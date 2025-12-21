@@ -1,0 +1,39 @@
+.card {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 24px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+  display: grid;
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 8px;
+  padding: 0 24px;
+}
+
+.cardTitle {
+  line-height: 1;
+  font-weight: 600;
+}
+
+.cardDescription {
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+
+.cardContent {
+  padding: 0 24px;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}

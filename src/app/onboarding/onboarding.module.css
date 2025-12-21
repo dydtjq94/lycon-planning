@@ -1,0 +1,3623 @@
+/* 페이지 전체 */
+.page {
+  height: 100vh;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 최상단 프로그레스 바 */
+.topProgressBar {
+  height: 4px;
+  background-color: #e7e5e4;
+  flex-shrink: 0;
+}
+
+.topProgressFill {
+  height: 100%;
+  background-color: #d97706;
+  transition: width 0.4s ease;
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 40px;
+  background-color: white;
+  border-bottom: 1px solid #e7e5e4;
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.headerLogo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.headerIcon {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.headerTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #292524;
+}
+
+.headerCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.headerStepLabel {
+  font-size: 15px;
+  font-weight: 600;
+  color: #292524;
+}
+
+.headerStepCount {
+  font-size: 13px;
+  color: #78716c;
+}
+
+.headerRight {
+  flex: 1;
+}
+
+/* 메인 2단 레이아웃 */
+.mainLayout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 왼쪽 패널: 폼 영역 */
+.leftPanel {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+}
+
+.leftPanelContent {
+  flex: 1 1 0;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+}
+
+/* 오른쪽 패널: 인사이트 영역 - Claude 스타일 */
+.rightPanel {
+  width: 50%;
+  background: linear-gradient(180deg, #f9f7f4 0%, #f3ede6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 64px;
+}
+
+@media (max-width: 900px) {
+  .mainLayout {
+    flex-direction: column;
+  }
+
+  .leftPanel {
+    width: 100%;
+    height: 100%;
+  }
+
+  .rightPanel {
+    display: none;
+  }
+
+  .content {
+    padding: 40px 24px 80px;
+    max-width: 100%;
+  }
+
+  .navigation {
+    padding: 20px 24px;
+  }
+
+  .header {
+    padding: 12px 20px;
+  }
+
+  .headerTitle {
+    font-size: 18px;
+  }
+
+  .headerLogo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .headerStepLabel {
+    font-size: 14px;
+  }
+
+  .headerStepCount {
+    font-size: 12px;
+  }
+}
+
+/* 더 작은 모바일 화면 */
+@media (max-width: 480px) {
+  .content {
+    padding: 24px 16px 80px;
+  }
+
+  .navigation {
+    padding: 16px;
+  }
+
+  .pageTitle {
+    font-size: 22px;
+  }
+
+  .pageDescription {
+    font-size: 15px;
+  }
+
+  .navButton {
+    padding: 14px 24px;
+    font-size: 15px;
+  }
+
+  .assetItem {
+    padding: 16px;
+  }
+
+  .assetItemRow {
+    flex-wrap: wrap;
+  }
+
+  .categoryItem {
+    padding: 12px 14px;
+  }
+
+  .categoryItemIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .categoryItemTitle {
+    font-size: 14px;
+  }
+
+  .categoryItemDesc {
+    font-size: 12px;
+  }
+}
+
+/* 인사이트 콘텐츠 */
+.insightContent {
+  max-width: 440px;
+}
+
+.insightStatBox {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.insightStat {
+  font-size: 32px;
+  font-weight: 700;
+  color: #44403c;
+  line-height: 1;
+}
+
+.insightStatLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #78716c;
+}
+
+.insightTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1c1917;
+  line-height: 1.4;
+  margin-bottom: 20px;
+}
+
+.insightDescription {
+  font-size: 15px;
+  font-weight: 400;
+  color: #57534e;
+  line-height: 1.8;
+}
+
+/* 콘텐츠 영역 */
+.content {
+  padding: 56px 48px 80px;
+  width: 100%;
+  max-width: 600px;
+}
+
+/* 메인 로고 - 숨김 */
+.mainLogo {
+  display: none;
+}
+
+.mainLogoIcon {
+  display: none;
+}
+
+/* 기존 프로그레스 영역 - 숨김 */
+.progressArea {
+  display: none;
+}
+
+.progressHeader {
+  display: none;
+}
+
+.setupTitle {
+  display: none;
+}
+
+.stepBadge {
+  display: none;
+}
+
+.progressWrapper {
+  display: none;
+}
+
+.progressBar {
+  display: none;
+}
+
+.progressFill {
+  display: none;
+}
+
+.errorBox {
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  font-size: 15px;
+  color: #dc2626;
+  background-color: #fef2f2;
+  border-radius: 12px;
+  border-left: 4px solid #dc2626;
+}
+
+/* 공통 타이틀 */
+.pageTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: #292524;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.pageDescription {
+  font-size: 14px;
+  color: #a8a29e;
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+/* 폼 섹션 */
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 600px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 13px;
+  color: #a8a29e;
+  font-weight: 500;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.labelSmall {
+  font-size: 12px;
+  color: #a8a29e;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+/* Welcome 화면 */
+.welcomeContainer {
+  text-align: center;
+}
+
+.welcomeGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.welcomeCard {
+  padding: 20px;
+  border: none;
+  border-radius: 12px;
+  text-align: left;
+  transition: background-color 0.2s;
+  background: #f5f5f4;
+  cursor: pointer;
+}
+
+.welcomeCard:hover {
+  background-color: #efedeb;
+}
+
+.welcomeCard:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.welcomeCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.welcomeCardIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e7e5e4;
+  color: #78716c;
+}
+
+.welcomeCardIconBlue {
+  background-color: #e7e5e4;
+}
+
+.welcomeCardIconPurple {
+  background-color: #e7e5e4;
+}
+
+.welcomeCardTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #292524;
+}
+
+.welcomeCardDescription {
+  font-size: 14px;
+  color: #78716c;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.welcomeCardTime {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #a8a29e;
+  font-weight: 500;
+}
+
+/* 아이콘 크기 */
+.icon12 {
+  width: 14px;
+  height: 14px;
+}
+
+.icon16 {
+  width: 18px;
+  height: 18px;
+}
+
+.icon20 {
+  width: 24px;
+  height: 24px;
+}
+
+.iconBlue {
+  color: #d97706;
+}
+
+.iconPurple {
+  color: #b45309;
+}
+
+/* 토글 스위치 */
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+}
+
+.toggleLabel {
+  font-size: 17px;
+  color: #44403c;
+  font-weight: 600;
+}
+
+.toggle {
+  width: 48px;
+  height: 28px;
+  border-radius: 14px;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.toggleActive {
+  background-color: #292524;
+}
+
+.toggleInactive {
+  background-color: #d6d3d1;
+}
+
+.toggleKnob {
+  width: 22px;
+  height: 22px;
+  background-color: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s;
+  position: absolute;
+  top: 3px;
+}
+
+.toggleKnobActive {
+  transform: translateX(23px);
+}
+
+.toggleKnobInactive {
+  transform: translateX(3px);
+}
+
+/* 가족 정보 섹션 */
+.familySection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.familyCard {
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.familyCardPink {
+  background-color: #f5f5f4;
+}
+
+.familyCardGray {
+  background-color: #f5f5f4;
+}
+
+.familyHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.familyHeaderWithButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.familyIconWrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.familyIconPink {
+  background-color: #e7e5e4;
+  color: #78716c;
+}
+
+.familyIconBlue {
+  background-color: #e7e5e4;
+  color: #78716c;
+}
+
+.familyIconAmber {
+  background-color: #e7e5e4;
+  color: #78716c;
+}
+
+.familyTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #292524;
+}
+
+.familySubtitle {
+  font-size: 14px;
+  color: #a8a29e;
+  margin-top: 2px;
+}
+
+.familyContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 직장 여부 버튼 */
+.workStatusSection {
+  padding-top: 16px;
+  border-top: 1px solid #e7e5e4;
+}
+
+.workStatusLabel {
+  font-size: 15px;
+  color: #78716c;
+  margin-bottom: 12px;
+  display: block;
+  font-weight: 500;
+}
+
+.workStatusButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.workStatusButton {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+}
+
+.workStatusActive {
+  background-color: #10b981;
+  color: white;
+}
+
+.workStatusInactiveGray {
+  background-color: #78716c;
+  color: white;
+}
+
+.workStatusInactive {
+  background-color: white;
+  border: 2px solid #e7e5e4;
+  color: #78716c;
+}
+
+.workStatusInactive:hover {
+  border-color: #a8a29e;
+}
+
+/* 자녀/부모 목록 */
+.familyList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.familyItem {
+  padding: 20px;
+  background-color: white;
+  border-radius: 12px;
+  border: 1px solid #e7e5e4;
+}
+
+.familyItemContent {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.familyItemFields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.familyItemRow {
+  display: flex;
+  gap: 12px;
+}
+
+.emptyMessage {
+  font-size: 15px;
+  color: #a8a29e;
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* 은퇴 정보 */
+.retirementInfo {
+  font-size: 14px;
+  color: #d97706;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+/* 자산 입력 리스트 - 엑셀 스타일 */
+.assetList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 8px;
+}
+
+.assetItem {
+  padding: 12px 0;
+  background-color: transparent;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 1px solid #f5f5f4;
+}
+
+.assetItem:last-of-type {
+  border-bottom: none;
+}
+
+.assetItemRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.assetSelect {
+  height: 40px;
+  padding: 0 8px;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid #e7e5e4;
+  background-color: transparent;
+  font-size: 14px;
+  color: #78716c;
+  transition: all 0.2s;
+}
+
+.assetSelect:focus {
+  color: #292524;
+  border-bottom-color: #292524;
+  outline: none;
+}
+
+.addButton {
+  width: fit-content;
+  padding: 8px 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #a8a29e;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s;
+  margin-top: 8px;
+}
+
+.addButton:hover {
+  color: #292524;
+}
+
+/* 부채/연금 페이지 */
+.debtPensionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #e7e5e4;
+}
+
+/* 네비게이션 버튼 */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 48px;
+  background-color: white;
+  flex-shrink: 0;
+}
+
+.prevButton {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  color: #78716c;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: color 0.2s;
+}
+
+.prevButton:hover {
+  color: #292524;
+}
+
+.nextButton {
+  padding: 14px 32px;
+  background-color: #292524;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s;
+}
+
+.nextButton:hover {
+  background-color: #44403c;
+}
+
+.nextButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 삭제 버튼 */
+.deleteButton {
+  padding: 6px;
+  background: none;
+  border: none;
+  color: #d6d3d1;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.2s;
+  opacity: 0.6;
+}
+
+.deleteButton:hover {
+  color: #78716c;
+  opacity: 1;
+}
+
+/* 추가 버튼 (ghost) */
+.ghostButton {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: #d97706;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.ghostButton:hover {
+  color: #2563eb;
+  background-color: #fffbeb;
+}
+
+/* 아이콘 색상 */
+.iconPink {
+  color: #ec4899;
+}
+
+.iconAmber {
+  color: #f59e0b;
+}
+
+/* 로딩 스피너 */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 카테고리 선택 - 심플 리스트 */
+.categoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.categoryItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #f5f5f4;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.categoryItem:hover {
+  background-color: #efedeb;
+}
+
+.categoryItemSelected {
+  background-color: #fef3c7;
+}
+
+.categoryCheckbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #d6d3d1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.categoryCheckboxSelected {
+  background-color: #d97706;
+  border-color: #d97706;
+  color: white;
+}
+
+.categoryItemIcon {
+  display: none;
+}
+
+.categoryItemSelected .categoryItemIcon {
+  display: none;
+}
+
+.categoryItemContent {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.categoryItemTitle {
+  font-size: 15px;
+  font-weight: 500;
+  color: #292524;
+}
+
+.categoryItemDesc {
+  font-size: 13px;
+  color: #a8a29e;
+}
+
+/* 스프레드시트 스타일 온보딩 */
+.spreadsheetContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.spreadsheetSection {
+  padding: 20px 0;
+  border-bottom: 1px solid #f5f5f4;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.spreadsheetSection:last-child {
+  border-bottom: none;
+}
+
+.spreadsheetSectionActive {
+  opacity: 1;
+}
+
+.spreadsheetSection:hover {
+  opacity: 0.8;
+}
+
+.spreadsheetSectionActive:hover {
+  opacity: 1;
+}
+
+.spreadsheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.spreadsheetTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.spreadsheetCount {
+  font-size: 12px;
+  color: #a8a29e;
+}
+
+.spreadsheetToggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #78716c;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.spreadsheetToggle:hover {
+  background-color: #f5f5f4;
+}
+
+.spreadsheetGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .spreadsheetGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.spreadsheetField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spreadsheetLabel {
+  font-size: 11px;
+  color: #a8a29e;
+  font-weight: 500;
+}
+
+.spreadsheetRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.spreadsheetRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spreadsheetRow > *:first-child {
+  flex: 2;
+}
+
+.spreadsheetRow > *:nth-child(2) {
+  flex: 1;
+}
+
+.spreadsheetSelect {
+  height: 44px;
+  padding: 0 8px;
+  border: none;
+  border-bottom: 1px solid #e7e5e4;
+  background: transparent;
+  font-size: 14px;
+  color: #78716c;
+  min-width: 60px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.spreadsheetSelect:focus {
+  color: #292524;
+  border-bottom-color: #292524;
+  outline: none;
+}
+
+.spreadsheetDelete {
+  padding: 8px;
+  border: none;
+  background: none;
+  color: #d6d3d1;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.spreadsheetRow:hover .spreadsheetDelete {
+  opacity: 1;
+}
+
+.spreadsheetDelete:hover {
+  color: #78716c;
+}
+
+.spreadsheetAdd {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #a8a29e;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.spreadsheetAdd:hover {
+  color: #292524;
+}
+
+/* 웰컴 페이지 */
+.welcomePage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #fafaf9 0%, #f5f5f4 100%);
+}
+
+.welcomeContent {
+  text-align: center;
+  padding: 40px;
+}
+
+@keyframes welcomeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcomeGreetingWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.welcomeGreeting {
+  font-size: 32px;
+  font-weight: 600;
+  color: #292524;
+  min-height: 48px;
+  margin-bottom: 40px;
+}
+
+.welcomeCursor {
+  color: #d97706;
+  animation: blink 1s infinite;
+  font-weight: 300;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.welcomeProgress {
+  display: flex;
+  gap: 8px;
+}
+
+.welcomeProgressDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #e7e5e4;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.welcomeProgressDotActive {
+  background-color: #d97706;
+  transform: scale(1.3);
+}
+
+.welcomeBadge {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #fef3c7;
+  color: #b45309;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 20px;
+  margin-bottom: 24px;
+  animation: welcomeFadeIn 0.8s ease 0.1s both;
+}
+
+.welcomeTitle {
+  font-size: 40px;
+  font-weight: 700;
+  color: #292524;
+  margin-bottom: 16px;
+  line-height: 1.3;
+  animation: welcomeFadeIn 0.8s ease 0.2s both;
+}
+
+.welcomeTitleHighlight {
+  color: #d97706;
+}
+
+.welcomeSubtitle {
+  font-size: 17px;
+  color: #78716c;
+  margin-bottom: 40px;
+  line-height: 1.6;
+  animation: welcomeFadeIn 0.8s ease 0.3s both;
+}
+
+.welcomeActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 300px;
+  margin: 0 auto;
+  animation: welcomeFadeIn 0.8s ease 0.4s both;
+}
+
+.welcomeStartButton {
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #d97706, #b45309);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3);
+}
+
+.welcomeStartButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.4);
+}
+
+.welcomeSandboxButton {
+  padding: 14px 32px;
+  background: none;
+  color: #78716c;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: color 0.2s;
+}
+
+.welcomeSandboxButton:hover {
+  color: #292524;
+}
+
+.welcomeSandboxButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.welcomeNote {
+  margin-top: 32px;
+  font-size: 13px;
+  color: #a8a29e;
+  animation: welcomeFadeIn 0.8s ease 0.5s both;
+}
+
+/* 스프레드시트 페이지 */
+.spreadsheetPage {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #fafaf9;
+  overflow: hidden;
+}
+
+.spreadsheetPageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background-color: white;
+  border-bottom: 1px solid #e7e5e4;
+  flex-shrink: 0;
+}
+
+.spreadsheetPageLogo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #292524;
+}
+
+.logoSeparator {
+  color: #d6d3d1;
+  font-weight: 300;
+}
+
+.logoSubtitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #78716c;
+}
+
+.headerProgress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.headerSteps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerStep {
+  font-size: 13px;
+  color: #d6d3d1;
+  padding: 4px 0;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.headerStep::after {
+  content: "→";
+  margin-left: 8px;
+  color: #e7e5e4;
+}
+
+.headerStep:last-child::after {
+  display: none;
+}
+
+.headerStepDone {
+  color: #78716c;
+}
+
+.headerStepActive {
+  color: #d97706;
+  font-weight: 600;
+}
+
+.spreadsheetSubmitButton {
+  padding: 10px 24px;
+  background-color: #292524;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.spreadsheetSubmitButton:hover {
+  background-color: #44403c;
+}
+
+.spreadsheetSubmitButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.autoSaveStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #78716c;
+  min-width: 90px;
+  transition: opacity 0.2s ease;
+}
+
+.autoSaveStatusIdle {
+  opacity: 0;
+}
+
+.autoSaveStatusSaving {
+  color: #78716c;
+  opacity: 1;
+}
+
+.autoSaveStatusSaved {
+  color: #16a34a;
+  opacity: 1;
+}
+
+.autoSaveStatusError {
+  color: #dc2626;
+  opacity: 1;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.spreadsheetPageContent {
+  flex: 1;
+  display: flex;
+  width: 100%;
+  padding: 0;
+  gap: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.spreadsheetPageMain {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  background-color: white;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.spreadsheetPageAside {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 24px 32px;
+  background: linear-gradient(180deg, #f9f7f4 0%, #f3ede6 100%);
+}
+
+.asideTip {
+  padding: 20px;
+  background-color: white;
+  border-radius: 12px;
+  border: 1px solid #e7e5e4;
+}
+
+.asideTipLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #d97706;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.asideTipText {
+  font-size: 14px;
+  color: #78716c;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+@media (max-width: 900px) {
+  .spreadsheetPageContent {
+    flex-direction: column;
+  }
+
+  .spreadsheetPageAside {
+    display: none;
+  }
+
+  .excelContainer {
+    border-right: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .headerSteps {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .spreadsheetPageHeader {
+    padding: 12px 16px;
+  }
+}
+
+/* 엑셀 스타일 프로그레시브 폼 */
+.excelWrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.excelContainer {
+  background: white;
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid #e7e5e4;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.excelHeader {
+  display: grid;
+  grid-template-columns: 40px 120px 1fr;
+  background-color: #fafaf9;
+  border-bottom: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.excelProgressBar {
+  height: 3px;
+  background-color: #e7e5e4;
+  position: sticky;
+  top: 32px;
+  z-index: 10;
+}
+
+.excelProgressFill {
+  height: 100%;
+  background-color: #d97706;
+  transition: width 0.3s ease;
+}
+
+.excelHeaderNumber,
+.excelHeaderLabel,
+.excelHeaderValue {
+  padding: 10px 12px;
+}
+
+.excelHeaderNumber {
+  text-align: center;
+  border-right: 1px solid #e7e5e4;
+}
+
+.excelHeaderLabel {
+  border-right: 1px solid #e7e5e4;
+}
+
+.excelBody {
+  display: flex;
+  flex-direction: column;
+}
+
+.excelRow {
+  display: grid;
+  grid-template-columns: 40px 120px 1fr;
+  border-bottom: 1px solid #f5f5f4;
+  transition: background-color 0.2s ease;
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.excelRow:last-child {
+  border-bottom: none;
+}
+
+/* 섹션 구분 행 */
+.excelSectionDivider {
+  display: grid;
+  grid-template-columns: 40px 120px 1fr;
+  background-color: #f5f5f4;
+  border-bottom: 1px solid #e7e5e4;
+  border-top: 1px solid #e7e5e4;
+}
+
+.excelSectionDividerLabel {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.excelRowActive {
+  background-color: #fffbeb;
+}
+
+.excelRowComplete .excelRowNumber {
+  color: #d97706;
+}
+
+/* 현재 해야 할 행 강조 */
+.excelRowCurrent .excelRowNumber {
+  color: #d97706;
+  font-weight: 600;
+}
+
+.excelRowCurrent .excelRowLabel {
+  color: #292524;
+  font-weight: 600;
+}
+
+/* 현재 입력해야 할 셀 강조 - 셀 단위로 border 표시 */
+.excelRowCurrent .excelValueCell:has(input:not(:focus):not([data-filled="true"])),
+.excelRowCurrent .excelValueCell:has(select:not(:focus)) {
+  background-color: #fef3c7;
+  box-shadow: inset 0 0 0 2px #f59e0b;
+}
+
+/* 단일 입력 행 (셀 구조 아닌 경우) */
+.excelRowCurrent .excelRowInput:has(input:not(:focus):not([data-filled="true"])) {
+  background-color: #fef3c7;
+  box-shadow: inset 0 0 0 2px #f59e0b;
+  border-radius: 4px;
+}
+
+.excelRowCurrent input::placeholder {
+  color: #d6d3d1;
+}
+
+.excelRow:hover {
+  background-color: #fafaf9;
+}
+
+.excelRowActive:hover {
+  background-color: #fffbeb;
+}
+
+.excelRowNumber {
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 12px;
+  color: #a8a29e;
+  border-right: 1px solid #f5f5f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.excelRowLabel {
+  padding: 14px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #44403c;
+  border-right: 1px solid #f5f5f4;
+  display: flex;
+  align-items: center;
+}
+
+.excelRowInput {
+  flex: 1;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+}
+
+/* 소득/지출 행의 입력 영역 (패딩 없음) */
+.excelRowInputMulti {
+  flex: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* 값 셀들 (소득/지출 등 다중 입력용) */
+.excelValueCells {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.excelValueCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 44px;
+  border-right: 1px solid #f5f5f4;
+  padding: 0;
+}
+
+.excelValueCell:last-child {
+  border-right: none;
+}
+
+.excelValueCellName {
+  flex: 1;
+  min-width: 80px;
+  justify-content: flex-start;
+}
+
+.excelValueCellName input {
+  width: 100%;
+  height: 100%;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 12px !important;
+  font-size: 14px;
+  background: transparent;
+}
+
+.excelValueCellName input:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+}
+
+.excelValueCellAmount {
+  width: 90px;
+  min-width: 90px;
+}
+
+/* MoneyInput container inside amount cell */
+.excelValueCellAmount > div {
+  width: 100%;
+  height: 100%;
+  gap: 0;
+}
+
+/* MoneyInput inputWrapper inside amount cell */
+.excelValueCellAmount > div > div {
+  height: 100%;
+}
+
+.excelValueCellAmount input {
+  width: 100%;
+  height: 100%;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 8px !important;
+  font-size: 14px;
+  text-align: right;
+  background: transparent;
+}
+
+.excelValueCellAmount input:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+}
+
+.excelValueCellUnit {
+  width: 40px;
+  min-width: 40px;
+  font-size: 13px;
+  color: #78716c;
+}
+
+.excelValueCellFrequency {
+  width: 40px;
+  min-width: 40px;
+}
+
+.excelValueCellFrequency select {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #57534e;
+  padding: 0 4px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.excelValueCellFrequency select:focus {
+  outline: none;
+  background: #fefce8;
+}
+
+/* 레이블 셀 (본인/배우자 또는 항목명 입력) */
+.excelValueCellLabel {
+  flex: 0 0 140px;
+  width: 140px;
+  font-size: 13px;
+  color: #57534e;
+  padding: 0 12px;
+  justify-content: flex-start;
+}
+
+/* 셀 내부 입력 필드 스타일 */
+.excelCellInput {
+  width: 100%;
+  height: 100%;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  font-size: 13px;
+  background: transparent;
+  box-shadow: none !important;
+}
+
+.excelCellInput:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+  outline: none;
+}
+
+/* 고정 항목명 레이블 */
+.excelCellLabel {
+  font-size: 13px;
+  color: #44403c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 구분선 셀 */
+.excelValueCellDivider {
+  width: 1px;
+  min-width: 1px;
+  background: #e7e5e4;
+  padding: 0;
+}
+
+/* 중간 너비 금액 셀 (레이블 있을 때) */
+.excelValueCellAmountMid {
+  flex: 1;
+  min-width: 60px;
+}
+
+/* MoneyInput container inside mid amount cell */
+.excelValueCellAmountMid > div {
+  width: 100%;
+  height: 100%;
+  gap: 0;
+}
+
+.excelValueCellAmountMid > div > div {
+  height: 100%;
+}
+
+.excelValueCellAmountMid input {
+  width: 100%;
+  height: 100%;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 8px !important;
+  font-size: 14px;
+  text-align: right;
+  background: transparent;
+}
+
+.excelValueCellAmountMid input:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+}
+
+/* 고정 항목용 (항목명 입력 없이 금액만) */
+.excelValueCellAmountWide {
+  flex: 1;
+  min-width: 100px;
+}
+
+/* MoneyInput container inside wide amount cell */
+.excelValueCellAmountWide > div {
+  width: 100%;
+  height: 100%;
+  gap: 0;
+}
+
+.excelValueCellAmountWide > div > div {
+  height: 100%;
+}
+
+.excelValueCellAmountWide input {
+  width: 100%;
+  height: 100%;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 12px !important;
+  font-size: 14px;
+  text-align: right;
+  background: transparent;
+}
+
+.excelValueCellAmountWide input:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+}
+
+/* 고정 주기 표시 (선택 불가) */
+.excelValueCellFrequencyFixed {
+  width: 40px;
+  min-width: 40px;
+  font-size: 13px;
+  color: #78716c;
+}
+
+/* 주기 토글 버튼 */
+.frequencyToggle {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #78716c;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s;
+  border-radius: 4px;
+}
+
+.frequencyToggle:hover {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.frequencyToggle:active {
+  background: #fde68a;
+}
+
+.excelValueCellDelete {
+  width: 32px;
+  min-width: 32px;
+}
+
+.excelValueCellDelete button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #d6d3d1;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.excelValueCellDelete button:hover {
+  color: #dc2626;
+}
+
+/* 날짜 셀 */
+.excelValueCellDate {
+  flex: 0 0 140px;
+  width: 140px;
+}
+
+.excelValueCellDate input {
+  width: 100%;
+  height: 100%;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 8px !important;
+  font-size: 13px;
+  background: transparent;
+}
+
+.excelValueCellDate input:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+}
+
+/* 나이 셀 */
+.excelValueCellAge {
+  flex: 1;
+  min-width: 100px;
+  font-size: 12px;
+  color: #78716c;
+  padding: 0 8px;
+}
+
+/* 날짜 + 나이 통합 셀 */
+.excelValueCellDateWithAge {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 0 12px;
+}
+
+.excelValueCellDateWithAge input {
+  width: 140px;
+  height: 100%;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  font-size: 13px;
+  background: transparent;
+}
+
+.excelValueCellDateWithAge input:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+}
+
+.excelCalculatedSmall {
+  font-size: 12px;
+  color: #78716c;
+  white-space: nowrap;
+}
+
+/* 배우자/자녀 토글 셀 */
+.excelValueCellSpouseToggle {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.excelCellLabelSmall {
+  font-size: 12px;
+  color: #78716c;
+  white-space: nowrap;
+}
+
+.excelToggleButtons {
+  display: flex;
+  gap: 4px;
+}
+
+.excelToggleBtn {
+  padding: 4px 10px;
+  border: 1px solid #e7e5e4;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+  color: #78716c;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.excelToggleBtn:hover {
+  background: #fafaf9;
+  border-color: #d6d3d1;
+}
+
+.excelToggleBtnSelected {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.excelDeleteBtnSmall {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #d6d3d1;
+  cursor: pointer;
+  transition: color 0.15s;
+  border-radius: 4px;
+}
+
+.excelDeleteBtnSmall:hover {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+/* 확장 행 (추가 항목들) */
+.excelRowExtension {
+  border-top: none;
+}
+
+.excelRowExtension .excelRowNumber,
+.excelRowExtension .excelRowLabel {
+  border-bottom: 1px solid #f5f5f4;
+}
+
+/* 추가 행 */
+.excelRowAdd {
+  cursor: pointer;
+}
+
+.excelRowAdd:hover {
+  background: #fafaf9;
+}
+
+.excelAddText {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #a8a29e;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.excelAddText:hover {
+  color: #78716c;
+}
+
+.excelRowInput input {
+  border: none;
+  background: transparent;
+  padding: 6px 0;
+  height: auto;
+}
+
+.excelRowInput input:focus {
+  background: transparent;
+}
+
+.excelRowOptions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.excelRowOptions .excelDeleteBtn {
+  margin-left: auto;
+}
+
+.excelRowOptionsFull {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+}
+
+.excelSpouseInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0;
+  overflow: hidden;
+  transition: flex 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.excelSpouseInputWrapper > input {
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.4s ease 0.2s, transform 0.4s ease 0.2s;
+}
+
+.excelSpouseInputWrapper > span {
+  opacity: 0;
+  transition: opacity 0.4s ease 0.3s;
+  white-space: nowrap;
+}
+
+.excelSpouseInputWrapperExpanded {
+  flex: 1;
+}
+
+.excelSpouseInputWrapperExpanded > input {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.excelSpouseInputWrapperExpanded > span {
+  opacity: 1;
+}
+
+/* 자녀 입력 래퍼 (배우자와 동일한 애니메이션) */
+.excelChildrenInputWrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 0;
+  overflow: hidden;
+  transition: flex 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.excelChildrenInputWrapperExpanded {
+  flex: 1;
+}
+
+.excelChildrenInputWrapperExpanded .excelChildrenList {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.excelChildrenList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.4s ease 0.2s, transform 0.4s ease 0.2s;
+}
+
+.excelChildItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.excelChildLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #57534e;
+  min-width: 32px;
+}
+
+.excelSpouseButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.excelOptionsLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.excelOptionsRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.excelOption {
+  padding: 6px 12px;
+  border: 1px solid #e7e5e4;
+  background: white;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #78716c;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: scale(1);
+}
+
+.excelOption:hover {
+  border-color: #d6d3d1;
+  transform: scale(1.02);
+}
+
+.excelOption:active {
+  transform: scale(0.97);
+}
+
+.excelOptionSelected {
+  background-color: #292524;
+  border-color: #292524;
+  color: white;
+  transform: scale(1);
+}
+
+.excelInlineInput {
+  flex: 1;
+  margin-left: 8px;
+}
+
+.excelCount {
+  font-size: 13px;
+  color: #78716c;
+  min-width: 40px;
+}
+
+.excelAddSmall {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #78716c;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.excelAddSmall:hover {
+  color: #292524;
+}
+
+.excelAssetRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.excelAssetGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #fafaf9;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.excelAssetGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.excelAssetGroupLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.excelAssetGroupTotal {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d97706;
+}
+
+.excelAssetItem {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  overflow: hidden;
+  background: white;
+}
+
+.excelAssetItem .excelDeleteBtn {
+  margin-left: auto;
+}
+
+.excelAssetItem input {
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: 1px solid #e7e5e4 !important;
+  border-radius: 0 !important;
+  padding: 10px 12px !important;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+.excelAssetItem input:focus {
+  background-color: #fefce8;
+}
+
+.excelAssetItem > *:first-child {
+  flex: 2;
+}
+
+.excelAssetItem > *:nth-child(2) {
+  flex: 1.5;
+  border-right: 1px solid #e7e5e4;
+}
+
+/* MoneyInput 내부 스타일 (excelAssetItem 내에서) */
+.excelAssetItem > *:nth-child(2) > div {
+  height: 100%;
+}
+
+.excelAssetItem > *:nth-child(2) input {
+  border-right: none !important;
+}
+
+.excelFrequency {
+  padding: 8px 12px;
+  border: none;
+  border-right: 1px solid #e7e5e4;
+  background: transparent;
+  font-size: 13px;
+  color: #78716c;
+  min-width: 55px;
+  height: 44px;
+  cursor: pointer;
+}
+
+.excelFrequency:focus {
+  outline: none;
+  background-color: #fefce8;
+}
+
+.excelDeleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: #a8a29e;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.excelDeleteBtn:hover {
+  color: #dc2626;
+}
+
+.excelFrequency:focus {
+  outline: none;
+  border-bottom-color: #292524;
+}
+
+.excelTotal {
+  font-size: 12px;
+  color: #78716c;
+  padding-top: 4px;
+  border-top: 1px solid #f5f5f4;
+  margin-top: 4px;
+}
+
+/* 엑셀 서브 행 스타일 (소득/지출 등) */
+.excelSubRows {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: -8px;
+}
+
+/* 서브 행 헤더 */
+.excelSubRowHeader {
+  display: flex;
+  align-items: center;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px 6px 0 0;
+  height: 28px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.excelSubRowHeader + .excelSubRow {
+  border-top: none;
+  border-radius: 0;
+}
+
+.excelSubRowHeader + .excelSubRow:first-of-type {
+  border-radius: 0;
+}
+
+.excelSubRowHeaderCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border-right: 1px solid #e7e5e4;
+  padding: 0 8px;
+}
+
+.excelSubRowHeaderCell:last-child {
+  border-right: none;
+}
+
+.excelSubSection {
+  margin-bottom: 16px;
+}
+
+.excelSubSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f5f5f4;
+  border-radius: 6px 6px 0 0;
+  border: 1px solid #e7e5e4;
+  border-bottom: none;
+}
+
+.excelSubSectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.excelSubSectionTotal {
+  font-size: 12px;
+  font-weight: 600;
+  color: #44403c;
+}
+
+.excelSubRow {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #e7e5e4;
+  border-top: none;
+  background: white;
+  min-height: 44px;
+}
+
+.excelSubRow:first-child {
+  border-top: 1px solid #e7e5e4;
+  border-radius: 6px 6px 0 0;
+}
+
+.excelSubSection .excelSubRow:first-child {
+  border-top: none;
+  border-radius: 0;
+}
+
+.excelSubRow:last-child {
+  border-radius: 0 0 6px 6px;
+}
+
+.excelSubRowComplete {
+  background: #fafaf9;
+}
+
+.excelSubRowNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-width: 36px;
+  font-size: 11px;
+  color: #a8a29e;
+  background: #fafaf9;
+  border-right: 1px solid #e7e5e4;
+}
+
+.excelSubRowComplete .excelSubRowNumber {
+  color: #16a34a;
+}
+
+.excelSubRowContent {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  gap: 0;
+  padding: 0;
+}
+
+/* 각 셀 공통 스타일 */
+.excelSubRowCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #e7e5e4;
+  height: 42px;
+  padding: 0;
+}
+
+.excelSubRowCell:last-child {
+  border-right: none;
+}
+
+/* 이름 셀 */
+.excelSubRowCellName {
+  flex: 1;
+  min-width: 80px;
+}
+
+.excelSubRowCellName input {
+  width: 100%;
+  height: 100%;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 12px !important;
+  font-size: 14px;
+  background: transparent;
+}
+
+.excelSubRowCellName input:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+}
+
+/* 금액 셀 */
+.excelSubRowCellAmount {
+  width: 100px;
+  min-width: 100px;
+}
+
+.excelSubRowCellAmount input {
+  width: 100%;
+  height: 100%;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 12px !important;
+  font-size: 14px;
+  text-align: right;
+  background: transparent;
+}
+
+.excelSubRowCellAmount input:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+}
+
+/* 단위 셀 (만원) */
+.excelSubRowCellUnit {
+  width: 45px;
+  min-width: 45px;
+  background: #fafaf9;
+  font-size: 13px;
+  color: #78716c;
+}
+
+/* 빈도 셀 */
+.excelSubRowCellFrequency {
+  width: 45px;
+  min-width: 45px;
+  background: #fafaf9;
+}
+
+.excelSubRowCellFrequency select {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #57534e;
+  padding: 0 4px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.excelSubRowCellFrequency select:focus {
+  outline: none;
+  background: #fefce8;
+}
+
+/* 삭제 셀 */
+.excelSubRowCellDelete {
+  width: 36px;
+  min-width: 36px;
+}
+
+.excelSubRowCellDelete button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #a8a29e;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.excelSubRowCellDelete button:hover {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
+/* 기존 호환성 유지 */
+.excelSubRowInput {
+  flex: 1;
+  border: none !important;
+  border-radius: 0 !important;
+  border-right: 1px solid #e7e5e4 !important;
+  height: 42px;
+  padding: 0 12px !important;
+  font-size: 14px;
+}
+
+.excelSubRowInput:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+}
+
+.excelSubRowAmount {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid #e7e5e4;
+}
+
+.excelSubRowAmount input {
+  border: none !important;
+  border-radius: 0 !important;
+  height: 42px;
+  width: 120px;
+  padding: 0 12px !important;
+  font-size: 14px;
+  text-align: right;
+}
+
+.excelSubRowAmount input:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+}
+
+.excelSubRowFrequency {
+  width: 50px;
+  height: 42px;
+  border: none;
+  border-left: 1px solid #e7e5e4;
+  background: #fafaf9;
+  font-size: 13px;
+  color: #57534e;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+.excelSubRowFrequency:focus {
+  outline: none;
+  background: #fefce8;
+}
+
+.excelSubRowDelete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-width: 40px;
+  height: 42px;
+  border: none;
+  background: transparent;
+  color: #a8a29e;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.excelSubRowDelete:hover {
+  color: #dc2626;
+}
+
+/* 추가 행 */
+.excelSubRowAdd {
+  cursor: pointer;
+  background: #fafaf9;
+  transition: background 0.15s;
+}
+
+.excelSubRowAdd:hover {
+  background: #f5f5f4;
+}
+
+.excelSubRowAdd .excelSubRowNumber {
+  color: #78716c;
+}
+
+.excelSubRowAdd .excelSubRowCell {
+  background: transparent;
+}
+
+.excelSubRowAddText {
+  font-size: 13px;
+  color: #78716c;
+  padding: 0 12px;
+}
+
+/* 합계 행 */
+.excelSubRowTotal {
+  background: #f5f5f4;
+  border-top: 2px solid #e7e5e4 !important;
+  margin-top: 8px;
+  border-radius: 6px !important;
+}
+
+.excelSubRowTotal .excelSubRowNumber {
+  background: transparent;
+  border: none;
+}
+
+.excelSubRowTotal .excelSubRowCell {
+  background: transparent;
+  border-right-color: transparent;
+}
+
+.excelSubRowTotalLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #57534e;
+  padding: 0 12px;
+}
+
+.excelSubRowTotalValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #292524;
+  padding: 0 12px;
+}
+
+.excelSmallInput {
+  width: 80px !important;
+  flex-shrink: 0;
+  flex-grow: 0;
+}
+
+.excelSmallMoneyInput {
+  width: 100px;
+}
+
+/* Input + 단위 wrapper */
+.excelInputWithUnit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.excelInputWithUnitInput {
+  width: 120px !important;
+  flex-shrink: 0;
+}
+
+.excelInputWithUnitSuffix {
+  font-size: 13px;
+  color: #78716c;
+  flex-shrink: 0;
+}
+
+.excelUnit {
+  font-size: 13px;
+  color: #78716c;
+  margin-left: 2px;
+}
+
+.excelCalculated {
+  font-size: 13px;
+  font-style: italic;
+  color: #78716c;
+  white-space: nowrap;
+}
+
+.excelSpouseSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.excelSpouseFields {
+  display: flex;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px solid #f5f5f4;
+}
+
+.excelSpouseField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.excelFieldLabel {
+  font-size: 11px;
+  color: #a8a29e;
+  font-weight: 500;
+}
+
+/* 연금 관련 스타일 */
+.excelPensionInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  width: 100%;
+}
+
+.excelPensionBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.excelPensionDesc {
+  font-size: 13px;
+  color: #78716c;
+}
+
+.excelPensionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.excelHelpText {
+  font-size: 12px;
+  color: #a8a29e;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #fafaf9;
+  border-radius: 6px;
+}
+
+.excelEmptyText {
+  font-size: 13px;
+  color: #a8a29e;
+  padding: 12px 0;
+  font-style: italic;
+}
+
+/* 컨텍스트 팁 (오른쪽 패널) */
+.contextPanel {
+  position: sticky;
+  top: 24px;
+  height: fit-content;
+  width: 100%;
+}
+
+.contextCard {
+  background: transparent;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.contextLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c4704f;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+  opacity: 0;
+  animation: tipElementIn 0.5s ease forwards;
+  animation-delay: 0.05s;
+}
+
+.contextTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1c1917;
+  margin-bottom: 16px;
+  line-height: 1.3;
+  opacity: 0;
+  animation: tipElementIn 0.5s ease forwards;
+  animation-delay: 0.15s;
+}
+
+.contextDescription {
+  font-size: 17px;
+  color: #57534e;
+  line-height: 1.8;
+  opacity: 0;
+  animation: tipElementIn 0.5s ease forwards;
+  animation-delay: 0.25s;
+}
+
+.contextGuides {
+  margin-top: 24px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  opacity: 0;
+  animation: tipElementIn 0.5s ease forwards;
+  animation-delay: 0.3s;
+}
+
+.contextGuides li {
+  font-size: 15px;
+  color: #78716c;
+  line-height: 1.6;
+  padding-left: 18px;
+  position: relative;
+}
+
+.contextGuides li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #a8a29e;
+}
+
+.contextInsight {
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: rgba(196, 112, 79, 0.1);
+  border-radius: 8px;
+  font-size: 16px;
+  color: #44403c;
+  line-height: 1.6;
+  opacity: 0;
+  animation: tipElementIn 0.5s ease forwards;
+  animation-delay: 0.4s;
+}
+
+.contextSuggestions {
+  margin-top: 28px;
+  opacity: 0;
+  animation: tipElementIn 0.5s ease forwards;
+  animation-delay: 0.35s;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.contextSuggestionGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.contextSuggestionsLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #a8a29e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.contextSuggestionsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.contextSuggestionBtn {
+  padding: 8px 14px;
+  background: white;
+  border: 1px solid #e7e5e4;
+  border-radius: 18px;
+  font-size: 14px;
+  color: #57534e;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.contextSuggestionBtn:hover:not(:disabled) {
+  background: #fafaf9;
+  border-color: #c4704f;
+  color: #c4704f;
+  transform: scale(1.03);
+}
+
+.contextSuggestionBtnAdded {
+  background: rgba(196, 112, 79, 0.1);
+  border-color: #c4704f;
+  color: #c4704f;
+}
+
+.contextStat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 20px;
+  opacity: 0;
+  animation: tipElementIn 0.5s ease forwards;
+  animation-delay: 0.5s;
+}
+
+.contextStatValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #44403c;
+  line-height: 1;
+}
+
+.contextStatLabel {
+  font-size: 14px;
+  color: #78716c;
+}
+
+@keyframes tipElementIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .excelHeader {
+    grid-template-columns: 32px 100px 1fr;
+  }
+
+  .excelRow {
+    grid-template-columns: 32px 100px 1fr;
+  }
+
+  .excelRowLabel {
+    font-size: 12px;
+  }
+}
+
+/* ========================================
+   섹션 기반 온보딩 스타일
+   ======================================== */
+
+/* 섹션 탭 네비게이션 */
+.sectionTabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.sectionTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.sectionTab {
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #78716c;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.sectionTab:hover {
+  background-color: #f5f5f4;
+  color: #292524;
+}
+
+.sectionTabActive {
+  background-color: #292524;
+  color: white;
+}
+
+.sectionTabActive:hover {
+  background-color: #44403c;
+  color: white;
+}
+
+.sectionTabComplete {
+  color: #16a34a;
+}
+
+.sectionTabComplete::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  background-color: #16a34a;
+  border-radius: 50%;
+}
+
+/* 섹션 폼 컨테이너 */
+.sectionFormContainer {
+  padding: 24px;
+  max-width: 600px;
+}
+
+/* 섹션 콘텐츠 */
+.sectionContent {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* 섹션 요약 카드 */
+.sectionSummary {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #fafaf9 0%, #f5f5f4 100%);
+  border-radius: 12px;
+  border: 1px solid #e7e5e4;
+}
+
+.sectionSummaryItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sectionSummaryLabel {
+  font-size: 12px;
+  color: #78716c;
+}
+
+.sectionSummaryValue {
+  font-size: 18px;
+  font-weight: 600;
+  color: #292524;
+}
+
+.sectionSummaryValue small {
+  font-size: 14px;
+  font-weight: 400;
+  color: #78716c;
+}
+
+.sectionSummaryPositive .sectionSummaryValue {
+  color: #16a34a;
+}
+
+.sectionSummaryNegative .sectionSummaryValue {
+  color: #dc2626;
+}
+
+/* 섹션 그룹 */
+.sectionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionGroupTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #292524;
+  margin: 0;
+}
+
+.sectionGroupDesc {
+  font-size: 14px;
+  color: #78716c;
+  margin: -8px 0 0 0;
+}
+
+/* 섹션 필드 */
+.sectionField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #44403c;
+}
+
+.sectionFieldWithInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sectionFieldInfo {
+  font-size: 14px;
+  color: #78716c;
+}
+
+.sectionUnit {
+  font-size: 14px;
+  color: #78716c;
+}
+
+.sectionSmallInput {
+  width: 100px;
+}
+
+/* 섹션 토글 버튼 */
+.sectionToggleGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.sectionToggle {
+  padding: 10px 20px;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #44403c;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sectionToggle:hover {
+  background: #e7e5e4;
+}
+
+.sectionToggleActive {
+  background: #292524;
+  border-color: #292524;
+  color: white;
+}
+
+.sectionToggleActive:hover {
+  background: #44403c;
+}
+
+/* 섹션 입력 리스트 */
+.sectionInputList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionInputRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sectionInputName {
+  flex: 1;
+  min-width: 120px;
+}
+
+.sectionFrequency {
+  width: 60px;
+  padding: 8px;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+.sectionDeleteBtn {
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #a8a29e;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sectionDeleteBtn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.sectionAddBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  background: #f5f5f4;
+  border: 1px dashed #d6d3d1;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #78716c;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sectionAddBtn:hover {
+  background: #e7e5e4;
+  border-color: #a8a29e;
+  color: #44403c;
+}
+
+/* 플레이스홀더 */
+.sectionPlaceholder {
+  padding: 40px 20px;
+  background: #fafaf9;
+  border: 1px dashed #d6d3d1;
+  border-radius: 8px;
+  text-align: center;
+  color: #a8a29e;
+  font-size: 14px;
+}
+
+/* 섹션 팁 패널 */
+.sectionTipPanel {
+  padding: 24px;
+  background: linear-gradient(180deg, #fafaf9 0%, #f5f5f4 100%);
+  height: 100%;
+  overflow-y: auto;
+}
+
+.sectionTipCard {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.sectionTipLabel {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #fef3c7;
+  color: #d97706;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+
+.sectionTipTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #292524;
+  margin: 0 0 12px 0;
+  line-height: 1.3;
+}
+
+.sectionTipDescription {
+  font-size: 15px;
+  color: #57534e;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+}
+
+.sectionTipSuggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionTipSuggestionsLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sectionTipSuggestionsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sectionTipSuggestionBtn {
+  padding: 8px 14px;
+  background: white;
+  border: 1px solid #e7e5e4;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #44403c;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sectionTipSuggestionBtn:hover {
+  background: #f5f5f4;
+  border-color: #d6d3d1;
+}
+
+.sectionTipSuggestionBtnAdded {
+  background: #ecfdf5;
+  border-color: #16a34a;
+  color: #16a34a;
+  cursor: default;
+}
+
+.sectionTipStat {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e7e5e4;
+  text-align: center;
+}
+
+.sectionTipStatValue {
+  font-size: 36px;
+  font-weight: 700;
+  color: #d97706;
+}
+
+.sectionTipStatLabel {
+  font-size: 13px;
+  color: #78716c;
+  margin-top: 4px;
+}
+
+/* 반응형 */
+@media (max-width: 1024px) {
+  .sectionTabs {
+    padding: 0 16px;
+  }
+
+  .sectionTab {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .sectionFormContainer {
+    padding: 16px;
+  }
+
+  .sectionSummary {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sectionInputRow {
+    flex-wrap: wrap;
+  }
+
+  .sectionInputName {
+    min-width: 100%;
+  }
+}
+
+/* 엑셀 시트 탭 */
+.excelSheetTabs {
+  display: flex;
+  flex-shrink: 0;
+  border-top: 1px solid #e7e5e4;
+}
+
+.excelSheetTab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 4px;
+  background: #fafaf9;
+  border: none;
+  border-right: 1px solid #e7e5e4;
+  font-size: 12px;
+  color: #78716c;
+  cursor: pointer;
+}
+
+.excelSheetTab:last-child {
+  border-right: none;
+}
+
+.excelSheetTab:hover {
+  background: #f5f5f4;
+}
+
+.excelSheetTabActive {
+  background: white;
+  color: #292524;
+  font-weight: 600;
+}
+
+.excelSheetTabComplete .excelSheetTabCheck {
+  color: #16a34a;
+}
+
+.excelSheetTabCheck {
+  flex-shrink: 0;
+}
+
+/* 하단 고정 네비게이션 */
+.excelBottomNav {
+  flex-shrink: 0;
+  height: 72px;
+  background: white;
+  border-top: 1px solid #e7e5e4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+
+.excelBottomNavInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.excelBottomNavCount {
+  font-size: 14px;
+  color: #78716c;
+}
+
+.excelBottomNavButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: #d97706;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.excelBottomNavButton:hover:not(:disabled) {
+  background-color: #b45309;
+}
+
+.excelBottomNavButton:disabled {
+  background-color: #e7e5e4;
+  color: #a8a29e;
+  cursor: not-allowed;
+}

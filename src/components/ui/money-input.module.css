@@ -1,0 +1,57 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 100%;
+}
+
+.label {
+  color: #A8A29E;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.inputWrapper {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  padding-right: 36px;
+  -moz-appearance: textfield;
+  flex: 1;
+  height: 100%;
+}
+
+.inputNoSuffix {
+  padding-right: 8px;
+  -moz-appearance: textfield;
+  flex: 1;
+  height: 100%;
+  text-align: right;
+}
+
+.input::-webkit-outer-spin-button,
+.input::-webkit-inner-spin-button,
+.inputNoSuffix::-webkit-outer-spin-button,
+.inputNoSuffix::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.suffix {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: #78716C;
+}
+
+.formattedValue {
+  font-size: 12px;
+  color: #A8A29E;
+  padding-left: 4px;
+}

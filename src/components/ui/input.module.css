@@ -1,0 +1,52 @@
+.input {
+  height: 44px;
+  width: 100%;
+  min-width: 0;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid #E7E5E4;
+  background-color: transparent;
+  padding: 10px 4px;
+  font-size: 16px;
+  color: #78716C;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.input::placeholder {
+  color: #D6D3D1;
+}
+
+.input:focus {
+  color: #292524;
+  border-bottom-color: #292524;
+}
+
+.input:not(:placeholder-shown) {
+  color: #292524;
+}
+
+.input:disabled {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 0.5;
+  background-color: #FAFAF9;
+}
+
+.input[type="date"] {
+  padding-left: 4px;
+  width: auto;
+  min-width: 150px;
+  max-width: 180px;
+}
+
+/* 숫자 입력 스피너 제거 */
+.input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.input[type="number"]::-webkit-outer-spin-button,
+.input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

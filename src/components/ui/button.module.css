@@ -1,0 +1,118 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+  outline: none;
+  border: none;
+  flex-shrink: 0;
+}
+
+.button:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.button svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Variants */
+.default {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.default:hover {
+  background-color: #B45309;
+}
+
+.destructive {
+  background-color: var(--destructive);
+  color: white;
+}
+
+.destructive:hover {
+  opacity: 0.9;
+}
+
+.outline {
+  border: 1px solid var(--border);
+  background-color: var(--background);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.outline:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.secondary {
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.secondary:hover {
+  opacity: 0.8;
+}
+
+.ghost {
+  background-color: transparent;
+}
+
+.ghost:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.link {
+  background-color: transparent;
+  color: var(--primary);
+  text-decoration-line: underline;
+  text-underline-offset: 4px;
+}
+
+/* Sizes */
+.sizeDefault {
+  height: 36px;
+  padding: 8px 16px;
+}
+
+.sizeSm {
+  height: 32px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  gap: 6px;
+}
+
+.sizeLg {
+  height: 40px;
+  padding: 8px 24px;
+  border-radius: 6px;
+}
+
+.sizeIcon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+.sizeIconSm {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.sizeIconLg {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
