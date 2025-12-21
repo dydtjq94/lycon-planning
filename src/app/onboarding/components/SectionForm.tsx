@@ -3,15 +3,15 @@
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { MoneyInput } from '@/components/ui/money-input'
-import type { OnboardingData, AssetInput, Frequency } from '@/types'
+import type { OnboardingData, AssetInput, Frequency, DebtInput } from '@/types'
 import { Plus, X, Check } from 'lucide-react'
 import styles from '../onboarding.module.css'
 
 // 섹션 정의
 export type SectionId =
   | 'basic'      // 기본 정보 및 은퇴 목표
-  | 'income'     // 소득 및 지출 정리
-  | 'savings'    // 저축 및 투자 정리
+  | 'income'     // 소득
+  | 'expense'    // 지출
   | 'realEstate' // 부동산 정리
   | 'asset'      // 자산 정리
   | 'debt'       // 부채 정리
@@ -25,9 +25,9 @@ export interface Section {
 }
 
 export const sections: Section[] = [
-  { id: 'basic', label: '기본 정보 및 은퇴 목표', shortLabel: '기본정보', description: '이름, 생년월일, 배우자 정보와 은퇴 목표를 입력하세요' },
-  { id: 'income', label: '소득 및 지출 정리', shortLabel: '소득/지출', description: '월별 소득과 지출 내역을 정리하세요' },
-  { id: 'savings', label: '저축 및 투자 정리', shortLabel: '저축/투자', description: '정기적인 저축과 투자 내역을 입력하세요' },
+  { id: 'basic', label: '기본 정보 및 은퇴 목표', shortLabel: '기본 정보', description: '이름, 생년월일, 배우자 정보와 은퇴 목표를 입력하세요' },
+  { id: 'income', label: '소득 정리', shortLabel: '소득', description: '월별 소득 내역을 정리하세요' },
+  { id: 'expense', label: '지출 정리', shortLabel: '지출', description: '월별 지출 내역을 정리하세요' },
   { id: 'realEstate', label: '부동산 정리', shortLabel: '부동산', description: '보유 부동산 자산을 정리하세요' },
   { id: 'asset', label: '자산 정리', shortLabel: '금융자산', description: '예금, 주식, 펀드 등 금융자산을 정리하세요' },
   { id: 'debt', label: '부채 정리', shortLabel: '부채', description: '대출, 카드빚 등 부채를 정리하세요' },
@@ -354,28 +354,6 @@ export function SectionForm({ data, activeSection, onUpdateData }: SectionFormPr
           </div>
         )
 
-      case 'savings':
-        // 저축/투자는 assets에서 특정 카테고리만 필터링하거나 별도 필드 사용
-        // 여기서는 간단히 안내만 표시
-        return (
-          <div className={styles.sectionContent}>
-            <div className={styles.sectionGroup}>
-              <h3 className={styles.sectionGroupTitle}>정기 저축</h3>
-              <p className={styles.sectionGroupDesc}>매월 정기적으로 저축하는 금액을 입력하세요</p>
-              <div className={styles.sectionPlaceholder}>
-                저축 항목 입력 기능 준비 중
-              </div>
-            </div>
-            <div className={styles.sectionGroup}>
-              <h3 className={styles.sectionGroupTitle}>투자</h3>
-              <p className={styles.sectionGroupDesc}>주식, 펀드, ETF 등 투자 내역을 입력하세요</p>
-              <div className={styles.sectionPlaceholder}>
-                투자 항목 입력 기능 준비 중
-              </div>
-            </div>
-          </div>
-        )
-
       case 'realEstate':
         const realEstateTotal = calculateTotalValue(data.realEstates)
 
@@ -419,7 +397,8 @@ export function SectionForm({ data, activeSection, onUpdateData }: SectionFormPr
         )
 
       case 'debt':
-        const debtTotal = calculateTotalValue(data.debts)
+        // DebtInput 타입을 위한 별도 합계 계산
+        const debtTotal = data.debts.reduce((sum, d) => sum + (d.amount || 0), 0)
 
         return (
           <div className={styles.sectionContent}>
@@ -434,7 +413,7 @@ export function SectionForm({ data, activeSection, onUpdateData }: SectionFormPr
             <div className={styles.sectionGroup}>
               <h3 className={styles.sectionGroupTitle}>부채</h3>
               <p className={styles.sectionGroupDesc}>주택담보대출, 신용대출, 학자금대출, 카드론 등</p>
-              {renderAssetInputs('debts', data.debts.length > 0 ? data.debts : [{ name: '', amount: null, frequency: 'once' }], '부채 항목', false)}
+              <p className={styles.sectionGroupDesc}>부채는 Progressive Form에서 입력하세요.</p>
             </div>
           </div>
         )

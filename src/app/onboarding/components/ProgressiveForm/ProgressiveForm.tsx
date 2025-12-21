@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import type { OnboardingData, AssetInput } from '@/types'
 import { Check, Loader2, ArrowRight } from 'lucide-react'
 import styles from '../../onboarding.module.css'
@@ -12,7 +12,7 @@ import {
   sectionRows,
   frequencyLabels,
 } from './types'
-import { sections } from '../SectionForm'
+import { sections, type SectionId } from '../SectionForm'
 
 import {
   renderNameInput,
@@ -24,20 +24,28 @@ import {
   SpouseLaborIncomeRow,
   renderBusinessIncomeInput,
   SpouseBusinessIncomeRow,
-  renderFixedExpensesInput,
-  FixedExpenseExtensionRows,
-  renderVariableExpensesInput,
-  VariableExpenseExtensionRows,
-  renderSavingsInput,
-  renderInvestmentInput,
-  renderRealEstateInput,
+  renderLivingExpensesInput,
+  RealEstateRows,
+  FinancialAssetRows,
+  DebtRows,
+  PensionRows,
   renderAssetInput,
-  renderDebtInput,
   renderNationalPensionInput,
   renderRetirementPensionInput,
   renderPersonalPensionInput,
   renderOtherPensionInput,
 } from './rows'
+
+// 섹션 헤더 레이블 정의
+const sectionLabels: Record<SectionId, string> = {
+  basic: '기본 정보',
+  income: '소득',
+  expense: '지출',
+  realEstate: '부동산',
+  asset: '금융자산',
+  debt: '부채',
+  pension: '연금',
+}
 
 export function ProgressiveForm({
   data,
@@ -50,8 +58,31 @@ export function ProgressiveForm({
   isSaving
 }: ProgressiveFormProps) {
   const [activeRow, setActiveRow] = useState<RowId>('name')
+  const [visibleSection, setVisibleSection] = useState<SectionId>('basic')
 
-  // 체크된 항목 + 다음 해야 할 항목 하나만 표시
+  // 섹션 헤더 ref들 (Intersection Observer용)
+  const sectionRefs = useRef<Record<SectionId, HTMLDivElement | null>>({
+    basic: null,
+    income: null,
+    expense: null,
+    realEstate: null,
+    asset: null,
+    debt: null,
+    pension: null,
+  })
+  // 섹션 컨테이너 ref들 (스크롤용)
+  const sectionContainerRefs = useRef<Record<SectionId, HTMLDivElement | null>>({
+    basic: null,
+    income: null,
+    expense: null,
+    realEstate: null,
+    asset: null,
+    debt: null,
+    pension: null,
+  })
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  // 체크된 항목 + 다음 해야 할 항목 하나만 표시 (프로그레시브 로직)
   const visibleRows = useMemo(() => {
     const visible: RowId[] = []
     let foundFirstIncomplete = false
@@ -70,28 +101,77 @@ export function ProgressiveForm({
 
   // 현재 해야 할 첫 번째 미완료 행 찾기
   const currentRowId = useMemo(() => {
-    const targetRows = activeSection
-      ? rows.filter(row => sectionRows[activeSection].includes(row.id))
-      : rows.filter(row => visibleRows.includes(row.id))
-
+    const targetRows = rows.filter(row => visibleRows.includes(row.id))
     const firstIncomplete = targetRows.find(row => !row.isComplete(data))
     return firstIncomplete?.id || null
-  }, [data, visibleRows, activeSection])
+  }, [data, visibleRows])
 
-  // 섹션 변경 시 해당 섹션의 첫 번째 행으로 이동
+  // Intersection Observer로 현재 보이는 섹션 감지
   useEffect(() => {
-    if (activeSection) {
-      const sectionRowIds = sectionRows[activeSection]
-      const firstIncomplete = rows.find(
-        row => sectionRowIds.includes(row.id) && !row.isComplete(data)
-      )
-      const targetRow = firstIncomplete?.id || sectionRowIds[0]
-      if (targetRow) {
-        setActiveRow(targetRow)
-        onActiveRowChange(targetRow)
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // 가장 상단에 가까운 보이는 섹션 찾기
+        const visibleEntries = entries.filter(entry => entry.isIntersecting)
+        if (visibleEntries.length > 0) {
+          // 가장 상단에 있는 섹션 (boundingClientRect.top이 가장 작은 것)
+          const topEntry = visibleEntries.reduce((prev, curr) =>
+            curr.boundingClientRect.top < prev.boundingClientRect.top ? curr : prev
+          )
+          const sectionId = topEntry.target.getAttribute('data-section') as SectionId
+          if (sectionId) {
+            setVisibleSection(sectionId)
+            // 외부에 섹션 변경 알림 (탭 상태 동기화)
+            if (onSectionChange && sectionId !== activeSection) {
+              // 스크롤로 인한 변경은 onSectionChange를 호출하지 않음 (무한 루프 방지)
+              // 대신 visibleSection 상태만 업데이트
+            }
+          }
+        }
+      },
+      {
+        root: container,
+        rootMargin: '-50px 0px -80% 0px', // 상단 50px 아래부터 감지
+        threshold: 0,
       }
+    )
+
+    // 각 섹션 헤더 관찰
+    Object.entries(sectionRefs.current).forEach(([sectionId, ref]) => {
+      if (ref) {
+        observer.observe(ref)
+      }
+    })
+
+    return () => observer.disconnect()
+  }, [activeSection, onSectionChange])
+
+  // 탭 클릭 시 해당 섹션으로 스크롤
+  const scrollToSection = useCallback((sectionId: SectionId) => {
+    const sectionContainer = sectionContainerRefs.current[sectionId]
+    const container = scrollContainerRef.current
+    if (sectionContainer && container) {
+      // 먼저 맨 위로 스크롤해서 getBoundingClientRect 정확히 계산
+      const containerRect = container.getBoundingClientRect()
+
+      // 섹션 컨테이너 위치 계산 (현재 스크롤 위치 고려)
+      const sectionRect = sectionContainer.getBoundingClientRect()
+      const currentScrollTop = container.scrollTop
+      const sectionTop = sectionRect.top - containerRect.top + currentScrollTop
+
+      // spacer 높이를 더해서 섹션 헤더가 상단에 오도록
+      const spacerHeight = sectionId !== 'basic' ? 28 : 0
+      const scrollTop = sectionTop + spacerHeight - 35
+
+      container.scrollTo({
+        top: Math.max(0, scrollTop),
+        behavior: 'smooth'
+      })
     }
-  }, [activeSection])
+    setVisibleSection(sectionId)
+  }, [])
 
   const handleRowFocus = (rowId: RowId) => {
     setActiveRow(rowId)
@@ -148,41 +228,35 @@ export function ProgressiveForm({
         return renderLaborIncomeInput(rowInputProps)
       case 'business_income':
         return renderBusinessIncomeInput(rowInputProps)
-      case 'fixed_expenses':
-        return renderFixedExpensesInput(rowInputProps)
-      case 'variable_expenses':
-        return renderVariableExpensesInput(rowInputProps)
-      case 'savings':
-        return renderSavingsInput(assetRowInputProps)
-      case 'investment':
-        return renderInvestmentInput(assetRowInputProps)
+      case 'living_expenses':
+        return renderLivingExpensesInput(rowInputProps)
       case 'realEstate':
-        return renderRealEstateInput(assetRowInputProps)
+        return null // 별도 처리
       case 'asset':
         return renderAssetInput(assetRowInputProps)
       case 'debt':
-        return renderDebtInput(assetRowInputProps)
+        return null // 별도 처리
       case 'national_pension':
-        return renderNationalPensionInput(assetRowInputProps)
       case 'retirement_pension':
-        return renderRetirementPensionInput(assetRowInputProps)
       case 'personal_pension':
-        return renderPersonalPensionInput(assetRowInputProps)
       case 'other_pension':
-        return renderOtherPensionInput(assetRowInputProps)
+        return null // 별도 처리 (PensionRows)
       default:
         return null
     }
   }
 
+  // 행이 보여야 하는지 체크 (프로그레시브 + 섹션 기반)
+  const isRowVisible = (rowId: RowId) => {
+    return visibleRows.includes(rowId)
+  }
+
   const renderRow = (rowConfig: typeof rows[0]) => {
+    // 프로그레시브: 보이지 않는 행은 렌더링하지 않음
+    if (!isRowVisible(rowConfig.id)) return null
+
     // 생년월일 행은 별도 처리 (본인 + 배우자 통합)
     if (rowConfig.id === 'birth_date') {
-      const isVisible = activeSection
-        ? sectionRows[activeSection].includes('birth_date')
-        : visibleRows.includes('birth_date')
-      if (!isVisible) return null
-
       const baseRowIndex = rows.findIndex(r => r.id === 'birth_date') + 1
       return (
         <BirthDateRows
@@ -199,11 +273,6 @@ export function ProgressiveForm({
 
     // 자녀 행은 별도 처리
     if (rowConfig.id === 'children') {
-      const isVisible = activeSection
-        ? sectionRows[activeSection].includes('children')
-        : visibleRows.includes('children')
-      if (!isVisible) return null
-
       const baseRowIndex = rows.findIndex(r => r.id === 'children') + 1
       return (
         <ChildrenRows
@@ -220,11 +289,6 @@ export function ProgressiveForm({
 
     // 은퇴 나이 행은 별도 처리
     if (rowConfig.id === 'retirement_age') {
-      const isVisible = activeSection
-        ? sectionRows[activeSection].includes('retirement_age')
-        : visibleRows.includes('retirement_age')
-      if (!isVisible) return null
-
       const baseRowIndex = rows.findIndex(r => r.id === 'retirement_age') + 1
       return (
         <RetirementAgeRows
@@ -239,26 +303,88 @@ export function ProgressiveForm({
       )
     }
 
+    // 부동산 행은 별도 처리
+    if (rowConfig.id === 'realEstate') {
+      const baseRowIndex = rows.findIndex(r => r.id === 'realEstate') + 1
+      return (
+        <RealEstateRows
+          key="real-estate-rows"
+          data={data}
+          onUpdateData={onUpdateData}
+          onFocus={handleRowFocus}
+          activeRow={activeRow}
+          currentRowId={currentRowId}
+          baseRowIndex={baseRowIndex}
+        />
+      )
+    }
+
+    // 금융자산 행은 별도 처리
+    if (rowConfig.id === 'asset') {
+      const baseRowIndex = rows.findIndex(r => r.id === 'asset') + 1
+      return (
+        <FinancialAssetRows
+          key="financial-asset-rows"
+          data={data}
+          onUpdateData={onUpdateData}
+          onFocus={handleRowFocus}
+          activeRow={activeRow}
+          currentRowId={currentRowId}
+          baseRowIndex={baseRowIndex}
+        />
+      )
+    }
+
+    // 부채 행은 별도 처리
+    if (rowConfig.id === 'debt') {
+      const baseRowIndex = rows.findIndex(r => r.id === 'debt') + 1
+      return (
+        <DebtRows
+          key="debt-rows"
+          data={data}
+          onUpdateData={onUpdateData}
+          onFocus={handleRowFocus}
+          activeRow={activeRow}
+          currentRowId={currentRowId}
+          baseRowIndex={baseRowIndex}
+        />
+      )
+    }
+
+    // 연금 행은 별도 처리 (국민연금 행에서 전체 렌더링)
+    if (rowConfig.id === 'national_pension') {
+      const baseRowIndex = rows.findIndex(r => r.id === 'national_pension') + 1
+      return (
+        <PensionRows
+          key="pension-rows"
+          data={data}
+          onUpdateData={onUpdateData}
+          onFocus={handleRowFocus}
+          activeRow={activeRow}
+          currentRowId={currentRowId}
+          baseRowIndex={baseRowIndex}
+        />
+      )
+    }
+
+    // 퇴직연금, 개인연금, 기타연금은 PensionRows에서 통합 처리되므로 스킵
+    if (['retirement_pension', 'personal_pension', 'other_pension'].includes(rowConfig.id)) {
+      return null
+    }
+
     const isActive = activeRow === rowConfig.id
     const isComplete = rowConfig.isComplete(data)
     const isCurrent = currentRowId === rowConfig.id
     const rowNumber = rows.findIndex(r => r.id === rowConfig.id) + 1
 
     // 셀 구조를 사용하는 행들 (소득/지출, 은퇴자금)
-    const useCellStructure = ['labor_income', 'business_income', 'fixed_expenses', 'variable_expenses', 'retirement_fund'].includes(rowConfig.id)
+    const useCellStructure = ['labor_income', 'business_income', 'living_expenses', 'retirement_fund'].includes(rowConfig.id)
 
-    // 근로 소득 행: 본인 + 배우자 확장 행 (소득 구분선 포함)
+    // 근로 소득 행: 본인 + 배우자 확장 행
     if (rowConfig.id === 'labor_income') {
-      // 본인 미입력 → 본인 행 강조
       const isMainCurrent = isCurrent && data.laborIncome === null
       return (
         <React.Fragment key={rowConfig.id}>
-          {/* 소득 구분 행 */}
-          <div className={styles.excelSectionDivider}>
-            <div className={styles.excelRowNumber}></div>
-            <div className={styles.excelSectionDividerLabel}>소득</div>
-            <div className={styles.excelRowInputMulti}></div>
-          </div>
           <div
             className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isComplete ? styles.excelRowComplete : ''} ${isMainCurrent ? styles.excelRowCurrent : ''}`}
             onClick={() => handleRowFocus(rowConfig.id)}
@@ -284,7 +410,6 @@ export function ProgressiveForm({
 
     // 사업 소득 행: 본인 + 배우자 확장 행
     if (rowConfig.id === 'business_income') {
-      // 본인 미입력 → 본인 행 강조
       const isMainCurrent = isCurrent && data.businessIncome === null
       return (
         <React.Fragment key={rowConfig.id}>
@@ -311,62 +436,6 @@ export function ProgressiveForm({
       )
     }
 
-    // 고정 지출 행: 메인 + 추가 항목 확장 행 (소득/지출 구분선 포함)
-    if (rowConfig.id === 'fixed_expenses') {
-      return (
-        <React.Fragment key={rowConfig.id}>
-          {/* 소득/지출 구분 행 */}
-          <div className={styles.excelSectionDivider}>
-            <div className={styles.excelRowNumber}></div>
-            <div className={styles.excelSectionDividerLabel}>지출</div>
-            <div className={styles.excelRowInputMulti}></div>
-          </div>
-          <div
-            className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isComplete ? styles.excelRowComplete : ''} ${isCurrent ? styles.excelRowCurrent : ''}`}
-            onClick={() => handleRowFocus(rowConfig.id)}
-          >
-            <div className={styles.excelRowNumber}>
-              {isComplete ? <Check size={14} /> : rowNumber}
-            </div>
-            <div className={styles.excelRowLabel}>{rowConfig.label}</div>
-            <div className={styles.excelRowInputMulti}>
-              {renderInput(rowConfig.id, isActive)}
-            </div>
-          </div>
-          <FixedExpenseExtensionRows
-            data={data}
-            onUpdateData={onUpdateData}
-            onFocus={handleRowFocus}
-          />
-        </React.Fragment>
-      )
-    }
-
-    // 변동 지출 행: 메인 + 추가 항목 확장 행
-    if (rowConfig.id === 'variable_expenses') {
-      return (
-        <React.Fragment key={rowConfig.id}>
-          <div
-            className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isComplete ? styles.excelRowComplete : ''} ${isCurrent ? styles.excelRowCurrent : ''}`}
-            onClick={() => handleRowFocus(rowConfig.id)}
-          >
-            <div className={styles.excelRowNumber}>
-              {isComplete ? <Check size={14} /> : rowNumber}
-            </div>
-            <div className={styles.excelRowLabel}>{rowConfig.label}</div>
-            <div className={styles.excelRowInputMulti}>
-              {renderInput(rowConfig.id, isActive)}
-            </div>
-          </div>
-          <VariableExpenseExtensionRows
-            data={data}
-            onUpdateData={onUpdateData}
-            onFocus={handleRowFocus}
-          />
-        </React.Fragment>
-      )
-    }
-
     return (
       <div
         key={rowConfig.id}
@@ -384,36 +453,63 @@ export function ProgressiveForm({
     )
   }
 
-  // 섹션이 지정되면 해당 섹션의 행만 필터링 + visibleRows로 프로그레시브하게 표시
-  const filteredRows = activeSection
-    ? rows.filter(row => sectionRows[activeSection].includes(row.id) && visibleRows.includes(row.id))
-    : rows.filter(row => visibleRows.includes(row.id))
+  // 섹션별로 행들을 그룹화하여 렌더링
+  const renderSectionWithRows = (sectionId: SectionId) => {
+    const sectionRowIds = sectionRows[sectionId]
+    const sectionRowConfigs = rows.filter(row => sectionRowIds.includes(row.id))
 
-  // 완료된 행 개수 계산 (섹션 전체 기준)
-  const sectionAllRows = activeSection
-    ? rows.filter(row => sectionRows[activeSection].includes(row.id))
-    : rows
-  const completedCount = sectionAllRows.filter(row => row.isComplete(data)).length
-  const totalCount = sectionAllRows.length
+    // 이 섹션에 보여야 할 행이 있는지 체크
+    const hasVisibleRows = sectionRowConfigs.some(row => isRowVisible(row.id))
+    if (!hasVisibleRows) return null
+
+    return (
+      <div
+        key={sectionId}
+        ref={el => { sectionContainerRefs.current[sectionId] = el }}
+        className={styles.excelSection}
+      >
+        {/* 섹션 구분 빈 행 (첫 번째 섹션 제외) */}
+        {sectionId !== 'basic' && (
+          <div className={styles.excelSectionSpacer}>
+            <div className={styles.excelSectionSpacerNumber} />
+            <div className={styles.excelSectionSpacerLabel} />
+            <div className={styles.excelSectionSpacerValue} />
+          </div>
+        )}
+
+        {/* 섹션 헤더 (sticky) */}
+        <div
+          ref={el => { sectionRefs.current[sectionId] = el }}
+          data-section={sectionId}
+          className={`${styles.excelSectionHeader} ${visibleSection === sectionId ? styles.excelSectionHeaderActive : ''}`}
+        >
+          <div className={styles.excelSectionHeaderNumber} />
+          <div className={styles.excelSectionHeaderContent}>
+            <span className={styles.excelSectionHeaderLabel}>{sectionLabels[sectionId]}</span>
+          </div>
+        </div>
+
+        {/* 섹션 내 행들 */}
+        <div className={styles.excelSectionBody}>
+          {sectionRowConfigs.map(renderRow)}
+        </div>
+      </div>
+    )
+  }
+
+  // 전체 진행률 계산
+  const completedCount = rows.filter(row => row.isComplete(data)).length
+  const totalCount = rows.length
   const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
-  // 현재 섹션 완료 여부
-  const isCurrentSectionComplete = sectionAllRows.every(row => row.isComplete(data))
-
   // 필수 항목 완료 여부 (basic 섹션의 필수 항목들)
-  const requiredRows = rows.filter(row => ['name', 'birth_date', 'spouse', 'children', 'retirement_age', 'retirement_fund'].includes(row.id))
+  const requiredRows = rows.filter(row => ['name', 'birth_date', 'children', 'retirement_age', 'retirement_fund'].includes(row.id))
   const allRequiredComplete = requiredRows.every(row => row.isComplete(data))
-
-  // 현재 섹션의 다음 섹션 찾기
-  const currentSectionIndex = activeSection ? sections.findIndex(s => s.id === activeSection) : -1
-  const nextSection = currentSectionIndex >= 0 && currentSectionIndex < sections.length - 1
-    ? sections[currentSectionIndex + 1]
-    : null
-  const isLastSection = currentSectionIndex === sections.length - 1
 
   return (
     <div className={styles.excelWrapper}>
-      <div className={styles.excelContainer}>
+      <div className={styles.excelContainer} ref={scrollContainerRef}>
+        {/* 고정 헤더 */}
         <div className={styles.excelHeader}>
           <div className={styles.excelHeaderNumber}>#</div>
           <div className={styles.excelHeaderLabel}>항목</div>
@@ -425,8 +521,10 @@ export function ProgressiveForm({
             style={{ width: `${progressPercent}%` }}
           />
         </div>
+
+        {/* 스크롤 가능한 바디 (모든 섹션 포함) */}
         <div className={styles.excelBody}>
-          {filteredRows.map(renderRow)}
+          {sections.map(section => renderSectionWithRows(section.id))}
         </div>
       </div>
 
@@ -438,13 +536,13 @@ export function ProgressiveForm({
             const row = rows.find(r => r.id === rowId)
             return row ? row.isComplete(data) : true
           })
-          const isActive = activeSection === section.id
+          const isActive = visibleSection === section.id
 
           return (
             <button
               key={section.id}
               className={`${styles.excelSheetTab} ${isActive ? styles.excelSheetTabActive : ''} ${sectionComplete ? styles.excelSheetTabComplete : ''}`}
-              onClick={() => onSectionChange?.(section.id)}
+              onClick={() => scrollToSection(section.id)}
             >
               {sectionComplete && <Check size={12} className={styles.excelSheetTabCheck} />}
               {section.shortLabel}
@@ -453,7 +551,7 @@ export function ProgressiveForm({
         })}
       </div>
 
-      {(onComplete || onSectionChange) && (
+      {onComplete && (
         <div className={styles.excelBottomNav}>
           <div className={styles.excelBottomNavInfo}>
             <span className={styles.excelBottomNavCount}>
@@ -462,14 +560,8 @@ export function ProgressiveForm({
           </div>
           <button
             className={styles.excelBottomNavButton}
-            onClick={() => {
-              if (isLastSection && onComplete) {
-                onComplete()
-              } else if (nextSection && onSectionChange) {
-                onSectionChange(nextSection.id)
-              }
-            }}
-            disabled={isLastSection ? (isCompleteDisabled || !allRequiredComplete) : !isCurrentSectionComplete}
+            onClick={onComplete}
+            disabled={isCompleteDisabled || !allRequiredComplete}
           >
             {isSaving ? (
               <>
@@ -478,7 +570,7 @@ export function ProgressiveForm({
               </>
             ) : (
               <>
-                {isLastSection ? '완료하기' : nextSection?.shortLabel}
+                완료하기
                 <ArrowRight size={16} />
               </>
             )}

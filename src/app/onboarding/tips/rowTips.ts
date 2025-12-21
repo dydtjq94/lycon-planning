@@ -388,160 +388,58 @@ export function getRowTip(rowId: string, data: OnboardingData): DynamicTip {
         insight: '사업소득이 있다면 노란우산공제 가입을 검토해보세요. 연 최대 500만원 세액공제가 가능해요.',
       }
 
-    case 'fixed_expenses':
-      // 고정 지출 계산 (월 기준으로 환산)
-      const mainFixedMonthly = toMonthly(data.fixedExpenses, data.fixedExpensesFrequency)
-      const additionalFixedMonthly = data.additionalFixedExpenses?.reduce(
-        (sum, item) => sum + toMonthly(item.amount, item.frequency || 'monthly'), 0
-      ) ?? 0
-      const totalFixed = mainFixedMonthly + additionalFixedMonthly
+    case 'living_expenses':
+      // 생활비 계산 (월 기준으로 환산)
+      const livingExpenseMonthly = toMonthly(data.livingExpenses, data.livingExpensesFrequency)
 
-      // 입력된 항목만 카운트 (금액이 있는 것만)
-      const filledFixedItems = [
-        data.fixedExpenses,
-        ...(data.additionalFixedExpenses?.map(item => item.amount) ?? [])
-      ].filter(amount => amount !== null && amount > 0)
-      const fixedItemCount = filledFixedItems.length
-
-      // 고정 지출 항목별 설명
-      const fixedExpenseDescriptions: Record<string, string> = {
-        '주거비': '월세·관리비 등 주거에 들어가는 비용',
-        '보험료': '건강·자동차·연금 보험 등',
-        '교육비': '학원비, 자녀 등록금 등',
-        '구독 서비스': 'OTT·음악·멤버십 등',
-        '용돈': '부모님이나 자녀에게 지급하는 용돈',
-        '기타 고정 지출': '기타 고정적으로 나가는 비용',
-      }
-
-      // 고정 지출 항목 제안 목록
-      const fixedExpenseSuggestions = ['주거비', '보험료', '교육비', '구독 서비스', '용돈', '기타 고정 지출']
-
-      if (totalFixed > 0) {
-        // 전체 소득 월 기준으로 환산 (근로 + 사업)
-        const totalMonthlyIncomeForFixed = toMonthly(data.laborIncome, data.laborIncomeFrequency) +
-          toMonthly(data.spouseLaborIncome, data.spouseLaborIncomeFrequency) +
-          toMonthly(data.businessIncome, data.businessIncomeFrequency) +
-          toMonthly(data.spouseBusinessIncome, data.spouseBusinessIncomeFrequency)
-        const fixedRatio = totalMonthlyIncomeForFixed > 0 ? Math.round((totalFixed / totalMonthlyIncomeForFixed) * 100) : 0
-
-        // 연간 지출 항목 있는지 체크
-        const hasYearlyItems = data.fixedExpensesFrequency === 'yearly' ||
-          data.additionalFixedExpenses?.some(item => item.frequency === 'yearly')
-        const yearlyNote = hasYearlyItems ? ' (연간 항목 월 환산)' : ''
-
-        let fixedAdvice = ''
-        if (fixedRatio > 60) {
-          fixedAdvice = '고정 지출 비중이 높아요. 구독 서비스나 보험료를 점검해보세요.'
-        } else if (fixedRatio > 40) {
-          fixedAdvice = '적정 수준이에요. 고정 지출이 잘 관리되고 있어요.'
-        } else {
-          fixedAdvice = '훌륭해요! 유동적인 자금 활용이 가능해요.'
-        }
-
-        return {
-          title: `고정 지출 ${fixedItemCount}개 항목`,
-          description: `월 ${formatMoney(totalFixed)}${yearlyNote}, 소득 대비 ${fixedRatio}%예요. ${fixedAdvice}`,
-          stat: `${fixedRatio}%`,
-          statLabel: '소득 대비 고정지출',
-          insight: '고정 지출은 매월 반드시 나가는 돈이에요. 50% 이하로 유지하세요.',
-          suggestions: fixedExpenseSuggestions,
-        }
-      }
-
-      return {
-        title: '고정 지출을 입력하세요',
-        description: '매월 고정적으로 나가는 비용들이에요. 클릭해서 항목을 추가하세요.',
-        stat: '50% 이하',
-        statLabel: '권장 고정지출 비율',
-        insight: '주거비는 소득의 25~30%, 보험료는 월 소득의 10% 이하가 적정해요.',
-        suggestions: fixedExpenseSuggestions,
-        guides: Object.entries(fixedExpenseDescriptions).map(([name, desc]) => `${name}: ${desc}`),
-      }
-
-    case 'variable_expenses':
-      // 변동 지출 계산 (월 기준으로 환산)
-      const mainVariableMonthly = toMonthly(data.variableExpenses, data.variableExpensesFrequency)
-      const additionalVariableMonthly = data.additionalVariableExpenses?.reduce(
-        (sum, item) => sum + toMonthly(item.amount, item.frequency || 'monthly'), 0
-      ) ?? 0
-      const totalVariable = mainVariableMonthly + additionalVariableMonthly
-
-      // 입력된 항목만 카운트 (금액이 있는 것만)
-      const filledVariableItems = [
-        data.variableExpenses,
-        ...(data.additionalVariableExpenses?.map(item => item.amount) ?? [])
-      ].filter(amount => amount !== null && amount > 0)
-      const variableItemCount = filledVariableItems.length
-
-      // 변동 지출 항목별 설명
-      const variableExpenseDescriptions: Record<string, string> = {
-        '생활·식비': '먹거리(장보기·외식)부터 기본 생필품까지 일상생활에 들어가는 모든 비용',
-        '패션·개인관리비': '의류, 잡화, 미용, 체형관리 등 외모·스타일 관련 지출',
-        '교통비': '이동과 차량 유지 관련 지출(기름값, 대중교통비 등)',
-        '교육·자기계발비': '커리어 성장·취미 학습·자격증 준비 등 본인 성장 관련 지출',
-        '건강·여가비': '건강관리·병원비·취미·여가·문화활동·지인 관계 비용',
-        '기타 변동 지출': '기타 변동적으로 나가는 비용',
-      }
-
-      // 변동 지출 항목 제안 목록
-      const variableExpenseSuggestions = ['생활·식비', '패션·개인관리비', '교통비', '교육·자기계발비', '건강·여가비', '기타 변동 지출']
-
-      // 전체 지출 계산 (모두 월 기준)
-      const totalFixedForVariable = toMonthly(data.fixedExpenses, data.fixedExpensesFrequency) +
-        (data.additionalFixedExpenses?.reduce(
-          (sum, item) => sum + toMonthly(item.amount, item.frequency || 'monthly'), 0
-        ) ?? 0)
-      const totalExpense = totalFixedForVariable + totalVariable
-      // 전체 소득 계산 (근로 + 사업)
-      const totalIncomeForExpense = toMonthly(data.laborIncome, data.laborIncomeFrequency) +
+      // 전체 소득 계산 (근로 + 사업, 월 기준)
+      const totalIncomeForLiving = toMonthly(data.laborIncome, data.laborIncomeFrequency) +
         toMonthly(data.spouseLaborIncome, data.spouseLaborIncomeFrequency) +
         toMonthly(data.businessIncome, data.businessIncomeFrequency) +
         toMonthly(data.spouseBusinessIncome, data.spouseBusinessIncomeFrequency)
 
-      if (totalVariable > 0) {
-        const savingsAmount = totalIncomeForExpense - totalExpense
-        const savingsRate = totalIncomeForExpense > 0
-          ? Math.round((savingsAmount / totalIncomeForExpense) * 100)
+      if (livingExpenseMonthly > 0) {
+        const savingsAmount = totalIncomeForLiving - livingExpenseMonthly
+        const savingsRate = totalIncomeForLiving > 0
+          ? Math.round((savingsAmount / totalIncomeForLiving) * 100)
+          : 0
+        const expenseRatio = totalIncomeForLiving > 0
+          ? Math.round((livingExpenseMonthly / totalIncomeForLiving) * 100)
           : 0
 
-        // 연간 지출 항목 있는지 체크
-        const hasYearlyVarItems = data.variableExpensesFrequency === 'yearly' ||
-          data.additionalVariableExpenses?.some(item => item.frequency === 'yearly')
-        const yearlyVarNote = hasYearlyVarItems ? ' (연간 항목 월 환산)' : ''
+        // 연간 입력 시 표시
+        const yearlyNote = data.livingExpensesFrequency === 'yearly' ? ' (연간 기준 월 환산)' : ''
 
         let savingsAdvice = ''
         if (savingsRate >= 50) {
-          savingsAdvice = '놀라워요! 상위 1% 저축률이에요. 17년 후 경제적 자유가 가능해요.'
+          savingsAdvice = '상위 1% 저축률이에요. 17년 후 경제적 자유가 가능해요.'
         } else if (savingsRate >= 30) {
           savingsAdvice = '훌륭해요! 권장 저축률을 달성했어요.'
         } else if (savingsRate >= 20) {
           savingsAdvice = '괜찮아요. 조금만 더 줄이면 30%도 가능해요.'
         } else if (savingsRate >= 0) {
-          savingsAdvice = '저축률을 높여보세요. 생활·식비나 여가비를 점검해보세요.'
+          savingsAdvice = '저축률을 높여보세요. 지출 점검이 필요해요.'
         } else {
           savingsAdvice = '지출이 소득을 초과해요. 즉시 지출 점검이 필요합니다.'
         }
 
         return {
           title: savingsRate >= 0 ? `저축률 ${savingsRate}%` : '지출 초과',
-          description: `월 수입 ${formatMoney(totalIncomeForExpense)}, 총 지출 ${formatMoney(totalExpense)}${yearlyVarNote}. ${savingsAdvice}`,
+          description: `월 수입 ${formatMoney(totalIncomeForLiving)}, 생활비 ${formatMoney(livingExpenseMonthly)}${yearlyNote}. ${savingsAdvice}`,
           stat: formatMoney(Math.abs(savingsAmount)),
           statLabel: savingsRate >= 0 ? '월 저축 가능액' : '월 초과 지출',
-          insight: variableItemCount > 1
-            ? `변동 지출 ${variableItemCount}개 항목, 가장 큰 비용부터 점검해보세요.`
-            : '변동 지출은 의지로 줄일 수 있는 돈이에요. 우선순위를 정해보세요.',
-          suggestions: variableExpenseSuggestions,
+          insight: expenseRatio <= 50
+            ? '생활비 50% 이하는 이상적이에요. 저축과 투자에 여유가 있어요.'
+            : '생활비 비중이 높아요. 불필요한 지출을 줄여보세요.',
         }
       }
 
       return {
-        title: '변동 지출을 입력하세요',
-        description: '매월 변동하는 비용들이에요. 클릭해서 항목을 추가하세요.',
-        stat: '30% 이상',
-        statLabel: '권장 저축률',
-        insight: '변동 지출을 10% 줄이면 은퇴 시기를 5년 앞당길 수 있어요.',
-        suggestions: variableExpenseSuggestions,
-        guides: Object.entries(variableExpenseDescriptions).map(([name, desc]) => `${name}: ${desc}`),
+        title: '생활비를 입력하세요',
+        description: '주거비, 식비, 교통비, 보험료 등 모든 생활비를 합산해서 입력해주세요. 대시보드에서 세부 항목을 나눌 수 있어요.',
+        stat: '50% 이하',
+        statLabel: '권장 생활비 비율',
+        insight: '저축률 30% 이상이면 28년, 50% 이상이면 17년 후 경제적 자유가 가능해요.',
       }
 
     default:

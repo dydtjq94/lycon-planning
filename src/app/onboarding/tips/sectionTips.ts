@@ -77,7 +77,8 @@ export function getDynamicTip(
   const totalPension = calculateMonthlyTotal(data.pensions)
   // 총액 기준 (자산/부채/부동산)
   const totalAsset = calculateTotalValue(data.assets)
-  const totalDebt = calculateTotalValue(data.debts)
+  // DebtInput은 frequency가 없으므로 별도 계산
+  const totalDebt = data.debts.reduce((sum, d) => sum + (d.amount || 0), 0)
   const totalRealEstate = calculateTotalValue(data.realEstates)
   const monthlySavings = totalIncome - totalExpense
   const yearsToRetirement = age ? data.target_retirement_age - age : null
@@ -139,86 +140,54 @@ export function getDynamicTip(
         toMonthly(data.spouseBusinessIncome, data.spouseBusinessIncomeFrequency)
       // 총 소득
       const totalMonthlyIncome = laborIncomeTotal + businessIncomeTotal
-      const fixedExpenseTotal = toMonthly(data.fixedExpenses, data.fixedExpensesFrequency) +
-        (data.additionalFixedExpenses?.reduce(
-          (sum, item) => sum + toMonthly(item.amount, item.frequency || 'monthly'), 0
-        ) ?? 0)
-      const variableExpenseTotal = toMonthly(data.variableExpenses, data.variableExpensesFrequency) +
-        (data.additionalVariableExpenses?.reduce(
-          (sum, item) => sum + toMonthly(item.amount, item.frequency || 'monthly'), 0
-        ) ?? 0)
-      const expenseTotal = fixedExpenseTotal + variableExpenseTotal
-      const monthlySavingsNew = totalMonthlyIncome - expenseTotal
+      // 생활비
+      const livingExpenseTotal = toMonthly(data.livingExpenses, data.livingExpensesFrequency)
+      const monthlySavingsNew = totalMonthlyIncome - livingExpenseTotal
 
       const incomeGuides = [
         '월급 또는 연봉으로 입력하세요. 주기(월/년)를 클릭해 변경할 수 있어요.',
         '사업소득이 없으면 빈칸으로 두세요.',
-        '0원인 항목은 비워두시면 됩니다.',
+        '생활비는 주거비, 식비, 교통비 등 모든 지출을 합산해주세요.',
       ]
 
-      // 고정 지출 항목 설명
-      const fixedExpenseDescriptions = [
-        '주거비: 월세·관리비 등',
-        '보험료: 건강·자동차·연금 보험',
-        '교육비: 학원비, 자녀 등록금',
-        '구독 서비스: OTT·음악·멤버십',
-        '용돈: 부모님/자녀에게 지급',
-      ]
-
-      // 변동 지출 항목 설명
-      const variableExpenseDescriptions = [
-        '생활·식비: 장보기·외식·생필품',
-        '패션·개인관리비: 의류·미용 등',
-        '교통비: 기름값·대중교통비',
-        '교육·자기계발비: 본인 성장 관련',
-        '건강·여가비: 병원비·취미·문화활동',
-      ]
-
-      const expenseGroups: SuggestionGroup[] = [
-        { label: '고정 지출', items: fixedExpenseDescriptions },
-        { label: '변동 지출', items: variableExpenseDescriptions },
-      ]
-
-      if (totalMonthlyIncome > 0 && expenseTotal > 0) {
+      if (totalMonthlyIncome > 0 && livingExpenseTotal > 0) {
         const savingsRate = Math.round((monthlySavingsNew / totalMonthlyIncome) * 100)
-        const fixedRatio = Math.round((fixedExpenseTotal / totalMonthlyIncome) * 100)
-        const variableRatio = Math.round((variableExpenseTotal / totalMonthlyIncome) * 100)
+        const expenseRatio = Math.round((livingExpenseTotal / totalMonthlyIncome) * 100)
 
         let title = ''
         let advice = ''
         if (savingsRate >= 50) {
-          title = '🔥 상위 1% 저축률!'
+          title = '상위 1% 저축률!'
           advice = '경제적 자유까지 약 17년! 이 속도를 유지하세요.'
         } else if (savingsRate >= 30) {
           title = '훌륭한 저축률이에요!'
           advice = '권장 저축률을 달성했어요. 꾸준히 유지하세요.'
         } else if (savingsRate >= 20) {
           title = '괜찮은 편이에요'
-          advice = '조금만 더 줄이면 30% 달성! 변동 지출을 점검해보세요.'
+          advice = '조금만 더 줄이면 30% 달성! 지출을 점검해보세요.'
         } else if (savingsRate >= 0) {
           title = '저축률 개선이 필요해요'
-          advice = '변동 지출에서 줄일 항목을 찾아보세요.'
+          advice = '지출에서 줄일 항목을 찾아보세요.'
         } else {
-          title = '⚠️ 지출 초과'
+          title = '지출 초과'
           advice = '지출이 소득을 초과해요. 즉시 점검이 필요합니다.'
         }
 
         // 소득 구성 설명
-        const incomeBreakdown = []
+        const incomeBreakdown: string[] = []
         if (laborIncomeTotal > 0) incomeBreakdown.push(`근로 ${formatMoney(laborIncomeTotal)}`)
         if (businessIncomeTotal > 0) incomeBreakdown.push(`사업 ${formatMoney(businessIncomeTotal)}`)
         const incomeDetail = incomeBreakdown.length > 1 ? ` (${incomeBreakdown.join(' + ')})` : ''
 
         return {
           title,
-          description: `월 소득 ${formatMoney(totalMonthlyIncome)}${incomeDetail} 중 고정 ${fixedRatio}%, 변동 ${variableRatio}% 지출. ${advice}`,
+          description: `월 소득 ${formatMoney(totalMonthlyIncome)}${incomeDetail}, 생활비 ${expenseRatio}%. ${advice}`,
           stat: `${savingsRate}%`,
           statLabel: '현재 저축률',
           insight: monthlySavingsNew >= 0
             ? `매월 ${formatMoney(monthlySavingsNew)} 저축 가능`
             : `매월 ${formatMoney(Math.abs(monthlySavingsNew))} 초과 지출`,
           guides: incomeGuides,
-          suggestionGroups: expenseGroups,
         }
       }
 
@@ -228,93 +197,24 @@ export function getDynamicTip(
         return {
           title: `월 ${formatMoney(totalMonthlyIncome)} 소득`,
           description: hasMultipleIncomeSources
-            ? `다양한 소득원이 있네요! 이제 지출을 정리하면 저축률을 알 수 있어요.`
+            ? `다양한 소득원이 있네요! 이제 생활비를 입력하면 저축률을 알 수 있어요.`
             : hasSpouse && data.spouseLaborIncome && data.spouseLaborIncome > 0
-              ? `맞벌이 가정이시네요! 이제 지출을 정리하면 저축률을 알 수 있어요.`
-              : '이제 지출을 정리하면 얼마를 저축할 수 있는지 알 수 있어요.',
+              ? `맞벌이 가정이시네요! 이제 생활비를 입력하면 저축률을 알 수 있어요.`
+              : '이제 생활비를 입력하면 얼마를 저축할 수 있는지 알 수 있어요.',
           stat: `연 ${formatMoney(totalMonthlyIncome * 12)}`,
           statLabel: '연간 총 소득',
-          insight: '고정 지출 → 변동 지출 순으로 입력하세요.',
+          insight: '생활비에는 주거비, 식비, 교통비 등을 합산해서 입력하세요.',
           guides: incomeGuides,
-          suggestionGroups: expenseGroups,
         }
       }
 
       return {
         title: '소득과 지출을 정리하세요',
-        description: '근로 소득, 고정 지출, 변동 지출 순으로 입력해보세요. 저축률이 은퇴 시기를 결정합니다.',
+        description: '근로 소득 입력 후 생활비를 입력해보세요. 저축률이 은퇴 시기를 결정합니다.',
         stat: '30% 이상',
         statLabel: '권장 저축률',
         insight: '저축률 50%면 17년, 30%면 28년 후 은퇴 가능',
         guides: incomeGuides,
-        suggestionGroups: expenseGroups,
-      }
-
-    case 'savings':
-      // 저축 및 투자 섹션
-      const savingsInAssets = data.assets.filter(
-        (item) =>
-          ['예금', '적금', 'CMA', 'MMF', '저축', '비상금'].some((k) =>
-            item.name.includes(k)
-          ) || item.subcategory === '저축'
-      )
-      const investmentInAssets = data.assets.filter(
-        (item) =>
-          ['주식', 'ETF', '펀드', '채권', '암호화폐', '코인', '투자'].some(
-            (k) => item.name.includes(k)
-          ) || item.subcategory === '투자'
-      )
-      const savingsAmount = calculateTotalValue(savingsInAssets)
-      const investmentAmount = calculateTotalValue(investmentInAssets)
-      const totalSavingsInvestment = savingsAmount + investmentAmount
-
-      const savingsGuides = [
-        '비상금은 월 생활비의 3~6개월치를 예금으로 보유하세요.',
-        '저축은 안전자산, 투자는 위험자산으로 분류됩니다.',
-        '나이가 젊을수록 투자 비중을 높여도 괜찮아요.',
-      ]
-      const savingsSuggestions = ['예금', '적금', 'CMA', 'MMF', '비상금']
-      const investmentSuggestions = ['주식', 'ETF', '펀드', '채권', '암호화폐']
-      const savingsExpenseGroups: SuggestionGroup[] = [
-        { label: '안전 자산 (저축)', items: savingsSuggestions },
-        { label: '위험 자산 (투자)', items: investmentSuggestions },
-      ]
-
-      if (totalSavingsInvestment > 0) {
-        const savingsRatio =
-          totalSavingsInvestment > 0
-            ? Math.round((savingsAmount / totalSavingsInvestment) * 100)
-            : 0
-        const investmentRatio = 100 - savingsRatio
-        const recommendedInvestmentRatio = age ? Math.max(0, 100 - age) : 60 // 100 - 나이 법칙
-
-        return {
-          title: `저축 ${savingsRatio}% : 투자 ${investmentRatio}%`,
-          description: age
-            ? `${age}세 기준 권장 투자 비중은 ${recommendedInvestmentRatio}%입니다. ${
-                investmentRatio < recommendedInvestmentRatio - 10
-                  ? '투자 비중을 늘려 수익률을 높여보세요.'
-                  : investmentRatio > recommendedInvestmentRatio + 10
-                  ? '안전자산 비중을 늘려 리스크를 줄이세요.'
-                  : '적절한 비율이에요!'
-              }`
-            : '저축과 투자의 균형이 중요합니다.',
-          stat: formatMoney(totalSavingsInvestment),
-          statLabel: '저축 + 투자 총액',
-          insight: `100 - 나이 = 투자 비중 (${age}세 → ${recommendedInvestmentRatio}% 투자 권장)`,
-          guides: savingsGuides,
-          suggestionGroups: savingsExpenseGroups,
-        }
-      }
-      return {
-        title: '저축과 투자를 정리하세요',
-        description:
-          '안전자산(예금, 적금)과 위험자산(주식, ETF)을 구분해서 입력하세요. 자산 배분이 수익률을 결정합니다.',
-        stat: '72의 법칙',
-        statLabel: '수익률 ÷ 72 = 원금 2배 기간',
-        insight: '연 7% 수익률이면 약 10년 후 원금이 2배가 됩니다.',
-        guides: savingsGuides,
-        suggestionGroups: savingsExpenseGroups,
       }
 
     case 'realEstate':
@@ -469,8 +369,9 @@ export function getDynamicTip(
           item.name.includes(k)
         )
       )
-      const securedAmount = calculateTotalValue(securedDebt)
-      const unsecuredAmount = calculateTotalValue(unsecuredDebt)
+      // DebtInput은 frequency가 없으므로 별도 계산
+      const securedAmount = securedDebt.reduce((sum, d) => sum + (d.amount || 0), 0)
+      const unsecuredAmount = unsecuredDebt.reduce((sum, d) => sum + (d.amount || 0), 0)
 
       if (totalDebt > 0) {
         const debtToAsset =

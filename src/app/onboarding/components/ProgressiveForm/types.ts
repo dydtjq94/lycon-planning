@@ -8,10 +8,7 @@ export type RowId =
   | 'children'
   | 'labor_income'        // 근로 소득
   | 'business_income'     // 사업 소득
-  | 'fixed_expenses'      // 고정 지출
-  | 'variable_expenses'   // 변동 지출
-  | 'savings'
-  | 'investment'
+  | 'living_expenses'     // 생활비
   | 'realEstate'
   | 'asset'
   | 'debt'
@@ -67,8 +64,8 @@ export const frequencyLabels: Record<Frequency, string> = {
 // 섹션별로 포함되는 행들 정의
 export const sectionRows: Record<SectionId, RowId[]> = {
   basic: ['name', 'birth_date', 'children', 'retirement_age', 'retirement_fund'],
-  income: ['labor_income', 'business_income', 'fixed_expenses', 'variable_expenses'],
-  savings: ['savings', 'investment'],
+  income: ['labor_income', 'business_income'],
+  expense: ['living_expenses'],
   realEstate: ['realEstate'],
   asset: ['asset'],
   debt: ['debt'],
@@ -139,43 +136,43 @@ export const rows: RowConfig[] = [
     },
   },
   {
-    id: 'fixed_expenses',
-    label: '고정 지출',
+    id: 'living_expenses',
+    label: '평균 생활비',
     isVisible: (_, visible) => visible.includes('business_income'),
-    isComplete: (data) => data.fixedExpenses !== null,
-  },
-  {
-    id: 'variable_expenses',
-    label: '변동 지출',
-    isVisible: (_, visible) => visible.includes('fixed_expenses'),
-    isComplete: (data) => data.variableExpenses !== null,
-  },
-  // 저축/투자
-  {
-    id: 'savings',
-    label: '저축',
-    isVisible: (_, visible) => visible.includes('variable_expenses'),
-    isComplete: (data) => data.assets.some(i => i.subcategory === '저축' && i.name && i.name.trim() !== '' && i.amount !== null && i.amount > 0),
-  },
-  {
-    id: 'investment',
-    label: '투자',
-    isVisible: (_, visible) => visible.includes('savings'),
-    isComplete: (data) => data.assets.some(i => i.subcategory === '투자' && i.name && i.name.trim() !== '' && i.amount !== null && i.amount > 0),
+    isComplete: (data) => data.livingExpenses !== null,
   },
   // 부동산
   {
     id: 'realEstate',
-    label: '부동산',
-    isVisible: (_, visible) => visible.includes('investment'),
-    isComplete: (data) => data.realEstates.some(i => i.name && i.name.trim() !== '' && i.amount !== null && i.amount > 0),
+    label: '거주 부동산',
+    isVisible: (_, visible) => visible.includes('living_expenses'),
+    isComplete: (data) => {
+      if (data.housingType === '해당없음') return true
+      if (data.housingType === null) return false
+      const isValueFilled = data.housingValue !== null && data.housingValue > 0
+      const isRentFilled = data.housingRent !== null && data.housingRent > 0
+      const isLoanFilled = data.housingLoan !== null && data.housingLoan > 0
+      // 월세는 보증금 + 월세 둘 다 필요
+      const isMonthlyRentComplete = data.housingType === '월세' ? (isValueFilled && isRentFilled) : isValueFilled
+      // 대출 추가했으면 대출도 입력해야 완료
+      return isMonthlyRentComplete && (!data.housingHasLoan || isLoanFilled)
+    },
   },
   // 금융자산
   {
     id: 'asset',
     label: '금융자산',
     isVisible: (_, visible) => visible.includes('realEstate'),
-    isComplete: (data) => data.assets.some(i => i.subcategory === '기타자산' && i.name && i.name.trim() !== '' && i.amount !== null && i.amount > 0),
+    isComplete: (data) => {
+      // 현금성 자산 또는 투자자산 중 하나라도 입력되면 완료
+      const hasCash = (data.cashCheckingAccount !== null && data.cashCheckingAccount > 0) ||
+                      (data.cashSavingsAccount !== null && data.cashSavingsAccount > 0)
+      const hasInvest = (data.investDomesticStock !== null && data.investDomesticStock > 0) ||
+                        (data.investForeignStock !== null && data.investForeignStock > 0) ||
+                        (data.investFund !== null && data.investFund > 0) ||
+                        (data.investOther !== null && data.investOther > 0)
+      return hasCash || hasInvest
+    },
   },
   // 부채
   {

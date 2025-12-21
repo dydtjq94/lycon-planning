@@ -1,8 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
-import { Plus, X } from "lucide-react";
 import type { OnboardingData } from "@/types";
 import type { RowInputProps, RowId } from "../types";
 import styles from "../../../onboarding.module.css";
@@ -247,35 +245,24 @@ export function SpouseBusinessIncomeRow({
   );
 }
 
-// 고정 지출 입력 (셀 구조: 항목명 | 금액 | 만원 | 주기 | 빈 삭제칸)
-export function renderFixedExpensesInput({
+// 생활비 입력 (셀 구조: 금액 | 만원 | 주기 | 빈 삭제칸)
+export function renderLivingExpensesInput({
   data,
   onUpdateData,
   onFocus,
 }: RowInputProps) {
   return (
     <div className={styles.excelValueCells}>
-      <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-        <Input
-          type="text"
-          value={data.fixedExpenseName}
-          onChange={(e) => onUpdateData({ fixedExpenseName: e.target.value })}
-          placeholder="항목명"
-          className={styles.excelCellInput}
-          onFocus={() => onFocus("fixed_expenses")}
-          data-filled={data.fixedExpenseName ? "true" : undefined}
-        />
-      </div>
       <div
         className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}
       >
         <MoneyInput
-          value={data.fixedExpenses}
-          onChange={(value) => onUpdateData({ fixedExpenses: value })}
+          value={data.livingExpenses}
+          onChange={(value) => onUpdateData({ livingExpenses: value })}
           placeholder="0"
           hideSuffix
-          onFocus={() => onFocus("fixed_expenses")}
-          data-filled={data.fixedExpenses !== null ? "true" : undefined}
+          onFocus={() => onFocus("living_expenses")}
+          data-filled={data.livingExpenses !== null ? "true" : undefined}
         />
       </div>
       <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
@@ -285,282 +272,13 @@ export function renderFixedExpensesInput({
         className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}
       >
         <FrequencyToggle
-          value={data.fixedExpensesFrequency}
-          onChange={(value) => onUpdateData({ fixedExpensesFrequency: value })}
+          value={data.livingExpensesFrequency}
+          onChange={(value) => onUpdateData({ livingExpensesFrequency: value })}
         />
       </div>
       <div
         className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}
       ></div>
     </div>
-  );
-}
-
-// 변동 지출 입력 (셀 구조: 항목명 | 금액 | 만원 | 주기 | 빈 삭제칸)
-export function renderVariableExpensesInput({
-  data,
-  onUpdateData,
-  onFocus,
-}: RowInputProps) {
-  return (
-    <div className={styles.excelValueCells}>
-      <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-        <Input
-          type="text"
-          value={data.variableExpenseName}
-          onChange={(e) =>
-            onUpdateData({ variableExpenseName: e.target.value })
-          }
-          placeholder="항목명"
-          className={styles.excelCellInput}
-          onFocus={() => onFocus("variable_expenses")}
-          data-filled={data.variableExpenseName ? "true" : undefined}
-        />
-      </div>
-      <div
-        className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}
-      >
-        <MoneyInput
-          value={data.variableExpenses}
-          onChange={(value) => onUpdateData({ variableExpenses: value })}
-          placeholder="0"
-          hideSuffix
-          onFocus={() => onFocus("variable_expenses")}
-          data-filled={data.variableExpenses !== null ? "true" : undefined}
-        />
-      </div>
-      <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
-        만원
-      </div>
-      <div
-        className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}
-      >
-        <FrequencyToggle
-          value={data.variableExpensesFrequency}
-          onChange={(value) => onUpdateData({ variableExpensesFrequency: value })}
-        />
-      </div>
-      <div
-        className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}
-      ></div>
-    </div>
-  );
-}
-
-// 고정 지출 - 추가 항목 확장 행
-interface ExpenseExtensionRowsProps {
-  data: OnboardingData;
-  onUpdateData: (updates: Partial<OnboardingData>) => void;
-  onFocus: (rowId: RowId) => void;
-}
-
-export function FixedExpenseExtensionRows({
-  data,
-  onUpdateData,
-  onFocus,
-}: ExpenseExtensionRowsProps) {
-  const items = data.additionalFixedExpenses || [];
-
-  const handleAdd = () => {
-    onUpdateData({
-      additionalFixedExpenses: [...items, { name: "", amount: null, frequency: 'monthly' as const }],
-    });
-  };
-
-  const handleUpdate = (
-    index: number,
-    field: "name" | "amount" | "frequency",
-    value: string | number | null | FrequencyType
-  ) => {
-    const newItems = items.map((item, i) =>
-      i === index ? { ...item, [field]: value } : item
-    );
-    onUpdateData({ additionalFixedExpenses: newItems });
-  };
-
-  const handleDelete = (index: number) => {
-    onUpdateData({
-      additionalFixedExpenses: items.filter((_, i) => i !== index),
-    });
-  };
-
-  return (
-    <>
-      {items.map((item, index) => (
-        <div
-          key={index}
-          className={`${styles.excelRow} ${styles.excelRowExtension}`}
-        >
-          <div className={styles.excelRowNumber}></div>
-          <div className={styles.excelRowLabel}></div>
-          <div className={styles.excelRowInputMulti}>
-            <div className={styles.excelValueCells}>
-              <div
-                className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}
-              >
-                <Input
-                  type="text"
-                  value={item.name}
-                  onChange={(e) => handleUpdate(index, "name", e.target.value)}
-                  placeholder="항목명"
-                  className={styles.excelCellInput}
-                  onFocus={() => onFocus("fixed_expenses")}
-                />
-              </div>
-              <div
-                className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}
-              >
-                <MoneyInput
-                  value={item.amount}
-                  onChange={(value) => handleUpdate(index, "amount", value)}
-                  placeholder="0"
-                  hideSuffix
-                  onFocus={() => onFocus("fixed_expenses")}
-                />
-              </div>
-              <div
-                className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}
-              >
-                만원
-              </div>
-              <div
-                className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}
-              >
-                <FrequencyToggle
-                  value={item.frequency || 'monthly'}
-                  onChange={(value) => handleUpdate(index, "frequency", value)}
-                />
-              </div>
-              <div
-                className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}
-              >
-                <button onClick={() => handleDelete(index)} type="button">
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-      {/* 추가 버튼 행 */}
-      <div
-        className={`${styles.excelRow} ${styles.excelRowExtension} ${styles.excelRowAdd}`}
-        onClick={handleAdd}
-      >
-        <div className={styles.excelRowNumber}></div>
-        <div className={styles.excelRowLabel}></div>
-        <div className={styles.excelRowInputMulti}>
-          <span className={styles.excelAddText}>
-            <Plus size={14} /> 고정 지출 추가
-          </span>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// 변동 지출 - 추가 항목 확장 행
-export function VariableExpenseExtensionRows({
-  data,
-  onUpdateData,
-  onFocus,
-}: ExpenseExtensionRowsProps) {
-  const items = data.additionalVariableExpenses || [];
-
-  const handleAdd = () => {
-    onUpdateData({
-      additionalVariableExpenses: [...items, { name: "", amount: null, frequency: 'monthly' as const }],
-    });
-  };
-
-  const handleUpdate = (
-    index: number,
-    field: "name" | "amount" | "frequency",
-    value: string | number | null | FrequencyType
-  ) => {
-    const newItems = items.map((item, i) =>
-      i === index ? { ...item, [field]: value } : item
-    );
-    onUpdateData({ additionalVariableExpenses: newItems });
-  };
-
-  const handleDelete = (index: number) => {
-    onUpdateData({
-      additionalVariableExpenses: items.filter((_, i) => i !== index),
-    });
-  };
-
-  return (
-    <>
-      {items.map((item, index) => (
-        <div
-          key={index}
-          className={`${styles.excelRow} ${styles.excelRowExtension}`}
-        >
-          <div className={styles.excelRowNumber}></div>
-          <div className={styles.excelRowLabel}></div>
-          <div className={styles.excelRowInputMulti}>
-            <div className={styles.excelValueCells}>
-              <div
-                className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}
-              >
-                <Input
-                  type="text"
-                  value={item.name}
-                  onChange={(e) => handleUpdate(index, "name", e.target.value)}
-                  placeholder="항목명"
-                  className={styles.excelCellInput}
-                  onFocus={() => onFocus("variable_expenses")}
-                />
-              </div>
-              <div
-                className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}
-              >
-                <MoneyInput
-                  value={item.amount}
-                  onChange={(value) => handleUpdate(index, "amount", value)}
-                  placeholder="0"
-                  hideSuffix
-                  onFocus={() => onFocus("variable_expenses")}
-                />
-              </div>
-              <div
-                className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}
-              >
-                만원
-              </div>
-              <div
-                className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}
-              >
-                <FrequencyToggle
-                  value={item.frequency || 'monthly'}
-                  onChange={(value) => handleUpdate(index, "frequency", value)}
-                />
-              </div>
-              <div
-                className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}
-              >
-                <button onClick={() => handleDelete(index)} type="button">
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-      {/* 추가 버튼 행 */}
-      <div
-        className={`${styles.excelRow} ${styles.excelRowExtension} ${styles.excelRowAdd}`}
-        onClick={handleAdd}
-      >
-        <div className={styles.excelRowNumber}></div>
-        <div className={styles.excelRowLabel}></div>
-        <div className={styles.excelRowInputMulti}>
-          <span className={styles.excelAddText}>
-            <Plus size={14} /> 변동 지출 추가
-          </span>
-        </div>
-      </div>
-    </>
   );
 }

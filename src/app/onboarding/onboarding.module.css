@@ -1658,6 +1658,12 @@
   color: #d6d3d1;
 }
 
+/* 현재 해야 할 행의 값 영역 강조 (버튼만 있는 경우, 셀 구조 없을 때) */
+.excelRowCurrent .excelRowInputMulti:not(:has(.excelValueCells)) {
+  background-color: #fef3c7;
+  box-shadow: inset 0 0 0 2px #f59e0b;
+}
+
 .excelRow:hover {
   background-color: #fafaf9;
 }
@@ -2130,6 +2136,12 @@
   color: #78716c;
 }
 
+.excelAddButtons {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
 .excelRowInput input {
   border: none;
   background: transparent;
@@ -2442,6 +2454,101 @@
   padding-top: 4px;
   border-top: 1px solid #f5f5f4;
   margin-top: 4px;
+}
+
+/* 대출 상환방식 선택 */
+.loanTypeSelect {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #292524;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.loanTypeSelect:focus {
+  outline: none;
+  background-color: #fefce8;
+}
+
+/* 금리/수익률 입력 */
+.rateInput {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #292524;
+  text-align: right;
+  padding: 0 4px;
+}
+
+.rateInput::placeholder {
+  color: #a8a29e;
+}
+
+.rateInput:focus {
+  outline: none;
+  background-color: #fefce8;
+}
+
+/* 부채명 입력 */
+.debtNameInput {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #292524;
+  padding: 0;
+}
+
+.debtNameInput::placeholder {
+  color: #a8a29e;
+}
+
+.debtNameInput:focus {
+  outline: none;
+  background-color: #fefce8;
+}
+
+/* 연금명 입력 */
+.pensionNameInput {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #292524;
+  padding: 0;
+}
+
+.pensionNameInput::placeholder {
+  color: #a8a29e;
+}
+
+.pensionNameInput:focus {
+  outline: none;
+  background-color: #fefce8;
+}
+
+/* 연금 유형 선택 (퇴직연금 DB/DC 등) */
+.pensionTypeSelect {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #292524;
+  padding: 0;
+  cursor: pointer;
+}
+
+.pensionTypeSelect:focus {
+  outline: none;
+  background-color: #fefce8;
 }
 
 /* 엑셀 서브 행 스타일 (소득/지출 등) */
@@ -3528,6 +3635,82 @@
   .sectionInputName {
     min-width: 100%;
   }
+}
+
+/* 섹션 컨테이너 */
+.excelSection {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 섹션 구분 빈 행 (첫 번째 섹션 제외) - 3열 구조 */
+.excelSectionSpacer {
+  display: grid;
+  grid-template-columns: 40px 120px 1fr;
+  min-height: 28px;
+  background-color: white;
+  border-top: 1px solid #f5f5f4;
+  border-bottom: 1px solid #f5f5f4;
+}
+
+.excelSectionSpacerNumber {
+  border-right: 1px solid #f5f5f4;
+}
+
+.excelSectionSpacerLabel {
+  border-right: 1px solid #f5f5f4;
+}
+
+.excelSectionSpacerValue {
+  /* 오른쪽 border 없음 - 전체 row border-bottom만 사용 */
+}
+
+/* 섹션 헤더 (sticky) */
+.excelSectionHeader {
+  position: sticky;
+  top: 35px; /* excelHeader + progressBar 높이 */
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  min-height: 32px;
+  background-color: #f5f5f4;
+  border-bottom: 1px solid #e7e5e4;
+  transition: background-color 0.2s;
+}
+
+.excelSectionHeaderNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #e7e5e4;
+}
+
+.excelSectionHeaderContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-right: 1px solid #e7e5e4;
+}
+
+.excelSectionHeaderLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #57534e;
+}
+
+.excelSectionHeaderCheck {
+  color: #16a34a;
+}
+
+.excelSectionBody {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 마지막 섹션도 상단으로 스크롤 가능하도록 하단 여백 */
+.excelBody > .excelSection:last-child {
+  padding-bottom: 80vh;
 }
 
 /* 엑셀 시트 탭 */

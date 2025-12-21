@@ -97,21 +97,43 @@ export interface OnboardingData {
   spouseBusinessIncomeFrequency: 'monthly' | 'yearly'
 
   // 지출
-  fixedExpenseName: string          // 고정 지출 항목명
-  fixedExpenses: number | null      // 고정 지출
-  fixedExpensesFrequency: 'monthly' | 'yearly'  // 고정 지출 주기
-  additionalFixedExpenses: Array<{name: string, amount: number | null, frequency: 'monthly' | 'yearly'}>
-  variableExpenseName: string       // 변동 지출 항목명
-  variableExpenses: number | null   // 변동 지출
-  variableExpensesFrequency: 'monthly' | 'yearly'  // 변동 지출 주기
-  additionalVariableExpenses: Array<{name: string, amount: number | null, frequency: 'monthly' | 'yearly'}>
+  livingExpenses: number | null     // 생활비
+  livingExpensesFrequency: 'monthly' | 'yearly'  // 생활비 주기
+
+  // 거주용 부동산
+  housingType: '자가' | '전세' | '월세' | '해당없음' | null  // 거주 형태
+  housingValue: number | null      // 자가: 시세, 전세/월세: 보증금
+  housingRent: number | null       // 월세: 월세+관리비
+  housingHasLoan: boolean          // 대출 여부
+  housingLoan: number | null       // 대출금액
+  housingLoanRate: number | null   // 대출 금리 (%)
+  housingLoanMaturity: string | null  // 대출 만기 (YYYY-MM)
+  housingLoanType: '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환' | null  // 상환방식
+
+  // 금융자산 - 현금성 자산
+  cashCheckingAccount: number | null      // 입출금통장
+  cashCheckingRate: number | null         // 입출금통장 금리
+  cashSavingsAccount: number | null       // 정기예금/적금
+  cashSavingsRate: number | null          // 정기예금/적금 금리
+
+  // 금융자산 - 투자자산
+  investDomesticStock: number | null      // 국내주식 및 ETF
+  investDomesticRate: number | null       // 국내주식 수익률
+  investForeignStock: number | null       // 해외주식 및 ETF
+  investForeignRate: number | null        // 해외주식 수익률
+  investFund: number | null               // 펀드 및 채권
+  investFundRate: number | null           // 펀드 수익률
+  investOther: number | null              // 기타 투자자산 (가상화폐, P2P 등)
+  investOtherRate: number | null          // 기타 수익률
+
+  // 부채 목록
+  debts: DebtInput[]
 
   // 기존 배열 (추후 상세 입력용, 현재 미사용)
   incomes: AssetInput[]
   expenses: AssetInput[]
   realEstates: AssetInput[]
   assets: AssetInput[]
-  debts: AssetInput[]
   pensions: AssetInput[]
 }
 
@@ -124,6 +146,15 @@ export interface AssetInput {
   start_date?: string
   end_date?: string
   notes?: string
+}
+
+// 부채 입력 폼 (대출 상세 정보 포함)
+export interface DebtInput {
+  name: string
+  amount: number | null  // 대출 금액
+  rate: number | null    // 금리 (%)
+  maturity: string | null  // 만기 (YYYY-MM)
+  repaymentType: '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환' | null
 }
 
 // 스코어 타입

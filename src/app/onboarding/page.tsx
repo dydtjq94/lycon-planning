@@ -69,16 +69,32 @@ const initialData: OnboardingData = {
   businessIncomeFrequency: 'monthly',
   spouseBusinessIncome: null,
   spouseBusinessIncomeFrequency: 'monthly',
-  // 고정 지출
-  fixedExpenseName: '',
-  fixedExpenses: null,
-  fixedExpensesFrequency: 'monthly',
-  additionalFixedExpenses: [],
-  // 변동 지출
-  variableExpenseName: '',
-  variableExpenses: null,
-  variableExpensesFrequency: 'monthly',
-  additionalVariableExpenses: [],
+  // 지출
+  livingExpenses: null,
+  livingExpensesFrequency: 'monthly',
+  // 거주용 부동산
+  housingType: null,
+  housingValue: null,
+  housingRent: null,
+  housingHasLoan: false,
+  housingLoan: null,
+  housingLoanRate: null,
+  housingLoanMaturity: null,
+  housingLoanType: null,
+  // 금융자산 - 현금성 자산
+  cashCheckingAccount: null,
+  cashCheckingRate: null,
+  cashSavingsAccount: null,
+  cashSavingsRate: null,
+  // 금융자산 - 투자자산
+  investDomesticStock: null,
+  investDomesticRate: null,
+  investForeignStock: null,
+  investForeignRate: null,
+  investFund: null,
+  investFundRate: null,
+  investOther: null,
+  investOtherRate: null,
   incomes: [],
   expenses: [],
   realEstates: [],
@@ -126,36 +142,46 @@ const sampleData: OnboardingData = {
   businessIncomeFrequency: 'monthly',
   spouseBusinessIncome: null,   // 배우자 사업소득
   spouseBusinessIncomeFrequency: 'monthly',
-  // 고정 지출 샘플
-  fixedExpenseName: '주거비',
-  fixedExpenses: 1500000,       // 150만원/월
-  fixedExpensesFrequency: 'monthly',
-  additionalFixedExpenses: [
-    { name: '보험료', amount: 500000, frequency: 'monthly' },
-    { name: '교육비', amount: 1000000, frequency: 'monthly' },
-    { name: '구독 서비스', amount: 50000, frequency: 'monthly' },
-    { name: '용돈', amount: 300000, frequency: 'monthly' },
-    { name: '기타 고정 지출', amount: null, frequency: 'monthly' },
-  ],
-  // 변동 지출 샘플
-  variableExpenseName: '생활·식비',
-  variableExpenses: 1200000,    // 120만원/월
-  variableExpensesFrequency: 'monthly',
-  additionalVariableExpenses: [
-    { name: '패션·개인관리비', amount: 300000, frequency: 'monthly' },
-    { name: '교통비', amount: 400000, frequency: 'monthly' },
-    { name: '교육·자기계발비', amount: 200000, frequency: 'monthly' },
-    { name: '건강·여가비', amount: 500000, frequency: 'monthly' },
-    { name: '기타 변동 지출', amount: null, frequency: 'monthly' },
+  // 지출 샘플 (월 450만원)
+  livingExpenses: 4500000,
+  livingExpensesFrequency: 'monthly',
+  // 거주용 부동산 샘플
+  housingType: '자가',
+  housingValue: 900000000,  // 9억
+  housingRent: null,
+  housingHasLoan: true,
+  housingLoan: 400000000,   // 4억 대출
+  housingLoanRate: 3.5,     // 금리 3.5%
+  housingLoanMaturity: '2045-06',  // 만기 2045년 6월
+  housingLoanType: '원리금균등상환',
+  // 금융자산 - 현금성 자산 샘플
+  cashCheckingAccount: 30000000,  // 입출금통장 3천만원
+  cashCheckingRate: 0.1,          // 0.1%
+  cashSavingsAccount: 100000000,  // 정기예금 1억
+  cashSavingsRate: 3.5,           // 3.5%
+  // 금융자산 - 투자자산 샘플
+  investDomesticStock: 50000000,  // 국내주식 5천만원
+  investDomesticRate: null,
+  investForeignStock: 30000000,   // 해외주식 3천만원
+  investForeignRate: null,
+  investFund: 20000000,           // 펀드 2천만원
+  investFundRate: null,
+  investOther: null,
+  investOtherRate: null,
+  // 부채 샘플
+  debts: [
+    {
+      name: '신용대출',
+      amount: 50000000,  // 5천만원
+      rate: 5.5,
+      maturity: '2027-12',
+      repaymentType: '원리금균등상환',
+    },
   ],
   incomes: [],
   expenses: [],
   realEstates: [],
-  assets: [
-    { name: "예금", amount: 150000000, frequency: "once" },
-    { name: "주식/ETF", amount: 80000000, frequency: "once" },
-  ],
-  debts: [{ name: "주택담보대출", amount: 400000000, frequency: "once" }],
+  assets: [],
   pensions: [
     { name: "국민연금 (예상)", amount: 1800000, frequency: "monthly" },
   ],
@@ -341,144 +367,14 @@ export default function OnboardingPage() {
     };
   }, [data, started, autoSave]);
 
-  // 지출 키워드 (소득/지출 섹션에서 구분용)
-  const expenseKeywords = [
-    "주거비",
-    "보험료",
-    "교육비",
-    "구독",
-    "용돈",
-    "생활",
-    "식비",
-    "교통비",
-    "건강",
-    "여가",
-    "지출",
-  ];
 
   // 제안 항목 클릭시 추가/제거 토글
   const handleToggleSuggestion = (name: string) => {
-    // 소득/지출 섹션의 새로운 구조 처리
-    if (activeSection === "income") {
-      // 고정 지출 또는 변동 지출 행인지 확인
-      if (activeRow === "fixed_expenses") {
-        // 고정 지출에 추가
-        const items = data.additionalFixedExpenses || [];
-
-        // 이미 메인 항목명에 있는지 확인
-        if (data.fixedExpenseName === name) {
-          // 메인 항목명 제거
-          setData((prev) => ({
-            ...prev,
-            fixedExpenseName: "",
-          }));
-          return;
-        }
-
-        // 추가 항목에 있는지 확인
-        const existingIndex = items.findIndex((item) => item.name === name);
-        if (existingIndex >= 0) {
-          // 이미 있으면 제거
-          setData((prev) => ({
-            ...prev,
-            additionalFixedExpenses: items.filter((_, i) => i !== existingIndex),
-          }));
-        } else {
-          // 없으면 추가 - 메인 항목명이 비어있으면 거기에 먼저 추가
-          if (!data.fixedExpenseName) {
-            setData((prev) => ({
-              ...prev,
-              fixedExpenseName: name,
-            }));
-          } else {
-            setData((prev) => ({
-              ...prev,
-              additionalFixedExpenses: [...items, { name, amount: null, frequency: 'monthly' as const }],
-            }));
-          }
-        }
-        return;
-      }
-
-      if (activeRow === "variable_expenses") {
-        // 변동 지출에 추가
-        const items = data.additionalVariableExpenses || [];
-
-        // 이미 메인 항목명에 있는지 확인
-        if (data.variableExpenseName === name) {
-          // 메인 항목명 제거
-          setData((prev) => ({
-            ...prev,
-            variableExpenseName: "",
-          }));
-          return;
-        }
-
-        // 추가 항목에 있는지 확인
-        const existingIndex = items.findIndex((item) => item.name === name);
-        if (existingIndex >= 0) {
-          // 이미 있으면 제거
-          setData((prev) => ({
-            ...prev,
-            additionalVariableExpenses: items.filter((_, i) => i !== existingIndex),
-          }));
-        } else {
-          // 없으면 추가 - 메인 항목명이 비어있으면 거기에 먼저 추가
-          if (!data.variableExpenseName) {
-            setData((prev) => ({
-              ...prev,
-              variableExpenseName: name,
-            }));
-          } else {
-            setData((prev) => ({
-              ...prev,
-              additionalVariableExpenses: [...items, { name, amount: null, frequency: 'monthly' as const }],
-            }));
-          }
-        }
-        return;
-      }
-
-      // 그 외 소득 섹션 (기존 로직 - 소득/지출 배열 사용)
-      const isExpense = expenseKeywords.some((k) => name.includes(k));
-      const key = isExpense ? "expenses" : "incomes";
-      const items = data[key] as Array<{
-        name: string;
-        amount: number | null;
-        frequency: "monthly" | "yearly" | "once";
-      }>;
-
-      const existingIndex = items.findIndex((item) => item.name === name);
-
-      if (existingIndex >= 0) {
-        const newItems = items.filter((_, index) => index !== existingIndex);
-        if (newItems.length === 0) {
-          newItems.push({ name: "", amount: null, frequency: "monthly" });
-        }
-        setData((prev) => ({ ...prev, [key]: newItems }));
-      } else {
-        const emptyIndex = items.findIndex(
-          (item) => !item.name && item.amount === null
-        );
-        if (emptyIndex >= 0) {
-          const newItems = [...items];
-          newItems[emptyIndex] = { ...newItems[emptyIndex], name };
-          setData((prev) => ({ ...prev, [key]: newItems }));
-        } else {
-          setData((prev) => ({
-            ...prev,
-            [key]: [...items, { name, amount: null, frequency: "monthly" }],
-          }));
-        }
-      }
-      return;
-    }
-
     // 다른 섹션들 (기존 로직)
     const keyMap: Record<SectionId, keyof OnboardingData | null> = {
       basic: null,
       income: "incomes",
-      savings: null,
+      expense: "expenses",
       realEstate: "realEstates",
       asset: "assets",
       debt: "debts",
@@ -519,27 +415,12 @@ export default function OnboardingPage() {
     }
   };
 
-  // 제안 항목이 이미 추가되었는지 확인 (새로운 구조 지원)
+  // 제안 항목이 이미 추가되었는지 확인
   const isSuggestionAdded = (name: string): boolean => {
-    if (activeSection === "income") {
-      if (activeRow === "fixed_expenses") {
-        const items = data.additionalFixedExpenses || [];
-        return items.some((item) => item.name === name) || data.fixedExpenseName === name;
-      }
-      if (activeRow === "variable_expenses") {
-        const items = data.additionalVariableExpenses || [];
-        return items.some((item) => item.name === name) || data.variableExpenseName === name;
-      }
-      // 기존 소득/지출 배열 확인
-      const isExpense = expenseKeywords.some((k) => name.includes(k));
-      const items = isExpense ? data.expenses : data.incomes;
-      return items.some((item) => item.name === name);
-    }
-
     const keyMap: Record<SectionId, keyof OnboardingData | null> = {
       basic: null,
       income: "incomes",
-      savings: null,
+      expense: "expenses",
       realEstate: "realEstates",
       asset: "assets",
       debt: "debts",
@@ -551,10 +432,10 @@ export default function OnboardingPage() {
     return items.some((item) => item.name === name);
   };
 
-  // row-based TIP을 사용하는 행 ID들 (기본정보 + 소득/지출)
+  // row-based TIP을 사용하는 행 ID들 (기본 정보 + 소득/지출)
   const rowBasedTipIds = [
-    'name', 'birth_date', 'children', 'retirement_age', 'retirement_fund',  // 기본정보
-    'labor_income', 'business_income', 'fixed_expenses', 'variable_expenses',  // 소득/지출
+    'name', 'birth_date', 'children', 'retirement_age', 'retirement_fund',  // 기본 정보
+    'labor_income', 'business_income', 'living_expenses',  // 소득/지출
   ];
   const currentTip = useMemo(() => {
     if (rowBasedTipIds.includes(activeRow)) {
@@ -905,10 +786,7 @@ export default function OnboardingPage() {
                 retirement_fund: "basic",
                 labor_income: "income",
                 business_income: "income",
-                fixed_expenses: "income",
-                variable_expenses: "income",
-                savings: "savings",
-                investment: "savings",
+                living_expenses: "expense",
                 realEstate: "realEstate",
                 asset: "asset",
                 debt: "debt",
