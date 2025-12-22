@@ -102,6 +102,7 @@ export function RealEstateRows({
       <div
         className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isCurrent ? styles.excelRowCurrent : ''}`}
         onClick={() => onFocus('realEstate')}
+        data-current={isCurrent ? 'true' : undefined}
       >
         <div className={styles.excelRowNumber}>{baseRowIndex}</div>
         <div className={styles.excelRowLabel}>거주 부동산</div>
@@ -176,6 +177,7 @@ export function RealEstateRows({
       <div
         className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsValue ? styles.excelRowCurrent : ''}`}
         onClick={() => onFocus('realEstate')}
+        data-current={isCurrent && needsValue ? 'true' : undefined}
       >
         <div className={styles.excelRowNumber}>
           {isComplete ? <Check size={14} /> : baseRowIndex}
@@ -220,6 +222,7 @@ export function RealEstateRows({
         <div
           className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsRent ? styles.excelRowCurrent : ''}`}
           onClick={() => onFocus('realEstate')}
+          data-current={isCurrent && needsRent ? 'true' : undefined}
         >
           <div className={styles.excelRowNumber} />
           <div className={styles.excelRowLabel} />
@@ -257,6 +260,7 @@ export function RealEstateRows({
           <div
             className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsLoan ? styles.excelRowCurrent : ''}`}
             onClick={() => onFocus('realEstate')}
+            data-current={isCurrent && needsLoan ? 'true' : undefined}
           >
             <div className={styles.excelRowNumber} />
             <div className={styles.excelRowLabel} />
@@ -457,6 +461,7 @@ export function FinancialAssetRows({
       <div
         className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsChecking && !isComplete ? styles.excelRowCurrent : ''}`}
         onClick={() => onFocus('asset')}
+        data-current={isCurrent && needsChecking && !isComplete ? 'true' : undefined}
       >
         <div className={styles.excelRowNumber}>
           {isComplete ? <Check size={14} /> : baseRowIndex}
@@ -496,6 +501,7 @@ export function FinancialAssetRows({
       <div
         className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsSavings && !isComplete ? styles.excelRowCurrent : ''}`}
         onClick={() => onFocus('asset')}
+        data-current={isCurrent && needsSavings && !isComplete ? 'true' : undefined}
       >
         <div className={styles.excelRowNumber} />
         <div className={styles.excelRowLabel} />
@@ -533,6 +539,7 @@ export function FinancialAssetRows({
       <div
         className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsDomestic && !isComplete ? styles.excelRowCurrent : ''}`}
         onClick={() => onFocus('asset')}
+        data-current={isCurrent && needsDomestic && !isComplete ? 'true' : undefined}
       >
         <div className={styles.excelRowNumber} />
         <div className={styles.excelRowLabel}>투자자산</div>
@@ -570,6 +577,7 @@ export function FinancialAssetRows({
       <div
         className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsForeign && !isComplete ? styles.excelRowCurrent : ''}`}
         onClick={() => onFocus('asset')}
+        data-current={isCurrent && needsForeign && !isComplete ? 'true' : undefined}
       >
         <div className={styles.excelRowNumber} />
         <div className={styles.excelRowLabel} />
@@ -607,6 +615,7 @@ export function FinancialAssetRows({
       <div
         className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsFund && !isComplete ? styles.excelRowCurrent : ''}`}
         onClick={() => onFocus('asset')}
+        data-current={isCurrent && needsFund && !isComplete ? 'true' : undefined}
       >
         <div className={styles.excelRowNumber} />
         <div className={styles.excelRowLabel} />
@@ -644,6 +653,7 @@ export function FinancialAssetRows({
       <div
         className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsOther && !isComplete ? styles.excelRowCurrent : ''}`}
         onClick={() => onFocus('asset')}
+        data-current={isCurrent && needsOther && !isComplete ? 'true' : undefined}
       >
         <div className={styles.excelRowNumber} />
         <div className={styles.excelRowLabel} />
@@ -761,13 +771,14 @@ export function DebtRows({
   const isActive = activeRow === 'debt'
   const isCurrent = currentRowId === 'debt'
   const debts = data.debts
+  const hasNoDebt = data.hasNoDebt
 
-  // 완료 조건: 하나 이상의 부채 항목이 이름과 금액이 입력됨
-  const isComplete = debts.some(d => d.name && d.name.trim() !== '' && d.amount !== null && d.amount > 0)
+  // 완료 조건: 부채 없음 선택됨 or 하나 이상의 부채 항목이 이름과 금액이 입력됨
+  const isComplete = hasNoDebt === true || debts.some(d => d.name && d.name.trim() !== '' && d.amount !== null && d.amount > 0)
 
   // 부채 항목 추가
   const addDebt = () => {
-    onUpdateData({ debts: [...debts, createEmptyDebt()] })
+    onUpdateData({ hasNoDebt: false, debts: [...debts, createEmptyDebt()] })
   }
 
   // 부채 항목 업데이트
@@ -780,7 +791,7 @@ export function DebtRows({
   const deleteDebt = (index: number) => {
     if (debts.length <= 1) {
       // 마지막 항목 삭제 시 빈 배열로 → 초기 버튼 UI로 복귀
-      onUpdateData({ debts: [] })
+      onUpdateData({ debts: [], hasNoDebt: null })
     } else {
       onUpdateData({ debts: debts.filter((_, i) => i !== index) })
     }
@@ -791,12 +802,43 @@ export function DebtRows({
     onUpdateData({ debts: [createEmptyDebt()] })
   }
 
+  // 부채 없음 선택됨
+  if (hasNoDebt === true) {
+    return (
+      <div
+        className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''}`}
+        onClick={() => onFocus('debt')}
+      >
+        <div className={styles.excelRowNumber}>
+          <Check size={14} />
+        </div>
+        <div className={styles.excelRowLabel}>부채</div>
+        <div className={styles.excelRowInputMulti}>
+          <div className={styles.excelValueCells}>
+            <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
+              부채 없음
+            </div>
+            <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`} />
+            <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`} />
+            <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
+            <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}>
+              <button onClick={(e) => { e.stopPropagation(); onUpdateData({ hasNoDebt: null }) }} type="button">
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // 부채가 없으면 추가 버튼만 표시
   if (debts.length === 0) {
     return (
       <div
         className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isCurrent ? styles.excelRowCurrent : ''}`}
         onClick={() => onFocus('debt')}
+        data-current={isCurrent ? 'true' : undefined}
       >
         <div className={styles.excelRowNumber}>{baseRowIndex}</div>
         <div className={styles.excelRowLabel}>부채</div>
@@ -809,9 +851,9 @@ export function DebtRows({
           </span>
           <span
             className={styles.excelAddText}
-            onClick={(e) => { e.stopPropagation(); /* 해당없음 처리 - 빈 상태 유지 */ }}
+            onClick={(e) => { e.stopPropagation(); onUpdateData({ hasNoDebt: true, debts: [] }) }}
           >
-            해당 없음
+            부채 없음
           </span>
         </div>
       </div>
@@ -830,6 +872,7 @@ export function DebtRows({
             <div
               className={`${styles.excelRow} ${!isFirstDebt ? styles.excelRowExtension : ''} ${isActive ? styles.excelRowActive : ''} ${isCurrent && isFirstDebt && !isComplete ? styles.excelRowCurrent : ''}`}
               onClick={() => onFocus('debt')}
+              data-current={isCurrent && isFirstDebt && !isComplete ? 'true' : undefined}
             >
               <div className={styles.excelRowNumber}>
                 {isFirstDebt ? (isComplete ? <Check size={14} /> : baseRowIndex) : null}

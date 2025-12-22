@@ -1466,6 +1466,24 @@
   background: linear-gradient(180deg, #f9f7f4 0%, #f3ede6 100%);
 }
 
+/* 새 레이아웃: 가이드 입력 (왼쪽) + 스프레드시트 (오른쪽) */
+.guidePanel {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #fafafa 0%, #f5f5f4 100%);
+  overflow-y: auto;
+}
+
+.spreadsheetPanel {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
 .asideTip {
   padding: 20px;
   background-color: white;
@@ -1494,6 +1512,15 @@
   }
 
   .spreadsheetPageAside {
+    display: none;
+  }
+
+  .guidePanel {
+    width: 100%;
+    height: 100%;
+  }
+
+  .spreadsheetPanel {
     display: none;
   }
 
@@ -2133,6 +2160,23 @@
 }
 
 .excelAddText:hover {
+  color: #78716c;
+}
+
+.excelSelectedText {
+  font-size: 14px;
+  color: #57534e;
+  font-weight: 500;
+}
+
+.excelChangeText {
+  font-size: 13px;
+  color: #a8a29e;
+  cursor: pointer;
+  margin-left: 12px;
+}
+
+.excelChangeText:hover {
   color: #78716c;
 }
 

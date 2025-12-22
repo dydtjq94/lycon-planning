@@ -1,0 +1,1047 @@
+.container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.questionSection {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.question {
+  font-size: 32px;
+  font-weight: 600;
+  color: #1c1917;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+
+.description {
+  font-size: 15px;
+  color: #a8a29e;
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.inputSection {
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 글래스 입력 필드 */
+.textInput {
+  width: 280px;
+  padding: 18px 24px;
+  font-size: 17px;
+  font-weight: 400;
+  border: none;
+  border-radius: 16px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.textInput:focus {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.textInput::placeholder {
+  color: #d6d3d1;
+}
+
+.dateInputGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.dateInput {
+  padding: 18px 24px;
+  font-size: 17px;
+  border: none;
+  border-radius: 16px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.dateInput:focus {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.ageDisplay {
+  font-size: 14px;
+  color: #a8a29e;
+  font-weight: 500;
+}
+
+.numberInputGroup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.numberInput {
+  width: 140px;
+  padding: 18px 20px;
+  font-size: 28px;
+  font-weight: 500;
+  border: none;
+  border-radius: 16px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+.numberInput:focus {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.numberInput::placeholder {
+  color: #e7e5e4;
+}
+
+/* 숫자 입력 스피너 제거 */
+.numberInput::-webkit-outer-spin-button,
+.numberInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.numberInput[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.unit {
+  font-size: 17px;
+  color: #78716c;
+  font-weight: 500;
+}
+
+.numberInputWithDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.actualAmount {
+  font-size: 15px;
+  color: #a8a29e;
+  font-weight: 500;
+}
+
+.buttonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.optionButton {
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #57534e;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.optionButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.optionButtonActive {
+  background: #1c1917;
+  color: white;
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.optionButtonActive:hover {
+  background: #1c1917;
+}
+
+.tipSection {
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 320px;
+}
+
+.tipLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: #a8a29e;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.tipText {
+  font-size: 14px;
+  color: #78716c;
+  margin: 6px 0 0 0;
+  line-height: 1.5;
+}
+
+.stepIndicator {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #a8a29e;
+  margin-bottom: 12px;
+}
+
+.navigation {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 48px;
+  background: rgba(250, 250, 250, 0.95);
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.navButtonPrev {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #78716c;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navButtonPrev:hover:not(:disabled) {
+  color: #57534e;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.navButtonPrev:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.navButtonNext {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  background: #1c1917;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navButtonNext:hover:not(:disabled) {
+  background: #292524;
+}
+
+.navButtonNext:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.navButtonComplete {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  background: #1c1917;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navButtonComplete:hover:not(:disabled) {
+  background: #292524;
+}
+
+.navButtonComplete:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.placeholder {
+  font-size: 15px;
+  color: #a8a29e;
+  text-align: center;
+}
+
+/* 자녀 입력 섹션 */
+.childrenSection {
+  width: 100%;
+  max-width: 360px;
+}
+
+.childrenList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.childItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.childLabel {
+  font-size: 15px;
+  font-weight: 500;
+  color: #57534e;
+  min-width: 36px;
+}
+
+.childDateInput {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 15px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.04);
+  outline: none;
+  transition: background 0.2s;
+}
+
+.childDateInput:focus {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.childAge {
+  font-size: 14px;
+  color: #a8a29e;
+  min-width: 36px;
+  text-align: right;
+}
+
+.childDeleteButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #a8a29e;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.childDeleteButton:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #57534e;
+}
+
+.childrenAddButtons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.addChildButton {
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #57534e;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.addChildButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.childrenHint {
+  font-size: 14px;
+  color: #a8a29e;
+  text-align: center;
+  margin-top: 16px;
+}
+
+/* 생년월일 + 배우자 섹션 */
+.birthDateSection {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.personRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.personLabel {
+  font-size: 15px;
+  font-weight: 500;
+  color: #57534e;
+  min-width: 48px;
+}
+
+.spouseSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.addSpouseButton {
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #57534e;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.addSpouseButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.removeSpouseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #a8a29e;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+
+.removeSpouseButton:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #57534e;
+}
+
+/* 은퇴 나이 섹션 */
+.retirementAgeSection {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.numberInputGroupInline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.numberInputSmall {
+  width: 80px;
+  padding: 10px 12px;
+  font-size: 18px;
+  font-weight: 500;
+  border: none;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.04);
+  outline: none;
+  text-align: center;
+  transition: background 0.2s;
+}
+
+.numberInputSmall:focus {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.numberInputSmall::placeholder {
+  color: #d6d3d1;
+}
+
+.numberInputSmall::-webkit-outer-spin-button,
+.numberInputSmall::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.numberInputSmall[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* 부동산 섹션 */
+.realEstateSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.realEstateInputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.realEstateRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.realEstateLabel {
+  font-size: 15px;
+  font-weight: 500;
+  color: #57534e;
+  min-width: 50px;
+}
+
+/* 금융자산 섹션 */
+.assetSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.assetGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.assetGroupLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #a8a29e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.assetRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.assetLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #57534e;
+  min-width: 60px;
+}
+
+.assetTotal {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1c1917;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+}
+
+/* 부채 섹션 */
+.debtSection {
+  width: 100%;
+  max-width: 340px;
+}
+
+.debtList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.debtCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.debtCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 4px;
+}
+
+.debtNameInput {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  outline: none;
+  transition: background 0.2s;
+}
+
+.debtNameInput:focus {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.debtNameInput::placeholder {
+  color: #d6d3d1;
+}
+
+.debtRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.debtLabel {
+  font-size: 14px;
+  color: #78716c;
+  min-width: 40px;
+}
+
+.debtInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.debtInput {
+  width: 80px;
+  padding: 8px 10px;
+  font-size: 15px;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  outline: none;
+  text-align: right;
+  transition: background 0.2s;
+}
+
+.debtInput:focus {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.debtInput::placeholder {
+  color: #d6d3d1;
+}
+
+.debtInput::-webkit-outer-spin-button,
+.debtInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.debtInput[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.debtUnit {
+  font-size: 14px;
+  color: #78716c;
+  font-weight: 500;
+  min-width: 28px;
+}
+
+.debtMonthInput {
+  padding: 8px 10px;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  outline: none;
+  transition: background 0.2s;
+}
+
+.debtMonthInput:focus {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.debtSelect {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  outline: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.debtSelect:focus {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.debtDeleteButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #a8a29e;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.debtDeleteButton:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #57534e;
+}
+
+.debtButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.noDebtButton {
+  flex: 1;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #57534e;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.noDebtButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.noDebtButtonActive {
+  background: #1c1917;
+  color: white;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.noDebtButtonActive:hover {
+  background: #1c1917;
+}
+
+.addDebtButton {
+  flex: 1;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #57534e;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.addDebtButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* 연금 섹션 */
+.pensionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.pensionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.pensionLabel {
+  font-size: 15px;
+  font-weight: 500;
+  color: #57534e;
+  min-width: 100px;
+}
+
+.pensionHint {
+  font-size: 14px;
+  color: #a8a29e;
+  text-align: center;
+  margin: 0;
+}
+
+.pensionTotal {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1c1917;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+}
+
+.buttonGroupSmall {
+  display: flex;
+  gap: 8px;
+}
+
+.typeButton {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #57534e;
+  background: rgba(0, 0, 0, 0.04);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.typeButton:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.typeButtonActive {
+  background: #1c1917;
+  color: white;
+}
+
+.typeButtonActive:hover {
+  background: #1c1917;
+}
+
+.complete {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.completeTitle {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1c1917;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.completeDescription {
+  font-size: 15px;
+  color: #a8a29e;
+  margin: 0;
+}
+
+/* Slide animations */
+.content {
+  /* Animation applied via slideInFromRight or slideInFromLeft classes */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 48px 40px;
+  overflow-y: auto;
+}
+
+.slideOutLeft {
+  animation: slideOutToLeft 0.2s ease-in forwards;
+}
+
+.slideOutRight {
+  animation: slideOutToRight 0.2s ease-in forwards;
+}
+
+.slideInFromRight {
+  animation: slideInFromRight 0.25s ease-out;
+}
+
+.slideInFromLeft {
+  animation: slideInFromLeft 0.25s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}

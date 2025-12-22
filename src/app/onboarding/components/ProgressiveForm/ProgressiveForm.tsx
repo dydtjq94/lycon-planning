@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import type { OnboardingData, AssetInput } from '@/types'
-import { Check, Loader2, ArrowRight } from 'lucide-react'
+import { Check } from 'lucide-react'
 import styles from '../../onboarding.module.css'
 
 import {
@@ -53,12 +53,46 @@ export function ProgressiveForm({
   onActiveRowChange,
   activeSection,
   onSectionChange,
-  onComplete,
-  isCompleteDisabled,
-  isSaving
+  currentStepIndex = 0
 }: ProgressiveFormProps) {
   const [activeRow, setActiveRow] = useState<RowId>('name')
   const [visibleSection, setVisibleSection] = useState<SectionId>('basic')
+
+  // currentStepIndex와 activeRow 동기화
+  useEffect(() => {
+    if (currentStepIndex >= 0 && currentStepIndex < rows.length) {
+      const targetRowId = rows[currentStepIndex].id
+      if (activeRow !== targetRowId) {
+        setActiveRow(targetRowId)
+      }
+    }
+  }, [currentStepIndex, activeRow])
+
+  // 현재 행으로 자동 스크롤
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    // 약간의 딜레이 후 스크롤 (DOM 업데이트 대기)
+    const timer = setTimeout(() => {
+      const currentRowElement = container.querySelector('[data-current="true"]') as HTMLElement
+      if (currentRowElement) {
+        const containerRect = container.getBoundingClientRect()
+        const rowRect = currentRowElement.getBoundingClientRect()
+        const headerHeight = 80 // 헤더 + 프로그레스바 높이
+
+        // 현재 스크롤 위치에서 행이 보이는 위치로 계산
+        const scrollTop = container.scrollTop + (rowRect.top - containerRect.top) - headerHeight
+
+        container.scrollTo({
+          top: Math.max(0, scrollTop),
+          behavior: 'smooth'
+        })
+      }
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [currentStepIndex])
 
   // 섹션 헤더 ref들 (Intersection Observer용)
   const sectionRefs = useRef<Record<SectionId, HTMLDivElement | null>>({
@@ -82,29 +116,15 @@ export function ProgressiveForm({
   })
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-  // 체크된 항목 + 다음 해야 할 항목 하나만 표시 (프로그레시브 로직)
+  // 현재 스텝까지의 모든 행 표시
   const visibleRows = useMemo(() => {
-    const visible: RowId[] = []
-    let foundFirstIncomplete = false
+    return rows.slice(0, currentStepIndex + 1).map(row => row.id)
+  }, [currentStepIndex])
 
-    for (const row of rows) {
-      if (row.isComplete(data)) {
-        visible.push(row.id)
-      } else if (!foundFirstIncomplete) {
-        visible.push(row.id)
-        foundFirstIncomplete = true
-      }
-    }
-
-    return visible
-  }, [data])
-
-  // 현재 해야 할 첫 번째 미완료 행 찾기
+  // 현재 스텝의 행 ID
   const currentRowId = useMemo(() => {
-    const targetRows = rows.filter(row => visibleRows.includes(row.id))
-    const firstIncomplete = targetRows.find(row => !row.isComplete(data))
-    return firstIncomplete?.id || null
-  }, [data, visibleRows])
+    return currentStepIndex < rows.length ? rows[currentStepIndex].id : null
+  }, [currentStepIndex])
 
   // Intersection Observer로 현재 보이는 섹션 감지
   useEffect(() => {
@@ -363,6 +383,7 @@ export function ProgressiveForm({
           activeRow={activeRow}
           currentRowId={currentRowId}
           baseRowIndex={baseRowIndex}
+          visibleRows={visibleRows}
         />
       )
     }
@@ -388,6 +409,7 @@ export function ProgressiveForm({
           <div
             className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isComplete ? styles.excelRowComplete : ''} ${isMainCurrent ? styles.excelRowCurrent : ''}`}
             onClick={() => handleRowFocus(rowConfig.id)}
+            data-current={isMainCurrent ? 'true' : undefined}
           >
             <div className={styles.excelRowNumber}>
               {isComplete ? <Check size={14} /> : rowNumber}
@@ -416,6 +438,7 @@ export function ProgressiveForm({
           <div
             className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isComplete ? styles.excelRowComplete : ''} ${isMainCurrent ? styles.excelRowCurrent : ''}`}
             onClick={() => handleRowFocus(rowConfig.id)}
+            data-current={isMainCurrent ? 'true' : undefined}
           >
             <div className={styles.excelRowNumber}>
               {isComplete ? <Check size={14} /> : rowNumber}
@@ -441,6 +464,7 @@ export function ProgressiveForm({
         key={rowConfig.id}
         className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isComplete ? styles.excelRowComplete : ''} ${isCurrent ? styles.excelRowCurrent : ''}`}
         onClick={() => handleRowFocus(rowConfig.id)}
+        data-current={isCurrent ? 'true' : undefined}
       >
         <div className={styles.excelRowNumber}>
           {isComplete ? <Check size={14} /> : rowNumber}
@@ -502,10 +526,6 @@ export function ProgressiveForm({
   const totalCount = rows.length
   const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
-  // 필수 항목 완료 여부 (basic 섹션의 필수 항목들)
-  const requiredRows = rows.filter(row => ['name', 'birth_date', 'children', 'retirement_age', 'retirement_fund'].includes(row.id))
-  const allRequiredComplete = requiredRows.every(row => row.isComplete(data))
-
   return (
     <div className={styles.excelWrapper}>
       <div className={styles.excelContainer} ref={scrollContainerRef}>
@@ -551,32 +571,6 @@ export function ProgressiveForm({
         })}
       </div>
 
-      {onComplete && (
-        <div className={styles.excelBottomNav}>
-          <div className={styles.excelBottomNavInfo}>
-            <span className={styles.excelBottomNavCount}>
-              {completedCount} / {totalCount} 완료
-            </span>
           </div>
-          <button
-            className={styles.excelBottomNavButton}
-            onClick={onComplete}
-            disabled={isCompleteDisabled || !allRequiredComplete}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 size={16} className={styles.spinner} />
-                저장 중...
-              </>
-            ) : (
-              <>
-                완료하기
-                <ArrowRight size={16} />
-              </>
-            )}
-          </button>
-        </div>
-      )}
-    </div>
   )
 }

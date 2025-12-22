@@ -98,7 +98,7 @@ export function SpouseLaborIncomeRow({
   const isSpouseCurrent = isCurrent && data.laborIncome !== null && data.spouseLaborIncome === null;
 
   return (
-    <div className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isSpouseCurrent ? styles.excelRowCurrent : ''}`}>
+    <div className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isSpouseCurrent ? styles.excelRowCurrent : ''}`} data-current={isSpouseCurrent ? 'true' : undefined}>
       <div className={styles.excelRowNumber}></div>
       <div className={styles.excelRowLabel}></div>
       <div className={styles.excelRowInputMulti}>
@@ -201,7 +201,7 @@ export function SpouseBusinessIncomeRow({
   const isSpouseCurrent = isCurrent && data.businessIncome !== null && data.spouseBusinessIncome === null;
 
   return (
-    <div className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isSpouseCurrent ? styles.excelRowCurrent : ''}`}>
+    <div className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isSpouseCurrent ? styles.excelRowCurrent : ''}`} data-current={isSpouseCurrent ? 'true' : undefined}>
       <div className={styles.excelRowNumber}></div>
       <div className={styles.excelRowLabel}></div>
       <div className={styles.excelRowInputMulti}>

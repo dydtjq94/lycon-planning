@@ -37,6 +37,7 @@ export interface ProgressiveFormProps {
   onComplete?: () => void
   isCompleteDisabled?: boolean
   isSaving?: boolean
+  currentStepIndex?: number
 }
 
 // Row Input Props (공통)
@@ -179,31 +180,31 @@ export const rows: RowConfig[] = [
     id: 'debt',
     label: '부채',
     isVisible: (_, visible) => visible.includes('asset'),
-    isComplete: (data) => data.debts.some(i => i.name && i.name.trim() !== '' && i.amount !== null && i.amount > 0),
+    isComplete: (data) => data.hasNoDebt === true || data.debts.some(i => i.name && i.name.trim() !== '' && i.amount !== null && i.amount > 0),
   },
   // 연금 (한국형 3층 연금)
   {
     id: 'national_pension',
     label: '국민연금',
     isVisible: (_, visible) => visible.includes('debt'),
-    isComplete: (data) => data.pensions.some(i => i.subcategory === '국민연금' && i.amount !== null && i.amount > 0),
+    isComplete: (data) => data.nationalPension != null && data.nationalPension > 0,
   },
   {
     id: 'retirement_pension',
     label: '퇴직연금',
     isVisible: (_, visible) => visible.includes('national_pension'),
-    isComplete: (data) => data.pensions.some(i => i.subcategory === '퇴직연금' && i.amount !== null && i.amount > 0),
+    isComplete: (data) => data.retirementPensionBalance != null && data.retirementPensionBalance > 0,
   },
   {
     id: 'personal_pension',
     label: '개인연금',
     isVisible: (_, visible) => visible.includes('retirement_pension'),
-    isComplete: (data) => data.pensions.some(i => i.subcategory === '개인연금' && i.amount !== null && i.amount > 0),
+    isComplete: (data) => data.personalPensionBalance != null && data.personalPensionBalance > 0,
   },
   {
     id: 'other_pension',
     label: '기타연금',
     isVisible: (_, visible) => visible.includes('personal_pension'),
-    isComplete: (data) => data.pensions.some(i => i.subcategory === '기타연금' && i.amount !== null && i.amount > 0),
+    isComplete: (data) => data.otherPensionMonthly != null && data.otherPensionMonthly > 0,
   },
 ]

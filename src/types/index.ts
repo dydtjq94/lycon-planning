@@ -128,6 +128,17 @@ export interface OnboardingData {
 
   // 부채 목록
   debts: DebtInput[]
+  hasNoDebt: boolean | null  // null = 아직 선택 안함, true = 부채 없음
+
+  // 연금
+  nationalPension: number | null           // 국민연금 예상 월 수령액
+  nationalPensionStartAge: number | null   // 국민연금 수령 시작 나이
+  retirementPensionType: 'DB' | 'DC' | null  // 퇴직연금 유형
+  retirementPensionBalance: number | null  // 퇴직연금 현재 잔액
+  personalPensionMonthly: number | null    // 개인연금 월 납입액
+  personalPensionBalance: number | null    // 개인연금 현재 잔액
+  otherPensionMonthly: number | null       // 기타연금 예상 월 수령액
+  hasNoPension: boolean | null             // null = 아직 선택 안함, true = 연금 없음
 
   // 기존 배열 (추후 상세 입력용, 현재 미사용)
   incomes: AssetInput[]

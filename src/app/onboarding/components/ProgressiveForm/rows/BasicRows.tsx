@@ -81,6 +81,7 @@ export function BirthDateRows({
           isMainCurrent ? styles.excelRowCurrent : ""
         }`}
         onClick={() => onFocus("birth_date")}
+        data-current={isMainCurrent ? "true" : undefined}
       >
         <div className={styles.excelRowNumber}>
           {isComplete ? <Check size={14} /> : baseRowIndex}
@@ -126,6 +127,7 @@ export function BirthDateRows({
             isActive ? styles.excelRowActive : ""
           } ${isSpouseCurrent ? styles.excelRowCurrent : ""}`}
           onClick={() => onFocus("birth_date")}
+          data-current={isSpouseCurrent ? "true" : undefined}
         >
           <div className={styles.excelRowNumber}></div>
           <div className={styles.excelRowLabel}></div>
@@ -261,6 +263,7 @@ export function ChildrenRows({
               isComplete ? styles.excelRowComplete : ""
             } ${isCurrent && !child.birth_date ? styles.excelRowCurrent : ""}`}
             onClick={() => onFocus("children")}
+            data-current={isCurrent && !child.birth_date ? "true" : undefined}
           >
             <div className={styles.excelRowNumber}>
               {isFirst ? isComplete ? <Check size={14} /> : baseRowIndex : null}
@@ -328,6 +331,7 @@ export function ChildrenRows({
           isCurrent && data.children.length === 0 ? styles.excelRowCurrent : ""
         }`}
         onClick={() => onFocus("children")}
+        data-current={isCurrent && data.children.length === 0 ? "true" : undefined}
       >
         <div className={styles.excelRowNumber}>
           {data.children.length === 0 ? baseRowIndex : null}
@@ -432,6 +436,7 @@ export function RetirementAgeRows({
           isMainCurrent ? styles.excelRowCurrent : ""
         }`}
         onClick={() => onFocus("retirement_age")}
+        data-current={isMainCurrent ? "true" : undefined}
       >
         <div className={styles.excelRowNumber}>
           {isComplete ? <Check size={14} /> : baseRowIndex}
@@ -483,6 +488,7 @@ export function RetirementAgeRows({
             isActive ? styles.excelRowActive : ""
           } ${isSpouseCurrent ? styles.excelRowCurrent : ""}`}
           onClick={() => onFocus("retirement_age")}
+          data-current={isSpouseCurrent ? "true" : undefined}
         >
           <div className={styles.excelRowNumber}></div>
           <div className={styles.excelRowLabel}></div>

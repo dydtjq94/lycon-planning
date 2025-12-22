@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Check } from "lucide-react";
 import type { OnboardingData, AssetCategory } from "@/types";
-import { ProgressiveForm, type SectionId } from "./components";
-import { getRowTip, getDynamicTip } from "./tips";
+import { ProgressiveForm, type SectionId, GuideInput } from "./components";
+import { rows, type RowId } from "./components/ProgressiveForm/types";
 import styles from "./onboarding.module.css";
 
 // 진행률 계산 함수 (나중에 진행률 바에 사용 예정)
@@ -100,6 +100,16 @@ const initialData: OnboardingData = {
   realEstates: [],
   assets: [],
   debts: [],
+  hasNoDebt: null,
+  // 연금
+  nationalPension: null,
+  nationalPensionStartAge: null,
+  retirementPensionType: null,
+  retirementPensionBalance: null,
+  personalPensionMonthly: null,
+  personalPensionBalance: null,
+  otherPensionMonthly: null,
+  hasNoPension: null,
   pensions: [],
 };
 
@@ -178,13 +188,21 @@ const sampleData: OnboardingData = {
       repaymentType: '원리금균등상환',
     },
   ],
+  hasNoDebt: false,
   incomes: [],
   expenses: [],
   realEstates: [],
   assets: [],
-  pensions: [
-    { name: "국민연금 (예상)", amount: 1800000, frequency: "monthly" },
-  ],
+  // 연금 샘플
+  nationalPension: 1800000,          // 예상 월 180만원
+  nationalPensionStartAge: 65,       // 65세부터 수령
+  retirementPensionType: 'DC',       // DC형
+  retirementPensionBalance: 80000000, // 현재 8천만원
+  personalPensionMonthly: 500000,    // 월 50만원 납입
+  personalPensionBalance: 30000000,  // 현재 3천만원
+  otherPensionMonthly: null,         // 기타연금 없음
+  hasNoPension: false,
+  pensions: [],
 };
 
 const greetingMessages = [
@@ -199,12 +217,12 @@ export default function OnboardingPage() {
   const [started, setStarted] = useState(false);
   const [data, setData] = useState<OnboardingData>(initialData);
   const [activeSection, setActiveSection] = useState<SectionId>("basic");
-  const [activeRow, setActiveRow] = useState<string>("name");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [currentText, setCurrentText] = useState("");
   const [showContent, setShowContent] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
 
   // 자동 저장 상태
   const [autoSaveStatus, setAutoSaveStatus] = useState<
@@ -213,6 +231,25 @@ export default function OnboardingPage() {
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedDataRef = useRef<string>("");
   const [isLoading, setIsLoading] = useState(true);
+
+  // 현재 스텝의 rowId
+  const currentRowId = stepIndex < rows.length ? rows[stepIndex].id : null;
+  const currentRow = stepIndex < rows.length ? rows[stepIndex] : null;
+  const isCurrentRowComplete = currentRow ? currentRow.isComplete(data) : false;
+  const isLastStep = stepIndex === rows.length - 1;
+
+  // 이전/다음 핸들러
+  const handlePrevStep = useCallback(() => {
+    if (stepIndex > 0) {
+      setStepIndex(stepIndex - 1);
+    }
+  }, [stepIndex]);
+
+  const handleNextStep = useCallback(() => {
+    if (stepIndex < rows.length - 1 && isCurrentRowComplete) {
+      setStepIndex(stepIndex + 1);
+    }
+  }, [stepIndex, isCurrentRowComplete]);
 
   // 페이지 로드 시 임시 저장 데이터 복원
   useEffect(() => {
@@ -366,85 +403,6 @@ export default function OnboardingPage() {
       }
     };
   }, [data, started, autoSave]);
-
-
-  // 제안 항목 클릭시 추가/제거 토글
-  const handleToggleSuggestion = (name: string) => {
-    // 다른 섹션들 (기존 로직)
-    const keyMap: Record<SectionId, keyof OnboardingData | null> = {
-      basic: null,
-      income: "incomes",
-      expense: "expenses",
-      realEstate: "realEstates",
-      asset: "assets",
-      debt: "debts",
-      pension: "pensions",
-    };
-    const key = keyMap[activeSection];
-
-    if (!key) return;
-
-    const items = data[key] as Array<{
-      name: string;
-      amount: number | null;
-      frequency: "monthly" | "yearly" | "once";
-    }>;
-
-    const existingIndex = items.findIndex((item) => item.name === name);
-
-    if (existingIndex >= 0) {
-      const newItems = items.filter((_, index) => index !== existingIndex);
-      if (newItems.length === 0) {
-        newItems.push({ name: "", amount: null, frequency: "monthly" });
-      }
-      setData((prev) => ({ ...prev, [key]: newItems }));
-    } else {
-      const emptyIndex = items.findIndex(
-        (item) => !item.name && item.amount === null
-      );
-      if (emptyIndex >= 0) {
-        const newItems = [...items];
-        newItems[emptyIndex] = { ...newItems[emptyIndex], name };
-        setData((prev) => ({ ...prev, [key]: newItems }));
-      } else {
-        setData((prev) => ({
-          ...prev,
-          [key]: [...items, { name, amount: null, frequency: "monthly" }],
-        }));
-      }
-    }
-  };
-
-  // 제안 항목이 이미 추가되었는지 확인
-  const isSuggestionAdded = (name: string): boolean => {
-    const keyMap: Record<SectionId, keyof OnboardingData | null> = {
-      basic: null,
-      income: "incomes",
-      expense: "expenses",
-      realEstate: "realEstates",
-      asset: "assets",
-      debt: "debts",
-      pension: "pensions",
-    };
-    const key = keyMap[activeSection];
-    if (!key) return false;
-    const items = data[key] as Array<{ name: string }>;
-    return items.some((item) => item.name === name);
-  };
-
-  // row-based TIP을 사용하는 행 ID들 (기본 정보 + 소득/지출)
-  const rowBasedTipIds = [
-    'name', 'birth_date', 'children', 'retirement_age', 'retirement_fund',  // 기본 정보
-    'labor_income', 'business_income', 'living_expenses',  // 소득/지출
-  ];
-  const currentTip = useMemo(() => {
-    if (rowBasedTipIds.includes(activeRow)) {
-      return getRowTip(activeRow, data);
-    }
-    return getDynamicTip(activeSection, data);
-  }, [activeRow, activeSection, data]);
-  // progress는 나중에 진행률 바에 사용할 수 있도록 유지
-  // const progress = useMemo(() => calculateProgress(data), [data]);
 
   // 데이터 저장
   const saveData = async (dataToSave: OnboardingData) => {
@@ -764,7 +722,23 @@ export default function OnboardingPage() {
       </header>
 
       <div className={styles.spreadsheetPageContent}>
-        <div className={styles.spreadsheetPageMain}>
+        {/* 왼쪽: 가이드 입력 영역 */}
+        <div className={styles.guidePanel}>
+          <GuideInput
+            data={data}
+            onUpdateData={updateData}
+            currentRowId={currentRowId as RowId | null}
+            onPrev={handlePrevStep}
+            onNext={handleNextStep}
+            canGoPrev={stepIndex > 0}
+            canGoNext={isCurrentRowComplete}
+            onComplete={handleSubmit}
+            isLastStep={isLastStep}
+          />
+        </div>
+
+        {/* 오른쪽: 스프레드시트 (동기화) */}
+        <div className={styles.spreadsheetPanel}>
           {error && <div className={styles.errorBox}>{error}</div>}
 
           <ProgressiveForm
@@ -773,11 +747,8 @@ export default function OnboardingPage() {
             onComplete={handleSubmit}
             isCompleteDisabled={saving || !data.name || !data.birth_date}
             isSaving={saving}
+            currentStepIndex={stepIndex}
             onActiveRowChange={(rowId) => {
-              // 활성 행 업데이트
-              setActiveRow(rowId);
-
-              // 행 ID에 따라 섹션 자동 전환
               const rowToSection: Record<string, SectionId> = {
                 name: "basic",
                 birth_date: "basic",
@@ -802,101 +773,6 @@ export default function OnboardingPage() {
             onSectionChange={setActiveSection}
           />
         </div>
-
-        <aside className={styles.spreadsheetPageAside}>
-          <div className={styles.contextPanel}>
-            <div
-              key={`${activeRow}-${currentTip.title}`}
-              className={styles.contextCard}
-            >
-              <span className={styles.contextLabel}>TIP</span>
-              <h3 className={styles.contextTitle}>{currentTip.title}</h3>
-              <p className={styles.contextDescription}>
-                {currentTip.description}
-              </p>
-              {currentTip.guides && currentTip.guides.length > 0 && (
-                <ul className={styles.contextGuides}>
-                  {currentTip.guides.map((guide, index) => (
-                    <li key={index}>{guide}</li>
-                  ))}
-                </ul>
-              )}
-              {currentTip.suggestionGroups &&
-                currentTip.suggestionGroups.length > 0 && (
-                  <div className={styles.contextSuggestions}>
-                    {currentTip.suggestionGroups.map((group) => (
-                      <div
-                        key={group.label}
-                        className={styles.contextSuggestionGroup}
-                      >
-                        <span className={styles.contextSuggestionsLabel}>
-                          {group.label}
-                        </span>
-                        <div className={styles.contextSuggestionsList}>
-                          {group.items.map((suggestion) => {
-                            const isAdded = isSuggestionAdded(suggestion);
-                            return (
-                              <button
-                                key={suggestion}
-                                className={`${styles.contextSuggestionBtn} ${
-                                  isAdded
-                                    ? styles.contextSuggestionBtnAdded
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleToggleSuggestion(suggestion)
-                                }
-                              >
-                                {suggestion}
-                                {isAdded && " ✓"}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              {currentTip.suggestions && currentTip.suggestions.length > 0 && (
-                <div className={styles.contextSuggestions}>
-                  <span className={styles.contextSuggestionsLabel}>
-                    클릭해서 추가
-                  </span>
-                  <div className={styles.contextSuggestionsList}>
-                    {currentTip.suggestions.map((suggestion) => {
-                      const isAdded = isSuggestionAdded(suggestion);
-                      return (
-                        <button
-                          key={suggestion}
-                          className={`${styles.contextSuggestionBtn} ${
-                            isAdded ? styles.contextSuggestionBtnAdded : ""
-                          }`}
-                          onClick={() => handleToggleSuggestion(suggestion)}
-                        >
-                          {suggestion}
-                          {isAdded && " ✓"}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              {currentTip.insight && (
-                <p className={styles.contextInsight}>{currentTip.insight}</p>
-              )}
-              {currentTip.stat && (
-                <div className={styles.contextStat}>
-                  <div className={styles.contextStatValue}>
-                    {currentTip.stat}
-                  </div>
-                  <div className={styles.contextStatLabel}>
-                    {currentTip.statLabel}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </aside>
       </div>
     </div>
   );
