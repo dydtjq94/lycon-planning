@@ -16,7 +16,7 @@
 
 .topProgressFill {
   height: 100%;
-  background-color: #d97706;
+  background-color: #525252;
   transition: width 0.4s ease;
 }
 
@@ -1300,12 +1300,35 @@
 
 .spreadsheetPageHeader {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 32px;
+  flex-direction: column;
   background-color: white;
   border-bottom: 1px solid #e7e5e4;
   flex-shrink: 0;
+}
+
+.headerMain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 32px;
+}
+
+@media (max-width: 768px) {
+  .headerMain {
+    padding: 12px 12px;
+  }
+}
+
+.headerProgressBar {
+  height: 3px;
+  background-color: #f5f5f4;
+}
+
+.headerProgressFill {
+  height: 100%;
+  background: #007aff;
+  transition: width 0.4s ease;
+  border-radius: 0 2px 2px 0;
 }
 
 .spreadsheetPageLogo {
@@ -1541,6 +1564,38 @@
   }
 }
 
+/* 오른쪽 패널 분할 레이아웃 */
+.rightPanelSplit {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.rightPanelTop {
+  height: 280px;
+  min-height: 280px;
+  background-color: #fafaf9;
+  border-bottom: 1px solid #e7e5e4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rightPanelTopPlaceholder {
+  color: #a8a29e;
+  font-size: 14px;
+  text-align: center;
+}
+
+.rightPanelBottom {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 /* 엑셀 스타일 프로그레시브 폼 */
 .excelWrapper {
   display: flex;
@@ -1571,20 +1626,6 @@
   position: sticky;
   top: 0;
   z-index: 10;
-}
-
-.excelProgressBar {
-  height: 3px;
-  background-color: #e7e5e4;
-  position: sticky;
-  top: 32px;
-  z-index: 10;
-}
-
-.excelProgressFill {
-  height: 100%;
-  background-color: #d97706;
-  transition: width 0.3s ease;
 }
 
 .excelHeaderNumber,
@@ -1668,14 +1709,16 @@
 }
 
 /* 현재 입력해야 할 셀 강조 - 셀 단위로 border 표시 */
-.excelRowCurrent .excelValueCell:has(input:not(:focus):not([data-filled="true"])),
+.excelRowCurrent
+  .excelValueCell:has(input:not(:focus):not([data-filled="true"])),
 .excelRowCurrent .excelValueCell:has(select:not(:focus)) {
   background-color: #fef3c7;
   box-shadow: inset 0 0 0 2px #f59e0b;
 }
 
 /* 단일 입력 행 (셀 구조 아닌 경우) */
-.excelRowCurrent .excelRowInput:has(input:not(:focus):not([data-filled="true"])) {
+.excelRowCurrent
+  .excelRowInput:has(input:not(:focus):not([data-filled="true"])) {
   background-color: #fef3c7;
   box-shadow: inset 0 0 0 2px #f59e0b;
   border-radius: 4px;
@@ -1818,6 +1861,16 @@
   color: #78716c;
 }
 
+.excelGenderToggle {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.excelGenderToggle:hover {
+  color: #1d1d1f;
+}
+
 .excelValueCellFrequency {
   width: 40px;
   min-width: 40px;
@@ -1914,6 +1967,28 @@
 }
 
 .excelValueCellAmountMid input:focus {
+  background: #fefce8 !important;
+  box-shadow: none !important;
+}
+
+/* 이름 입력 셀 (넓게) */
+.excelValueCellNameInput {
+  flex: 1;
+  min-width: 120px;
+}
+
+.excelValueCellNameInput input {
+  width: 100%;
+  height: 100%;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 8px !important;
+  font-size: 14px;
+  text-align: left;
+  background: transparent;
+}
+
+.excelValueCellNameInput input:focus {
   background: #fefce8 !important;
   box-shadow: none !important;
 }
@@ -2161,6 +2236,14 @@
 
 .excelAddText:hover {
   color: #78716c;
+}
+
+.excelCategoryLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #78716c;
+  padding: 0 8px 0 12px;
+  min-width: 72px;
 }
 
 .excelSelectedText {
@@ -2515,6 +2598,41 @@
 .loanTypeSelect:focus {
   outline: none;
   background-color: #fefce8;
+}
+
+/* 만기 없음 버튼 */
+.noMaturityButton {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #292524;
+  background: #f5f5f4;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.noMaturityButton:hover {
+  background: #e7e5e4;
+}
+
+.noMaturityToggle {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #78716c;
+  background: transparent;
+  border: 1px solid #d6d3d1;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.noMaturityToggle:hover {
+  background: #f5f5f4;
+  color: #292524;
 }
 
 /* 금리/수익률 입력 */
@@ -3712,7 +3830,7 @@
 /* 섹션 헤더 (sticky) */
 .excelSectionHeader {
   position: sticky;
-  top: 35px; /* excelHeader + progressBar 높이 */
+  top: 32px; /* excelHeader 높이 */
   z-index: 5;
   display: grid;
   grid-template-columns: 40px 1fr;
@@ -3720,6 +3838,7 @@
   background-color: #f5f5f4;
   border-bottom: 1px solid #e7e5e4;
   transition: background-color 0.2s;
+  scroll-margin-top: 32px; /* 스크롤 시 스티키 헤더 높이만큼 여백 */
 }
 
 .excelSectionHeaderNumber {

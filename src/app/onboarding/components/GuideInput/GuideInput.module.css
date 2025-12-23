@@ -4,273 +4,307 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  background: #ffffff;
 }
 
-.questionSection {
-  margin-bottom: 40px;
-  text-align: center;
+/* 상단 헤더 - 애플 스타일 */
+.header {
+  padding: 48px 48px 32px;
+  flex-shrink: 0;
+}
+
+.stepIndicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #007aff;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 50%;
+  margin-bottom: 16px;
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
 }
 
 .question {
-  font-size: 32px;
-  font-weight: 600;
-  color: #1c1917;
-  margin: 0 0 8px 0;
-  line-height: 1.2;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin: 0;
+  line-height: 1.15;
   letter-spacing: -0.5px;
+  margin-bottom: 8px;
 }
 
 .description {
-  font-size: 15px;
-  color: #a8a29e;
+  font-size: 17px;
+  color: #86868b;
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.4;
   font-weight: 400;
+}
+
+/* 스크롤 가능한 콘텐츠 영역 */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 48px 48px;
+  overflow-y: auto;
 }
 
 .inputSection {
-  margin-bottom: 32px;
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 
-/* 글래스 입력 필드 */
-.textInput {
-  width: 280px;
-  padding: 18px 24px;
-  font-size: 17px;
-  font-weight: 400;
+/* 이름 + 성별 섹션 */
+.nameSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.genderButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.genderButton {
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  background: #f5f5f7;
   border: none;
-  border-radius: 16px;
+  border-radius: 980px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.genderButton:hover {
+  background: #e8e8ed;
+}
+
+.genderButtonActive {
+  background: #1d1d1f;
+  color: white;
+}
+
+.genderButtonActive:hover {
+  background: #1d1d1f;
+}
+
+/* 기본 텍스트 입력 */
+.textInput {
+  width: 100%;
+  max-width: 320px;
+  padding: 12px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 2px solid #d2d2d7;
+  border-radius: 0;
   outline: none;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
-  text-align: center;
+  background: transparent;
+  transition: border-color 0.2s ease;
+  letter-spacing: -0.5px;
 }
 
 .textInput:focus {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow:
-    0 0 0 2px rgba(0, 0, 0, 0.08),
-    0 4px 16px rgba(0, 0, 0, 0.06);
+  border-bottom-color: #007aff;
 }
 
 .textInput::placeholder {
-  color: #d6d3d1;
+  color: #86868b;
 }
 
+/* 날짜 입력 */
 .dateInputGroup {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: baseline;
   gap: 12px;
+  flex-wrap: nowrap;
 }
 
 .dateInput {
-  padding: 18px 24px;
-  font-size: 17px;
+  padding: 12px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f;
   border: none;
-  border-radius: 16px;
+  border-bottom: 2px solid #d2d2d7;
+  border-radius: 0;
   outline: none;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
+  background: transparent;
+  transition: border-color 0.2s ease;
+  letter-spacing: -0.5px;
 }
 
 .dateInput:focus {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow:
-    0 0 0 2px rgba(0, 0, 0, 0.08),
-    0 4px 16px rgba(0, 0, 0, 0.06);
+  border-bottom-color: #007aff;
 }
 
 .ageDisplay {
-  font-size: 14px;
-  color: #a8a29e;
-  font-weight: 500;
+  font-size: 17px;
+  color: #86868b;
+  font-weight: 400;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
+/* 숫자 입력 그룹 */
 .numberInputGroup {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: baseline;
   gap: 8px;
 }
 
 .numberInput {
-  width: 140px;
-  padding: 18px 20px;
-  font-size: 28px;
-  font-weight: 500;
+  width: 160px;
+  padding: 16px 0;
+  font-size: 34px;
+  font-weight: 600;
+  color: #1d1d1f;
   border: none;
-  border-radius: 16px;
+  border-bottom: 2px solid #d2d2d7;
+  border-radius: 0;
   outline: none;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
-  text-align: center;
+  background: transparent;
+  transition: border-color 0.2s ease;
   letter-spacing: -0.5px;
 }
 
 .numberInput:focus {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow:
-    0 0 0 2px rgba(0, 0, 0, 0.08),
-    0 4px 16px rgba(0, 0, 0, 0.06);
+  border-bottom-color: #007aff;
 }
 
 .numberInput::placeholder {
-  color: #e7e5e4;
+  color: #d2d2d7;
 }
 
-/* 숫자 입력 스피너 제거 */
 .numberInput::-webkit-outer-spin-button,
 .numberInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.numberInput[type='number'] {
+.numberInput[type="number"] {
   -moz-appearance: textfield;
 }
 
 .unit {
   font-size: 17px;
-  color: #78716c;
-  font-weight: 500;
+  color: #86868b;
+  font-weight: 400;
 }
 
 .numberInputWithDisplay {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .actualAmount {
   font-size: 15px;
-  color: #a8a29e;
-  font-weight: 500;
+  color: #86868b;
+  font-weight: 400;
 }
 
+/* 버튼 그룹 - Segmented Control 스타일 */
 .buttonGroup {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .optionButton {
-  padding: 14px 28px;
+  padding: 12px 20px;
   font-size: 15px;
   font-weight: 500;
-  color: #57534e;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  color: #1d1d1f;
+  background: #f5f5f7;
   border: none;
-  border-radius: 12px;
+  border-radius: 980px;
   cursor: pointer;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
 }
 
 .optionButton:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: #e8e8ed;
 }
 
 .optionButtonActive {
-  background: #1c1917;
+  background: #1d1d1f;
   color: white;
-  box-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
 .optionButtonActive:hover {
-  background: #1c1917;
+  background: #1d1d1f;
 }
 
+/* TIP 섹션 */
 .tipSection {
+  margin-top: 32px;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 14px;
-  text-align: center;
+  background: #f5f5f7;
+  border-radius: 12px;
   max-width: 320px;
 }
 
 .tipLabel {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
-  color: #a8a29e;
+  color: #86868b;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .tipText {
-  font-size: 14px;
-  color: #78716c;
-  margin: 6px 0 0 0;
+  font-size: 15px;
+  color: #1d1d1f;
+  margin: 4px 0 0 0;
   line-height: 1.5;
 }
 
-.stepIndicator {
-  display: inline-block;
-  font-size: 13px;
-  font-weight: 500;
-  color: #a8a29e;
-  margin-bottom: 12px;
-}
-
+/* 하단 네비게이션 */
 .navigation {
   flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 48px;
-  background: rgba(250, 250, 250, 0.95);
-  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 20px 48px;
+  background: #ffffff;
+  border-top: 1px solid #d2d2d7;
 }
 
 .navButtonPrev {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 12px 20px;
-  font-size: 15px;
-  font-weight: 500;
-  color: #78716c;
+  padding: 12px 16px;
+  font-size: 17px;
+  font-weight: 400;
+  color: #007aff;
   background: transparent;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .navButtonPrev:hover:not(:disabled) {
-  color: #57534e;
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(0, 122, 255, 0.1);
 }
 
 .navButtonPrev:disabled {
-  opacity: 0.3;
+  color: #d2d2d7;
   cursor: not-allowed;
 }
 
@@ -278,23 +312,23 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 14px 28px;
-  font-size: 15px;
-  font-weight: 600;
+  padding: 12px 24px;
+  font-size: 17px;
+  font-weight: 500;
   color: white;
-  background: #1c1917;
+  background: #007aff;
   border: none;
-  border-radius: 12px;
+  border-radius: 980px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .navButtonNext:hover:not(:disabled) {
-  background: #292524;
+  background: #0066d6;
 }
 
 .navButtonNext:disabled {
-  opacity: 0.4;
+  background: #d2d2d7;
   cursor: not-allowed;
 }
 
@@ -302,222 +336,206 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 14px 32px;
-  font-size: 15px;
-  font-weight: 600;
+  padding: 12px 24px;
+  font-size: 17px;
+  font-weight: 500;
   color: white;
-  background: #1c1917;
+  background: #007aff;
   border: none;
-  border-radius: 12px;
+  border-radius: 980px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .navButtonComplete:hover:not(:disabled) {
-  background: #292524;
+  background: #0066d6;
 }
 
 .navButtonComplete:disabled {
-  opacity: 0.4;
+  background: #d2d2d7;
   cursor: not-allowed;
 }
 
 .placeholder {
   font-size: 15px;
-  color: #a8a29e;
-  text-align: center;
+  color: #86868b;
 }
 
 /* 자녀 입력 섹션 */
 .childrenSection {
   width: 100%;
-  max-width: 360px;
+  max-width: 400px;
 }
 
 .childrenList {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .childItem {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 12px;
-  padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 14px;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .childLabel {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
-  color: #57534e;
-  min-width: 36px;
+  color: #86868b;
+  min-width: 40px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .childDateInput {
-  flex: 1;
-  padding: 10px 14px;
-  font-size: 15px;
+  padding: 12px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f;
   border: none;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.04);
+  border-bottom: 2px solid #d2d2d7;
+  border-radius: 0;
+  background: transparent;
   outline: none;
-  transition: background 0.2s;
+  transition: border-color 0.2s;
+  letter-spacing: -0.5px;
 }
 
 .childDateInput:focus {
-  background: rgba(0, 0, 0, 0.06);
+  border-bottom-color: #007aff;
 }
 
 .childAge {
-  font-size: 14px;
-  color: #a8a29e;
-  min-width: 36px;
-  text-align: right;
+  font-size: 17px;
+  color: #86868b;
+  min-width: 48px;
 }
 
 .childDeleteButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border: none;
-  border-radius: 8px;
+  border-radius: 50%;
   background: transparent;
-  color: #a8a29e;
+  color: #d2d2d7;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
+  margin-left: 8px;
 }
 
 .childDeleteButton:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #57534e;
+  color: #ff3b30;
 }
 
 .childrenAddButtons {
   display: flex;
-  justify-content: center;
   gap: 12px;
 }
 
 .addChildButton {
-  padding: 12px 24px;
+  padding: 12px 20px;
   font-size: 15px;
   font-weight: 500;
-  color: #57534e;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
   border: none;
-  border-radius: 12px;
+  border-radius: 980px;
   cursor: pointer;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .addChildButton:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 122, 255, 0.15);
 }
 
 .childrenHint {
-  font-size: 14px;
-  color: #a8a29e;
-  text-align: center;
+  font-size: 15px;
+  color: #86868b;
   margin-top: 16px;
 }
 
 /* 생년월일 + 배우자 섹션 */
 .birthDateSection {
   width: 100%;
-  max-width: 360px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+.incomeSection {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .personRow {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 12px;
-  padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 14px;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .personLabel {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
-  color: #57534e;
-  min-width: 48px;
+  color: #86868b;
+  min-width: 40px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .spouseSection {
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 
 .addSpouseButton {
-  padding: 12px 24px;
+  padding: 12px 20px;
   font-size: 15px;
   font-weight: 500;
-  color: #57534e;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
   border: none;
-  border-radius: 12px;
+  border-radius: 980px;
   cursor: pointer;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
+  align-self: flex-start;
 }
 
 .addSpouseButton:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 122, 255, 0.15);
 }
 
 .removeSpouseButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border: none;
-  border-radius: 8px;
+  border-radius: 50%;
   background: transparent;
-  color: #a8a29e;
+  color: #d2d2d7;
   cursor: pointer;
-  transition: all 0.2s;
-  margin-left: auto;
+  transition: all 0.15s;
+  margin-left: 8px;
 }
 
 .removeSpouseButton:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #57534e;
+  color: #ff3b30;
 }
 
 /* 은퇴 나이 섹션 */
 .retirementAgeSection {
   width: 100%;
-  max-width: 360px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -525,29 +543,31 @@
 
 .numberInputGroupInline {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
 }
 
 .numberInputSmall {
-  width: 80px;
-  padding: 10px 12px;
-  font-size: 18px;
-  font-weight: 500;
+  width: 140px;
+  padding: 12px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f;
   border: none;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.04);
+  border-bottom: 2px solid #d2d2d7;
+  background: transparent;
   outline: none;
-  text-align: center;
-  transition: background 0.2s;
+  text-align: left;
+  transition: border-color 0.2s;
+  letter-spacing: -0.5px;
 }
 
 .numberInputSmall:focus {
-  background: rgba(0, 0, 0, 0.06);
+  border-bottom-color: #007aff;
 }
 
 .numberInputSmall::placeholder {
-  color: #d6d3d1;
+  color: #d2d2d7;
 }
 
 .numberInputSmall::-webkit-outer-spin-button,
@@ -556,7 +576,7 @@
   margin: 0;
 }
 
-.numberInputSmall[type='number'] {
+.numberInputSmall[type="number"] {
   -moz-appearance: textfield;
 }
 
@@ -564,38 +584,29 @@
 .realEstateSection {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  gap: 24px;
 }
 
 .realEstateInputs {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 100%;
-  max-width: 300px;
+  max-width: 320px;
 }
 
 .realEstateRow {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: baseline;
   gap: 12px;
-  padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 14px;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .realEstateLabel {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
-  color: #57534e;
-  min-width: 50px;
+  color: #86868b;
+  min-width: 56px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 /* 금융자산 섹션 */
@@ -604,150 +615,259 @@
   flex-direction: column;
   gap: 24px;
   width: 100%;
-  max-width: 320px;
+  max-width: 400px;
 }
 
-.assetGroup {
+.assetList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assetItem {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.assetItemLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  min-width: 80px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.assetItemInput {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1;
+}
+
+.assetItemDelete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #d2d2d7;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.assetItemDelete:hover {
+  color: #ff3b30;
+}
+
+.assetTotal {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  padding-top: 16px;
+  border-top: 1px solid #e8e8ed;
+  margin-top: 8px;
+}
+
+.assetAddSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.assetAddGroup {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.assetGroupLabel {
+.assetAddGroupLabel {
   font-size: 13px;
   font-weight: 600;
-  color: #a8a29e;
+  color: #86868b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 4px;
 }
 
-.assetRow {
+.assetAddButtons {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 12px;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.assetLabel {
+.assetAddButton {
+  padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #57534e;
-  min-width: 60px;
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.assetTotal {
-  text-align: center;
+.assetAddButton:hover {
+  background: rgba(0, 122, 255, 0.15);
+}
+
+.noAssetButton {
+  padding: 14px 24px;
   font-size: 15px;
-  font-weight: 600;
-  color: #1c1917;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+  color: #86868b;
+  background: #f5f5f7;
+  border: none;
   border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  align-self: flex-start;
+}
+
+.noAssetButton:hover {
+  background: #e8e8ed;
+  color: #1d1d1f;
+}
+
+.assetEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 20px;
+}
+
+.assetEmptyText {
+  font-size: 15px;
+  color: #86868b;
+  margin: 0;
+}
+
+.assetResetButton {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #007aff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.assetResetButton:hover {
+  opacity: 0.7;
 }
 
 /* 부채 섹션 */
 .debtSection {
   width: 100%;
-  max-width: 340px;
+  max-width: 380px;
 }
 
 .debtList {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .debtCard {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 16px;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e8e8ed;
+}
+
+.debtCard:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .debtCardHeader {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  margin-bottom: 4px;
 }
 
 .debtNameInput {
   flex: 1;
-  padding: 8px 12px;
-  font-size: 16px;
-  font-weight: 500;
+  padding: 12px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f;
   border: none;
-  border-radius: 8px;
+  border-bottom: 2px solid #d2d2d7;
   background: transparent;
   outline: none;
-  transition: background 0.2s;
+  transition: border-color 0.2s;
+  letter-spacing: -0.5px;
 }
 
 .debtNameInput:focus {
-  background: rgba(0, 0, 0, 0.04);
+  border-bottom-color: #007aff;
 }
 
 .debtNameInput::placeholder {
-  color: #d6d3d1;
+  color: #86868b;
+}
+
+.debtNameDisplay {
+  padding: 12px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -0.5px;
 }
 
 .debtRow {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 0;
+  align-items: baseline;
+  gap: 12px;
 }
 
 .debtLabel {
-  font-size: 14px;
-  color: #78716c;
-  min-width: 40px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  min-width: 56px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .debtInputGroup {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .debtInput {
-  width: 80px;
-  padding: 8px 10px;
-  font-size: 15px;
-  font-weight: 500;
+  width: 160px;
+  padding: 12px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f;
   border: none;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.04);
+  border-bottom: 2px solid #d2d2d7;
+  background: transparent;
   outline: none;
-  text-align: right;
-  transition: background 0.2s;
+  text-align: left;
+  transition: border-color 0.2s;
+  letter-spacing: -0.5px;
 }
 
 .debtInput:focus {
-  background: rgba(0, 0, 0, 0.06);
+  border-bottom-color: #007aff;
 }
 
 .debtInput::placeholder {
-  color: #d6d3d1;
+  color: #d2d2d7;
 }
 
 .debtInput::-webkit-outer-spin-button,
@@ -756,68 +876,58 @@
   margin: 0;
 }
 
-.debtInput[type='number'] {
+.debtInput[type="number"] {
   -moz-appearance: textfield;
 }
 
 .debtUnit {
-  font-size: 14px;
-  color: #78716c;
-  font-weight: 500;
-  min-width: 28px;
+  font-size: 15px;
+  color: #86868b;
+  min-width: 32px;
 }
 
 .debtMonthInput {
-  padding: 8px 10px;
-  font-size: 14px;
+  padding: 4px 0;
+  font-size: 15px;
+  color: #1d1d1f;
   border: none;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.04);
+  background: transparent;
   outline: none;
-  transition: background 0.2s;
-}
-
-.debtMonthInput:focus {
-  background: rgba(0, 0, 0, 0.06);
 }
 
 .debtSelect {
   padding: 8px 12px;
-  font-size: 14px;
+  font-size: 15px;
+  color: #1d1d1f;
   border: none;
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.04);
+  background: #e8e8ed;
   outline: none;
   cursor: pointer;
-  transition: background 0.2s;
-}
-
-.debtSelect:focus {
-  background: rgba(0, 0, 0, 0.06);
 }
 
 .debtDeleteButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border: none;
-  border-radius: 6px;
+  border-radius: 50%;
   background: transparent;
-  color: #a8a29e;
+  color: #d2d2d7;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
+  margin-left: auto;
 }
 
 .debtDeleteButton:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #57534e;
+  color: #ff3b30;
 }
 
 .debtButtons {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .noDebtButton {
@@ -825,31 +935,25 @@
   padding: 14px 20px;
   font-size: 15px;
   font-weight: 500;
-  color: #57534e;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  color: #1d1d1f;
+  background: #f5f5f7;
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .noDebtButton:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: #e8e8ed;
 }
 
 .noDebtButtonActive {
-  background: #1c1917;
+  background: #1d1d1f;
   color: white;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
 .noDebtButtonActive:hover {
-  background: #1c1917;
+  background: #1d1d1f;
 }
 
 .addDebtButton {
@@ -857,21 +961,16 @@
   padding: 14px 20px;
   font-size: 15px;
   font-weight: 500;
-  color: #57534e;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .addDebtButton:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 122, 255, 0.15);
 }
 
 /* 연금 섹션 */
@@ -880,46 +979,43 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
-  max-width: 340px;
+  max-width: 380px;
 }
 
 .pensionRow {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: baseline;
   gap: 12px;
-  padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 14px;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.inputWithAmount {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .pensionLabel {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
-  color: #57534e;
-  min-width: 100px;
+  color: #86868b;
+  min-width: 64px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .pensionHint {
-  font-size: 14px;
-  color: #a8a29e;
-  text-align: center;
+  font-size: 15px;
+  color: #86868b;
   margin: 0;
 }
 
 .pensionTotal {
-  text-align: center;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
-  color: #1c1917;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 12px;
+  color: #1d1d1f;
+  padding-top: 16px;
+  border-top: 1px solid #e8e8ed;
+  margin-top: 8px;
 }
 
 .buttonGroupSmall {
@@ -928,30 +1024,31 @@
 }
 
 .typeButton {
-  padding: 10px 18px;
-  font-size: 14px;
+  padding: 8px 16px;
+  font-size: 15px;
   font-weight: 500;
-  color: #57534e;
-  background: rgba(0, 0, 0, 0.04);
+  color: #1d1d1f;
+  background: #e8e8ed;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .typeButton:hover {
-  background: rgba(0, 0, 0, 0.08);
+  background: #d2d2d7;
 }
 
 .typeButtonActive {
-  background: #1c1917;
+  background: #007aff;
   color: white;
 }
 
 .typeButtonActive:hover {
-  background: #1c1917;
+  background: #007aff;
 }
 
+/* 완료 화면 */
 .complete {
   flex: 1;
   display: flex;
@@ -959,53 +1056,44 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  padding: 48px;
 }
 
 .completeTitle {
   font-size: 28px;
-  font-weight: 600;
-  color: #1c1917;
+  font-weight: 700;
+  color: #1d1d1f;
   margin: 0 0 8px 0;
   letter-spacing: -0.5px;
 }
 
 .completeDescription {
-  font-size: 15px;
-  color: #a8a29e;
+  font-size: 17px;
+  color: #86868b;
   margin: 0;
 }
 
-/* Slide animations */
-.content {
-  /* Animation applied via slideInFromRight or slideInFromLeft classes */
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 80px 48px 40px;
-  overflow-y: auto;
-}
-
+/* 슬라이드 애니메이션 */
 .slideOutLeft {
-  animation: slideOutToLeft 0.2s ease-in forwards;
+  animation: slideOutToLeft 0.2s ease-out forwards;
 }
 
 .slideOutRight {
-  animation: slideOutToRight 0.2s ease-in forwards;
+  animation: slideOutToRight 0.2s ease-out forwards;
 }
 
 .slideInFromRight {
-  animation: slideInFromRight 0.25s ease-out;
+  animation: slideInFromRight 0.3s ease-out;
 }
 
 .slideInFromLeft {
-  animation: slideInFromLeft 0.25s ease-out;
+  animation: slideInFromLeft 0.3s ease-out;
 }
 
 @keyframes slideInFromRight {
   from {
     opacity: 0;
-    transform: translateX(30px);
+    transform: translateX(20px);
   }
   to {
     opacity: 1;
@@ -1016,7 +1104,7 @@
 @keyframes slideInFromLeft {
   from {
     opacity: 0;
-    transform: translateX(-30px);
+    transform: translateX(-20px);
   }
   to {
     opacity: 1;
@@ -1031,7 +1119,7 @@
   }
   to {
     opacity: 0;
-    transform: translateX(-30px);
+    transform: translateX(-20px);
   }
 }
 
@@ -1042,6 +1130,151 @@
   }
   to {
     opacity: 0;
-    transform: translateX(30px);
+    transform: translateX(20px);
   }
+}
+
+/* 대출 섹션 */
+.addButton {
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
+  border: none;
+  border-radius: 980px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  align-self: flex-start;
+}
+
+.addButton:hover {
+  background: rgba(0, 122, 255, 0.15);
+}
+
+.loanSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e8e8ed;
+  max-width: 320px;
+}
+
+.loanHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.loanTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.removeButton {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ff3b30;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.removeButton:hover {
+  background: rgba(255, 59, 48, 0.1);
+}
+
+.monthInput {
+  padding: 12px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 2px solid #d2d2d7;
+  background: transparent;
+  outline: none;
+  transition: border-color 0.2s;
+  letter-spacing: -0.5px;
+}
+
+.monthInput:focus {
+  border-bottom-color: #007aff;
+}
+
+.selectInputLarge {
+  padding: 12px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 2px solid #d2d2d7;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  letter-spacing: -0.5px;
+}
+
+.selectInputLarge:focus {
+  border-bottom-color: #007aff;
+}
+
+.selectInput {
+  padding: 8px 12px;
+  font-size: 15px;
+  color: #1d1d1f;
+  border: none;
+  border-radius: 8px;
+  background: #e8e8ed;
+  outline: none;
+  cursor: pointer;
+}
+
+/* 부채 만기 그룹 */
+.debtMaturityGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.noMaturityToggle {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  background: transparent;
+  border: 1px solid #d2d2d7;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.noMaturityToggle:hover {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+.noMaturityButton {
+  padding: 8px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  background: #e8e8ed;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.noMaturityButton:hover {
+  background: #d2d2d7;
 }

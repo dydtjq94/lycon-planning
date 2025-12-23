@@ -38,7 +38,8 @@ import {
 
 // 섹션 헤더 레이블 정의
 const sectionLabels: Record<SectionId, string> = {
-  basic: '기본 정보',
+  household: '가계 정보',
+  goals: '목표',
   income: '소득',
   expense: '지출',
   realEstate: '부동산',
@@ -53,10 +54,23 @@ export function ProgressiveForm({
   onActiveRowChange,
   activeSection,
   onSectionChange,
+  onStepChange,
   currentStepIndex = 0
 }: ProgressiveFormProps) {
   const [activeRow, setActiveRow] = useState<RowId>('name')
-  const [visibleSection, setVisibleSection] = useState<SectionId>('basic')
+  const [visibleSection, setVisibleSection] = useState<SectionId>('household')
+  const prevSectionRef = useRef<SectionId | null>(null)
+  const initialScrollDone = useRef(false)
+
+  // 현재 행이 속한 섹션 찾기
+  const getCurrentSection = (rowId: RowId): SectionId | null => {
+    for (const [sectionId, rowIds] of Object.entries(sectionRows)) {
+      if (rowIds.includes(rowId)) {
+        return sectionId as SectionId
+      }
+    }
+    return null
+  }
 
   // currentStepIndex와 activeRow 동기화
   useEffect(() => {
@@ -68,35 +82,11 @@ export function ProgressiveForm({
     }
   }, [currentStepIndex, activeRow])
 
-  // 현재 행으로 자동 스크롤
-  useEffect(() => {
-    const container = scrollContainerRef.current
-    if (!container) return
-
-    // 약간의 딜레이 후 스크롤 (DOM 업데이트 대기)
-    const timer = setTimeout(() => {
-      const currentRowElement = container.querySelector('[data-current="true"]') as HTMLElement
-      if (currentRowElement) {
-        const containerRect = container.getBoundingClientRect()
-        const rowRect = currentRowElement.getBoundingClientRect()
-        const headerHeight = 80 // 헤더 + 프로그레스바 높이
-
-        // 현재 스크롤 위치에서 행이 보이는 위치로 계산
-        const scrollTop = container.scrollTop + (rowRect.top - containerRect.top) - headerHeight
-
-        container.scrollTo({
-          top: Math.max(0, scrollTop),
-          behavior: 'smooth'
-        })
-      }
-    }, 100)
-
-    return () => clearTimeout(timer)
-  }, [currentStepIndex])
 
   // 섹션 헤더 ref들 (Intersection Observer용)
   const sectionRefs = useRef<Record<SectionId, HTMLDivElement | null>>({
-    basic: null,
+    household: null,
+    goals: null,
     income: null,
     expense: null,
     realEstate: null,
@@ -106,7 +96,8 @@ export function ProgressiveForm({
   })
   // 섹션 컨테이너 ref들 (스크롤용)
   const sectionContainerRefs = useRef<Record<SectionId, HTMLDivElement | null>>({
-    basic: null,
+    household: null,
+    goals: null,
     income: null,
     expense: null,
     realEstate: null,
@@ -116,10 +107,12 @@ export function ProgressiveForm({
   })
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-  // 현재 스텝까지의 모든 행 표시
+  // 현재 스텝까지 + 체크된(완료된) 행 모두 표시
   const visibleRows = useMemo(() => {
-    return rows.slice(0, currentStepIndex + 1).map(row => row.id)
-  }, [currentStepIndex])
+    return rows
+      .filter((row, index) => index <= currentStepIndex || row.isComplete(data))
+      .map(row => row.id)
+  }, [currentStepIndex, data])
 
   // 현재 스텝의 행 ID
   const currentRowId = useMemo(() => {
@@ -168,7 +161,7 @@ export function ProgressiveForm({
     return () => observer.disconnect()
   }, [activeSection, onSectionChange])
 
-  // 탭 클릭 시 해당 섹션으로 스크롤
+  // 탭 클릭 시 해당 섹션으로 스크롤 및 왼쪽 패널도 이동
   const scrollToSection = useCallback((sectionId: SectionId) => {
     const sectionContainer = sectionContainerRefs.current[sectionId]
     const container = scrollContainerRef.current
@@ -182,8 +175,8 @@ export function ProgressiveForm({
       const sectionTop = sectionRect.top - containerRect.top + currentScrollTop
 
       // spacer 높이를 더해서 섹션 헤더가 상단에 오도록
-      const spacerHeight = sectionId !== 'basic' ? 28 : 0
-      const scrollTop = sectionTop + spacerHeight - 35
+      const spacerHeight = sectionId !== 'household' ? 28 : 0
+      const scrollTop = sectionTop + spacerHeight - 32
 
       container.scrollTo({
         top: Math.max(0, scrollTop),
@@ -191,7 +184,113 @@ export function ProgressiveForm({
       })
     }
     setVisibleSection(sectionId)
-  }, [])
+
+    // 해당 섹션의 첫 번째 행으로 왼쪽 패널도 이동
+    const sectionFirstRowIds = sectionRows[sectionId]
+    if (sectionFirstRowIds && sectionFirstRowIds.length > 0) {
+      const firstRowId = sectionFirstRowIds[0]
+      const firstRowIndex = rows.findIndex(r => r.id === firstRowId)
+      if (firstRowIndex >= 0 && onStepChange) {
+        onStepChange(firstRowIndex)
+      }
+    }
+  }, [onStepChange])
+
+  // 시트 탭을 현재 섹션으로 동기화
+  useEffect(() => {
+    if (currentStepIndex < 0 || currentStepIndex >= rows.length) return
+
+    const currentRowId = rows[currentStepIndex].id
+    const currentSection = getCurrentSection(currentRowId)
+
+    if (currentSection) {
+      setVisibleSection(currentSection)
+    }
+  }, [currentStepIndex])
+
+  // 섹션 변경 시 해당 섹션으로 자동 스크롤
+  useEffect(() => {
+    if (currentStepIndex < 0 || currentStepIndex >= rows.length) return
+
+    const currentRowId = rows[currentStepIndex].id
+    const currentSection = getCurrentSection(currentRowId)
+
+    if (!currentSection) return
+
+    const prevSection = prevSectionRef.current
+
+    // 섹션이 변경되었을 때만 스크롤
+    if (prevSection !== null && prevSection !== currentSection) {
+      const timer = setTimeout(() => {
+        const container = scrollContainerRef.current
+        const sectionContainer = sectionContainerRefs.current[currentSection]
+
+        if (container && sectionContainer) {
+          const containerRect = container.getBoundingClientRect()
+          const sectionRect = sectionContainer.getBoundingClientRect()
+          const sectionTopInContainer = sectionRect.top - containerRect.top
+
+          const stickyHeaderHeight = 35
+          const spacerHeight = currentSection === 'household' ? 0 : 28
+
+          const scrollTarget = container.scrollTop + sectionTopInContainer + spacerHeight - stickyHeaderHeight
+
+          container.scrollTo({
+            top: Math.max(0, scrollTarget),
+            behavior: 'smooth'
+          })
+        }
+      }, 150)
+
+      prevSectionRef.current = currentSection
+      return () => clearTimeout(timer)
+    }
+
+    prevSectionRef.current = currentSection
+  }, [currentStepIndex])
+
+  // 초기 로드 시 현재 스텝으로 스크롤 (새로고침 대응)
+  useEffect(() => {
+    if (initialScrollDone.current) return
+    if (currentStepIndex === 0) {
+      initialScrollDone.current = true
+      return
+    }
+
+    const currentRowId = rows[currentStepIndex]?.id
+    if (!currentRowId) return
+
+    const currentSection = getCurrentSection(currentRowId)
+    if (!currentSection) return
+
+    // DOM이 준비될 때까지 약간 대기
+    const timer = setTimeout(() => {
+      const container = scrollContainerRef.current
+      const sectionContainer = sectionContainerRefs.current[currentSection]
+
+      if (container && sectionContainer) {
+        const containerRect = container.getBoundingClientRect()
+        const sectionRect = sectionContainer.getBoundingClientRect()
+        const sectionTopInContainer = sectionRect.top - containerRect.top
+
+        const stickyHeaderHeight = 35
+        const spacerHeight = currentSection === 'household' ? 0 : 28
+        const scrollTarget = container.scrollTop + sectionTopInContainer + spacerHeight - stickyHeaderHeight
+
+        container.scrollTo({
+          top: Math.max(0, scrollTarget),
+          behavior: 'auto' // 초기 로드는 즉시 이동
+        })
+
+        setVisibleSection(currentSection)
+        prevSectionRef.current = currentSection
+      }
+
+      initialScrollDone.current = true
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [currentStepIndex])
 
   const handleRowFocus = (rowId: RowId) => {
     setActiveRow(rowId)
@@ -259,7 +358,6 @@ export function ProgressiveForm({
       case 'national_pension':
       case 'retirement_pension':
       case 'personal_pension':
-      case 'other_pension':
         return null // 별도 처리 (PensionRows)
       default:
         return null
@@ -399,7 +497,7 @@ export function ProgressiveForm({
     const rowNumber = rows.findIndex(r => r.id === rowConfig.id) + 1
 
     // 셀 구조를 사용하는 행들 (소득/지출, 은퇴자금)
-    const useCellStructure = ['labor_income', 'business_income', 'living_expenses', 'retirement_fund'].includes(rowConfig.id)
+    const useCellStructure = ['name', 'labor_income', 'business_income', 'living_expenses', 'retirement_fund'].includes(rowConfig.id)
 
     // 근로 소득 행: 본인 + 배우자 확장 행
     if (rowConfig.id === 'labor_income') {
@@ -493,7 +591,7 @@ export function ProgressiveForm({
         className={styles.excelSection}
       >
         {/* 섹션 구분 빈 행 (첫 번째 섹션 제외) */}
-        {sectionId !== 'basic' && (
+        {sectionId !== 'household' && (
           <div className={styles.excelSectionSpacer}>
             <div className={styles.excelSectionSpacerNumber} />
             <div className={styles.excelSectionSpacerLabel} />
@@ -521,56 +619,56 @@ export function ProgressiveForm({
     )
   }
 
-  // 전체 진행률 계산
-  const completedCount = rows.filter(row => row.isComplete(data)).length
-  const totalCount = rows.length
-  const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
-
   return (
-    <div className={styles.excelWrapper}>
-      <div className={styles.excelContainer} ref={scrollContainerRef}>
-        {/* 고정 헤더 */}
-        <div className={styles.excelHeader}>
-          <div className={styles.excelHeaderNumber}>#</div>
-          <div className={styles.excelHeaderLabel}>항목</div>
-          <div className={styles.excelHeaderValue}>값</div>
-        </div>
-        <div className={styles.excelProgressBar}>
-          <div
-            className={styles.excelProgressFill}
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        {/* 스크롤 가능한 바디 (모든 섹션 포함) */}
-        <div className={styles.excelBody}>
-          {sections.map(section => renderSectionWithRows(section.id))}
+    <div className={styles.rightPanelSplit}>
+      {/* 상단: 팁/그래프 영역 (플레이스홀더) */}
+      <div className={styles.rightPanelTop}>
+        <div className={styles.rightPanelTopPlaceholder}>
+          TIP / 그래프 영역
         </div>
       </div>
 
-      {/* 엑셀 시트 탭 */}
-      <div className={styles.excelSheetTabs}>
-        {sections.map((section) => {
-          const sectionRowIds = sectionRows[section.id]
-          const sectionComplete = sectionRowIds.every(rowId => {
-            const row = rows.find(r => r.id === rowId)
-            return row ? row.isComplete(data) : true
-          })
-          const isActive = visibleSection === section.id
+      {/* 하단: 셀 영역 */}
+      <div className={styles.rightPanelBottom}>
+        <div className={styles.excelWrapper}>
+          <div className={styles.excelContainer} ref={scrollContainerRef}>
+            {/* 고정 헤더 */}
+            <div className={styles.excelHeader}>
+              <div className={styles.excelHeaderNumber}>#</div>
+              <div className={styles.excelHeaderLabel}>항목</div>
+              <div className={styles.excelHeaderValue}>값</div>
+            </div>
 
-          return (
-            <button
-              key={section.id}
-              className={`${styles.excelSheetTab} ${isActive ? styles.excelSheetTabActive : ''} ${sectionComplete ? styles.excelSheetTabComplete : ''}`}
-              onClick={() => scrollToSection(section.id)}
-            >
-              {sectionComplete && <Check size={12} className={styles.excelSheetTabCheck} />}
-              {section.shortLabel}
-            </button>
-          )
-        })}
-      </div>
-
+            {/* 스크롤 가능한 바디 (모든 섹션 포함) */}
+            <div className={styles.excelBody}>
+              {sections.map(section => renderSectionWithRows(section.id))}
+            </div>
           </div>
+
+          {/* 엑셀 시트 탭 */}
+          <div className={styles.excelSheetTabs}>
+            {sections.map((section) => {
+              const sectionRowIds = sectionRows[section.id]
+              const sectionComplete = sectionRowIds.every(rowId => {
+                const row = rows.find(r => r.id === rowId)
+                return row ? row.isComplete(data) : true
+              })
+              const isActive = visibleSection === section.id
+
+              return (
+                <button
+                  key={section.id}
+                  className={`${styles.excelSheetTab} ${isActive ? styles.excelSheetTabActive : ''} ${sectionComplete ? styles.excelSheetTabComplete : ''}`}
+                  onClick={() => scrollToSection(section.id)}
+                >
+                  {sectionComplete && <Check size={12} className={styles.excelSheetTabCheck} />}
+                  {section.shortLabel}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

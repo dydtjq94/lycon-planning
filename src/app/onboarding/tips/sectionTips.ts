@@ -84,18 +84,17 @@ export function getDynamicTip(
   const yearsToRetirement = age ? data.target_retirement_age - age : null
 
   switch (activeSection) {
-    case 'basic':
-      // 기본 정보 섹션 - 이름, 생년월일, 배우자, 은퇴 목표
+    case 'household':
+      // 가계 정보 섹션 - 이름, 생년월일, 배우자, 자녀
       if (age) {
         const lifeExpectancy = 90
         const remainingLife = lifeExpectancy - age
-        const retirementYears = lifeExpectancy - data.target_retirement_age
         return {
           title: data.name
             ? `${data.name}님, 반갑습니다`
-            : '기본 정보를 입력하세요',
+            : '가계 정보를 입력하세요',
           description: data.name
-            ? `${age}세, 아직 늦지 않았어요. 기대수명 90세 기준, 앞으로 약 ${remainingLife}년의 시간이 있습니다. 은퇴 후에도 ${retirementYears}년을 준비해야 해요.`
+            ? `${age}세, 아직 늦지 않았어요. 기대수명 90세 기준, 앞으로 약 ${remainingLife}년의 시간이 있습니다.`
             : '은퇴 준비의 첫 걸음입니다. 당신만을 위한 맞춤 분석을 시작할게요.',
           stat: data.name ? `${remainingLife}년` : '상위 30%',
           statLabel: data.name ? '앞으로의 시간' : '은퇴 준비를 시작한 사람',
@@ -123,11 +122,42 @@ export function getDynamicTip(
         }
       }
       return {
-        title: '기본 정보를 입력하세요',
+        title: '가계 정보를 입력하세요',
         description:
-          '은퇴 준비의 첫 걸음입니다. 이름, 생년월일, 배우자 정보와 은퇴 목표를 입력해주세요.',
-        stat: '3분',
+          '은퇴 준비의 첫 걸음입니다. 이름, 생년월일, 가족 정보를 입력해주세요.',
+        stat: '2분',
         statLabel: '평균 소요 시간',
+      }
+
+    case 'goals':
+      // 목표 섹션 - 은퇴 나이, 은퇴 자금
+      if (age && data.target_retirement_age > 0) {
+        const lifeExpectancy = 90
+        const retirementYears = lifeExpectancy - data.target_retirement_age
+        const yearsUntilRetirement = data.target_retirement_age - age
+        return {
+          title: yearsUntilRetirement > 0
+            ? `${yearsUntilRetirement}년 후 은퇴 목표`
+            : '은퇴 시기가 다가왔어요',
+          description: yearsUntilRetirement > 0
+            ? `${data.target_retirement_age}세에 은퇴하면 약 ${retirementYears}년의 은퇴 생활을 준비해야 해요.`
+            : '지금부터 은퇴 자금 활용 계획이 중요합니다.',
+          stat: formatMoney(data.target_retirement_fund || 0),
+          statLabel: '목표 은퇴 자금',
+          insight: data.target_retirement_fund >= 1000000000
+            ? '10억 이상 목표! 월 300만원 이상의 은퇴 생활이 가능해요.'
+            : data.target_retirement_fund >= 500000000
+            ? '5억 목표면 월 200만원 수준의 은퇴 생활이에요.'
+            : '목표 금액을 조금 더 높여보는 건 어떨까요?',
+        }
+      }
+      return {
+        title: '은퇴 목표를 설정하세요',
+        description:
+          '몇 살에 은퇴하고 싶으신가요? 은퇴 후 필요한 자금은 얼마일까요?',
+        stat: '10억원',
+        statLabel: '30년 은퇴생활 권장 자금',
+        insight: '부부 기준 월 277만원 x 30년 = 약 10억원이 필요합니다.',
       }
 
     case 'income':

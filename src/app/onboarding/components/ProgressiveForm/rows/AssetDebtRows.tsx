@@ -140,7 +140,7 @@ export function RealEstateRows({
   if (housingType === '해당없음') {
     return (
       <div
-        className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''}`}
+        className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${styles.excelRowComplete}`}
         onClick={() => onFocus('realEstate')}
       >
         <div className={styles.excelRowNumber}>
@@ -175,7 +175,7 @@ export function RealEstateRows({
     <>
       {/* 메인 행: 거주 부동산 정보 */}
       <div
-        className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsValue ? styles.excelRowCurrent : ''}`}
+        className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isComplete ? styles.excelRowComplete : ''} ${isCurrent && needsValue ? styles.excelRowCurrent : ''}`}
         onClick={() => onFocus('realEstate')}
         data-current={isCurrent && needsValue ? 'true' : undefined}
       >
@@ -201,13 +201,7 @@ export function RealEstateRows({
             <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
               만원
             </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}>
-              {data.housingValue !== null && data.housingValue > 0 && (
-                <span className={styles.excelCalculatedSmall}>
-                  {formatMoney(data.housingValue)}
-                </span>
-              )}
-            </div>
+            <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
             <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}>
               <button onClick={(e) => { e.stopPropagation(); resetHousingType() }} type="button">
                 <X size={14} />
@@ -253,145 +247,42 @@ export function RealEstateRows({
         </div>
       )}
 
-      {/* 대출 행들: 대출이 있는 경우 */}
+      {/* 대출 행: 대출이 있는 경우 */}
       {data.housingHasLoan && (
-        <>
-          {/* 대출 금액 행 */}
-          <div
-            className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsLoan ? styles.excelRowCurrent : ''}`}
-            onClick={() => onFocus('realEstate')}
-            data-current={isCurrent && needsLoan ? 'true' : undefined}
-          >
-            <div className={styles.excelRowNumber} />
-            <div className={styles.excelRowLabel} />
-            <div className={styles.excelRowInputMulti}>
-              <div className={styles.excelValueCells}>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-                  {loanLabel}
-                </div>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-                  <MoneyInput
-                    value={data.housingLoan}
-                    onChange={(value) => onUpdateData({ housingLoan: value })}
-                    placeholder="0"
-                    hideSuffix
-                    onFocus={() => onFocus('realEstate')}
-                    data-filled={data.housingLoan !== null ? 'true' : undefined}
-                  />
-                </div>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
-                  만원
-                </div>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}>
-                  {data.housingLoan !== null && data.housingLoan > 0 && (
-                    <span className={styles.excelCalculatedSmall}>
-                      {formatMoney(data.housingLoan)}
-                    </span>
-                  )}
-                </div>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}>
-                  <button onClick={(e) => { e.stopPropagation(); removeLoan() }} type="button">
-                    <X size={14} />
-                  </button>
-                </div>
+        <div
+          className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsLoan ? styles.excelRowCurrent : ''}`}
+          onClick={() => onFocus('realEstate')}
+          data-current={isCurrent && needsLoan ? 'true' : undefined}
+        >
+          <div className={styles.excelRowNumber} />
+          <div className={styles.excelRowLabel} />
+          <div className={styles.excelRowInputMulti}>
+            <div className={styles.excelValueCells}>
+              <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
+                {loanLabel}
+              </div>
+              <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
+                <MoneyInput
+                  value={data.housingLoan}
+                  onChange={(value) => onUpdateData({ housingLoan: value })}
+                  placeholder="0"
+                  hideSuffix
+                  onFocus={() => onFocus('realEstate')}
+                  data-filled={data.housingLoan !== null ? 'true' : undefined}
+                />
+              </div>
+              <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
+                만원
+              </div>
+              <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
+              <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}>
+                <button onClick={(e) => { e.stopPropagation(); removeLoan() }} type="button">
+                  <X size={14} />
+                </button>
               </div>
             </div>
           </div>
-
-          {/* 대출 금리 행 */}
-          <div
-            className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''}`}
-            onClick={() => onFocus('realEstate')}
-          >
-            <div className={styles.excelRowNumber} />
-            <div className={styles.excelRowLabel} />
-            <div className={styles.excelRowInputMulti}>
-              <div className={styles.excelValueCells}>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-                  금리
-                </div>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={data.housingLoanRate ?? ''}
-                    onChange={(e) => onUpdateData({ housingLoanRate: e.target.value ? parseFloat(e.target.value) : null })}
-                    placeholder="0.0"
-                    onFocus={() => onFocus('realEstate')}
-                    data-filled={data.housingLoanRate !== null ? 'true' : undefined}
-                  />
-                </div>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
-                  %
-                </div>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
-              </div>
-            </div>
-          </div>
-
-          {/* 대출 만기 행 */}
-          <div
-            className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''}`}
-            onClick={() => onFocus('realEstate')}
-          >
-            <div className={styles.excelRowNumber} />
-            <div className={styles.excelRowLabel} />
-            <div className={styles.excelRowInputMulti}>
-              <div className={styles.excelValueCells}>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-                  만기
-                </div>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-                  <Input
-                    type="month"
-                    value={data.housingLoanMaturity ?? ''}
-                    onChange={(e) => onUpdateData({ housingLoanMaturity: e.target.value || null })}
-                    onFocus={() => onFocus('realEstate')}
-                    data-filled={data.housingLoanMaturity !== null ? 'true' : undefined}
-                  />
-                </div>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`} />
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
-              </div>
-            </div>
-          </div>
-
-          {/* 상환방식 행 */}
-          <div
-            className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''}`}
-            onClick={() => onFocus('realEstate')}
-          >
-            <div className={styles.excelRowNumber} />
-            <div className={styles.excelRowLabel} />
-            <div className={styles.excelRowInputMulti}>
-              <div className={styles.excelValueCells}>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-                  상환방식
-                </div>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-                  <select
-                    className={styles.loanTypeSelect}
-                    value={data.housingLoanType ?? ''}
-                    onChange={(e) => onUpdateData({ housingLoanType: (e.target.value || null) as typeof data.housingLoanType })}
-                    onFocus={() => onFocus('realEstate')}
-                    data-filled={data.housingLoanType !== null ? 'true' : undefined}
-                  >
-                    <option value="">선택</option>
-                    <option value="만기일시상환">만기일시상환</option>
-                    <option value="원리금균등상환">원리금균등상환</option>
-                    <option value="원금균등상환">원금균등상환</option>
-                    <option value="거치식상환">거치식상환</option>
-                  </select>
-                </div>
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`} />
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
-                <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
-              </div>
-            </div>
-          </div>
-        </>
+        </div>
       )}
 
       {/* 대출 추가 버튼 행 */}
@@ -426,7 +317,17 @@ interface FinancialAssetRowsProps {
   baseRowIndex: number
 }
 
-// 금융자산 행들 렌더링 (현금성 자산 + 투자자산)
+// 금융자산 타입 정의
+const assetTypeConfig = [
+  { key: 'checking', label: '입출금통장', category: 'cash', dataKey: 'cashCheckingAccount' as const },
+  { key: 'savings', label: '정기예금/적금', category: 'cash', dataKey: 'cashSavingsAccount' as const },
+  { key: 'domestic', label: '국내주식/ETF', category: 'invest', dataKey: 'investDomesticStock' as const },
+  { key: 'foreign', label: '해외주식/ETF', category: 'invest', dataKey: 'investForeignStock' as const },
+  { key: 'fund', label: '펀드/채권', category: 'invest', dataKey: 'investFund' as const },
+  { key: 'other', label: '기타 투자자산', category: 'invest', dataKey: 'investOther' as const },
+]
+
+// 금융자산 행들 렌더링 (추가 형태)
 export function FinancialAssetRows({
   data,
   onUpdateData,
@@ -438,254 +339,199 @@ export function FinancialAssetRows({
   const isActive = activeRow === 'asset'
   const isCurrent = currentRowId === 'asset'
 
-  // 완료 조건: 현금성 자산 또는 투자자산 중 하나라도 입력
-  const hasCash = (data.cashCheckingAccount !== null && data.cashCheckingAccount > 0) ||
-                  (data.cashSavingsAccount !== null && data.cashSavingsAccount > 0)
-  const hasInvest = (data.investDomesticStock !== null && data.investDomesticStock > 0) ||
-                    (data.investForeignStock !== null && data.investForeignStock > 0) ||
-                    (data.investFund !== null && data.investFund > 0) ||
-                    (data.investOther !== null && data.investOther > 0)
-  const isComplete = hasCash || hasInvest
+  // 추가된 자산들 (값이 null이 아닌 것들)
+  const addedAssets = assetTypeConfig.filter(type => data[type.dataKey] !== null)
+  const hasAnyAsset = addedAssets.length > 0
+  const hasNoAssetSelected = data.hasNoAsset === true
 
-  // 첫 번째 미입력 항목 찾기 (현재 입력해야 할 행 결정)
-  const needsChecking = data.cashCheckingAccount === null
-  const needsSavings = !needsChecking && data.cashSavingsAccount === null
-  const needsDomestic = !needsChecking && !needsSavings && data.investDomesticStock === null
-  const needsForeign = !needsDomestic && data.investForeignStock === null
-  const needsFund = !needsForeign && data.investFund === null
-  const needsOther = !needsFund && data.investOther === null
+  // 완료 조건: 자산 없음 선택됨 or 하나 이상의 자산이 실제 값 입력됨 (0보다 큼)
+  const isComplete = hasNoAssetSelected || addedAssets.some(type => {
+    const value = data[type.dataKey]
+    return value !== null && value > 0
+  })
+
+  // 아직 추가되지 않은 자산 타입들
+  const availableCashAssets = assetTypeConfig.filter(t => t.category === 'cash' && data[t.dataKey] === null)
+  const availableInvestAssets = assetTypeConfig.filter(t => t.category === 'invest' && data[t.dataKey] === null)
+
+  // 자산 삭제
+  const removeAsset = (dataKey: keyof OnboardingData) => {
+    onUpdateData({ [dataKey]: null })
+  }
+
+  // 자산 없음 선택됨
+  if (hasNoAssetSelected) {
+    return (
+      <div
+        className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${styles.excelRowComplete}`}
+        onClick={() => onFocus('asset')}
+      >
+        <div className={styles.excelRowNumber}>
+          <Check size={14} />
+        </div>
+        <div className={styles.excelRowLabel}>금융자산</div>
+        <div className={styles.excelRowInputMulti}>
+          <div className={styles.excelValueCells}>
+            <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
+              금융자산 없음
+            </div>
+            <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`} />
+            <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`} />
+            <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
+            <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}>
+              <button onClick={(e) => { e.stopPropagation(); onUpdateData({ hasNoAsset: null }) }} type="button">
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 자산이 하나도 없으면 카테고리 선택 버튼 표시
+  if (!hasAnyAsset) {
+    return (
+      <>
+        {/* 메인 행: 카테고리 선택 */}
+        <div
+          className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isCurrent ? styles.excelRowCurrent : ''}`}
+          onClick={() => onFocus('asset')}
+          data-current={isCurrent ? 'true' : undefined}
+        >
+          <div className={styles.excelRowNumber}>{baseRowIndex}</div>
+          <div className={styles.excelRowLabel}>금융자산</div>
+          <div className={styles.excelRowInputMulti}>
+            <span className={styles.excelCategoryLabel}>현금성 자산</span>
+            {availableCashAssets.map(type => (
+              <span
+                key={type.key}
+                className={styles.excelAddText}
+                onClick={(e) => { e.stopPropagation(); onUpdateData({ [type.dataKey]: 0 }) }}
+              >
+                <Plus size={14} /> {type.label}
+              </span>
+            ))}
+          </div>
+        </div>
+        {/* 투자 자산 행 */}
+        <div
+          className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''}`}
+          onClick={() => onFocus('asset')}
+        >
+          <div className={styles.excelRowNumber} />
+          <div className={styles.excelRowLabel} />
+          <div className={styles.excelRowInputMulti}>
+            <span className={styles.excelCategoryLabel}>투자 자산</span>
+            {availableInvestAssets.map(type => (
+              <span
+                key={type.key}
+                className={styles.excelAddText}
+                onClick={(e) => { e.stopPropagation(); onUpdateData({ [type.dataKey]: 0 }) }}
+              >
+                <Plus size={14} /> {type.label}
+              </span>
+            ))}
+          </div>
+        </div>
+        {/* 금융자산 없음 행 */}
+        <div
+          className={`${styles.excelRow} ${styles.excelRowExtension} ${styles.excelRowAdd} ${isActive ? styles.excelRowActive : ''}`}
+          onClick={() => onFocus('asset')}
+        >
+          <div className={styles.excelRowNumber} />
+          <div className={styles.excelRowLabel} />
+          <div className={styles.excelRowInputMulti}>
+            <span
+              className={styles.excelAddText}
+              onClick={(e) => { e.stopPropagation(); onUpdateData({ hasNoAsset: true }) }}
+            >
+              금융자산 없음
+            </span>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
-      {/* 현금성 자산 - 입출금통장 */}
-      <div
-        className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsChecking && !isComplete ? styles.excelRowCurrent : ''}`}
-        onClick={() => onFocus('asset')}
-        data-current={isCurrent && needsChecking && !isComplete ? 'true' : undefined}
-      >
-        <div className={styles.excelRowNumber}>
-          {isComplete ? <Check size={14} /> : baseRowIndex}
-        </div>
-        <div className={styles.excelRowLabel}>현금성 자산</div>
-        <div className={styles.excelRowInputMulti}>
-          <div className={styles.excelValueCells}>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-              입출금통장
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-              <MoneyInput
-                value={data.cashCheckingAccount}
-                onChange={(value) => onUpdateData({ cashCheckingAccount: value })}
-                placeholder="0"
-                hideSuffix
-                onFocus={() => onFocus('asset')}
-                data-filled={data.cashCheckingAccount !== null ? 'true' : undefined}
-              />
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
-              만원
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}>
-              {data.cashCheckingAccount !== null && data.cashCheckingAccount > 0 && (
-                <span className={styles.excelCalculatedSmall}>
-                  {formatMoney(data.cashCheckingAccount)}
-                </span>
-              )}
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
-          </div>
-        </div>
-      </div>
+      {/* 추가된 자산들 */}
+      {addedAssets.map((assetType, index) => {
+        const isFirst = index === 0
+        const value = data[assetType.dataKey]
 
-      {/* 현금성 자산 - 정기예금/적금 */}
-      <div
-        className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsSavings && !isComplete ? styles.excelRowCurrent : ''}`}
-        onClick={() => onFocus('asset')}
-        data-current={isCurrent && needsSavings && !isComplete ? 'true' : undefined}
-      >
-        <div className={styles.excelRowNumber} />
-        <div className={styles.excelRowLabel} />
-        <div className={styles.excelRowInputMulti}>
-          <div className={styles.excelValueCells}>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-              정기예금/적금
+        return (
+          <div
+            key={assetType.key}
+            className={`${styles.excelRow} ${!isFirst ? styles.excelRowExtension : ''} ${isActive ? styles.excelRowActive : ''} ${isFirst && isComplete ? styles.excelRowComplete : ''} ${isCurrent && isFirst && !isComplete ? styles.excelRowCurrent : ''}`}
+            onClick={() => onFocus('asset')}
+            data-current={isCurrent && isFirst && !isComplete ? 'true' : undefined}
+          >
+            <div className={styles.excelRowNumber}>
+              {isFirst ? (isComplete ? <Check size={14} /> : baseRowIndex) : null}
             </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-              <MoneyInput
-                value={data.cashSavingsAccount}
-                onChange={(value) => onUpdateData({ cashSavingsAccount: value })}
-                placeholder="0"
-                hideSuffix
-                onFocus={() => onFocus('asset')}
-                data-filled={data.cashSavingsAccount !== null ? 'true' : undefined}
-              />
+            <div className={styles.excelRowLabel}>{isFirst ? '금융자산' : ''}</div>
+            <div className={styles.excelRowInputMulti}>
+              <div className={styles.excelValueCells}>
+                <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
+                  {assetType.label}
+                </div>
+                <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
+                  <MoneyInput
+                    value={value === 0 ? null : value}
+                    onChange={(newValue) => onUpdateData({ [assetType.dataKey]: newValue ?? 0 })}
+                    placeholder="0"
+                    hideSuffix
+                    onFocus={() => onFocus('asset')}
+                    data-filled={value !== null && value !== 0 ? 'true' : undefined}
+                  />
+                </div>
+                <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
+                  만원
+                </div>
+                <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
+                <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}>
+                  <button onClick={(e) => { e.stopPropagation(); removeAsset(assetType.dataKey) }} type="button">
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
-              만원
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}>
-              {data.cashSavingsAccount !== null && data.cashSavingsAccount > 0 && (
-                <span className={styles.excelCalculatedSmall}>
-                  {formatMoney(data.cashSavingsAccount)}
-                </span>
-              )}
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
           </div>
-        </div>
-      </div>
+        )
+      })}
 
-      {/* 투자자산 - 국내주식 및 ETF */}
-      <div
-        className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsDomestic && !isComplete ? styles.excelRowCurrent : ''}`}
-        onClick={() => onFocus('asset')}
-        data-current={isCurrent && needsDomestic && !isComplete ? 'true' : undefined}
-      >
-        <div className={styles.excelRowNumber} />
-        <div className={styles.excelRowLabel}>투자자산</div>
-        <div className={styles.excelRowInputMulti}>
-          <div className={styles.excelValueCells}>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-              국내주식/ETF
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-              <MoneyInput
-                value={data.investDomesticStock}
-                onChange={(value) => onUpdateData({ investDomesticStock: value })}
-                placeholder="0"
-                hideSuffix
-                onFocus={() => onFocus('asset')}
-                data-filled={data.investDomesticStock !== null ? 'true' : undefined}
-              />
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
-              만원
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}>
-              {data.investDomesticStock !== null && data.investDomesticStock > 0 && (
-                <span className={styles.excelCalculatedSmall}>
-                  {formatMoney(data.investDomesticStock)}
-                </span>
-              )}
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
+      {/* 자산 추가 버튼 행 */}
+      {(availableCashAssets.length > 0 || availableInvestAssets.length > 0) && (
+        <div
+          className={`${styles.excelRow} ${styles.excelRowExtension} ${styles.excelRowAdd} ${isActive ? styles.excelRowActive : ''}`}
+          onClick={() => onFocus('asset')}
+        >
+          <div className={styles.excelRowNumber} />
+          <div className={styles.excelRowLabel} />
+          <div className={styles.excelRowInputMulti}>
+            {availableCashAssets.map(type => (
+              <span
+                key={type.key}
+                className={styles.excelAddText}
+                onClick={(e) => { e.stopPropagation(); onUpdateData({ [type.dataKey]: 0 }) }}
+              >
+                <Plus size={14} /> {type.label}
+              </span>
+            ))}
+            {availableInvestAssets.map(type => (
+              <span
+                key={type.key}
+                className={styles.excelAddText}
+                onClick={(e) => { e.stopPropagation(); onUpdateData({ [type.dataKey]: 0 }) }}
+              >
+                <Plus size={14} /> {type.label}
+              </span>
+            ))}
           </div>
         </div>
-      </div>
-
-      {/* 투자자산 - 해외주식 및 ETF */}
-      <div
-        className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsForeign && !isComplete ? styles.excelRowCurrent : ''}`}
-        onClick={() => onFocus('asset')}
-        data-current={isCurrent && needsForeign && !isComplete ? 'true' : undefined}
-      >
-        <div className={styles.excelRowNumber} />
-        <div className={styles.excelRowLabel} />
-        <div className={styles.excelRowInputMulti}>
-          <div className={styles.excelValueCells}>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-              해외주식/ETF
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-              <MoneyInput
-                value={data.investForeignStock}
-                onChange={(value) => onUpdateData({ investForeignStock: value })}
-                placeholder="0"
-                hideSuffix
-                onFocus={() => onFocus('asset')}
-                data-filled={data.investForeignStock !== null ? 'true' : undefined}
-              />
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
-              만원
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}>
-              {data.investForeignStock !== null && data.investForeignStock > 0 && (
-                <span className={styles.excelCalculatedSmall}>
-                  {formatMoney(data.investForeignStock)}
-                </span>
-              )}
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
-          </div>
-        </div>
-      </div>
-
-      {/* 투자자산 - 펀드 및 채권 */}
-      <div
-        className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsFund && !isComplete ? styles.excelRowCurrent : ''}`}
-        onClick={() => onFocus('asset')}
-        data-current={isCurrent && needsFund && !isComplete ? 'true' : undefined}
-      >
-        <div className={styles.excelRowNumber} />
-        <div className={styles.excelRowLabel} />
-        <div className={styles.excelRowInputMulti}>
-          <div className={styles.excelValueCells}>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-              펀드/채권
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-              <MoneyInput
-                value={data.investFund}
-                onChange={(value) => onUpdateData({ investFund: value })}
-                placeholder="0"
-                hideSuffix
-                onFocus={() => onFocus('asset')}
-                data-filled={data.investFund !== null ? 'true' : undefined}
-              />
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
-              만원
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}>
-              {data.investFund !== null && data.investFund > 0 && (
-                <span className={styles.excelCalculatedSmall}>
-                  {formatMoney(data.investFund)}
-                </span>
-              )}
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
-          </div>
-        </div>
-      </div>
-
-      {/* 투자자산 - 기타 (가상화폐, P2P 등) */}
-      <div
-        className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''} ${isCurrent && needsOther && !isComplete ? styles.excelRowCurrent : ''}`}
-        onClick={() => onFocus('asset')}
-        data-current={isCurrent && needsOther && !isComplete ? 'true' : undefined}
-      >
-        <div className={styles.excelRowNumber} />
-        <div className={styles.excelRowLabel} />
-        <div className={styles.excelRowInputMulti}>
-          <div className={styles.excelValueCells}>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-              기타 투자자산
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-              <MoneyInput
-                value={data.investOther}
-                onChange={(value) => onUpdateData({ investOther: value })}
-                placeholder="0"
-                hideSuffix
-                onFocus={() => onFocus('asset')}
-                data-filled={data.investOther !== null ? 'true' : undefined}
-              />
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
-              만원
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}>
-              {data.investOther !== null && data.investOther > 0 && (
-                <span className={styles.excelCalculatedSmall}>
-                  {formatMoney(data.investOther)}
-                </span>
-              )}
-            </div>
-            <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
-          </div>
-        </div>
-      </div>
+      )}
     </>
   )
 }
@@ -731,11 +577,6 @@ export function renderAssetInput({ data, onFocus, addAssetItem, updateAssetItem,
       <button className={styles.excelAddSmall} onClick={() => addAssetItem('assets')}>
         <Plus size={14} /> 추가
       </button>
-      {total > 0 && (
-        <span className={styles.excelTotal}>
-          총 합계: {formatMoney(total)}
-        </span>
-      )}
     </div>
   )
 }
@@ -806,7 +647,7 @@ export function DebtRows({
   if (hasNoDebt === true) {
     return (
       <div
-        className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''}`}
+        className={`${styles.excelRow} ${isActive ? styles.excelRowActive : ''} ${styles.excelRowComplete}`}
         onClick={() => onFocus('debt')}
       >
         <div className={styles.excelRowNumber}>
@@ -870,7 +711,7 @@ export function DebtRows({
           <React.Fragment key={index}>
             {/* 부채 항목 - 이름 + 금액 행 */}
             <div
-              className={`${styles.excelRow} ${!isFirstDebt ? styles.excelRowExtension : ''} ${isActive ? styles.excelRowActive : ''} ${isCurrent && isFirstDebt && !isComplete ? styles.excelRowCurrent : ''}`}
+              className={`${styles.excelRow} ${!isFirstDebt ? styles.excelRowExtension : ''} ${isActive ? styles.excelRowActive : ''} ${isFirstDebt && isComplete ? styles.excelRowComplete : ''} ${isCurrent && isFirstDebt && !isComplete ? styles.excelRowCurrent : ''}`}
               onClick={() => onFocus('debt')}
               data-current={isCurrent && isFirstDebt && !isComplete ? 'true' : undefined}
             >
@@ -902,112 +743,12 @@ export function DebtRows({
                   <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
                     만원
                   </div>
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}>
-                    {debt.amount !== null && debt.amount > 0 && (
-                      <span className={styles.excelCalculatedSmall}>
-                        {formatMoney(debt.amount)}
-                      </span>
-                    )}
-                  </div>
+                  <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
                   <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}>
                     <button onClick={(e) => { e.stopPropagation(); deleteDebt(index) }} type="button">
                       <X size={14} />
                     </button>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 금리 행 */}
-            <div
-              className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''}`}
-              onClick={() => onFocus('debt')}
-            >
-              <div className={styles.excelRowNumber} />
-              <div className={styles.excelRowLabel} />
-              <div className={styles.excelRowInputMulti}>
-                <div className={styles.excelValueCells}>
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-                    금리
-                  </div>
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={debt.rate ?? ''}
-                      onChange={(e) => updateDebt(index, { rate: e.target.value ? parseFloat(e.target.value) : null })}
-                      placeholder="0.0"
-                      onFocus={() => onFocus('debt')}
-                      data-filled={debt.rate !== null ? 'true' : undefined}
-                    />
-                  </div>
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`}>
-                    %
-                  </div>
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
-                </div>
-              </div>
-            </div>
-
-            {/* 만기 행 */}
-            <div
-              className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''}`}
-              onClick={() => onFocus('debt')}
-            >
-              <div className={styles.excelRowNumber} />
-              <div className={styles.excelRowLabel} />
-              <div className={styles.excelRowInputMulti}>
-                <div className={styles.excelValueCells}>
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-                    만기
-                  </div>
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-                    <Input
-                      type="month"
-                      value={debt.maturity ?? ''}
-                      onChange={(e) => updateDebt(index, { maturity: e.target.value || null })}
-                      onFocus={() => onFocus('debt')}
-                      data-filled={debt.maturity !== null ? 'true' : undefined}
-                    />
-                  </div>
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`} />
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
-                </div>
-              </div>
-            </div>
-
-            {/* 상환방식 행 */}
-            <div
-              className={`${styles.excelRow} ${styles.excelRowExtension} ${isActive ? styles.excelRowActive : ''}`}
-              onClick={() => onFocus('debt')}
-            >
-              <div className={styles.excelRowNumber} />
-              <div className={styles.excelRowLabel} />
-              <div className={styles.excelRowInputMulti}>
-                <div className={styles.excelValueCells}>
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
-                    상환방식
-                  </div>
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellAmountMid}`}>
-                    <select
-                      className={styles.loanTypeSelect}
-                      value={debt.repaymentType ?? ''}
-                      onChange={(e) => updateDebt(index, { repaymentType: (e.target.value || null) as DebtInput['repaymentType'] })}
-                      onFocus={() => onFocus('debt')}
-                      data-filled={debt.repaymentType !== null ? 'true' : undefined}
-                    >
-                      <option value="">선택</option>
-                      <option value="만기일시상환">만기일시상환</option>
-                      <option value="원리금균등상환">원리금균등상환</option>
-                      <option value="원금균등상환">원금균등상환</option>
-                      <option value="거치식상환">거치식상환</option>
-                    </select>
-                  </div>
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellUnit}`} />
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
-                  <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
                 </div>
               </div>
             </div>

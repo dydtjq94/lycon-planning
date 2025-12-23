@@ -13,9 +13,8 @@ export type RowId =
   | 'asset'
   | 'debt'
   | 'national_pension'    // 국민연금
-  | 'retirement_pension'  // 퇴직연금 (DB/DC)
-  | 'personal_pension'    // 개인연금 (IRP, 연금저축)
-  | 'other_pension'       // 기타연금 (주택연금 등)
+  | 'retirement_pension'  // 퇴직연금/퇴직금
+  | 'personal_pension'    // 개인연금 (IRP, 연금저축, ISA)
   | 'retirement_age'
   | 'retirement_fund'
 
@@ -34,6 +33,7 @@ export interface ProgressiveFormProps {
   onActiveRowChange: (rowId: string) => void
   activeSection?: SectionId
   onSectionChange?: (sectionId: SectionId) => void
+  onStepChange?: (stepIndex: number) => void
   onComplete?: () => void
   isCompleteDisabled?: boolean
   isSaving?: boolean
@@ -64,13 +64,14 @@ export const frequencyLabels: Record<Frequency, string> = {
 
 // 섹션별로 포함되는 행들 정의
 export const sectionRows: Record<SectionId, RowId[]> = {
-  basic: ['name', 'birth_date', 'children', 'retirement_age', 'retirement_fund'],
+  household: ['name', 'birth_date', 'children'],
+  goals: ['retirement_age', 'retirement_fund'],
   income: ['labor_income', 'business_income'],
   expense: ['living_expenses'],
   realEstate: ['realEstate'],
   asset: ['asset'],
   debt: ['debt'],
-  pension: ['national_pension', 'retirement_pension', 'personal_pension', 'other_pension'],
+  pension: ['national_pension', 'retirement_pension', 'personal_pension'],
 }
 
 // Row 설정 배열
@@ -165,14 +166,16 @@ export const rows: RowConfig[] = [
     label: '금융자산',
     isVisible: (_, visible) => visible.includes('realEstate'),
     isComplete: (data) => {
-      // 현금성 자산 또는 투자자산 중 하나라도 입력되면 완료
-      const hasCash = (data.cashCheckingAccount !== null && data.cashCheckingAccount > 0) ||
-                      (data.cashSavingsAccount !== null && data.cashSavingsAccount > 0)
-      const hasInvest = (data.investDomesticStock !== null && data.investDomesticStock > 0) ||
-                        (data.investForeignStock !== null && data.investForeignStock > 0) ||
-                        (data.investFund !== null && data.investFund > 0) ||
-                        (data.investOther !== null && data.investOther > 0)
-      return hasCash || hasInvest
+      // 금융자산 없음 선택됨
+      if (data.hasNoAsset === true) return true
+      // 하나라도 실제 값이 입력되면 완료 (0보다 큼)
+      const hasValue = (data.cashCheckingAccount !== null && data.cashCheckingAccount > 0) ||
+                       (data.cashSavingsAccount !== null && data.cashSavingsAccount > 0) ||
+                       (data.investDomesticStock !== null && data.investDomesticStock > 0) ||
+                       (data.investForeignStock !== null && data.investForeignStock > 0) ||
+                       (data.investFund !== null && data.investFund > 0) ||
+                       (data.investOther !== null && data.investOther > 0)
+      return hasValue
     },
   },
   // 부채
@@ -191,20 +194,14 @@ export const rows: RowConfig[] = [
   },
   {
     id: 'retirement_pension',
-    label: '퇴직연금',
+    label: '퇴직연금/퇴직금',
     isVisible: (_, visible) => visible.includes('national_pension'),
-    isComplete: (data) => data.retirementPensionBalance != null && data.retirementPensionBalance > 0,
+    isComplete: (data) => data.retirementPensionType != null && data.retirementPensionBalance != null,
   },
   {
     id: 'personal_pension',
     label: '개인연금',
     isVisible: (_, visible) => visible.includes('retirement_pension'),
-    isComplete: (data) => data.personalPensionBalance != null && data.personalPensionBalance > 0,
-  },
-  {
-    id: 'other_pension',
-    label: '기타연금',
-    isVisible: (_, visible) => visible.includes('personal_pension'),
-    isComplete: (data) => data.otherPensionMonthly != null && data.otherPensionMonthly > 0,
+    isComplete: (data) => (data.irpBalance != null && data.irpBalance > 0) || (data.pensionSavingsBalance != null && data.pensionSavingsBalance > 0) || (data.isaBalance != null && data.isaBalance > 0),
   },
 ]

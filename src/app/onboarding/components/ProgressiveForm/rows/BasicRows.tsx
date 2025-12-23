@@ -21,14 +21,26 @@ export function renderNameInput({
   isActive,
 }: RowInputProps) {
   return (
-    <Input
-      placeholder="이름을 입력하세요"
-      value={data.name}
-      onChange={(e) => onUpdateData({ name: e.target.value })}
-      onFocus={() => onFocus("name")}
-      autoFocus={isActive}
-      data-filled={data.name ? "true" : undefined}
-    />
+    <div className={styles.excelValueCells}>
+      <div className={`${styles.excelValueCell} ${styles.excelValueCellNameInput}`}>
+        <Input
+          placeholder="이름을 입력하세요"
+          value={data.name}
+          onChange={(e) => onUpdateData({ name: e.target.value })}
+          onFocus={() => onFocus("name")}
+          autoFocus={isActive}
+          data-filled={data.name ? "true" : undefined}
+        />
+      </div>
+      <div
+        className={`${styles.excelValueCell} ${styles.excelValueCellUnit} ${styles.excelGenderToggle}`}
+        onClick={() => onUpdateData({ gender: data.gender === "male" ? "female" : "male" })}
+      >
+        {data.gender === "male" ? "남" : data.gender === "female" ? "여" : ""}
+      </div>
+      <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
+      <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
+    </div>
   );
 }
 
@@ -614,13 +626,8 @@ export function renderRetirementFundInput({
       </div>
       <div
         className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`}
-      >
-        {data.target_retirement_fund > 0 && (
-          <span className={styles.excelCalculatedSmall}>
-            {formatMoney(data.target_retirement_fund)}
-          </span>
-        )}
-      </div>
+      />
+
       <div
         className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`}
       ></div>

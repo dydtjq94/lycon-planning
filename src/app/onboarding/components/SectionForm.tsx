@@ -9,7 +9,8 @@ import styles from '../onboarding.module.css'
 
 // 섹션 정의
 export type SectionId =
-  | 'basic'      // 기본 정보 및 은퇴 목표
+  | 'household'  // 가계 정보
+  | 'goals'      // 목표
   | 'income'     // 소득
   | 'expense'    // 지출
   | 'realEstate' // 부동산 정리
@@ -25,7 +26,8 @@ export interface Section {
 }
 
 export const sections: Section[] = [
-  { id: 'basic', label: '기본 정보 및 은퇴 목표', shortLabel: '기본 정보', description: '이름, 생년월일, 배우자 정보와 은퇴 목표를 입력하세요' },
+  { id: 'household', label: '가계 정보', shortLabel: '가계', description: '이름, 생년월일, 가족 정보를 입력하세요' },
+  { id: 'goals', label: '목표', shortLabel: '목표', description: '은퇴 목표를 설정하세요' },
   { id: 'income', label: '소득 정리', shortLabel: '소득', description: '월별 소득 내역을 정리하세요' },
   { id: 'expense', label: '지출 정리', shortLabel: '지출', description: '월별 지출 내역을 정리하세요' },
   { id: 'realEstate', label: '부동산 정리', shortLabel: '부동산', description: '보유 부동산 자산을 정리하세요' },
@@ -176,7 +178,7 @@ export function SectionForm({ data, activeSection, onUpdateData }: SectionFormPr
   // 각 섹션별 콘텐츠 렌더링
   const renderSectionContent = () => {
     switch (activeSection) {
-      case 'basic':
+      case 'household':
         const currentAge = calculateAge(data.birth_date)
         const koreanAge = calculateKoreanAge(data.birth_date)
         const spouseAge = data.spouse?.birth_date ? calculateAge(data.spouse.birth_date) : null
@@ -248,7 +250,14 @@ export function SectionForm({ data, activeSection, onUpdateData }: SectionFormPr
                 </div>
               )}
             </div>
+          </div>
+        )
 
+      case 'goals':
+        const goalsCurrentAge = calculateAge(data.birth_date)
+
+        return (
+          <div className={styles.sectionContent}>
             <div className={styles.sectionGroup}>
               <h3 className={styles.sectionGroupTitle}>은퇴 목표</h3>
               <div className={styles.sectionField}>
@@ -262,9 +271,9 @@ export function SectionForm({ data, activeSection, onUpdateData }: SectionFormPr
                     className={styles.sectionSmallInput}
                   />
                   <span className={styles.sectionUnit}>세</span>
-                  {currentAge && data.target_retirement_age > currentAge && (
+                  {goalsCurrentAge && data.target_retirement_age > goalsCurrentAge && (
                     <span className={styles.sectionFieldInfo}>
-                      {data.target_retirement_age - currentAge}년 후
+                      {data.target_retirement_age - goalsCurrentAge}년 후
                     </span>
                   )}
                 </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { OnboardingData, AssetCategory } from "@/types";
 import { ProgressiveForm, type SectionId, GuideInput } from "./components";
 import { rows, type RowId } from "./components/ProgressiveForm/types";
@@ -52,6 +52,7 @@ import styles from "./onboarding.module.css";
 
 const initialData: OnboardingData = {
   name: "",
+  gender: null,
   birth_date: "",
   target_retirement_age: 0,
   target_retirement_fund: 0,
@@ -95,6 +96,7 @@ const initialData: OnboardingData = {
   investFundRate: null,
   investOther: null,
   investOtherRate: null,
+  hasNoAsset: null,
   incomes: [],
   expenses: [],
   realEstates: [],
@@ -108,6 +110,9 @@ const initialData: OnboardingData = {
   retirementPensionBalance: null,
   personalPensionMonthly: null,
   personalPensionBalance: null,
+  irpBalance: null,
+  pensionSavingsBalance: null,
+  isaBalance: null,
   otherPensionMonthly: null,
   hasNoPension: null,
   pensions: [],
@@ -115,6 +120,7 @@ const initialData: OnboardingData = {
 
 const sampleData: OnboardingData = {
   name: "김민수",
+  gender: "male",
   birth_date: "1983-05-15",
   target_retirement_age: 55,
   target_retirement_fund: 1500000000,
@@ -178,6 +184,7 @@ const sampleData: OnboardingData = {
   investFundRate: null,
   investOther: null,
   investOtherRate: null,
+  hasNoAsset: false,
   // 부채 샘플
   debts: [
     {
@@ -198,8 +205,11 @@ const sampleData: OnboardingData = {
   nationalPensionStartAge: 65,       // 65세부터 수령
   retirementPensionType: 'DC',       // DC형
   retirementPensionBalance: 80000000, // 현재 8천만원
-  personalPensionMonthly: 500000,    // 월 50만원 납입
-  personalPensionBalance: 30000000,  // 현재 3천만원
+  personalPensionMonthly: null,
+  personalPensionBalance: null,
+  irpBalance: 20000000,              // IRP 2천만원
+  pensionSavingsBalance: 15000000,   // 연금저축 1500만원
+  isaBalance: 10000000,              // ISA 1천만원
   otherPensionMonthly: null,         // 기타연금 없음
   hasNoPension: false,
   pensions: [],
@@ -216,13 +226,20 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [started, setStarted] = useState(false);
   const [data, setData] = useState<OnboardingData>(initialData);
-  const [activeSection, setActiveSection] = useState<SectionId>("basic");
+  const [activeSection, setActiveSection] = useState<SectionId>("household");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [currentText, setCurrentText] = useState("");
   const [showContent, setShowContent] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
+
+  // 첫 번째 미완료 스텝 인덱스 찾기
+  const findFirstIncompleteStep = useCallback((loadedData: OnboardingData) => {
+    const firstIncomplete = rows.findIndex(row => !row.isComplete(loadedData));
+    // 모두 완료면 마지막 스텝, 아니면 첫 번째 미완료 스텝
+    return firstIncomplete === -1 ? rows.length - 1 : firstIncomplete;
+  }, []);
 
   // 자동 저장 상태
   const [autoSaveStatus, setAutoSaveStatus] = useState<
@@ -237,6 +254,11 @@ export default function OnboardingPage() {
   const currentRow = stepIndex < rows.length ? rows[stepIndex] : null;
   const isCurrentRowComplete = currentRow ? currentRow.isComplete(data) : false;
   const isLastStep = stepIndex === rows.length - 1;
+
+  // 전체 진행률 계산
+  const completedCount = rows.filter(row => row.isComplete(data)).length;
+  const totalCount = rows.length;
+  const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   // 이전/다음 핸들러
   const handlePrevStep = useCallback(() => {
@@ -276,6 +298,8 @@ export default function OnboardingPage() {
           const draftData = profile.draft_data as OnboardingData;
           setData(draftData);
           lastSavedDataRef.current = JSON.stringify(draftData);
+          // 첫 번째 미완료 스텝으로 시작
+          setStepIndex(findFirstIncompleteStep(draftData));
           setStarted(true); // 임시 저장 데이터가 있으면 바로 폼으로
         } else {
           // localStorage 백업 확인
@@ -287,6 +311,8 @@ export default function OnboardingPage() {
               const parsedData = JSON.parse(localDraft) as OnboardingData;
               setData(parsedData);
               lastSavedDataRef.current = localDraft;
+              // 첫 번째 미완료 스텝으로 시작
+              setStepIndex(findFirstIncompleteStep(parsedData));
               setStarted(true);
             } catch {
               // 파싱 실패시 무시
@@ -301,7 +327,7 @@ export default function OnboardingPage() {
     };
 
     loadDraftData();
-  }, []);
+  }, [findFirstIncompleteStep]);
 
   // 타이핑 효과
   useEffect(() => {
@@ -521,7 +547,8 @@ export default function OnboardingPage() {
         ...dataToSave.debts
           .filter((i) => i.name && i.amount)
           .map((i) => ({
-            ...i,
+            name: i.name,
+            amount: i.amount,
             category: "debt" as AssetCategory,
             user_id: user.id,
           })),
@@ -667,57 +694,45 @@ export default function OnboardingPage() {
   return (
     <div className={styles.spreadsheetPage}>
       <header className={styles.spreadsheetPageHeader}>
-        <div className={styles.spreadsheetPageLogo}>
-          <span>Lycon</span>
-          <span className={styles.logoSeparator}>|</span>
-          <span className={styles.logoSubtitle}>현재 재무 정리</span>
-        </div>
-        <div className={styles.headerActions}>
-          <span
-            className={`${styles.autoSaveStatus} ${
-              autoSaveStatus === "idle" ? styles.autoSaveStatusIdle : ""
-            } ${
-              autoSaveStatus !== "idle"
-                ? styles[
-                    `autoSaveStatus${
-                      autoSaveStatus.charAt(0).toUpperCase() +
-                      autoSaveStatus.slice(1)
-                    }`
-                  ]
-                : ""
-            }`}
-          >
+        <div className={styles.headerMain}>
+          <div className={styles.spreadsheetPageLogo}>
+            <span>Lycon</span>
+            <span className={styles.logoSeparator}>|</span>
+            <span className={styles.logoSubtitle}>현재 재무 정리</span>
+          </div>
+          <div className={styles.headerActions}>
             {autoSaveStatus === "saving" && (
-              <>
+              <span className={styles.autoSaveStatus}>
                 <Loader2 size={14} className={styles.spinner} />
                 저장 중...
-              </>
+              </span>
             )}
-            {autoSaveStatus === "saved" && (
-              <>
-                <Check size={14} />
-                임시 저장됨
-              </>
+            {autoSaveStatus === "error" && (
+              <span className={`${styles.autoSaveStatus} ${styles.autoSaveStatusError}`}>
+                저장 실패
+              </span>
             )}
-            {autoSaveStatus === "error" && "저장 실패"}
-            {autoSaveStatus === "idle" && (
-              <span style={{ visibility: "hidden" }}>임시 저장됨</span>
-            )}
-          </span>
-          <button
-            className={styles.spreadsheetSubmitButton}
-            onClick={handleSubmit}
-            disabled={saving || !data.name || !data.birth_date}
-          >
-            {saving ? (
-              <>
-                <Loader2 size={16} className={styles.spinner} />
-                저장 중...
-              </>
-            ) : (
-              "완료"
-            )}
-          </button>
+            <button
+              className={styles.spreadsheetSubmitButton}
+              onClick={handleSubmit}
+              disabled={saving || !data.name || !data.birth_date}
+            >
+              {saving ? (
+                <>
+                  <Loader2 size={16} className={styles.spinner} />
+                  저장 중...
+                </>
+              ) : (
+                "완료"
+              )}
+            </button>
+          </div>
+        </div>
+        <div className={styles.headerProgressBar}>
+          <div
+            className={styles.headerProgressFill}
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
       </header>
 
@@ -748,13 +763,14 @@ export default function OnboardingPage() {
             isCompleteDisabled={saving || !data.name || !data.birth_date}
             isSaving={saving}
             currentStepIndex={stepIndex}
+            onStepChange={setStepIndex}
             onActiveRowChange={(rowId) => {
               const rowToSection: Record<string, SectionId> = {
-                name: "basic",
-                birth_date: "basic",
-                children: "basic",
-                retirement_age: "basic",
-                retirement_fund: "basic",
+                name: "household",
+                birth_date: "household",
+                children: "household",
+                retirement_age: "goals",
+                retirement_fund: "goals",
                 labor_income: "income",
                 business_income: "income",
                 living_expenses: "expense",

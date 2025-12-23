@@ -72,6 +72,7 @@ export interface Asset {
 export interface OnboardingData {
   // Step 1: 기본 정보
   name: string
+  gender: Gender | null  // 성별
   birth_date: string  // YYYY-MM-DD 형식
   target_retirement_age: number
   target_retirement_fund: number
@@ -125,6 +126,7 @@ export interface OnboardingData {
   investFundRate: number | null           // 펀드 수익률
   investOther: number | null              // 기타 투자자산 (가상화폐, P2P 등)
   investOtherRate: number | null          // 기타 수익률
+  hasNoAsset: boolean | null              // null = 아직 선택 안함, true = 금융자산 없음
 
   // 부채 목록
   debts: DebtInput[]
@@ -133,10 +135,13 @@ export interface OnboardingData {
   // 연금
   nationalPension: number | null           // 국민연금 예상 월 수령액
   nationalPensionStartAge: number | null   // 국민연금 수령 시작 나이
-  retirementPensionType: 'DB' | 'DC' | null  // 퇴직연금 유형
+  retirementPensionType: 'DB' | 'DC' | 'severance' | null  // 퇴직연금/퇴직금 유형
   retirementPensionBalance: number | null  // 퇴직연금 현재 잔액
-  personalPensionMonthly: number | null    // 개인연금 월 납입액
-  personalPensionBalance: number | null    // 개인연금 현재 잔액
+  personalPensionMonthly: number | null    // 개인연금 월 납입액 (deprecated)
+  personalPensionBalance: number | null    // 개인연금 현재 잔액 (deprecated)
+  irpBalance: number | null                // IRP 현재 잔액
+  pensionSavingsBalance: number | null     // 연금저축 현재 잔액
+  isaBalance: number | null                // ISA 현재 잔액
   otherPensionMonthly: number | null       // 기타연금 예상 월 수령액
   hasNoPension: boolean | null             // null = 아직 선택 안함, true = 연금 없음
 
