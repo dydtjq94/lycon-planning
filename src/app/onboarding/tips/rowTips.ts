@@ -14,17 +14,23 @@ function calculateAge(birthDate: string): number | null {
   return age
 }
 
-// 금액 포맷 헬퍼
+// 금액 포맷 헬퍼 (원 단위 입력 기준)
+// 입력: 원 단위 (100000000 = 1억, 10000 = 1만원)
 function formatMoney(amount: number): string {
-  if (amount >= 100000000) {
-    const eok = Math.floor(amount / 100000000)
-    const man = Math.floor((amount % 100000000) / 10000)
-    return man > 0 ? `${eok}억 ${man.toLocaleString()}만원` : `${eok}억원`
+  if (amount === 0) return '0원'
+
+  const manwon = amount / 10000  // 만원 단위로 변환
+
+  if (manwon >= 10000) {
+    const billions = Math.floor(manwon / 10000)
+    const remainder = manwon % 10000
+    if (remainder > 0) {
+      return `${billions}억 ${Math.round(remainder).toLocaleString()}만원`
+    }
+    return `${billions}억`
   }
-  if (amount >= 10000) {
-    return `${Math.floor(amount / 10000).toLocaleString()}만원`
-  }
-  return `${amount.toLocaleString()}원`
+
+  return `${Math.round(manwon).toLocaleString()}만원`
 }
 
 // 월 단위로 환산하는 헬퍼

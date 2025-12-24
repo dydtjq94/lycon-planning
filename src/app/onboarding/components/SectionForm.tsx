@@ -89,21 +89,23 @@ function calculateTotalValue(items: AssetInput[]): number {
   }, 0)
 }
 
-// 금액 포맷
+// 금액 포맷 (원 단위 입력 기준)
+// 입력: 원 단위 (100000000 = 1억, 10000 = 1만원)
 function formatMoney(amount: number): string {
-  if (amount >= 100000000) {
-    const eok = Math.floor(amount / 100000000)
-    const remainder = amount % 100000000
-    if (remainder >= 10000) {
-      const man = Math.floor(remainder / 10000)
-      return `${eok}억 ${man.toLocaleString()}만원`
+  if (amount === 0) return '0원'
+
+  const manwon = amount / 10000  // 만원 단위로 변환
+
+  if (manwon >= 10000) {
+    const billions = Math.floor(manwon / 10000)
+    const remainder = manwon % 10000
+    if (remainder > 0) {
+      return `${billions}억 ${Math.round(remainder).toLocaleString()}만원`
     }
-    return `${eok}억원`
-  } else if (amount >= 10000) {
-    const man = Math.floor(amount / 10000)
-    return `${man.toLocaleString()}만원`
+    return `${billions}억`
   }
-  return `${amount.toLocaleString()}원`
+
+  return `${Math.round(manwon).toLocaleString()}만원`
 }
 
 export function SectionForm({ data, activeSection, onUpdateData }: SectionFormProps) {

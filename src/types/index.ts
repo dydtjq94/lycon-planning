@@ -135,7 +135,7 @@ export interface OnboardingData {
   // 연금
   nationalPension: number | null           // 국민연금 예상 월 수령액
   nationalPensionStartAge: number | null   // 국민연금 수령 시작 나이
-  retirementPensionType: 'DB' | 'DC' | 'severance' | null  // 퇴직연금/퇴직금 유형
+  retirementPensionType: 'DB' | 'DC' | 'corporate_irp' | 'severance' | null  // 퇴직연금/퇴직금 유형
   retirementPensionBalance: number | null  // 퇴직연금 현재 잔액
   personalPensionMonthly: number | null    // 개인연금 월 납입액 (deprecated)
   personalPensionBalance: number | null    // 개인연금 현재 잔액 (deprecated)

@@ -1,0 +1,390 @@
+.chartContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.chartTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1C1917;
+}
+
+.chartSubtitle {
+  font-size: 12px;
+  color: #78716C;
+}
+
+.chartBody {
+  height: 80px;
+  width: 100%;
+}
+
+.chartBodyLarge {
+  height: 120px;
+  width: 100%;
+}
+
+.chartFooter {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 8px;
+  border-top: 1px solid #E7E5E4;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.statValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1C1917;
+}
+
+.statValueWarning {
+  font-size: 18px;
+  font-weight: 700;
+  color: #F97316;
+}
+
+.statValueSuccess {
+  font-size: 18px;
+  font-weight: 700;
+  color: #10B981;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: #78716C;
+}
+
+.chartPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  background-color: #F5F5F4;
+  border-radius: 8px;
+  color: #A8A29E;
+  font-size: 13px;
+  text-align: center;
+  gap: 4px;
+}
+
+/* 프로그레스 차트 */
+.progressContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progressTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1C1917;
+}
+
+.progressPercent {
+  font-size: 24px;
+  font-weight: 700;
+  color: #3B82F6;
+}
+
+.progressPercentLow {
+  color: #F97316;
+}
+
+.progressPercentHigh {
+  color: #10B981;
+}
+
+.progressBar {
+  width: 100%;
+  height: 12px;
+  background-color: #E7E5E4;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: #3B82F6;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.progressFillLow {
+  background-color: #F97316;
+}
+
+.progressFillHigh {
+  background-color: #10B981;
+}
+
+.progressStats {
+  display: flex;
+  justify-content: space-between;
+}
+
+.progressStat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.progressStatLabel {
+  font-size: 11px;
+  color: #78716C;
+}
+
+.progressStatValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1C1917;
+}
+
+.progressStatValueHighlight {
+  font-size: 15px;
+  font-weight: 600;
+  color: #3B82F6;
+}
+
+/* SavingsChart 바 스타일 */
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.barLabel {
+  width: 36px;
+  font-size: 12px;
+  color: #57534E;
+  flex-shrink: 0;
+}
+
+.barContainer {
+  flex: 1;
+  height: 16px;
+  background-color: #E7E5E4;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.barValue {
+  width: 70px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1C1917;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.savingsMessage {
+  font-size: 12px;
+  color: #57534E;
+  padding: 8px 12px;
+  background-color: #F5F5F4;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+/* LTVChart 스타일 */
+.housingStats {
+  display: flex;
+  gap: 24px;
+}
+
+.housingStat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.housingStatLabel {
+  font-size: 11px;
+  color: #78716C;
+}
+
+.housingStatValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1C1917;
+}
+
+.rentRatioSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ltvSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dsrInfo {
+  padding-top: 8px;
+  border-top: 1px solid #E7E5E4;
+}
+
+/* AssetPieChart 도넛 스타일 */
+.doughnutWrapper {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.doughnutChart {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.doughnutCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.doughnutCenterValue {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #10B981;
+}
+
+.doughnutCenterLabel {
+  font-size: 10px;
+  color: #78716C;
+}
+
+.doughnutLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  font-size: 12px;
+  color: #57534E;
+  flex: 1;
+}
+
+.legendValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1C1917;
+}
+
+/* DebtChart 스타일 */
+.dtiSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.debtList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.debtItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #F5F5F4;
+}
+
+.debtItem:last-child {
+  border-bottom: none;
+}
+
+.debtInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.debtName {
+  font-size: 13px;
+  color: #1C1917;
+}
+
+.highRateBadge {
+  font-size: 10px;
+  color: #EF4444;
+  background-color: #FEF2F2;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.debtDetails {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.debtAmount {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1C1917;
+}
+
+.debtRate {
+  font-size: 12px;
+  color: #78716C;
+}
+
+.debtMore {
+  font-size: 12px;
+  color: #A8A29E;
+  text-align: center;
+  padding: 4px 0;
+}

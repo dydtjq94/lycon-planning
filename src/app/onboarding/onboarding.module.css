@@ -1573,14 +1573,14 @@
 }
 
 .rightPanelTop {
-  height: 280px;
-  min-height: 280px;
+  flex: 1;
+  min-height: 320px;
   background-color: #fafaf9;
   border-bottom: 1px solid #e7e5e4;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow-y: auto;
 }
 
 .rightPanelTopPlaceholder {
@@ -1592,8 +1592,9 @@
 .rightPanelBottom {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  height: 320px;
+  min-height: 320px;
+  flex-shrink: 0;
 }
 
 /* 엑셀 스타일 프로그레시브 폼 */

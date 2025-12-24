@@ -41,38 +41,21 @@ export function calculateKoreanAge(birthDate: string): number | null {
   return today.getFullYear() - birth.getFullYear() + 1
 }
 
-// 금액 포맷 함수 (조/억/만원)
+// 금액 포맷 함수 (원 단위 입력 기준)
+// 입력: 원 단위 (100000000 = 1억, 10000 = 1만원)
 export function formatMoney(amount: number): string {
-  const jo = 1000000000000 // 1조
-  const eok = 100000000 // 1억
-  const man = 10000 // 1만
+  if (amount === 0) return '0원'
 
-  if (amount >= jo) {
-    const joVal = Math.floor(amount / jo)
-    const remainder = amount % jo
-    const eokVal = Math.floor(remainder / eok)
-    const manVal = Math.floor((remainder % eok) / man)
+  const manwon = amount / 10000  // 만원 단위로 변환
 
-    let result = `${joVal}조`
-    if (eokVal > 0) result += ` ${eokVal.toLocaleString()}억`
-    if (manVal > 0) result += ` ${manVal.toLocaleString()}만`
-    return result + '원'
-  }
-
-  if (amount >= eok) {
-    const eokVal = Math.floor(amount / eok)
-    const remainder = amount % eok
-    const manVal = Math.floor(remainder / man)
-    if (manVal > 0) {
-      return `${eokVal}억 ${manVal.toLocaleString()}만원`
+  if (manwon >= 10000) {
+    const billions = Math.floor(manwon / 10000)
+    const remainder = manwon % 10000
+    if (remainder > 0) {
+      return `${billions}억 ${Math.round(remainder).toLocaleString()}만원`
     }
-    return `${eokVal}억원`
+    return `${billions}억`
   }
 
-  if (amount >= man) {
-    const manVal = Math.floor(amount / man)
-    return `${manVal.toLocaleString()}만원`
-  }
-
-  return `${amount.toLocaleString()}원`
+  return `${Math.round(manwon).toLocaleString()}만원`
 }

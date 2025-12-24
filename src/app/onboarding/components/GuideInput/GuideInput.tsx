@@ -23,7 +23,7 @@ interface GuideInputProps {
 // 각 행에 대한 질문과 설명
 const rowQuestions: Record<
   RowId,
-  { question: string; description?: string; tip?: string }
+  { question: string; description?: string }
 > = {
   name: {
     question: "이름을 알려주세요",
@@ -40,12 +40,10 @@ const rowQuestions: Record<
   retirement_age: {
     question: "몇 살에 은퇴하고 싶으세요?",
     description: "목표 은퇴 나이를 설정해주세요.",
-    tip: "한국인 평균 희망 은퇴 나이는 64세예요.",
   },
   retirement_fund: {
     question: "은퇴 후 필요한 자금은 얼마인가요?",
     description: "은퇴 후 생활에 필요한 총 금액이에요.",
-    tip: "부부 기준 월 277만원 x 30년 = 약 10억원",
   },
   labor_income: {
     question: "근로소득이 얼마인가요?",
@@ -54,7 +52,6 @@ const rowQuestions: Record<
   business_income: {
     question: "사업소득이 있으신가요?",
     description: "사업, 프리랜서 등으로 얻는 소득이에요.",
-    tip: "없으면 0을 입력해주세요.",
   },
   living_expenses: {
     question: "월 평균 생활비는 얼마인가요?",
@@ -75,7 +72,6 @@ const rowQuestions: Record<
   national_pension: {
     question: "국민연금 예상 수령액을 알고 계신가요?",
     description: "국민연금공단에서 확인할 수 있어요.",
-    tip: "모르시면 예상 금액을 입력해주세요.",
   },
   retirement_pension: {
     question: "퇴직연금 또는 퇴직금이 있으신가요?",
@@ -204,12 +200,6 @@ export function GuideInput({
           {renderInputForRow(displayRowId, data, onUpdateData)}
         </div>
 
-        {questionData?.tip && (
-          <div className={styles.tipSection}>
-            <span className={styles.tipLabel}>TIP</span>
-            <p className={styles.tipText}>{questionData.tip}</p>
-          </div>
-        )}
       </div>
 
       <div className={styles.navigation}>
@@ -1308,6 +1298,21 @@ function renderInputForRow(
               </button>
               <button
                 className={`${styles.typeButton} ${
+                  data.retirementPensionType === "corporate_irp"
+                    ? styles.typeButtonActive
+                    : ""
+                }`}
+                onClick={() =>
+                  onUpdateData({
+                    retirementPensionType: "corporate_irp",
+                    hasNoPension: false,
+                  })
+                }
+              >
+                기업형 IRP
+              </button>
+              <button
+                className={`${styles.typeButton} ${
                   data.retirementPensionType === "severance"
                     ? styles.typeButtonActive
                     : ""
@@ -1325,7 +1330,7 @@ function renderInputForRow(
           </div>
           <div className={styles.pensionRow}>
             <span className={styles.pensionLabel}>
-              {data.retirementPensionType === "DC"
+              {data.retirementPensionType === "DC" || data.retirementPensionType === "corporate_irp"
                 ? "현재 적립금"
                 : "예상 퇴직 금액"}
             </span>

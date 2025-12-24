@@ -143,7 +143,7 @@ export function PensionRows({
                   onChange={(e) =>
                     onUpdateData({
                       retirementPensionType:
-                        (e.target.value as "DB" | "DC" | "severance" | null) ||
+                        (e.target.value as "DB" | "DC" | "corporate_irp" | "severance" | null) ||
                         null,
                       hasNoPension: false,
                     })
@@ -152,6 +152,7 @@ export function PensionRows({
                   <option value="">유형 선택</option>
                   <option value="DC">DC형</option>
                   <option value="DB">DB형</option>
+                  <option value="corporate_irp">기업형 IRP</option>
                   <option value="severance">퇴직금</option>
                 </select>
               </div>

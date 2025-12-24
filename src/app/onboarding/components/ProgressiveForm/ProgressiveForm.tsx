@@ -35,6 +35,7 @@ import {
   renderPersonalPensionInput,
   renderOtherPensionInput,
 } from './rows'
+import { TipPanel } from './tips'
 
 // 섹션 헤더 레이블 정의
 const sectionLabels: Record<SectionId, string> = {
@@ -621,11 +622,13 @@ export function ProgressiveForm({
 
   return (
     <div className={styles.rightPanelSplit}>
-      {/* 상단: 팁/그래프 영역 (플레이스홀더) */}
+      {/* 상단: 팁/그래프 영역 */}
       <div className={styles.rightPanelTop}>
-        <div className={styles.rightPanelTopPlaceholder}>
-          TIP / 그래프 영역
-        </div>
+        <TipPanel
+          activeSection={visibleSection}
+          activeRow={activeRow}
+          data={data}
+        />
       </div>
 
       {/* 하단: 셀 영역 */}
