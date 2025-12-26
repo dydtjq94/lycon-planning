@@ -622,8 +622,8 @@ export function ProgressiveForm({
 
   return (
     <div className={styles.rightPanelSplit}>
-      {/* 상단: 팁/그래프 영역 */}
-      <div className={styles.rightPanelTop}>
+      {/* TIP + 차트 영역 (전체 높이 사용) */}
+      <div className={styles.rightPanelFull}>
         <TipPanel
           activeSection={visibleSection}
           activeRow={activeRow}
@@ -631,8 +631,8 @@ export function ProgressiveForm({
         />
       </div>
 
-      {/* 하단: 셀 영역 */}
-      <div className={styles.rightPanelBottom}>
+      {/* 하단: 셀 영역 - 숨김 처리 (기능 유지) */}
+      <div className={styles.rightPanelBottomHidden}>
         <div className={styles.excelWrapper}>
           <div className={styles.excelContainer} ref={scrollContainerRef}>
             {/* 고정 헤더 */}

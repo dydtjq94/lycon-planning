@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { OnboardingData, FamilyMemberInput, DebtInput } from "@/types";
 import { type RowId, rows } from "../ProgressiveForm/types";
-import { formatMoney } from "../ProgressiveForm/utils";
 import { NumberInput } from "./NumberInput";
 import styles from "./GuideInput.module.css";
 
@@ -27,7 +26,7 @@ const rowQuestions: Record<
 > = {
   name: {
     question: "이름을 알려주세요",
-    description: "본인의 이름을 입력해주세요.",
+    description: "이름은 맞춤형 리포트에, 성별은 기대수명 계산에 활용됩니다.",
   },
   birth_date: {
     question: "생년월일을 알려주세요",
@@ -439,26 +438,16 @@ function renderInputForRow(
           <div className={styles.numberInputGroup}>
             <NumberInput
               className={styles.numberInput}
-              value={
-                data.target_retirement_fund
-                  ? data.target_retirement_fund / 10000
-                  : ""
-              }
+              value={data.target_retirement_fund || ""}
               onChange={(e) =>
                 onUpdateData({
-                  target_retirement_fund:
-                    (parseFloat(e.target.value) || 0) * 10000,
+                  target_retirement_fund: parseFloat(e.target.value) || 0,
                 })
               }
               placeholder="100000"
             />
             <span className={styles.unit}>만원</span>
           </div>
-          <span className={styles.actualAmount}>
-            {data.target_retirement_fund > 0
-              ? formatMoney(data.target_retirement_fund)
-              : "0만원"}
-          </span>
         </div>
       );
 
@@ -470,27 +459,19 @@ function renderInputForRow(
           {/* 본인 근로소득 */}
           <div className={styles.personRow}>
             <span className={styles.personLabel}>본인</span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={
-                    data.laborIncome !== null ? data.laborIncome / 10000 : ""
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      laborIncome:
-                        value === "" ? null : (parseFloat(value) || 0) * 10000,
-                    });
-                  }}
-                  placeholder="500"
-                />
-                <span className={styles.unit}>만원/월</span>
-              </div>
-              <span className={styles.actualAmount}>
-                {data.laborIncome ? formatMoney(data.laborIncome) : "0만원"}
-              </span>
+            <div className={styles.numberInputGroupInline}>
+              <NumberInput
+                className={styles.numberInputSmall}
+                value={data.laborIncome !== null ? data.laborIncome : ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  onUpdateData({
+                    laborIncome: value === "" ? null : parseFloat(value) || 0,
+                  });
+                }}
+                placeholder="500"
+              />
+              <span className={styles.unit}>만원/월</span>
             </div>
           </div>
 
@@ -498,29 +479,22 @@ function renderInputForRow(
           {hasWorkingSpouse && (
             <div className={styles.personRow}>
               <span className={styles.personLabel}>배우자</span>
-              <div className={styles.inputWithAmount}>
-                <div className={styles.numberInputGroupInline}>
-                  <NumberInput
-                    className={styles.numberInputSmall}
-                    value={
-                      data.spouseLaborIncome !== null
-                        ? data.spouseLaborIncome / 10000
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      onUpdateData({
-                        spouseLaborIncome:
-                          value === "" ? null : (parseFloat(value) || 0) * 10000,
-                      });
-                    }}
-                    placeholder="300"
-                  />
-                  <span className={styles.unit}>만원/월</span>
-                </div>
-                <span className={styles.actualAmount}>
-                  {data.spouseLaborIncome ? formatMoney(data.spouseLaborIncome) : "0만원"}
-                </span>
+              <div className={styles.numberInputGroupInline}>
+                <NumberInput
+                  className={styles.numberInputSmall}
+                  value={
+                    data.spouseLaborIncome !== null ? data.spouseLaborIncome : ""
+                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    onUpdateData({
+                      spouseLaborIncome:
+                        value === "" ? null : parseFloat(value) || 0,
+                    });
+                  }}
+                  placeholder="300"
+                />
+                <span className={styles.unit}>만원/월</span>
               </div>
             </div>
           )}
@@ -535,29 +509,19 @@ function renderInputForRow(
           {/* 본인 사업소득 */}
           <div className={styles.personRow}>
             <span className={styles.personLabel}>본인</span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={
-                    data.businessIncome !== null
-                      ? data.businessIncome / 10000
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      businessIncome:
-                        value === "" ? null : (parseFloat(value) || 0) * 10000,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원/월</span>
-              </div>
-              <span className={styles.actualAmount}>
-                {data.businessIncome ? formatMoney(data.businessIncome) : "0만원"}
-              </span>
+            <div className={styles.numberInputGroupInline}>
+              <NumberInput
+                className={styles.numberInputSmall}
+                value={data.businessIncome !== null ? data.businessIncome : ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  onUpdateData({
+                    businessIncome: value === "" ? null : parseFloat(value) || 0,
+                  });
+                }}
+                placeholder="0"
+              />
+              <span className={styles.unit}>만원/월</span>
             </div>
           </div>
 
@@ -565,29 +529,24 @@ function renderInputForRow(
           {hasWorkingSpouseForBiz && (
             <div className={styles.personRow}>
               <span className={styles.personLabel}>배우자</span>
-              <div className={styles.inputWithAmount}>
-                <div className={styles.numberInputGroupInline}>
-                  <NumberInput
-                    className={styles.numberInputSmall}
-                    value={
-                      data.spouseBusinessIncome !== null
-                        ? data.spouseBusinessIncome / 10000
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      onUpdateData({
-                        spouseBusinessIncome:
-                          value === "" ? null : (parseFloat(value) || 0) * 10000,
-                      });
-                    }}
-                    placeholder="0"
-                  />
-                  <span className={styles.unit}>만원/월</span>
-                </div>
-                <span className={styles.actualAmount}>
-                  {data.spouseBusinessIncome ? formatMoney(data.spouseBusinessIncome) : "0만원"}
-                </span>
+              <div className={styles.numberInputGroupInline}>
+                <NumberInput
+                  className={styles.numberInputSmall}
+                  value={
+                    data.spouseBusinessIncome !== null
+                      ? data.spouseBusinessIncome
+                      : ""
+                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    onUpdateData({
+                      spouseBusinessIncome:
+                        value === "" ? null : parseFloat(value) || 0,
+                    });
+                  }}
+                  placeholder="0"
+                />
+                <span className={styles.unit}>만원/월</span>
               </div>
             </div>
           )}
@@ -600,23 +559,17 @@ function renderInputForRow(
           <div className={styles.numberInputGroup}>
             <NumberInput
               className={styles.numberInput}
-              value={
-                data.livingExpenses !== null ? data.livingExpenses / 10000 : ""
-              }
+              value={data.livingExpenses !== null ? data.livingExpenses : ""}
               onChange={(e) => {
                 const value = e.target.value;
                 onUpdateData({
-                  livingExpenses:
-                    value === "" ? null : (parseFloat(value) || 0) * 10000,
+                  livingExpenses: value === "" ? null : parseFloat(value) || 0,
                 });
               }}
               placeholder="300"
             />
             <span className={styles.unit}>만원/월</span>
           </div>
-          <span className={styles.actualAmount}>
-            {data.livingExpenses ? formatMoney(data.livingExpenses) : "0만원"}
-          </span>
         </div>
       );
 
@@ -642,31 +595,20 @@ function renderInputForRow(
             <div className={styles.realEstateInputs}>
               <div className={styles.realEstateRow}>
                 <span className={styles.realEstateLabel}>시세</span>
-                <div className={styles.inputWithAmount}>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={
-                        data.housingValue !== null
-                          ? data.housingValue / 10000
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({
-                          housingValue:
-                            value === ""
-                              ? null
-                              : (parseFloat(value) || 0) * 10000,
-                        });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원</span>
-                  </div>
-                  <span className={styles.actualAmount}>
-                    {data.housingValue ? formatMoney(data.housingValue) : "0만원"}
-                  </span>
+                <div className={styles.numberInputGroupInline}>
+                  <NumberInput
+                    className={styles.numberInputSmall}
+                    value={data.housingValue !== null ? data.housingValue : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateData({
+                        housingValue:
+                          value === "" ? null : parseFloat(value) || 0,
+                      });
+                    }}
+                    placeholder="0"
+                  />
+                  <span className={styles.unit}>만원</span>
                 </div>
               </div>
             </div>
@@ -677,31 +619,20 @@ function renderInputForRow(
             <div className={styles.realEstateInputs}>
               <div className={styles.realEstateRow}>
                 <span className={styles.realEstateLabel}>보증금</span>
-                <div className={styles.inputWithAmount}>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={
-                        data.housingValue !== null
-                          ? data.housingValue / 10000
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({
-                          housingValue:
-                            value === ""
-                              ? null
-                              : (parseFloat(value) || 0) * 10000,
-                        });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원</span>
-                  </div>
-                  <span className={styles.actualAmount}>
-                    {data.housingValue ? formatMoney(data.housingValue) : "0만원"}
-                  </span>
+                <div className={styles.numberInputGroupInline}>
+                  <NumberInput
+                    className={styles.numberInputSmall}
+                    value={data.housingValue !== null ? data.housingValue : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateData({
+                        housingValue:
+                          value === "" ? null : parseFloat(value) || 0,
+                      });
+                    }}
+                    placeholder="0"
+                  />
+                  <span className={styles.unit}>만원</span>
                 </div>
               </div>
             </div>
@@ -712,58 +643,37 @@ function renderInputForRow(
             <div className={styles.realEstateInputs}>
               <div className={styles.realEstateRow}>
                 <span className={styles.realEstateLabel}>보증금</span>
-                <div className={styles.inputWithAmount}>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={
-                        data.housingValue !== null
-                          ? data.housingValue / 10000
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({
-                          housingValue:
-                            value === ""
-                              ? null
-                              : (parseFloat(value) || 0) * 10000,
-                        });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원</span>
-                  </div>
-                  <span className={styles.actualAmount}>
-                    {data.housingValue ? formatMoney(data.housingValue) : "0만원"}
-                  </span>
+                <div className={styles.numberInputGroupInline}>
+                  <NumberInput
+                    className={styles.numberInputSmall}
+                    value={data.housingValue !== null ? data.housingValue : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateData({
+                        housingValue:
+                          value === "" ? null : parseFloat(value) || 0,
+                      });
+                    }}
+                    placeholder="0"
+                  />
+                  <span className={styles.unit}>만원</span>
                 </div>
               </div>
               <div className={styles.realEstateRow}>
                 <span className={styles.realEstateLabel}>월세</span>
-                <div className={styles.inputWithAmount}>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={
-                        data.housingRent !== null ? data.housingRent / 10000 : ""
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({
-                          housingRent:
-                            value === ""
-                              ? null
-                              : (parseFloat(value) || 0) * 10000,
-                        });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원/월</span>
-                  </div>
-                  <span className={styles.actualAmount}>
-                    {data.housingRent ? formatMoney(data.housingRent) : "0만원"}
-                  </span>
+                <div className={styles.numberInputGroupInline}>
+                  <NumberInput
+                    className={styles.numberInputSmall}
+                    value={data.housingRent !== null ? data.housingRent : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateData({
+                        housingRent: value === "" ? null : parseFloat(value) || 0,
+                      });
+                    }}
+                    placeholder="0"
+                  />
+                  <span className={styles.unit}>만원/월</span>
                 </div>
               </div>
             </div>
@@ -808,31 +718,22 @@ function renderInputForRow(
                   </div>
                   <div className={styles.debtRow}>
                     <span className={styles.debtLabel}>금액</span>
-                    <div className={styles.inputWithAmount}>
-                      <div className={styles.debtInputGroup}>
-                        <NumberInput
-                          className={styles.debtInput}
-                          value={
-                            data.housingLoan !== null
-                              ? data.housingLoan / 10000
-                              : ""
-                          }
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            onUpdateData({
-                              housingLoan:
-                                value === ""
-                                  ? null
-                                  : (parseFloat(value) || 0) * 10000,
-                            });
-                          }}
-                          placeholder="0"
-                        />
-                        <span className={styles.debtUnit}>만원</span>
-                      </div>
-                      <span className={styles.actualAmount}>
-                        {data.housingLoan ? formatMoney(data.housingLoan) : "0만원"}
-                      </span>
+                    <div className={styles.debtInputGroup}>
+                      <NumberInput
+                        className={styles.debtInput}
+                        value={
+                          data.housingLoan !== null ? data.housingLoan : ""
+                        }
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          onUpdateData({
+                            housingLoan:
+                              value === "" ? null : parseFloat(value) || 0,
+                          });
+                        }}
+                        placeholder="0"
+                      />
+                      <span className={styles.debtUnit}>만원</span>
                     </div>
                   </div>
                 </div>
@@ -907,33 +808,26 @@ function renderInputForRow(
                 .map((type) => {
                   const rawValue = data[type.dataKey];
                   const displayValue =
-                    rawValue !== null && rawValue !== 0 ? rawValue / 10000 : "";
+                    rawValue !== null && rawValue !== 0 ? rawValue : "";
                   return (
                     <div key={type.key} className={styles.assetItem}>
                       <span className={styles.assetItemLabel}>
                         {type.label}
                       </span>
-                      <div className={styles.inputWithAmount}>
-                        <div className={styles.assetItemInput}>
-                          <NumberInput
-                            className={styles.numberInputSmall}
-                            value={displayValue}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              onUpdateData({
-                                [type.dataKey]:
-                                  value === ""
-                                    ? 0
-                                    : (parseFloat(value) || 0) * 10000,
-                              });
-                            }}
-                            placeholder="0"
-                          />
-                          <span className={styles.unit}>만원</span>
-                        </div>
-                        <span className={styles.actualAmount}>
-                          {rawValue ? formatMoney(rawValue) : "0만원"}
-                        </span>
+                      <div className={styles.assetItemInput}>
+                        <NumberInput
+                          className={styles.numberInputSmall}
+                          value={displayValue}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            onUpdateData({
+                              [type.dataKey]:
+                                value === "" ? 0 : parseFloat(value) || 0,
+                            });
+                          }}
+                          placeholder="0"
+                        />
+                        <span className={styles.unit}>만원</span>
                       </div>
                       <button
                         className={styles.assetItemDelete}
@@ -1156,30 +1050,22 @@ function renderInputForRow(
                   {/* 금액 */}
                   <div className={styles.debtRow}>
                     <span className={styles.debtLabel}>금액</span>
-                    <div className={styles.inputWithAmount}>
-                      <div className={styles.debtInputGroup}>
-                        <NumberInput
-                          className={styles.debtInput}
-                          value={debt.amount !== null ? debt.amount / 10000 : ""}
-                          onChange={(e) => {
-                            const newDebts = [...data.debts];
-                            const value = e.target.value;
-                            newDebts[index] = {
-                              ...newDebts[index],
-                              amount:
-                                value === ""
-                                  ? null
-                                  : (parseFloat(value) || 0) * 10000,
-                            };
-                            onUpdateData({ debts: newDebts });
-                          }}
-                          placeholder="0"
-                        />
-                        <span className={styles.debtUnit}>만원</span>
-                      </div>
-                      <span className={styles.actualAmount}>
-                        {debt.amount ? formatMoney(debt.amount) : "0만원"}
-                      </span>
+                    <div className={styles.debtInputGroup}>
+                      <NumberInput
+                        className={styles.debtInput}
+                        value={debt.amount !== null ? debt.amount : ""}
+                        onChange={(e) => {
+                          const newDebts = [...data.debts];
+                          const value = e.target.value;
+                          newDebts[index] = {
+                            ...newDebts[index],
+                            amount: value === "" ? null : parseFloat(value) || 0,
+                          };
+                          onUpdateData({ debts: newDebts });
+                        }}
+                        placeholder="0"
+                      />
+                      <span className={styles.debtUnit}>만원</span>
                     </div>
                   </div>
                 </div>
@@ -1226,30 +1112,21 @@ function renderInputForRow(
         <div className={styles.pensionSection}>
           <div className={styles.pensionRow}>
             <span className={styles.pensionLabel}>예상 월 수령액</span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={
-                    data.nationalPension != null
-                      ? data.nationalPension / 10000
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      nationalPension:
-                        value === "" ? null : (parseFloat(value) || 0) * 10000,
-                      hasNoPension: false,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원/월</span>
-              </div>
-              <span className={styles.actualAmount}>
-                {data.nationalPension ? formatMoney(data.nationalPension) : "0만원"}
-              </span>
+            <div className={styles.numberInputGroupInline}>
+              <NumberInput
+                className={styles.numberInputSmall}
+                value={data.nationalPension != null ? data.nationalPension : ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  onUpdateData({
+                    nationalPension:
+                      value === "" ? null : parseFloat(value) || 0,
+                    hasNoPension: false,
+                  });
+                }}
+                placeholder="0"
+              />
+              <span className={styles.unit}>만원/월</span>
             </div>
           </div>
           {data.nationalPension == null && (
@@ -1334,32 +1211,25 @@ function renderInputForRow(
                 ? "현재 적립금"
                 : "예상 퇴직 금액"}
             </span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={
-                    data.retirementPensionBalance != null
-                      ? data.retirementPensionBalance / 10000
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      retirementPensionBalance:
-                        value === "" ? null : (parseFloat(value) || 0) * 10000,
-                      hasNoPension: false,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <span className={styles.actualAmount}>
-                {data.retirementPensionBalance
-                  ? formatMoney(data.retirementPensionBalance)
-                  : "0만원"}
-              </span>
+            <div className={styles.numberInputGroupInline}>
+              <NumberInput
+                className={styles.numberInputSmall}
+                value={
+                  data.retirementPensionBalance != null
+                    ? data.retirementPensionBalance
+                    : ""
+                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  onUpdateData({
+                    retirementPensionBalance:
+                      value === "" ? null : parseFloat(value) || 0,
+                    hasNoPension: false,
+                  });
+                }}
+                placeholder="0"
+              />
+              <span className={styles.unit}>만원</span>
             </div>
           </div>
         </div>
@@ -1370,80 +1240,61 @@ function renderInputForRow(
         <div className={styles.pensionSection}>
           <div className={styles.pensionRow}>
             <span className={styles.pensionLabel}>IRP</span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={data.irpBalance != null ? data.irpBalance / 10000 : ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      irpBalance:
-                        value === "" ? null : (parseFloat(value) || 0) * 10000,
-                      hasNoPension: false,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <span className={styles.actualAmount}>
-                {data.irpBalance ? formatMoney(data.irpBalance) : "0만원"}
-              </span>
+            <div className={styles.numberInputGroupInline}>
+              <NumberInput
+                className={styles.numberInputSmall}
+                value={data.irpBalance != null ? data.irpBalance : ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  onUpdateData({
+                    irpBalance: value === "" ? null : parseFloat(value) || 0,
+                    hasNoPension: false,
+                  });
+                }}
+                placeholder="0"
+              />
+              <span className={styles.unit}>만원</span>
             </div>
           </div>
           <div className={styles.pensionRow}>
             <span className={styles.pensionLabel}>연금저축</span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={
-                    data.pensionSavingsBalance != null
-                      ? data.pensionSavingsBalance / 10000
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      pensionSavingsBalance:
-                        value === "" ? null : (parseFloat(value) || 0) * 10000,
-                      hasNoPension: false,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <span className={styles.actualAmount}>
-                {data.pensionSavingsBalance
-                  ? formatMoney(data.pensionSavingsBalance)
-                  : "0만원"}
-              </span>
+            <div className={styles.numberInputGroupInline}>
+              <NumberInput
+                className={styles.numberInputSmall}
+                value={
+                  data.pensionSavingsBalance != null
+                    ? data.pensionSavingsBalance
+                    : ""
+                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  onUpdateData({
+                    pensionSavingsBalance:
+                      value === "" ? null : parseFloat(value) || 0,
+                    hasNoPension: false,
+                  });
+                }}
+                placeholder="0"
+              />
+              <span className={styles.unit}>만원</span>
             </div>
           </div>
           <div className={styles.pensionRow}>
             <span className={styles.pensionLabel}>ISA</span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={data.isaBalance != null ? data.isaBalance / 10000 : ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      isaBalance:
-                        value === "" ? null : (parseFloat(value) || 0) * 10000,
-                      hasNoPension: false,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <span className={styles.actualAmount}>
-                {data.isaBalance ? formatMoney(data.isaBalance) : "0만원"}
-              </span>
+            <div className={styles.numberInputGroupInline}>
+              <NumberInput
+                className={styles.numberInputSmall}
+                value={data.isaBalance != null ? data.isaBalance : ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  onUpdateData({
+                    isaBalance: value === "" ? null : parseFloat(value) || 0,
+                    hasNoPension: false,
+                  });
+                }}
+                placeholder="0"
+              />
+              <span className={styles.unit}>만원</span>
             </div>
           </div>
         </div>
@@ -1475,16 +1326,4 @@ function calculateKoreanAge(birthDate: string): number {
   const today = new Date();
   const birth = new Date(birthDate);
   return today.getFullYear() - birth.getFullYear() + 1;
-}
-
-// 총 금융자산 계산
-function getTotalFinancialAssets(data: OnboardingData): number {
-  return (
-    (data.cashCheckingAccount || 0) +
-    (data.cashSavingsAccount || 0) +
-    (data.investDomesticStock || 0) +
-    (data.investForeignStock || 0) +
-    (data.investFund || 0) +
-    (data.investOther || 0)
-  );
 }

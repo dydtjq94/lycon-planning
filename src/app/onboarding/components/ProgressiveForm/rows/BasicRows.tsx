@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Check, X } from "lucide-react";
 import type { OnboardingData } from "@/types";
 import type { RowId, RowInputProps } from "../types";
-import { calculateAge, calculateKoreanAge, formatMoney } from "../utils";
+import { calculateAge, calculateKoreanAge } from "../utils";
 import styles from "../../../onboarding.module.css";
 
 interface BasicRowsProps extends RowInputProps {
@@ -35,8 +35,9 @@ export function renderNameInput({
       <div
         className={`${styles.excelValueCell} ${styles.excelValueCellUnit} ${styles.excelGenderToggle}`}
         onClick={() => onUpdateData({ gender: data.gender === "male" ? "female" : "male" })}
+        data-filled={data.gender ? "true" : undefined}
       >
-        {data.gender === "male" ? "남" : data.gender === "female" ? "여" : ""}
+        {data.gender === "male" ? "남" : data.gender === "female" ? "여" : "성별"}
       </div>
       <div className={`${styles.excelValueCell} ${styles.excelValueCellFrequencyFixed}`} />
       <div className={`${styles.excelValueCell} ${styles.excelValueCellDelete}`} />
@@ -594,10 +595,6 @@ export function renderRetirementFundInput({
   onUpdateData,
   onFocus,
 }: RowInputProps) {
-  const fundInManwon = data.target_retirement_fund
-    ? data.target_retirement_fund / 10000
-    : "";
-
   return (
     <div className={styles.excelValueCells}>
       <div className={`${styles.excelValueCell} ${styles.excelValueCellLabel}`}>
@@ -609,11 +606,10 @@ export function renderRetirementFundInput({
         <Input
           type="number"
           placeholder="100000"
-          value={fundInManwon}
+          value={data.target_retirement_fund || ""}
           onChange={(e) => {
-            const manwon = parseFloat(e.target.value) || 0;
             onUpdateData({
-              target_retirement_fund: Math.round(manwon * 10000),
+              target_retirement_fund: parseFloat(e.target.value) || 0,
             });
           }}
           onFocus={() => onFocus("retirement_fund")}

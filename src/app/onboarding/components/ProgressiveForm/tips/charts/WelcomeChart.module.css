@@ -1,0 +1,30 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chartWrapper {
+  height: 140px;
+}
+
+.highlight {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: #FFF7ED;
+  border-radius: 8px;
+}
+
+.highlightLabel {
+  font-size: 13px;
+  color: #78716C;
+}
+
+.highlightValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #F97316;
+}

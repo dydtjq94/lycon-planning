@@ -79,9 +79,9 @@ export const rows: RowConfig[] = [
   // 기본 정보
   {
     id: 'name',
-    label: '이름',
+    label: '이름/성별',
     isVisible: () => true,
-    isComplete: (data) => !!data.name.trim(),
+    isComplete: (data) => !!data.name.trim() && !!data.gender,
   },
   {
     id: 'birth_date',

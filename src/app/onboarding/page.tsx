@@ -220,6 +220,7 @@ const greetingMessages = [
   "편안한 노후를 꿈꾸시나요?",
   "지금 시작하면 늦지 않아요.",
   "당신의 은퇴를 함께 준비할게요.",
+  "이제 시작해볼까요?",
 ];
 
 export default function OnboardingPage() {
@@ -605,86 +606,41 @@ export default function OnboardingPage() {
     );
   }
 
+  // 마지막 메시지인지 체크
+  const isLastMessage = currentMessageIndex === greetingMessages.length - 1;
+
   // 시작 전 화면
   if (!started) {
     return (
       <div className={styles.welcomePage}>
         <div className={styles.welcomeContent}>
-          {!showContent && (
-            <div className={styles.welcomeGreetingWrapper}>
-              <h2 className={styles.welcomeGreeting}>
-                {currentText}
-                <span className={styles.welcomeCursor}>|</span>
-              </h2>
-              <div className={styles.welcomeProgress}>
-                {greetingMessages.map((_, index) => {
-                  const isCompleted = index < currentMessageIndex;
-                  const isCurrent = index === currentMessageIndex;
-                  const progress = isCurrent
-                    ? currentText.length / greetingMessages[index].length
-                    : 0;
+          <div className={styles.welcomeGreetingWrapper}>
+            <h2 className={`${styles.welcomeGreeting} ${isLastMessage ? styles.welcomeGreetingLast : ''}`}>
+              {currentText}
+            </h2>
 
-                  // 색상 보간: #E7E5E4 (회색) -> #D97706 (주황)
-                  const r = Math.round(231 + (217 - 231) * progress);
-                  const g = Math.round(229 + (119 - 229) * progress);
-                  const b = Math.round(228 + (6 - 228) * progress);
-                  const scale = 1 + progress * 0.3;
-
-                  return (
-                    <span
-                      key={index}
-                      className={`${styles.welcomeProgressDot} ${
-                        isCompleted ? styles.welcomeProgressDotActive : ""
-                      }`}
-                      style={
-                        isCurrent
-                          ? {
-                              backgroundColor: `rgb(${r}, ${g}, ${b})`,
-                              transform: `scale(${scale})`,
-                            }
-                          : undefined
-                      }
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {showContent && (
-            <>
-              <div className={styles.welcomeBadge}>은퇴 진단 시뮬레이션</div>
-              <h1 className={styles.welcomeTitle}>이제 시작해볼까요?</h1>
-              <p className={styles.welcomeSubtitle}>
-                3분이면 충분해요.
-                <br />
-                간단한 정보만 입력하면 은퇴 준비 상태를 진단해드려요.
-              </p>
-
-              <div className={styles.welcomeActions}>
-                <button
-                  className={styles.welcomeStartButton}
-                  onClick={() => setStarted(true)}
-                >
-                  무료로 진단받기
-                </button>
-                <button
-                  className={styles.welcomeSandboxButton}
-                  onClick={handleSandbox}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <Loader2 size={16} className={styles.spinner} />
-                  ) : null}
-                  샘플로 먼저 체험하기
-                </button>
-              </div>
-
-              <p className={styles.welcomeNote}>
+            <div className={`${styles.welcomeActionsContainer} ${showContent ? styles.welcomeActionsVisible : ''}`}>
+              <button
+                className={styles.welcomeStartButton}
+                onClick={() => setStarted(true)}
+              >
+                무료로 진단하기
+              </button>
+              <button
+                className={styles.welcomeSandboxButton}
+                onClick={handleSandbox}
+                disabled={saving}
+              >
+                {saving ? (
+                  <Loader2 size={16} className={styles.spinner} />
+                ) : null}
+                샘플로 먼저 체험하기
+              </button>
+              <p className={styles.welcomeNoteInline}>
                 입력하신 정보는 안전하게 보호됩니다
               </p>
-            </>
-          )}
+            </div>
+          </div>
         </div>
       </div>
     );
