@@ -64,6 +64,12 @@
   color: #10B981;
 }
 
+.statValueHighlight {
+  font-size: 18px;
+  font-weight: 700;
+  color: #16A34A;
+}
+
 .statLabel {
   font-size: 11px;
   color: #78716C;
@@ -387,4 +393,776 @@
   color: #A8A29E;
   text-align: center;
   padding: 4px 0;
+}
+
+/* 명언 스타일 */
+.quoteContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 24px 0;
+  width: 100%;
+}
+
+.quoteIcon {
+  font-size: 48px;
+  font-family: Georgia, serif;
+  color: #E7E5E4;
+  line-height: 1;
+  margin-bottom: -8px;
+  margin-left: -4px;
+}
+
+.quoteText {
+  font-size: 17px;
+  font-weight: 500;
+  color: #44403C;
+  line-height: 1.7;
+  margin: 0;
+  padding: 0;
+}
+
+.quoteHighlight {
+  color: #1C1917;
+  font-weight: 600;
+}
+
+.quoteSource {
+  margin-top: 16px;
+  font-size: 13px;
+  font-style: normal;
+  color: #A8A29E;
+}
+
+/* 생애 타임라인 차트 */
+.timelineContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0;
+  width: 100%;
+}
+
+.timelinePlaceholder {
+  color: #A8A29E;
+  font-size: 14px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.timelineHighlight {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.timelineNumber {
+  font-size: 56px;
+  font-weight: 700;
+  color: #D97706;
+  line-height: 1;
+}
+
+.timelineUnit {
+  font-size: 24px;
+  font-weight: 600;
+  color: #D97706;
+}
+
+.timelineSubtitle {
+  font-size: 15px;
+  color: #57534E;
+  margin-bottom: 24px;
+}
+
+.timelineBar {
+  display: flex;
+  width: 100%;
+  height: 32px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.timelineBeforeRetirement {
+  background-color: #525252;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+
+.timelineAfterRetirement {
+  background-color: #D97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+
+.timelineBarLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+
+.timelineLabels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 12px;
+  color: #78716C;
+}
+
+.timelineMessage {
+  text-align: center;
+  padding: 20px;
+}
+
+.timelineMessageTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: #D97706;
+  margin-bottom: 12px;
+}
+
+.timelineMessageDesc {
+  font-size: 14px;
+  color: #57534E;
+  line-height: 1.6;
+}
+
+/* 단일 통합 타임라인 */
+.singleTimeline {
+  width: 100%;
+  position: relative;
+  padding-bottom: 80px;
+}
+
+.singleTimelineBar {
+  display: flex;
+  width: 100%;
+  height: 20px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.singleTimelineWork {
+  background-color: #525252;
+  height: 100%;
+}
+
+.singleTimelineRetire {
+  background-color: #D97706;
+  height: 100%;
+}
+
+.milestoneMarkers {
+  position: relative;
+  width: 100%;
+  height: 60px;
+}
+
+.milestone {
+  position: absolute;
+  transform: translateX(-50%);
+  margin-top: 8px;
+}
+
+.milestoneText {
+  font-size: 11px;
+  color: #78716C;
+  white-space: nowrap;
+}
+
+.timelineStart {
+  position: absolute;
+  left: 0;
+  top: 28px;
+  font-size: 11px;
+  color: #A8A29E;
+}
+
+.legendDotMy {
+  background-color: #3B82F6;
+}
+
+.legendDotSpouse {
+  background-color: #EC4899;
+}
+
+/* 인생 여정 S커브 차트 */
+.journeyContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.journeyPlaceholder {
+  color: #A8A29E;
+  font-size: 14px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.journeyHeader {
+  text-align: center;
+}
+
+.journeyTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #78716C;
+}
+
+/* S자 곡선 영역 */
+.sCurvePath {
+  position: relative;
+  width: 100%;
+  height: 420px;
+}
+
+.curvesvg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.curveProgress {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: drawPath 3s ease-out forwards;
+}
+
+@keyframes drawPath {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* 영역 아이템들 */
+.journeyItems {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.journeyItem {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  animation: fadeInItem 0.5s ease-out forwards;
+}
+
+.journeyItem:nth-child(1) { animation-delay: 0.3s; }
+.journeyItem:nth-child(2) { animation-delay: 0.6s; }
+.journeyItem:nth-child(3) { animation-delay: 0.9s; }
+.journeyItem:nth-child(4) { animation-delay: 1.2s; }
+.journeyItem:nth-child(5) { animation-delay: 1.5s; }
+.journeyItem:nth-child(6) { animation-delay: 1.8s; }
+.journeyItem:nth-child(7) { animation-delay: 2.1s; }
+.journeyItem:nth-child(8) { animation-delay: 2.4s; }
+
+@keyframes fadeInItem {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.journeyItemLeft {
+  left: 0;
+  padding-left: 4px;
+}
+
+.journeyItemRight {
+  right: 0;
+  flex-direction: row-reverse;
+  padding-right: 4px;
+}
+
+.journeyAge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #F97316;
+  min-width: 32px;
+  flex-shrink: 0;
+}
+
+.journeyItemRight .journeyAge {
+  text-align: right;
+}
+
+.journeyItem:nth-child(1) .journeyAge { color: #F97316; }
+.journeyItem:nth-child(2) .journeyAge { color: #F97316; }
+.journeyItem:nth-child(3) .journeyAge { color: #EA580C; }
+.journeyItem:nth-child(4) .journeyAge { color: #3B82F6; }
+.journeyItem:nth-child(5) .journeyAge { color: #3B82F6; }
+.journeyItem:nth-child(6) .journeyAge { color: #2563EB; }
+.journeyItem:nth-child(7) .journeyAge { color: #10B981; }
+.journeyItem:nth-child(8) .journeyAge { color: #10B981; }
+.journeyItem:nth-child(9) .journeyAge { color: #8B5CF6; }
+.journeyItem:nth-child(10) .journeyAge { color: #8B5CF6; }
+.journeyItem:nth-child(11) .journeyAge { color: #7C3AED; }
+.journeyItem:nth-child(12) .journeyAge { color: #6D28D9; }
+
+.journeyItemLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #44403C;
+}
+
+.journeyFooter {
+  text-align: center;
+  font-size: 12px;
+  color: #78716C;
+  padding-top: 8px;
+  border-top: 1px solid #E7E5E4;
+}
+
+/* 타임라인 범례 */
+.timelineLegend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #E7E5E4;
+}
+
+.legendDotBefore {
+  background-color: #525252;
+}
+
+.legendDotAfter {
+  background-color: #D97706;
+}
+
+/* 직선 타임라인 차트 */
+.linePath {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  padding: 0 12px;
+}
+
+.lineTrack {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  right: 12px;
+  height: 3px;
+  background-color: #E7E5E4;
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+
+.lineProgress {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  height: 3px;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, #F97316, #3B82F6, #8B5CF6);
+  animation: lineFlow 3s ease-in-out infinite;
+}
+
+@keyframes lineFlow {
+  0% {
+    width: 0;
+    opacity: 1;
+  }
+  70% {
+    width: calc(100% - 24px);
+    opacity: 1;
+  }
+  100% {
+    width: calc(100% - 24px);
+    opacity: 0.3;
+  }
+}
+
+.lineEvents {
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+}
+
+.lineEvent {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transform: translateX(-50%);
+}
+
+.lineEventTop {
+  top: 8px;
+}
+
+.lineEventBottom {
+  bottom: 8px;
+}
+
+.lineAge {
+  font-size: 13px;
+  font-weight: 700;
+  color: #3B82F6;
+}
+
+.lineEventTop .lineAge {
+  order: 2;
+}
+
+.lineEventTop .lineLabel {
+  order: 1;
+}
+
+.lineLabel {
+  font-size: 11px;
+  color: #57534E;
+  white-space: nowrap;
+}
+
+.lineEvent:first-child .lineAge {
+  color: #F97316;
+}
+
+.lineEvent:last-child .lineAge {
+  color: #8B5CF6;
+}
+
+/* 전 구간 재무 설계 영역 */
+.planningCloud {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 20px 16px;
+  margin-top: 8px;
+  background: linear-gradient(180deg, #F5F5F4 0%, #E7E5E4 100%);
+  border-radius: 12px;
+}
+
+.planningTag {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1C1917;
+  padding: 8px 18px;
+  background-color: white;
+  border-radius: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* ChildCostChart - 듀얼 파이 차트 */
+.dualPieChart {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+}
+
+.pieSection {
+  flex: 1;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.pieChart {
+  width: 100px;
+  height: 100px;
+}
+
+.pieLabel {
+  font-size: 13px;
+  color: #57534E;
+}
+
+.pieTotal {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1C1917;
+}
+
+.pieLegend {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-top: 12px;
+  border-top: 1px solid #E7E5E4;
+}
+
+.pieLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #57534E;
+}
+
+.pieLegendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* 은퇴 카운트다운 */
+.countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  width: 100%;
+  background: linear-gradient(180deg, #FAFAF9 0%, #F5F5F4 100%);
+  border-radius: 16px;
+}
+
+.countdownPlaceholder {
+  color: #A8A29E;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.6;
+  padding: 40px 0;
+}
+
+.countdownRetired {
+  font-size: 18px;
+  font-weight: 600;
+  color: #10B981;
+  text-align: center;
+  padding: 40px 0;
+}
+
+.countdownHeader {
+  margin-bottom: 20px;
+}
+
+.countdownLabel {
+  font-size: 16px;
+  font-weight: 600;
+  color: #57534E;
+}
+
+.countdownTimer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.countdownUnit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.countdownNumber {
+  display: flex;
+  gap: 3px;
+}
+
+.countdownDigit {
+  width: 26px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1C1917;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdownDigitTick {
+  animation: digitTick 0.3s ease-out;
+}
+
+@keyframes digitTick {
+  0% {
+    transform: translateY(-2px);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(1px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.countdownUnitLabel {
+  font-size: 11px;
+  color: #A8A29E;
+  font-weight: 500;
+}
+
+.countdownSeparator {
+  font-size: 24px;
+  font-weight: 300;
+  color: #D6D3D1;
+  margin-bottom: 24px;
+}
+
+.countdownSummary {
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #78716C;
+}
+
+.countdownMessage {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #A8A29E;
+  text-align: center;
+  font-style: italic;
+}
+
+/* 은퇴 목표 차트 */
+.goalChart {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.goalHeader {
+  margin-bottom: 4px;
+}
+
+.goalLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #57534E;
+}
+
+.goalLevels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.goalLevel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background-color: #F5F5F4;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.goalLevelPassed {
+  background-color: #F0FDF4;
+  border-color: #BBF7D0;
+}
+
+.goalLevelActive {
+  background-color: #ECFDF5;
+  border-color: #10B981;
+}
+
+.goalLevelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.goalLevelName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1C1917;
+}
+
+.goalLevelActive .goalLevelName {
+  color: #059669;
+}
+
+.goalLevelAsset {
+  font-size: 14px;
+  font-weight: 600;
+  color: #57534E;
+}
+
+.goalLevelActive .goalLevelAsset {
+  color: #059669;
+}
+
+.goalLevelDetail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.goalLevelMonthly {
+  font-size: 13px;
+  color: #78716C;
+}
+
+.goalLevelDesc {
+  font-size: 12px;
+  color: #A8A29E;
+}
+
+.goalResult {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  background: linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%);
+  border-radius: 12px;
+  margin-top: 8px;
+}
+
+.goalResultLabel {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.goalResultValue {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.goalResultAsset {
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+}
+
+.goalResultMonthly {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.goalNote {
+  font-size: 11px;
+  color: #A8A29E;
+  text-align: right;
 }

@@ -8,6 +8,7 @@ import type { OnboardingData, AssetCategory } from "@/types";
 import { ProgressiveForm, type SectionId, GuideInput } from "./components";
 import { rows, type RowId } from "./components/ProgressiveForm/types";
 import styles from "./onboarding.module.css";
+import welcomeStyles from "./components/WelcomePage.module.css";
 
 // 진행률 계산 함수 (나중에 진행률 바에 사용 예정)
 // function calculateProgress(data: OnboardingData): {
@@ -47,9 +48,6 @@ import styles from "./onboarding.module.css";
 //   return { steps, percent };
 // }
 
-
-
-
 const initialData: OnboardingData = {
   name: "",
   gender: null,
@@ -63,16 +61,16 @@ const initialData: OnboardingData = {
   parents: [],
   // 소득: 근로소득, 사업소득
   laborIncome: null,
-  laborIncomeFrequency: 'monthly',
+  laborIncomeFrequency: "monthly",
   spouseLaborIncome: null,
-  spouseLaborIncomeFrequency: 'monthly',
+  spouseLaborIncomeFrequency: "monthly",
   businessIncome: null,
-  businessIncomeFrequency: 'monthly',
+  businessIncomeFrequency: "monthly",
   spouseBusinessIncome: null,
-  spouseBusinessIncomeFrequency: 'monthly',
+  spouseBusinessIncomeFrequency: "monthly",
   // 지출
   livingExpenses: null,
-  livingExpensesFrequency: 'monthly',
+  livingExpensesFrequency: "monthly",
   // 거주용 부동산
   housingType: null,
   housingValue: null,
@@ -150,37 +148,37 @@ const sampleData: OnboardingData = {
   ],
   parents: [],
   // 소득 샘플
-  laborIncome: 8500000,         // 본인 근로소득 850만원/월
-  laborIncomeFrequency: 'monthly',
-  spouseLaborIncome: 5000000,   // 배우자 근로소득 500만원/월
-  spouseLaborIncomeFrequency: 'monthly',
-  businessIncome: null,         // 본인 사업소득
-  businessIncomeFrequency: 'monthly',
-  spouseBusinessIncome: null,   // 배우자 사업소득
-  spouseBusinessIncomeFrequency: 'monthly',
+  laborIncome: 8500000, // 본인 근로소득 850만원/월
+  laborIncomeFrequency: "monthly",
+  spouseLaborIncome: 5000000, // 배우자 근로소득 500만원/월
+  spouseLaborIncomeFrequency: "monthly",
+  businessIncome: null, // 본인 사업소득
+  businessIncomeFrequency: "monthly",
+  spouseBusinessIncome: null, // 배우자 사업소득
+  spouseBusinessIncomeFrequency: "monthly",
   // 지출 샘플 (월 450만원)
   livingExpenses: 4500000,
-  livingExpensesFrequency: 'monthly',
+  livingExpensesFrequency: "monthly",
   // 거주용 부동산 샘플
-  housingType: '자가',
-  housingValue: 900000000,  // 9억
+  housingType: "자가",
+  housingValue: 900000000, // 9억
   housingRent: null,
   housingHasLoan: true,
-  housingLoan: 400000000,   // 4억 대출
-  housingLoanRate: 3.5,     // 금리 3.5%
-  housingLoanMaturity: '2045-06',  // 만기 2045년 6월
-  housingLoanType: '원리금균등상환',
+  housingLoan: 400000000, // 4억 대출
+  housingLoanRate: 3.5, // 금리 3.5%
+  housingLoanMaturity: "2045-06", // 만기 2045년 6월
+  housingLoanType: "원리금균등상환",
   // 금융자산 - 현금성 자산 샘플
-  cashCheckingAccount: 30000000,  // 입출금통장 3천만원
-  cashCheckingRate: 0.1,          // 0.1%
-  cashSavingsAccount: 100000000,  // 정기예금 1억
-  cashSavingsRate: 3.5,           // 3.5%
+  cashCheckingAccount: 30000000, // 입출금통장 3천만원
+  cashCheckingRate: 0.1, // 0.1%
+  cashSavingsAccount: 100000000, // 정기예금 1억
+  cashSavingsRate: 3.5, // 3.5%
   // 금융자산 - 투자자산 샘플
-  investDomesticStock: 50000000,  // 국내주식 5천만원
+  investDomesticStock: 50000000, // 국내주식 5천만원
   investDomesticRate: null,
-  investForeignStock: 30000000,   // 해외주식 3천만원
+  investForeignStock: 30000000, // 해외주식 3천만원
   investForeignRate: null,
-  investFund: 20000000,           // 펀드 2천만원
+  investFund: 20000000, // 펀드 2천만원
   investFundRate: null,
   investOther: null,
   investOtherRate: null,
@@ -188,11 +186,11 @@ const sampleData: OnboardingData = {
   // 부채 샘플
   debts: [
     {
-      name: '신용대출',
-      amount: 50000000,  // 5천만원
+      name: "신용대출",
+      amount: 50000000, // 5천만원
       rate: 5.5,
-      maturity: '2027-12',
-      repaymentType: '원리금균등상환',
+      maturity: "2027-12",
+      repaymentType: "원리금균등상환",
     },
   ],
   hasNoDebt: false,
@@ -201,16 +199,16 @@ const sampleData: OnboardingData = {
   realEstates: [],
   assets: [],
   // 연금 샘플
-  nationalPension: 1800000,          // 예상 월 180만원
-  nationalPensionStartAge: 65,       // 65세부터 수령
-  retirementPensionType: 'DC',       // DC형
+  nationalPension: 1800000, // 예상 월 180만원
+  nationalPensionStartAge: 65, // 65세부터 수령
+  retirementPensionType: "DC", // DC형
   retirementPensionBalance: 80000000, // 현재 8천만원
   personalPensionMonthly: null,
   personalPensionBalance: null,
-  irpBalance: 20000000,              // IRP 2천만원
-  pensionSavingsBalance: 15000000,   // 연금저축 1500만원
-  isaBalance: 10000000,              // ISA 1천만원
-  otherPensionMonthly: null,         // 기타연금 없음
+  irpBalance: 20000000, // IRP 2천만원
+  pensionSavingsBalance: 15000000, // 연금저축 1500만원
+  isaBalance: 10000000, // ISA 1천만원
+  otherPensionMonthly: null, // 기타연금 없음
   hasNoPension: false,
   pensions: [],
 };
@@ -237,7 +235,9 @@ export default function OnboardingPage() {
 
   // 첫 번째 미완료 스텝 인덱스 찾기
   const findFirstIncompleteStep = useCallback((loadedData: OnboardingData) => {
-    const firstIncomplete = rows.findIndex(row => !row.isComplete(loadedData));
+    const firstIncomplete = rows.findIndex(
+      (row) => !row.isComplete(loadedData)
+    );
     // 모두 완료면 마지막 스텝, 아니면 첫 번째 미완료 스텝
     return firstIncomplete === -1 ? rows.length - 1 : firstIncomplete;
   }, []);
@@ -257,9 +257,10 @@ export default function OnboardingPage() {
   const isLastStep = stepIndex === rows.length - 1;
 
   // 전체 진행률 계산
-  const completedCount = rows.filter(row => row.isComplete(data)).length;
+  const completedCount = rows.filter((row) => row.isComplete(data)).length;
   const totalCount = rows.length;
-  const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+  const progressPercent =
+    totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   // 이전/다음 핸들러
   const handlePrevStep = useCallback(() => {
@@ -283,7 +284,21 @@ export default function OnboardingPage() {
         const {
           data: { user },
         } = await supabase.auth.getUser();
+
+        // 비로그인 상태: localStorage에서 게스트 데이터 복원
         if (!user) {
+          const guestDraft = localStorage.getItem("onboarding_draft_guest");
+          if (guestDraft) {
+            try {
+              const parsedData = JSON.parse(guestDraft) as OnboardingData;
+              setData(parsedData);
+              lastSavedDataRef.current = guestDraft;
+              setStepIndex(findFirstIncompleteStep(parsedData));
+              setStarted(true);
+            } catch {
+              // 파싱 실패시 무시
+            }
+          }
           setIsLoading(false);
           return;
         }
@@ -379,8 +394,12 @@ export default function OnboardingPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
+      // 비로그인 상태에서도 localStorage에 저장
       if (!user) {
-        setAutoSaveStatus("idle");
+        localStorage.setItem("onboarding_draft_guest", currentDataStr);
+        lastSavedDataRef.current = currentDataStr;
+        setAutoSaveStatus("saved");
         return;
       }
 
@@ -598,9 +617,9 @@ export default function OnboardingPage() {
   // 로딩 중
   if (isLoading) {
     return (
-      <div className={styles.welcomePage}>
-        <div className={styles.welcomeContent}>
-          <Loader2 size={32} className={styles.spinner} />
+      <div className={welcomeStyles.welcomePage}>
+        <div className={welcomeStyles.welcomeContent}>
+          <Loader2 size={32} className={welcomeStyles.spinner} />
         </div>
       </div>
     );
@@ -612,31 +631,39 @@ export default function OnboardingPage() {
   // 시작 전 화면
   if (!started) {
     return (
-      <div className={styles.welcomePage}>
-        <div className={styles.welcomeContent}>
-          <div className={styles.welcomeGreetingWrapper}>
-            <h2 className={`${styles.welcomeGreeting} ${isLastMessage ? styles.welcomeGreetingLast : ''}`}>
+      <div className={welcomeStyles.welcomePage}>
+        <div className={welcomeStyles.welcomeContent}>
+          <div className={welcomeStyles.welcomeGreetingWrapper}>
+            <h2
+              className={`${welcomeStyles.welcomeGreeting} ${
+                isLastMessage ? welcomeStyles.welcomeGreetingLast : ""
+              }`}
+            >
               {currentText}
             </h2>
 
-            <div className={`${styles.welcomeActionsContainer} ${showContent ? styles.welcomeActionsVisible : ''}`}>
+            <div
+              className={`${welcomeStyles.welcomeActionsContainer} ${
+                showContent ? welcomeStyles.welcomeActionsVisible : ""
+              }`}
+            >
               <button
-                className={styles.welcomeStartButton}
+                className={welcomeStyles.welcomeStartButton}
                 onClick={() => setStarted(true)}
               >
                 무료로 진단하기
               </button>
               <button
-                className={styles.welcomeSandboxButton}
+                className={welcomeStyles.welcomeSandboxButton}
                 onClick={handleSandbox}
                 disabled={saving}
               >
                 {saving ? (
-                  <Loader2 size={16} className={styles.spinner} />
+                  <Loader2 size={16} className={welcomeStyles.spinner} />
                 ) : null}
                 샘플로 먼저 체험하기
               </button>
-              <p className={styles.welcomeNoteInline}>
+              <p className={welcomeStyles.welcomeNoteInline}>
                 입력하신 정보는 안전하게 보호됩니다
               </p>
             </div>
@@ -654,7 +681,7 @@ export default function OnboardingPage() {
           <div className={styles.spreadsheetPageLogo}>
             <span>Lycon</span>
             <span className={styles.logoSeparator}>|</span>
-            <span className={styles.logoSubtitle}>현재 재무 정리</span>
+            <span className={styles.logoSubtitle}>자산 진단</span>
           </div>
           <div className={styles.headerActions}>
             {autoSaveStatus === "saving" && (
@@ -664,7 +691,9 @@ export default function OnboardingPage() {
               </span>
             )}
             {autoSaveStatus === "error" && (
-              <span className={`${styles.autoSaveStatus} ${styles.autoSaveStatusError}`}>
+              <span
+                className={`${styles.autoSaveStatus} ${styles.autoSaveStatusError}`}
+              >
                 저장 실패
               </span>
             )}
@@ -708,41 +737,13 @@ export default function OnboardingPage() {
           />
         </div>
 
-        {/* 오른쪽: 스프레드시트 (동기화) */}
+        {/* 오른쪽: TIP 패널 */}
         <div className={styles.spreadsheetPanel}>
           {error && <div className={styles.errorBox}>{error}</div>}
 
           <ProgressiveForm
             data={data}
-            onUpdateData={updateData}
-            onComplete={handleSubmit}
-            isCompleteDisabled={saving || !data.name || !data.birth_date}
-            isSaving={saving}
             currentStepIndex={stepIndex}
-            onStepChange={setStepIndex}
-            onActiveRowChange={(rowId) => {
-              const rowToSection: Record<string, SectionId> = {
-                name: "household",
-                birth_date: "household",
-                children: "household",
-                retirement_age: "goals",
-                retirement_fund: "goals",
-                labor_income: "income",
-                business_income: "income",
-                living_expenses: "expense",
-                realEstate: "realEstate",
-                asset: "asset",
-                debt: "debt",
-                national_pension: "pension",
-                retirement_pension: "pension",
-                personal_pension: "pension",
-                other_pension: "pension",
-              };
-              const section = rowToSection[rowId];
-              if (section) setActiveSection(section);
-            }}
-            activeSection={activeSection}
-            onSectionChange={setActiveSection}
           />
         </div>
       </div>

@@ -212,6 +212,11 @@
   gap: 8px;
 }
 
+.amountDisplay {
+  font-size: 14px;
+  color: #a1a1a6;
+}
+
 .actualAmount {
   font-size: 15px;
   color: #86868b;
@@ -622,6 +627,12 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.assetItemWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .assetItem {

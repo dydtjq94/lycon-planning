@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { OnboardingData, FamilyMemberInput, DebtInput } from "@/types";
 import { type RowId, rows } from "../ProgressiveForm/types";
+import { formatMoney } from "../ProgressiveForm/tips/formatUtils";
 import { NumberInput } from "./NumberInput";
 import styles from "./GuideInput.module.css";
 
@@ -20,67 +21,65 @@ interface GuideInputProps {
 }
 
 // 각 행에 대한 질문과 설명
-const rowQuestions: Record<
-  RowId,
-  { question: string; description?: string }
-> = {
-  name: {
-    question: "이름을 알려주세요",
-    description: "이름은 맞춤형 리포트에, 성별은 기대수명 계산에 활용됩니다.",
-  },
-  birth_date: {
-    question: "생년월일을 알려주세요",
-    description: "정확한 나이 계산을 위해 필요해요.",
-  },
-  children: {
-    question: "자녀가 있으신가요?",
-    description: "자녀의 교육비, 양육비 계획에 반영됩니다.",
-  },
-  retirement_age: {
-    question: "몇 살에 은퇴하고 싶으세요?",
-    description: "목표 은퇴 나이를 설정해주세요.",
-  },
-  retirement_fund: {
-    question: "은퇴 후 필요한 자금은 얼마인가요?",
-    description: "은퇴 후 생활에 필요한 총 금액이에요.",
-  },
-  labor_income: {
-    question: "근로소득이 얼마인가요?",
-    description: "월급, 상여금 등 근로를 통해 얻는 소득이에요.",
-  },
-  business_income: {
-    question: "사업소득이 있으신가요?",
-    description: "사업, 프리랜서 등으로 얻는 소득이에요.",
-  },
-  living_expenses: {
-    question: "월 평균 생활비는 얼마인가요?",
-    description: "주거비, 식비, 교통비 등 모든 지출을 포함해요.",
-  },
-  realEstate: {
-    question: "현재 거주 형태는 어떻게 되나요?",
-    description: "자가, 전세, 월세 중에서 선택해주세요.",
-  },
-  asset: {
-    question: "금융자산은 얼마나 있으신가요?",
-    description: "예금, 적금, 주식, 펀드 등 모든 금융자산이에요.",
-  },
-  debt: {
-    question: "부채가 있으신가요?",
-    description: "대출, 카드론 등 모든 부채를 입력해주세요.",
-  },
-  national_pension: {
-    question: "국민연금 예상 수령액을 알고 계신가요?",
-    description: "국민연금공단에서 확인할 수 있어요.",
-  },
-  retirement_pension: {
-    question: "퇴직연금 또는 퇴직금이 있으신가요?",
-    description: "회사에서 적립 중인 퇴직연금 또는 퇴직금이에요.",
-  },
-  personal_pension: {
-    question: "개인연금을 납입하고 계신가요?",
-    description: "IRP, 연금저축, ISA 등 개인이 가입한 연금이에요.",
-  },
-};
+const rowQuestions: Record<RowId, { question: string; description?: string }> =
+  {
+    name: {
+      question: "이름을 알려주세요",
+      description: "이름은 맞춤형 리포트에, 성별은 기대수명 계산에 활용됩니다.",
+    },
+    birth_date: {
+      question: "생년월일을 알려주세요",
+      description: "정확한 나이 계산을 위해 필요해요.",
+    },
+    children: {
+      question: "자녀가 있으신가요?",
+      description: "자녀의 교육비, 양육비 계획에 반영됩니다.",
+    },
+    retirement_age: {
+      question: "몇 살에 은퇴하고 싶으세요?",
+      description: "목표 은퇴 나이를 설정해주세요.",
+    },
+    retirement_fund: {
+      question: "은퇴할 때 자산 목표는 얼마인가요?",
+      description: "은퇴 시점에 모으고 싶은 총 자산이에요.",
+    },
+    labor_income: {
+      question: "근로소득이 얼마인가요?",
+      description: "월급, 상여금 등 근로를 통해 얻는 소득이에요.",
+    },
+    business_income: {
+      question: "사업소득이 있으신가요?",
+      description: "사업, 프리랜서 등으로 얻는 소득이에요.",
+    },
+    living_expenses: {
+      question: "월 평균 생활비는 얼마인가요?",
+      description: "주거비, 식비, 교통비 등 모든 지출을 포함해요.",
+    },
+    realEstate: {
+      question: "현재 거주 형태는 어떻게 되나요?",
+      description: "자가, 전세, 월세 중에서 선택해주세요.",
+    },
+    asset: {
+      question: "금융자산은 얼마나 있으신가요?",
+      description: "예금, 적금, 주식, 펀드 등 모든 금융자산이에요.",
+    },
+    debt: {
+      question: "부채가 있으신가요?",
+      description: "대출, 카드론 등 모든 부채를 입력해주세요.",
+    },
+    national_pension: {
+      question: "국민연금 예상 수령액을 알고 계신가요?",
+      description: "국민연금공단에서 확인할 수 있어요.",
+    },
+    retirement_pension: {
+      question: "퇴직연금 또는 퇴직금이 있으신가요?",
+      description: "회사에서 적립 중인 퇴직연금 또는 퇴직금이에요.",
+    },
+    personal_pension: {
+      question: "개인연금을 납입하고 계신가요?",
+      description: "IRP, 연금저축, ISA 등 개인이 가입한 연금이에요.",
+    },
+  };
 
 export function GuideInput({
   data,
@@ -198,7 +197,6 @@ export function GuideInput({
         <div className={styles.inputSection} ref={inputSectionRef}>
           {renderInputForRow(displayRowId, data, onUpdateData)}
         </div>
-
       </div>
 
       <div className={styles.navigation}>
@@ -253,14 +251,18 @@ function renderInputForRow(
           />
           <div className={styles.genderButtons}>
             <button
-              className={`${styles.genderButton} ${data.gender === "male" ? styles.genderButtonActive : ""}`}
+              className={`${styles.genderButton} ${
+                data.gender === "male" ? styles.genderButtonActive : ""
+              }`}
               onClick={() => onUpdateData({ gender: "male" })}
               type="button"
             >
               남자
             </button>
             <button
-              className={`${styles.genderButton} ${data.gender === "female" ? styles.genderButtonActive : ""}`}
+              className={`${styles.genderButton} ${
+                data.gender === "female" ? styles.genderButtonActive : ""
+              }`}
               onClick={() => onUpdateData({ gender: "female" })}
               type="button"
             >
@@ -370,7 +372,7 @@ function renderInputForRow(
                     target_retirement_age: parseInt(e.target.value) || 0,
                   })
                 }
-                placeholder="55"
+                placeholder="60"
                 min={30}
                 max={100}
               />
@@ -433,6 +435,7 @@ function renderInputForRow(
       );
 
     case "retirement_fund":
+      const fundValue = data.target_retirement_fund || 0;
       return (
         <div className={styles.numberInputWithDisplay}>
           <div className={styles.numberInputGroup}>
@@ -448,6 +451,9 @@ function renderInputForRow(
             />
             <span className={styles.unit}>만원</span>
           </div>
+          {fundValue > 0 && (
+            <div className={styles.amountDisplay}>{formatMoney(fundValue)}</div>
+          )}
         </div>
       );
 
@@ -483,7 +489,9 @@ function renderInputForRow(
                 <NumberInput
                   className={styles.numberInputSmall}
                   value={
-                    data.spouseLaborIncome !== null ? data.spouseLaborIncome : ""
+                    data.spouseLaborIncome !== null
+                      ? data.spouseLaborIncome
+                      : ""
                   }
                   onChange={(e) => {
                     const value = e.target.value;
@@ -516,7 +524,8 @@ function renderInputForRow(
                 onChange={(e) => {
                   const value = e.target.value;
                   onUpdateData({
-                    businessIncome: value === "" ? null : parseFloat(value) || 0,
+                    businessIncome:
+                      value === "" ? null : parseFloat(value) || 0,
                   });
                 }}
                 placeholder="0"
@@ -554,6 +563,7 @@ function renderInputForRow(
       );
 
     case "living_expenses":
+      const expenseValue = data.livingExpenses || 0;
       return (
         <div className={styles.numberInputWithDisplay}>
           <div className={styles.numberInputGroup}>
@@ -570,6 +580,11 @@ function renderInputForRow(
             />
             <span className={styles.unit}>만원/월</span>
           </div>
+          {expenseValue > 0 && (
+            <div className={styles.amountDisplay}>
+              {formatMoney(expenseValue)}
+            </div>
+          )}
         </div>
       );
 
@@ -611,6 +626,11 @@ function renderInputForRow(
                   <span className={styles.unit}>만원</span>
                 </div>
               </div>
+              {(data.housingValue || 0) > 0 && (
+                <div className={styles.amountDisplay}>
+                  {formatMoney(data.housingValue || 0)}
+                </div>
+              )}
             </div>
           )}
 
@@ -635,6 +655,11 @@ function renderInputForRow(
                   <span className={styles.unit}>만원</span>
                 </div>
               </div>
+              {(data.housingValue || 0) > 0 && (
+                <div className={styles.amountDisplay}>
+                  {formatMoney(data.housingValue || 0)}
+                </div>
+              )}
             </div>
           )}
 
@@ -659,6 +684,11 @@ function renderInputForRow(
                   <span className={styles.unit}>만원</span>
                 </div>
               </div>
+              {(data.housingValue || 0) > 0 && (
+                <div className={styles.amountDisplay}>
+                  {formatMoney(data.housingValue || 0)}
+                </div>
+              )}
               <div className={styles.realEstateRow}>
                 <span className={styles.realEstateLabel}>월세</span>
                 <div className={styles.numberInputGroupInline}>
@@ -668,7 +698,8 @@ function renderInputForRow(
                     onChange={(e) => {
                       const value = e.target.value;
                       onUpdateData({
-                        housingRent: value === "" ? null : parseFloat(value) || 0,
+                        housingRent:
+                          value === "" ? null : parseFloat(value) || 0,
                       });
                     }}
                     placeholder="0"
@@ -736,6 +767,11 @@ function renderInputForRow(
                       <span className={styles.debtUnit}>만원</span>
                     </div>
                   </div>
+                  {(data.housingLoan || 0) > 0 && (
+                    <div className={styles.amountDisplay}>
+                      {formatMoney(data.housingLoan || 0)}
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -807,34 +843,42 @@ function renderInputForRow(
                 )
                 .map((type) => {
                   const rawValue = data[type.dataKey];
+                  const numValue = rawValue || 0;
                   const displayValue =
                     rawValue !== null && rawValue !== 0 ? rawValue : "";
                   return (
-                    <div key={type.key} className={styles.assetItem}>
-                      <span className={styles.assetItemLabel}>
-                        {type.label}
-                      </span>
-                      <div className={styles.assetItemInput}>
-                        <NumberInput
-                          className={styles.numberInputSmall}
-                          value={displayValue}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            onUpdateData({
-                              [type.dataKey]:
-                                value === "" ? 0 : parseFloat(value) || 0,
-                            });
-                          }}
-                          placeholder="0"
-                        />
-                        <span className={styles.unit}>만원</span>
+                    <div key={type.key} className={styles.assetItemWrapper}>
+                      <div className={styles.assetItem}>
+                        <span className={styles.assetItemLabel}>
+                          {type.label}
+                        </span>
+                        <div className={styles.assetItemInput}>
+                          <NumberInput
+                            className={styles.numberInputSmall}
+                            value={displayValue}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              onUpdateData({
+                                [type.dataKey]:
+                                  value === "" ? 0 : parseFloat(value) || 0,
+                              });
+                            }}
+                            placeholder="0"
+                          />
+                          <span className={styles.unit}>만원</span>
+                        </div>
+                        <button
+                          className={styles.assetItemDelete}
+                          onClick={() => onUpdateData({ [type.dataKey]: null })}
+                        >
+                          <X size={16} />
+                        </button>
                       </div>
-                      <button
-                        className={styles.assetItemDelete}
-                        onClick={() => onUpdateData({ [type.dataKey]: null })}
-                      >
-                        <X size={16} />
-                      </button>
+                      {numValue > 0 && (
+                        <div className={styles.amountDisplay}>
+                          {formatMoney(numValue)}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -925,32 +969,35 @@ function renderInputForRow(
           {data.children.length > 0 && (
             <div className={styles.childrenList}>
               {data.children.map((child, index) => (
-                <div key={index} className={styles.childItem}>
-                  <span className={styles.childLabel}>
+                <div key={index} className={styles.personRow}>
+                  <span className={styles.personLabel}>
                     {child.gender === "male" ? "아들" : "딸"}
                   </span>
-                  <input
-                    type="date"
-                    className={styles.childDateInput}
-                    value={child.birth_date || ""}
-                    onChange={(e) => {
-                      const newChildren = [...data.children];
-                      newChildren[index] = {
-                        ...newChildren[index],
-                        birth_date: e.target.value,
-                      };
-                      onUpdateData({ children: newChildren });
-                    }}
-                    min="1990-01-01"
-                    max="2099-12-31"
-                  />
-                  {child.birth_date && (
-                    <span className={styles.childAge}>
-                      {calculateKoreanAge(child.birth_date)}세
-                    </span>
-                  )}
+                  <div className={styles.dateInputGroup}>
+                    <input
+                      type="date"
+                      className={styles.dateInput}
+                      value={child.birth_date || ""}
+                      onChange={(e) => {
+                        const newChildren = [...data.children];
+                        newChildren[index] = {
+                          ...newChildren[index],
+                          birth_date: e.target.value,
+                        };
+                        onUpdateData({ children: newChildren });
+                      }}
+                      min="1990-01-01"
+                      max="2099-12-31"
+                    />
+                    {child.birth_date && (
+                      <span className={styles.ageDisplay}>
+                        {calculateKoreanAge(child.birth_date)}세 (만{" "}
+                        {calculateAge(child.birth_date)}세)
+                      </span>
+                    )}
+                  </div>
                   <button
-                    className={styles.childDeleteButton}
+                    className={styles.removeSpouseButton}
                     onClick={() => {
                       const newChildren = data.children.filter(
                         (_, i) => i !== index
@@ -1059,7 +1106,8 @@ function renderInputForRow(
                           const value = e.target.value;
                           newDebts[index] = {
                             ...newDebts[index],
-                            amount: value === "" ? null : parseFloat(value) || 0,
+                            amount:
+                              value === "" ? null : parseFloat(value) || 0,
                           };
                           onUpdateData({ debts: newDebts });
                         }}
@@ -1068,6 +1116,11 @@ function renderInputForRow(
                       <span className={styles.debtUnit}>만원</span>
                     </div>
                   </div>
+                  {(debt.amount || 0) > 0 && (
+                    <div className={styles.amountDisplay}>
+                      {formatMoney(debt.amount || 0)}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1207,7 +1260,8 @@ function renderInputForRow(
           </div>
           <div className={styles.pensionRow}>
             <span className={styles.pensionLabel}>
-              {data.retirementPensionType === "DC" || data.retirementPensionType === "corporate_irp"
+              {data.retirementPensionType === "DC" ||
+              data.retirementPensionType === "corporate_irp"
                 ? "현재 적립금"
                 : "예상 퇴직 금액"}
             </span>
@@ -1232,10 +1286,19 @@ function renderInputForRow(
               <span className={styles.unit}>만원</span>
             </div>
           </div>
+          {(data.retirementPensionBalance || 0) > 0 && (
+            <div className={styles.amountDisplay}>
+              {formatMoney(data.retirementPensionBalance || 0)}
+            </div>
+          )}
         </div>
       );
 
     case "personal_pension":
+      const totalPersonalPension =
+        (data.irpBalance || 0) +
+        (data.pensionSavingsBalance || 0) +
+        (data.isaBalance || 0);
       return (
         <div className={styles.pensionSection}>
           <div className={styles.pensionRow}>
@@ -1297,6 +1360,11 @@ function renderInputForRow(
               <span className={styles.unit}>만원</span>
             </div>
           </div>
+          {totalPersonalPension > 0 && (
+            <div className={styles.amountDisplay}>
+              합계: {formatMoney(totalPersonalPension)}
+            </div>
+          )}
         </div>
       );
 

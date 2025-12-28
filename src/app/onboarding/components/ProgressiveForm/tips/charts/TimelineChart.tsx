@@ -11,7 +11,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js'
-import type { OnboardingData, FamilyMemberInput } from '@/types'
+import type { OnboardingData } from '@/types'
 import {
   calculateAge,
   yearsToRetirement,
@@ -24,7 +24,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 interface TimelineChartProps {
   data: OnboardingData
-  showChildrenTimeline?: boolean  // 자녀 타임라인 모드
+  showChildrenTimeline?: boolean
 }
 
 // 자녀 나이 계산
@@ -40,21 +40,66 @@ function getChildAge(birthDate: string | undefined): number {
   return Math.max(0, age)
 }
 
-// 자녀 교육 단계 정보
-function getEducationStage(age: number): { stage: string; yearsLeft: number; color: string } {
-  if (age < 7) {
-    return { stage: '미취학', yearsLeft: 7 - age, color: '#A78BFA' }
-  } else if (age < 13) {
-    return { stage: '초등학교', yearsLeft: 13 - age, color: '#60A5FA' }
-  } else if (age < 16) {
-    return { stage: '중학교', yearsLeft: 16 - age, color: '#34D399' }
-  } else if (age < 19) {
-    return { stage: '고등학교', yearsLeft: 19 - age, color: '#FBBF24' }
-  } else if (age < 23) {
-    return { stage: '대학교', yearsLeft: 23 - age, color: '#F97316' }
-  } else {
-    return { stage: '성인', yearsLeft: 0, color: '#78716C' }
+// 물가상승률 적용 (연 3%)
+const INFLATION_RATE = 0.03
+
+function applyInflation(amount: number, yearsFromNow: number): number {
+  return Math.round(amount * Math.pow(1 + INFLATION_RATE, yearsFromNow))
+}
+
+// 나이별 연간 비용 계산 (만원 단위, 물가상승률 반영)
+function getYearlyCostByAge(
+  age: number,
+  currentAge: number,
+  isMale: boolean,
+  marriageAge: number
+): {
+  childcare: number
+  education: number
+  allowance: number
+  tuition: number
+  wedding: number
+} {
+  const yearsFromNow = age - currentAge
+  const cost = {
+    childcare: 0,
+    education: 0,
+    allowance: 0,
+    tuition: 0,
+    wedding: 0,
   }
+
+  // 양육비 (0-6세) - 연 600만원
+  if (age <= 6) {
+    cost.childcare = applyInflation(600, yearsFromNow)
+  }
+
+  // 교육비 + 용돈
+  if (age >= 7 && age <= 12) {
+    // 초등학교
+    cost.education = applyInflation(300, yearsFromNow)
+    cost.allowance = applyInflation(36, yearsFromNow)
+  } else if (age >= 13 && age <= 15) {
+    // 중학교
+    cost.education = applyInflation(400, yearsFromNow)
+    cost.allowance = applyInflation(60, yearsFromNow)
+  } else if (age >= 16 && age <= 18) {
+    // 고등학교
+    cost.education = applyInflation(600, yearsFromNow)
+    cost.allowance = applyInflation(120, yearsFromNow)
+  } else if (age >= 19 && age <= 22) {
+    // 대학교
+    cost.tuition = applyInflation(800, yearsFromNow)
+    cost.allowance = applyInflation(360, yearsFromNow)
+  }
+
+  // 결혼 자금 (남자 1.3억, 여자 8천)
+  if (age === marriageAge) {
+    const weddingBase = isMale ? 13000 : 8000
+    cost.wedding = applyInflation(weddingBase, yearsFromNow)
+  }
+
+  return cost
 }
 
 export function TimelineChart({ data, showChildrenTimeline }: TimelineChartProps) {
@@ -62,31 +107,41 @@ export function TimelineChart({ data, showChildrenTimeline }: TimelineChartProps
   const retirementAge = data.target_retirement_age || 60
   const pensionStartAge = data.nationalPensionStartAge || DEFAULT_PENSION_START_AGE
 
-  // 자녀가 있고 자녀 모드인 경우 자녀 타임라인 표시
   const hasChildren = data.children && data.children.length > 0
 
   if (hasChildren && showChildrenTimeline) {
-    const childrenInfo = data.children.map((child: FamilyMemberInput, index: number) => {
-      const age = getChildAge(child.birth_date)
-      const edu = getEducationStage(age)
-      const yearsToIndependence = Math.max(0, 23 - age)  // 대학 졸업 (23세) 기준
-      const name = child.gender === 'male' ? `아들${data.children.length > 1 ? index + 1 : ''}` :
-                   child.gender === 'female' ? `딸${data.children.length > 1 ? index + 1 : ''}` :
-                   `자녀${index + 1}`
-      return { name, age, edu, yearsToIndependence }
+    // 모든 자녀의 총 비용 카테고리별 계산
+    const totals = {
+      childcare: 0,   // 양육비
+      education: 0,   // 교육비
+      allowance: 0,   // 용돈
+      tuition: 0,     // 대학등록금
+      wedding: 0,     // 결혼자금
+    }
+
+    data.children.forEach(child => {
+      const childCurrentAge = getChildAge(child.birth_date)
+      const isMale = child.gender === 'male'
+      const marriageAge = isMale ? 34 : 30
+
+      for (let childAge = childCurrentAge; childAge <= marriageAge; childAge++) {
+        const cost = getYearlyCostByAge(childAge, childCurrentAge, isMale, marriageAge)
+        totals.childcare += cost.childcare
+        totals.education += cost.education
+        totals.allowance += cost.allowance
+        totals.tuition += cost.tuition
+        totals.wedding += cost.wedding
+      }
     })
 
-    // 모든 자녀가 독립할 때까지 남은 최대 년수
-    const maxYearsToIndependence = Math.max(...childrenInfo.map(c => c.yearsToIndependence))
+    const totalCost = totals.childcare + totals.education + totals.allowance + totals.tuition + totals.wedding
 
-    // 자녀별 막대 차트 데이터
     const chartData = {
-      labels: childrenInfo.map(c => `${c.name} (${c.age}세)`),
+      labels: ['양육비', '교육비', '용돈', '대학등록금', '결혼자금'],
       datasets: [
         {
-          label: '독립까지',
-          data: childrenInfo.map(c => c.yearsToIndependence),
-          backgroundColor: childrenInfo.map(c => c.edu.color),
+          data: [totals.childcare, totals.education, totals.allowance, totals.tuition, totals.wedding],
+          backgroundColor: ['#A78BFA', '#60A5FA', '#34D399', '#FBBF24', '#F97316'],
           borderRadius: 4,
         },
       ],
@@ -100,71 +155,56 @@ export function TimelineChart({ data, showChildrenTimeline }: TimelineChartProps
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (context: { raw: unknown, dataIndex: number }) => {
-              const child = childrenInfo[context.dataIndex]
-              return `${child.edu.stage} / 독립까지 ${context.raw}년`
+            label: (context: { raw: unknown }) => {
+              const value = context.raw as number
+              return `${value.toLocaleString()}만원`
             },
           },
         },
       },
       scales: {
         x: {
-          display: true,
-          grid: { display: false },
+          grid: { color: '#F5F5F4' },
           ticks: {
             font: { size: 10 },
             color: '#78716C',
-            callback: (value: unknown) => `${value}년`,
+            callback: (value: unknown) => {
+              const v = value as number
+              return v >= 10000 ? `${(v / 10000).toFixed(0)}억` : `${v}만`
+            },
           },
         },
         y: {
           grid: { display: false },
           ticks: {
-            font: { size: 12 },
-            color: '#57534E',
+            font: { size: 11 },
+            color: '#44403C',
           },
         },
       },
     }
 
-    // 예상 교육비 계산 (1인당 평균 약 2억, 만원 단위)
-    const totalEducationCost = childrenInfo.reduce((sum, child) => {
-      if (child.age >= 23) return sum
-      // 남은 교육 단계별 대략적 비용 (만원 단위)
-      let cost = 0
-      if (child.age < 7) cost += 3000  // 유아기
-      if (child.age < 13) cost += 4000  // 초등
-      if (child.age < 16) cost += 3000  // 중등
-      if (child.age < 19) cost += 5000  // 고등
-      if (child.age < 23) cost += 8000  // 대학
-      return sum + cost  // 만원 단위 그대로
-    }, 0)
-
     return (
       <div className={styles.chartContainer}>
         <div className={styles.chartHeader}>
-          <span className={styles.chartTitle}>자녀 교육 타임라인</span>
+          <span className={styles.chartTitle}>자녀 양육 총 비용</span>
           <span className={styles.chartSubtitle}>
-            독립까지 최대 {maxYearsToIndependence}년
+            자녀 {data.children.length}명 기준
           </span>
         </div>
-        <div className={styles.chartBody}>
+        <div className={styles.chartBodyLarge}>
           <Bar data={chartData} options={options} />
         </div>
         <div className={styles.chartFooter}>
-          {childrenInfo.map((child, index) => (
-            <div key={index} className={styles.statItem}>
-              <span className={styles.statValue}>{child.edu.stage}</span>
-              <span className={styles.statLabel}>{child.name}</span>
-            </div>
-          ))}
-        </div>
-        {totalEducationCost > 0 && (
-          <div className={styles.savingsMessage}>
-            남은 예상 교육비: 약 {Math.round(totalEducationCost / 10000)}억원
-            (자녀 {childrenInfo.filter(c => c.yearsToIndependence > 0).length}명 기준)
+          <div className={styles.statItem}>
+            <span className={styles.statValueWarning}>
+              {totalCost >= 10000
+                ? `${(totalCost / 10000).toFixed(1)}억`
+                : `${totalCost.toLocaleString()}만`}
+            </span>
+            <span className={styles.statLabel}>예상 총 비용</span>
           </div>
-        )}
+        </div>
       </div>
     )
   }
@@ -184,7 +224,6 @@ export function TimelineChart({ data, showChildrenTimeline }: TimelineChartProps
   const pensionGap = Math.max(0, pensionStartAge - retirementAge)
   const pensionYears = LIFE_EXPECTANCY - pensionStartAge
 
-  // 가로 막대 차트 데이터
   const chartData = {
     labels: ['생애 타임라인'],
     datasets: [

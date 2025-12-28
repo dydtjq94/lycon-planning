@@ -1,4 +1,4 @@
-import type { OnboardingData, AssetInput, Frequency } from '@/types'
+import type { OnboardingData } from '@/types'
 import type { SectionId } from '../SectionForm'
 
 // Row ID 타입 정의
@@ -6,15 +6,15 @@ export type RowId =
   | 'name'
   | 'birth_date'
   | 'children'
-  | 'labor_income'        // 근로 소득
-  | 'business_income'     // 사업 소득
-  | 'living_expenses'     // 생활비
+  | 'labor_income'
+  | 'business_income'
+  | 'living_expenses'
   | 'realEstate'
   | 'asset'
   | 'debt'
-  | 'national_pension'    // 국민연금
-  | 'retirement_pension'  // 퇴직연금/퇴직금
-  | 'personal_pension'    // 개인연금 (IRP, 연금저축, ISA)
+  | 'national_pension'
+  | 'retirement_pension'
+  | 'personal_pension'
   | 'retirement_age'
   | 'retirement_fund'
 
@@ -29,40 +29,10 @@ export interface RowConfig {
 // ProgressiveForm Props
 export interface ProgressiveFormProps {
   data: OnboardingData
-  onUpdateData: (updates: Partial<OnboardingData>) => void
-  onActiveRowChange: (rowId: string) => void
-  activeSection?: SectionId
-  onSectionChange?: (sectionId: SectionId) => void
-  onStepChange?: (stepIndex: number) => void
-  onComplete?: () => void
-  isCompleteDisabled?: boolean
-  isSaving?: boolean
   currentStepIndex?: number
 }
 
-// Row Input Props (공통)
-export interface RowInputProps {
-  data: OnboardingData
-  onUpdateData: (updates: Partial<OnboardingData>) => void
-  onFocus: (rowId: RowId) => void
-  isActive?: boolean
-}
-
-// Asset Item 관련 Props
-export interface AssetRowInputProps extends RowInputProps {
-  addAssetItem: (key: keyof OnboardingData) => void
-  updateAssetItem: (key: keyof OnboardingData, index: number, updates: Partial<AssetInput>) => void
-  deleteAssetItem: (key: keyof OnboardingData, index: number) => void
-}
-
-// 빈도 레이블
-export const frequencyLabels: Record<Frequency, string> = {
-  monthly: '월',
-  yearly: '연',
-  once: '총',
-}
-
-// 섹션별로 포함되는 행들 정의
+// 섹션별 행 매핑
 export const sectionRows: Record<SectionId, RowId[]> = {
   household: ['name', 'birth_date', 'children'],
   goals: ['retirement_age', 'retirement_fund'],
@@ -76,7 +46,6 @@ export const sectionRows: Record<SectionId, RowId[]> = {
 
 // Row 설정 배열
 export const rows: RowConfig[] = [
-  // 기본 정보
   {
     id: 'name',
     label: '이름/성별',
@@ -112,7 +81,6 @@ export const rows: RowConfig[] = [
     isVisible: (_, visible) => visible.includes('retirement_age'),
     isComplete: (data) => data.target_retirement_fund > 0,
   },
-  // 소득/지출
   {
     id: 'labor_income',
     label: '근로소득',
@@ -120,7 +88,6 @@ export const rows: RowConfig[] = [
     isComplete: (data) => {
       const mainComplete = data.laborIncome !== null
       const spouseComplete = data.spouseLaborIncome !== null
-      // 배우자 은퇴 나이가 설정된 경우에만 배우자 소득 필요
       const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
       return mainComplete && (!hasWorkingSpouse || spouseComplete)
     },
@@ -132,7 +99,6 @@ export const rows: RowConfig[] = [
     isComplete: (data) => {
       const mainComplete = data.businessIncome !== null
       const spouseComplete = data.spouseBusinessIncome !== null
-      // 배우자 은퇴 나이가 설정된 경우에만 배우자 소득 필요
       const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
       return mainComplete && (!hasWorkingSpouse || spouseComplete)
     },
@@ -143,7 +109,6 @@ export const rows: RowConfig[] = [
     isVisible: (_, visible) => visible.includes('business_income'),
     isComplete: (data) => data.livingExpenses !== null,
   },
-  // 부동산
   {
     id: 'realEstate',
     label: '거주 부동산',
@@ -154,21 +119,16 @@ export const rows: RowConfig[] = [
       const isValueFilled = data.housingValue !== null && data.housingValue > 0
       const isRentFilled = data.housingRent !== null && data.housingRent > 0
       const isLoanFilled = data.housingLoan !== null && data.housingLoan > 0
-      // 월세는 보증금 + 월세 둘 다 필요
       const isMonthlyRentComplete = data.housingType === '월세' ? (isValueFilled && isRentFilled) : isValueFilled
-      // 대출 추가했으면 대출도 입력해야 완료
       return isMonthlyRentComplete && (!data.housingHasLoan || isLoanFilled)
     },
   },
-  // 금융자산
   {
     id: 'asset',
     label: '금융자산',
     isVisible: (_, visible) => visible.includes('realEstate'),
     isComplete: (data) => {
-      // 금융자산 없음 선택됨
       if (data.hasNoAsset === true) return true
-      // 하나라도 실제 값이 입력되면 완료 (0보다 큼)
       const hasValue = (data.cashCheckingAccount !== null && data.cashCheckingAccount > 0) ||
                        (data.cashSavingsAccount !== null && data.cashSavingsAccount > 0) ||
                        (data.investDomesticStock !== null && data.investDomesticStock > 0) ||
@@ -178,14 +138,12 @@ export const rows: RowConfig[] = [
       return hasValue
     },
   },
-  // 부채
   {
     id: 'debt',
     label: '부채',
     isVisible: (_, visible) => visible.includes('asset'),
     isComplete: (data) => data.hasNoDebt === true || data.debts.some(i => i.name && i.name.trim() !== '' && i.amount !== null && i.amount > 0),
   },
-  // 연금 (한국형 3층 연금)
   {
     id: 'national_pension',
     label: '국민연금',

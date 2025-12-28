@@ -1,0 +1,16 @@
+/* TIP 패널 레이아웃 */
+.rightPanelSplit {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.rightPanelFull {
+  flex: 1;
+  background-color: #fafaf9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow-y: auto;
+}
