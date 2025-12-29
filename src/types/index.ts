@@ -104,7 +104,8 @@ export interface OnboardingData {
   // 거주용 부동산
   housingType: '자가' | '전세' | '월세' | '해당없음' | null  // 거주 형태
   housingValue: number | null      // 자가: 시세, 전세/월세: 보증금
-  housingRent: number | null       // 월세: 월세+관리비
+  housingRent: number | null       // 월세: 월세
+  housingMaintenance: number | null  // 관리비 (자가, 전세, 월세 공통)
   housingHasLoan: boolean          // 대출 여부
   housingLoan: number | null       // 대출금액
   housingLoanRate: number | null   // 대출 금리 (%)
@@ -194,6 +195,20 @@ export interface DashboardSummary {
   scores: Scores
 }
 
+// 시뮬레이션 설정
+export interface SimulationSettings {
+  inflationRate: number      // 물가 상승률 (%)
+  investmentReturn: number   // 투자 수익률 (%)
+  lifeExpectancy: number     // 예상 수명 (세)
+}
+
+// 기본 시뮬레이션 설정
+export const DEFAULT_SETTINGS: SimulationSettings = {
+  inflationRate: 2.5,
+  investmentReturn: 5,
+  lifeExpectancy: 90,
+}
+
 // 은퇴 시뮬레이션 데이터 포인트
 export interface SimulationDataPoint {
   age: number
@@ -212,6 +227,247 @@ export interface ChartData {
     backgroundColor?: string | string[]
     borderColor?: string
     fill?: boolean
+  }[]
+}
+
+// ============================================
+// 새로운 시뮬레이션 기반 데이터 구조
+// ============================================
+
+// 시뮬레이션 (시나리오)
+export interface Simulation {
+  id: string
+  profile_id: string
+  title: string
+  description?: string
+  is_default: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+// 재무 항목 카테고리
+export type FinancialCategory =
+  | 'income'
+  | 'expense'
+  | 'savings'
+  | 'pension'
+  | 'asset'
+  | 'debt'
+  | 'real_estate'
+
+// 소유자 타입
+export type OwnerType = 'self' | 'spouse' | 'child' | 'common'
+
+// 재무 항목 타입 (카테고리별)
+export type IncomeType = 'salary' | 'business' | 'side_income' | 'rental' | 'dividend' | 'other'
+export type ExpenseType = 'living' | 'housing' | 'maintenance' | 'education' | 'child' | 'insurance' | 'transport' | 'health' | 'travel' | 'parents' | 'wedding' | 'leisure' | 'other'
+export type SavingsType = 'emergency_fund' | 'savings_account' | 'stock' | 'fund' | 'crypto' | 'other'
+export type PensionType = 'national' | 'retirement' | 'personal' | 'irp' | 'severance'
+export type AssetType = 'deposit' | 'stock' | 'fund' | 'bond' | 'crypto' | 'vehicle' | 'other'
+export type DebtType = 'mortgage' | 'credit_loan' | 'student_loan' | 'car_loan' | 'credit_card' | 'other'
+export type RealEstateType = 'residence' | 'investment' | 'land' | 'other'
+
+export type FinancialItemType =
+  | IncomeType
+  | ExpenseType
+  | SavingsType
+  | PensionType
+  | AssetType
+  | DebtType
+  | RealEstateType
+
+// ============================================
+// 카테고리별 상세 데이터 (JSONB)
+// ============================================
+
+// 소득 데이터
+export interface IncomeData {
+  amount: number                    // 금액 (만원)
+  frequency: 'monthly' | 'yearly'   // 지급 주기
+  growthRate: number                // 연간 증가율 (%)
+}
+
+// 지출 데이터
+export interface ExpenseData {
+  amount: number                    // 금액 (만원)
+  frequency: 'monthly' | 'yearly'   // 지출 주기
+  growthRate: number                // 연간 증가율 (%, 보통 물가상승률)
+}
+
+// 저축 데이터
+export interface SavingsData {
+  currentBalance: number            // 현재 잔액 (만원)
+  monthlyContribution?: number      // 월 납입액 (만원)
+  interestRate?: number             // 이자율/수익률 (%)
+  targetAmount?: number             // 목표 금액 (만원)
+}
+
+// 연금 데이터 (유형별로 다른 필드 사용)
+export interface PensionData {
+  // 국민연금
+  expectedMonthlyAmount?: number    // 예상 월 수령액 (만원)
+  paymentStartAge?: number          // 수령 시작 나이
+
+  // 퇴직연금/퇴직금
+  currentBalance?: number           // 현재 잔액 (만원)
+  pensionType?: 'DB' | 'DC' | 'corporate_irp' | 'severance'
+
+  // 개인연금 (연금저축, IRP)
+  monthlyContribution?: number      // 월 납입액 (만원)
+  returnRate?: number               // 예상 수익률 (%)
+  paymentStartYear?: number         // 수령 시작 연도
+  paymentYears?: number             // 수령 기간 (년)
+}
+
+// 자산 데이터
+export interface AssetData {
+  currentValue: number              // 현재 가치 (만원)
+  purchasePrice?: number            // 매입가 (만원)
+  appreciationRate?: number         // 연간 상승률 (%)
+  interestRate?: number             // 이자율 (예금 등)
+}
+
+// 부채 데이터
+export interface DebtData {
+  principal: number                 // 원금 (만원)
+  currentBalance?: number           // 현재 잔액 (만원)
+  interestRate: number              // 금리 (%)
+  repaymentType: '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환'
+  monthlyPayment?: number           // 월 상환액 (만원)
+}
+
+// 부동산 데이터
+export interface RealEstateData {
+  currentValue: number              // 현재 시세 (만원)
+  purchasePrice?: number            // 매입가 (만원)
+  appreciationRate?: number         // 연간 상승률 (%)
+
+  // 거주용
+  housingType?: '자가' | '전세' | '월세'
+  deposit?: number                  // 보증금 (만원)
+  monthlyRent?: number              // 월세 (만원)
+
+  // 대출 정보
+  hasLoan?: boolean
+  loanAmount?: number               // 대출금액 (만원)
+  loanRate?: number                 // 대출 금리 (%)
+  loanMaturityYear?: number         // 대출 만기 연도
+  loanMaturityMonth?: number        // 대출 만기 월
+  loanRepaymentType?: '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환'
+}
+
+// 통합 데이터 타입
+export type FinancialItemData =
+  | IncomeData
+  | ExpenseData
+  | SavingsData
+  | PensionData
+  | AssetData
+  | DebtData
+  | RealEstateData
+
+// ============================================
+// 재무 항목 (통합 테이블)
+// ============================================
+
+export interface FinancialItem {
+  id: string
+  simulation_id: string
+
+  // 분류
+  category: FinancialCategory
+  type: FinancialItemType
+
+  // 기본 정보
+  title: string
+  owner: OwnerType
+  memo?: string
+
+  // 시간 범위 (월별 계산 기반)
+  start_year?: number
+  start_month?: number
+  end_year?: number
+  end_month?: number
+  is_fixed_to_retirement_year: boolean
+
+  // 카테고리별 상세 데이터
+  data: FinancialItemData
+
+  // 연동 항목 (부동산 대출 ↔ 부채)
+  linked_item_id?: string
+
+  // 메타
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+// 재무 항목 생성 입력
+export interface FinancialItemInput {
+  simulation_id: string
+  category: FinancialCategory
+  type: FinancialItemType
+  title: string
+  owner?: OwnerType
+  memo?: string
+  start_year?: number
+  start_month?: number
+  end_year?: number
+  end_month?: number
+  is_fixed_to_retirement_year?: boolean
+  data: FinancialItemData
+  linked_item_id?: string
+  sort_order?: number
+}
+
+// 시뮬레이션 생성 입력
+export interface SimulationInput {
+  profile_id: string
+  title: string
+  description?: string
+  is_default?: boolean
+  sort_order?: number
+}
+
+// ============================================
+// 월별 시뮬레이션 계산용 타입
+// ============================================
+
+// 월별 현금흐름
+export interface MonthlyCashFlow {
+  year: number
+  month: number
+  incomes: { item: FinancialItem; amount: number }[]
+  expenses: { item: FinancialItem; amount: number }[]
+  totalIncome: number
+  totalExpense: number
+  netCashFlow: number
+}
+
+// 월별 자산 상태
+export interface MonthlyAssetState {
+  year: number
+  month: number
+  assets: { item: FinancialItem; value: number }[]
+  debts: { item: FinancialItem; balance: number }[]
+  realEstates: { item: FinancialItem; value: number; loanBalance: number }[]
+  savings: { item: FinancialItem; balance: number }[]
+  pensions: { item: FinancialItem; value: number }[]
+  totalAssets: number
+  totalDebts: number
+  netWorth: number
+}
+
+// 시뮬레이션 결과 (전체 타임라인)
+export interface SimulationResult {
+  simulation: Simulation
+  timeline: {
+    year: number
+    month: number
+    cashFlow: MonthlyCashFlow
+    assetState: MonthlyAssetState
   }[]
 }
 

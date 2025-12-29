@@ -1,0 +1,86 @@
+/* Recharts 수입/지출 차트 스타일 */
+
+/* Recharts 기본 포커스 스타일 제거 및 키보드 접근성 차단 */
+:global(.recharts-surface),
+:global(.recharts-wrapper),
+:global(.recharts-layer),
+:global(.recharts-cartesian-axis),
+:global(.recharts-xAxis),
+:global(.recharts-yAxis),
+:global(.recharts-bar),
+:global(.recharts-bar-rectangle),
+:global(.recharts-rectangle),
+:global(.recharts-tooltip-wrapper) {
+  outline: none !important;
+  pointer-events: auto !important; /* 마우스 이벤트는 유지 */
+}
+
+/* 모든 Recharts 요소가 포커스를 받지 못하도록 */
+:global(.recharts-surface *),
+:global(.recharts-wrapper *) {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* 포커스 상태 완전 제거 */
+:global(.recharts-surface:focus),
+:global(.recharts-wrapper:focus),
+:global(.recharts-layer:focus),
+:global(.recharts-cartesian-axis:focus),
+:global(.recharts-xAxis:focus),
+:global(.recharts-yAxis:focus),
+:global(.recharts-bar:focus),
+:global(.recharts-bar-rectangle:focus),
+:global(.recharts-rectangle:focus) {
+  outline: none !important;
+}
+
+.chartContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.noData {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* 차트 그리드 */
+.chartGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: 100%;
+  flex: 1;
+}
+
+.chartWrapper {
+  flex: 1;
+  min-height: 400px;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1200px) {
+  .chartGrid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .chartWrapper {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chartWrapper {
+    min-height: 300px;
+  }
+}
+

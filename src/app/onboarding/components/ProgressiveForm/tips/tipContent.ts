@@ -2,10 +2,10 @@ import type { OnboardingData } from "@/types";
 import type { SectionId } from "../../SectionForm";
 import type { RowId } from "../types";
 
-// TIP 콘텐츠 타입 (내부 저장용 - title이 함수일 수 있음)
+// TIP 콘텐츠 타입 (내부 저장용 - title/description이 함수일 수 있음)
 export interface TipContentRaw {
   title: string | ((data: OnboardingData) => string);
-  description: string;
+  description: string | ((data: OnboardingData) => string);
 }
 
 // TIP 콘텐츠 타입 (렌더링용 - title이 항상 string)
@@ -99,14 +99,14 @@ export const rowTips: Partial<Record<RowId, TipContentRaw>> = {
   retirement_fund: {
     title: "잘 모르겠다면?",
     description:
-      "10억(100,000만원)으로 시작해도 괜찮아요. 나중에 결과를 보고 조정하면 돼요.",
+      "10억으로 목표를 잡아도 괜찮아요. 나중에 결과를 보고 조정하면 돼요.",
   },
 
   // 6. 근로소득
   labor_income: {
-    title: "세전 금액이에요",
+    title: "간단하게만 입력하세요",
     description:
-      "급여명세서의 '지급총액'을 입력하세요. 상여금 포함해서 월평균으로 넣으면 돼요.",
+      "지금은 대략적인 금액만 입력하면 돼요. 상여금, 성과급 등 상세 소득은 나중에 수정할 수 있어요.",
   },
 
   // 7. 사업소득
@@ -125,9 +125,21 @@ export const rowTips: Partial<Record<RowId, TipContentRaw>> = {
 
   // 9. 부동산
   realEstate: {
-    title: "현재 사는 곳 기준이에요",
-    description:
-      "자가라면 KB부동산이나 네이버부동산에서 시세를 확인할 수 있어요.",
+    title: (data) => {
+      if (data.housingType === "자가") return "내 집의 현재 가치";
+      if (data.housingType === "전세") return "보증금도 자산이에요";
+      if (data.housingType === "월세") return "월세도 기록해두세요";
+      return "거주 형태를 선택해주세요";
+    },
+    description: (data) => {
+      if (data.housingType === "자가")
+        return "KB부동산, 네이버부동산에서 시세를 확인할 수 있어요. 주택담보대출이 있다면 함께 입력해주세요.";
+      if (data.housingType === "전세")
+        return "전세보증금은 나중에 돌려받는 자산이에요. 전세대출이 있다면 함께 입력해주세요.";
+      if (data.housingType === "월세")
+        return "보증금과 월세를 입력해주세요. 월세는 매월 나가는 고정 지출로 계산됩니다.";
+      return "자가, 전세, 월세 중 현재 거주 형태를 선택해주세요.";
+    },
   },
 
   // 10. 금융자산
@@ -139,30 +151,30 @@ export const rowTips: Partial<Record<RowId, TipContentRaw>> = {
 
   // 11. 부채
   debt: {
-    title: "주담대 외 부채만 입력하세요",
+    title: "생각나는 것만 적어도 돼요",
     description:
-      "주택담보대출은 앞에서 입력했어요. 신용대출, 카드론 등 다른 부채가 있다면 추가해주세요.",
+      "신용대출, 마이너스통장, 카드론, 학자금대출, 자동차할부 등이 있어요. 주택 관련 대출은 앞에서 입력했으니 제외하세요.",
   },
 
   // 12. 국민연금
   national_pension: {
     title: "모르면 나중에 수정해도 돼요",
     description:
-      "국민연금공단(nps.or.kr) > '내 연금 알아보기'에서 예상 수령액을 확인할 수 있어요.",
+      "예상 수령액은 아래 버튼에서 확인할 수 있어요.",
   },
 
   // 13. 퇴직연금
   retirement_pension: {
-    title: "회사 인사팀에 물어보세요",
+    title: "퇴직연금 유형 알아보기",
     description:
-      "급여명세서나 사내 인트라넷에서 확인할 수 있어요. DC형/DB형 유형과 현재 적립금을 입력해주세요.",
+      "DB형은 회사가 운용하고 퇴직 시 정해진 금액을 받아요. DC형은 본인이 운용하고 수익에 따라 수령액이 달라져요. 모르면 대략적인 적립금만 입력해도 괜찮아요.",
   },
 
   // 14. 개인연금
   personal_pension: {
-    title: "거의 다 왔어요!",
+    title: "개인연금 유형 알아보기",
     description:
-      "IRP, 연금저축, ISA 등 개인적으로 가입한 연금 계좌가 있다면 입력해주세요. 없으면 0으로 넘어가세요.",
+      "IRP, 연금저축, ISA는 모두 세제 혜택이 있는 노후 준비 상품이에요. 각각 특징이 달라서 함께 활용하면 좋아요.",
   },
 };
 
@@ -182,8 +194,16 @@ export function getTipContent(
       ? rawTip.title
       : "정보 입력";
 
+  // description이 함수인 경우 실행해서 문자열로 변환
+  const description =
+    typeof rawTip.description === "function" && data
+      ? rawTip.description(data)
+      : typeof rawTip.description === "string"
+      ? rawTip.description
+      : "";
+
   return {
     title,
-    description: rawTip.description,
+    description,
   };
 }

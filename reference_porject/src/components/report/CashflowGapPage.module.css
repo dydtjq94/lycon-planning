@@ -1,0 +1,545 @@
+/* 슬라이드 컨테이너 */
+.slideContainer {
+  width: 100vw;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  color: white;
+  background-color: #0b1828;
+  font-family: "Pretendard", sans-serif;
+}
+
+/* 헤더 */
+.header {
+  padding: 40px 48px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.headerBadges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.stepBadge {
+  background-color: #1f2937;
+  color: #d1d5db;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.sectionBadge {
+  color: #d4af37;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.headerTitle {
+  font-family: "Pretendard", sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.headerDescription {
+  text-align: right;
+  color: #9ca3af;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+.headerDescription p {
+  margin: 0;
+}
+
+/* Divider */
+.divider {
+  margin: 0 48px 24px;
+  height: 1px;
+  background-color: #1f2937;
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
+  padding: 0 48px 80px;
+  display: flex;
+  gap: 24px;
+  overflow: hidden;
+}
+
+/* Left Column */
+.leftColumn {
+  width: 60%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Chart Card */
+.chartCard {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.chartTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #d1d5db;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chartTitle i {
+  color: #60a5fa;
+}
+
+.unitBadge {
+  font-size: 11px;
+  color: #9ca3af;
+  background-color: #1f2937;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.chartContainer {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Summary Box */
+.summaryBox {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(31, 41, 55, 0.4);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.summaryLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.summaryIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(127, 29, 29, 0.5);
+  border: 1px solid rgba(127, 29, 29, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fca5a5;
+}
+
+.summaryLabel {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.summaryValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fca5a5;
+  margin: 0;
+}
+
+.summaryUnit {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.summaryRight {
+  text-align: right;
+}
+
+.summaryNote {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0 0 4px 0;
+}
+
+.summaryWarning {
+  font-size: 11px;
+  color: #fbbf24;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: 0;
+}
+
+/* Breakdown Card */
+.breakdownCard {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  height: 192px;
+  display: flex;
+  flex-direction: column;
+}
+
+.breakdownTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 12px 0;
+}
+
+.breakdownContent {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+}
+
+.breakdownSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px;
+}
+
+.breakdownSection:first-child {
+  padding-left: 0;
+}
+
+.breakdownSection:last-child {
+  padding-left: 24px;
+  padding-right: 0;
+}
+
+.breakdownHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.breakdownLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+.breakdownLabelDemand {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.breakdownTable {
+  overflow-y: auto;
+}
+
+.breakdownTable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.breakdownTable::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.breakdownTable::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.breakdownTable table {
+  width: 100%;
+}
+
+.breakdownTable td {
+  padding: 8px 0;
+  font-size: 12px;
+  border: none;
+  color: #d1d5db;
+}
+
+.breakdownNumber {
+  text-align: right;
+  font-family: "Inter", monospace;
+  color: white !important;
+  font-weight: 500;
+}
+
+/* Right Column */
+.rightColumn {
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Worst Year Card */
+.worstYearCard {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.worstYearIcon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  opacity: 0.05;
+  font-size: 64px;
+  color: #ef4444;
+}
+
+.worstYearHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.worstYearBadge {
+  font-size: 10px;
+  color: #fca5a5;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 4px 0;
+}
+
+.worstYearTitle {
+  font-family: "Pretendard", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.worstYearAmount {
+  text-align: right;
+}
+
+.worstYearLabel {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0 0 4px 0;
+}
+
+.worstYearValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ef4444;
+  margin: 0;
+}
+
+.worstYearValue span {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.worstYearDetails {
+  background-color: rgba(31, 41, 55, 0.4);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.worstYearDetailsTitle {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.worstYearDetailsContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.worstYearItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #d1d5db;
+}
+
+.worstYearItem i {
+  color: #ef4444;
+  margin-right: 8px;
+}
+
+.worstYearItemAmount {
+  font-family: "Inter", monospace;
+  color: white;
+  font-weight: 500;
+}
+
+.worstYearItemTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #9ca3af;
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.worstYearItemTotal span:first-child {
+  padding-left: 16px;
+}
+
+.worstYearNote {
+  font-size: 11px;
+  color: #9ca3af;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Insights Card */
+.insightsCard {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.insightsHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.insightsHeader i {
+  color: #d4af37;
+}
+
+.insightsHeader h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.insightsContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.insightsContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.insightsContent::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.insightsContent::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.insightItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.insightIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 11px;
+}
+
+.insightGood {
+  background-color: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.insightWarn {
+  background-color: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.insightInfo {
+  background-color: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #60a5fa;
+}
+
+.insightTitle {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.insightGood + div .insightTitle {
+  color: #10b981;
+}
+
+.insightWarn + div .insightTitle {
+  color: #fbbf24;
+}
+
+.insightInfo + div .insightTitle {
+  color: #60a5fa;
+}
+
+.insightText {
+  font-size: 11px;
+  color: #9ca3af;
+  line-height: 1.5;
+  margin: 0;
+}

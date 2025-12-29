@@ -1,0 +1,556 @@
+/* 모달 오버레이 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+/* 모달 컨텐츠 */
+.modalContent {
+  background: white;
+  border-radius: 0;
+  max-width: 1400px;
+  width: 100%;
+  max-height: 90vh;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 상단 헤더 */
+.header {
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-radius: 12px 12px 0 0;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  font-size: 2rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+/* 폼 */
+.form {
+  padding: 2rem;
+  padding-bottom: 100px; /* 버튼 공간 확보 */
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* 에러 배너 */
+.errorBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+/* ========== 프로필 상태 선택 (최상단) ========== */
+.statusSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+}
+
+.statusLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.statusSelect {
+  flex: 1;
+  max-width: 200px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  outline: none;
+}
+
+.statusSelect:hover {
+  border-color: #9ca3af;
+}
+
+.statusSelect:focus {
+  border-color: #111827;
+}
+
+.statusSelect:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+/* ========== 2단 레이아웃 ========== */
+.twoColumnLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.leftColumn,
+.rightColumn {
+  min-width: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.leftColumn {
+  background: linear-gradient(to bottom, #ffffff, #f9fafb);
+}
+
+.rightColumn {
+  background: linear-gradient(to bottom, #ffffff, #fafbfc);
+}
+
+.columnTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  letter-spacing: -0.02em;
+}
+
+/* 필드 그리드 */
+.fieldGrid {
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* 필드 */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: white;
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input:focus,
+.select:focus {
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.1);
+  outline: none;
+}
+
+.input:disabled,
+.select:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.inputError {
+  border-color: #ef4444;
+}
+
+.inputError:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.errorText {
+  color: #ef4444;
+  font-size: 0.875rem;
+}
+
+.amountPreview {
+  font-size: 0.7rem;
+  color: #6b7280;
+  font-weight: 500;
+  margin-left: 12px;
+}
+
+/* 패스워드 헬퍼 텍스트 */
+.passwordHelper {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.4;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 6px;
+  border-left: 3px solid #3b82f6;
+}
+
+/* 체크박스 */
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.checkboxField {
+  margin: 0.5rem 0;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  outline: none;
+}
+
+/* ========== 가구 구성원 섹션 ========== */
+
+/* 가족 섹션 (자녀/부모/기타) */
+.familySection {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.familySection:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.familySectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.familySectionTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.addFamilyButton {
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+  background: #111827;
+  color: white;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.addFamilyButton:hover:not(:disabled) {
+  background: #1f2937;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.addFamilyButton:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.addFamilyButton:focus,
+.addFamilyButton:active {
+  outline: none;
+}
+
+/* 가족 구성원 아이템 (심플) */
+.familyMemberItem {
+  position: relative;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.familyMemberItem:last-child {
+  border-bottom: none;
+}
+
+/* X 삭제 버튼 (오른쪽 위) */
+.removeButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  outline: none;
+}
+
+.removeButton:hover:not(:disabled) {
+  color: #dc2626;
+  transform: scale(1.1);
+}
+
+.removeButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* 가족 구성원 아이템 내부 필드 간격 */
+.familyMemberItem .fieldGrid {
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, 1fr); /* 자녀/부모/기타 카드는 3열 */
+}
+
+.familyMemberItem .field {
+  gap: 0.25rem;
+}
+
+.familyMemberItem .label {
+  font-size: 0.75rem;
+}
+
+.familyMemberItem .input,
+.familyMemberItem .select {
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.familyMemberItem .checkboxLabel {
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+/* 제출 버튼 */
+.submitButtonContainer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1.5rem 2rem;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  border-radius: 0 0 12px 12px;
+}
+
+.submitButton {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+  background: #111827;
+  color: white;
+}
+
+.submitButton:hover {
+  background: #374151;
+}
+
+.submitButton:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.submitButton:focus,
+.submitButton:active {
+  outline: none;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+  .modalContent {
+    max-height: 95vh;
+    border-radius: 8px;
+  }
+
+  .header {
+    padding: 1rem;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .closeButton {
+    font-size: 1.75rem;
+  }
+
+  .form {
+    padding: 1rem;
+  }
+
+  /* 모바일에서는 1열로 */
+  .twoColumnLayout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .leftColumn,
+  .rightColumn {
+    padding: 1.5rem;
+    border-radius: 10px;
+  }
+
+  .columnTitle {
+    font-size: 1.1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .fieldGrid,
+  .familyMemberItem .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .input,
+  .select {
+    font-size: 0.9375rem;
+  }
+
+  .familySection {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .familySectionTitle {
+    font-size: 0.9rem;
+  }
+
+  .addFamilyButton {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.7rem;
+  }
+
+  .familyMemberItem {
+    padding: 0.75rem 0;
+  }
+
+  .removeButton {
+    font-size: 1.25rem;
+  }
+
+  .submitButtonContainer {
+    padding: 1rem 1.5rem;
+  }
+
+  .form {
+    padding: 1rem;
+    padding-bottom: 80px; /* 모바일에서 버튼 공간 */
+  }
+}

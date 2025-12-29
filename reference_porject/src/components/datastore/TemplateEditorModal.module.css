@@ -1,0 +1,588 @@
+/* 템플릿 편집 모달 스타일 - SavingModal 디자인 적용 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(30, 64, 175, 0.15),
+    rgba(59, 130, 246, 0.05)
+  );
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2001; /* TemplateManageModal(2000)보다 높게 */
+  padding: 1rem;
+}
+
+/* 모달 컨텐츠 */
+.modalContent {
+  background: #ffffff;
+  border-radius: 0;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(30, 64, 175, 0.25),
+    0 0 0 1px rgba(30, 64, 175, 0.05);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 2rem 1rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.title::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3b82f6;
+  flex-shrink: 0;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  line-height: 1;
+  transition: all 0.2s;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+}
+
+.closeButton:hover {
+  color: #1e293b;
+}
+
+/* 폼 */
+.form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.formContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.5rem 2rem 1.25rem;
+  background: linear-gradient(to bottom, #f8fafc, #ffffff);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 에러 배너 */
+.errorBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+/* 섹션 */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sectionTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e40af;
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e2e8f0;
+  letter-spacing: -0.01em;
+}
+
+.sectionDescription {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+  padding-left: 0.25rem;
+}
+
+/* 필드 */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: relative;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 0.4rem;
+  letter-spacing: -0.01em;
+}
+
+.required {
+  color: #f43f5e;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  background: #ffffff;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #1e293b;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.input:hover,
+.select:hover,
+.textarea:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12),
+    0 4px 12px -2px rgba(59, 130, 246, 0.15);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.6;
+}
+
+.input:disabled,
+.select:disabled,
+.textarea:disabled {
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  cursor: not-allowed;
+  color: #94a3b8;
+  border-color: #cbd5e1;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #f43f5e;
+  font-size: 0.8rem;
+  margin-top: 0.35rem;
+  font-weight: 500;
+  padding-left: 0.25rem;
+}
+
+.error::before {
+  content: "⚠";
+  font-size: 0.9rem;
+}
+
+/* 탭 버튼 (카테고리) */
+.tabButtons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tabButton {
+  flex: 1;
+  min-width: 70px;
+  padding: 0.65rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tabButton:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.tabButtonActive {
+  border-color: #3b82f6;
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
+}
+
+.tabButtonActive:hover {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+/* 가족 구성원 타입 버튼 */
+.familyTypeButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.familyTypeButton {
+  padding: 0.5rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.familyTypeButton:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.familyTypeButtonActive {
+  border-color: #3b82f6;
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
+}
+
+.familyTypeButtonActive:hover {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+.hint {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.5;
+  padding-left: 0.25rem;
+  font-weight: 400;
+}
+
+/* 라디오 버튼 그룹 */
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #334155;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+}
+
+.radioLabel:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.radioLabel input[type="radio"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.radioLabel input[type="radio"]:checked + .radioText {
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.radioText {
+  font-weight: 500;
+  user-select: none;
+}
+
+/* 필드 헤더 (라벨과 체크박스를 같은 줄에) */
+.fieldHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.fieldHeader .label {
+  margin-bottom: 0;
+}
+
+.fieldHeader .checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.fieldHeader .checkboxLabel:hover {
+  background: #f1f5f9;
+}
+
+.fieldHeader .checkboxLabel input {
+  width: 14px;
+  height: 14px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.fieldHeader .checkboxLabel span {
+  user-select: none;
+  font-weight: 500;
+}
+
+/* 체크박스 필드 */
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.checkboxField:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.checkboxLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 버튼 컨테이너 */
+.submitButtonContainer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1rem 2rem;
+  border-top: 2px solid #f1f5f9;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.cancelButton,
+.submitButton {
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: -0.01em;
+  position: relative;
+  overflow: hidden;
+}
+
+.cancelButton {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  color: #64748b;
+}
+
+.cancelButton:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.submitButton {
+  background-color: #3b82f6;
+  border: 2px solid transparent;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(30, 64, 175, 0.25);
+}
+
+.submitButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
+}
+
+.submitButton:disabled {
+  background: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* 모바일 대응 */
+@media (max-width: 640px) {
+  .modalOverlay {
+    padding: 0.5rem;
+  }
+
+  .modalContent {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 0;
+  }
+
+  .header {
+    padding: 1rem 1.5rem 0.85rem;
+  }
+
+  .title {
+    font-size: 1.1rem;
+  }
+
+  .formContent {
+    padding: 1.25rem 1.5rem 1rem;
+  }
+
+  .submitButtonContainer {
+    padding: 0.85rem 1.5rem;
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+  }
+
+  .fieldRow {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .cancelButton,
+  .submitButton {
+    width: 100%;
+    padding: 0.75rem;
+  }
+
+  .tabButtons {
+    flex-wrap: wrap;
+  }
+
+  .tabButton {
+    flex: 1 1 45%;
+    min-width: 0;
+  }
+
+  .fieldHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* 스크롤바 스타일링 */
+.formContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.formContent::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 0;
+}
+
+.formContent::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #cbd5e1, #94a3b8);
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+.formContent::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #94a3b8, #64748b);
+}

@@ -1,0 +1,170 @@
+/* 연금 리스트 스타일 */
+.pensionList {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.pensionItem {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 4px 20px 4px;
+
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pensionItem.readOnly {
+  cursor: default;
+}
+
+.pensionItem.readOnly:hover {
+  background: white;
+}
+
+.pensionItem:hover {
+  background: #f9fafb;
+}
+
+.pensionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.pensionTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.typeBadge {
+  display: inline-block;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+  width: fit-content;
+  margin-top: 4px;
+}
+
+.title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.pensionActions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.deleteButton {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #374151;
+  font-weight: bold;
+  margin-bottom: 4px;
+  margin-right: -8px;
+}
+
+.pensionContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pensionCurrentAmount {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #059669;
+  margin-bottom: 0.25rem;
+}
+
+.pensionAmount {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #3b82f6;
+  margin-bottom: 0.25rem;
+}
+
+.pensionPeriod {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.pensionMemo {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-style: italic;
+  background: #f9fafb;
+  padding: 0.5rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+/* 빈 상태 스타일 */
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+}
+
+.emptyState p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.emptyState p:last-child {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 640px) {
+  .pensionItem {
+    padding: 12px;
+  }
+
+  .pensionHeader {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .pensionTitle {
+    width: 100%;
+  }
+
+  .deleteButton {
+    align-self: flex-end;
+  }
+
+  .pensionAmount {
+    font-size: 16px;
+  }
+
+  .pensionPeriod {
+    font-size: 13px;
+  }
+}

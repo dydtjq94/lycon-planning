@@ -1,0 +1,672 @@
+/* 모달 오버레이 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+/* 모달 컨텐츠 */
+.modalContent {
+  background: white;
+  border-radius: 0;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 헤더 */
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.modalHeader h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.closeButton {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.closeButton:hover {
+  color: #374151;
+}
+
+/* 본문 */
+.modalBody {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* 정보 박스 */
+.infoBox {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.infoRow:not(:last-child) {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.infoLabel {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.infoValue {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 500;
+}
+
+/* 섹션 */
+.section {
+  margin-bottom: 20px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sectionLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.ratioStatus {
+  font-size: 12px;
+  color: #10b981;
+  font-weight: 500;
+}
+
+.ratioStatusError {
+  font-size: 12px;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+
+/* 범위 슬라이더 섹션 */
+.rangeSliderSection {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.rangeSliderSection .sectionLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 16px;
+  display: block;
+}
+
+/* 슬라이더 컨테이너 */
+.sliderContainer {
+  margin-bottom: 16px;
+}
+
+/* 듀얼 슬라이더 */
+.dualSlider {
+  position: relative;
+  height: 40px;
+  margin-bottom: 8px;
+}
+
+/* 슬라이더 트랙 */
+.sliderTrack {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  transform: translateY(-50%);
+}
+
+/* 선택된 범위 */
+.sliderRange {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+/* 슬라이더 인풋 */
+.sliderInput {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 6px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+}
+
+/* 시작 슬라이더 (왼쪽, z-index 낮음) */
+.sliderInputStart {
+  z-index: 1;
+}
+
+/* 끝 슬라이더 (오른쪽, z-index 높음) */
+.sliderInputEnd {
+  z-index: 2;
+}
+
+/* 슬라이더 Thumb (Webkit) - 공통 */
+.sliderInput::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border: 3px solid #111827;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s;
+}
+
+/* 시작 슬라이더 Thumb - 왼쪽으로 이동 */
+.sliderInputStart::-webkit-slider-thumb {
+  background: white;
+  margin-left: -12px;
+}
+
+/* 끝 슬라이더 Thumb - 오른쪽으로 이동 */
+.sliderInputEnd::-webkit-slider-thumb {
+  background: white;
+  margin-left: 12px;
+}
+
+.sliderInput::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.sliderInput::-webkit-slider-thumb:active {
+  transform: scale(1.3);
+  border-color: #3b82f6;
+}
+
+/* 슬라이더 Thumb (Firefox) - 공통 */
+.sliderInput::-moz-range-thumb {
+  pointer-events: auto;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border: 3px solid #111827;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s;
+}
+
+/* Firefox에서는 margin이 안먹히므로 transform 사용 */
+.sliderInputStart::-moz-range-thumb {
+  transform: translateX(-12px);
+}
+
+.sliderInputEnd::-moz-range-thumb {
+  transform: translateX(12px);
+}
+
+.sliderInput::-moz-range-thumb:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.sliderInputStart::-moz-range-thumb:hover {
+  transform: translateX(-12px) scale(1.2);
+}
+
+.sliderInputEnd::-moz-range-thumb:hover {
+  transform: translateX(12px) scale(1.2);
+}
+
+.sliderInput::-moz-range-thumb:active {
+  border-color: #3b82f6;
+}
+
+.sliderInputStart::-moz-range-thumb:active {
+  transform: translateX(-12px) scale(1.3);
+}
+
+.sliderInputEnd::-moz-range-thumb:active {
+  transform: translateX(12px) scale(1.3);
+}
+
+/* 최소/최대 레이블 */
+.minMaxLabels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* 범위 정보 */
+.rangeInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding: 8px 0;
+  border-top: 1px solid #e5e7eb;
+  font-size: 13px;
+}
+
+.rangeYears {
+  color: #374151;
+  font-weight: 500;
+}
+
+.totalAmount {
+  color: #10b981;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* 단일 년도 정보 (양수 년도가 1개일 때만) */
+.singleYearInfo {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+
+.singleYearInfo .infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.singleYearInfo .infoRow:not(:last-child) {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.singleYearInfo .infoLabel {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.singleYearInfo .infoValue {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 500;
+}
+
+/* 배분 항목 */
+.allocationItem {
+  margin-bottom: 8px;
+}
+
+.allocationRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.targetName {
+  flex: 1;
+  font-size: 13px;
+  color: #374151;
+}
+
+.ratioInput {
+  width: 40px;
+  padding: 4px 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: right;
+  outline: none;
+  -moz-appearance: textfield; /* Firefox */
+}
+
+.ratioInput:focus {
+  border-color: #9ca3af;
+}
+
+/* Chrome, Safari, Edge - 스피너 제거 */
+.ratioInput::-webkit-inner-spin-button,
+.ratioInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.percent {
+  font-size: 13px;
+  color: #9ca3af;
+  width: 12px;
+}
+
+.expectedAmount {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.amountLabel {
+  color: #9ca3af;
+}
+
+.amountValue {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.noSavings {
+  padding: 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+/* 카테고리 섹션 스타일 */
+.categorySection {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.categorySection:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.categoryLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pensionType {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* 셀렉트 박스 */
+.select {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #9ca3af;
+}
+
+/* 비율 입력 */
+.ratioInput {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  width: 80px;
+}
+
+.ratioInput input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  text-align: right;
+}
+
+.ratioInput span {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* 삭제 버튼 */
+.removeButton {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.removeButton:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* 추가 버튼 */
+.addButton {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed #d1d5db;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addButton:hover {
+  border-color: #9ca3af;
+  color: #374151;
+  background: #f9fafb;
+}
+
+/* 설명 */
+.description {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 12px;
+  color: #0369a1;
+  line-height: 1.5;
+}
+
+.description p {
+  margin: 0;
+}
+
+/* 푸터 */
+.modalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.resetButton,
+.cancelButton,
+.saveButton {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.resetButton {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.resetButton:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.cancelButton {
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.cancelButton:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.saveButton {
+  background: #111827;
+  color: white;
+}
+
+.saveButton:hover {
+  background: #1f2937;
+}
+
+.saveButton:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+  .modalContent {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modalHeader {
+    padding: 16px;
+  }
+
+  .modalHeader h2 {
+    font-size: 15px;
+  }
+
+  .modalBody {
+    padding: 16px;
+  }
+
+  .modalFooter {
+    padding: 12px 16px;
+    flex-direction: column-reverse;
+  }
+
+  .buttonGroup {
+    width: 100%;
+  }
+
+  .resetButton,
+  .cancelButton,
+  .saveButton {
+    flex: 1;
+  }
+
+  .allocationRow {
+    flex-wrap: wrap;
+  }
+
+  .ratioInput {
+    width: 100%;
+  }
+
+}

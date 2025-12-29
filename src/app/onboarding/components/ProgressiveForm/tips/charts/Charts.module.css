@@ -1042,127 +1042,671 @@
   font-style: italic;
 }
 
-/* 은퇴 목표 차트 */
-.goalChart {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-}
-
-.goalHeader {
-  margin-bottom: 4px;
-}
-
-.goalLabel {
-  font-size: 14px;
-  font-weight: 600;
-  color: #57534E;
-}
-
-.goalLevels {
+/* 은퇴 목표 차트 - 심플 */
+.goalChartSimple {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
 }
 
-.goalLevel {
+.goalRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #E7E5E4;
+}
+
+.goalRow:last-of-type {
+  border-bottom: none;
+}
+
+.goalRowActive {
+  color: #2563EB;
+}
+
+.goalRowLevel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #78716C;
+  width: 36px;
+}
+
+.goalRowActive .goalRowLevel {
+  color: #2563EB;
+  font-weight: 600;
+}
+
+.goalRowAsset {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1C1917;
+  flex: 1;
+}
+
+.goalRowActive .goalRowAsset {
+  color: #2563EB;
+}
+
+.goalRowMonthly {
+  font-size: 13px;
+  color: #A8A29E;
+}
+
+.goalRowActive .goalRowMonthly {
+  color: #60A5FA;
+}
+
+.goalMyTarget {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  margin-top: 8px;
+  border-top: 1px solid #1C1917;
+}
+
+.goalMyLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1C1917;
+  width: 48px;
+}
+
+.goalMyValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1C1917;
+  flex: 1;
+}
+
+.goalMyMonthly {
+  font-size: 13px;
+  color: #57534E;
+}
+
+/* 월 생활비 바 차트 */
+.monthlyChart {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  width: 100%;
+  background: linear-gradient(180deg, #FAFAF9 0%, #F5F5F4 100%);
+  border-radius: 16px;
+}
+
+.monthlyPlaceholder {
+  color: #A8A29E;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.6;
+  padding: 40px 0;
+}
+
+.monthlyLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #78716C;
+  margin-bottom: 16px;
+}
+
+.monthlyBarContainer {
+  position: relative;
+  width: 80px;
+  height: 160px;
+  background-color: #E7E5E4;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.monthlyBar {
+  width: 100%;
+  background: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
+  border-radius: 0 0 8px 8px;
+  transition: height 0.5s ease-out;
+}
+
+.monthlyValue {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.monthlyAmount {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1C1917;
+}
+
+.monthlyUnit {
+  font-size: 14px;
+  font-weight: 500;
+  color: #57534E;
+}
+
+.monthlyGuide {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #E7E5E4;
+  width: 100%;
+}
+
+.monthlyGuideItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #78716C;
+}
+
+.monthlyGuideDot {
+  width: 6px;
+  height: 6px;
+  background-color: #D6D3D1;
+  border-radius: 50%;
+}
+
+.monthlyNote {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #A8A29E;
+}
+
+/* 목표 자산 라인 차트 */
+.goalLineChart {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 16px;
+  background-color: #FAFAF9;
+  border-radius: 12px;
+}
+
+.goalLinePlaceholder {
+  color: #A8A29E;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.6;
+  padding: 40px 0;
+}
+
+.goalLineHeader {
+  display: flex;
+  align-items: baseline;
   gap: 4px;
-  padding: 12px 16px;
-  background-color: #F5F5F4;
-  border-radius: 10px;
-  border: 2px solid transparent;
-  transition: all 0.2s ease;
+  margin-bottom: 12px;
 }
 
-.goalLevelPassed {
-  background-color: #F0FDF4;
-  border-color: #BBF7D0;
+.goalLineAmount {
+  font-size: 32px;
+  font-weight: 700;
+  color: #3B82F6;
 }
 
-.goalLevelActive {
-  background-color: #ECFDF5;
-  border-color: #10B981;
+.goalLineUnit {
+  font-size: 14px;
+  color: #78716C;
 }
 
-.goalLevelHeader {
+.goalLineBody {
+  height: 140px;
+  width: 100%;
+}
+
+.goalLineFooter {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 11px;
+  color: #A8A29E;
+}
+
+/* 소득 위치 차트 */
+.incomePosition {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 16px;
+  background-color: #FAFAF9;
+  border-radius: 12px;
+}
+
+.incomePositionPlaceholder {
+  color: #A8A29E;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.6;
+  padding: 40px 0;
+}
+
+.incomePositionHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 16px;
 }
 
-.goalLevelName {
+.incomePositionLabel {
+  font-size: 13px;
+  color: #78716C;
+}
+
+.incomePositionValue {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.incomePositionTop {
+  font-size: 13px;
+  color: #78716C;
+  margin-right: 4px;
+}
+
+.incomePositionPercent {
+  font-size: 32px;
+  font-weight: 700;
+  color: #3B82F6;
+}
+
+.incomePositionUnit {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3B82F6;
+}
+
+.incomePositionBar {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  background: linear-gradient(90deg, #E7E5E4 0%, #3B82F6 100%);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.incomePositionFill {
+  height: 100%;
+  background-color: #3B82F6;
+  border-radius: 6px;
+}
+
+.incomePositionMarker {
+  position: absolute;
+  top: -4px;
+  width: 4px;
+  height: 20px;
+  background-color: #1C1917;
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+
+.incomePositionScale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #A8A29E;
+  margin-bottom: 16px;
+}
+
+.incomePositionInfo {
+  display: flex;
+  gap: 24px;
+  padding-top: 12px;
+  border-top: 1px solid #E7E5E4;
+}
+
+.incomePositionInfoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.incomePositionInfoLabel {
+  font-size: 11px;
+  color: #A8A29E;
+}
+
+.incomePositionInfoValue {
   font-size: 14px;
   font-weight: 600;
   color: #1C1917;
 }
 
-.goalLevelActive .goalLevelName {
-  color: #059669;
+/* 저축률 차트 */
+.savingsRate {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 16px;
+  background-color: #FAFAF9;
+  border-radius: 12px;
 }
 
-.goalLevelAsset {
+.savingsRatePlaceholder {
+  color: #A8A29E;
   font-size: 14px;
-  font-weight: 600;
-  color: #57534E;
+  text-align: center;
+  line-height: 1.6;
+  padding: 40px 0;
 }
 
-.goalLevelActive .goalLevelAsset {
-  color: #059669;
+.savingsRateHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
-.goalLevelDetail {
+.savingsRateLabel {
+  font-size: 13px;
+  color: #78716C;
+}
+
+.savingsRateValue {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.savingsRateAmount {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.savingsRateUnit {
+  font-size: 14px;
+  color: #78716C;
+}
+
+.savingsRateBar {
+  width: 100%;
+  height: 8px;
+  background-color: #E7E5E4;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.savingsRateFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+
+.savingsRateInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #E7E5E4;
+}
+
+.savingsRateRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.goalLevelMonthly {
+.savingsRateRowTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid #E7E5E4;
+}
+
+.savingsRateRowLabel {
+  font-size: 12px;
+  color: #78716C;
+}
+
+.savingsRateRowValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1C1917;
+}
+
+/* 금융자산 요약 차트 */
+.assetSummary {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 16px;
+  background-color: #FAFAF9;
+  border-radius: 12px;
+}
+
+.assetSummaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.assetSummaryLabel {
   font-size: 13px;
   color: #78716C;
 }
 
-.goalLevelDesc {
-  font-size: 12px;
-  color: #A8A29E;
+.assetSummaryTotal {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1C1917;
 }
 
-.goalResult {
+.assetSummaryBar {
+  display: flex;
+  width: 100%;
+  height: 12px;
+  background-color: #E7E5E4;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.assetSummaryCash {
+  height: 100%;
+  background-color: #3B82F6;
+}
+
+.assetSummaryInvest {
+  height: 100%;
+  background-color: #10B981;
+}
+
+.assetSummaryLegend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.assetSummaryLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #57534E;
+}
+
+.assetSummaryDotCash {
+  width: 8px;
+  height: 8px;
+  background-color: #3B82F6;
+  border-radius: 2px;
+}
+
+.assetSummaryDotInvest {
+  width: 8px;
+  height: 8px;
+  background-color: #10B981;
+  border-radius: 2px;
+}
+
+.assetSummaryTip {
+  font-size: 13px;
+  color: #57534E;
+  line-height: 1.5;
+  padding: 12px;
+  background-color: white;
+  border-radius: 8px;
+}
+
+/* 국민연금 가이드 */
+.pensionGuide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.pensionEstimate {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background-color: #FAFAF9;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.pensionEstimateMain {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 16px;
-  background: linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%);
-  border-radius: 12px;
-  margin-top: 8px;
 }
 
-.goalResultLabel {
+.pensionEstimateLabel {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #78716C;
 }
 
-.goalResultValue {
+.pensionEstimateValue {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.pensionEstimateAmount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1C1917;
+}
+
+.pensionEstimateUnit {
+  font-size: 14px;
+  color: #78716C;
+}
+
+.pensionEstimateDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid #E7E5E4;
+}
+
+.pensionEstimateRow {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  font-size: 12px;
+  color: #78716C;
 }
 
-.goalResultAsset {
-  font-size: 20px;
-  font-weight: 700;
-  color: white;
+.pensionGuideLink {
+  font-size: 13px;
+  font-weight: 500;
+  color: #3B82F6;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.goalResultMonthly {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+.pensionGuideLink:hover {
+  color: #2563EB;
 }
 
-.goalNote {
-  font-size: 11px;
+/* 퇴직연금 유형 가이드 */
+.pensionTypeGuide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.pensionTypeTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pensionTypeTable th {
+  text-align: left;
+  font-weight: 600;
+  color: #78716C;
+  padding: 8px 8px 8px 0;
+  border-bottom: 1px solid #E7E5E4;
+}
+
+.pensionTypeTable td {
+  padding: 10px 8px 10px 0;
+  color: #44403C;
+  border-bottom: 1px solid #F5F5F4;
+}
+
+.pensionTypeTable tr:last-child td {
+  border-bottom: none;
+}
+
+.pensionTypeName {
+  font-weight: 600;
+  color: #1C1917;
+  white-space: nowrap;
+}
+
+.pensionTypeFeature {
+  font-size: 12px;
+  color: #78716C;
+}
+
+.pensionTypeNote {
+  font-size: 12px;
   color: #A8A29E;
-  text-align: right;
+  margin: 0;
+}
+
+.pensionStrategy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background-color: #F5F5F4;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.pensionStrategyLabel {
+  font-size: 11px;
+  color: #78716C;
+}
+
+.pensionStrategyValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1C1917;
 }

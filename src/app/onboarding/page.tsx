@@ -75,6 +75,7 @@ const initialData: OnboardingData = {
   housingType: null,
   housingValue: null,
   housingRent: null,
+  housingMaintenance: null,
   housingHasLoan: false,
   housingLoan: null,
   housingLoanRate: null,
@@ -104,7 +105,7 @@ const initialData: OnboardingData = {
   // 연금
   nationalPension: null,
   nationalPensionStartAge: null,
-  retirementPensionType: null,
+  retirementPensionType: 'DC',
   retirementPensionBalance: null,
   personalPensionMonthly: null,
   personalPensionBalance: null,
@@ -163,6 +164,7 @@ const sampleData: OnboardingData = {
   housingType: "자가",
   housingValue: 900000000, // 9억
   housingRent: null,
+  housingMaintenance: 30, // 관리비 30만원
   housingHasLoan: true,
   housingLoan: 400000000, // 4억 대출
   housingLoanRate: 3.5, // 금리 3.5%

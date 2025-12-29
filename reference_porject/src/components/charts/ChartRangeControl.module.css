@@ -1,0 +1,148 @@
+/* X축 범위 조정 UI - Range Slider (작고 심플하게) */
+.rangeControlsContainer {
+  padding: 8px 20px 6px;
+  background: white;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rangeSliderWrapper {
+  width: 50%;
+  max-width: 50%;
+}
+
+.rangeInputWrapper {
+  position: relative;
+  height: 20px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.rangeTrack {
+  position: absolute;
+  width: 100%;
+  height: 3px;
+  background: #f3f4f6;
+  border-radius: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.rangeTrackActive {
+  position: absolute;
+  height: 100%;
+  background: #6b7280;
+  border-radius: 2px;
+  transition: left 0.1s ease, right 0.1s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* 은퇴 시점 마커 */
+.retirementMarker {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: rgb(229, 229, 229);
+  border-radius: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.rangeLabels {
+  position: absolute;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  top: -16px;
+  left: 0;
+}
+
+.rangeLabel {
+  font-size: 0.65rem;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.rangeInput {
+  position: absolute;
+  width: 100%;
+  height: 20px;
+  top: 0;
+  left: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+  margin: 0;
+}
+
+.rangeInput::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: white;
+  border: 1.5px solid #d1d5db;
+  cursor: pointer;
+  pointer-events: all;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: all 0.15s;
+}
+
+.rangeInput::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  border-color: #9ca3af;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.rangeInput::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+}
+
+.rangeInput::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: white;
+  border: 1.5px solid #d1d5db;
+  cursor: pointer;
+  pointer-events: all;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: all 0.15s;
+}
+
+.rangeInput::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  border-color: #9ca3af;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.rangeInput::-moz-range-thumb:active {
+  transform: scale(1.05);
+}
+
+.rangeInputStart {
+  z-index: 3;
+}
+
+.rangeInputEnd {
+  z-index: 4;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .rangeControlsContainer {
+    padding: 6px 12px 5px;
+  }
+
+  .rangeSliderWrapper {
+    width: 60%;
+  }
+}
+

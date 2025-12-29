@@ -11,6 +11,11 @@ import {
   ChildCostChart,
   RetirementCountdown,
   RetirementGoalChart,
+  SavingsRateChart,
+  AssetSummaryChart,
+  NationalPensionGuide,
+  RetirementPensionGuide,
+  PersonalPensionGuide,
 } from './charts'
 import styles from './TipPanel.module.css'
 
@@ -29,6 +34,11 @@ const rowChartMap: Partial<Record<RowId, ChartMapValue>> = {
   children: ChildCostChart,        // 자녀 양육비 차트
   retirement_age: RetirementCountdown, // 은퇴 카운트다운
   retirement_fund: RetirementGoalChart, // 목표 자산 가이드
+  living_expenses: SavingsRateChart,   // 저축률 차트
+  asset: AssetSummaryChart,            // 금융자산 요약
+  national_pension: NationalPensionGuide, // 국민연금 공단 링크
+  retirement_pension: RetirementPensionGuide, // 퇴직연금 유형 가이드
+  personal_pension: PersonalPensionGuide, // 개인연금 유형 가이드
 }
 
 export function TipPanel({ activeSection, activeRow, data }: TipPanelProps) {

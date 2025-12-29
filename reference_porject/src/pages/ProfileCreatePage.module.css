@@ -1,0 +1,696 @@
+/* 프로필 생성 페이지 스타일 - 심플한 화이트 */
+.container {
+  min-height: 100vh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 상단 헤더 */
+.header {
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.backIconButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: #5e6166;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  flex-shrink: 0;
+  border: none;
+  background-color: transparent;
+  margin-right: 8px;
+  margin-bottom: 1px;
+}
+
+.backIconButton:hover {
+  background-color: transparent;
+}
+
+.backIconButton:focus,
+.backIconButton:active {
+  outline: none;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+/* 폼 컨테이너 */
+.formContainer {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+  padding-bottom: 100px; /* 버튼 공간 확보 */
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* 에러 배너 */
+.errorBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+/* 섹션 */
+.section {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: #f9fafb;
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #d1d5db;
+}
+
+/* 필드 그리드 */
+.fieldGrid {
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* 3개 필드 그리드 */
+.fieldGrid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+/* 필드 */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.fieldFullWidth {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: white;
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input:focus,
+.select:focus {
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.1);
+  outline: none;
+}
+
+.input:disabled,
+.select:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.inputError {
+  border-color: #ef4444;
+}
+
+.inputError:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.errorText {
+  color: #ef4444;
+  font-size: 0.875rem;
+}
+
+.amountPreview {
+  font-size: 0.7rem;
+  color: #6b7280;
+  font-weight: 500;
+  margin-left: 12px;
+}
+
+.hint {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* 체크박스 */
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.checkboxField {
+  margin: 0.5rem 0;
+}
+
+/* 가족 구성원 카드 내부 체크박스 */
+.familyMemberItem .checkboxLabel {
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  outline: none;
+}
+
+.checkboxText {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* ========== 2단 레이아웃 ========== */
+.twoColumnLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.leftColumn,
+.rightColumn {
+  min-width: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.leftColumn {
+  background: linear-gradient(to bottom, #ffffff, #f9fafb);
+}
+
+.rightColumn {
+  background: linear-gradient(to bottom, #ffffff, #fafbfc);
+}
+
+.columnTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  letter-spacing: -0.02em;
+}
+
+/* ========== 가구 구성원 섹션 ========== */
+
+/* 가족 섹션 (자녀/부모/기타) */
+.familySection {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.familySection:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.familySectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.familySectionTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.addFamilyButton {
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+  background: #111827;
+  color: white;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.addFamilyButton:hover:not(:disabled) {
+  background: #1f2937;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.addFamilyButton:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.addFamilyButton:focus,
+.addFamilyButton:active {
+  outline: none;
+}
+
+/* 가족 구성원 아이템 (심플) */
+.familyMemberItem {
+  position: relative;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.familyMemberItem:last-child {
+  border-bottom: none;
+}
+
+/* X 삭제 버튼 (오른쪽 위) */
+.removeButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  outline: none;
+}
+
+.removeButton:hover:not(:disabled) {
+  color: #dc2626;
+  transform: scale(1.1);
+}
+
+.removeButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* 가족 구성원 아이템 내부 필드 간격 */
+.familyMemberItem .fieldGrid {
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, 1fr); /* 자녀 카드는 3열 (이름, 성별, 출생년도) */
+}
+
+.familyMemberItem .field {
+  gap: 0.25rem;
+}
+
+.familyMemberItem .label {
+  font-size: 0.75rem;
+}
+
+.familyMemberItem .input,
+.familyMemberItem .select {
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+/* 제출 버튼 */
+.actions {
+  margin-top: 1rem;
+}
+
+.submitButtonContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin-top: 2rem;
+  padding: 1.5rem 2rem;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.submitButton {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+  background: #111827;
+  color: white;
+}
+
+.submitButton:hover {
+  background: #374151;
+}
+
+.submitButton:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.submitButton:focus,
+.submitButton:active {
+  outline: none;
+}
+
+/* ========== 모드 선택 UI ========== */
+.modeSelector {
+  display: flex;
+  gap: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+}
+
+.modeButton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modeButton:hover {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.modeButtonActive {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.modeButtonActive:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.modeIcon {
+  font-size: 2rem;
+}
+
+.modeLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.modeDesc {
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+/* ========== 온보딩 모드 UI ========== */
+.onboardingMode {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+  flex: 1;
+}
+
+.onboardingCard {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 3rem;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.onboardingTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.onboardingDesc {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0 0 2rem 0;
+}
+
+.onboardingSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.onboardingStep {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.stepNum {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.onboardingButton {
+  margin-top: 1.5rem;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.onboardingButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.onboardingButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+  .modeSelector {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .modeButton {
+    padding: 1rem;
+  }
+
+  .modeIcon {
+    font-size: 1.5rem;
+  }
+
+  .onboardingMode {
+    padding: 1rem;
+  }
+
+  .onboardingCard {
+    padding: 1.5rem;
+  }
+
+  .onboardingTitle {
+    font-size: 1.25rem;
+  }
+
+  .header {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .backIconButton {
+    width: 28px;
+    height: 28px;
+    font-size: 1.125rem;
+  }
+
+  .formContainer {
+    padding: 1rem;
+  }
+
+  .section {
+    padding: 1rem;
+  }
+
+  .sectionTitle {
+    font-size: 1rem;
+  }
+
+  /* 모바일에서는 1열로 */
+  .fieldGrid,
+  .fieldGrid3,
+  .familyMemberItem .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .input,
+  .select {
+    font-size: 0.9375rem;
+  }
+
+  .familyMembersHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  /* 2단 레이아웃 모바일에서는 1단으로 */
+  .twoColumnLayout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .leftColumn,
+  .rightColumn {
+    padding: 1.5rem;
+    border-radius: 10px;
+  }
+
+  .columnTitle {
+    font-size: 1.1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .familySection {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .familySectionTitle {
+    font-size: 0.9rem;
+  }
+
+  .addFamilyButton {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.7rem;
+  }
+
+  .familyMemberItem {
+    padding: 0.75rem 0;
+  }
+
+  .removeButton {
+    font-size: 1.25rem;
+  }
+
+  .submitButtonContainer {
+    padding: 1rem;
+  }
+
+  .formContainer {
+    padding-bottom: 80px; /* 모바일에서 버튼 공간 */
+  }
+}

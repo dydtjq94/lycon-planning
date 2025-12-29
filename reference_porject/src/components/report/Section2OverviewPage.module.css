@@ -1,0 +1,277 @@
+/* 슬라이드 컨테이너 */
+.slideContainer {
+  width: 100vw;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  position: relative;
+  color: white;
+  background-color: #0b1828;
+  font-family: "Pretendard", sans-serif;
+  overflow: hidden;
+}
+
+/* 배경 요소 */
+.backgroundOverlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  background-color: #111827;
+  opacity: 0.3;
+  z-index: 0;
+}
+
+.accentLine {
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  left: 40%;
+  top: 0;
+  background-color: #d4af37;
+  opacity: 0.2;
+  z-index: 0;
+}
+
+/* Left Section */
+.leftSection {
+  width: 40%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 80px;
+  padding-right: 40px;
+  position: relative;
+  z-index: 10;
+}
+
+.topAccent {
+  position: absolute;
+  top: 96px;
+  left: 80px;
+  width: 80px;
+  height: 4px;
+  background-color: rgba(212, 175, 55, 0.1);
+  margin-bottom: 32px;
+}
+
+.topAccentFill {
+  height: 100%;
+  width: 33.33%;
+  background-color: #eab308;
+}
+
+.titleArea {
+  position: relative;
+  margin-top: 40px;
+}
+
+.sectionNumber {
+  position: absolute;
+  top: -96px;
+  left: -16px;
+  font-size: 144px;
+  font-weight: 700;
+  color: #1f2937;
+  opacity: 0.2;
+  font-family: "Pretendard";
+  user-select: none;
+  pointer-events: none;
+}
+
+.sectionLabel {
+  color: #d4af37;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.sectionTitle {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-family: "Pretendard";
+  margin-bottom: 24px;
+}
+
+.sectionDescription {
+  color: #9ca3af;
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1.6;
+  max-width: 400px;
+}
+
+/* Right Section */
+.rightSection {
+  width: 60%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 64px;
+  position: relative;
+  z-index: 10;
+}
+
+.cardsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Card */
+.card {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  padding: 32px;
+  border-radius: 8px;
+  position: relative;
+}
+
+.cardHighlight {
+}
+
+.cardIcon {
+  position: absolute;
+  top: 16px;
+  right: 24px;
+  font-size: 36px;
+  color: #374151;
+  opacity: 0.2;
+  transition: opacity 0.3s ease;
+}
+
+.card:hover .cardIcon {
+  opacity: 0.4;
+}
+
+.cardTitle {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cardHighlight .cardTitle {
+  color: #fef3c7;
+}
+
+.cardBadge {
+  font-size: 11px;
+  background-color: #1f2937;
+  color: #9ca3af;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cardHighlight .cardBadge {
+  background-color: #713f12;
+  color: #fbbf24;
+}
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cardDescription {
+  color: #d1d5db;
+  font-weight: 300;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.checkItem {
+  color: #d1d5db;
+  font-weight: 300;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  margin: 0;
+}
+
+.checkItem i {
+  color: #d97706;
+  font-size: 11px;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.checkItem strong {
+  color: white;
+  font-weight: 600;
+}
+
+/* Key Question Grid */
+.keyQuestionGrid {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.keyQuestionItem {
+  flex: 1;
+  background-color: rgba(31, 41, 55, 0.5);
+  padding: 12px 16px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.keyQuestionLabel {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.keyQuestionValue {
+  font-size: 14px;
+  color: white;
+  font-weight: 500;
+}
+
+/* Output Grid */
+.outputGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.outputItem {
+  text-align: center;
+  padding: 8px;
+}
+
+.outputItem:nth-child(2) {
+  border-left: 1px solid #374151;
+}
+
+.outputIcon {
+  color: #eab308;
+  margin-bottom: 4px;
+  font-size: 18px;
+}
+
+.outputLabel {
+  font-size: 14px;
+  color: #d1d5db;
+  margin: 0;
+}
+

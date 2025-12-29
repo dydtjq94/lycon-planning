@@ -1,0 +1,369 @@
+/* 슬라이드 컨테이너 */
+.slideContainer {
+  width: 100vw;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  color: white;
+  background-color: #0b1828;
+  font-family: "Pretendard", sans-serif;
+}
+
+/* 헤더 */
+.header {
+  padding: 40px 48px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.headerBadges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.stepBadge {
+  background-color: #1f2937;
+  color: #d1d5db;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.sectionBadge {
+  color: #d4af37;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.headerTitle {
+  font-family: "Pretendard", sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.headerDescription {
+  text-align: right;
+  color: #9ca3af;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+.headerDescription p {
+  margin: 0;
+}
+
+/* Divider */
+.divider {
+  margin: 0 48px 24px;
+  height: 1px;
+  background-color: #1f2937;
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
+  padding: 0 48px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+}
+
+/* Insights Grid */
+.insightsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  height: 192px;
+}
+
+/* Insight Card */
+.insightCard {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.insightCardAccent {
+}
+
+.numberWatermark {
+  position: absolute;
+  top: -15px;
+  right: 5px;
+  font-size: 96px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.03);
+  font-family: "Inter", sans-serif;
+  z-index: 0;
+}
+
+.insightContent {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.insightIconBox {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.insightTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 4px 0;
+}
+
+.insightTextBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.insightText {
+  font-size: 12px;
+  color: #d1d5db;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.insightText strong {
+  font-weight: 600;
+}
+
+.insightFooter {
+  background-color: rgba(31, 41, 55, 0.5);
+  padding: 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #9ca3af;
+  margin-top: auto;
+}
+
+.insightFooter i {
+  margin-right: 4px;
+}
+
+/* Bottom Row */
+.bottomRow {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Next Steps Section */
+.nextStepsSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.sectionLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: #9ca3af;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.nextStepsCard {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+
+.stepItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  position: relative;
+  z-index: 10;
+}
+
+.stepIconBox {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  border: 2px solid;
+}
+
+.stepTitle {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.stepDescription {
+  font-size: 10px;
+  color: #6b7280;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.stepArrow {
+  color: #4b5563;
+  font-size: 14px;
+}
+
+/* Contact Section */
+.contactSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.contactCard {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.contactBackgroundIcon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  opacity: 0.1;
+  font-size: 80px;
+  color: white;
+}
+
+.contactIntro {
+  color: #9ca3af;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.contactProfile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.contactAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #374151;
+  border: 2px solid #4b5563;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contactAvatar i {
+  font-size: 18px;
+  color: #9ca3af;
+}
+
+.contactName {
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.contactRole {
+  font-size: 10px;
+  color: #d4af37;
+  margin: 0;
+}
+
+.contactDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.contactItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #d1d5db;
+}
+
+.contactIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background-color: #1f2937;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.contactIcon i {
+  font-size: 10px;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  gap: 16px;
+}
+
+.loading i {
+  font-size: 48px;
+}

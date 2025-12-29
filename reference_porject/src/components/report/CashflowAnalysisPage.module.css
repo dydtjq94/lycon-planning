@@ -1,0 +1,288 @@
+/* 슬라이드 컨테이너 */
+.slideContainer {
+  width: 100vw;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  color: white;
+  background-color: #0b1828;
+  font-family: "Pretendard", sans-serif;
+}
+
+/* 헤더 */
+.header {
+  padding: 40px 48px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.headerBadges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.stepBadge {
+  background-color: #1f2937;
+  color: #d1d5db;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.sectionBadge {
+  color: #d4af37;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.headerTitle {
+  font-family: "Pretendard", sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.headerDescription {
+  text-align: right;
+  color: #9ca3af;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+.headerDescription p {
+  margin: 0;
+}
+
+/* Divider */
+.divider {
+  margin: 0 48px 24px;
+  height: 1px;
+  background-color: #1f2937;
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
+  padding: 0 48px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow: hidden;
+}
+
+/* KPI Grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.kpiCard {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.kpiHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.kpiLabel {
+  color: #9ca3af;
+  font-size: 14px;
+  margin: 0;
+}
+
+.kpiIcon {
+  font-size: 20px;
+}
+
+.kpiValue {
+  font-size: 36px;
+  font-weight: 700;
+  margin: 8px 0;
+  font-family: "Inter", monospace;
+}
+
+.kpiUnit {
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.kpiNote {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Content Row */
+.contentRow {
+  flex: 1;
+  display: flex;
+  gap: 24px;
+  overflow: hidden;
+}
+
+/* Chart Card */
+.chartCard {
+  flex: 2;
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.chartTitle {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.legendContainer {
+  display: flex;
+  gap: 16px;
+  margin-left: 16px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legendDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.legendLabel {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.chartArea {
+  flex: 1;
+  width: 100%;
+}
+
+/* Table Card */
+.tableCard {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tableTitle {
+  font-size: 14px;
+  margin: 0 0 16px 0;
+}
+
+.tableUnit {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.tableContainer {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.table {
+  width: 100%;
+  font-size: 14px;
+  border-collapse: collapse;
+}
+
+.table thead {
+  font-size: 12px;
+  color: #9ca3af;
+  border-bottom: 1px solid #374151;
+}
+
+.table th {
+  padding: 8px 12px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.table tbody {
+  color: #d1d5db;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #1f2937;
+}
+
+.table td {
+  padding: 10px 12px;
+}
+
+.textRight {
+  text-align: right;
+}
+
+.tableNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.tableNote i {
+  margin-top: 2px;
+}
+
+.tableNote p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  gap: 16px;
+}
+
+.loading i {
+  font-size: 48px;
+}

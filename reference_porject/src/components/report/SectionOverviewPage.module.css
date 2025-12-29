@@ -1,0 +1,274 @@
+/* 슬라이드 컨테이너 */
+.slideContainer {
+  width: 100vw;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  position: relative;
+  color: white;
+  background-color: #0b1828;
+  font-family: "Pretendard";
+}
+
+/* 배경 요소 */
+.backgroundOverlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  background-color: #111827;
+  opacity: 0.3;
+  z-index: 0;
+}
+
+.accentLine {
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  left: 40%;
+  top: 0;
+  background-color: #d4af37;
+  opacity: 0.2;
+  z-index: 0;
+}
+
+/* 왼쪽 섹션 */
+.leftSection {
+  width: 40%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 80px;
+  padding-right: 40px;
+  position: relative;
+  z-index: 10;
+}
+
+.topBar {
+  position: absolute;
+  top: 96px;
+  left: 80px;
+  width: 80px;
+  height: 4px;
+  background-color: rgba(212, 175, 55, 0.1);
+  margin-bottom: 32px;
+}
+
+.goldBar {
+  height: 100%;
+  width: 33.333%;
+  background-color: #f59e0b;
+}
+
+.titleArea {
+  position: relative;
+  margin-top: 40px;
+}
+
+.bigNumber {
+  position: absolute;
+  font-size: 144px;
+  font-weight: 700;
+  color: #1f2937;
+  opacity: 0.2;
+  font-family: "Pretendard";
+  top: -96px;
+  left: -16px;
+  user-select: none;
+  line-height: 1;
+}
+
+.sectionLabel {
+  color: #d4af37;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.mainTitle {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 24px;
+  font-family: "Pretendard";
+}
+
+.description {
+  color: #9ca3af;
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1.6;
+  max-width: 448px;
+}
+
+/* 오른쪽 섹션 */
+.rightSection {
+  width: 60%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 64px;
+  position: relative;
+  z-index: 10;
+}
+
+.cardsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 카드 공통 */
+.card {
+  padding: 32px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.cardPurpose {
+}
+
+.cardMethod {
+}
+
+.cardOutput {
+}
+
+.cardIcon {
+  position: absolute;
+  top: 16px;
+  right: 24px;
+  font-size: 36px;
+  color: #374151;
+  opacity: 0.2;
+}
+
+.cardTitle {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #f9fafb;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.badge {
+  font-size: 12px;
+  background-color: #854d0e;
+  color: #fbbf24;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badgeGray {
+  font-size: 12px;
+  background-color: #1f2937;
+  color: #9ca3af;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Card 1: 진단 목적 */
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkItem {
+  color: #d1d5db;
+  font-weight: 300;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.checkItem i {
+  color: #f59e0b;
+  font-size: 12px;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.checkItem strong {
+  font-weight: 600;
+}
+
+/* Card 2: 분석 방법 */
+.cardDescription {
+  color: #d1d5db;
+  font-weight: 300;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.stepContainer {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.step {
+  flex: 1;
+  background-color: rgba(31, 41, 55, 0.5);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stepLabel {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.stepText {
+  font-size: 14px;
+  color: white;
+}
+
+/* Card 3: 핵심 산출물 */
+.outputGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.outputItem {
+  text-align: center;
+  padding: 0 8px;
+}
+
+.outputBorder {
+  border-left: 1px solid #374151;
+}
+
+.outputIcon {
+  color: #fbbf24;
+  margin-bottom: 4px;
+  font-size: 18px;
+}
+
+.outputItem p {
+  font-size: 14px;
+  color: #d1d5db;
+  margin: 0;
+}

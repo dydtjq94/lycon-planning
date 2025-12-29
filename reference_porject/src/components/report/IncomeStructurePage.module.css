@@ -1,0 +1,419 @@
+/* 슬라이드 컨테이너 */
+.slideContainer {
+  width: 100vw;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  color: white;
+  background-color: #0b1828;
+  font-family: "Pretendard", sans-serif;
+}
+
+/* 헤더 */
+.header {
+  padding: 40px 48px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.headerBadges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.stepBadge {
+  background-color: #1f2937;
+  color: #d1d5db;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.sectionBadge {
+  color: #d4af37;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.headerTitle {
+  font-family: "Pretendard", sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.headerDescription {
+  text-align: right;
+  color: #9ca3af;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+.headerDescription p {
+  margin: 0;
+}
+
+/* Divider */
+.divider {
+  margin: 0 48px 24px;
+  height: 1px;
+  background-color: #1f2937;
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
+  padding: 0 48px 80px;
+  display: flex;
+  gap: 20px;
+  overflow: hidden;
+}
+
+/* Left Column */
+.leftColumn {
+  width: 41.666%;
+  display: flex;
+  flex-direction: column;
+}
+
+.incomeCard {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px 14px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e5e7eb;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardTitle i {
+  color: #d97706;
+}
+
+/* Chart Container */
+.chartContainer {
+  height: 210px;
+  width: 100%;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+/* Income Table */
+.tableContainer {
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid #1f2937;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.incomeTable {
+  width: 100%;
+  font-size: 13px;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.incomeTable thead {
+  font-size: 11px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  background-color: rgba(31, 41, 55, 0.8);
+}
+
+.incomeTable th {
+  padding: 6px 10px;
+  font-weight: 500;
+}
+
+.incomeTable th:nth-child(2),
+.incomeTable th:nth-child(3) {
+  text-align: right;
+}
+
+.incomeTable tbody {
+  color: #d1d5db;
+}
+
+.incomeTable tbody tr {
+  border-top: 1px solid #1f2937;
+  transition: background-color 0.2s;
+}
+
+.incomeTable tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.incomeTable td {
+  padding: 7px 10px;
+}
+
+.incomeTable td:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.colorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.amountCell,
+.percentCell {
+  text-align: right;
+  font-family: "Inter", monospace;
+}
+
+.incomeTable tfoot {
+  background-color: rgba(31, 41, 55, 0.5);
+  font-weight: 700;
+  color: white;
+}
+
+.incomeTable tfoot td {
+  padding: 7px 10px;
+}
+
+.incomeTable tfoot td:nth-child(2),
+.incomeTable tfoot td:nth-child(3) {
+  text-align: right;
+}
+
+/* Insight Box */
+.insightBox {
+  flex-shrink: 0;
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.insightLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: #60a5fa;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.insightText {
+  font-size: 12px;
+  color: #d1d5db;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.insightText strong {
+  color: white;
+  font-weight: 600;
+}
+
+/* Right Column */
+.rightColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Path Card */
+.pathCard {
+  flex-shrink: 0;
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pathHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.pathTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e5e7eb;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pathTitle i {
+  color: #d97706;
+}
+
+.pathBadge {
+  font-size: 11px;
+  color: #9ca3af;
+  background-color: #1f2937;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.lineChartContainer {
+  width: 100%;
+  height: 200px;
+}
+
+/* Events Card */
+.eventsCard {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.eventsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.eventsTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e5e7eb;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eventsTitle i {
+  color: #d97706;
+}
+
+.eventsPeriod {
+  font-size: 11px;
+  color: #9ca3af;
+  background-color: #1f2937;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+/* Events List */
+.eventsList {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.eventItem {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  background-color: rgba(31, 41, 55, 0.4);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.eventLeft {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.eventYear {
+  font-size: 13px;
+  font-weight: 700;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background-color: #1f2937;
+  border: 1px solid;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eventContent {
+  flex: 1;
+}
+
+.eventName {
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 4px 0;
+}
+
+.eventDesc {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.eventBadge {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  gap: 16px;
+}
+
+.loading i {
+  font-size: 48px;
+}

@@ -1,0 +1,278 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #292524;
+  margin: 0 0 16px 0;
+}
+
+/* Progress Section */
+.progressGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.progressCard {
+  background-color: white;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #78716c;
+  margin: 0 0 12px 0;
+}
+
+.bigNumber {
+  font-size: 36px;
+  font-weight: 700;
+  color: #292524;
+  margin-bottom: 16px;
+}
+
+.progressBar {
+  height: 8px;
+  background-color: #f5f5f4;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: #007aff;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.progressLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #a8a29e;
+}
+
+.cardSubtext {
+  font-size: 14px;
+  color: #78716c;
+  margin: 0;
+}
+
+/* Milestones */
+.milestones {
+  background-color: white;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.milestoneList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.milestone {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: #fafaf9;
+  border-radius: 12px;
+}
+
+.milestone.completed {
+  background-color: rgba(52, 199, 89, 0.08);
+}
+
+.milestoneCheck {
+  padding: 6px 12px;
+  background-color: #e7e5e4;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #78716c;
+}
+
+.milestone.completed .milestoneCheck {
+  background-color: #34c759;
+  color: white;
+}
+
+.milestoneInfo {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.milestoneName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #292524;
+}
+
+.milestoneValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #78716c;
+}
+
+.milestone.completed .milestoneValue {
+  color: #34c759;
+}
+
+/* Plans Section */
+.plansHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.plansGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.addPlanCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background-color: white;
+  border: 2px dashed #e7e5e4;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.addPlanCard:hover {
+  border-color: #d6d3d1;
+  background-color: #fafaf9;
+}
+
+.addPlanIcon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f4;
+  border-radius: 12px;
+  color: #78716c;
+}
+
+.addPlanText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.addPlanTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #292524;
+}
+
+.addPlanDesc {
+  font-size: 13px;
+  color: #a8a29e;
+}
+
+.planCard {
+  background-color: white;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e7e5e4;
+}
+
+.planHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.planTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #292524;
+}
+
+.planBadge {
+  padding: 4px 10px;
+  background-color: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.planDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.planRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.planRow span:first-child {
+  color: #78716c;
+}
+
+.planRow span:last-child {
+  font-weight: 600;
+  color: #292524;
+}
+
+/* Scenario Section */
+.scenarioSection {
+  background-color: white;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.scenarioList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scenarioItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: #fafaf9;
+  border-radius: 12px;
+}
+
+.scenarioName {
+  font-size: 14px;
+  color: #57534e;
+}
+
+.scenarioResult {
+  font-size: 14px;
+  font-weight: 600;
+  color: #34c759;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .progressGrid {
+    grid-template-columns: 1fr;
+  }
+}

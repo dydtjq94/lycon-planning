@@ -1,0 +1,385 @@
+/* 슬라이드 컨테이너 */
+.slideContainer {
+  width: 100vw;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  color: white;
+  background-color: #0b1828;
+  font-family: "Pretendard", sans-serif;
+}
+
+/* 헤더 */
+.header {
+  padding: 40px 48px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.headerBadges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.stepBadge {
+  background-color: #1f2937;
+  color: #d1d5db;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.sectionBadge {
+  color: #d4af37;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.headerTitle {
+  font-family: "Pretendard", sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.headerDescription {
+  text-align: right;
+  color: #9ca3af;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+.headerDescription p {
+  margin: 0;
+}
+
+/* Divider */
+.divider {
+  margin: 0 48px 24px;
+  height: 1px;
+  background-color: #1f2937;
+}
+
+/* 메인 콘텐츠 */
+.mainContent {
+  flex: 1;
+  padding: 0 48px 80px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* KPI 그리드 */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  height: 128px;
+}
+
+.kpiCard {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpiCardHighlight {
+}
+
+.kpiIconBg {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  opacity: 0.1;
+  font-size: 40px;
+  color: white;
+}
+
+.kpiLabel {
+  color: #9ca3af;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.kpiValue {
+  font-size: 30px;
+  font-weight: 700;
+  color: white;
+  margin: 8px 0;
+}
+
+.kpiUnit {
+  font-size: 18px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+.kpiValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.kpiStatus {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kpiStatus i {
+  font-size: 12px;
+}
+
+/* 하단 행 */
+.bottomRow {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 차트 컨테이너 */
+.chartContainer {
+  width: 70%;
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.chartTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #d1d5db;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.chartTitle i {
+  color: #d4af37;
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+.chartLegend {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.chartWrapper {
+  flex: 1;
+  width: 100%;
+}
+
+/* 분석 컨테이너 */
+.analysisContainer {
+  width: 30%;
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.analysisTopBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background-color: #10b981;
+  opacity: 0.5;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.analysisContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.analysisTitle {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.analysisTitle i {
+  color: #f59e0b;
+  font-size: 18px;
+}
+
+.insightsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  justify-content: space-evenly;
+  overflow-y: auto;
+}
+
+.insightItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.insightIconGreen {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.insightIconGreen i {
+  color: #10b981;
+  font-size: 12px;
+}
+
+.insightIconYellow {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: rgba(245, 158, 11, 0.2);
+  border: 1px solid #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.insightIconYellow i {
+  color: #f59e0b;
+  font-size: 12px;
+}
+
+.insightContent {
+  flex: 1;
+}
+
+.insightTitleGreen {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #10b981;
+}
+
+.insightTitleYellow {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #f59e0b;
+}
+
+.insightText {
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 액션 박스 */
+.actionBox {
+  background-color: rgba(31, 41, 55, 0.5);
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+.actionLabel {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
+.actionText {
+  font-size: 14px;
+  color: white;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.actionHighlight {
+  color: #f59e0b;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.actionHighlight i {
+  margin-left: 4px;
+}

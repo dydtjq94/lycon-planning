@@ -1,0 +1,210 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 요약 카드 */
+.summaryCard {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  background-color: white;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.summaryItem {
+  text-align: center;
+}
+
+.summaryLabel {
+  font-size: 13px;
+  color: #78716c;
+  margin-bottom: 8px;
+}
+
+.summaryValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ff9500;
+}
+
+/* 섹션 */
+.section {
+  background-color: white;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #292524;
+  margin: 0;
+}
+
+.sectionTotal {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ff9500;
+}
+
+/* 그룹 */
+.group {
+  margin-bottom: 24px;
+}
+
+.group:last-child {
+  margin-bottom: 0;
+}
+
+.groupHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+.groupTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #57534e;
+}
+
+.groupDescription {
+  font-size: 12px;
+  color: #a8a29e;
+  margin-left: 8px;
+  font-weight: 400;
+}
+
+.groupTotal {
+  font-size: 14px;
+  font-weight: 600;
+  color: #292524;
+}
+
+/* 항목 리스트 */
+.itemList {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 1fr 120px 60px 32px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f4;
+}
+
+.itemFuture {
+  display: grid;
+  grid-template-columns: 1fr 120px 60px 32px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f4;
+  opacity: 0.6;
+}
+
+.item:last-child,
+.itemFuture:last-child {
+  border-bottom: none;
+}
+
+.itemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.itemTitle {
+  font-size: 14px;
+  color: #292524;
+}
+
+.itemPeriod {
+  font-size: 12px;
+  color: #a8a29e;
+}
+
+.itemAmount {
+  font-size: 14px;
+  font-weight: 600;
+  color: #292524;
+  text-align: right;
+}
+
+.itemFrequency {
+  font-size: 12px;
+  color: #78716c;
+  text-align: left;
+}
+
+.editButton {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: #a8a29e;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.editButton:hover {
+  color: #78716c;
+}
+
+/* 추가 버튼 */
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #007aff;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  color: #0056b3;
+}
+
+/* 빈 상태 */
+.emptyGroup {
+  padding: 16px 0;
+  color: #a8a29e;
+  font-size: 13px;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .summaryCard {
+    grid-template-columns: 1fr;
+  }
+
+  .item,
+  .itemFuture {
+    grid-template-columns: 1fr 100px 32px;
+  }
+
+  .itemFrequency {
+    display: none;
+  }
+}

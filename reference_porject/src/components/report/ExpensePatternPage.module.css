@@ -1,0 +1,402 @@
+/* 슬라이드 컨테이너 */
+.slideContainer {
+  width: 100vw;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  color: white;
+  background-color: #0b1828;
+  font-family: "Pretendard", sans-serif;
+}
+
+/* 헤더 */
+.header {
+  padding: 40px 48px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.headerBadges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.stepBadge {
+  background-color: #1f2937;
+  color: #d1d5db;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.sectionBadge {
+  color: #d4af37;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.headerTitle {
+  font-family: "Pretendard", sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.headerDescription {
+  text-align: right;
+  color: #9ca3af;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+.headerDescription p {
+  margin: 0;
+}
+
+/* Divider */
+.divider {
+  margin: 0 48px 24px;
+  height: 1px;
+  background-color: #1f2937;
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
+  padding: 0 48px 80px;
+  display: flex;
+  gap: 20px;
+  overflow: hidden;
+}
+
+/* Left Column */
+.leftColumn {
+  flex: 0 0 33.333%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Right Column */
+.rightColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Card */
+.card {
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.cardLabel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  font-size: 10px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.cardIconBadge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 20px;
+  color: #10b981;
+}
+
+.circularProgress {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin: 16px 0;
+}
+
+.circularProgressSvg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circularProgressBg {
+  fill: none;
+  stroke: #1f2937;
+  stroke-width: 10;
+}
+
+.circularProgressFill {
+  fill: none;
+  stroke: #ef4444;
+  stroke-width: 10;
+  stroke-dasharray: 440;
+  transition: stroke-dashoffset 0.5s ease;
+}
+
+.circularProgressValue {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.progressPercentage {
+  font-size: 40px;
+  font-weight: 700;
+  color: white;
+  font-family: "Inter", monospace;
+}
+
+.fixedCostSummary {
+  color: #d1d5db;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.fixedCostSummary strong {
+  color: white;
+}
+
+.variableAmount {
+  color: #9ca3af;
+}
+
+.statusBadge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-top: 8px;
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+/* Total Expense Card - 두 번째 카드 */
+.card:last-child {
+  justify-content: flex-start;
+  align-items: stretch;
+  text-align: left;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.cardHeaderLabel {
+  font-size: 10px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.cardHeaderIcon {
+  font-size: 20px;
+  color: #f59e0b;
+}
+
+.totalAmount {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.amountValue {
+  font-family: "Inter", monospace;
+  font-size: 36px;
+  font-weight: 700;
+  color: white;
+}
+
+.amountUnit {
+  font-size: 20px;
+  color: #9ca3af;
+}
+
+.expenseNote {
+  color: #f59e0b;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.expenseNote i {
+  margin-right: 4px;
+}
+
+.expenseBar {
+  width: 100%;
+  height: 8px;
+  background-color: #1f2937;
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: 16px;
+  display: flex;
+}
+
+.expenseBarFixed {
+  height: 100%;
+  background-color: #ef4444;
+  transition: width 0.5s ease;
+}
+
+.expenseBarVariable {
+  height: 100%;
+  background-color: #3b82f6;
+  transition: width 0.5s ease;
+}
+
+.expenseBarLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Chart Container */
+.chartCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 24px;
+  min-height: 0;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.chartTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.chartTitle i {
+  color: #3b82f6;
+}
+
+.chartLegend {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legendDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.chartContainer {
+  flex: 1;
+  min-height: 280px;
+  margin-bottom: 16px;
+}
+
+/* Insight Box */
+.insightBox {
+  padding: 16px;
+  background-color: rgba(31, 41, 55, 0.5);
+  border-radius: 8px;
+  display: flex;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.insightColumn {
+  flex: 1;
+}
+
+.insightLabelObs {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  color: #f59e0b;
+}
+
+.insightLabelAction {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  color: #10b981;
+}
+
+.insightText {
+  font-size: 13px;
+  color: #d1d5db;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.insightText strong {
+  color: white;
+  font-weight: 600;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  gap: 16px;
+}
+
+.loading i {
+  font-size: 48px;
+}
