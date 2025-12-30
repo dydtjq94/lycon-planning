@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# landing page (separate repo)
+/lycon-landing
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -68,6 +68,27 @@ export interface Asset {
   updated_at: string
 }
 
+// 소득 항목 타입 (대시보드용)
+export type DashboardIncomeType = 'labor' | 'business' | 'regular' | 'onetime' | 'rental' | 'pension'
+export type DashboardEndType = 'self-retirement' | 'spouse-retirement' | 'custom'
+export type DashboardIncomeFrequency = 'monthly' | 'yearly'
+
+// 소득 항목 (대시보드용)
+export interface DashboardIncomeItem {
+  id: string
+  type: DashboardIncomeType
+  label: string
+  owner: 'self' | 'spouse'
+  amount: number // 만원 (frequency에 따라 월/년)
+  frequency: DashboardIncomeFrequency // 지급 주기 (월/년)
+  startYear: number
+  startMonth: number // 1-12
+  endType: DashboardEndType
+  endYear: number | null // custom일 때만 사용
+  endMonth: number | null // custom일 때만 사용
+  growthRate: number // % (연간)
+}
+
 // 온보딩 데이터
 export interface OnboardingData {
   // Step 1: 기본 정보
@@ -96,6 +117,9 @@ export interface OnboardingData {
   businessIncomeFrequency: 'monthly' | 'yearly'
   spouseBusinessIncome: number | null  // 배우자 사업 소득
   spouseBusinessIncomeFrequency: 'monthly' | 'yearly'
+
+  // 소득 항목 (대시보드용 상세 데이터)
+  incomeItems?: DashboardIncomeItem[]
 
   // 지출
   livingExpenses: number | null     // 생활비

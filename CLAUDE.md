@@ -141,19 +141,20 @@ import { Chart as ChartJS, ... } from 'chart.js'
 
 - **모든 금액 입력은 만원 단위**: 사용자가 입력하는 모든 금액은 만원 단위
 - **예시**: 사용자가 `10000` 입력 = 10000만원 = 1억원
-- **표시 단위도 만원**: 차트, 텍스트 등 모든 금액 표시는 만원 단위 사용
-- **억 단위 사용 금지**: `1억` 대신 `10,000만원` 으로 표시
+- **표시는 억+만 병행**: 1억 이상은 `6억 4,724만` 형식으로 표시
+- **전역 유틸리티 사용**: `formatMoney` 함수를 `@/lib/utils`에서 import하여 사용
 - **원 단위 변환 필요시**: `만원 * 10000 = 원`
 
 ```tsx
-// 입력값 (만원)
-const inputValue = 10000 // 10000만원 = 1억
+import { formatMoney } from '@/lib/utils'
+
+// formatMoney 사용 예시
+formatMoney(5000)     // "5,000만원"
+formatMoney(10000)    // "1억"
+formatMoney(64724)    // "6억 4,724만"
 
 // 원 단위 변환 (계산용)
 const wonValue = inputValue * 10000 // 100,000,000원
-
-// 표시 (만원 단위)
-const display = `${inputValue.toLocaleString()}만원` // "10,000만원"
 ```
 
 ## 시간 단위 규칙 (중요!)
