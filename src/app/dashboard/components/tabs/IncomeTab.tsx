@@ -15,9 +15,10 @@ import type {
   OnboardingData,
   DashboardIncomeItem,
   DashboardIncomeFrequency,
+  GlobalSettings,
 } from "@/types";
 import { DEFAULT_GLOBAL_SETTINGS } from "@/types";
-import { formatMoney } from "@/lib/utils";
+import { formatMoney, getDefaultRateCategory, getEffectiveRate } from "@/lib/utils";
 import styles from "./IncomeTab.module.css";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -25,6 +26,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 interface IncomeTabProps {
   data: OnboardingData;
   onUpdateData: (updates: Partial<OnboardingData>) => void;
+  globalSettings: GlobalSettings;
 }
 
 // 상승률 프리셋 (숫자만)
@@ -41,7 +43,7 @@ type IncomeType = DashboardIncomeItem["type"];
 type EndType = DashboardIncomeItem["endType"];
 type IncomeFrequency = DashboardIncomeFrequency;
 
-export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
+export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps) {
   const currentYear = new Date().getFullYear();
 
   // 현재 나이 계산
@@ -126,6 +128,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
         endYear: null,
         endMonth: null,
         growthRate: DEFAULT_GLOBAL_SETTINGS.incomeGrowthRate,
+        rateCategory: "income",
       });
     }
 
@@ -143,6 +146,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
         endYear: null,
         endMonth: null,
         growthRate: DEFAULT_GLOBAL_SETTINGS.incomeGrowthRate,
+        rateCategory: "income",
       });
     }
 
@@ -160,6 +164,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
         endYear: null,
         endMonth: null,
         growthRate: DEFAULT_GLOBAL_SETTINGS.incomeGrowthRate,
+        rateCategory: "income",
       });
     }
 
@@ -177,6 +182,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
         endYear: null,
         endMonth: null,
         growthRate: DEFAULT_GLOBAL_SETTINGS.incomeGrowthRate,
+        rateCategory: "income",
       });
     }
 
@@ -187,6 +193,24 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
   useEffect(() => {
     onUpdateData({ incomeItems });
   }, [incomeItems]);
+
+  // 시나리오 모드 적용된 표시용 데이터 (한 번만 계산!)
+  const isPresetMode = globalSettings.scenarioMode !== "custom";
+  const displayItems = useMemo(() => {
+    return incomeItems.map((item) => {
+      const rateCategory = item.rateCategory || getDefaultRateCategory(item.type);
+      const effectiveRate = getEffectiveRate(
+        item.growthRate,
+        rateCategory,
+        globalSettings.scenarioMode,
+        globalSettings
+      );
+      return {
+        ...item,
+        displayGrowthRate: effectiveRate, // 현재 시나리오에서 표시할 상승률
+      };
+    });
+  }, [incomeItems, globalSettings]);
 
   // 편집 중인 항목 ID
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -203,13 +227,14 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
   const [newOnetimeYear, setNewOnetimeYear] = useState(currentYear);
   const [newOnetimeMonth, setNewOnetimeMonth] = useState(currentMonth);
 
-  // 타입별 항목
-  const laborItems = incomeItems.filter((i) => i.type === "labor");
-  const businessItems = incomeItems.filter((i) => i.type === "business");
-  const regularItems = incomeItems.filter((i) => i.type === "regular");
-  const onetimeItems = incomeItems.filter((i) => i.type === "onetime");
-  const rentalItems = incomeItems.filter((i) => i.type === "rental");
-  const pensionItems = incomeItems.filter((i) => i.type === "pension");
+  // 타입별 항목 (displayItems에서 필터 - 시나리오 적용된 상승률 포함)
+  type DisplayItem = IncomeItem & { displayGrowthRate: number };
+  const laborItems = displayItems.filter((i) => i.type === "labor");
+  const businessItems = displayItems.filter((i) => i.type === "business");
+  const regularItems = displayItems.filter((i) => i.type === "regular");
+  const onetimeItems = displayItems.filter((i) => i.type === "onetime");
+  const rentalItems = displayItems.filter((i) => i.type === "rental");
+  const pensionItems = displayItems.filter((i) => i.type === "pension");
 
   // 월 소득으로 변환 (frequency 고려)
   const toMonthlyAmount = (item: IncomeItem): number => {
@@ -218,24 +243,52 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
     return item.amount;
   };
 
-  // 월 총 소득 (일시적 소득 제외, frequency 고려)
-  const monthlyIncome = useMemo(() => {
-    return incomeItems.reduce((sum, item) => sum + toMonthlyAmount(item), 0);
-  }, [incomeItems]);
+  // 현재 연도에 해당하는 항목만 필터링
+  const isCurrentYearItem = (item: IncomeItem): boolean => {
+    if (item.type === "onetime") {
+      return item.startYear === currentYear;
+    }
+    const endYear = item.endType === "self-retirement"
+      ? selfRetirementYear
+      : item.endType === "spouse-retirement"
+        ? spouseRetirementYear
+        : item.endYear || 9999;
+    return currentYear >= item.startYear && currentYear <= endYear;
+  };
 
-  // 은퇴까지 총 소득 (상승률 반영, 월 단위 계산)
+  // 월 총 소득 (현재 연도에 해당하는 항목만)
+  const monthlyIncome = useMemo(() => {
+    return displayItems
+      .filter((item) => isCurrentYearItem(item) && item.type !== "onetime")
+      .reduce((sum, item) => sum + toMonthlyAmount(item), 0);
+  }, [displayItems, currentYear, selfRetirementYear, spouseRetirementYear]);
+
+  // 은퇴까지 총 소득 (상승률 반영, 은퇴 전에 시작하는 항목만)
   const lifetimeIncome = useMemo(() => {
     let total = 0;
-    incomeItems.forEach((item) => {
-      // 일시적 소득은 한 번만 추가
+    displayItems.forEach((item) => {
+      // 은퇴 이후에 시작하는 항목은 제외
+      if (item.startYear > selfRetirementYear) return;
+
+      // 일시적 소득은 은퇴 전이면 포함
       if (item.type === "onetime") {
-        total += item.amount;
+        if (item.startYear <= selfRetirementYear) {
+          total += item.amount;
+        }
         return;
       }
 
-      const months = getMonthsCount(item);
-      // 연간 상승률을 월간으로 변환 (복리)
-      const monthlyGrowthRate = Math.pow(1 + item.growthRate / 100, 1 / 12) - 1;
+      // 종료 시점을 은퇴년도로 제한
+      const itemEnd = getEndYearMonth(item);
+      const effectiveEndYear = Math.min(itemEnd.year, selfRetirementYear);
+      const effectiveEndMonth = itemEnd.year <= selfRetirementYear ? itemEnd.month : 12;
+
+      // 실제 개월 수 계산 (은퇴까지만)
+      const months = (effectiveEndYear - item.startYear) * 12 + (effectiveEndMonth - item.startMonth);
+      if (months <= 0) return;
+
+      // displayGrowthRate 사용 (이미 시나리오 적용됨)
+      const monthlyGrowthRate = Math.pow(1 + item.displayGrowthRate / 100, 1 / 12) - 1;
       // 월 소득으로 변환
       let monthlyAmount =
         item.frequency === "yearly" ? item.amount / 12 : item.amount;
@@ -245,17 +298,17 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
       }
     });
     return Math.round(total);
-  }, [incomeItems, selfRetirementYear, spouseRetirementYear]);
+  }, [displayItems, selfRetirementYear, spouseRetirementYear]);
 
-  // 소득 유형별 월 소득
+  // 소득 유형별 월 소득 (현재 연도 해당 항목만)
   const incomeByType = useMemo(
     () => ({
-      labor: laborItems.reduce((s, i) => s + toMonthlyAmount(i), 0),
-      business: businessItems.reduce((s, i) => s + toMonthlyAmount(i), 0),
-      regular: regularItems.reduce((s, i) => s + toMonthlyAmount(i), 0),
-      onetime: onetimeItems.reduce((s, i) => s + i.amount, 0), // 일시적 소득은 총액
-      rental: rentalItems.reduce((s, i) => s + toMonthlyAmount(i), 0),
-      pension: pensionItems.reduce((s, i) => s + toMonthlyAmount(i), 0),
+      labor: laborItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
+      business: businessItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
+      regular: regularItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
+      onetime: onetimeItems.filter(isCurrentYearItem).reduce((s, i) => s + i.amount, 0),
+      rental: rentalItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
+      pension: pensionItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
     }),
     [
       laborItems,
@@ -264,12 +317,20 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
       onetimeItems,
       rentalItems,
       pensionItems,
+      currentYear,
+      selfRetirementYear,
+      spouseRetirementYear,
     ]
   );
 
-  // 차트 데이터 (연간 합계, 소득 유형별로 분리)
+  // 차트 데이터 (연간 합계, 소득 유형별로 분리) - 100세까지 표시
   const projectionData = useMemo(() => {
-    const maxYear = Math.max(selfRetirementYear, spouseRetirementYear);
+    // 본인/배우자 중 나중에 100세 되는 해까지
+    const selfAge100Year = currentYear + (100 - currentAge);
+    const spouseAge100Year = spouseCurrentAge !== null
+      ? currentYear + (100 - spouseCurrentAge)
+      : selfAge100Year;
+    const maxYear = Math.max(selfAge100Year, spouseAge100Year);
     const yearsUntilEnd = Math.max(0, maxYear - currentYear);
     const labels: string[] = [];
     const laborData: number[] = [];
@@ -288,7 +349,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
       let rentalTotal = 0;
       let pensionTotal = 0;
 
-      incomeItems.forEach((item) => {
+      displayItems.forEach((item) => {
         // 일시적 소득: 해당 연도/월에만 한 번 추가
         if (item.type === "onetime") {
           if (year === item.startYear) {
@@ -303,11 +364,11 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
           const endM = year === end.year ? end.month : 12;
           const monthsInYear = Math.max(0, endM - startM + 1);
           const yearsFromStart = year - item.startYear;
-          // 월 금액으로 변환 후 상승률 적용
+          // displayGrowthRate 사용 (이미 시나리오 적용됨)
           const monthlyAmount =
             item.frequency === "yearly" ? item.amount / 12 : item.amount;
           const grownAmount =
-            monthlyAmount * Math.pow(1 + item.growthRate / 100, yearsFromStart);
+            monthlyAmount * Math.pow(1 + item.displayGrowthRate / 100, yearsFromStart);
           const yearAmount = Math.round(grownAmount * monthsInYear);
 
           if (item.type === "labor") laborTotal += yearAmount;
@@ -336,7 +397,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
       rentalData,
       pensionData,
     };
-  }, [incomeItems, selfRetirementYear, spouseRetirementYear, currentYear]);
+  }, [displayItems, currentYear, currentAge, spouseCurrentAge, selfRetirementYear, spouseRetirementYear]);
 
   // 차트에 표시할 데이터셋 (값이 있는 것만)
   const chartDatasets = useMemo(() => {
@@ -561,7 +622,13 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
           font: { size: 11 },
           callback: (value: number | string) => {
             const num = typeof value === "number" ? value : parseFloat(value);
-            if (num >= 10000) return `${(num / 10000).toFixed(0)}억`;
+            if (num >= 10000) {
+              const eok = Math.floor(num / 10000);
+              const cheon = Math.floor((num % 10000) / 1000);
+              if (cheon > 0) return `${eok}억 ${cheon}천`;
+              return `${eok}억`;
+            }
+            if (num >= 1000) return `${(num / 1000).toFixed(0)}천`;
             return `${num.toLocaleString()}만`;
           },
         },
@@ -603,6 +670,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
       endYear: isOnetime ? newOnetimeYear : null,
       endMonth: isOnetime ? newOnetimeMonth : null,
       growthRate: isOnetime ? 0 : DEFAULT_GLOBAL_SETTINGS.incomeGrowthRate,
+      rateCategory: getDefaultRateCategory(addingType),
     };
 
     setIncomeItems((prev) => [...prev, newItem]);
@@ -627,7 +695,12 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
   // 편집 시작
   const startEdit = (item: IncomeItem) => {
     setEditingId(item.id);
-    setEditForm({ ...item });
+    // rateCategory가 없는 기존 항목은 기본값 설정
+    const itemWithCategory = {
+      ...item,
+      rateCategory: item.rateCategory || getDefaultRateCategory(item.type),
+    };
+    setEditForm(itemWithCategory);
     const isCustom = !isPresetRate(item.growthRate);
     setIsCustomRateMode(isCustom);
     setCustomRateInput(isCustom ? String(item.growthRate) : "");
@@ -706,11 +779,11 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
   const isPresetRate = (rate: number) =>
     GROWTH_PRESETS.some((p) => p.value === rate);
 
-  // 섹션 렌더링
+  // 섹션 렌더링 (items는 displayItems에서 필터된 것)
   const renderSection = (
     title: string,
     type: IncomeType,
-    items: IncomeItem[],
+    items: DisplayItem[],
     placeholder: string,
     description?: string
   ) => (
@@ -755,6 +828,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                             amount: parseFloat(e.target.value) || 0,
                           })
                         }
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
                       />
                       <span className={styles.editUnit}>만원</span>
                     </div>
@@ -766,6 +840,8 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                       <input
                         type="number"
                         className={styles.editYearInput}
+                        min={1900}
+                        max={2200}
                         value={editForm.startYear}
                         onChange={(e) => {
                           const year = parseInt(e.target.value) || currentYear;
@@ -775,6 +851,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                             endYear: year,
                           });
                         }}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
                       />
                       <span className={styles.editUnit}>년</span>
                       <input
@@ -794,6 +871,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                             endMonth: month,
                           });
                         }}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
                       />
                       <span className={styles.editUnit}>월</span>
                     </div>
@@ -916,6 +994,8 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                     <input
                       type="number"
                       className={styles.editYearInput}
+                      min={1900}
+                      max={2200}
                       value={editForm.startYear}
                       onChange={(e) =>
                         setEditForm({
@@ -923,6 +1003,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                           startYear: parseInt(e.target.value) || currentYear,
                         })
                       }
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
                     />
                     <span className={styles.editUnit}>년</span>
                     <input
@@ -940,6 +1021,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                           ),
                         })
                       }
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
                     />
                     <span className={styles.editUnit}>월</span>
                   </div>
@@ -1005,6 +1087,8 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                         <input
                           type="number"
                           className={styles.editYearInput}
+                          min={1900}
+                          max={2200}
                           value={editForm.endYear || ""}
                           onChange={(e) =>
                             setEditForm({
@@ -1012,6 +1096,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                               endYear: parseInt(e.target.value) || null,
                             })
                           }
+                          onWheel={(e) => (e.target as HTMLElement).blur()}
                         />
                         <span className={styles.editUnit}>년</span>
                         <input
@@ -1029,6 +1114,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                               ),
                             })
                           }
+                          onWheel={(e) => (e.target as HTMLElement).blur()}
                         />
                         <span className={styles.editUnit}>월</span>
                       </>
@@ -1054,6 +1140,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                           }
                         }}
                         onChange={(e) => setCustomRateInput(e.target.value)}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
                         placeholder="0"
                         step="0.5"
                       />
@@ -1096,7 +1183,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
             );
           }
 
-          // 읽기 모드
+          // 읽기 모드 - displayGrowthRate 사용 (이미 시나리오 적용됨)
           return (
             <div key={item.id} className={styles.incomeItem}>
               <div className={styles.itemMain}>
@@ -1107,7 +1194,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                 <span className={styles.itemMeta}>
                   {item.type === "onetime"
                     ? formatPeriod(item)
-                    : `${formatPeriod(item)} | 연 ${item.growthRate}% 상승`}
+                    : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isPresetMode ? " (시나리오)" : ""}`}
                 </span>
               </div>
               <div className={styles.itemActions}>
@@ -1177,6 +1264,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                       className={styles.inlineAmountInput}
                       value={newAmount}
                       onChange={(e) => setNewAmount(e.target.value)}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
                       placeholder="0"
                     />
                     <span className={styles.inlineUnit}>만원</span>
@@ -1185,12 +1273,15 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                     <input
                       type="number"
                       className={styles.editYearInput}
+                      min={1900}
+                      max={2200}
                       value={newOnetimeYear}
                       onChange={(e) =>
                         setNewOnetimeYear(
                           parseInt(e.target.value) || currentYear
                         )
                       }
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
                     />
                     <span className={styles.editUnit}>년</span>
                     <input
@@ -1207,6 +1298,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                           )
                         )
                       }
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
                     />
                     <span className={styles.editUnit}>월 수령</span>
                   </div>
@@ -1218,6 +1310,7 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                     className={styles.inlineAmountInput}
                     value={newAmount}
                     onChange={(e) => setNewAmount(e.target.value)}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
                     placeholder="0"
                     autoFocus={type !== "regular"}
                   />
@@ -1367,137 +1460,6 @@ export function IncomeTab({ data, onUpdateData }: IncomeTabProps) {
                     <span className={styles.retirementValue}>
                       {spouseRetirementYear}년 ({spouseRetirementAge}세)
                     </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 소득 구성 */}
-            <div className={styles.breakdownCard}>
-              <h4 className={styles.cardTitle}>소득 구성</h4>
-              <div className={styles.breakdownList}>
-                {incomeByType.labor > 0 && (
-                  <div className={styles.breakdownItem}>
-                    <div className={styles.breakdownInfo}>
-                      <span
-                        className={styles.breakdownDot}
-                        style={{ backgroundColor: "#007aff" }}
-                      />
-                      <span className={styles.breakdownLabel}>근로 소득</span>
-                    </div>
-                    <div className={styles.breakdownValues}>
-                      <span className={styles.breakdownAmount}>
-                        {formatMoney(incomeByType.labor)}/월
-                      </span>
-                      <span className={styles.breakdownPercent}>
-                        {Math.round((incomeByType.labor / monthlyIncome) * 100)}
-                        %
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {incomeByType.business > 0 && (
-                  <div className={styles.breakdownItem}>
-                    <div className={styles.breakdownInfo}>
-                      <span
-                        className={styles.breakdownDot}
-                        style={{ backgroundColor: "#34c759" }}
-                      />
-                      <span className={styles.breakdownLabel}>사업 소득</span>
-                    </div>
-                    <div className={styles.breakdownValues}>
-                      <span className={styles.breakdownAmount}>
-                        {formatMoney(incomeByType.business)}/월
-                      </span>
-                      <span className={styles.breakdownPercent}>
-                        {Math.round(
-                          (incomeByType.business / monthlyIncome) * 100
-                        )}
-                        %
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {incomeByType.regular > 0 && (
-                  <div className={styles.breakdownItem}>
-                    <div className={styles.breakdownInfo}>
-                      <span
-                        className={styles.breakdownDot}
-                        style={{ backgroundColor: "#ff9500" }}
-                      />
-                      <span className={styles.breakdownLabel}>정기적 소득</span>
-                    </div>
-                    <div className={styles.breakdownValues}>
-                      <span className={styles.breakdownAmount}>
-                        {formatMoney(incomeByType.regular)}/월
-                      </span>
-                      <span className={styles.breakdownPercent}>
-                        {Math.round(
-                          (incomeByType.regular / monthlyIncome) * 100
-                        )}
-                        %
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {incomeByType.onetime > 0 && (
-                  <div className={styles.breakdownItem}>
-                    <div className={styles.breakdownInfo}>
-                      <span
-                        className={styles.breakdownDot}
-                        style={{ backgroundColor: "#af52de" }}
-                      />
-                      <span className={styles.breakdownLabel}>일시적 소득</span>
-                    </div>
-                    <div className={styles.breakdownValues}>
-                      <span className={styles.breakdownAmount}>
-                        {formatMoney(incomeByType.onetime)} (총액)
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {incomeByType.rental > 0 && (
-                  <div className={styles.breakdownItem}>
-                    <div className={styles.breakdownInfo}>
-                      <span
-                        className={styles.breakdownDot}
-                        style={{ backgroundColor: "#ff3b30" }}
-                      />
-                      <span className={styles.breakdownLabel}>임대 소득</span>
-                    </div>
-                    <div className={styles.breakdownValues}>
-                      <span className={styles.breakdownAmount}>
-                        {formatMoney(incomeByType.rental)}/월
-                      </span>
-                      <span className={styles.breakdownPercent}>
-                        {Math.round(
-                          (incomeByType.rental / monthlyIncome) * 100
-                        )}
-                        %
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {incomeByType.pension > 0 && (
-                  <div className={styles.breakdownItem}>
-                    <div className={styles.breakdownInfo}>
-                      <span
-                        className={styles.breakdownDot}
-                        style={{ backgroundColor: "#5856d6" }}
-                      />
-                      <span className={styles.breakdownLabel}>연금 소득</span>
-                    </div>
-                    <div className={styles.breakdownValues}>
-                      <span className={styles.breakdownAmount}>
-                        {formatMoney(incomeByType.pension)}/월
-                      </span>
-                      <span className={styles.breakdownPercent}>
-                        {Math.round(
-                          (incomeByType.pension / monthlyIncome) * 100
-                        )}
-                        %
-                      </span>
-                    </div>
                   </div>
                 )}
               </div>

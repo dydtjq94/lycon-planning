@@ -1,32 +1,27 @@
 .container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 48px;
+  gap: 0;
   height: 100%;
 }
 
+/* 왼쪽: 입력 패널 */
 .inputPanel {
   display: flex;
   flex-direction: column;
   gap: 0;
   overflow-y: auto;
-  padding-right: 48px;
-  border-right: 1px solid #e8e8ed;
+  padding-right: 40px;
+  background: #fff;
 }
 
-.insightPanel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
-}
-
-.section {
+/* 지출 섹션 */
+.expenseSection {
   padding: 24px 0;
   border-bottom: 1px solid #e8e8ed;
 }
 
-.section:last-of-type {
+.expenseSection:last-of-type {
   border-bottom: none;
 }
 
@@ -43,86 +38,861 @@
   color: #1d1d1f;
 }
 
-.placeholder {
-  font-size: 14px;
-  color: #86868b;
-  padding: 16px 0;
-}
-
-.infoText {
+.sectionDesc {
   font-size: 13px;
   color: #86868b;
-  margin: 24px 0 0;
-  padding-top: 24px;
-  border-top: 1px solid #e8e8ed;
+  margin: 0 0 8px 0;
 }
 
-.summaryCard {
-  padding: 0 0 24px 0;
-  border-bottom: 1px solid #e8e8ed;
-}
-
-.summaryRow {
+/* 항목 리스트 */
+.itemList {
   display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ========== 읽기 모드 ========== */
+.expenseItem {
+  display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
+  padding: 16px 0;
   border-bottom: 1px solid #f0f0f0;
 }
 
-.summaryRow:last-of-type {
+.expenseItem:last-of-type {
   border-bottom: none;
 }
 
-.summaryLabel {
-  font-size: 15px;
+.itemMain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.itemLabel {
+  font-size: 13px;
+  font-weight: 500;
   color: #86868b;
 }
 
-.summaryValue {
+.itemAmount {
   font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
 }
 
-.summaryValueLarge {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1d1d1f;
-  letter-spacing: -0.5px;
+.itemMeta {
+  font-size: 13px;
+  color: #a1a1a6;
+  margin-top: 2px;
 }
 
+.itemActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-top: -4px;
+}
+
+.editBtn,
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: #c7c7cc;
+  cursor: pointer;
+}
+
+.editBtn:hover {
+  color: #007aff;
+}
+
+.deleteBtn:hover {
+  color: #ff3b30;
+}
+
+/* ========== 편집 모드 ========== */
+.editItem {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid #e8e8ed;
+}
+
+.editRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.editLabelInput {
+  width: 120px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  padding: 6px 0;
+  border: none;
+  border-bottom: 1px solid #d2d2d7;
+  outline: none;
+  background: transparent;
+}
+
+.editLabelInput:focus {
+  border-bottom-color: #007aff;
+}
+
+.editRowLabel {
+  font-size: 13px;
+  color: #86868b;
+  width: 40px;
+  flex-shrink: 0;
+  padding-top: 8px;
+}
+
+.editField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.editInput {
+  width: 100px;
+  padding: 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 1px solid #d2d2d7;
+  outline: none;
+  background: transparent;
+  text-align: right;
+}
+
+.editInput:focus {
+  border-bottom-color: #007aff;
+}
+
+.editInput::-webkit-outer-spin-button,
+.editInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.editUnit {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.editYearInput {
+  width: 60px;
+  padding: 6px 0;
+  font-size: 14px;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 1px solid #d2d2d7;
+  outline: none;
+  background: transparent;
+  text-align: center;
+}
+
+.editYearInput:focus {
+  border-bottom-color: #007aff;
+}
+
+.editYearInput::-webkit-outer-spin-button,
+.editYearInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.editMonthInput {
+  width: 40px;
+  padding: 6px 0;
+  font-size: 14px;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 1px solid #d2d2d7;
+  outline: none;
+  background: transparent;
+  text-align: center;
+}
+
+.editMonthInput:focus {
+  border-bottom-color: #007aff;
+}
+
+.editMonthInput::-webkit-outer-spin-button,
+.editMonthInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 종료 타입 버튼 */
+.endTypeButtons {
+  display: flex;
+  gap: 6px;
+}
+
+.endTypeBtn {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.endTypeBtn:hover {
+  background: #e8e8ed;
+}
+
+.endTypeBtn.active {
+  background: #1d1d1f;
+  color: #fff;
+}
+
+/* 상승률 버튼 */
+.rateButtons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rateBtn {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.rateBtn:hover {
+  background: #e8e8ed;
+}
+
+.rateBtn.active {
+  background: #1d1d1f;
+  color: #fff;
+}
+
+.customRateGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.customRateLabel {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.customRateInput {
+  width: 50px;
+  padding: 6px 8px;
+  font-size: 13px;
+  color: #1d1d1f;
+  border: 1px solid #d2d2d7;
+  border-radius: 6px;
+  outline: none;
+  background: transparent;
+  text-align: center;
+}
+
+.customRateInput:focus {
+  border-color: #007aff;
+}
+
+.customRateInput.active {
+  border-color: #1d1d1f;
+  background: #f5f5f7;
+}
+
+.customRateInput::-webkit-outer-spin-button,
+.customRateInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.rateUnit {
+  font-size: 13px;
+  color: #86868b;
+}
+
+/* 편집 액션 */
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #86868b;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  color: #1d1d1f;
+}
+
+.saveBtn {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.saveBtn:hover {
+  background: #0066d6;
+}
+
+/* ========== 추가 폼 ========== */
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #007aff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.addBtn:hover {
+  color: #0066d6;
+}
+
+.inlineAddForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  width: 100%;
+}
+
+.addFormRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inlineLabelInput {
+  flex: 1;
+  min-width: 80px;
+  max-width: 160px;
+  padding: 8px 0;
+  font-size: 15px;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 1px solid #d2d2d7;
+  outline: none;
+  background: transparent;
+}
+
+.inlineLabelInput:focus {
+  border-bottom-color: #007aff;
+}
+
+.inlineLabelInput::placeholder {
+  color: #a1a1a6;
+}
+
+.inlineAmountGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inlineAmountInput {
+  width: 80px;
+  padding: 8px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 1px solid #d2d2d7;
+  outline: none;
+  background: transparent;
+  text-align: right;
+}
+
+.inlineAmountInput:focus {
+  border-bottom-color: #007aff;
+}
+
+.inlineAmountInput::-webkit-outer-spin-button,
+.inlineAmountInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.inlineUnit {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.inlineDateGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.frequencyButtons {
+  display: flex;
+  background: #f5f5f7;
+  border-radius: 6px;
+  padding: 2px;
+  margin-left: 8px;
+}
+
+.freqBtn {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.freqBtn:hover {
+  color: #1d1d1f;
+}
+
+.freqBtn.active {
+  background: #fff;
+  color: #1d1d1f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.inlineActions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.inlineCancelBtn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #86868b;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.inlineCancelBtn:hover {
+  background: #e8e8ed;
+  color: #1d1d1f;
+}
+
+.inlineAddBtn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.inlineAddBtn:hover {
+  background: #0066d6;
+}
+
+.inlineAddBtn:disabled {
+  background: #c7c7cc;
+  cursor: not-allowed;
+}
+
+/* 다른 탭 링크 */
+.realEstateLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #007aff;
+  background: #f5f5f7;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.realEstateLink:hover {
+  background: #e8e8ed;
+}
+
+/* ========== 오른쪽: 대시보드 패널 ========== */
+.summaryPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  background: #f5f5f7;
+  padding: 12px 12px 240px;
+  margin: -24px -24px -24px 0;
+}
+
+.summaryCard {
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.totalExpense {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.totalLabel {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.totalValue {
+  font-size: 36px;
+  font-weight: 700;
+  color: #ff3b30;
+  letter-spacing: -1px;
+}
+
+.subValues {
+  display: flex;
+  gap: 24px;
+}
+
+.subValueItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.subLabel {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.subValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+/* 은퇴 정보 */
+.retirementInfo {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f5;
+}
+
+.retirementItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.retirementLabel {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.retirementValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+/* 지출 구성 */
+.breakdownCard {
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 16px 0;
+}
+
+.breakdownList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.breakdownItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.breakdownInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.breakdownDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.breakdownLabel {
+  font-size: 14px;
+  color: #1d1d1f;
+}
+
+.breakdownValues {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.breakdownAmount {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.breakdownPercent {
+  font-size: 13px;
+  color: #86868b;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* 차트 */
+.chartCard {
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.chartWrapper {
+  position: relative;
+  height: 240px;
+}
+
+/* 빈 상태 */
 .emptyState {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 0;
+  padding: 60px 24px;
   text-align: center;
   color: #c7c7cc;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .emptyState svg {
-  margin-bottom: 12px;
-  opacity: 0.3;
+  margin-bottom: 16px;
+  opacity: 0.4;
 }
 
 .emptyState p {
   font-size: 14px;
   color: #86868b;
   margin: 0;
+  line-height: 1.5;
 }
 
+/* 반응형 */
 @media (max-width: 1024px) {
   .container {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 0;
   }
 
   .inputPanel {
     padding-right: 0;
-    border-right: none;
     padding-bottom: 32px;
-    border-bottom: 1px solid #e8e8ed;
   }
+
+  .summaryPanel {
+    margin: 0;
+    padding: 24px 20px 48px;
+  }
+}
+
+@media (max-width: 600px) {
+  .editField {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .endTypeButtons {
+    flex-wrap: wrap;
+  }
+
+  .rateButtons {
+    width: 100%;
+  }
+
+  .inlineAddForm {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .inlineActions {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+}
+
+/* ========== 의료비 섹션 ========== */
+
+.sectionTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionToggle {
+  color: #86868b;
+}
+
+.infoBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: #86868b;
+  cursor: pointer;
+}
+
+.infoBtn:hover {
+  color: #007aff;
+}
+
+.medicalInfoBox {
+  padding: 16px;
+  background: #f5f5f7;
+  margin-bottom: 16px;
+}
+
+.medicalInfoText {
+  font-size: 13px;
+  color: #1d1d1f;
+  line-height: 1.6;
+  white-space: pre-line;
+  margin: 0 0 12px 0;
+}
+
+.medicalInfoClose {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #86868b;
+  background: #fff;
+  border: 1px solid #d2d2d7;
+  cursor: pointer;
+}
+
+.medicalInfoClose:hover {
+  color: #1d1d1f;
+  border-color: #1d1d1f;
+}
+
+.sectionContent {
+  /* 내용 영역 */
+}
+
+.emptyMedical {
+  padding: 24px;
+  background: #f5f5f7;
+  text-align: center;
+}
+
+.emptyMedicalText {
+  font-size: 14px;
+  color: #86868b;
+  margin: 0 0 16px 0;
+}
+
+.generateMedicalBtn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  cursor: pointer;
+}
+
+.generateMedicalBtn:hover {
+  background: #0066d6;
+}
+
+.medicalActions {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.regenerateMedicalBtn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  background: #f5f5f7;
+  border: none;
+  cursor: pointer;
+}
+
+.regenerateMedicalBtn:hover {
+  color: #1d1d1f;
+  background: #e8e8ed;
+}
+
+.collapsedSummary {
+  padding: 8px 0;
+  font-size: 13px;
+  color: #86868b;
 }

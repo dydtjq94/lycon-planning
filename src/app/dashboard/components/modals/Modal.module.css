@@ -1,0 +1,471 @@
+/* 배경 오버레이 */
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 모달 컨테이너 */
+.modal {
+  background: #fff;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: #86868b;
+  cursor: pointer;
+}
+
+.closeBtn:hover {
+  color: #1d1d1f;
+}
+
+/* 콘텐츠 */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* 시나리오 모드 선택 */
+.modeSelector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.modeBtn {
+  flex: 1;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #86868b;
+  background: #f5f5f7;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.modeBtn:hover {
+  background: #e8e8ed;
+  color: #1d1d1f;
+}
+
+.modeBtn.active {
+  background: #1d1d1f;
+  color: #fff;
+}
+
+/* 성장률 목록 */
+.rateList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.rateRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rateLabel {
+  font-size: 14px;
+  color: #1d1d1f;
+}
+
+.rateInput {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rateInput input {
+  width: 80px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  border: 1px solid #d2d2d7;
+  background: #fff;
+  text-align: right;
+}
+
+.rateInput input:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.rateInput input:disabled {
+  background: #f5f5f7;
+  color: #86868b;
+  cursor: not-allowed;
+}
+
+.rateInput input::-webkit-outer-spin-button,
+.rateInput input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.rateUnit {
+  font-size: 14px;
+  color: #86868b;
+  min-width: 20px;
+}
+
+.rateValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+/* 커스텀 모드 안내 */
+.customModeInfo {
+  padding: 32px 16px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.customModeText {
+  font-size: 14px;
+  color: #86868b;
+  line-height: 1.5;
+}
+
+/* 적용 옵션 */
+.applyOptions {
+  padding: 16px;
+  background: #f5f5f7;
+}
+
+.applyHint {
+  font-size: 13px;
+  color: #86868b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 푸터 */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.cancelBtn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: none;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: #e8e8ed;
+}
+
+.applyBtn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  cursor: pointer;
+}
+
+.applyBtn:hover {
+  background: #0066d6;
+}
+
+/* ========== 가족 모달 ========== */
+
+.section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 16px 0;
+}
+
+.sectionHeader .sectionTitle {
+  margin: 0;
+}
+
+.subSection {
+  padding-left: 0;
+}
+
+/* 폼 행 */
+.formRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.formRow:last-child {
+  margin-bottom: 0;
+}
+
+.formLabel {
+  width: 100px;
+  font-size: 14px;
+  color: #86868b;
+  flex-shrink: 0;
+}
+
+.formInput {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #1d1d1f;
+  border: 1px solid #d2d2d7;
+  background: #fff;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.formInputSmall {
+  width: 80px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #1d1d1f;
+  border: 1px solid #d2d2d7;
+  background: #fff;
+  text-align: right;
+}
+
+.formInputSmall:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.formInputSmall::-webkit-outer-spin-button,
+.formInputSmall::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.formInputWithUnit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.formInputWithAge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.formUnit {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.ageDisplay {
+  font-size: 14px;
+  font-weight: 500;
+  color: #007aff;
+  white-space: nowrap;
+}
+
+/* 토글 버튼 */
+.toggleButtons {
+  display: flex;
+  gap: 4px;
+}
+
+.toggleBtn {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  background: #f5f5f7;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toggleBtn:hover {
+  background: #e8e8ed;
+  color: #1d1d1f;
+}
+
+.toggleBtn.active {
+  background: #1d1d1f;
+  color: #fff;
+}
+
+/* 성별 버튼 */
+.genderButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.genderBtn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #86868b;
+  background: #f5f5f7;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.genderBtn:hover {
+  background: #e8e8ed;
+  color: #1d1d1f;
+}
+
+.genderBtn.active {
+  background: #1d1d1f;
+  color: #fff;
+}
+
+/* 자녀 아이템 */
+.childItem {
+  padding: 16px;
+  background: #f5f5f7;
+  margin-bottom: 12px;
+}
+
+.childHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.childIndex {
+  font-size: 13px;
+  font-weight: 600;
+  color: #86868b;
+}
+
+.removeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: #ff3b30;
+  cursor: pointer;
+}
+
+.removeBtn:hover {
+  background: rgba(255, 59, 48, 0.1);
+}
+
+/* 자녀 추가 버튼 그룹 */
+.addChildButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.addChildBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #007aff;
+  background: #f5f5f7;
+  border: none;
+  cursor: pointer;
+}
+
+.addChildBtn:hover {
+  background: #e8e8ed;
+}

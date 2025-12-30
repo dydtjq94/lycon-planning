@@ -49,6 +49,37 @@
   animation: fadeIn 0.5s ease-out;
 }
 
+/* 헤더 액션 버튼 */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.headerActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: #78716c;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.headerActionBtn:hover {
+  background-color: #f5f5f4;
+  color: #292524;
+}
+
+.headerActionBtn.active {
+  background-color: #292524;
+  color: white;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0.5;

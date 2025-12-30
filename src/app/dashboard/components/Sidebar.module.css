@@ -58,11 +58,11 @@
 }
 
 .pinButton.pinned {
-  color: #007aff;
+  color: #fff;
 }
 
 .pinButton.pinned:hover {
-  color: #0056b3;
+  color: #fff;
 }
 
 .logoLetter {

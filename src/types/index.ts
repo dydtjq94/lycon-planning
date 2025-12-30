@@ -73,6 +73,18 @@ export type DashboardIncomeType = 'labor' | 'business' | 'regular' | 'onetime' |
 export type DashboardEndType = 'self-retirement' | 'spouse-retirement' | 'custom'
 export type DashboardIncomeFrequency = 'monthly' | 'yearly'
 
+// 상승률 카테고리 (시나리오에 따라 변동)
+export type RateCategory = 'inflation' | 'income' | 'investment' | 'realEstate' | 'fixed'
+
+// 상승률 카테고리 라벨
+export const RATE_CATEGORY_LABELS: Record<RateCategory, string> = {
+  inflation: '물가연동',
+  income: '소득연동',
+  investment: '투자수익',
+  realEstate: '부동산',
+  fixed: '고정',
+}
+
 // 소득 항목 (대시보드용)
 export interface DashboardIncomeItem {
   id: string
@@ -86,7 +98,28 @@ export interface DashboardIncomeItem {
   endType: DashboardEndType
   endYear: number | null // custom일 때만 사용
   endMonth: number | null // custom일 때만 사용
-  growthRate: number // % (연간)
+  growthRate: number // % (연간) - 커스텀 모드에서 사용하는 기본값
+  rateCategory: RateCategory // 상승률 카테고리 (시나리오 모드에 따라 적용)
+}
+
+// 지출 항목 타입 (대시보드용)
+export type DashboardExpenseType = 'fixed' | 'variable' | 'onetime' | 'medical' | 'interest' | 'housing'
+export type DashboardExpenseFrequency = 'monthly' | 'yearly'
+
+// 지출 항목 (대시보드용)
+export interface DashboardExpenseItem {
+  id: string
+  type: DashboardExpenseType
+  label: string
+  amount: number // 만원 (frequency에 따라 월/년)
+  frequency: DashboardExpenseFrequency // 지출 주기 (월/년)
+  startYear: number
+  startMonth: number // 1-12
+  endType: DashboardEndType
+  endYear: number | null // custom일 때만 사용
+  endMonth: number | null // custom일 때만 사용
+  growthRate: number // % (연간) - 커스텀 모드에서 사용하는 기본값
+  rateCategory: RateCategory // 상승률 카테고리 (시나리오 모드에 따라 적용)
 }
 
 // 온보딩 데이터
@@ -120,6 +153,12 @@ export interface OnboardingData {
 
   // 소득 항목 (대시보드용 상세 데이터)
   incomeItems?: DashboardIncomeItem[]
+
+  // 지출 항목 (대시보드용 상세 데이터)
+  expenseItems?: DashboardExpenseItem[]
+
+  // 글로벌 설정 (시나리오, 성장률 등)
+  globalSettings?: GlobalSettings
 
   // 지출
   livingExpenses: number | null     // 생활비
@@ -219,8 +258,44 @@ export interface DashboardSummary {
   scores: Scores
 }
 
+// 시나리오 모드 타입
+export type ScenarioMode = 'optimistic' | 'average' | 'pessimistic' | 'custom'
+
+// 시나리오별 성장률 프리셋
+export interface ScenarioRates {
+  inflationRate: number           // 물가 상승률 (%)
+  incomeGrowthRate: number        // 소득 증가율 (%)
+  investmentReturnRate: number    // 투자 수익률 (%)
+  realEstateGrowthRate: number    // 부동산 상승률 (%)
+}
+
+// 시나리오 프리셋 상수
+export const SCENARIO_PRESETS: Record<Exclude<ScenarioMode, 'custom'>, ScenarioRates> = {
+  optimistic: {
+    inflationRate: 2.0,
+    incomeGrowthRate: 5.0,
+    investmentReturnRate: 8.0,
+    realEstateGrowthRate: 4.0,
+  },
+  average: {
+    inflationRate: 2.5,
+    incomeGrowthRate: 3.0,
+    investmentReturnRate: 5.0,
+    realEstateGrowthRate: 2.5,
+  },
+  pessimistic: {
+    inflationRate: 4.0,
+    incomeGrowthRate: 1.0,
+    investmentReturnRate: 2.0,
+    realEstateGrowthRate: 0.5,
+  },
+}
+
 // 글로벌 설정 (시뮬레이션 전역)
 export interface GlobalSettings {
+  // 시나리오 모드
+  scenarioMode: ScenarioMode
+
   // 물가/인플레이션
   inflationRate: number           // 물가 상승률 (%) - 지출, 국민연금에 적용
 
@@ -239,10 +314,14 @@ export interface GlobalSettings {
 
   // 수명
   lifeExpectancy: number          // 예상 수명 (세)
+
+  // 커스텀 모드 저장값 (다른 모드 갔다가 돌아올 때 복원용)
+  customRates: ScenarioRates
 }
 
 // 기본 글로벌 설정
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
+  scenarioMode: 'custom',
   inflationRate: 2.5,
   incomeGrowthRate: 3.3,
   investmentReturnRate: 5,
@@ -250,6 +329,12 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   realEstateGrowthRate: 2.4,
   debtInterestRate: 3.5,
   lifeExpectancy: 90,
+  customRates: {
+    inflationRate: 2.5,
+    incomeGrowthRate: 3.3,
+    investmentReturnRate: 5,
+    realEstateGrowthRate: 2.4,
+  },
 }
 
 // 시뮬레이션 설정 (deprecated - GlobalSettings 사용)
@@ -550,4 +635,54 @@ export interface MonthlySnapshot {
   created_at: string
   updated_at: string
 }
+
+// ============================================
+// 나이대별 의료비 기본값 (월 만원 단위)
+// ============================================
+
+// 나이대별 월 의료비 (보수적 예산 기준)
+// 출처: 건강보험통계연보, 국민건강보험공단
+export const MEDICAL_EXPENSE_BY_AGE: Record<number, number> = {
+  20: 5,    // 20대: 월 5만원
+  30: 10,   // 30대: 월 10만원
+  40: 15,   // 40대: 월 15만원
+  50: 25,   // 50대: 월 25만원
+  60: 35,   // 60-64세: 월 35만원
+  65: 45,   // 65-69세: 월 45만원
+  70: 60,   // 70-74세: 월 60만원
+  75: 85,   // 75-79세: 월 85만원
+  80: 130,  // 80-84세: 월 130만원
+  85: 180,  // 85-89세: 월 180만원
+  90: 230,  // 90-94세: 월 230만원
+  95: 280,  // 95-99세: 월 280만원
+  100: 300, // 100세+: 월 300만원
+}
+
+// 나이에 해당하는 의료비 반환
+export function getMedicalExpenseByAge(age: number): number {
+  if (age < 20) return 5
+  if (age >= 100) return 300
+
+  // 5년 단위로 반올림하여 해당 구간의 값 반환
+  const ageKeys = Object.keys(MEDICAL_EXPENSE_BY_AGE).map(Number).sort((a, b) => a - b)
+
+  for (let i = ageKeys.length - 1; i >= 0; i--) {
+    if (age >= ageKeys[i]) {
+      return MEDICAL_EXPENSE_BY_AGE[ageKeys[i]]
+    }
+  }
+
+  return 5 // 기본값
+}
+
+// 의료비 안내 메시지
+export const MEDICAL_EXPENSE_INFO = `대한민국 나이대별 본인부담 의료비 분석 자료 기반 (건강보험통계연보, 국민건강보험공단)
+
+- 20대: 월 5만원 → 90대: 월 300만원 (60배 증가)
+- 65세 이상이 전체 의료비의 44% 사용
+- 80대 이후 간병비 포함 시 월 200~400만원 가능
+
+포함 항목: 건강보험 본인부담금, 비급여, 간병비, 보조기구
+
+※ 개인 건강 상태에 따라 실제 비용은 크게 다를 수 있습니다.`
 

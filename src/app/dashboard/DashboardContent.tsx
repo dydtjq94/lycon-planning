@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { Users, TrendingUp, Wallet, Settings } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { OnboardingData, SimulationSettings } from '@/types'
+import type { OnboardingData, SimulationSettings, GlobalSettings } from '@/types'
+import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
 import { Sidebar } from './components'
 import {
   OverviewTab,
@@ -19,7 +21,11 @@ import {
 } from './components/tabs'
 import { ProgressSection } from './components/sections/ProgressSection'
 import { PlansSection } from './components/sections/PlansSection'
+import { ScenarioModal } from './components/modals/ScenarioModal'
+import { FamilyModal } from './components/modals/FamilyModal'
 import styles from './dashboard.module.css'
+
+type ModalType = 'family' | 'scenario' | 'cashflow' | 'settings' | null
 
 interface DashboardContentProps {
   data: OnboardingData
@@ -52,6 +58,10 @@ export function DashboardContent({ data: initialData, initialSettings }: Dashboa
   const [data, setData] = useState<OnboardingData>(initialData)
   const [settings, setSettings] = useState<SimulationSettings>(initialSettings)
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false)
+  const [activeModal, setActiveModal] = useState<ModalType>(null)
+
+  // 글로벌 설정 (data에서 가져오거나 기본값 사용)
+  const globalSettings = data.globalSettings || DEFAULT_GLOBAL_SETTINGS
 
   // URL 해시에서 섹션 읽기
   const getHashSection = useCallback(() => {
@@ -111,9 +121,9 @@ export function DashboardContent({ data: initialData, initialSettings }: Dashboa
         return <TaxAnalyticsTab data={data} settings={settings} />
       // Finance tabs
       case 'income':
-        return <IncomeTab data={data} onUpdateData={handleUpdateData} />
+        return <IncomeTab data={data} onUpdateData={handleUpdateData} globalSettings={globalSettings} />
       case 'expense':
-        return <ExpenseTab data={data} onUpdateData={handleUpdateData} />
+        return <ExpenseTab data={data} onUpdateData={handleUpdateData} globalSettings={globalSettings} />
       case 'savings':
         return <SavingsTab data={data} onUpdateData={handleUpdateData} />
       case 'asset':
@@ -134,6 +144,11 @@ export function DashboardContent({ data: initialData, initialSettings }: Dashboa
     }
   }
 
+  // 글로벌 설정 업데이트
+  const handleUpdateGlobalSettings = (newSettings: GlobalSettings) => {
+    handleUpdateData({ globalSettings: newSettings })
+  }
+
   return (
     <div className={styles.layout}>
       <Sidebar
@@ -146,12 +161,59 @@ export function DashboardContent({ data: initialData, initialSettings }: Dashboa
       <main className={`${styles.main} ${isSidebarExpanded ? styles.mainExpanded : ''}`}>
         <header className={styles.header}>
           <h1 key={currentSection} className={styles.pageTitle}>{sectionTitles[currentSection]}</h1>
+
+          <div className={styles.headerActions}>
+            <button
+              className={`${styles.headerActionBtn} ${activeModal === 'family' ? styles.active : ''}`}
+              onClick={() => setActiveModal(activeModal === 'family' ? null : 'family')}
+              title="가족 구성원"
+            >
+              <Users size={18} />
+            </button>
+            <button
+              className={`${styles.headerActionBtn} ${activeModal === 'scenario' ? styles.active : ''}`}
+              onClick={() => setActiveModal(activeModal === 'scenario' ? null : 'scenario')}
+              title="시나리오 설정"
+            >
+              <TrendingUp size={18} />
+            </button>
+            <button
+              className={`${styles.headerActionBtn} ${activeModal === 'cashflow' ? styles.active : ''}`}
+              onClick={() => setActiveModal(activeModal === 'cashflow' ? null : 'cashflow')}
+              title="현금 흐름 분배"
+            >
+              <Wallet size={18} />
+            </button>
+            <button
+              className={`${styles.headerActionBtn} ${activeModal === 'settings' ? styles.active : ''}`}
+              onClick={() => setActiveModal(activeModal === 'settings' ? null : 'settings')}
+              title="설정"
+            >
+              <Settings size={18} />
+            </button>
+          </div>
         </header>
 
         <div className={styles.content}>
           {renderContent()}
         </div>
       </main>
+
+      {/* 모달 */}
+      {activeModal === 'scenario' && (
+        <ScenarioModal
+          globalSettings={globalSettings}
+          onUpdate={handleUpdateGlobalSettings}
+          onClose={() => setActiveModal(null)}
+        />
+      )}
+      {activeModal === 'family' && (
+        <FamilyModal
+          data={data}
+          onUpdate={handleUpdateData}
+          onClose={() => setActiveModal(null)}
+        />
+      )}
     </div>
   )
 }

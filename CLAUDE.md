@@ -95,6 +95,8 @@ src/app/feature/
 - **고정 너비**: 숫자 입력칸은 고정 width 사용 (80px, 120px 등)
 - **왼쪽 정렬**: 텍스트는 기본 왼쪽 정렬 유지
 - **단위 배치**: 단위(세, 만원 등)는 입력칸 바로 옆에 배치
+- **스핀 버튼 제거**: `type="number"` 입력의 위아래 화살표 숨김
+- **스크롤 변경 방지**: 숫자 입력에서 마우스 스크롤로 값 변경되지 않도록 처리
 
 ```css
 .smallInput {
@@ -103,6 +105,21 @@ src/app/feature/
 .unit {
   margin-left: 4px;
 }
+
+/* 숫자 입력 스핀 버튼 제거 (필수) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+```
+
+```tsx
+// 숫자 입력에서 스크롤 변경 방지 (필수)
+<input
+  type="number"
+  onWheel={(e) => (e.target as HTMLElement).blur()}
+/>
 ```
 
 ## 프로그레시브 폼 규칙
@@ -131,10 +148,18 @@ src/app/feature/
 - **반드시 chart.js 사용**: 모든 차트/그래프는 `chart.js` + `react-chartjs-2` 사용
 - **순수 SVG 금지**: 직접 SVG로 차트 그리지 않음
 - **설치된 패키지**: `chart.js@^4.5.1`, `react-chartjs-2@^5.3.1`
+- **시뮬레이션 종료 시점**: 본인/배우자 중 나중에 100세가 되는 해까지 표시
 
 ```tsx
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import { Chart as ChartJS, ... } from 'chart.js'
+
+// 차트 종료 시점 계산 (100세 기준)
+const selfAge100Year = currentYear + (100 - currentAge);
+const spouseAge100Year = spouseCurrentAge !== null
+  ? currentYear + (100 - spouseCurrentAge)
+  : selfAge100Year;
+const maxYear = Math.max(selfAge100Year, spouseAge100Year);
 ```
 
 ## 금액 단위 규칙

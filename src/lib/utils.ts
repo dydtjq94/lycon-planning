@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import type { RateCategory, ScenarioMode, GlobalSettings } from "@/types"
+import { SCENARIO_PRESETS } from "@/types"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -16,4 +18,68 @@ export function formatMoney(amount: number): string {
     return `${uk}억 ${man.toLocaleString()}만`
   }
   return `${amount.toLocaleString()}만원`
+}
+
+// 시나리오 모드에 따른 실제 적용 상승률 계산
+export function getEffectiveRate(
+  baseRate: number,
+  rateCategory: RateCategory,
+  scenarioMode: ScenarioMode,
+  globalSettings: GlobalSettings
+): number {
+  // 고정 카테고리는 항상 기본값 사용
+  if (rateCategory === 'fixed') {
+    return baseRate
+  }
+
+  // 커스텀 모드는 기본값 사용
+  if (scenarioMode === 'custom') {
+    return baseRate
+  }
+
+  // 프리셋 모드는 해당 카테고리의 프리셋 값 사용
+  const preset = SCENARIO_PRESETS[scenarioMode]
+
+  switch (rateCategory) {
+    case 'inflation':
+      return preset.inflationRate
+    case 'income':
+      return preset.incomeGrowthRate
+    case 'investment':
+      return preset.investmentReturnRate
+    case 'realEstate':
+      return preset.realEstateGrowthRate
+    default:
+      return baseRate
+  }
+}
+
+// 타입별 기본 상승률 카테고리 반환
+export function getDefaultRateCategory(
+  itemType: string
+): RateCategory {
+  switch (itemType) {
+    // 소득
+    case 'labor':
+    case 'business':
+    case 'regular':
+      return 'income'
+    case 'rental':
+      return 'realEstate'
+    case 'pension':
+      return 'fixed' // 연금은 별도 로직으로 처리 (PMT 등)
+    case 'onetime':
+      return 'fixed'
+    // 지출
+    case 'fixed':
+    case 'variable':
+    case 'medical':
+      return 'inflation'
+    case 'housing':
+      return 'realEstate'
+    case 'interest':
+      return 'fixed'
+    default:
+      return 'inflation'
+  }
 }
