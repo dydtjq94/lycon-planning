@@ -1,5 +1,11 @@
 # 개발 규칙
 
+## 참고 프로젝트
+
+- **reference_porject 폴더는 오직 참고용**: 이전에 만들던 재무 시뮬레이션 프로젝트 (React + Firebase)
+- **코드 복사 금지**: 구조와 로직만 참고, 직접 복사하지 않음
+- **기술 스택 다름**: reference는 React/Firebase, 현재는 Next.js/Supabase
+
 ## CSS 스타일
 
 - **CSS Modules 사용**: Tailwind 사용 금지
@@ -148,4 +154,31 @@ const wonValue = inputValue * 10000 // 100,000,000원
 
 // 표시 (만원 단위)
 const display = `${inputValue.toLocaleString()}만원` // "10,000만원"
+```
+
+## 시간 단위 규칙 (중요!)
+
+- **모든 기간/시뮬레이션은 월 단위**: 내부 데이터와 계산은 반드시 월(month) 단위
+- **년도만 사용 금지**: startYear만 저장하지 말고, startYear + startMonth 함께 저장
+- **표시는 유연하게**: 사용자에게는 년 단위로 보여줘도 되지만, 저장/계산은 월 단위
+- **reference_project 참고**: cashflowSimulator.js 패턴 참고
+
+```tsx
+// 기간 데이터 구조
+interface Period {
+  startYear: number
+  startMonth: number  // 1-12
+  endYear: number
+  endMonth: number    // 1-12
+}
+
+// 월 단위 계산 예시
+const monthsElapsed = (endYear - startYear) * 12 + (endMonth - startMonth)
+
+// 연간 상승률 → 월간 상승률 변환 (복리)
+const monthlyRate = Math.pow(1 + annualRate, 1/12) - 1
+
+// 표시할 때는 년도로 간략화 가능
+const displayPeriod = `${startYear}년 ${startMonth}월 ~ ${endYear}년 ${endMonth}월`
+// 또는 간략하게: `${startYear}.${startMonth} ~ ${endYear}.${endMonth}`
 ```

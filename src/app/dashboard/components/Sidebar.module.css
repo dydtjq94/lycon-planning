@@ -253,6 +253,13 @@
   color: white;
 }
 
+/* 서브메뉴 구분선 */
+.submenuDivider {
+  height: 1px;
+  background-color: #2a2a2a;
+  margin: 6px 12px;
+}
+
 /* 푸터 */
 .footer {
   padding: 8px;

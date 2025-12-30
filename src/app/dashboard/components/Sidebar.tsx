@@ -41,14 +41,20 @@ const dashboardMenus = [
   { id: 'tax', label: '세금분석', icon: Calculator },
 ]
 
+// 섹터별 구분 (자산 → 현금흐름 → 미래준비)
 const financeSubmenus = [
-  { id: 'income', label: '소득', icon: Banknote },
-  { id: 'expense', label: '지출', icon: Receipt },
-  { id: 'savings', label: '저축/투자', icon: LineChart },
-  { id: 'pension', label: '연금', icon: Landmark },
+  // 자산 (Net Worth)
   { id: 'realEstate', label: '부동산', icon: Home },
   { id: 'asset', label: '자산', icon: PiggyBank },
   { id: 'debt', label: '부채', icon: CreditCard },
+  { id: 'divider-1', label: '', icon: null },
+  // 현금흐름 (Cash Flow)
+  { id: 'income', label: '소득', icon: Banknote },
+  { id: 'expense', label: '지출', icon: Receipt },
+  { id: 'divider-2', label: '', icon: null },
+  // 미래준비 (Future Planning)
+  { id: 'savings', label: '저축/투자', icon: LineChart },
+  { id: 'pension', label: '연금', icon: Landmark },
 ]
 
 export function Sidebar({ currentSection, onSectionChange, isExpanded, onExpandChange }: SidebarProps) {
@@ -131,17 +137,23 @@ export function Sidebar({ currentSection, onSectionChange, isExpanded, onExpandC
 
             {isFinanceOpen && (
               <div className={styles.submenu}>
-                {financeSubmenus.map((item) => (
-                  <button
-                    key={item.id}
-                    className={`${styles.submenuItem} ${currentSection === item.id ? styles.active : ''}`}
-                    onClick={() => onSectionChange(item.id)}
-                    title={item.label}
-                  >
-                    <item.icon size={16} />
-                    <span className={styles.navLabel}>{item.label}</span>
-                  </button>
-                ))}
+                {financeSubmenus.map((item) => {
+                  if (item.id.startsWith('divider')) {
+                    return <div key={item.id} className={styles.submenuDivider} />
+                  }
+                  const IconComponent = item.icon!
+                  return (
+                    <button
+                      key={item.id}
+                      className={`${styles.submenuItem} ${currentSection === item.id ? styles.active : ''}`}
+                      onClick={() => onSectionChange(item.id)}
+                      title={item.label}
+                    >
+                      <IconComponent size={16} />
+                      <span className={styles.navLabel}>{item.label}</span>
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>

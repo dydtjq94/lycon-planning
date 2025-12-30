@@ -195,14 +195,47 @@ export interface DashboardSummary {
   scores: Scores
 }
 
-// 시뮬레이션 설정
+// 글로벌 설정 (시뮬레이션 전역)
+export interface GlobalSettings {
+  // 물가/인플레이션
+  inflationRate: number           // 물가 상승률 (%) - 지출, 국민연금에 적용
+
+  // 소득 관련
+  incomeGrowthRate: number        // 소득 증가율 (%) - 근로/사업소득에 적용
+
+  // 투자 관련
+  investmentReturnRate: number    // 투자 수익률 (%) - 저축/투자, 퇴직/개인연금에 적용
+  savingsGrowthRate: number       // 저축 증가율 (%) - 적립금 증가에 적용
+
+  // 부동산 관련
+  realEstateGrowthRate: number    // 부동산 상승률 (%)
+
+  // 부채 관련
+  debtInterestRate: number        // 부채 기본 금리 (%)
+
+  // 수명
+  lifeExpectancy: number          // 예상 수명 (세)
+}
+
+// 기본 글로벌 설정
+export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
+  inflationRate: 2.5,
+  incomeGrowthRate: 3.3,
+  investmentReturnRate: 5,
+  savingsGrowthRate: 2.5,
+  realEstateGrowthRate: 2.4,
+  debtInterestRate: 3.5,
+  lifeExpectancy: 90,
+}
+
+// 시뮬레이션 설정 (deprecated - GlobalSettings 사용)
 export interface SimulationSettings {
   inflationRate: number      // 물가 상승률 (%)
   investmentReturn: number   // 투자 수익률 (%)
   lifeExpectancy: number     // 예상 수명 (세)
 }
 
-// 기본 시뮬레이션 설정
+// 기본 시뮬레이션 설정 (deprecated)
 export const DEFAULT_SETTINGS: SimulationSettings = {
   inflationRate: 2.5,
   investmentReturn: 5,

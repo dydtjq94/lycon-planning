@@ -1,13 +1,7 @@
 'use client'
 
-import { useMemo } from 'react'
-import { Pencil, Plus } from 'lucide-react'
-import type { OnboardingData, FinancialItemInput, ExpenseData } from '@/types'
-import {
-  migrateOnboardingToFinancialItems,
-  CASHFLOW_UI_GROUPS,
-  createChildEducationItems,
-} from '@/lib/services'
+import { TrendingDown } from 'lucide-react'
+import type { OnboardingData } from '@/types'
 import styles from './ExpenseTab.module.css'
 
 interface ExpenseTabProps {
@@ -15,179 +9,58 @@ interface ExpenseTabProps {
   onUpdateData: (updates: Partial<OnboardingData>) => void
 }
 
-type ExpenseItem = FinancialItemInput & {
-  data: ExpenseData
-}
-
-export function ExpenseTab({ data }: ExpenseTabProps) {
-  const currentYear = new Date().getFullYear()
-  const birthYear = data.birth_date ? parseInt(data.birth_date.split('-')[0]) : currentYear - 35
-  const retirementYear = birthYear + data.target_retirement_age
-
-  // OnboardingData를 FinancialItem으로 변환
-  const financialItems = useMemo(() => {
-    const items = migrateOnboardingToFinancialItems(data, 'temp')
-
-    // 자녀 교육비 추가
-    if (data.children && data.children.length > 0) {
-      data.children.forEach((child) => {
-        if (child.birth_date) {
-          const childBirthYear = parseInt(child.birth_date.split('-')[0])
-          const childName = child.name || '자녀'
-          const educationItems = createChildEducationItems('temp', childName, childBirthYear, currentYear)
-          items.push(...educationItems)
-        }
-      })
-    }
-
-    return items
-  }, [data, currentYear])
-
-  // 지출 항목 필터링
-  const expenseItems = useMemo(() => {
-    return financialItems.filter(item => item.category === 'expense') as ExpenseItem[]
-  }, [financialItems])
-
-  // 그룹별로 항목 분류
-  const getItemsByTypes = (items: ExpenseItem[], types: readonly string[]) => {
-    return items.filter(item => types.includes(item.type))
-  }
-
-  // 금액 계산
-  const getMonthlyAmount = (item: ExpenseItem): number => {
-    if (item.data.frequency === 'yearly') {
-      return Math.round(item.data.amount / 12)
-    }
-    return item.data.amount
-  }
-
-  // 총 지출 계산 (현재 활성화된 항목만)
-  const totalExpense = useMemo(() => {
-    return expenseItems
-      .filter(item => {
-        if (!item.start_year) return true
-        if (item.start_year > currentYear) return false
-        return true
-      })
-      .reduce((sum, item) => sum + getMonthlyAmount(item), 0)
-  }, [expenseItems, currentYear])
-
-  // 기간 표시 포맷
-  const formatPeriod = (item: ExpenseItem): string => {
-    const start = item.start_year || currentYear
-    const end = item.end_year
-
-    if (item.is_fixed_to_retirement_year) {
-      return `${start} ~ ${retirementYear} (은퇴)`
-    }
-    if (end) {
-      return `${start} ~ ${end}`
-    }
-    return `${start} ~ (계속)`
-  }
-
-  // 그룹 총합 계산
-  const getGroupTotal = (items: ExpenseItem[]): number => {
-    return items.reduce((sum, item) => sum + getMonthlyAmount(item), 0)
-  }
-
+export function ExpenseTab({ data, onUpdateData }: ExpenseTabProps) {
   return (
     <div className={styles.container}>
-      {/* 요약 카드 */}
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryItem}>
-          <p className={styles.summaryLabel}>월 총 지출</p>
-          <p className={styles.summaryValue}>{totalExpense.toLocaleString()}만원</p>
+      {/* 왼쪽: 지출 입력 */}
+      <div className={styles.inputPanel}>
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTitle}>고정 지출</span>
+          </div>
+          <p className={styles.placeholder}>주거비, 보험료, 대출상환 등</p>
         </div>
-        <div className={styles.summaryItem}>
-          <p className={styles.summaryLabel}>연 총 지출</p>
-          <p className={styles.summaryValue}>{(totalExpense * 12).toLocaleString()}만원</p>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTitle}>생활 지출</span>
+          </div>
+          <p className={styles.placeholder}>식비, 교통비, 통신비 등</p>
         </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTitle}>기타 지출</span>
+          </div>
+          <p className={styles.placeholder}>교육비, 여가비, 경조사비 등</p>
+        </div>
+
+        <p className={styles.infoText}>
+          각 항목별 상세 지출을 입력하면 더 정확한 분석이 가능합니다.
+        </p>
       </div>
 
-      {/* 지출 섹션 */}
-      <div className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>지출 항목</h2>
-          <span className={styles.sectionTotal}>월 {totalExpense.toLocaleString()}만원</span>
+      {/* 오른쪽: 인사이트 */}
+      <div className={styles.insightPanel}>
+        <div className={styles.summaryCard}>
+          <div className={styles.summaryRow}>
+            <span className={styles.summaryLabel}>월 총 지출</span>
+            <span className={styles.summaryValue}>-</span>
+          </div>
+          <div className={styles.summaryRow}>
+            <span className={styles.summaryLabel}>연 총 지출</span>
+            <span className={styles.summaryValue}>-</span>
+          </div>
+          <div className={styles.summaryRow}>
+            <span className={styles.summaryLabel}>소득 대비 지출률</span>
+            <span className={styles.summaryValueLarge}>-</span>
+          </div>
         </div>
 
-        {CASHFLOW_UI_GROUPS.expense.map((group) => {
-          const groupItems = getItemsByTypes(expenseItems, group.types)
-          // 현재 활성화된 항목만 필터 (은퇴 후 생활비 제외)
-          const activeItems = groupItems.filter(item => {
-            if (!item.start_year) return true
-            if (item.start_year > currentYear) return false
-            return true
-          })
-          const futureItems = groupItems.filter(item => {
-            if (!item.start_year) return false
-            return item.start_year > currentYear
-          })
-          const groupTotal = getGroupTotal(activeItems)
-
-          return (
-            <div key={group.group} className={styles.group}>
-              <div className={styles.groupHeader}>
-                <div>
-                  <span className={styles.groupTitle}>{group.label}</span>
-                  <span className={styles.groupDescription}>{group.description}</span>
-                </div>
-                {groupTotal > 0 && (
-                  <span className={styles.groupTotal}>{groupTotal.toLocaleString()}만원/월</span>
-                )}
-              </div>
-
-              <div className={styles.itemList}>
-                {activeItems.length > 0 ? (
-                  activeItems.map((item, index) => (
-                    <div key={index} className={styles.item}>
-                      <div className={styles.itemInfo}>
-                        <span className={styles.itemTitle}>{item.title}</span>
-                        <span className={styles.itemPeriod}>{formatPeriod(item)}</span>
-                      </div>
-                      <span className={styles.itemAmount}>
-                        {getMonthlyAmount(item).toLocaleString()}만원
-                      </span>
-                      <span className={styles.itemFrequency}>
-                        /{item.data.frequency === 'yearly' ? '년' : '월'}
-                      </span>
-                      <button className={styles.editButton} title="수정">
-                        <Pencil size={14} />
-                      </button>
-                    </div>
-                  ))
-                ) : futureItems.length === 0 ? (
-                  <div className={styles.emptyGroup}>(없음)</div>
-                ) : null}
-
-                {/* 미래 항목 (예: 자녀 교육비) */}
-                {futureItems.map((item, index) => (
-                  <div key={`future-${index}`} className={styles.itemFuture}>
-                    <div className={styles.itemInfo}>
-                      <span className={styles.itemTitle}>{item.title}</span>
-                      <span className={styles.itemPeriod}>{formatPeriod(item)}</span>
-                    </div>
-                    <span className={styles.itemAmount}>
-                      {getMonthlyAmount(item).toLocaleString()}만원
-                    </span>
-                    <span className={styles.itemFrequency}>
-                      /{item.data.frequency === 'yearly' ? '년' : '월'}
-                    </span>
-                    <button className={styles.editButton} title="수정">
-                      <Pencil size={14} />
-                    </button>
-                  </div>
-                ))}
-
-                <button className={styles.addButton}>
-                  <Plus size={14} />
-                  <span>추가</span>
-                </button>
-              </div>
-            </div>
-          )
-        })}
+        <div className={styles.emptyState}>
+          <TrendingDown size={40} />
+          <p>지출을 입력하면 분석 결과가 표시됩니다</p>
+        </div>
       </div>
     </div>
   )

@@ -92,6 +92,28 @@
   letter-spacing: -0.5px;
 }
 
+.chartCard {
+  padding: 24px 0;
+  border-bottom: 1px solid #e8e8ed;
+}
+
+.chartCard:last-of-type {
+  border-bottom: none;
+}
+
+.chartTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 16px 0;
+}
+
+.chartWrapper {
+  height: 180px;
+}
+
 .emptyState {
   display: flex;
   flex-direction: column;
