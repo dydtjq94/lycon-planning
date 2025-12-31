@@ -234,7 +234,193 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
   const regularItems = displayItems.filter((i) => i.type === "regular");
   const onetimeItems = displayItems.filter((i) => i.type === "onetime");
   const rentalItems = displayItems.filter((i) => i.type === "rental");
-  const pensionItems = displayItems.filter((i) => i.type === "pension");
+  const userPensionItems = displayItems.filter((i) => i.type === "pension");
+
+  // 연금 탭에서 자동 생성되는 연금 소득 항목
+  const computedPensionItems = useMemo((): DisplayItem[] => {
+    const items: DisplayItem[] = [];
+    const lifeExpectancy = globalSettings.lifeExpectancy || 85;
+    const investmentReturnRate = globalSettings.investmentReturnRate / 100;
+
+    // PMT 계산 함수
+    const calculatePMT = (presentValue: number, years: number, annualRate: number) => {
+      if (years <= 0 || presentValue <= 0) return 0;
+      if (annualRate === 0) return presentValue / years;
+      const r = annualRate;
+      const n = years;
+      const factor = Math.pow(1 + r, n);
+      return presentValue * (r * factor) / (factor - 1);
+    };
+
+    // 미래가치 계산 (적립)
+    const calculateFV = (balance: number, monthlyContribution: number, years: number) => {
+      let fv = balance;
+      for (let i = 0; i < years; i++) {
+        fv = (fv + monthlyContribution * 12) * (1 + investmentReturnRate);
+      }
+      return fv;
+    };
+
+    // 1. 국민연금
+    if (data.nationalPension && data.nationalPension > 0) {
+      const startAge = data.nationalPensionStartAge || 65;
+      const startYear = currentYear + (startAge - currentAge);
+      const endYear = currentYear + (lifeExpectancy - currentAge);
+      items.push({
+        id: 'pension-national',
+        type: 'pension' as const,
+        label: '국민연금',
+        amount: data.nationalPension,
+        frequency: 'monthly' as const,
+        owner: 'self' as const,
+        startYear,
+        startMonth: 1,
+        endType: 'custom' as const,
+        endAge: lifeExpectancy,
+        endYear,
+        endMonth: 12,
+        growthRate: 0,
+        rateCategory: 'fixed' as const,
+        displayGrowthRate: 0,
+        isSystem: true,
+      });
+    }
+
+    // 2. 연금저축
+    if (data.pensionSavingsBalance && data.pensionSavingsBalance > 0) {
+      const startAge = data.pensionSavingsStartAge || 56;
+      const receivingYears = data.pensionSavingsReceivingYears || 20;
+      const startYear = currentYear + (startAge - currentAge);
+      const yearsUntilStart = Math.max(0, startAge - currentAge);
+
+      // 수령 시작 시점의 적립액
+      const futureValue = calculateFV(data.pensionSavingsBalance, 0, yearsUntilStart);
+      // 연간 PMT → 월 PMT
+      const annualPMT = calculatePMT(futureValue, receivingYears, investmentReturnRate);
+      const monthlyPMT = Math.round(annualPMT / 12);
+
+      if (monthlyPMT > 0) {
+        items.push({
+          id: 'pension-savings',
+          type: 'pension' as const,
+          label: '연금저축',
+          amount: monthlyPMT,
+          frequency: 'monthly' as const,
+          owner: 'self' as const,
+          startYear,
+          startMonth: 1,
+          endType: 'custom' as const,
+          endYear: startYear + receivingYears - 1,
+          endMonth: 12,
+          growthRate: 0,
+          rateCategory: 'fixed' as const,
+          displayGrowthRate: 0,
+          isSystem: true,
+        });
+      }
+    }
+
+    // 3. IRP
+    if (data.irpBalance && data.irpBalance > 0) {
+      const startAge = data.irpStartAge || 56;
+      const receivingYears = data.irpReceivingYears || 20;
+      const startYear = currentYear + (startAge - currentAge);
+      const yearsUntilStart = Math.max(0, startAge - currentAge);
+
+      const futureValue = calculateFV(data.irpBalance, 0, yearsUntilStart);
+      const annualPMT = calculatePMT(futureValue, receivingYears, investmentReturnRate);
+      const monthlyPMT = Math.round(annualPMT / 12);
+
+      if (monthlyPMT > 0) {
+        items.push({
+          id: 'pension-irp',
+          type: 'pension' as const,
+          label: 'IRP',
+          amount: monthlyPMT,
+          frequency: 'monthly' as const,
+          owner: 'self' as const,
+          startYear,
+          startMonth: 1,
+          endType: 'custom' as const,
+          endYear: startYear + receivingYears - 1,
+          endMonth: 12,
+          growthRate: 0,
+          rateCategory: 'fixed' as const,
+          displayGrowthRate: 0,
+          isSystem: true,
+        });
+      }
+    }
+
+    // 4. 퇴직연금 (기본값: 연금 수령, 일시금 선택 시만 제외)
+    if (data.retirementPensionType && data.retirementPensionReceiveType !== 'lump_sum') {
+      const startAge = data.retirementPensionStartAge || 56;
+      const receivingYears = data.retirementPensionReceivingYears || 10;
+      const startYear = currentYear + (startAge - currentAge);
+      const retirementAge = data.target_retirement_age || 60;
+
+      // 퇴직연금 일시금 계산
+      const isDBType = data.retirementPensionType === 'DB' || data.retirementPensionType === 'severance';
+      let totalAmount = 0;
+
+      if (isDBType && data.laborIncome) {
+        const monthlyIncome = data.laborIncomeFrequency === 'yearly' ? data.laborIncome / 12 : data.laborIncome;
+        const yearsOfService = data.yearsOfService || 0;
+        const yearsUntilRetirement = Math.max(0, retirementAge - currentAge);
+        const totalYearsAtRetirement = yearsOfService + yearsUntilRetirement;
+        const incomeGrowthRate = globalSettings.incomeGrowthRate / 100;
+        const finalMonthlySalary = monthlyIncome * Math.pow(1 + incomeGrowthRate, yearsUntilRetirement);
+        totalAmount = finalMonthlySalary * totalYearsAtRetirement;
+      } else if (!isDBType && data.retirementPensionBalance && data.laborIncome) {
+        const monthlyIncome = data.laborIncomeFrequency === 'yearly' ? data.laborIncome / 12 : data.laborIncome;
+        const monthlyContribution = monthlyIncome * 0.0833;
+        const yearsUntilRetirement = Math.max(0, retirementAge - currentAge);
+        let futureValue = data.retirementPensionBalance;
+        for (let i = 0; i < yearsUntilRetirement; i++) {
+          futureValue = (futureValue + monthlyContribution * 12) * (1 + investmentReturnRate);
+        }
+        totalAmount = futureValue;
+      }
+
+      if (totalAmount > 0) {
+        // 퇴직 시점부터 수령 시작까지 추가 운용
+        const yearsUntilReceive = Math.max(0, startAge - retirementAge);
+        const valueAtReceiveStart = totalAmount * Math.pow(1 + investmentReturnRate, yearsUntilReceive);
+
+        // PMT 계산
+        const r = investmentReturnRate;
+        const n = receivingYears;
+        const factor = Math.pow(1 + r, n);
+        const annualPMT = r === 0 ? valueAtReceiveStart / n : valueAtReceiveStart * (r * factor) / (factor - 1);
+        const monthlyPMT = Math.round(annualPMT / 12);
+
+        if (monthlyPMT > 0) {
+          items.push({
+            id: 'pension-retirement',
+            type: 'pension' as const,
+            label: '퇴직연금',
+            amount: monthlyPMT,
+            frequency: 'monthly' as const,
+            owner: 'self' as const,
+            startYear,
+            startMonth: 1,
+            endType: 'custom' as const,
+            endYear: startYear + receivingYears - 1,
+            endMonth: 12,
+            growthRate: 0,
+            rateCategory: 'fixed' as const,
+            displayGrowthRate: 0,
+            isSystem: true,
+          });
+        }
+      }
+    }
+
+    return items;
+  }, [data, currentAge, currentYear, globalSettings]);
+
+  // 연금 항목 = 사용자 입력 + 자동 계산
+  const pensionItems = [...userPensionItems, ...computedPensionItems];
 
   // 월 소득으로 변환 (frequency 고려)
   const toMonthlyAmount = (item: IncomeItem): number => {
@@ -349,7 +535,10 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
       let rentalTotal = 0;
       let pensionTotal = 0;
 
-      displayItems.forEach((item) => {
+      // 모든 소득 항목 (사용자 입력 + 시스템 생성 연금)
+      const allItems = [...displayItems, ...computedPensionItems];
+
+      allItems.forEach((item) => {
         // 일시적 소득: 해당 연도/월에만 한 번 추가
         if (item.type === "onetime") {
           if (year === item.startYear) {
@@ -397,7 +586,7 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
       rentalData,
       pensionData,
     };
-  }, [displayItems, currentYear, currentAge, spouseCurrentAge, selfRetirementYear, spouseRetirementYear]);
+  }, [displayItems, computedPensionItems, currentYear, currentAge, spouseCurrentAge, selfRetirementYear, spouseRetirementYear]);
 
   // 차트에 표시할 데이터셋 (값이 있는 것만)
   const chartDatasets = useMemo(() => {
@@ -1187,30 +1376,37 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
           return (
             <div key={item.id} className={styles.incomeItem}>
               <div className={styles.itemMain}>
-                <span className={styles.itemLabel}>{item.label}</span>
+                <span className={styles.itemLabel}>
+                  {item.label}
+                  {item.isSystem && <span className={styles.systemBadge}>연금탭</span>}
+                </span>
                 <span className={styles.itemAmount}>
                   {formatAmountWithFreq(item)}
                 </span>
                 <span className={styles.itemMeta}>
                   {item.type === "onetime"
                     ? formatPeriod(item)
+                    : item.isSystem
+                    ? formatPeriod(item)
                     : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isPresetMode ? " (시나리오)" : ""}`}
                 </span>
               </div>
-              <div className={styles.itemActions}>
-                <button
-                  className={styles.editBtn}
-                  onClick={() => startEdit(item)}
-                >
-                  <Pencil size={16} />
-                </button>
-                <button
-                  className={styles.deleteBtn}
-                  onClick={() => handleDelete(item.id)}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
+              {!item.isSystem && (
+                <div className={styles.itemActions}>
+                  <button
+                    className={styles.editBtn}
+                    onClick={() => startEdit(item)}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}

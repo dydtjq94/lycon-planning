@@ -623,6 +623,71 @@
   max-width: 400px;
 }
 
+/* 간소화된 금융자산 입력 */
+.simpleAssetInputs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.simpleAssetRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.simpleAssetLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  min-width: 70px;
+}
+
+.simpleAssetInput {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.simpleAssetAmount {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  margin-left: 8px;
+}
+
+.assetHint {
+  font-size: 14px;
+  color: #86868b;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.numberInputMedium {
+  width: 120px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 2px solid #d2d2d7;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+  text-align: right;
+  padding: 4px 0;
+  transition: border-color 0.2s;
+}
+
+.numberInputMedium:focus {
+  border-bottom-color: #007aff;
+}
+
+.numberInputMedium::-webkit-outer-spin-button,
+.numberInputMedium::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .assetList {
   display: flex;
   flex-direction: column;

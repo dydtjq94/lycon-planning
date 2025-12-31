@@ -898,183 +898,80 @@ function renderInputForRow(
       );
 
     case "asset":
-      // 추가된 자산 타입들 (값이 있거나 0으로 설정된 것들)
-      const addedAssets = {
-        checking: data.cashCheckingAccount !== null,
-        savings: data.cashSavingsAccount !== null,
-        domestic: data.investDomesticStock !== null,
-        foreign: data.investForeignStock !== null,
-        fund: data.investFund !== null,
-        other: data.investOther !== null,
-      };
-      const hasAnyAsset = Object.values(addedAssets).some((v) => v);
+      // 간소화된 금융자산 입력: 입출금통장 + 투자자산 총액
       const hasNoAssetSelected = data.hasNoAsset === true;
-
-      // 자산 타입별 설정
-      const assetTypes = [
-        {
-          key: "checking",
-          label: "입출금통장",
-          category: "cash",
-          dataKey: "cashCheckingAccount" as const,
-        },
-        {
-          key: "savings",
-          label: "정기예금/적금",
-          category: "cash",
-          dataKey: "cashSavingsAccount" as const,
-        },
-        {
-          key: "domestic",
-          label: "국내주식/ETF",
-          category: "invest",
-          dataKey: "investDomesticStock" as const,
-        },
-        {
-          key: "foreign",
-          label: "해외주식/ETF",
-          category: "invest",
-          dataKey: "investForeignStock" as const,
-        },
-        {
-          key: "fund",
-          label: "펀드/채권",
-          category: "invest",
-          dataKey: "investFund" as const,
-        },
-        {
-          key: "other",
-          label: "기타 투자자산",
-          category: "invest",
-          dataKey: "investOther" as const,
-        },
-      ];
+      const checkingValue = data.cashCheckingAccount || 0;
+      const investValue = data.investDomesticStock || 0; // 투자자산 총액으로 사용
+      const hasAnyAsset = data.cashCheckingAccount !== null || data.investDomesticStock !== null;
 
       return (
         <div className={styles.assetSection}>
-          {/* 추가된 자산 목록 */}
-          {hasAnyAsset && !hasNoAssetSelected && (
-            <div className={styles.assetList}>
-              {assetTypes
-                .filter(
-                  (type) => addedAssets[type.key as keyof typeof addedAssets]
-                )
-                .map((type) => {
-                  const rawValue = data[type.dataKey];
-                  const numValue = rawValue || 0;
-                  const displayValue =
-                    rawValue !== null && rawValue !== 0 ? rawValue : "";
-                  return (
-                    <div key={type.key} className={styles.assetItemWrapper}>
-                      <div className={styles.assetItem}>
-                        <span className={styles.assetItemLabel}>
-                          {type.label}
-                        </span>
-                        <div className={styles.inputWithAmount}>
-                          <div className={styles.assetItemInput}>
-                            <NumberInput
-                              className={styles.numberInputSmall}
-                              value={displayValue}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                onUpdateData({
-                                  [type.dataKey]:
-                                    value === "" ? 0 : parseFloat(value) || 0,
-                                });
-                              }}
-                              placeholder="0"
-                            />
-                            <span className={styles.unit}>만원</span>
-                          </div>
-                          {numValue > 0 && (
-                            <div className={styles.amountDisplay}>
-                              {formatMoney(numValue)}
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          className={styles.assetItemDelete}
-                          onClick={() => onUpdateData({ [type.dataKey]: null })}
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+          {!hasNoAssetSelected && (
+            <div className={styles.simpleAssetInputs}>
+              {/* 입출금통장 */}
+              <div className={styles.simpleAssetRow}>
+                <span className={styles.simpleAssetLabel}>입출금통장</span>
+                <div className={styles.simpleAssetInput}>
+                  <NumberInput
+                    className={styles.numberInputMedium}
+                    value={data.cashCheckingAccount !== null ? data.cashCheckingAccount || "" : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateData({
+                        cashCheckingAccount: value === "" ? null : parseFloat(value) || 0,
+                        hasNoAsset: null,
+                      });
+                    }}
+                    placeholder="0"
+                  />
+                  <span className={styles.unit}>만원</span>
+                </div>
+                {checkingValue > 0 && (
+                  <span className={styles.simpleAssetAmount}>{formatMoney(checkingValue)}</span>
+                )}
+              </div>
+
+              {/* 투자자산 총액 */}
+              <div className={styles.simpleAssetRow}>
+                <span className={styles.simpleAssetLabel}>투자자산</span>
+                <div className={styles.simpleAssetInput}>
+                  <NumberInput
+                    className={styles.numberInputMedium}
+                    value={data.investDomesticStock !== null ? data.investDomesticStock || "" : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateData({
+                        investDomesticStock: value === "" ? null : parseFloat(value) || 0,
+                        hasNoAsset: null,
+                      });
+                    }}
+                    placeholder="0"
+                  />
+                  <span className={styles.unit}>만원</span>
+                </div>
+                {investValue > 0 && (
+                  <span className={styles.simpleAssetAmount}>{formatMoney(investValue)}</span>
+                )}
+              </div>
+
+              <p className={styles.assetHint}>
+                주식, ETF, 펀드 등 투자자산의 총 평가액을 입력해주세요.
+                대시보드에서 계좌별로 상세 관리할 수 있어요.
+              </p>
             </div>
           )}
 
-          {/* 자산 추가 버튼들 - 항상 표시 */}
-          <div className={styles.assetAddSection}>
-            {/* 현금성 자산 */}
-            {assetTypes.filter(
-              (t) =>
-                t.category === "cash" &&
-                !addedAssets[t.key as keyof typeof addedAssets]
-            ).length > 0 && (
-              <div className={styles.assetAddGroup}>
-                <span className={styles.assetAddGroupLabel}>현금성 자산</span>
-                <div className={styles.assetAddButtons}>
-                  {assetTypes
-                    .filter(
-                      (t) =>
-                        t.category === "cash" &&
-                        !addedAssets[t.key as keyof typeof addedAssets]
-                    )
-                    .map((type) => (
-                      <button
-                        key={type.key}
-                        className={styles.assetAddButton}
-                        onClick={() =>
-                          onUpdateData({ [type.dataKey]: 0, hasNoAsset: null })
-                        }
-                      >
-                        + {type.label}
-                      </button>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* 투자 자산 */}
-            {assetTypes.filter(
-              (t) =>
-                t.category === "invest" &&
-                !addedAssets[t.key as keyof typeof addedAssets]
-            ).length > 0 && (
-              <div className={styles.assetAddGroup}>
-                <span className={styles.assetAddGroupLabel}>투자 자산</span>
-                <div className={styles.assetAddButtons}>
-                  {assetTypes
-                    .filter(
-                      (t) =>
-                        t.category === "invest" &&
-                        !addedAssets[t.key as keyof typeof addedAssets]
-                    )
-                    .map((type) => (
-                      <button
-                        key={type.key}
-                        className={styles.assetAddButton}
-                        onClick={() =>
-                          onUpdateData({ [type.dataKey]: 0, hasNoAsset: null })
-                        }
-                      >
-                        + {type.label}
-                      </button>
-                    ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 하단 버튼 - 금융자산 없음만 */}
+          {/* 하단 버튼 - 금융자산 없음 */}
           <div className={styles.debtButtons}>
             <button
               className={`${styles.noDebtButton} ${
                 hasNoAssetSelected ? styles.noDebtButtonActive : ""
               }`}
-              onClick={() => onUpdateData({ hasNoAsset: true })}
+              onClick={() => onUpdateData({
+                hasNoAsset: true,
+                cashCheckingAccount: null,
+                investDomesticStock: null,
+              })}
             >
               금융자산 없음
             </button>

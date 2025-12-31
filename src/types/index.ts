@@ -98,8 +98,10 @@ export interface DashboardIncomeItem {
   endType: DashboardEndType
   endYear: number | null // custom일 때만 사용
   endMonth: number | null // custom일 때만 사용
+  endAge?: number // age 종료 조건일 때 사용
   growthRate: number // % (연간) - 커스텀 모드에서 사용하는 기본값
   rateCategory: RateCategory // 상승률 카테고리 (시나리오 모드에 따라 적용)
+  isSystem?: boolean // 시스템에서 자동 생성된 항목 (연금 탭 등)
 }
 
 // 지출 항목 타입 (대시보드용)
@@ -120,6 +122,32 @@ export interface DashboardExpenseItem {
   endMonth: number | null // custom일 때만 사용
   growthRate: number // % (연간) - 커스텀 모드에서 사용하는 기본값
   rateCategory: RateCategory // 상승률 카테고리 (시나리오 모드에 따라 적용)
+}
+
+// 저축 계좌 타입
+export type SavingsAccountType = 'checking' | 'savings' | 'deposit'
+
+// 저축 계좌
+export interface SavingsAccount {
+  id: string
+  type: SavingsAccountType
+  name: string           // 계좌명 (예: 신한은행 주거래, 카카오뱅크 등)
+  balance: number        // 잔액 (만원)
+  interestRate?: number  // 금리 (%)
+  maturityYear?: number  // 만기 연도 (정기예금/적금)
+  maturityMonth?: number // 만기 월 (정기예금/적금)
+}
+
+// 투자 계좌 타입
+export type InvestmentAccountType = 'domestic_stock' | 'foreign_stock' | 'fund' | 'bond' | 'crypto' | 'other'
+
+// 투자 계좌
+export interface InvestmentAccount {
+  id: string
+  type: InvestmentAccountType
+  name: string             // 계좌명 (예: 삼성증권 국내, 키움 해외 등)
+  balance: number          // 평가액 (만원)
+  expectedReturn?: number  // 예상 수익률 (%)
 }
 
 // 온보딩 데이터
@@ -175,13 +203,19 @@ export interface OnboardingData {
   housingLoanMaturity: string | null  // 대출 만기 (YYYY-MM)
   housingLoanType: '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환' | null  // 상환방식
 
-  // 금융자산 - 현금성 자산
+  // 금융자산 - 저축 계좌 (복수)
+  savingsAccounts: SavingsAccount[]
+
+  // 금융자산 - 투자 계좌 (복수)
+  investmentAccounts: InvestmentAccount[]
+
+  // 금융자산 - 현금성 자산 (deprecated - 하위 호환용)
   cashCheckingAccount: number | null      // 입출금통장
   cashCheckingRate: number | null         // 입출금통장 금리
   cashSavingsAccount: number | null       // 정기예금/적금
   cashSavingsRate: number | null          // 정기예금/적금 금리
 
-  // 금융자산 - 투자자산
+  // 금융자산 - 투자자산 (deprecated - 하위 호환용)
   investDomesticStock: number | null      // 국내주식 및 ETF
   investDomesticRate: number | null       // 국내주식 수익률
   investForeignStock: number | null       // 해외주식 및 ETF
@@ -201,13 +235,28 @@ export interface OnboardingData {
   nationalPensionStartAge: number | null   // 국민연금 수령 시작 나이
   retirementPensionType: 'DB' | 'DC' | 'corporate_irp' | 'severance' | null  // 퇴직연금/퇴직금 유형
   retirementPensionBalance: number | null  // 퇴직연금 현재 잔액
+  retirementPensionReceiveType: 'lump_sum' | 'annuity' | null  // 수령 방식: 일시금 / 연금
+  retirementPensionStartAge: number | null  // 연금 수령 시작 나이
+  retirementPensionReceivingYears: number | null  // 연금 수령 기간
   personalPensionMonthly: number | null    // 개인연금 월 납입액 (deprecated)
   personalPensionBalance: number | null    // 개인연금 현재 잔액 (deprecated)
   irpBalance: number | null                // IRP 현재 잔액
+  irpStartAge: number | null               // IRP 수령 시작 나이
+  irpReceivingYears: number | null         // IRP 수령 기간 (년)
   pensionSavingsBalance: number | null     // 연금저축 현재 잔액
+  pensionSavingsStartAge: number | null    // 연금저축 수령 시작 나이
+  pensionSavingsReceivingYears: number | null  // 연금저축 수령 기간 (년)
   isaBalance: number | null                // ISA 현재 잔액
+  isaMaturityYear: number | null           // ISA 만기 연도
+  isaMaturityMonth: number | null          // ISA 만기 월
+  isaMaturityStrategy: 'pension_savings' | 'irp' | 'cash' | null  // ISA 만기 후 전략
+  personalPensionWithdrawYears: number | null  // 개인연금 수령 기간 (년) - deprecated
   otherPensionMonthly: number | null       // 기타연금 예상 월 수령액
   hasNoPension: boolean | null             // null = 아직 선택 안함, true = 연금 없음
+  yearsOfService: number | null            // 현재 근속연수
+
+  // 현금 흐름 분배 규칙
+  cashFlowRules: CashFlowRule[]
 
   // 기존 배열 (추후 상세 입력용, 현재 미사용)
   incomes: AssetInput[]
@@ -572,6 +621,38 @@ export interface SimulationInput {
   is_default?: boolean
   sort_order?: number
 }
+
+// ============================================
+// 현금 흐름 분배 규칙
+// ============================================
+
+export type CashFlowAccountType =
+  | 'pension_savings'  // 연금저축
+  | 'irp'              // IRP
+  | 'isa'              // ISA
+  | 'savings'          // 정기예금/적금
+  | 'investment'       // 투자 (주식/펀드 등)
+  | 'checking'         // 입출금통장 (기본값, 나머지)
+
+export interface CashFlowRule {
+  id: string
+  accountType: CashFlowAccountType
+  name: string                     // 표시 이름
+  priority: number                 // 우선순위 (1이 가장 높음)
+  allocationType: 'fixed' | 'percentage' | 'remainder'
+  monthlyAmount?: number           // 월 납입액 (fixed일 때, 만원 단위)
+  percentage?: number              // 비율 (percentage일 때)
+  annualLimit?: number             // 연간 한도 (만원 단위)
+  isEnabled: boolean
+}
+
+export const DEFAULT_CASH_FLOW_RULES: CashFlowRule[] = [
+  { id: '1', accountType: 'pension_savings', name: '연금저축', priority: 1, allocationType: 'fixed', monthlyAmount: 50, annualLimit: 600, isEnabled: true },
+  { id: '2', accountType: 'irp', name: 'IRP', priority: 2, allocationType: 'fixed', monthlyAmount: 25, annualLimit: 300, isEnabled: true },
+  { id: '3', accountType: 'isa', name: 'ISA', priority: 3, allocationType: 'fixed', monthlyAmount: 167, annualLimit: 2000, isEnabled: true },
+  { id: '4', accountType: 'savings', name: '비상금', priority: 4, allocationType: 'fixed', monthlyAmount: 50, isEnabled: true },
+  { id: '5', accountType: 'checking', name: '입출금통장', priority: 99, allocationType: 'remainder', isEnabled: true },
+]
 
 // ============================================
 // 월별 시뮬레이션 계산용 타입

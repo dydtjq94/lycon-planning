@@ -1,0 +1,382 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 600px;
+  max-width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e8e8ed;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: #86868b;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.closeBtn:hover {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* 잉여금 카드 */
+.surplusCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.surplusLabel {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.surplusValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: #007aff;
+  letter-spacing: -1px;
+}
+
+.surplusDesc {
+  font-size: 12px;
+  color: #a1a1a6;
+}
+
+/* 섹션 */
+.rulesSection {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 4px 0;
+}
+
+.sectionDesc {
+  font-size: 13px;
+  color: #86868b;
+  margin: 0 0 16px 0;
+}
+
+/* 규칙 리스트 */
+.rulesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ruleItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f5f5f7;
+  border-radius: 8px;
+  cursor: grab;
+}
+
+.ruleItem:active {
+  cursor: grabbing;
+}
+
+.ruleItem.dragging {
+  opacity: 0.5;
+  background: #e8e8ed;
+}
+
+.ruleItem.disabled {
+  opacity: 0.5;
+}
+
+.ruleItem.remainderRule {
+  background: #fff;
+  border: 1px dashed #d2d2d7;
+  cursor: default;
+}
+
+.ruleHandle {
+  color: #c7c7cc;
+  cursor: grab;
+}
+
+.ruleHandle:active {
+  cursor: grabbing;
+}
+
+.rulePriority {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: #007aff;
+  border-radius: 6px;
+}
+
+.ruleDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ruleInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ruleName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.ruleLimit {
+  font-size: 11px;
+  color: #86868b;
+}
+
+.ruleAmount {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.amountInput {
+  width: 60px;
+  padding: 6px 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  text-align: right;
+  border: 1px solid #d2d2d7;
+  border-radius: 6px;
+  outline: none;
+  background: #fff;
+}
+
+.amountInput:focus {
+  border-color: #007aff;
+}
+
+.amountInput:disabled {
+  background: #e8e8ed;
+  color: #86868b;
+}
+
+.amountInput::-webkit-outer-spin-button,
+.amountInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.amountUnit {
+  font-size: 12px;
+  color: #86868b;
+  white-space: nowrap;
+}
+
+.remainderText {
+  font-size: 13px;
+  color: #86868b;
+  font-style: italic;
+}
+
+.ruleAllocation {
+  width: 80px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.ruleAllocation .insufficient {
+  color: #ff9500;
+}
+
+.toggleBtn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #86868b;
+  background: #e8e8ed;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: 48px;
+}
+
+.toggleBtn:hover {
+  background: #d2d2d7;
+}
+
+/* 요약 섹션 */
+.summarySection {
+  padding-top: 16px;
+  border-top: 1px solid #e8e8ed;
+}
+
+.summaryBar {
+  display: flex;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: #e8e8ed;
+}
+
+.summarySegment {
+  height: 100%;
+  min-width: 2px;
+}
+
+.summaryLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legendName {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.legendValue {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+/* 푸터 */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid #e8e8ed;
+}
+
+.cancelBtn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #86868b;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.cancelBtn:hover {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+.saveBtn {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.saveBtn:hover {
+  background: #0066d6;
+}
+
+/* 반응형 */
+@media (max-width: 600px) {
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+  }
+
+  .ruleItem {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ruleAmount {
+    margin-left: auto;
+  }
+
+  .ruleAllocation {
+    width: 100%;
+    text-align: left;
+    padding-left: 48px;
+  }
+}

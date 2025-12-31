@@ -81,7 +81,10 @@ const initialData: OnboardingData = {
   housingLoanRate: null,
   housingLoanMaturity: null,
   housingLoanType: null,
-  // 금융자산 - 현금성 자산
+  // 금융자산 - 계좌
+  savingsAccounts: [],
+  investmentAccounts: [],
+  // 금융자산 - 현금성 자산 (deprecated)
   cashCheckingAccount: null,
   cashCheckingRate: null,
   cashSavingsAccount: null,
@@ -107,13 +110,26 @@ const initialData: OnboardingData = {
   nationalPensionStartAge: null,
   retirementPensionType: 'DC',
   retirementPensionBalance: null,
+  retirementPensionReceiveType: null,
+  retirementPensionStartAge: null,
+  retirementPensionReceivingYears: null,
   personalPensionMonthly: null,
   personalPensionBalance: null,
   irpBalance: null,
+  irpStartAge: null,
+  irpReceivingYears: null,
   pensionSavingsBalance: null,
+  pensionSavingsStartAge: null,
+  pensionSavingsReceivingYears: null,
   isaBalance: null,
+  isaMaturityYear: null,
+  isaMaturityMonth: null,
+  isaMaturityStrategy: null,
+  personalPensionWithdrawYears: null,
   otherPensionMonthly: null,
   hasNoPension: null,
+  yearsOfService: null,
+  cashFlowRules: [],
   pensions: [],
 };
 
@@ -170,17 +186,28 @@ const sampleData: OnboardingData = {
   housingLoanRate: 3.5, // 금리 3.5%
   housingLoanMaturity: "2045-06", // 만기 2045년 6월
   housingLoanType: "원리금균등상환",
-  // 금융자산 - 현금성 자산 샘플
-  cashCheckingAccount: 30000000, // 입출금통장 3천만원
-  cashCheckingRate: 0.1, // 0.1%
-  cashSavingsAccount: 100000000, // 정기예금 1억
-  cashSavingsRate: 3.5, // 3.5%
-  // 금융자산 - 투자자산 샘플
-  investDomesticStock: 50000000, // 국내주식 5천만원
+  // 금융자산 - 저축 계좌 샘플
+  savingsAccounts: [
+    { id: 'sav-1', type: 'checking', name: '카카오뱅크 주거래', balance: 3000, interestRate: 0.1 },
+    { id: 'sav-2', type: 'deposit', name: '신한은행 정기예금', balance: 5000, interestRate: 3.5, maturityYear: 2026, maturityMonth: 6 },
+    { id: 'sav-3', type: 'savings', name: '토스 적금', balance: 2000, interestRate: 4.0, maturityYear: 2025, maturityMonth: 12 },
+  ],
+  // 금융자산 - 투자 계좌 샘플
+  investmentAccounts: [
+    { id: 'inv-1', type: 'domestic_stock', name: '삼성증권 국내', balance: 5000, expectedReturn: 7 },
+    { id: 'inv-2', type: 'foreign_stock', name: '키움 해외주식', balance: 3000, expectedReturn: 10 },
+    { id: 'inv-3', type: 'fund', name: 'KB 펀드', balance: 2000, expectedReturn: 5 },
+  ],
+  // 금융자산 - deprecated (하위 호환)
+  cashCheckingAccount: null,
+  cashCheckingRate: null,
+  cashSavingsAccount: null,
+  cashSavingsRate: null,
+  investDomesticStock: null,
   investDomesticRate: null,
-  investForeignStock: 30000000, // 해외주식 3천만원
+  investForeignStock: null,
   investForeignRate: null,
-  investFund: 20000000, // 펀드 2천만원
+  investFund: null,
   investFundRate: null,
   investOther: null,
   investOtherRate: null,
@@ -205,13 +232,26 @@ const sampleData: OnboardingData = {
   nationalPensionStartAge: 65, // 65세부터 수령
   retirementPensionType: "DC", // DC형
   retirementPensionBalance: 80000000, // 현재 8천만원
+  retirementPensionReceiveType: "annuity", // 연금 수령
+  retirementPensionStartAge: 55, // 55세부터
+  retirementPensionReceivingYears: 10, // 10년간
   personalPensionMonthly: null,
   personalPensionBalance: null,
   irpBalance: 20000000, // IRP 2천만원
+  irpStartAge: 55, // 55세부터 수령
+  irpReceivingYears: 20, // 20년간 수령
   pensionSavingsBalance: 15000000, // 연금저축 1500만원
+  pensionSavingsStartAge: 55, // 55세부터 수령
+  pensionSavingsReceivingYears: 20, // 20년간 수령
   isaBalance: 10000000, // ISA 1천만원
+  isaMaturityYear: 2027, // 2027년 만기
+  isaMaturityMonth: 12, // 12월
+  isaMaturityStrategy: 'pension_savings', // 연금저축 전환
+  personalPensionWithdrawYears: 20, // 20년간 수령 (deprecated)
   otherPensionMonthly: null, // 기타연금 없음
   hasNoPension: false,
+  yearsOfService: 10, // 10년 근속
+  cashFlowRules: [], // 기본값 사용
   pensions: [],
 };
 

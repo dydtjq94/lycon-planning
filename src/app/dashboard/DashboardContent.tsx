@@ -3,8 +3,89 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Users, TrendingUp, Wallet, Settings } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { OnboardingData, SimulationSettings, GlobalSettings } from '@/types'
+import type { OnboardingData, SimulationSettings, GlobalSettings, SavingsAccount, InvestmentAccount } from '@/types'
 import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
+
+// 온보딩 데이터를 새 계좌 구조로 마이그레이션
+function migrateToAccountStructure(data: OnboardingData): OnboardingData {
+  // 이미 마이그레이션되었으면 스킵
+  if (data.savingsAccounts?.length > 0 || data.investmentAccounts?.length > 0) {
+    return data
+  }
+
+  const savingsAccounts: SavingsAccount[] = []
+  const investmentAccounts: InvestmentAccount[] = []
+
+  // 입출금통장 마이그레이션
+  if (data.cashCheckingAccount && data.cashCheckingAccount > 0) {
+    savingsAccounts.push({
+      id: 'migrated-checking',
+      type: 'checking',
+      name: '입출금통장',
+      balance: data.cashCheckingAccount,
+      interestRate: data.cashCheckingRate || undefined,
+    })
+  }
+
+  // 정기예금/적금 마이그레이션
+  if (data.cashSavingsAccount && data.cashSavingsAccount > 0) {
+    savingsAccounts.push({
+      id: 'migrated-savings',
+      type: 'deposit',
+      name: '정기예금/적금',
+      balance: data.cashSavingsAccount,
+      interestRate: data.cashSavingsRate || undefined,
+    })
+  }
+
+  // 투자자산 마이그레이션 (여러 필드를 하나의 계좌로 합침)
+  if (data.investDomesticStock && data.investDomesticStock > 0) {
+    investmentAccounts.push({
+      id: 'migrated-domestic',
+      type: 'domestic_stock',
+      name: '국내주식/ETF',
+      balance: data.investDomesticStock,
+      expectedReturn: data.investDomesticRate || undefined,
+    })
+  }
+
+  if (data.investForeignStock && data.investForeignStock > 0) {
+    investmentAccounts.push({
+      id: 'migrated-foreign',
+      type: 'foreign_stock',
+      name: '해외주식/ETF',
+      balance: data.investForeignStock,
+      expectedReturn: data.investForeignRate || undefined,
+    })
+  }
+
+  if (data.investFund && data.investFund > 0) {
+    investmentAccounts.push({
+      id: 'migrated-fund',
+      type: 'fund',
+      name: '펀드/채권',
+      balance: data.investFund,
+      expectedReturn: data.investFundRate || undefined,
+    })
+  }
+
+  if (data.investOther && data.investOther > 0) {
+    investmentAccounts.push({
+      id: 'migrated-other',
+      type: 'other',
+      name: '기타 투자자산',
+      balance: data.investOther,
+      expectedReturn: data.investOtherRate || undefined,
+    })
+  }
+
+  // 마이그레이션할 데이터가 없으면 빈 배열로 초기화
+  return {
+    ...data,
+    savingsAccounts: savingsAccounts.length > 0 ? savingsAccounts : data.savingsAccounts || [],
+    investmentAccounts: investmentAccounts.length > 0 ? investmentAccounts : data.investmentAccounts || [],
+  }
+}
 import { Sidebar } from './components'
 import {
   OverviewTab,
@@ -23,6 +104,7 @@ import { ProgressSection } from './components/sections/ProgressSection'
 import { PlansSection } from './components/sections/PlansSection'
 import { ScenarioModal } from './components/modals/ScenarioModal'
 import { FamilyModal } from './components/modals/FamilyModal'
+import { CashFlowModal } from './components/modals/CashFlowModal'
 import styles from './dashboard.module.css'
 
 type ModalType = 'family' | 'scenario' | 'cashflow' | 'settings' | null
@@ -55,7 +137,8 @@ const validSections = Object.keys(sectionTitles)
 
 export function DashboardContent({ data: initialData, initialSettings }: DashboardContentProps) {
   const [currentSection, setCurrentSection] = useState<string>('overview')
-  const [data, setData] = useState<OnboardingData>(initialData)
+  // 초기 데이터 로드 시 마이그레이션 적용
+  const [data, setData] = useState<OnboardingData>(() => migrateToAccountStructure(initialData))
   const [settings, setSettings] = useState<SimulationSettings>(initialSettings)
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false)
   const [activeModal, setActiveModal] = useState<ModalType>(null)
@@ -133,7 +216,7 @@ export function DashboardContent({ data: initialData, initialSettings }: Dashboa
       case 'realEstate':
         return <RealEstateTab data={data} onUpdateData={handleUpdateData} />
       case 'pension':
-        return <PensionTab data={data} onUpdateData={handleUpdateData} />
+        return <PensionTab data={data} onUpdateData={handleUpdateData} globalSettings={globalSettings} />
       // Other sections
       case 'progress':
         return <ProgressSection data={data} settings={settings} />
@@ -209,6 +292,13 @@ export function DashboardContent({ data: initialData, initialSettings }: Dashboa
       )}
       {activeModal === 'family' && (
         <FamilyModal
+          data={data}
+          onUpdate={handleUpdateData}
+          onClose={() => setActiveModal(null)}
+        />
+      )}
+      {activeModal === 'cashflow' && (
+        <CashFlowModal
           data={data}
           onUpdate={handleUpdateData}
           onClose={() => setActiveModal(null)}
