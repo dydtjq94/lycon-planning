@@ -84,6 +84,10 @@ const initialData: OnboardingData = {
   // 금융자산 - 계좌
   savingsAccounts: [],
   investmentAccounts: [],
+  // 실물 자산
+  physicalAssets: [],
+  // 추가 부동산 (투자용, 임대용, 토지)
+  realEstateProperties: [],
   // 금융자산 - 현금성 자산 (deprecated)
   cashCheckingAccount: null,
   cashCheckingRate: null,
@@ -105,7 +109,7 @@ const initialData: OnboardingData = {
   assets: [],
   debts: [],
   hasNoDebt: null,
-  // 연금
+  // 연금 - 본인
   nationalPension: null,
   nationalPensionStartAge: null,
   retirementPensionType: 'DC',
@@ -116,19 +120,44 @@ const initialData: OnboardingData = {
   personalPensionMonthly: null,
   personalPensionBalance: null,
   irpBalance: null,
+  irpMonthlyContribution: null,
   irpStartAge: null,
   irpReceivingYears: null,
   pensionSavingsBalance: null,
+  pensionSavingsMonthlyContribution: null,
   pensionSavingsStartAge: null,
   pensionSavingsReceivingYears: null,
   isaBalance: null,
+  isaMonthlyContribution: null,
   isaMaturityYear: null,
   isaMaturityMonth: null,
   isaMaturityStrategy: null,
+  spouseIsaBalance: null,
+  spouseIsaMonthlyContribution: null,
+  spouseIsaMaturityYear: null,
+  spouseIsaMaturityMonth: null,
+  spouseIsaMaturityStrategy: null,
   personalPensionWithdrawYears: null,
   otherPensionMonthly: null,
   hasNoPension: null,
   yearsOfService: null,
+  // 연금 - 배우자
+  spouseNationalPension: null,
+  spouseNationalPensionStartAge: null,
+  spouseRetirementPensionType: 'DC',
+  spouseRetirementPensionBalance: null,
+  spouseRetirementPensionReceiveType: null,
+  spouseRetirementPensionStartAge: null,
+  spouseRetirementPensionReceivingYears: null,
+  spouseYearsOfService: null,
+  spousePensionSavingsBalance: null,
+  spousePensionSavingsMonthlyContribution: null,
+  spousePensionSavingsStartAge: null,
+  spousePensionSavingsReceivingYears: null,
+  spouseIrpBalance: null,
+  spouseIrpMonthlyContribution: null,
+  spouseIrpStartAge: null,
+  spouseIrpReceivingYears: null,
   cashFlowRules: [],
   pensions: [],
 };
@@ -198,6 +227,29 @@ const sampleData: OnboardingData = {
     { id: 'inv-2', type: 'foreign_stock', name: '키움 해외주식', balance: 3000, expectedReturn: 10 },
     { id: 'inv-3', type: 'fund', name: 'KB 펀드', balance: 2000, expectedReturn: 5 },
   ],
+  // 실물 자산 샘플
+  physicalAssets: [
+    { id: 'asset-1', type: 'car', name: 'BMW 520d', purchaseValue: 6000, purchaseYear: 2021, purchaseMonth: 6, financingType: 'none' },
+  ],
+  // 추가 부동산 샘플 (투자용)
+  realEstateProperties: [
+    {
+      id: 'realestate-1',
+      usageType: 'rental',
+      name: '강남 오피스텔',
+      marketValue: 35000,  // 3.5억
+      purchaseYear: 2020,
+      purchaseMonth: 3,
+      hasRentalIncome: true,
+      monthlyRent: 120,    // 월 120만원
+      deposit: 5000,       // 보증금 5000만원
+      hasLoan: true,
+      loanAmount: 20000,   // 2억 대출
+      loanRate: 4.5,
+      loanMaturity: '2040-03',
+      loanRepaymentType: '원리금균등상환',
+    },
+  ],
   // 금융자산 - deprecated (하위 호환)
   cashCheckingAccount: null,
   cashCheckingRate: null,
@@ -215,6 +267,7 @@ const sampleData: OnboardingData = {
   // 부채 샘플
   debts: [
     {
+      id: "debt-sample-1",
       name: "신용대출",
       amount: 50000000, // 5천만원
       rate: 5.5,
@@ -227,30 +280,55 @@ const sampleData: OnboardingData = {
   expenses: [],
   realEstates: [],
   assets: [],
-  // 연금 샘플
+  // 연금 샘플 - 본인
   nationalPension: 1800000, // 예상 월 180만원
   nationalPensionStartAge: 65, // 65세부터 수령
   retirementPensionType: "DC", // DC형
   retirementPensionBalance: 80000000, // 현재 8천만원
   retirementPensionReceiveType: "annuity", // 연금 수령
-  retirementPensionStartAge: 55, // 55세부터
+  retirementPensionStartAge: 56, // 56세부터
   retirementPensionReceivingYears: 10, // 10년간
   personalPensionMonthly: null,
   personalPensionBalance: null,
   irpBalance: 20000000, // IRP 2천만원
-  irpStartAge: 55, // 55세부터 수령
+  irpMonthlyContribution: 25, // 월 25만원 납입
+  irpStartAge: 56, // 56세부터 수령
   irpReceivingYears: 20, // 20년간 수령
   pensionSavingsBalance: 15000000, // 연금저축 1500만원
-  pensionSavingsStartAge: 55, // 55세부터 수령
+  pensionSavingsMonthlyContribution: 50, // 월 50만원 납입
+  pensionSavingsStartAge: 56, // 56세부터 수령
   pensionSavingsReceivingYears: 20, // 20년간 수령
   isaBalance: 10000000, // ISA 1천만원
+  isaMonthlyContribution: 167, // 월 167만원 납입
   isaMaturityYear: 2027, // 2027년 만기
   isaMaturityMonth: 12, // 12월
   isaMaturityStrategy: 'pension_savings', // 연금저축 전환
+  spouseIsaBalance: 800, // 배우자 ISA 800만원
+  spouseIsaMonthlyContribution: 50, // 배우자 ISA 월 50만원 납입
+  spouseIsaMaturityYear: 2028,
+  spouseIsaMaturityMonth: 6,
+  spouseIsaMaturityStrategy: 'irp', // IRP 전환
   personalPensionWithdrawYears: 20, // 20년간 수령 (deprecated)
   otherPensionMonthly: null, // 기타연금 없음
   hasNoPension: false,
   yearsOfService: 10, // 10년 근속
+  // 연금 샘플 - 배우자
+  spouseNationalPension: 1200000, // 배우자 예상 월 120만원
+  spouseNationalPensionStartAge: 65,
+  spouseRetirementPensionType: "DC",
+  spouseRetirementPensionBalance: 50000000, // 5천만원
+  spouseRetirementPensionReceiveType: "annuity",
+  spouseRetirementPensionStartAge: 56,
+  spouseRetirementPensionReceivingYears: 10,
+  spouseYearsOfService: 8,
+  spousePensionSavingsBalance: 10000000, // 1천만원
+  spousePensionSavingsMonthlyContribution: 30, // 월 30만원
+  spousePensionSavingsStartAge: 56,
+  spousePensionSavingsReceivingYears: 20,
+  spouseIrpBalance: 5000000, // 500만원
+  spouseIrpMonthlyContribution: 15, // 월 15만원
+  spouseIrpStartAge: 56,
+  spouseIrpReceivingYears: 20,
   cashFlowRules: [], // 기본값 사용
   pensions: [],
 };

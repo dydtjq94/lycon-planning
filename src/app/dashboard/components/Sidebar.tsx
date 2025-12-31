@@ -22,7 +22,7 @@ import {
   Calculator,
   Receipt,
   Pin,
-  PinOff,
+  Car,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import styles from './Sidebar.module.css'
@@ -45,8 +45,8 @@ const dashboardMenus = [
 const financeSubmenus = [
   // 자산 (Net Worth)
   { id: 'realEstate', label: '부동산', icon: Home },
-  { id: 'asset', label: '자산', icon: PiggyBank },
   { id: 'debt', label: '부채', icon: CreditCard },
+  { id: 'asset', label: '실물 자산', icon: Car },
   { id: 'divider-1', label: '', icon: null },
   // 현금흐름 (Cash Flow)
   { id: 'income', label: '소득', icon: Banknote },
@@ -99,7 +99,7 @@ export function Sidebar({ currentSection, onSectionChange, isExpanded, onExpandC
           onClick={handlePin}
           title={isPinned ? '고정 해제' : '사이드바 고정'}
         >
-          {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+          <Pin size={16} fill={isPinned ? "currentColor" : "none"} />
         </button>
       </div>
 

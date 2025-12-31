@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Trash2, TrendingUp, Pencil, X, Check } from "lucide-react";
+import { Plus, Trash2, TrendingUp, Pencil, X, Check, ExternalLink, Building2 } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -239,7 +239,7 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
   // 연금 탭에서 자동 생성되는 연금 소득 항목
   const computedPensionItems = useMemo((): DisplayItem[] => {
     const items: DisplayItem[] = [];
-    const lifeExpectancy = globalSettings.lifeExpectancy || 85;
+    const lifeExpectancy = globalSettings.lifeExpectancy || 100;
     const investmentReturnRate = globalSettings.investmentReturnRate / 100;
 
     // PMT 계산 함수
@@ -353,7 +353,7 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
     }
 
     // 4. 퇴직연금 (기본값: 연금 수령, 일시금 선택 시만 제외)
-    if (data.retirementPensionType && data.retirementPensionReceiveType !== 'lump_sum') {
+    if (data.retirementPensionType && data.retirementPensionType !== 'unknown' && data.retirementPensionReceiveType !== 'lump_sum') {
       const startAge = data.retirementPensionStartAge || 56;
       const receivingYears = data.retirementPensionReceivingYears || 10;
       const startYear = currentYear + (startAge - currentAge);
@@ -416,8 +416,164 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
       }
     }
 
+    // === 배우자 연금 ===
+    const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
+    if (hasWorkingSpouse && spouseCurrentAge !== null) {
+      const spouseLifeExpectancy = globalSettings.lifeExpectancy || 100;
+
+      // 5. 배우자 국민연금
+      if (data.spouseNationalPension && data.spouseNationalPension > 0) {
+        const startAge = data.spouseNationalPensionStartAge || 65;
+        const startYear = currentYear + (startAge - spouseCurrentAge);
+        const endYear = currentYear + (spouseLifeExpectancy - spouseCurrentAge);
+        items.push({
+          id: 'pension-spouse-national',
+          type: 'pension' as const,
+          label: '배우자 국민연금',
+          amount: data.spouseNationalPension,
+          frequency: 'monthly' as const,
+          owner: 'spouse' as const,
+          startYear,
+          startMonth: 1,
+          endType: 'custom' as const,
+          endAge: spouseLifeExpectancy,
+          endYear,
+          endMonth: 12,
+          growthRate: 0,
+          rateCategory: 'fixed' as const,
+          displayGrowthRate: 0,
+          isSystem: true,
+        });
+      }
+
+      // 6. 배우자 연금저축
+      if (data.spousePensionSavingsBalance && data.spousePensionSavingsBalance > 0) {
+        const startAge = data.spousePensionSavingsStartAge || 56;
+        const receivingYears = data.spousePensionSavingsReceivingYears || 20;
+        const startYear = currentYear + (startAge - spouseCurrentAge);
+        const yearsUntilStart = Math.max(0, startAge - spouseCurrentAge);
+
+        const futureValue = calculateFV(data.spousePensionSavingsBalance, 0, yearsUntilStart);
+        const annualPMT = calculatePMT(futureValue, receivingYears, investmentReturnRate);
+        const monthlyPMT = Math.round(annualPMT / 12);
+
+        if (monthlyPMT > 0) {
+          items.push({
+            id: 'pension-spouse-savings',
+            type: 'pension' as const,
+            label: '배우자 연금저축',
+            amount: monthlyPMT,
+            frequency: 'monthly' as const,
+            owner: 'spouse' as const,
+            startYear,
+            startMonth: 1,
+            endType: 'custom' as const,
+            endYear: startYear + receivingYears - 1,
+            endMonth: 12,
+            growthRate: 0,
+            rateCategory: 'fixed' as const,
+            displayGrowthRate: 0,
+            isSystem: true,
+          });
+        }
+      }
+
+      // 7. 배우자 IRP
+      if (data.spouseIrpBalance && data.spouseIrpBalance > 0) {
+        const startAge = data.spouseIrpStartAge || 56;
+        const receivingYears = data.spouseIrpReceivingYears || 20;
+        const startYear = currentYear + (startAge - spouseCurrentAge);
+        const yearsUntilStart = Math.max(0, startAge - spouseCurrentAge);
+
+        const futureValue = calculateFV(data.spouseIrpBalance, 0, yearsUntilStart);
+        const annualPMT = calculatePMT(futureValue, receivingYears, investmentReturnRate);
+        const monthlyPMT = Math.round(annualPMT / 12);
+
+        if (monthlyPMT > 0) {
+          items.push({
+            id: 'pension-spouse-irp',
+            type: 'pension' as const,
+            label: '배우자 IRP',
+            amount: monthlyPMT,
+            frequency: 'monthly' as const,
+            owner: 'spouse' as const,
+            startYear,
+            startMonth: 1,
+            endType: 'custom' as const,
+            endYear: startYear + receivingYears - 1,
+            endMonth: 12,
+            growthRate: 0,
+            rateCategory: 'fixed' as const,
+            displayGrowthRate: 0,
+            isSystem: true,
+          });
+        }
+      }
+
+      // 8. 배우자 퇴직연금
+      if (data.spouseRetirementPensionType && data.spouseRetirementPensionType !== 'unknown' && data.spouseRetirementPensionReceiveType !== 'lump_sum') {
+        const startAge = data.spouseRetirementPensionStartAge || 56;
+        const receivingYears = data.spouseRetirementPensionReceivingYears || 10;
+        const startYear = currentYear + (startAge - spouseCurrentAge);
+        const spouseRetireAge = data.spouse?.retirement_age || 60;
+
+        const isDBType = data.spouseRetirementPensionType === 'DB' || data.spouseRetirementPensionType === 'severance';
+        let totalAmount = 0;
+
+        if (isDBType && data.spouseLaborIncome) {
+          const monthlyIncome = data.spouseLaborIncomeFrequency === 'yearly' ? data.spouseLaborIncome / 12 : data.spouseLaborIncome;
+          const yearsOfService = data.spouseYearsOfService || 0;
+          const yearsUntilRetirement = Math.max(0, spouseRetireAge - spouseCurrentAge);
+          const totalYearsAtRetirement = yearsOfService + yearsUntilRetirement;
+          const incomeGrowthRate = globalSettings.incomeGrowthRate / 100;
+          const finalMonthlySalary = monthlyIncome * Math.pow(1 + incomeGrowthRate, yearsUntilRetirement);
+          totalAmount = finalMonthlySalary * totalYearsAtRetirement;
+        } else if (!isDBType && data.spouseRetirementPensionBalance && data.spouseLaborIncome) {
+          const monthlyIncome = data.spouseLaborIncomeFrequency === 'yearly' ? data.spouseLaborIncome / 12 : data.spouseLaborIncome;
+          const monthlyContribution = monthlyIncome * 0.0833;
+          const yearsUntilRetirement = Math.max(0, spouseRetireAge - spouseCurrentAge);
+          let futureValue = data.spouseRetirementPensionBalance;
+          for (let i = 0; i < yearsUntilRetirement; i++) {
+            futureValue = (futureValue + monthlyContribution * 12) * (1 + investmentReturnRate);
+          }
+          totalAmount = futureValue;
+        }
+
+        if (totalAmount > 0) {
+          const yearsUntilReceive = Math.max(0, startAge - spouseRetireAge);
+          const valueAtReceiveStart = totalAmount * Math.pow(1 + investmentReturnRate, yearsUntilReceive);
+
+          const r = investmentReturnRate;
+          const n = receivingYears;
+          const factor = Math.pow(1 + r, n);
+          const annualPMT = r === 0 ? valueAtReceiveStart / n : valueAtReceiveStart * (r * factor) / (factor - 1);
+          const monthlyPMT = Math.round(annualPMT / 12);
+
+          if (monthlyPMT > 0) {
+            items.push({
+              id: 'pension-spouse-retirement',
+              type: 'pension' as const,
+              label: '배우자 퇴직연금',
+              amount: monthlyPMT,
+              frequency: 'monthly' as const,
+              owner: 'spouse' as const,
+              startYear,
+              startMonth: 1,
+              endType: 'custom' as const,
+              endYear: startYear + receivingYears - 1,
+              endMonth: 12,
+              growthRate: 0,
+              rateCategory: 'fixed' as const,
+              displayGrowthRate: 0,
+              isSystem: true,
+            });
+          }
+        }
+      }
+    }
+
     return items;
-  }, [data, currentAge, currentYear, globalSettings]);
+  }, [data, currentAge, spouseCurrentAge, currentYear, globalSettings]);
 
   // 연금 항목 = 사용자 입력 + 자동 계산
   const pensionItems = [...userPensionItems, ...computedPensionItems];
@@ -1373,12 +1529,14 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
           }
 
           // 읽기 모드 - displayGrowthRate 사용 (이미 시나리오 적용됨)
+          const isLinkedFromRealEstate = item.sourceType === 'realEstate';
+          const isReadOnly = item.isSystem || isLinkedFromRealEstate;
+
           return (
             <div key={item.id} className={styles.incomeItem}>
               <div className={styles.itemMain}>
                 <span className={styles.itemLabel}>
                   {item.label}
-                  {item.isSystem && <span className={styles.systemBadge}>연금탭</span>}
                 </span>
                 <span className={styles.itemAmount}>
                   {formatAmountWithFreq(item)}
@@ -1386,12 +1544,17 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
                 <span className={styles.itemMeta}>
                   {item.type === "onetime"
                     ? formatPeriod(item)
-                    : item.isSystem
+                    : isReadOnly
                     ? formatPeriod(item)
                     : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isPresetMode ? " (시나리오)" : ""}`}
                 </span>
               </div>
-              {!item.isSystem && (
+              {isLinkedFromRealEstate ? (
+                <div className={styles.linkedBadge}>
+                  <Building2 size={12} />
+                  <span>부동산</span>
+                </div>
+              ) : !isReadOnly && (
                 <div className={styles.itemActions}>
                   <button
                     className={styles.editBtn}

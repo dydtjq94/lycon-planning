@@ -44,8 +44,8 @@ export const sectionTips: Record<SectionId, TipContent> = {
     description: "주거비는 소득의 25-30% 이하가 적정합니다.",
   },
   asset: {
-    title: "금융자산",
-    description: "예금, 주식, 펀드 등 분산 투자가 중요합니다.",
+    title: "현금 보유",
+    description: "비상금은 최소 3~6개월 생활비를 권장해요.",
   },
   debt: {
     title: "부채",
@@ -77,8 +77,14 @@ export const rowTips: Partial<Record<RowId, TipContentRaw>> = {
       const yearsAfterRetirement = Math.max(0, lifeExpectancy - retireAge);
       return `앞으로 ${remainingYears}년, 은퇴 후 ${yearsAfterRetirement}년`;
     },
-    description:
-      "100세 시대, Lycon은 돈이 아닌 인생을 설계합니다. 은퇴, 자녀 독립, 노후까지 — 당신의 인생 여정을 함께 계획해 드릴게요.",
+    description: (data) => {
+      const base = "100세 시대, Lycon은 돈이 아닌 인생을 설계합니다. 은퇴, 자녀 독립, 노후까지 — 당신의 인생 여정을 함께 계획해 드릴게요.";
+      if (data.isMarried && data.spouse?.birth_date) {
+        const spouseAge = calculateAge(data.spouse.birth_date);
+        return `${base} 배우자(${spouseAge}세)와 함께하는 노후도 설계해요.`;
+      }
+      return base;
+    },
   },
 
   // 3. 자녀
@@ -90,9 +96,19 @@ export const rowTips: Partial<Record<RowId, TipContentRaw>> = {
 
   // 4. 은퇴 나이
   retirement_age: {
-    title: "정답은 없어요",
-    description:
-      "대략적으로 생각하시는 나이면 충분해요. 한국인 평균 희망 은퇴 나이는 60세예요.",
+    title: (data) => {
+      if (data.isMarried && data.spouse?.retirement_age) {
+        return "부부의 은퇴 시기";
+      }
+      return "정답은 없어요";
+    },
+    description: (data) => {
+      const base = "대략적으로 생각하시는 나이면 충분해요. 한국인 평균 희망 은퇴 나이는 60세예요.";
+      if (data.isMarried && data.spouse) {
+        return `${base} 배우자의 은퇴 나이도 설정하면 부부 합산 소득을 계산해요.`;
+      }
+      return base;
+    },
   },
 
   // 5. 은퇴 자금
@@ -104,16 +120,34 @@ export const rowTips: Partial<Record<RowId, TipContentRaw>> = {
 
   // 6. 근로소득
   labor_income: {
-    title: "간단하게만 입력하세요",
-    description:
-      "지금은 대략적인 금액만 입력하면 돼요. 상여금, 성과급 등 상세 소득은 나중에 수정할 수 있어요.",
+    title: (data) => {
+      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
+      if (hasWorkingSpouse) return "부부 근로소득";
+      return "간단하게만 입력하세요";
+    },
+    description: (data) => {
+      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
+      if (hasWorkingSpouse) {
+        return "본인과 배우자의 근로소득을 각각 입력해주세요. 부부 합산 소득으로 저축률과 은퇴 준비 상태를 계산해요.";
+      }
+      return "지금은 대략적인 금액만 입력하면 돼요. 상여금, 성과급 등 상세 소득은 나중에 수정할 수 있어요.";
+    },
   },
 
   // 7. 사업소득
   business_income: {
-    title: "없으면 0 입력하세요",
-    description:
-      "프리랜서, 자영업 등 사업으로 버는 수입이에요. 직장인이라면 0으로 넘어가세요.",
+    title: (data) => {
+      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
+      if (hasWorkingSpouse) return "부부 사업소득";
+      return "없으면 0 입력하세요";
+    },
+    description: (data) => {
+      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
+      if (hasWorkingSpouse) {
+        return "프리랜서, 자영업 등 사업소득이에요. 본인과 배우자 모두 없으면 각각 0으로 입력하세요.";
+      }
+      return "프리랜서, 자영업 등 사업으로 버는 수입이에요. 직장인이라면 0으로 넘어가세요.";
+    },
   },
 
   // 8. 생활비
@@ -142,11 +176,11 @@ export const rowTips: Partial<Record<RowId, TipContentRaw>> = {
     },
   },
 
-  // 10. 금융자산
+  // 10. 현금 보유
   asset: {
-    title: "통장 잔액 합계면 돼요",
+    title: "비상금 체크",
     description:
-      "토스, 뱅크샐러드에서 전체 자산을 한눈에 확인할 수 있어요. 연금 계좌는 따로 입력할 거예요.",
+      "입출금통장, 파킹통장 등 즉시 사용할 수 있는 현금이에요. 투자, 예금, 연금은 나중에 입력해요.",
   },
 
   // 11. 부채
@@ -158,23 +192,49 @@ export const rowTips: Partial<Record<RowId, TipContentRaw>> = {
 
   // 12. 국민연금
   national_pension: {
-    title: "모르면 나중에 수정해도 돼요",
-    description:
-      "예상 수령액은 아래 버튼에서 확인할 수 있어요.",
+    title: (data) => {
+      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
+      if (hasWorkingSpouse) return "부부 국민연금";
+      return "모르면 나중에 수정해도 돼요";
+    },
+    description: (data) => {
+      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
+      if (hasWorkingSpouse) {
+        return "본인과 배우자의 예상 수령액을 각각 입력해주세요. 부부 합산 연금으로 노후 소득을 계산해요.";
+      }
+      return "예상 수령액은 국민연금공단에서 확인할 수 있어요.";
+    },
   },
 
   // 13. 퇴직연금
   retirement_pension: {
-    title: "퇴직연금 유형 알아보기",
-    description:
-      "DB형은 회사가 운용하고 퇴직 시 정해진 금액을 받아요. DC형은 본인이 운용하고 수익에 따라 수령액이 달라져요. 모르면 대략적인 적립금만 입력해도 괜찮아요.",
+    title: (data) => {
+      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
+      if (hasWorkingSpouse) return "부부 퇴직연금";
+      const isDCType = data.retirementPensionType === "DC" || data.retirementPensionType === "corporate_irp";
+      const isDBType = data.retirementPensionType === "DB" || data.retirementPensionType === "severance";
+      if (isDCType) return "DC형/기업IRP";
+      if (isDBType) return "DB형/퇴직금";
+      return "퇴직연금 유형을 선택하세요";
+    },
+    description: (data) => {
+      const isDCType = data.retirementPensionType === "DC" || data.retirementPensionType === "corporate_irp";
+      const isDBType = data.retirementPensionType === "DB" || data.retirementPensionType === "severance";
+      if (isDCType) {
+        return "본인이 직접 운용하고, 수익에 따라 수령액이 달라져요. 현재 적립된 금액을 입력하세요.";
+      }
+      if (isDBType) {
+        return "회사가 운용하고, 퇴직 시 급여x근속연수로 계산돼요. 현재 근속년수를 입력하면 예상 퇴직금을 계산해드려요.";
+      }
+      return "급여명세서나 사내 인트라넷에서 유형을 확인할 수 있어요.";
+    },
   },
 
   // 14. 개인연금
   personal_pension: {
     title: "개인연금 유형 알아보기",
     description:
-      "IRP, 연금저축, ISA는 모두 세제 혜택이 있는 노후 준비 상품이에요. 각각 특징이 달라서 함께 활용하면 좋아요.",
+      "IRP와 연금저축은 55세 이후 연금으로 받는 노후 준비 상품이에요. ISA는 절세 투자계좌라 저축/투자에서 관리합니다.",
   },
 };
 

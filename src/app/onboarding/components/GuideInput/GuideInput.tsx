@@ -60,8 +60,8 @@ const rowQuestions: Record<RowId, { question: string; description?: string }> =
       description: "자가, 전세, 월세 중에서 선택해주세요.",
     },
     asset: {
-      question: "금융자산은 얼마나 있으신가요?",
-      description: "예금, 적금, 주식, 펀드 등 모든 금융자산이에요.",
+      question: "바로 쓸 수 있는 현금이 얼마나 있나요?",
+      description: "입출금통장, 파킹통장 등 즉시 인출 가능한 금액이에요.",
     },
     debt: {
       question: "부채가 있으신가요?",
@@ -76,8 +76,8 @@ const rowQuestions: Record<RowId, { question: string; description?: string }> =
       description: "회사에서 적립 중인 퇴직연금 또는 퇴직금이에요.",
     },
     personal_pension: {
-      question: "개인연금을 납입하고 계신가요?",
-      description: "IRP, 연금저축, ISA 등 개인이 가입한 연금이에요.",
+      question: "개인연금에 얼마나 모았나요?",
+      description: "IRP, 연금저축에 지금까지 쌓인 금액이에요.",
     },
   };
 
@@ -898,84 +898,38 @@ function renderInputForRow(
       );
 
     case "asset":
-      // 간소화된 금융자산 입력: 입출금통장 + 투자자산 총액
-      const hasNoAssetSelected = data.hasNoAsset === true;
+      // 간소화된 현금 보유 입력: 입출금통장만
       const checkingValue = data.cashCheckingAccount || 0;
-      const investValue = data.investDomesticStock || 0; // 투자자산 총액으로 사용
-      const hasAnyAsset = data.cashCheckingAccount !== null || data.investDomesticStock !== null;
 
       return (
-        <div className={styles.assetSection}>
-          {!hasNoAssetSelected && (
-            <div className={styles.simpleAssetInputs}>
-              {/* 입출금통장 */}
-              <div className={styles.simpleAssetRow}>
-                <span className={styles.simpleAssetLabel}>입출금통장</span>
-                <div className={styles.simpleAssetInput}>
-                  <NumberInput
-                    className={styles.numberInputMedium}
-                    value={data.cashCheckingAccount !== null ? data.cashCheckingAccount || "" : ""}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      onUpdateData({
-                        cashCheckingAccount: value === "" ? null : parseFloat(value) || 0,
-                        hasNoAsset: null,
-                      });
-                    }}
-                    placeholder="0"
-                  />
-                  <span className={styles.unit}>만원</span>
-                </div>
-                {checkingValue > 0 && (
-                  <span className={styles.simpleAssetAmount}>{formatMoney(checkingValue)}</span>
-                )}
+        <div className={styles.pensionSection}>
+          <div className={styles.pensionRow}>
+            <span className={styles.pensionLabel}>입출금통장</span>
+            <div className={styles.inputWithAmount}>
+              <div className={styles.numberInputGroupInline}>
+                <NumberInput
+                  className={styles.numberInputSmall}
+                  value={data.cashCheckingAccount !== null ? data.cashCheckingAccount : ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    onUpdateData({
+                      cashCheckingAccount: value === "" ? null : parseFloat(value) || 0,
+                    });
+                  }}
+                  placeholder="0"
+                />
+                <span className={styles.unit}>만원</span>
               </div>
-
-              {/* 투자자산 총액 */}
-              <div className={styles.simpleAssetRow}>
-                <span className={styles.simpleAssetLabel}>투자자산</span>
-                <div className={styles.simpleAssetInput}>
-                  <NumberInput
-                    className={styles.numberInputMedium}
-                    value={data.investDomesticStock !== null ? data.investDomesticStock || "" : ""}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      onUpdateData({
-                        investDomesticStock: value === "" ? null : parseFloat(value) || 0,
-                        hasNoAsset: null,
-                      });
-                    }}
-                    placeholder="0"
-                  />
-                  <span className={styles.unit}>만원</span>
+              {checkingValue > 0 && (
+                <div className={styles.amountDisplay}>
+                  {formatMoney(checkingValue)}
                 </div>
-                {investValue > 0 && (
-                  <span className={styles.simpleAssetAmount}>{formatMoney(investValue)}</span>
-                )}
-              </div>
-
-              <p className={styles.assetHint}>
-                주식, ETF, 펀드 등 투자자산의 총 평가액을 입력해주세요.
-                대시보드에서 계좌별로 상세 관리할 수 있어요.
-              </p>
+              )}
             </div>
-          )}
-
-          {/* 하단 버튼 - 금융자산 없음 */}
-          <div className={styles.debtButtons}>
-            <button
-              className={`${styles.noDebtButton} ${
-                hasNoAssetSelected ? styles.noDebtButtonActive : ""
-              }`}
-              onClick={() => onUpdateData({
-                hasNoAsset: true,
-                cashCheckingAccount: null,
-                investDomesticStock: null,
-              })}
-            >
-              금융자산 없음
-            </button>
           </div>
+          <p className={styles.pensionHint}>
+            없으면 0을 입력하세요. 투자자산, 절세계좌 등은 대시보드에서 관리해요.
+          </p>
         </div>
       );
 
@@ -1151,6 +1105,7 @@ function renderInputForRow(
               className={styles.addDebtButton}
               onClick={() => {
                 const newDebt: DebtInput = {
+                  id: `debt-${Date.now()}`,
                   name: "",
                   amount: null,
                   rate: null,
@@ -1180,7 +1135,7 @@ function renderInputForRow(
       );
 
     case "national_pension":
-      // 예상 국민연금 수령액 계산
+      // 예상 국민연금 수령액 계산 (본인)
       const monthlyIncome = (data.laborIncome || 0) + (data.businessIncome || 0);
       const retirementAge = data.target_retirement_age || 60;
       const estimatedPension = (() => {
@@ -1192,10 +1147,26 @@ function renderInputForRow(
         return Math.round((aValue + bValue) * contributionYears * 0.005);
       })();
 
+      // 배우자 예상 국민연금 수령액 계산
+      const spouseMonthlyIncome = (data.spouseLaborIncome || 0) + (data.spouseBusinessIncome || 0);
+      const spouseRetirementAge = data.spouse?.retirement_age || 60;
+      const spouseEstimatedPension = (() => {
+        if (spouseMonthlyIncome <= 0) return 0;
+        const grossIncome = Math.round(spouseMonthlyIncome / 0.85);
+        const aValue = 309;
+        const bValue = Math.min(Math.max(grossIncome, 40), 637);
+        const contributionYears = Math.max(0, Math.min(spouseRetirementAge, 60) - 27);
+        return Math.round((aValue + bValue) * contributionYears * 0.005);
+      })();
+
+      const hasWorkingSpouseForPension =
+        data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
+
       return (
         <div className={styles.pensionSection}>
-          <div className={styles.pensionRow}>
-            <span className={styles.pensionLabel}>예상 월 수령액</span>
+          {/* 본인 국민연금 */}
+          <div className={styles.personRow}>
+            <span className={styles.personLabel}>본인</span>
             <div className={styles.inputWithAmount}>
               <div className={styles.numberInputGroupInline}>
                 <NumberInput
@@ -1220,131 +1191,197 @@ function renderInputForRow(
               )}
             </div>
           </div>
-          {data.nationalPension == null && estimatedPension > 0 && (
-            <p className={styles.pensionHint}>
-              입력된 정보 기준 예상액이에요. 정확한 금액은 공단에서 확인하세요.
-            </p>
+
+          {/* 배우자 국민연금 (배우자 은퇴 나이가 설정된 경우) */}
+          {hasWorkingSpouseForPension && (
+            <div className={styles.personRow}>
+              <span className={styles.personLabel}>배우자</span>
+              <div className={styles.inputWithAmount}>
+                <div className={styles.numberInputGroupInline}>
+                  <NumberInput
+                    className={styles.numberInputSmall}
+                    value={data.spouseNationalPension != null ? data.spouseNationalPension : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateData({
+                        spouseNationalPension:
+                          value === "" ? null : parseFloat(value) || 0,
+                      });
+                    }}
+                    placeholder={spouseEstimatedPension > 0 ? String(spouseEstimatedPension) : "0"}
+                  />
+                  <span className={styles.unit}>만원/월</span>
+                </div>
+                {(data.spouseNationalPension || 0) > 0 && (
+                  <div className={styles.amountDisplay}>
+                    {formatMoney(data.spouseNationalPension || 0)}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
+
+          <p className={styles.pensionHint}>
+            정확한 금액은 국민연금공단에서 확인하세요.
+          </p>
         </div>
       );
 
     case "retirement_pension":
+      // DC형/기업IRP vs DB형/퇴직금 구분
+      const isDCType = data.retirementPensionType === "DC" || data.retirementPensionType === "corporate_irp";
+      const isDBType = data.retirementPensionType === "DB" || data.retirementPensionType === "severance";
+      const isUnknownType = data.retirementPensionType === "unknown";
+      const hasWorkingSpouseForRetirement = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
+      const spouseIsDCType = data.spouseRetirementPensionType === "DC" || data.spouseRetirementPensionType === "corporate_irp";
+      const spouseIsDBType = data.spouseRetirementPensionType === "DB" || data.spouseRetirementPensionType === "severance";
+      const spouseIsUnknownType = data.spouseRetirementPensionType === "unknown";
+
       return (
         <div className={styles.pensionSection}>
-          <div className={styles.pensionRow}>
-            <span className={styles.pensionLabel}>유형</span>
-            <div className={styles.buttonGroupSmall}>
-              <button
-                className={`${styles.typeButton} ${
-                  data.retirementPensionType === "DC"
-                    ? styles.typeButtonActive
-                    : ""
-                }`}
-                onClick={() =>
-                  onUpdateData({
-                    retirementPensionType: "DC",
-                    hasNoPension: false,
-                  })
-                }
-              >
-                DC형
-              </button>
-              <button
-                className={`${styles.typeButton} ${
-                  data.retirementPensionType === "DB"
-                    ? styles.typeButtonActive
-                    : ""
-                }`}
-                onClick={() =>
-                  onUpdateData({
-                    retirementPensionType: "DB",
-                    hasNoPension: false,
-                  })
-                }
-              >
-                DB형
-              </button>
-              <button
-                className={`${styles.typeButton} ${
-                  data.retirementPensionType === "corporate_irp"
-                    ? styles.typeButtonActive
-                    : ""
-                }`}
-                onClick={() =>
-                  onUpdateData({
-                    retirementPensionType: "corporate_irp",
-                    hasNoPension: false,
-                  })
-                }
-              >
-                기업형 IRP
-              </button>
-              <button
-                className={`${styles.typeButton} ${
-                  data.retirementPensionType === "severance"
-                    ? styles.typeButtonActive
-                    : ""
-                }`}
-                onClick={() =>
-                  onUpdateData({
-                    retirementPensionType: "severance",
-                    hasNoPension: false,
-                  })
-                }
-              >
-                퇴직금
-              </button>
-            </div>
-          </div>
-          <div className={styles.pensionRow}>
-            <span className={styles.pensionLabel}>
-              {data.retirementPensionType === "DC" ||
-              data.retirementPensionType === "corporate_irp"
-                ? "현재 적립금"
-                : "예상 퇴직 금액"}
-            </span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={
-                    data.retirementPensionBalance != null
-                      ? data.retirementPensionBalance
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      retirementPensionBalance:
-                        value === "" ? null : parseFloat(value) || 0,
-                      hasNoPension: false,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원</span>
+          {/* 본인 퇴직연금 */}
+          <div className={styles.personRow}>
+            <span className={styles.personLabel}>본인</span>
+            <div className={styles.retirementPensionInputs}>
+              <div className={styles.buttonGroupSmall}>
+                <button
+                  className={`${styles.typeButton} ${isDCType ? styles.typeButtonActive : ""}`}
+                  onClick={() => onUpdateData({ retirementPensionType: "DC", hasNoPension: false })}
+                >
+                  DC형/기업IRP
+                </button>
+                <button
+                  className={`${styles.typeButton} ${isDBType ? styles.typeButtonActive : ""}`}
+                  onClick={() => onUpdateData({ retirementPensionType: "DB", hasNoPension: false })}
+                >
+                  DB형/퇴직금
+                </button>
+                <button
+                  className={`${styles.typeButton} ${isUnknownType ? styles.typeButtonActive : ""}`}
+                  onClick={() => onUpdateData({ retirementPensionType: "unknown", hasNoPension: false })}
+                >
+                  모름
+                </button>
               </div>
-              {(data.retirementPensionBalance || 0) > 0 && (
-                <div className={styles.amountDisplay}>
-                  {formatMoney(data.retirementPensionBalance || 0)}
+              {isDCType && (
+                <div className={styles.numberInputGroupInline}>
+                  <span className={styles.inputLabel}>적립금</span>
+                  <NumberInput
+                    className={styles.numberInputSmall}
+                    value={data.retirementPensionBalance != null ? data.retirementPensionBalance : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateData({ retirementPensionBalance: value === "" ? null : parseFloat(value) || 0 });
+                    }}
+                    placeholder="0"
+                  />
+                  <span className={styles.unit}>만원</span>
                 </div>
+              )}
+              {isDBType && (
+                <div className={styles.numberInputGroupInline}>
+                  <span className={styles.inputLabel}>근속</span>
+                  <NumberInput
+                    className={styles.numberInputSmall}
+                    value={data.yearsOfService != null ? data.yearsOfService : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateData({ yearsOfService: value === "" ? null : parseInt(value) || 0 });
+                    }}
+                    placeholder="0"
+                    min={0}
+                    max={50}
+                  />
+                  <span className={styles.unit}>년</span>
+                </div>
+              )}
+              {isUnknownType && (
+                <p className={styles.pensionHint}>
+                  대시보드에서 나중에 추가할 수 있어요.
+                </p>
               )}
             </div>
           </div>
+
+          {/* 배우자 퇴직연금 (배우자가 일하는 경우) */}
+          {hasWorkingSpouseForRetirement && (
+            <div className={styles.personRow}>
+              <span className={styles.personLabel}>배우자</span>
+              <div className={styles.retirementPensionInputs}>
+                <div className={styles.buttonGroupSmall}>
+                  <button
+                    className={`${styles.typeButton} ${spouseIsDCType ? styles.typeButtonActive : ""}`}
+                    onClick={() => onUpdateData({ spouseRetirementPensionType: "DC" })}
+                  >
+                    DC형/기업IRP
+                  </button>
+                  <button
+                    className={`${styles.typeButton} ${spouseIsDBType ? styles.typeButtonActive : ""}`}
+                    onClick={() => onUpdateData({ spouseRetirementPensionType: "DB" })}
+                  >
+                    DB형/퇴직금
+                  </button>
+                  <button
+                    className={`${styles.typeButton} ${spouseIsUnknownType ? styles.typeButtonActive : ""}`}
+                    onClick={() => onUpdateData({ spouseRetirementPensionType: "unknown" })}
+                  >
+                    모름
+                  </button>
+                </div>
+                {spouseIsDCType && (
+                  <div className={styles.numberInputGroupInline}>
+                    <span className={styles.inputLabel}>적립금</span>
+                    <NumberInput
+                      className={styles.numberInputSmall}
+                      value={data.spouseRetirementPensionBalance != null ? data.spouseRetirementPensionBalance : ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        onUpdateData({ spouseRetirementPensionBalance: value === "" ? null : parseFloat(value) || 0 });
+                      }}
+                      placeholder="0"
+                    />
+                    <span className={styles.unit}>만원</span>
+                  </div>
+                )}
+                {spouseIsDBType && (
+                  <div className={styles.numberInputGroupInline}>
+                    <span className={styles.inputLabel}>근속</span>
+                    <NumberInput
+                      className={styles.numberInputSmall}
+                      value={data.spouseYearsOfService != null ? data.spouseYearsOfService : ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        onUpdateData({ spouseYearsOfService: value === "" ? null : parseInt(value) || 0 });
+                      }}
+                      placeholder="0"
+                      min={0}
+                      max={50}
+                    />
+                    <span className={styles.unit}>년</span>
+                  </div>
+                )}
+                {spouseIsUnknownType && (
+                  <p className={styles.pensionHint}>
+                    대시보드에서 나중에 추가할 수 있어요.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       );
 
     case "personal_pension":
-      const totalPersonalPension =
-        (data.irpBalance || 0) +
-        (data.pensionSavingsBalance || 0) +
-        (data.isaBalance || 0);
+      const hasWorkingSpouseForPersonalPension =
+        data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
       return (
         <div className={styles.pensionSection}>
-          <div className={styles.pensionRow}>
-            <span className={styles.pensionLabel}>IRP</span>
-            <div className={styles.inputWithAmount}>
+          {/* 본인 개인연금 */}
+          <div className={styles.personRow}>
+            <span className={styles.personLabel}>본인</span>
+            <div className={styles.retirementPensionInputs}>
               <div className={styles.numberInputGroupInline}>
+                <span className={styles.inputLabel}>IRP</span>
                 <NumberInput
                   className={styles.numberInputSmall}
                   value={data.irpBalance != null ? data.irpBalance : ""}
@@ -1359,17 +1396,8 @@ function renderInputForRow(
                 />
                 <span className={styles.unit}>만원</span>
               </div>
-              {(data.irpBalance || 0) > 0 && (
-                <div className={styles.amountDisplay}>
-                  {formatMoney(data.irpBalance || 0)}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className={styles.pensionRow}>
-            <span className={styles.pensionLabel}>연금저축</span>
-            <div className={styles.inputWithAmount}>
               <div className={styles.numberInputGroupInline}>
+                <span className={styles.inputLabel}>연금저축</span>
                 <NumberInput
                   className={styles.numberInputSmall}
                   value={
@@ -1389,43 +1417,56 @@ function renderInputForRow(
                 />
                 <span className={styles.unit}>만원</span>
               </div>
-              {(data.pensionSavingsBalance || 0) > 0 && (
-                <div className={styles.amountDisplay}>
-                  {formatMoney(data.pensionSavingsBalance || 0)}
-                </div>
-              )}
             </div>
           </div>
-          <div className={styles.pensionRow}>
-            <span className={styles.pensionLabel}>ISA</span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={data.isaBalance != null ? data.isaBalance : ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      isaBalance: value === "" ? null : parseFloat(value) || 0,
-                      hasNoPension: false,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원</span>
+
+          {/* 배우자 개인연금 (배우자가 일하는 경우) */}
+          {hasWorkingSpouseForPersonalPension && (
+            <div className={styles.personRow}>
+              <span className={styles.personLabel}>배우자</span>
+              <div className={styles.retirementPensionInputs}>
+                <div className={styles.numberInputGroupInline}>
+                  <span className={styles.inputLabel}>IRP</span>
+                  <NumberInput
+                    className={styles.numberInputSmall}
+                    value={data.spouseIrpBalance != null ? data.spouseIrpBalance : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateData({
+                        spouseIrpBalance: value === "" ? null : parseFloat(value) || 0,
+                      });
+                    }}
+                    placeholder="0"
+                  />
+                  <span className={styles.unit}>만원</span>
+                </div>
+                <div className={styles.numberInputGroupInline}>
+                  <span className={styles.inputLabel}>연금저축</span>
+                  <NumberInput
+                    className={styles.numberInputSmall}
+                    value={
+                      data.spousePensionSavingsBalance != null
+                        ? data.spousePensionSavingsBalance
+                        : ""
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateData({
+                        spousePensionSavingsBalance:
+                          value === "" ? null : parseFloat(value) || 0,
+                      });
+                    }}
+                    placeholder="0"
+                  />
+                  <span className={styles.unit}>만원</span>
+                </div>
               </div>
-              {(data.isaBalance || 0) > 0 && (
-                <div className={styles.amountDisplay}>
-                  {formatMoney(data.isaBalance || 0)}
-                </div>
-              )}
-            </div>
-          </div>
-          {totalPersonalPension > 0 && (
-            <div className={styles.amountDisplay}>
-              합계: {formatMoney(totalPersonalPension)}
             </div>
           )}
+
+          <p className={styles.pensionHint}>
+            없으면 0을 입력하세요. ISA는 절세 투자계좌라 저축/투자에서 관리해요.
+          </p>
         </div>
       );
 

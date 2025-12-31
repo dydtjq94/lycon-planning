@@ -305,6 +305,7 @@ export function createDefaultFinancialItems(
       pensionType: 'DC',
       returnRate: DEFAULT_RATES.pensionReturn,
       paymentStartYear: retirementYear,
+      paymentStartMonth: 1,  // 1월부터 수령 시작
       paymentYears: 10,  // 10년간 연금 수령 (기본값)
     } as PensionData,
     memo: '은퇴 시까지 적립, 이후 10년간 연금 수령',
@@ -328,6 +329,7 @@ export function createDefaultFinancialItems(
       monthlyContribution: 0,
       returnRate: DEFAULT_RATES.pensionReturn,
       paymentStartYear: retirementYear,
+      paymentStartMonth: 1,  // 1월부터 수령 시작
       paymentYears: 20,  // 20년간 연금 수령
     } as PensionData,
     memo: '은퇴 전까지 납입, 은퇴 후 20년간 수령',
@@ -351,6 +353,7 @@ export function createDefaultFinancialItems(
       monthlyContribution: 0,
       returnRate: DEFAULT_RATES.pensionReturn,
       paymentStartYear: retirementYear,
+      paymentStartMonth: 1,  // 1월부터 수령 시작
       paymentYears: 20,  // 20년간 연금 수령
     } as PensionData,
     memo: '은퇴 전까지 납입, 은퇴 후 20년간 수령',

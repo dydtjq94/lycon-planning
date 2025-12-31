@@ -125,18 +125,9 @@ export const rows: RowConfig[] = [
   },
   {
     id: 'asset',
-    label: '금융자산',
+    label: '현금 보유',
     isVisible: (_, visible) => visible.includes('realEstate'),
-    isComplete: (data) => {
-      if (data.hasNoAsset === true) return true
-      const hasValue = (data.cashCheckingAccount !== null && data.cashCheckingAccount > 0) ||
-                       (data.cashSavingsAccount !== null && data.cashSavingsAccount > 0) ||
-                       (data.investDomesticStock !== null && data.investDomesticStock > 0) ||
-                       (data.investForeignStock !== null && data.investForeignStock > 0) ||
-                       (data.investFund !== null && data.investFund > 0) ||
-                       (data.investOther !== null && data.investOther > 0)
-      return hasValue
-    },
+    isComplete: (data) => data.cashCheckingAccount !== null,
   },
   {
     id: 'debt',
@@ -148,18 +139,55 @@ export const rows: RowConfig[] = [
     id: 'national_pension',
     label: '국민연금',
     isVisible: (_, visible) => visible.includes('debt'),
-    isComplete: (data) => data.nationalPension != null && data.nationalPension > 0,
+    isComplete: (data) => {
+      const mainComplete = data.nationalPension != null && data.nationalPension > 0
+      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
+      const spouseComplete = data.spouseNationalPension != null && data.spouseNationalPension > 0
+      return mainComplete && (!hasWorkingSpouse || spouseComplete)
+    },
   },
   {
     id: 'retirement_pension',
     label: '퇴직연금/퇴직금',
     isVisible: (_, visible) => visible.includes('national_pension'),
-    isComplete: (data) => data.retirementPensionType != null && data.retirementPensionBalance != null,
+    isComplete: (data) => {
+      // 본인: DC형은 적립금, DB형은 근속년수, 모름은 바로 완료
+      const isDCType = data.retirementPensionType === 'DC' || data.retirementPensionType === 'corporate_irp'
+      const isDBType = data.retirementPensionType === 'DB' || data.retirementPensionType === 'severance'
+      const isUnknownType = data.retirementPensionType === 'unknown'
+      const mainComplete = isUnknownType
+        ? true
+        : isDCType
+          ? data.retirementPensionBalance != null
+          : isDBType
+            ? data.yearsOfService != null
+            : false
+
+      // 배우자
+      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
+      const spouseIsDCType = data.spouseRetirementPensionType === 'DC' || data.spouseRetirementPensionType === 'corporate_irp'
+      const spouseIsDBType = data.spouseRetirementPensionType === 'DB' || data.spouseRetirementPensionType === 'severance'
+      const spouseIsUnknownType = data.spouseRetirementPensionType === 'unknown'
+      const spouseComplete = spouseIsUnknownType
+        ? true
+        : spouseIsDCType
+          ? data.spouseRetirementPensionBalance != null
+          : spouseIsDBType
+            ? data.spouseYearsOfService != null
+            : false
+
+      return mainComplete && (!hasWorkingSpouse || spouseComplete)
+    },
   },
   {
     id: 'personal_pension',
     label: '개인연금',
     isVisible: (_, visible) => visible.includes('retirement_pension'),
-    isComplete: (data) => (data.irpBalance != null && data.irpBalance > 0) || (data.pensionSavingsBalance != null && data.pensionSavingsBalance > 0) || (data.isaBalance != null && data.isaBalance > 0),
+    isComplete: (data) => {
+      const mainComplete = (data.irpBalance != null && data.irpBalance >= 0) || (data.pensionSavingsBalance != null && data.pensionSavingsBalance >= 0)
+      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
+      const spouseComplete = (data.spouseIrpBalance != null && data.spouseIrpBalance >= 0) || (data.spousePensionSavingsBalance != null && data.spousePensionSavingsBalance >= 0)
+      return mainComplete && (!hasWorkingSpouse || spouseComplete)
+    },
   },
 ]

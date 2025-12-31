@@ -1625,6 +1625,76 @@
   color: #78716C;
 }
 
+.pensionEstimateTotal {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #F5F5F4;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1C1917;
+}
+
+/* 부부 국민연금 표 스타일 */
+.pensionTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pensionTable th {
+  padding: 8px 12px;
+  text-align: right;
+  font-weight: 500;
+  color: #78716C;
+  border-bottom: 1px solid #E7E5E4;
+}
+
+.pensionTable th:first-child {
+  text-align: left;
+}
+
+.pensionTable td {
+  padding: 10px 12px;
+  text-align: right;
+  color: #44403C;
+  border-bottom: 1px solid #F5F5F4;
+}
+
+.pensionTable tbody tr:last-child td {
+  border-bottom: 1px solid #E7E5E4;
+}
+
+.pensionTableLabel {
+  text-align: left !important;
+  color: #78716C;
+  font-weight: 500;
+}
+
+.pensionTableValue {
+  font-weight: 600;
+  color: #1C1917;
+}
+
+.pensionTable tfoot td {
+  padding: 12px;
+  border-bottom: none;
+}
+
+.pensionTableTotal {
+  font-weight: 700;
+  font-size: 15px;
+  color: #1C1917;
+  text-align: right !important;
+}
+
+.pensionTableHighlight {
+  font-weight: 600;
+  color: #1C1917;
+  background: #FEF3C7;
+}
+
 .pensionGuideLink {
   font-size: 13px;
   font-weight: 500;

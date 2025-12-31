@@ -47,44 +47,108 @@ function estimatePension(monthlyIncome: number, retirementAge: number): number {
 }
 
 export function NationalPensionGuide({ data }: NationalPensionGuideProps) {
-  const monthlyIncome = (data.laborIncome || 0) + (data.businessIncome || 0)
-  const retirementAge = data.target_retirement_age || 60
-  const estimatedAmount = estimatePension(monthlyIncome, retirementAge)
+  // 본인 계산
+  const myIncome = (data.laborIncome || 0) + (data.businessIncome || 0)
+  const myRetirementAge = data.target_retirement_age || 60
+  const myEstimated = estimatePension(myIncome, myRetirementAge)
+  const myContributionYears = Math.max(0, Math.min(myRetirementAge, 60) - 27)
 
-  // 가입 기간 계산 (표시용)
-  const contributionYears = Math.max(0, Math.min(retirementAge, 60) - 27)
+  // 배우자 계산 (배우자가 일하는 경우)
+  const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
+  const spouseIncome = (data.spouseLaborIncome || 0) + (data.spouseBusinessIncome || 0)
+  const spouseRetirementAge = data.spouse?.retirement_age || 60
+  const spouseEstimated = hasWorkingSpouse ? estimatePension(spouseIncome, spouseRetirementAge) : 0
+  const spouseContributionYears = hasWorkingSpouse ? Math.max(0, Math.min(spouseRetirementAge, 60) - 27) : 0
 
   const handleClick = () => {
     window.open('https://csa.nps.or.kr/ohkd/ntpsidnty/anpninq/UHKD7101M0.do', '_blank')
   }
 
+  // 배우자가 있을 때: 표 형태로 표시
+  if (hasWorkingSpouse && (myEstimated > 0 || spouseEstimated > 0)) {
+    return (
+      <div className={styles.pensionGuide}>
+        <table className={styles.pensionTable}>
+          <thead>
+            <tr>
+              <th></th>
+              <th>본인</th>
+              <th>배우자</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className={styles.pensionTableLabel}>예상 수령액</td>
+              <td className={styles.pensionTableValue}>{myEstimated}만원</td>
+              <td className={styles.pensionTableValue}>{spouseEstimated}만원</td>
+            </tr>
+            <tr>
+              <td className={styles.pensionTableLabel}>현재 소득</td>
+              <td>{myIncome}만원</td>
+              <td>{spouseIncome}만원</td>
+            </tr>
+            <tr>
+              <td className={styles.pensionTableLabel}>은퇴 나이</td>
+              <td>{myRetirementAge}세</td>
+              <td>{spouseRetirementAge}세</td>
+            </tr>
+            <tr>
+              <td className={styles.pensionTableLabel}>가입 기간</td>
+              <td>{myContributionYears}년</td>
+              <td>{spouseContributionYears}년</td>
+            </tr>
+          </tbody>
+          {myEstimated > 0 && spouseEstimated > 0 && (
+            <tfoot>
+              <tr>
+                <td className={styles.pensionTableLabel}>부부 합산</td>
+                <td colSpan={2} className={styles.pensionTableTotal}>
+                  월 {myEstimated + spouseEstimated}만원
+                </td>
+              </tr>
+            </tfoot>
+          )}
+        </table>
+
+        <button
+          className={styles.pensionGuideLink}
+          onClick={handleClick}
+        >
+          국민연금공단에서 정확히 조회하기
+        </button>
+      </div>
+    )
+  }
+
+  // 본인만 있을 때: 기존 세로 레이아웃
   return (
     <div className={styles.pensionGuide}>
-      {estimatedAmount > 0 && (
+      {myEstimated > 0 && (
         <div className={styles.pensionEstimate}>
           <div className={styles.pensionEstimateMain}>
             <span className={styles.pensionEstimateLabel}>예상 수령액</span>
             <div className={styles.pensionEstimateValue}>
-              <span className={styles.pensionEstimateAmount}>약 {estimatedAmount}</span>
+              <span className={styles.pensionEstimateAmount}>약 {myEstimated}</span>
               <span className={styles.pensionEstimateUnit}>만원/월</span>
             </div>
           </div>
           <div className={styles.pensionEstimateDetails}>
             <div className={styles.pensionEstimateRow}>
               <span>현재 소득</span>
-              <span>{monthlyIncome}만원/월</span>
+              <span>{myIncome}만원/월</span>
             </div>
             <div className={styles.pensionEstimateRow}>
               <span>은퇴 나이</span>
-              <span>{retirementAge}세</span>
+              <span>{myRetirementAge}세</span>
             </div>
             <div className={styles.pensionEstimateRow}>
               <span>예상 가입 기간</span>
-              <span>{contributionYears}년</span>
+              <span>{myContributionYears}년</span>
             </div>
           </div>
         </div>
       )}
+
       <button
         className={styles.pensionGuideLink}
         onClick={handleClick}

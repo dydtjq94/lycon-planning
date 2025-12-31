@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Pencil, Trash2, PiggyBank } from 'lucide-react'
 import {
   Chart as ChartJS,
@@ -18,6 +18,13 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 interface SavingsTabProps {
   data: OnboardingData
   onUpdateData: (updates: Partial<OnboardingData>) => void
+}
+
+// ISA 만기 전략 라벨
+const ISA_STRATEGY_LABELS = {
+  pension_savings: '연금저축 전환',
+  irp: 'IRP 전환',
+  cash: '현금 인출',
 }
 
 // 타입별 라벨
@@ -51,19 +58,67 @@ const COLORS = {
 
 export function SavingsTab({ data, onUpdateData }: SavingsTabProps) {
   const currentYear = new Date().getFullYear()
+  const prevIsMarried = useRef(data.isMarried)
 
   // 편집 상태
   const [editingAccount, setEditingAccount] = useState<{ section: 'savings' | 'investment', id: string | null } | null>(null)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
 
+  // ISA 편집 상태
+  const [editingIsa, setEditingIsa] = useState<'self' | 'spouse' | null>(null)
+  const [isaEditValues, setIsaEditValues] = useState<Record<string, string>>({})
+
+  // 배우자 유무 변경 시 배우자 ISA 데이터 초기화
+  useEffect(() => {
+    const wasMarried = prevIsMarried.current
+    const isNowMarried = data.isMarried
+
+    if (wasMarried !== isNowMarried) {
+      if (!isNowMarried && wasMarried) {
+        onUpdateData({
+          spouseIsaBalance: null,
+          spouseIsaMonthlyContribution: null,
+          spouseIsaMaturityYear: null,
+          spouseIsaMaturityMonth: null,
+          spouseIsaMaturityStrategy: null,
+        })
+      }
+      prevIsMarried.current = isNowMarried
+    }
+  }, [data.isMarried, onUpdateData])
+
+  const isMarried = data.isMarried === true
+
   // 데이터 가져오기
   const savingsAccounts = data.savingsAccounts || []
   const investmentAccounts = data.investmentAccounts || []
 
-  // 합계 계산
-  const savingsTotal = savingsAccounts.reduce((sum, acc) => sum + acc.balance, 0)
+  // 온보딩에서 입력한 입출금통장 (deprecated 필드)
+  // 이미 savingsAccounts에 마이그레이션된 경우 표시하지 않음
+  const hasMigratedChecking = savingsAccounts.some(acc => acc.id === 'migrated-checking')
+  const onboardingChecking = hasMigratedChecking ? 0 : (data.cashCheckingAccount || 0)
+
+  // ISA 데이터
+  const selfIsa = {
+    balance: data.isaBalance,
+    monthly: data.isaMonthlyContribution,
+    maturityYear: data.isaMaturityYear || currentYear + 3,
+    maturityMonth: data.isaMaturityMonth || 12,
+    strategy: data.isaMaturityStrategy || 'pension_savings',
+  }
+  const spouseIsa = {
+    balance: data.spouseIsaBalance,
+    monthly: data.spouseIsaMonthlyContribution,
+    maturityYear: data.spouseIsaMaturityYear || currentYear + 3,
+    maturityMonth: data.spouseIsaMaturityMonth || 12,
+    strategy: data.spouseIsaMaturityStrategy || 'pension_savings',
+  }
+
+  // 합계 계산 (온보딩 입출금통장 포함)
+  const savingsTotal = savingsAccounts.reduce((sum, acc) => sum + acc.balance, 0) + onboardingChecking
   const investmentTotal = investmentAccounts.reduce((sum, acc) => sum + acc.balance, 0)
-  const totalAssets = savingsTotal + investmentTotal
+  const isaTotal = (selfIsa.balance || 0) + (isMarried ? (spouseIsa.balance || 0) : 0)
+  const totalAssets = savingsTotal + investmentTotal + isaTotal
 
   // 편집 시작
   const startAddAccount = (section: 'savings' | 'investment') => {
@@ -161,11 +216,57 @@ export function SavingsTab({ data, onUpdateData }: SavingsTabProps) {
     onUpdateData({ investmentAccounts: updated })
   }
 
+  // ISA 편집 함수
+  const startEditIsa = (owner: 'self' | 'spouse') => {
+    const isa = owner === 'self' ? selfIsa : spouseIsa
+    setEditingIsa(owner)
+    setIsaEditValues({
+      balance: isa.balance?.toString() || '',
+      monthly: isa.monthly?.toString() || '',
+      maturityYear: isa.maturityYear.toString(),
+      maturityMonth: isa.maturityMonth.toString(),
+      strategy: isa.strategy,
+    })
+  }
+
+  const cancelIsaEdit = () => {
+    setEditingIsa(null)
+    setIsaEditValues({})
+  }
+
+  const saveIsa = () => {
+    const updates: Partial<OnboardingData> = {}
+
+    if (editingIsa === 'self') {
+      updates.isaBalance = isaEditValues.balance ? parseFloat(isaEditValues.balance) : null
+      updates.isaMonthlyContribution = isaEditValues.monthly ? parseFloat(isaEditValues.monthly) : null
+      updates.isaMaturityYear = isaEditValues.maturityYear ? parseInt(isaEditValues.maturityYear) : null
+      updates.isaMaturityMonth = isaEditValues.maturityMonth ? parseInt(isaEditValues.maturityMonth) : null
+      updates.isaMaturityStrategy = (isaEditValues.strategy as 'pension_savings' | 'irp' | 'cash') || 'pension_savings'
+    } else {
+      updates.spouseIsaBalance = isaEditValues.balance ? parseFloat(isaEditValues.balance) : null
+      updates.spouseIsaMonthlyContribution = isaEditValues.monthly ? parseFloat(isaEditValues.monthly) : null
+      updates.spouseIsaMaturityYear = isaEditValues.maturityYear ? parseInt(isaEditValues.maturityYear) : null
+      updates.spouseIsaMaturityMonth = isaEditValues.maturityMonth ? parseInt(isaEditValues.maturityMonth) : null
+      updates.spouseIsaMaturityStrategy = (isaEditValues.strategy as 'pension_savings' | 'irp' | 'cash') || 'pension_savings'
+    }
+
+    onUpdateData(updates)
+    cancelIsaEdit()
+  }
+
   // 도넛 차트 데이터
   const chartData = useMemo(() => {
     const labels: string[] = []
     const values: number[] = []
     const colors: string[] = []
+
+    // 온보딩에서 입력한 입출금통장
+    if (onboardingChecking > 0) {
+      labels.push('입출금통장')
+      values.push(onboardingChecking)
+      colors.push('#34c759')
+    }
 
     savingsAccounts.forEach(acc => {
       labels.push(`${acc.name} (${SAVINGS_TYPE_LABELS[acc.type]})`)
@@ -179,8 +280,20 @@ export function SavingsTab({ data, onUpdateData }: SavingsTabProps) {
       colors.push(COLORS[acc.type])
     })
 
+    // ISA 추가
+    if (selfIsa.balance) {
+      labels.push('본인 ISA')
+      values.push(selfIsa.balance)
+      colors.push('#5ac8fa')
+    }
+    if (isMarried && spouseIsa.balance) {
+      labels.push('배우자 ISA')
+      values.push(spouseIsa.balance)
+      colors.push('#64d2ff')
+    }
+
     return { labels, values, colors }
-  }, [savingsAccounts, investmentAccounts])
+  }, [savingsAccounts, investmentAccounts, selfIsa.balance, spouseIsa.balance, isMarried, onboardingChecking])
 
   const doughnutData = {
     labels: chartData.labels,
@@ -631,8 +744,251 @@ export function SavingsTab({ data, onUpdateData }: SavingsTabProps) {
           </div>
         </section>
 
+        {/* ========== 절세계좌 (ISA) ========== */}
+        <section className={styles.assetSection}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTitle}>절세계좌</span>
+            {isaTotal > 0 && (
+              <span className={styles.sectionTotal}>{formatMoney(isaTotal)}</span>
+            )}
+          </div>
+          <p className={styles.sectionDesc}>
+            ISA(개인종합자산관리계좌). 만기 시 연금계좌로 전환하면 추가 세액공제 혜택.
+          </p>
+
+          <div className={styles.itemList}>
+            {/* 본인 ISA */}
+            {editingIsa === 'self' ? (
+              <div className={styles.editItem}>
+                <div className={styles.editRow}>
+                  <span className={styles.editRowLabel}>잔액</span>
+                  <div className={styles.editField}>
+                    <input
+                      type="number"
+                      className={styles.editInput}
+                      value={isaEditValues.balance || ''}
+                      onChange={e => setIsaEditValues({ ...isaEditValues, balance: e.target.value })}
+                      onWheel={e => (e.target as HTMLElement).blur()}
+                      placeholder="0"
+                      autoFocus
+                    />
+                    <span className={styles.editUnit}>만원</span>
+                  </div>
+                </div>
+                <div className={styles.editRow}>
+                  <span className={styles.editRowLabel}>납입</span>
+                  <div className={styles.editField}>
+                    <input
+                      type="number"
+                      className={styles.editInput}
+                      value={isaEditValues.monthly || ''}
+                      onChange={e => setIsaEditValues({ ...isaEditValues, monthly: e.target.value })}
+                      onWheel={e => (e.target as HTMLElement).blur()}
+                      placeholder="0"
+                    />
+                    <span className={styles.editUnit}>만원/월</span>
+                  </div>
+                </div>
+                <div className={styles.editRow}>
+                  <span className={styles.editRowLabel}>만기</span>
+                  <div className={styles.editField}>
+                    <input
+                      type="number"
+                      className={styles.editInputSmall}
+                      value={isaEditValues.maturityYear || ''}
+                      onChange={e => setIsaEditValues({ ...isaEditValues, maturityYear: e.target.value })}
+                      onWheel={e => (e.target as HTMLElement).blur()}
+                      min={currentYear}
+                      max={currentYear + 10}
+                      placeholder={String(currentYear + 3)}
+                    />
+                    <span className={styles.editUnit}>년</span>
+                    <input
+                      type="number"
+                      className={styles.editInputSmall}
+                      value={isaEditValues.maturityMonth || ''}
+                      onChange={e => setIsaEditValues({ ...isaEditValues, maturityMonth: e.target.value })}
+                      onWheel={e => (e.target as HTMLElement).blur()}
+                      min={1}
+                      max={12}
+                      placeholder="12"
+                    />
+                    <span className={styles.editUnit}>월</span>
+                  </div>
+                </div>
+                <div className={styles.editRow}>
+                  <span className={styles.editRowLabel}>전략</span>
+                  <div className={styles.typeButtons}>
+                    <button
+                      type="button"
+                      className={`${styles.typeBtn} ${isaEditValues.strategy === 'pension_savings' ? styles.active : ''}`}
+                      onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'pension_savings' })}
+                    >
+                      연금저축 전환
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.typeBtn} ${isaEditValues.strategy === 'irp' ? styles.active : ''}`}
+                      onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'irp' })}
+                    >
+                      IRP 전환
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.typeBtn} ${isaEditValues.strategy === 'cash' ? styles.active : ''}`}
+                      onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'cash' })}
+                    >
+                      현금 인출
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.editActions}>
+                  <button className={styles.cancelBtn} onClick={cancelIsaEdit}>취소</button>
+                  <button className={styles.saveBtn} onClick={saveIsa}>저장</button>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.assetItem}>
+                <div className={styles.itemMain}>
+                  <span className={styles.itemLabel}>본인 ISA</span>
+                  <span className={styles.itemAmount}>
+                    {selfIsa.balance ? formatMoney(selfIsa.balance) : '0'}
+                  </span>
+                  {selfIsa.balance ? (
+                    <span className={styles.itemMeta}>
+                      {selfIsa.monthly ? `월 ${formatMoney(selfIsa.monthly)} 납입 | ` : ''}
+                      {selfIsa.maturityYear}년 {selfIsa.maturityMonth}월 만기
+                      {' → '}{ISA_STRATEGY_LABELS[selfIsa.strategy as keyof typeof ISA_STRATEGY_LABELS]}
+                    </span>
+                  ) : null}
+                </div>
+                <div className={styles.itemActions}>
+                  <button className={styles.editBtn} onClick={() => startEditIsa('self')}>
+                    <Pencil size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 배우자 ISA */}
+            {isMarried && (
+              editingIsa === 'spouse' ? (
+                <div className={styles.editItem}>
+                  <div className={styles.editRow}>
+                    <span className={styles.editRowLabel}>잔액</span>
+                    <div className={styles.editField}>
+                      <input
+                        type="number"
+                        className={styles.editInput}
+                        value={isaEditValues.balance || ''}
+                        onChange={e => setIsaEditValues({ ...isaEditValues, balance: e.target.value })}
+                        onWheel={e => (e.target as HTMLElement).blur()}
+                        placeholder="0"
+                        autoFocus
+                      />
+                      <span className={styles.editUnit}>만원</span>
+                    </div>
+                  </div>
+                  <div className={styles.editRow}>
+                    <span className={styles.editRowLabel}>납입</span>
+                    <div className={styles.editField}>
+                      <input
+                        type="number"
+                        className={styles.editInput}
+                        value={isaEditValues.monthly || ''}
+                        onChange={e => setIsaEditValues({ ...isaEditValues, monthly: e.target.value })}
+                        onWheel={e => (e.target as HTMLElement).blur()}
+                        placeholder="0"
+                      />
+                      <span className={styles.editUnit}>만원/월</span>
+                    </div>
+                  </div>
+                  <div className={styles.editRow}>
+                    <span className={styles.editRowLabel}>만기</span>
+                    <div className={styles.editField}>
+                      <input
+                        type="number"
+                        className={styles.editInputSmall}
+                        value={isaEditValues.maturityYear || ''}
+                        onChange={e => setIsaEditValues({ ...isaEditValues, maturityYear: e.target.value })}
+                        onWheel={e => (e.target as HTMLElement).blur()}
+                        min={currentYear}
+                        max={currentYear + 10}
+                        placeholder={String(currentYear + 3)}
+                      />
+                      <span className={styles.editUnit}>년</span>
+                      <input
+                        type="number"
+                        className={styles.editInputSmall}
+                        value={isaEditValues.maturityMonth || ''}
+                        onChange={e => setIsaEditValues({ ...isaEditValues, maturityMonth: e.target.value })}
+                        onWheel={e => (e.target as HTMLElement).blur()}
+                        min={1}
+                        max={12}
+                        placeholder="12"
+                      />
+                      <span className={styles.editUnit}>월</span>
+                    </div>
+                  </div>
+                  <div className={styles.editRow}>
+                    <span className={styles.editRowLabel}>전략</span>
+                    <div className={styles.typeButtons}>
+                      <button
+                        type="button"
+                        className={`${styles.typeBtn} ${isaEditValues.strategy === 'pension_savings' ? styles.active : ''}`}
+                        onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'pension_savings' })}
+                      >
+                        연금저축 전환
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.typeBtn} ${isaEditValues.strategy === 'irp' ? styles.active : ''}`}
+                        onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'irp' })}
+                      >
+                        IRP 전환
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.typeBtn} ${isaEditValues.strategy === 'cash' ? styles.active : ''}`}
+                        onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'cash' })}
+                      >
+                        현금 인출
+                      </button>
+                    </div>
+                  </div>
+                  <div className={styles.editActions}>
+                    <button className={styles.cancelBtn} onClick={cancelIsaEdit}>취소</button>
+                    <button className={styles.saveBtn} onClick={saveIsa}>저장</button>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.assetItem}>
+                  <div className={styles.itemMain}>
+                    <span className={styles.itemLabel}>배우자 ISA</span>
+                    <span className={styles.itemAmount}>
+                      {spouseIsa.balance ? formatMoney(spouseIsa.balance) : '0'}
+                    </span>
+                    {spouseIsa.balance ? (
+                      <span className={styles.itemMeta}>
+                        {spouseIsa.monthly ? `월 ${formatMoney(spouseIsa.monthly)} 납입 | ` : ''}
+                        {spouseIsa.maturityYear}년 {spouseIsa.maturityMonth}월 만기
+                        {' → '}{ISA_STRATEGY_LABELS[spouseIsa.strategy as keyof typeof ISA_STRATEGY_LABELS]}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className={styles.itemActions}>
+                    <button className={styles.editBtn} onClick={() => startEditIsa('spouse')}>
+                      <Pencil size={16} />
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        </section>
+
         <p className={styles.infoText}>
-          연금저축, IRP, ISA는 연금 탭에서 관리됩니다.
+          연금저축, IRP는 연금 탭에서 관리됩니다.
         </p>
       </div>
 
@@ -656,6 +1012,10 @@ export function SavingsTab({ data, onUpdateData }: SavingsTabProps) {
                   <span className={styles.subLabel}>투자 계좌</span>
                   <span className={styles.subValue}>{formatMoney(investmentTotal)}</span>
                 </div>
+                <div className={styles.subValueItem}>
+                  <span className={styles.subLabel}>절세계좌</span>
+                  <span className={styles.subValue}>{formatMoney(isaTotal)}</span>
+                </div>
               </div>
             </div>
 
@@ -670,6 +1030,10 @@ export function SavingsTab({ data, onUpdateData }: SavingsTabProps) {
                 <div className={styles.countRow}>
                   <span className={styles.countLabel}>투자 계좌</span>
                   <span className={styles.countValue}>{investmentAccounts.length}개</span>
+                </div>
+                <div className={styles.countRow}>
+                  <span className={styles.countLabel}>절세계좌 (ISA)</span>
+                  <span className={styles.countValue}>{(selfIsa.balance ? 1 : 0) + (isMarried && spouseIsa.balance ? 1 : 0)}개</span>
                 </div>
               </div>
             </div>

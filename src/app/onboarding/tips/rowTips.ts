@@ -41,7 +41,7 @@ function toMonthly(amount: number | null, frequency: 'monthly' | 'yearly'): numb
 export function getRowTip(rowId: string, data: OnboardingData): DynamicTip {
   const age = calculateAge(data.birth_date)
   const spouseAge = data.spouse?.birth_date ? calculateAge(data.spouse.birth_date) : null
-  const lifeExpectancy = 90
+  const lifeExpectancy = 100
   const retirementYears = lifeExpectancy - data.target_retirement_age
   const yearsToRetirement = age ? data.target_retirement_age - age : null
 

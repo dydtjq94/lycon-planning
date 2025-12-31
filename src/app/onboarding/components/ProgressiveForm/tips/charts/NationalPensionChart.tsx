@@ -61,8 +61,15 @@ function compareNationalPensionTimingInManwon(monthlyPension: number, lifeExpect
 }
 
 export function NationalPensionChart({ data }: NationalPensionChartProps) {
+  // 본인 국민연금
+  const myPension = data.nationalPension || 0
+  // 배우자 국민연금 (배우자가 일하는 경우)
+  const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
+  const spousePension = hasWorkingSpouse ? (data.spouseNationalPension || 0) : 0
+  const totalMonthlyPension = myPension + spousePension
+
   // 국민연금 데이터가 없으면 안내 메시지
-  if (!data.nationalPension || data.nationalPension === 0) {
+  if (myPension === 0 && spousePension === 0) {
     return (
       <div className={styles.chartPlaceholder}>
         <p>국민연금 예상 수령액을 입력하면</p>
@@ -71,9 +78,8 @@ export function NationalPensionChart({ data }: NationalPensionChartProps) {
     )
   }
 
-  // 입력값 그대로 사용 (이미 만원 단위)
-  const monthlyPension = data.nationalPension
-  const timingComparison = compareNationalPensionTimingInManwon(monthlyPension, LIFE_EXPECTANCY)
+  // 본인 기준 수령 시기별 비교 (합계 기준)
+  const timingComparison = compareNationalPensionTimingInManwon(totalMonthlyPension, LIFE_EXPECTANCY)
 
   // 차트 데이터 (만원 단위 그대로)
   const chartData = {
@@ -156,26 +162,52 @@ export function NationalPensionChart({ data }: NationalPensionChartProps) {
       </div>
 
       <div className={styles.chartFooter}>
-        <div className={styles.statItem}>
-          <span className={styles.statValue}>{formatAmount(monthlyPension)}</span>
-          <span className={styles.statLabel}>월 수령액 (65세)</span>
-        </div>
-        <div className={styles.statItem}>
-          <span className={styles.statValueSuccess}>{optimalTiming.startAge}세</span>
-          <span className={styles.statLabel}>최적 수령시기</span>
-        </div>
-        <div className={styles.statItem}>
-          <span className={styles.statValue}>{formatAmount(optimalTiming.totalAmount)}</span>
-          <span className={styles.statLabel}>최대 총액</span>
-        </div>
+        {/* 배우자가 있는 경우: 본인/배우자/합계 표시 */}
+        {hasWorkingSpouse && spousePension > 0 ? (
+          <>
+            <div className={styles.statItem}>
+              <span className={styles.statValue}>{formatAmount(myPension)}</span>
+              <span className={styles.statLabel}>본인 (월)</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statValue}>{formatAmount(spousePension)}</span>
+              <span className={styles.statLabel}>배우자 (월)</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statValueSuccess}>{formatAmount(totalMonthlyPension)}</span>
+              <span className={styles.statLabel}>합계 (월)</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className={styles.statItem}>
+              <span className={styles.statValue}>{formatAmount(myPension)}</span>
+              <span className={styles.statLabel}>월 수령액 (65세)</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statValueSuccess}>{optimalTiming.startAge}세</span>
+              <span className={styles.statLabel}>최적 수령시기</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statValue}>{formatAmount(optimalTiming.totalAmount)}</span>
+              <span className={styles.statLabel}>최대 총액</span>
+            </div>
+          </>
+        )}
       </div>
 
-      {optimalTiming.startAge !== 65 && (
+      {optimalTiming.startAge !== 65 && !hasWorkingSpouse && (
         <div className={styles.savingsMessage}>
           {optimalTiming.startAge < 65
             ? `조기수령 시 월 ${formatAmount(optimalTiming.monthlyAmount)}로 줄지만, 기대수명까지 총액은 더 많습니다.`
             : `${optimalTiming.startAge}세까지 연기하면 월 ${formatAmount(optimalTiming.monthlyAmount)}로 +${optimalTiming.adjustmentRate}% 증가합니다.`
           }
+        </div>
+      )}
+
+      {hasWorkingSpouse && spousePension > 0 && (
+        <div className={styles.savingsMessage}>
+          부부 합산 월 {formatAmount(totalMonthlyPension)}, 연간 {formatAmount(totalMonthlyPension * 12)}을 수령합니다.
         </div>
       )}
     </div>

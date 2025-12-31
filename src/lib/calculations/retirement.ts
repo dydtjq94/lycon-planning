@@ -19,7 +19,7 @@ export function generateRetirementSimulation(params: SimulationParams): Simulati
   const {
     currentAge,
     retirementAge,
-    lifeExpectancy = 90,
+    lifeExpectancy = 100,
     currentAssets,
     monthlyIncome,
     monthlyExpense,

@@ -85,6 +85,9 @@ export const RATE_CATEGORY_LABELS: Record<RateCategory, string> = {
   fixed: '고정',
 }
 
+// 소득 연동 출처 타입
+export type IncomeSourceType = 'realEstate' | 'manual'
+
 // 소득 항목 (대시보드용)
 export interface DashboardIncomeItem {
   id: string
@@ -102,11 +105,17 @@ export interface DashboardIncomeItem {
   growthRate: number // % (연간) - 커스텀 모드에서 사용하는 기본값
   rateCategory: RateCategory // 상승률 카테고리 (시나리오 모드에 따라 적용)
   isSystem?: boolean // 시스템에서 자동 생성된 항목 (연금 탭 등)
+  // 연동 정보 (다른 탭에서 생성된 경우)
+  sourceType?: IncomeSourceType
+  sourceId?: string // 원본 항목 ID (realEstateProperty.id 등)
 }
 
 // 지출 항목 타입 (대시보드용)
 export type DashboardExpenseType = 'fixed' | 'variable' | 'onetime' | 'medical' | 'interest' | 'housing'
 export type DashboardExpenseFrequency = 'monthly' | 'yearly'
+
+// 지출 연동 출처 타입
+export type ExpenseSourceType = 'debt' | 'housing' | 'manual'
 
 // 지출 항목 (대시보드용)
 export interface DashboardExpenseItem {
@@ -122,6 +131,9 @@ export interface DashboardExpenseItem {
   endMonth: number | null // custom일 때만 사용
   growthRate: number // % (연간) - 커스텀 모드에서 사용하는 기본값
   rateCategory: RateCategory // 상승률 카테고리 (시나리오 모드에 따라 적용)
+  // 연동 정보 (다른 탭에서 생성된 경우)
+  sourceType?: ExpenseSourceType
+  sourceId?: string // 원본 항목 ID (debt.id 등)
 }
 
 // 저축 계좌 타입
@@ -148,6 +160,61 @@ export interface InvestmentAccount {
   name: string             // 계좌명 (예: 삼성증권 국내, 키움 해외 등)
   balance: number          // 평가액 (만원)
   expectedReturn?: number  // 예상 수익률 (%)
+}
+
+// 실물 자산 타입 (저축/투자 외 실물 자산)
+export type PhysicalAssetType = 'car' | 'precious_metal' | 'custom'
+
+// 부동산 용도 타입 (온보딩 거주용 외 추가 부동산)
+export type RealEstateUsageType = 'investment' | 'rental' | 'land'
+// investment: 투자용 (아파트, 주택)
+// rental: 임대용 (상가, 오피스텔)
+// land: 토지
+
+// 추가 부동산 (투자용, 임대용, 토지)
+export interface RealEstateProperty {
+  id: string
+  usageType: RealEstateUsageType    // 용도
+  name: string                      // 예: "강남 오피스텔", "판교 상가"
+
+  // 가치 정보
+  marketValue: number               // 시세/매입가 (만원)
+  purchaseYear?: number
+  purchaseMonth?: number
+
+  // 임대 수익
+  hasRentalIncome?: boolean
+  monthlyRent?: number              // 월 임대료 (만원)
+  deposit?: number                  // 임대 보증금 (만원)
+
+  // 대출 정보
+  hasLoan?: boolean
+  loanAmount?: number               // 대출금액 (만원)
+  loanRate?: number                 // 금리 (%)
+  loanMaturity?: string             // 만기 (YYYY-MM)
+  loanRepaymentType?: '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환' | null
+}
+
+// 실물 자산 금융 타입 (대출/할부/없음)
+export type AssetFinancingType = 'loan' | 'installment' | 'none'
+
+// 실물 자산 대출 상환방식
+export type AssetLoanRepaymentType = '만기일시상환' | '원리금균등상환' | '원금균등상환' | null
+
+// 실물 자산
+export interface PhysicalAsset {
+  id: string
+  type: PhysicalAssetType
+  name: string                   // 자산명 (예: BMW 5시리즈, 금 50g)
+  purchaseValue: number          // 매입가 (만원)
+  purchaseYear?: number          // 취득 연도
+  purchaseMonth?: number         // 취득 월
+  // 대출/할부 정보
+  financingType?: AssetFinancingType  // 금융 타입: 대출/할부/없음
+  loanAmount?: number            // 대출/할부 금액 (만원)
+  loanRate?: number              // 금리 (%)
+  loanMaturity?: string          // 만기 (YYYY-MM)
+  loanRepaymentType?: AssetLoanRepaymentType  // 상환방식
 }
 
 // 온보딩 데이터
@@ -209,6 +276,12 @@ export interface OnboardingData {
   // 금융자산 - 투자 계좌 (복수)
   investmentAccounts: InvestmentAccount[]
 
+  // 실물 자산 (자동차, 귀금속 등)
+  physicalAssets: PhysicalAsset[]
+
+  // 추가 부동산 (투자용, 임대용, 토지 - 거주용 제외)
+  realEstateProperties: RealEstateProperty[]
+
   // 금융자산 - 현금성 자산 (deprecated - 하위 호환용)
   cashCheckingAccount: number | null      // 입출금통장
   cashCheckingRate: number | null         // 입출금통장 금리
@@ -230,10 +303,10 @@ export interface OnboardingData {
   debts: DebtInput[]
   hasNoDebt: boolean | null  // null = 아직 선택 안함, true = 부채 없음
 
-  // 연금
+  // 연금 - 본인
   nationalPension: number | null           // 국민연금 예상 월 수령액
   nationalPensionStartAge: number | null   // 국민연금 수령 시작 나이
-  retirementPensionType: 'DB' | 'DC' | 'corporate_irp' | 'severance' | null  // 퇴직연금/퇴직금 유형
+  retirementPensionType: 'DB' | 'DC' | 'corporate_irp' | 'severance' | 'unknown' | null  // 퇴직연금/퇴직금 유형
   retirementPensionBalance: number | null  // 퇴직연금 현재 잔액
   retirementPensionReceiveType: 'lump_sum' | 'annuity' | null  // 수령 방식: 일시금 / 연금
   retirementPensionStartAge: number | null  // 연금 수령 시작 나이
@@ -241,12 +314,15 @@ export interface OnboardingData {
   personalPensionMonthly: number | null    // 개인연금 월 납입액 (deprecated)
   personalPensionBalance: number | null    // 개인연금 현재 잔액 (deprecated)
   irpBalance: number | null                // IRP 현재 잔액
+  irpMonthlyContribution: number | null    // IRP 월 납입액
   irpStartAge: number | null               // IRP 수령 시작 나이
   irpReceivingYears: number | null         // IRP 수령 기간 (년)
   pensionSavingsBalance: number | null     // 연금저축 현재 잔액
+  pensionSavingsMonthlyContribution: number | null  // 연금저축 월 납입액
   pensionSavingsStartAge: number | null    // 연금저축 수령 시작 나이
   pensionSavingsReceivingYears: number | null  // 연금저축 수령 기간 (년)
   isaBalance: number | null                // ISA 현재 잔액
+  isaMonthlyContribution: number | null    // ISA 월 납입액
   isaMaturityYear: number | null           // ISA 만기 연도
   isaMaturityMonth: number | null          // ISA 만기 월
   isaMaturityStrategy: 'pension_savings' | 'irp' | 'cash' | null  // ISA 만기 후 전략
@@ -254,6 +330,31 @@ export interface OnboardingData {
   otherPensionMonthly: number | null       // 기타연금 예상 월 수령액
   hasNoPension: boolean | null             // null = 아직 선택 안함, true = 연금 없음
   yearsOfService: number | null            // 현재 근속연수
+
+  // 연금 - 배우자
+  spouseNationalPension: number | null              // 배우자 국민연금 예상 월 수령액
+  spouseNationalPensionStartAge: number | null      // 배우자 국민연금 수령 시작 나이
+  spouseRetirementPensionType: 'DB' | 'DC' | 'corporate_irp' | 'severance' | 'unknown' | null
+  spouseRetirementPensionBalance: number | null     // 배우자 퇴직연금 현재 잔액
+  spouseRetirementPensionReceiveType: 'lump_sum' | 'annuity' | null
+  spouseRetirementPensionStartAge: number | null
+  spouseRetirementPensionReceivingYears: number | null
+  spouseYearsOfService: number | null               // 배우자 현재 근속연수
+  spousePensionSavingsBalance: number | null        // 배우자 연금저축 잔액
+  spousePensionSavingsMonthlyContribution: number | null
+  spousePensionSavingsStartAge: number | null
+  spousePensionSavingsReceivingYears: number | null
+  spouseIrpBalance: number | null                   // 배우자 IRP 잔액
+  spouseIrpMonthlyContribution: number | null
+  spouseIrpStartAge: number | null
+  spouseIrpReceivingYears: number | null
+
+  // ISA - 배우자
+  spouseIsaBalance: number | null                   // 배우자 ISA 잔액
+  spouseIsaMonthlyContribution: number | null       // 배우자 ISA 월 납입액
+  spouseIsaMaturityYear: number | null              // 배우자 ISA 만기 연도
+  spouseIsaMaturityMonth: number | null             // 배우자 ISA 만기 월
+  spouseIsaMaturityStrategy: 'pension_savings' | 'irp' | 'cash' | null
 
   // 현금 흐름 분배 규칙
   cashFlowRules: CashFlowRule[]
@@ -277,13 +378,20 @@ export interface AssetInput {
   notes?: string
 }
 
+// 부채 연동 출처 타입
+export type DebtSourceType = 'physicalAsset' | 'housing' | 'realEstate' | 'manual'
+
 // 부채 입력 폼 (대출 상세 정보 포함)
 export interface DebtInput {
+  id: string              // 고유 ID
   name: string
-  amount: number | null  // 대출 금액
-  rate: number | null    // 금리 (%)
-  maturity: string | null  // 만기 (YYYY-MM)
+  amount: number | null   // 대출 금액
+  rate: number | null     // 금리 (%)
+  maturity: string | null // 만기 (YYYY-MM)
   repaymentType: '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환' | null
+  // 연동 정보 (다른 탭에서 생성된 경우)
+  sourceType?: DebtSourceType
+  sourceId?: string       // 원본 항목 ID (physicalAsset.id 등)
 }
 
 // 스코어 타입
@@ -307,8 +415,8 @@ export interface DashboardSummary {
   scores: Scores
 }
 
-// 시나리오 모드 타입
-export type ScenarioMode = 'optimistic' | 'average' | 'pessimistic' | 'custom'
+// 시나리오 모드 타입: 낙관, 평균, 비관, 커스텀(직접입력), 개별(항목별)
+export type ScenarioMode = 'optimistic' | 'average' | 'pessimistic' | 'custom' | 'individual'
 
 // 시나리오별 성장률 프리셋
 export interface ScenarioRates {
@@ -318,8 +426,8 @@ export interface ScenarioRates {
   realEstateGrowthRate: number    // 부동산 상승률 (%)
 }
 
-// 시나리오 프리셋 상수
-export const SCENARIO_PRESETS: Record<Exclude<ScenarioMode, 'custom'>, ScenarioRates> = {
+// 시나리오 프리셋 상수 (낙관/평균/비관만 해당)
+export const SCENARIO_PRESETS: Record<'optimistic' | 'average' | 'pessimistic', ScenarioRates> = {
   optimistic: {
     inflationRate: 2.0,
     incomeGrowthRate: 5.0,
@@ -377,7 +485,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   savingsGrowthRate: 2.5,
   realEstateGrowthRate: 2.4,
   debtInterestRate: 3.5,
-  lifeExpectancy: 90,
+  lifeExpectancy: 100,
   customRates: {
     inflationRate: 2.5,
     incomeGrowthRate: 3.3,
@@ -397,7 +505,7 @@ export interface SimulationSettings {
 export const DEFAULT_SETTINGS: SimulationSettings = {
   inflationRate: 2.5,
   investmentReturn: 5,
-  lifeExpectancy: 90,
+  lifeExpectancy: 100,
 }
 
 // 은퇴 시뮬레이션 데이터 포인트
@@ -508,6 +616,7 @@ export interface PensionData {
   monthlyContribution?: number      // 월 납입액 (만원)
   returnRate?: number               // 예상 수익률 (%)
   paymentStartYear?: number         // 수령 시작 연도
+  paymentStartMonth?: number        // 수령 시작 월 (1-12)
   paymentYears?: number             // 수령 기간 (년)
 }
 

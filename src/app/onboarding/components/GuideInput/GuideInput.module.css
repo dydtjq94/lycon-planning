@@ -1053,7 +1053,7 @@
 .pensionSection {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
   width: 100%;
   max-width: 380px;
 }
@@ -1092,6 +1092,19 @@
   padding-top: 16px;
   border-top: 1px solid #e8e8ed;
   margin-top: 8px;
+}
+
+.retirementPensionInputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.inputLabel {
+  font-size: 13px;
+  color: #78716C;
+  min-width: 60px;
 }
 
 .buttonGroupSmall {

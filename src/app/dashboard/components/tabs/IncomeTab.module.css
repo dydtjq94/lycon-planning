@@ -137,6 +137,24 @@
   color: #ff3b30;
 }
 
+/* 연동 배지 */
+.linkedBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #f5f5f7;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #86868b;
+  flex-shrink: 0;
+}
+
+.linkedBadge svg {
+  opacity: 0.7;
+}
+
 /* ========== 편집 모드 ========== */
 .editItem {
   display: flex;

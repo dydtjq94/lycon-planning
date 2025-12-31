@@ -50,7 +50,7 @@ export function TipPanel({ activeSection, activeRow, data }: TipPanelProps) {
       {/* TIP 텍스트 */}
       <div key={`tip-${activeRow}`} className={styles.tipArea}>
         <div className={styles.tipHeader}>
-          <span className={styles.tipLabel}>Lycon</span>
+          <span className={styles.tipLabel}>Lycon TIP</span>
           <h3 className={styles.tipTitle}>{tipContent.title}</h3>
         </div>
         <p className={styles.tipDescription}>{tipContent.description}</p>

@@ -182,29 +182,50 @@ formatMoney(64724)    // "6억 4,724만"
 const wonValue = inputValue * 10000 // 100,000,000원
 ```
 
-## 시간 단위 규칙 (중요!)
+## 시간 단위 규칙 (매우 중요!)
 
-- **모든 기간/시뮬레이션은 월 단위**: 내부 데이터와 계산은 반드시 월(month) 단위
-- **년도만 사용 금지**: startYear만 저장하지 말고, startYear + startMonth 함께 저장
-- **표시는 유연하게**: 사용자에게는 년 단위로 보여줘도 되지만, 저장/계산은 월 단위
-- **reference_project 참고**: cashflowSimulator.js 패턴 참고
+### 핵심 원칙
+- **모든 재무 데이터는 년+월 구조**: 년도만 저장하는 필드 절대 금지
+- **시작일 = 해당 월 1일**: startYear/startMonth → 그 달 1일부터
+- **종료일 = 해당 월 말일**: endYear/endMonth → 그 달 마지막 날까지
+- **일(day)은 저장하지 않음**: 월 단위가 최소 단위
 
+### 적용 대상 (예외 없음)
+- 소득/지출 기간: startYear + startMonth, endYear + endMonth
+- 자산 취득일: purchaseYear + purchaseMonth
+- 대출 만기: maturityYear + maturityMonth (또는 "YYYY-MM" 문자열)
+- 연금 수령 시작: paymentStartYear + paymentStartMonth (또는 startYear + startMonth)
+- 부동산 계약: startYear + startMonth, endYear + endMonth
+- ISA/저축 만기: maturityYear + maturityMonth
+
+### 데이터 구조 예시
 ```tsx
-// 기간 데이터 구조
+// 기간 데이터
 interface Period {
-  startYear: number
-  startMonth: number  // 1-12
-  endYear: number
-  endMonth: number    // 1-12
+  startYear: number   // 시작 연도
+  startMonth: number  // 시작 월 (1-12) - 해당 월 1일부터
+  endYear: number     // 종료 연도
+  endMonth: number    // 종료 월 (1-12) - 해당 월 말일까지
 }
 
-// 월 단위 계산 예시
-const monthsElapsed = (endYear - startYear) * 12 + (endMonth - startMonth)
+// 취득일/만기일
+interface AssetDate {
+  purchaseYear: number
+  purchaseMonth: number  // 1-12
+}
 
-// 연간 상승률 → 월간 상승률 변환 (복리)
+// 만기일 문자열 형식 (대출 등)
+const maturity = "2027-06"  // YYYY-MM 형식
+```
+
+### 계산 예시
+```tsx
+// 월 수 계산
+const months = (endYear - startYear) * 12 + (endMonth - startMonth)
+
+// 연간 상승률 → 월간 상승률 변환
 const monthlyRate = Math.pow(1 + annualRate, 1/12) - 1
 
-// 표시할 때는 년도로 간략화 가능
-const displayPeriod = `${startYear}년 ${startMonth}월 ~ ${endYear}년 ${endMonth}월`
-// 또는 간략하게: `${startYear}.${startMonth} ~ ${endYear}.${endMonth}`
+// 표시 형식
+const display = `${year}.${String(month).padStart(2, '0')}`  // "2025.06"
 ```

@@ -43,6 +43,80 @@
   color: #1d1d1f;
 }
 
+.sectionTotal {
+  font-size: 14px;
+  font-weight: 500;
+  color: #ff3b30;
+}
+
+/* 부채 리스트 */
+.debtList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.debtItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.debtItem:last-of-type {
+  border-bottom: none;
+}
+
+.debtIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #f5f5f7;
+  border-radius: 8px;
+  color: #86868b;
+  flex-shrink: 0;
+}
+
+.debtMain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.debtName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.debtAmount {
+  font-size: 17px;
+  font-weight: 600;
+  color: #ff3b30;
+}
+
+.debtMeta {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.debtBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #86868b;
+  background: #f5f5f7;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
 .placeholder {
   font-size: 14px;
   color: #86868b;

@@ -76,7 +76,7 @@ export function CashFlowOverviewTab({ data, settings }: CashFlowOverviewTabProps
   const savingsRate = totalIncome > 0 ? Math.round((monthlySavings / totalIncome) * 100) : 0
 
   // 연간 현금흐름 예측 (현재 ~ 은퇴 ~ 기대수명)
-  const lifeExpectancy = settings.lifeExpectancy || 85
+  const lifeExpectancy = settings.lifeExpectancy || 100
   const yearsToRetirement = Math.max(0, retirementAge - currentAge)
 
   // 국민연금

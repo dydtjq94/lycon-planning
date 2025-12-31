@@ -80,10 +80,14 @@ function migrateToAccountStructure(data: OnboardingData): OnboardingData {
   }
 
   // 마이그레이션할 데이터가 없으면 빈 배열로 초기화
+  // 마이그레이션 후 원본 필드는 null로 설정 (중복 방지)
   return {
     ...data,
     savingsAccounts: savingsAccounts.length > 0 ? savingsAccounts : data.savingsAccounts || [],
     investmentAccounts: investmentAccounts.length > 0 ? investmentAccounts : data.investmentAccounts || [],
+    // 마이그레이션된 필드는 null로 설정
+    cashCheckingAccount: savingsAccounts.length > 0 ? null : data.cashCheckingAccount,
+    cashSavingsAccount: savingsAccounts.length > 0 ? null : data.cashSavingsAccount,
   }
 }
 import { Sidebar } from './components'
@@ -124,7 +128,7 @@ const sectionTitles: Record<string, string> = {
   income: '소득 관리',
   expense: '지출 관리',
   savings: '저축/투자 관리',
-  asset: '자산 관리',
+  asset: '실물 자산 관리',
   debt: '부채 관리',
   realEstate: '부동산 관리',
   pension: '연금 관리',

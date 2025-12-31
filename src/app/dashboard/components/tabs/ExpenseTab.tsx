@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Trash2, TrendingDown, Pencil, ChevronDown, ChevronUp, Info } from "lucide-react";
+import { Plus, Trash2, TrendingDown, Pencil, ChevronDown, ChevronUp, Info, CreditCard } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -1543,12 +1543,77 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
           housingItems,
           "부동산 탭에서 등록한 월세, 관리비가 표시됩니다"
         )}
-        {renderSection(
-          "이자 비용",
-          "interest",
-          interestItems,
-          "부채 탭에서 등록한 대출 이자가 표시됩니다"
-        )}
+        {/* 이자 비용 섹션 - 부채에서 연동 */}
+        <div className={styles.expenseSection}>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTitle}>이자 비용</span>
+          </div>
+          <p className={styles.sectionDesc}>부채 탭에서 등록한 대출 상환금이 표시됩니다</p>
+
+          <div className={styles.itemList}>
+            {interestItems.map((item) => {
+              const isLinked = item.sourceType === 'debt';
+              const isEditing = editingId === item.id;
+
+              // 연동된 항목은 읽기 전용
+              if (isLinked) {
+                return (
+                  <div key={item.id} className={styles.expenseItem}>
+                    <div className={styles.itemMain}>
+                      <span className={styles.itemLabel}>{item.label}</span>
+                      <span className={styles.itemAmount}>
+                        {formatAmountWithFreq(item)}
+                      </span>
+                      <span className={styles.itemMeta}>
+                        {formatPeriod(item)}
+                      </span>
+                    </div>
+                    <div className={styles.linkedBadge}>
+                      <CreditCard size={12} />
+                      <span>부채</span>
+                    </div>
+                  </div>
+                );
+              }
+
+              // 수동 입력 항목
+              if (isEditing && editForm) {
+                return (
+                  <div key={item.id} className={styles.editItem}>
+                    {/* 기존 편집 로직 */}
+                  </div>
+                );
+              }
+              return (
+                <div key={item.id} className={styles.expenseItem}>
+                  <div className={styles.itemMain}>
+                    <span className={styles.itemLabel}>{item.label}</span>
+                    <span className={styles.itemAmount}>
+                      {formatAmountWithFreq(item)}
+                    </span>
+                    <span className={styles.itemMeta}>
+                      {formatPeriod(item)} | 연 {item.displayGrowthRate}% 상승
+                    </span>
+                  </div>
+                  <div className={styles.itemActions}>
+                    <button className={styles.editBtn} onClick={() => startEdit(item)}>
+                      <Pencil size={16} />
+                    </button>
+                    <button className={styles.deleteBtn} onClick={() => handleDelete(item.id)}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {interestItems.length === 0 && (
+              <p className={styles.emptyText}>
+                부채 탭에서 대출을 등록하면 월 상환금이 표시됩니다
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* 오른쪽: 요약 */}

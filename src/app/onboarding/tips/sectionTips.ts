@@ -87,14 +87,14 @@ export function getDynamicTip(
     case 'household':
       // 가계 정보 섹션 - 이름, 생년월일, 배우자, 자녀
       if (age) {
-        const lifeExpectancy = 90
+        const lifeExpectancy = 100
         const remainingLife = lifeExpectancy - age
         return {
           title: data.name
             ? `${data.name}님, 반갑습니다`
             : '가계 정보를 입력하세요',
           description: data.name
-            ? `${age}세, 아직 늦지 않았어요. 기대수명 90세 기준, 앞으로 약 ${remainingLife}년의 시간이 있습니다.`
+            ? `${age}세, 아직 늦지 않았어요. 100세 시대, 앞으로 약 ${remainingLife}년의 시간이 있습니다.`
             : '은퇴 준비의 첫 걸음입니다. 당신만을 위한 맞춤 분석을 시작할게요.',
           stat: data.name ? `${remainingLife}년` : '상위 30%',
           statLabel: data.name ? '앞으로의 시간' : '은퇴 준비를 시작한 사람',
@@ -132,7 +132,7 @@ export function getDynamicTip(
     case 'goals':
       // 목표 섹션 - 은퇴 나이, 은퇴 자금
       if (age && data.target_retirement_age > 0) {
-        const lifeExpectancy = 90
+        const lifeExpectancy = 100
         const retirementYears = lifeExpectancy - data.target_retirement_age
         const yearsUntilRetirement = data.target_retirement_age - age
         return {

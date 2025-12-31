@@ -32,13 +32,29 @@ export function getEffectiveRate(
     return baseRate
   }
 
-  // 커스텀 모드는 기본값 사용
-  if (scenarioMode === 'custom') {
+  // 개별 모드는 항목별 개별 상승률 사용
+  if (scenarioMode === 'individual') {
     return baseRate
   }
 
-  // 프리셋 모드는 해당 카테고리의 프리셋 값 사용
-  const preset = SCENARIO_PRESETS[scenarioMode]
+  // 커스텀 모드는 globalSettings에 저장된 값 사용
+  if (scenarioMode === 'custom') {
+    switch (rateCategory) {
+      case 'inflation':
+        return globalSettings.inflationRate
+      case 'income':
+        return globalSettings.incomeGrowthRate
+      case 'investment':
+        return globalSettings.investmentReturnRate
+      case 'realEstate':
+        return globalSettings.realEstateGrowthRate
+      default:
+        return baseRate
+    }
+  }
+
+  // 프리셋 모드(낙관/평균/비관)는 해당 카테고리의 프리셋 값 사용
+  const preset = SCENARIO_PRESETS[scenarioMode as 'optimistic' | 'average' | 'pessimistic']
 
   switch (rateCategory) {
     case 'inflation':
