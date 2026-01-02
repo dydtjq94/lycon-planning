@@ -97,7 +97,7 @@ export function createDefaultFinancialItems(
   items.push({
     simulation_id: simulationId,
     category: 'income',
-    type: 'salary',
+    type: 'labor',
     title: '본인 급여',
     owner: 'self',
     start_year: currentYear,
@@ -118,7 +118,7 @@ export function createDefaultFinancialItems(
     items.push({
       simulation_id: simulationId,
       category: 'income',
-      type: 'salary',
+      type: 'labor',
       title: '배우자 급여',
       owner: 'spouse',
       start_year: currentYear,
@@ -368,7 +368,7 @@ export function createDefaultFinancialItems(
  */
 export const ADDABLE_ITEM_TYPES = {
   income: [
-    { type: 'salary', label: '급여' },
+    { type: 'labor', label: '급여' },
     { type: 'business', label: '사업소득' },
     { type: 'side_income', label: '부업/프리랜서' },
     { type: 'rental', label: '임대소득' },
@@ -542,7 +542,7 @@ export const CASHFLOW_UI_GROUPS = {
     {
       group: 'labor',
       label: '근로소득',
-      types: ['salary'],
+      types: ['labor'],
       description: '급여, 상여금 등',
     },
     {

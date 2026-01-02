@@ -559,7 +559,7 @@ export type FinancialCategory =
 export type OwnerType = 'self' | 'spouse' | 'child' | 'common'
 
 // 재무 항목 타입 (카테고리별)
-export type IncomeType = 'salary' | 'business' | 'side_income' | 'rental' | 'dividend' | 'other'
+export type IncomeType = 'labor' | 'business' | 'side_income' | 'rental' | 'dividend' | 'other'
 export type ExpenseType = 'living' | 'housing' | 'maintenance' | 'education' | 'child' | 'insurance' | 'transport' | 'health' | 'travel' | 'parents' | 'wedding' | 'leisure' | 'other'
 export type SavingsType = 'emergency_fund' | 'savings_account' | 'stock' | 'fund' | 'crypto' | 'other'
 export type PensionType = 'national' | 'retirement' | 'personal' | 'irp' | 'severance'

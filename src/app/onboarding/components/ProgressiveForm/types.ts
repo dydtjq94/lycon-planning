@@ -1,6 +1,45 @@
 import type { OnboardingData } from '@/types'
 import type { SectionId } from '../SectionForm'
 
+// ============================================
+// 유틸리티 함수
+// ============================================
+
+/**
+ * 배우자가 일하는지 확인 (은퇴 나이가 설정되어 있으면 일하는 것으로 간주)
+ */
+export function hasWorkingSpouse(data: OnboardingData): boolean {
+  return data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
+}
+
+/**
+ * 퇴직연금 타입이 DC형인지 확인 (DC, 기업형IRP)
+ */
+export function isDCType(type: string | null | undefined): boolean {
+  return type === 'DC' || type === 'corporate_irp'
+}
+
+/**
+ * 퇴직연금 타입이 DB형인지 확인 (DB, 퇴직금)
+ */
+export function isDBType(type: string | null | undefined): boolean {
+  return type === 'DB' || type === 'severance'
+}
+
+/**
+ * 퇴직연금 완료 여부 확인
+ */
+export function isRetirementPensionComplete(
+  pensionType: string | null | undefined,
+  dcBalance: number | null | undefined,
+  dbYearsOfService: number | null | undefined
+): boolean {
+  if (pensionType === 'unknown') return true
+  if (isDCType(pensionType)) return dcBalance != null
+  if (isDBType(pensionType)) return dbYearsOfService != null
+  return false
+}
+
 // Row ID 타입 정의
 export type RowId =
   | 'name'
@@ -88,8 +127,7 @@ export const rows: RowConfig[] = [
     isComplete: (data) => {
       const mainComplete = data.laborIncome !== null
       const spouseComplete = data.spouseLaborIncome !== null
-      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
-      return mainComplete && (!hasWorkingSpouse || spouseComplete)
+      return mainComplete && (!hasWorkingSpouse(data) || spouseComplete)
     },
   },
   {
@@ -99,8 +137,7 @@ export const rows: RowConfig[] = [
     isComplete: (data) => {
       const mainComplete = data.businessIncome !== null
       const spouseComplete = data.spouseBusinessIncome !== null
-      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
-      return mainComplete && (!hasWorkingSpouse || spouseComplete)
+      return mainComplete && (!hasWorkingSpouse(data) || spouseComplete)
     },
   },
   {
@@ -127,7 +164,12 @@ export const rows: RowConfig[] = [
     id: 'asset',
     label: '현금 보유',
     isVisible: (_, visible) => visible.includes('realEstate'),
-    isComplete: (data) => data.cashCheckingAccount !== null,
+    isComplete: (data) => {
+      // 온보딩 입력 (deprecated) 또는 대시보드 입력 (savingsAccounts) 체크
+      const hasOnboardingInput = data.cashCheckingAccount !== null
+      const hasDashboardInput = data.savingsAccounts && data.savingsAccounts.length > 0
+      return hasOnboardingInput || hasDashboardInput
+    },
   },
   {
     id: 'debt',
@@ -141,9 +183,8 @@ export const rows: RowConfig[] = [
     isVisible: (_, visible) => visible.includes('debt'),
     isComplete: (data) => {
       const mainComplete = data.nationalPension != null && data.nationalPension > 0
-      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
       const spouseComplete = data.spouseNationalPension != null && data.spouseNationalPension > 0
-      return mainComplete && (!hasWorkingSpouse || spouseComplete)
+      return mainComplete && (!hasWorkingSpouse(data) || spouseComplete)
     },
   },
   {
@@ -152,31 +193,18 @@ export const rows: RowConfig[] = [
     isVisible: (_, visible) => visible.includes('national_pension'),
     isComplete: (data) => {
       // 본인: DC형은 적립금, DB형은 근속년수, 모름은 바로 완료
-      const isDCType = data.retirementPensionType === 'DC' || data.retirementPensionType === 'corporate_irp'
-      const isDBType = data.retirementPensionType === 'DB' || data.retirementPensionType === 'severance'
-      const isUnknownType = data.retirementPensionType === 'unknown'
-      const mainComplete = isUnknownType
-        ? true
-        : isDCType
-          ? data.retirementPensionBalance != null
-          : isDBType
-            ? data.yearsOfService != null
-            : false
-
+      const mainComplete = isRetirementPensionComplete(
+        data.retirementPensionType,
+        data.retirementPensionBalance,
+        data.yearsOfService
+      )
       // 배우자
-      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
-      const spouseIsDCType = data.spouseRetirementPensionType === 'DC' || data.spouseRetirementPensionType === 'corporate_irp'
-      const spouseIsDBType = data.spouseRetirementPensionType === 'DB' || data.spouseRetirementPensionType === 'severance'
-      const spouseIsUnknownType = data.spouseRetirementPensionType === 'unknown'
-      const spouseComplete = spouseIsUnknownType
-        ? true
-        : spouseIsDCType
-          ? data.spouseRetirementPensionBalance != null
-          : spouseIsDBType
-            ? data.spouseYearsOfService != null
-            : false
-
-      return mainComplete && (!hasWorkingSpouse || spouseComplete)
+      const spouseComplete = isRetirementPensionComplete(
+        data.spouseRetirementPensionType,
+        data.spouseRetirementPensionBalance,
+        data.spouseYearsOfService
+      )
+      return mainComplete && (!hasWorkingSpouse(data) || spouseComplete)
     },
   },
   {
@@ -185,9 +213,8 @@ export const rows: RowConfig[] = [
     isVisible: (_, visible) => visible.includes('retirement_pension'),
     isComplete: (data) => {
       const mainComplete = (data.irpBalance != null && data.irpBalance >= 0) || (data.pensionSavingsBalance != null && data.pensionSavingsBalance >= 0)
-      const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0
       const spouseComplete = (data.spouseIrpBalance != null && data.spouseIrpBalance >= 0) || (data.spousePensionSavingsBalance != null && data.spousePensionSavingsBalance >= 0)
-      return mainComplete && (!hasWorkingSpouse || spouseComplete)
+      return mainComplete && (!hasWorkingSpouse(data) || spouseComplete)
     },
   },
 ]

@@ -40,7 +40,7 @@ export function migrateOnboardingToFinancialItems(
     items.push({
       simulation_id: simulationId,
       category: 'income',
-      type: 'salary',
+      type: 'labor',
       title: '본인 급여',
       owner: 'self',
       start_year: currentYear,
@@ -67,7 +67,7 @@ export function migrateOnboardingToFinancialItems(
     items.push({
       simulation_id: simulationId,
       category: 'income',
-      type: 'salary',
+      type: 'labor',
       title: '배우자 급여',
       owner: 'spouse',
       start_year: currentYear,

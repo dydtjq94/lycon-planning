@@ -4,9 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
-import type { OnboardingData, AssetCategory } from "@/types";
+import type { OnboardingData } from "@/types";
 import { ProgressiveForm, type SectionId, GuideInput } from "./components";
 import { rows, type RowId } from "./components/ProgressiveForm/types";
+import { simulationService, financialItemService } from "@/lib/services/financialService";
+import { migrateOnboardingToFinancialItems } from "@/lib/services/dataMigration";
 import styles from "./onboarding.module.css";
 import welcomeStyles from "./components/WelcomePage.module.css";
 
@@ -570,37 +572,38 @@ export default function OnboardingPage() {
     };
   }, [data, started, autoSave]);
 
-  // 데이터 저장
-  const saveData = async (dataToSave: OnboardingData) => {
+  const handleSubmit = async () => {
     setSaving(true);
     setError(null);
 
     const supabase = createClient();
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setError("로그인이 필요합니다");
         setSaving(false);
-        return false;
+        return;
       }
 
-      // 프로필 저장
+      // 1. 프로필 기본 정보 저장 (draft_data 제외)
       const { error: profileError } = await supabase.from("profiles").upsert({
         id: user.id,
-        name: dataToSave.name,
-        birth_date: dataToSave.birth_date || null,
-        target_retirement_age: dataToSave.target_retirement_age,
-        target_retirement_fund: dataToSave.target_retirement_fund,
+        name: data.name,
+        birth_date: data.birth_date || null,
+        target_retirement_age: data.target_retirement_age,
+        target_retirement_fund: data.target_retirement_fund,
+        settings: {
+          inflationRate: 2.5,
+          investmentReturn: 5.0,
+          lifeExpectancy: 100,
+        },
         updated_at: new Date().toISOString(),
       });
 
       if (profileError) throw profileError;
 
-      // 기존 가족 구성원 삭제 후 새로 저장
+      // 2. 가족 구성원 저장
       await supabase.from("family_members").delete().eq("user_id", user.id);
 
       const familyMembers: Array<{
@@ -615,21 +618,21 @@ export default function OnboardingPage() {
         monthly_income: number;
       }> = [];
 
-      if (dataToSave.isMarried && dataToSave.spouse && dataToSave.spouse.name) {
+      if (data.isMarried && data.spouse && data.spouse.name) {
         familyMembers.push({
           user_id: user.id,
           relationship: "spouse",
-          name: dataToSave.spouse.name,
-          birth_date: dataToSave.spouse.birth_date || null,
+          name: data.spouse.name,
+          birth_date: data.spouse.birth_date || null,
           gender: null,
           is_dependent: false,
-          is_working: dataToSave.spouse.is_working ?? false,
-          retirement_age: dataToSave.spouse.retirement_age ?? null,
-          monthly_income: dataToSave.spouse.monthly_income ?? 0,
+          is_working: data.spouse.is_working ?? false,
+          retirement_age: data.spouse.retirement_age ?? null,
+          monthly_income: data.spouse.monthly_income ?? 0,
         });
       }
 
-      dataToSave.children
+      data.children
         .filter((c) => c.name)
         .forEach((child) => {
           familyMembers.push({
@@ -652,85 +655,158 @@ export default function OnboardingPage() {
         if (familyError) throw familyError;
       }
 
-      // 자산 저장
-      await supabase.from("assets").delete().eq("user_id", user.id);
+      // 3. 기본 시뮬레이션 생성 (또는 조회)
+      const simulation = await simulationService.getDefault();
 
-      const assetsToInsert = [
-        ...dataToSave.incomes
-          .filter((i) => i.name && i.amount)
-          .map((i) => ({
-            ...i,
-            category: "income" as AssetCategory,
-            user_id: user.id,
-          })),
-        ...dataToSave.expenses
-          .filter((i) => i.name && i.amount)
-          .map((i) => ({
-            ...i,
-            category: "expense" as AssetCategory,
-            user_id: user.id,
-          })),
-        ...dataToSave.realEstates
-          .filter((i) => i.name && i.amount)
-          .map((i) => ({
-            ...i,
-            category: "real_estate" as AssetCategory,
-            user_id: user.id,
-          })),
-        ...dataToSave.assets
-          .filter((i) => i.name && i.amount)
-          .map((i) => ({
-            ...i,
-            category: "asset" as AssetCategory,
-            user_id: user.id,
-          })),
-        ...dataToSave.debts
-          .filter((i) => i.name && i.amount)
-          .map((i) => ({
-            name: i.name,
-            amount: i.amount,
-            category: "debt" as AssetCategory,
-            user_id: user.id,
-          })),
-        ...dataToSave.pensions
-          .filter((i) => i.name && i.amount)
-          .map((i) => ({
-            ...i,
-            category: "pension" as AssetCategory,
-            user_id: user.id,
-          })),
-      ];
+      // 4. 기존 재무 항목 삭제 (soft delete)
+      const { data: existingItems } = await supabase
+        .from("financial_items")
+        .select("id")
+        .eq("simulation_id", simulation.id);
 
-      if (assetsToInsert.length > 0) {
-        const { error: assetsError } = await supabase
-          .from("assets")
-          .insert(assetsToInsert);
-        if (assetsError) throw assetsError;
+      if (existingItems && existingItems.length > 0) {
+        await supabase
+          .from("financial_items")
+          .update({ is_active: false })
+          .eq("simulation_id", simulation.id);
       }
 
-      return true;
+      // 5. OnboardingData를 FinancialItem으로 변환 후 저장
+      const financialItems = migrateOnboardingToFinancialItems(data, simulation.id);
+      if (financialItems.length > 0) {
+        await financialItemService.createMany(financialItems);
+      }
+
+      // localStorage 정리
+      localStorage.removeItem(`onboarding_draft_${user.id}`);
+
+      router.push("/dashboard");
+      router.refresh();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "저장 중 오류가 발생했습니다"
       );
+    } finally {
       setSaving(false);
-      return false;
-    }
-  };
-
-  const handleSubmit = async () => {
-    const success = await saveData(data);
-    if (success) {
-      router.push("/dashboard");
-      router.refresh();
     }
   };
 
   const handleSandbox = async () => {
-    const success = await saveData(sampleData);
-    if (success) {
+    setSaving(true);
+    setError(null);
+
+    const supabase = createClient();
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError("로그인이 필요합니다");
+        setSaving(false);
+        return;
+      }
+
+      // 1. 프로필 기본 정보 저장 (샘플 데이터)
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        id: user.id,
+        name: sampleData.name,
+        birth_date: sampleData.birth_date || null,
+        target_retirement_age: sampleData.target_retirement_age,
+        target_retirement_fund: sampleData.target_retirement_fund,
+        settings: {
+          inflationRate: 2.5,
+          investmentReturn: 5.0,
+          lifeExpectancy: 100,
+        },
+        updated_at: new Date().toISOString(),
+      });
+
+      if (profileError) throw profileError;
+
+      // 2. 가족 구성원 저장
+      await supabase.from("family_members").delete().eq("user_id", user.id);
+
+      const familyMembers: Array<{
+        user_id: string;
+        relationship: string;
+        name: string;
+        birth_date: string | null;
+        gender: string | null;
+        is_dependent: boolean;
+        is_working: boolean;
+        retirement_age: number | null;
+        monthly_income: number;
+      }> = [];
+
+      if (sampleData.isMarried && sampleData.spouse && sampleData.spouse.name) {
+        familyMembers.push({
+          user_id: user.id,
+          relationship: "spouse",
+          name: sampleData.spouse.name,
+          birth_date: sampleData.spouse.birth_date || null,
+          gender: null,
+          is_dependent: false,
+          is_working: sampleData.spouse.is_working ?? false,
+          retirement_age: sampleData.spouse.retirement_age ?? null,
+          monthly_income: sampleData.spouse.monthly_income ?? 0,
+        });
+      }
+
+      sampleData.children
+        .filter((c) => c.name)
+        .forEach((child) => {
+          familyMembers.push({
+            user_id: user.id,
+            relationship: "child",
+            name: child.name,
+            birth_date: child.birth_date || null,
+            gender: child.gender || null,
+            is_dependent: false,
+            is_working: false,
+            retirement_age: null,
+            monthly_income: 0,
+          });
+        });
+
+      if (familyMembers.length > 0) {
+        const { error: familyError } = await supabase
+          .from("family_members")
+          .insert(familyMembers);
+        if (familyError) throw familyError;
+      }
+
+      // 3. 기본 시뮬레이션 생성 (또는 조회)
+      const simulation = await simulationService.getDefault();
+
+      // 4. 기존 재무 항목 삭제 (soft delete)
+      const { data: existingItems } = await supabase
+        .from("financial_items")
+        .select("id")
+        .eq("simulation_id", simulation.id);
+
+      if (existingItems && existingItems.length > 0) {
+        await supabase
+          .from("financial_items")
+          .update({ is_active: false })
+          .eq("simulation_id", simulation.id);
+      }
+
+      // 5. 샘플 데이터를 FinancialItem으로 변환 후 저장
+      const financialItems = migrateOnboardingToFinancialItems(sampleData, simulation.id);
+      if (financialItems.length > 0) {
+        await financialItemService.createMany(financialItems);
+      }
+
+      // localStorage 정리
+      localStorage.removeItem(`onboarding_draft_${user.id}`);
+
       router.push("/dashboard");
       router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "저장 중 오류가 발생했습니다"
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
