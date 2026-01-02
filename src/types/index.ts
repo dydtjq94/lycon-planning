@@ -379,14 +379,19 @@ export interface AssetInput {
 }
 
 // 부채 연동 출처 타입
-export type DebtSourceType = 'physicalAsset' | 'housing' | 'realEstate' | 'manual'
+export type DebtSourceType = 'physicalAsset' | 'housing' | 'realEstate' | 'manual' | 'credit' | 'other'
+
+// 금리 타입
+export type RateType = 'fixed' | 'floating'
 
 // 부채 입력 폼 (대출 상세 정보 포함)
 export interface DebtInput {
   id: string              // 고유 ID
   name: string
   amount: number | null   // 대출 금액
-  rate: number | null     // 금리 (%)
+  rate: number | null     // 금리 (%) - 고정금리일 때 사용
+  rateType?: RateType     // 금리 타입: 고정(fixed) / 변동(floating)
+  spread?: number         // 스프레드 (%) - 변동금리일 때: 기준금리 + 스프레드
   maturity: string | null // 만기 (YYYY-MM)
   repaymentType: '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환' | null
   // 연동 정보 (다른 탭에서 생성된 경우)
@@ -424,6 +429,7 @@ export interface ScenarioRates {
   incomeGrowthRate: number        // 소득 증가율 (%)
   investmentReturnRate: number    // 투자 수익률 (%)
   realEstateGrowthRate: number    // 부동산 상승률 (%)
+  baseRate: number                // 기준금리 (%) - 변동금리 대출에 적용
 }
 
 // 시나리오 프리셋 상수 (낙관/평균/비관만 해당)
@@ -433,18 +439,21 @@ export const SCENARIO_PRESETS: Record<'optimistic' | 'average' | 'pessimistic', 
     incomeGrowthRate: 5.0,
     investmentReturnRate: 8.0,
     realEstateGrowthRate: 4.0,
+    baseRate: 2.5,              // 기준금리 낮음
   },
   average: {
     inflationRate: 2.5,
     incomeGrowthRate: 3.0,
     investmentReturnRate: 5.0,
     realEstateGrowthRate: 2.5,
+    baseRate: 3.5,              // 기준금리 보통
   },
   pessimistic: {
     inflationRate: 4.0,
     incomeGrowthRate: 1.0,
     investmentReturnRate: 2.0,
     realEstateGrowthRate: 0.5,
+    baseRate: 5.0,              // 기준금리 높음
   },
 }
 
@@ -467,7 +476,8 @@ export interface GlobalSettings {
   realEstateGrowthRate: number    // 부동산 상승률 (%)
 
   // 부채 관련
-  debtInterestRate: number        // 부채 기본 금리 (%)
+  debtInterestRate: number        // 부채 기본 금리 (%) - 신규 대출 기본값
+  baseRate: number                // 기준금리 (%) - 변동금리 대출에 적용
 
   // 수명
   lifeExpectancy: number          // 예상 수명 (세)
@@ -485,12 +495,14 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   savingsGrowthRate: 2.5,
   realEstateGrowthRate: 2.4,
   debtInterestRate: 3.5,
+  baseRate: 3.5,
   lifeExpectancy: 100,
   customRates: {
     inflationRate: 2.5,
     incomeGrowthRate: 3.3,
     investmentReturnRate: 5,
     realEstateGrowthRate: 2.4,
+    baseRate: 3.5,
   },
 }
 
@@ -611,6 +623,9 @@ export interface PensionData {
   // 퇴직연금/퇴직금
   currentBalance?: number           // 현재 잔액 (만원)
   pensionType?: 'DB' | 'DC' | 'corporate_irp' | 'severance'
+  yearsOfService?: number           // 근속연수 (DB형에서 사용)
+  receiveType?: 'lump_sum' | 'annuity'  // 수령 방식 (일시금/연금)
+  receivingYears?: number           // 수령 기간 (년, 연금 수령 시)
 
   // 개인연금 (연금저축, IRP)
   monthlyContribution?: number      // 월 납입액 (만원)
@@ -632,7 +647,9 @@ export interface AssetData {
 export interface DebtData {
   principal: number                 // 원금 (만원)
   currentBalance?: number           // 현재 잔액 (만원)
-  interestRate: number              // 금리 (%)
+  interestRate: number              // 금리 (%) - 고정금리 또는 현재 실효금리
+  rateType?: RateType               // 금리 타입: 고정(fixed) / 변동(floating)
+  spread?: number                   // 스프레드 (%) - 변동금리일 때: 기준금리 + 스프레드
   repaymentType: '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환'
   monthlyPayment?: number           // 월 상환액 (만원)
 }

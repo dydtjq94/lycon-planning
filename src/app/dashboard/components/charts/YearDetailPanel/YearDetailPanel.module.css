@@ -1,0 +1,146 @@
+.panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.closeBtn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 순자산 섹션 */
+.netWorthSection {
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.netWorthLabel {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.netWorthValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.changePositive {
+  font-size: 14px;
+  color: #22c55e;
+  margin-top: 4px;
+}
+
+.changeNegative {
+  font-size: 14px;
+  color: #ef4444;
+  margin-top: 4px;
+}
+
+.changePercent {
+  margin-left: 4px;
+  opacity: 0.8;
+}
+
+/* 섹션 */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+/* 행 */
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.rowLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rowValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.rowValueNegative {
+  font-size: 14px;
+  font-weight: 500;
+  color: #ef4444;
+}
+
+.rowTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0 0;
+  margin-top: 4px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}

@@ -50,13 +50,16 @@ function convertItemsToLegacyData(
   // 생활비 찾기
   const livingExpense = expenses.find(i => i.type === 'living')
 
+  // 관리비 찾기
+  const maintenanceExpense = expenses.find(i => i.type === 'housing' && i.title === '관리비')
+
   // 거주용 부동산 찾기
   const residence = realEstates.find(i => i.type === 'residence')
   const residenceData = residence?.data as RealEstateData | undefined
 
-  // 저축 계좌 변환
+  // 저축 계좌 변환 (ISA 제외)
   const savingsAccounts = savings
-    .filter(i => ['emergency_fund', 'savings_account'].includes(i.type))
+    .filter(i => ['emergency_fund', 'savings_account'].includes(i.type) && i.title !== 'ISA' && i.title !== '배우자 ISA')
     .map(i => {
       const d = i.data as SavingsData
       return {
@@ -67,6 +70,12 @@ function convertItemsToLegacyData(
         interestRate: d.interestRate,
       }
     })
+
+  // ISA 찾기
+  const isaItem = savings.find(i => i.title === 'ISA')
+  const isaData = isaItem?.data as SavingsData | undefined
+  const spouseIsaItem = savings.find(i => i.title === '배우자 ISA')
+  const spouseIsaData = spouseIsaItem?.data as SavingsData | undefined
 
   // 투자 계좌 변환
   const investmentAccounts = savings
@@ -93,10 +102,53 @@ function convertItemsToLegacyData(
       rate: d.interestRate || 5,
       maturity: i.end_year && i.end_month ? `${i.end_year}-${String(i.end_month).padStart(2, '0')}` : null,
       repaymentType: d.repaymentType || '원리금균등상환',
+      sourceType: i.type === 'mortgage' ? 'housing' as const :
+                  i.type === 'car_loan' ? 'physicalAsset' as const :
+                  i.type === 'credit_loan' ? 'credit' as const : 'other' as const,
     }
   })
 
-  // 연금 데이터 추출
+  // 추가 부동산 변환 (residence 제외)
+  const assets = items.filter(i => i.category === 'asset')
+  const realEstateProperties: RealEstateProperty[] = realEstates
+    .filter(i => i.type !== 'residence')
+    .map(i => {
+      const d = i.data as RealEstateData
+      return {
+        id: i.id,
+        usageType: (i.type === 'land' ? 'land' : i.type === 'investment' ? 'investment' : 'rental') as 'investment' | 'rental' | 'land',
+        name: i.title,
+        marketValue: d.currentValue || 0,
+        purchaseYear: i.start_year,
+        purchaseMonth: i.start_month,
+        hasRentalIncome: !!(d.monthlyRent && d.monthlyRent > 0),
+        monthlyRent: d.monthlyRent,
+        deposit: d.deposit,
+        hasLoan: d.hasLoan || false,
+        loanAmount: d.loanAmount,
+        loanRate: d.loanRate,
+        loanMaturity: d.loanMaturityYear && d.loanMaturityMonth
+          ? `${d.loanMaturityYear}-${String(d.loanMaturityMonth).padStart(2, '0')}`
+          : undefined,
+        loanRepaymentType: d.loanRepaymentType,
+      }
+    })
+
+  // 실물 자산 변환
+  const physicalAssets: PhysicalAsset[] = assets.map(i => {
+    const d = i.data as AssetData
+    return {
+      id: i.id,
+      type: (i.type === 'vehicle' ? 'car' : i.type === 'other' ? 'custom' : 'custom') as 'car' | 'precious_metal' | 'custom',
+      name: i.title,
+      purchaseValue: d.currentValue || d.purchasePrice || 0,
+      purchaseYear: i.start_year,
+      purchaseMonth: i.start_month,
+      financingType: 'none' as const,
+    }
+  })
+
+  // 연금 데이터 추출 - 본인
   const nationalPensionItem = pensions.find(i => i.type === 'national' && i.owner === 'self')
   const retirementPensionItem = pensions.find(i => i.type === 'retirement' && i.owner === 'self')
   const irpItem = pensions.find(i => i.type === 'irp' && i.owner === 'self')
@@ -106,6 +158,17 @@ function convertItemsToLegacyData(
   const retirementPensionData = retirementPensionItem?.data as PensionData | undefined
   const irpData = irpItem?.data as PensionData | undefined
   const pensionSavingsData = pensionSavingsItem?.data as PensionData | undefined
+
+  // 연금 데이터 추출 - 배우자
+  const spouseNationalPensionItem = pensions.find(i => i.type === 'national' && i.owner === 'spouse')
+  const spouseRetirementPensionItem = pensions.find(i => i.type === 'retirement' && i.owner === 'spouse')
+  const spouseIrpItem = pensions.find(i => i.type === 'irp' && i.owner === 'spouse')
+  const spousePensionSavingsItem = pensions.find(i => i.type === 'personal' && i.owner === 'spouse')
+
+  const spouseNationalPensionData = spouseNationalPensionItem?.data as PensionData | undefined
+  const spouseRetirementPensionData = spouseRetirementPensionItem?.data as PensionData | undefined
+  const spouseIrpData = spouseIrpItem?.data as PensionData | undefined
+  const spousePensionSavingsData = spousePensionSavingsItem?.data as PensionData | undefined
 
   return {
     name: profile.name,
@@ -136,9 +199,12 @@ function convertItemsToLegacyData(
     livingExpenses: livingExpense ? (livingExpense.data as ExpenseData).amount : null,
     livingExpensesFrequency: 'monthly',
     housingType: residenceData?.housingType || null,
-    housingValue: residenceData?.currentValue || null,
+    // 전세/월세는 deposit, 자가는 currentValue
+    housingValue: residenceData?.housingType === '전세' || residenceData?.housingType === '월세'
+      ? residenceData?.deposit || null
+      : residenceData?.currentValue || null,
     housingRent: residenceData?.monthlyRent || null,
-    housingMaintenance: null,
+    housingMaintenance: maintenanceExpense ? (maintenanceExpense.data as ExpenseData).amount : null,
     housingHasLoan: residenceData?.hasLoan || false,
     housingLoan: residenceData?.loanAmount || null,
     housingLoanRate: residenceData?.loanRate || null,
@@ -148,8 +214,8 @@ function convertItemsToLegacyData(
     housingLoanType: residenceData?.loanRepaymentType || null,
     savingsAccounts,
     investmentAccounts,
-    physicalAssets: [],
-    realEstateProperties: [],
+    physicalAssets,
+    realEstateProperties,
     cashCheckingAccount: null,
     cashCheckingRate: null,
     cashSavingsAccount: null,
@@ -169,56 +235,60 @@ function convertItemsToLegacyData(
     assets: [],
     debts: debtItems,
     hasNoDebt: debtItems.length === 0,
+    // 본인 연금
     nationalPension: nationalPensionData?.expectedMonthlyAmount || null,
     nationalPensionStartAge: nationalPensionData?.paymentStartAge || null,
-    retirementPensionType: (retirementPensionData?.pensionType as 'DC' | 'DB') || 'DC',
+    retirementPensionType: (retirementPensionData?.pensionType as 'DC' | 'DB' | 'corporate_irp' | 'severance') || 'DC',
     retirementPensionBalance: retirementPensionData?.currentBalance || null,
-    retirementPensionReceiveType: null,
-    retirementPensionStartAge: null,
-    retirementPensionReceivingYears: null,
+    retirementPensionReceiveType: retirementPensionData?.receiveType || null,
+    retirementPensionStartAge: retirementPensionData?.paymentStartAge || null,
+    retirementPensionReceivingYears: retirementPensionData?.receivingYears || null,
+    yearsOfService: retirementPensionData?.yearsOfService || null,
     personalPensionMonthly: null,
     personalPensionBalance: null,
     irpBalance: irpData?.currentBalance || null,
-    irpMonthlyContribution: null,
-    irpStartAge: null,
-    irpReceivingYears: null,
+    irpMonthlyContribution: irpData?.monthlyContribution || null,
+    irpStartAge: irpData?.paymentStartAge || null,
+    irpReceivingYears: irpData?.paymentYears || null,
     pensionSavingsBalance: pensionSavingsData?.currentBalance || null,
-    pensionSavingsMonthlyContribution: null,
-    pensionSavingsStartAge: null,
-    pensionSavingsReceivingYears: null,
-    isaBalance: null,
-    isaMonthlyContribution: null,
-    isaMaturityYear: null,
-    isaMaturityMonth: null,
+    pensionSavingsMonthlyContribution: pensionSavingsData?.monthlyContribution || null,
+    pensionSavingsStartAge: pensionSavingsData?.paymentStartAge || null,
+    pensionSavingsReceivingYears: pensionSavingsData?.paymentYears || null,
+    isaBalance: isaData?.currentBalance || null,
+    isaMonthlyContribution: isaData?.monthlyContribution || null,
+    isaMaturityYear: isaItem?.end_year || null,
+    isaMaturityMonth: isaItem?.end_month || null,
     isaMaturityStrategy: null,
-    spouseIsaBalance: null,
-    spouseIsaMonthlyContribution: null,
-    spouseIsaMaturityYear: null,
-    spouseIsaMaturityMonth: null,
+    spouseIsaBalance: spouseIsaData?.currentBalance || null,
+    spouseIsaMonthlyContribution: spouseIsaData?.monthlyContribution || null,
+    spouseIsaMaturityYear: spouseIsaItem?.end_year || null,
+    spouseIsaMaturityMonth: spouseIsaItem?.end_month || null,
     spouseIsaMaturityStrategy: null,
     personalPensionWithdrawYears: null,
     otherPensionMonthly: null,
     hasNoPension: pensions.length === 0,
-    yearsOfService: null,
-    spouseNationalPension: null,
-    spouseNationalPensionStartAge: null,
-    spouseRetirementPensionType: 'DC',
-    spouseRetirementPensionBalance: null,
-    spouseRetirementPensionReceiveType: null,
-    spouseRetirementPensionStartAge: null,
-    spouseRetirementPensionReceivingYears: null,
-    spouseYearsOfService: null,
-    spousePensionSavingsBalance: null,
-    spousePensionSavingsMonthlyContribution: null,
-    spousePensionSavingsStartAge: null,
-    spousePensionSavingsReceivingYears: null,
-    spouseIrpBalance: null,
-    spouseIrpMonthlyContribution: null,
-    spouseIrpStartAge: null,
-    spouseIrpReceivingYears: null,
+    // 배우자 연금
+    spouseNationalPension: spouseNationalPensionData?.expectedMonthlyAmount || null,
+    spouseNationalPensionStartAge: spouseNationalPensionData?.paymentStartAge || null,
+    spouseRetirementPensionType: (spouseRetirementPensionData?.pensionType as 'DC' | 'DB' | 'corporate_irp' | 'severance') || 'DC',
+    spouseRetirementPensionBalance: spouseRetirementPensionData?.currentBalance || null,
+    spouseRetirementPensionReceiveType: spouseRetirementPensionData?.receiveType || null,
+    spouseRetirementPensionStartAge: spouseRetirementPensionData?.paymentStartAge || null,
+    spouseRetirementPensionReceivingYears: spouseRetirementPensionData?.receivingYears || null,
+    spouseYearsOfService: spouseRetirementPensionData?.yearsOfService || null,
+    spousePensionSavingsBalance: spousePensionSavingsData?.currentBalance || null,
+    spousePensionSavingsMonthlyContribution: spousePensionSavingsData?.monthlyContribution || null,
+    spousePensionSavingsStartAge: spousePensionSavingsData?.paymentStartAge || null,
+    spousePensionSavingsReceivingYears: spousePensionSavingsData?.paymentYears || null,
+    spouseIrpBalance: spouseIrpData?.currentBalance || null,
+    spouseIrpMonthlyContribution: spouseIrpData?.monthlyContribution || null,
+    spouseIrpStartAge: spouseIrpData?.paymentStartAge || null,
+    spouseIrpReceivingYears: spouseIrpData?.paymentYears || null,
     cashFlowRules: [],
     pensions: [],
     globalSettings,
+    // expenseItems는 전달하지 않음 - ExpenseTab에서 자체 관리
+    // 부채 기반 지출은 ExpenseTab에서 data.debts를 기반으로 동적 생성
   }
 }
 
@@ -757,6 +827,49 @@ export function DashboardContent() {
       }
     }
 
+    // 직접 debts 업데이트 처리 (신용대출, 기타 부채 등)
+    if ('debts' in updates && updates.debts) {
+      try {
+        // 기존 debt 항목들 가져오기 (credit, other 타입만)
+        const existingManualDebts = items.filter(i =>
+          i.category === 'debt' && ['credit_loan', 'other'].includes(i.type)
+        )
+
+        // 새로운 부채 중 credit/other 타입만 필터링
+        const newManualDebts = updates.debts.filter(d =>
+          d.sourceType === 'credit' || d.sourceType === 'other' || d.sourceType === 'manual' || !d.sourceType
+        )
+
+        // 기존 항목 삭제
+        for (const item of existingManualDebts) {
+          await deleteItem(item.id)
+        }
+
+        // 새 항목 추가
+        for (const debt of newManualDebts) {
+          if (!debt.amount) continue
+
+          const [maturityYear, maturityMonth] = (debt.maturity || '').split('-').map(Number)
+          await addItem({
+            category: 'debt',
+            type: debt.sourceType === 'credit' ? 'credit_loan' : 'other',
+            title: debt.name || (debt.sourceType === 'credit' ? '신용대출' : '기타 부채'),
+            owner: 'self',
+            end_year: maturityYear || undefined,
+            end_month: maturityMonth || undefined,
+            data: {
+              principal: debt.amount,
+              currentBalance: debt.amount,
+              interestRate: debt.rate || 0,
+              repaymentType: '원리금균등상환',
+            } as DebtData,
+          })
+        }
+      } catch (error) {
+        console.error('[DashboardContent] Failed to save debts:', error)
+      }
+    }
+
     // 국민연금 업데이트 처리
     if ('nationalPension' in updates || 'nationalPensionStartAge' in updates) {
       try {
@@ -792,12 +905,17 @@ export function DashboardContent() {
     }
 
     // 퇴직연금 업데이트 처리
-    if ('retirementPensionType' in updates || 'retirementPensionBalance' in updates || 'yearsOfService' in updates) {
+    if ('retirementPensionType' in updates || 'retirementPensionBalance' in updates || 'yearsOfService' in updates ||
+        'retirementPensionReceiveType' in updates || 'retirementPensionStartAge' in updates || 'retirementPensionReceivingYears' in updates) {
       try {
         const existingRetirement = items.find(i => i.category === 'pension' && i.type === 'retirement' && i.owner === 'self')
 
         const pensionType = updates.retirementPensionType ?? data.retirementPensionType
         const balance = updates.retirementPensionBalance ?? data.retirementPensionBalance
+        const yearsOfService = updates.yearsOfService ?? data.yearsOfService
+        const receiveType = updates.retirementPensionReceiveType ?? data.retirementPensionReceiveType
+        const startAge = updates.retirementPensionStartAge ?? data.retirementPensionStartAge
+        const receivingYears = updates.retirementPensionReceivingYears ?? data.retirementPensionReceivingYears
 
         if (existingRetirement) {
           await updateItem(existingRetirement.id, {
@@ -805,9 +923,13 @@ export function DashboardContent() {
               ...existingRetirement.data,
               pensionType,
               currentBalance: balance,
+              yearsOfService,
+              receiveType,
+              paymentStartAge: startAge,
+              receivingYears,
             } as PensionData,
           })
-        } else if (pensionType || balance) {
+        } else if (pensionType || balance || yearsOfService) {
           await addItem({
             category: 'pension',
             type: 'retirement',
@@ -816,6 +938,10 @@ export function DashboardContent() {
             data: {
               pensionType,
               currentBalance: balance,
+              yearsOfService,
+              receiveType,
+              paymentStartAge: startAge,
+              receivingYears,
             } as PensionData,
           })
         }
@@ -934,6 +1060,131 @@ export function DashboardContent() {
         console.error('[DashboardContent] Failed to save spouse national pension:', error)
       }
     }
+
+    // 배우자 퇴직연금 업데이트 처리
+    if ('spouseRetirementPensionType' in updates || 'spouseRetirementPensionBalance' in updates || 'spouseYearsOfService' in updates ||
+        'spouseRetirementPensionReceiveType' in updates || 'spouseRetirementPensionStartAge' in updates || 'spouseRetirementPensionReceivingYears' in updates) {
+      try {
+        const existingSpouseRetirement = items.find(i => i.category === 'pension' && i.type === 'retirement' && i.owner === 'spouse')
+
+        const pensionType = updates.spouseRetirementPensionType ?? data.spouseRetirementPensionType
+        const balance = updates.spouseRetirementPensionBalance ?? data.spouseRetirementPensionBalance
+        const yearsOfService = updates.spouseYearsOfService ?? data.spouseYearsOfService
+        const receiveType = updates.spouseRetirementPensionReceiveType ?? data.spouseRetirementPensionReceiveType
+        const startAge = updates.spouseRetirementPensionStartAge ?? data.spouseRetirementPensionStartAge
+        const receivingYears = updates.spouseRetirementPensionReceivingYears ?? data.spouseRetirementPensionReceivingYears
+
+        if (existingSpouseRetirement) {
+          await updateItem(existingSpouseRetirement.id, {
+            data: {
+              ...existingSpouseRetirement.data,
+              pensionType,
+              currentBalance: balance,
+              yearsOfService,
+              receiveType,
+              paymentStartAge: startAge,
+              receivingYears,
+            } as PensionData,
+          })
+        } else if (pensionType || balance || yearsOfService) {
+          await addItem({
+            category: 'pension',
+            type: 'retirement',
+            title: '배우자 퇴직연금',
+            owner: 'spouse',
+            data: {
+              pensionType,
+              currentBalance: balance,
+              yearsOfService,
+              receiveType,
+              paymentStartAge: startAge,
+              receivingYears,
+            } as PensionData,
+          })
+        }
+      } catch (error) {
+        console.error('[DashboardContent] Failed to save spouse retirement pension:', error)
+      }
+    }
+
+    // 배우자 IRP 업데이트 처리
+    if ('spouseIrpBalance' in updates || 'spouseIrpMonthlyContribution' in updates || 'spouseIrpStartAge' in updates || 'spouseIrpReceivingYears' in updates) {
+      try {
+        const existingSpouseIrp = items.find(i => i.category === 'pension' && i.type === 'irp' && i.owner === 'spouse')
+
+        const balance = updates.spouseIrpBalance ?? data.spouseIrpBalance
+        const monthly = updates.spouseIrpMonthlyContribution ?? data.spouseIrpMonthlyContribution
+        const startAge = updates.spouseIrpStartAge ?? data.spouseIrpStartAge
+        const years = updates.spouseIrpReceivingYears ?? data.spouseIrpReceivingYears
+
+        if (existingSpouseIrp) {
+          await updateItem(existingSpouseIrp.id, {
+            data: {
+              ...existingSpouseIrp.data,
+              currentBalance: balance,
+              monthlyContribution: monthly,
+              paymentStartAge: startAge,
+              paymentYears: years,
+            } as PensionData,
+          })
+        } else if (balance || monthly) {
+          await addItem({
+            category: 'pension',
+            type: 'irp',
+            title: '배우자 IRP',
+            owner: 'spouse',
+            data: {
+              currentBalance: balance,
+              monthlyContribution: monthly,
+              paymentStartAge: startAge,
+              paymentYears: years,
+            } as PensionData,
+          })
+        }
+      } catch (error) {
+        console.error('[DashboardContent] Failed to save spouse IRP:', error)
+      }
+    }
+
+    // 배우자 연금저축 업데이트 처리
+    if ('spousePensionSavingsBalance' in updates || 'spousePensionSavingsMonthlyContribution' in updates ||
+        'spousePensionSavingsStartAge' in updates || 'spousePensionSavingsReceivingYears' in updates) {
+      try {
+        const existingSpousePensionSavings = items.find(i => i.category === 'pension' && i.type === 'personal' && i.owner === 'spouse')
+
+        const balance = updates.spousePensionSavingsBalance ?? data.spousePensionSavingsBalance
+        const monthly = updates.spousePensionSavingsMonthlyContribution ?? data.spousePensionSavingsMonthlyContribution
+        const startAge = updates.spousePensionSavingsStartAge ?? data.spousePensionSavingsStartAge
+        const years = updates.spousePensionSavingsReceivingYears ?? data.spousePensionSavingsReceivingYears
+
+        if (existingSpousePensionSavings) {
+          await updateItem(existingSpousePensionSavings.id, {
+            data: {
+              ...existingSpousePensionSavings.data,
+              currentBalance: balance,
+              monthlyContribution: monthly,
+              paymentStartAge: startAge,
+              paymentYears: years,
+            } as PensionData,
+          })
+        } else if (balance || monthly) {
+          await addItem({
+            category: 'pension',
+            type: 'personal',
+            title: '배우자 연금저축',
+            owner: 'spouse',
+            data: {
+              currentBalance: balance,
+              monthlyContribution: monthly,
+              paymentStartAge: startAge,
+              paymentYears: years,
+            } as PensionData,
+          })
+        }
+      } catch (error) {
+        console.error('[DashboardContent] Failed to save spouse pension savings:', error)
+      }
+    }
   }, [items, data, profile, addItem, updateItem, deleteItem, convertIncomeItemToFinancial, convertExpenseItemToFinancial, convertSavingsAccountToFinancial, convertInvestmentAccountToFinancial, convertPhysicalAssetToFinancial, convertRealEstatePropertyToFinancial])
 
   const renderContent = () => {
@@ -942,9 +1193,9 @@ export function DashboardContent() {
       case 'overview':
         return <OverviewTab data={data} settings={settings} />
       case 'networth':
-        return <NetWorthTab data={data} settings={settings} />
+        return <NetWorthTab data={data} settings={settings} globalSettings={globalSettings} />
       case 'cashflow-overview':
-        return <CashFlowOverviewTab data={data} settings={settings} />
+        return <CashFlowOverviewTab data={data} settings={settings} globalSettings={globalSettings} />
       case 'tax':
         return <TaxAnalyticsTab data={data} settings={settings} />
       // Finance tabs

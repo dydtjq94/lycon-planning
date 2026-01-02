@@ -1,5 +1,13 @@
 'use client'
 
+import { useMemo } from 'react'
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import { Doughnut } from 'react-chartjs-2'
 import type { GlobalSettings } from '@/types'
 import { formatMoney } from '@/lib/utils'
 import type {
@@ -8,6 +16,8 @@ import type {
   TotalPensionProjection,
 } from './usePensionCalculations'
 import styles from '../PensionTab.module.css'
+
+ChartJS.register(ArcElement, Tooltip, Legend)
 
 interface PensionSummaryProps {
   settings: GlobalSettings
@@ -21,6 +31,7 @@ interface PensionSummaryProps {
     spouse: { monthly: number; startAge: number } | null
   }
   isMarried: boolean
+  currentAge: number
 }
 
 export function PensionSummary({
@@ -32,7 +43,208 @@ export function PensionSummary({
   totalPensionProjection,
   nationalPensionData,
   isMarried,
+  currentAge,
 }: PensionSummaryProps) {
+  // 연령대별 타임라인 계산
+  const ageTimeline = useMemo(() => {
+    const ages = [56, 60, 65, 75, 85]
+    return ages
+      .filter(age => age > currentAge)
+      .map(age => {
+        let monthly = 0
+        const sources: string[] = []
+
+        // 국민연금 (65세 이상)
+        if (age >= nationalPensionData.self.startAge) {
+          monthly += nationalPensionData.self.monthly
+          if (nationalPensionData.self.monthly > 0) sources.push('국민연금')
+        }
+        if (nationalPensionData.spouse && age >= nationalPensionData.spouse.startAge) {
+          monthly += nationalPensionData.spouse.monthly
+        }
+
+        // 퇴직연금 (수령 시작 나이 이상 && 수령 기간 내)
+        if (retirementPensionProjection?.receiveType === 'annuity') {
+          const startAge = retirementPensionProjection.startAge
+          const endAge = startAge + retirementPensionProjection.receivingYears
+          if (age >= startAge && age < endAge) {
+            monthly += retirementPensionProjection.monthlyPMT
+            if (retirementPensionProjection.monthlyPMT > 0) sources.push('퇴직연금')
+          }
+        }
+        if (spouseRetirementPensionProjection?.receiveType === 'annuity') {
+          const startAge = spouseRetirementPensionProjection.startAge
+          const endAge = startAge + spouseRetirementPensionProjection.receivingYears
+          if (age >= startAge && age < endAge) {
+            monthly += spouseRetirementPensionProjection.monthlyPMT
+          }
+        }
+
+        // 연금저축
+        const psStartAge = personalPensionProjection.pensionSavings.startAge
+        const psEndAge = psStartAge + personalPensionProjection.pensionSavings.receivingYears
+        if (age >= psStartAge && age < psEndAge) {
+          monthly += personalPensionProjection.pensionSavings.monthlyPMT
+          if (personalPensionProjection.pensionSavings.monthlyPMT > 0) sources.push('연금저축')
+        }
+        if (spousePersonalPensionProjection) {
+          const spsStartAge = spousePersonalPensionProjection.pensionSavings.startAge
+          const spsEndAge = spsStartAge + spousePersonalPensionProjection.pensionSavings.receivingYears
+          if (age >= spsStartAge && age < spsEndAge) {
+            monthly += spousePersonalPensionProjection.pensionSavings.monthlyPMT
+          }
+        }
+
+        // IRP
+        const irpStartAge = personalPensionProjection.irp.startAge
+        const irpEndAge = irpStartAge + personalPensionProjection.irp.receivingYears
+        if (age >= irpStartAge && age < irpEndAge) {
+          monthly += personalPensionProjection.irp.monthlyPMT
+          if (personalPensionProjection.irp.monthlyPMT > 0 && !sources.includes('IRP')) sources.push('IRP')
+        }
+        if (spousePersonalPensionProjection) {
+          const sipStartAge = spousePersonalPensionProjection.irp.startAge
+          const sipEndAge = sipStartAge + spousePersonalPensionProjection.irp.receivingYears
+          if (age >= sipStartAge && age < sipEndAge) {
+            monthly += spousePersonalPensionProjection.irp.monthlyPMT
+          }
+        }
+
+        return { age, monthly, sources }
+      })
+  }, [
+    currentAge,
+    nationalPensionData,
+    retirementPensionProjection,
+    spouseRetirementPensionProjection,
+    personalPensionProjection,
+    spousePersonalPensionProjection,
+  ])
+
+  // 연금 구성비 차트 데이터
+  const chartData = useMemo(() => {
+    const data: { label: string; value: number; color: string }[] = []
+
+    const nationalTotal = totalPensionProjection.nationalPension.monthly
+    if (nationalTotal > 0) {
+      data.push({ label: '국민연금', value: nationalTotal, color: '#5856d6' })
+    }
+
+    const retirementMonthly = totalPensionProjection.retirement.isAnnuity
+      ? totalPensionProjection.retirement.monthlyPMT
+      : 0
+    if (retirementMonthly > 0) {
+      data.push({ label: '퇴직연금', value: retirementMonthly, color: '#007aff' })
+    }
+
+    const personalMonthly = totalPensionProjection.personal.monthlyPMT
+    if (personalMonthly > 0) {
+      data.push({ label: '개인연금', value: personalMonthly, color: '#34c759' })
+    }
+
+    return {
+      labels: data.map(d => d.label),
+      datasets: [{
+        data: data.map(d => d.value),
+        backgroundColor: data.map(d => d.color),
+        borderWidth: 0,
+        hoverOffset: 4,
+      }],
+    }
+  }, [totalPensionProjection])
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: { label?: string; raw: unknown }) => {
+            const value = typeof context.raw === 'number' ? context.raw : 0
+            return `${context.label || ''}: ${formatMoney(value)}/월`
+          },
+        },
+      },
+    },
+    cutout: '65%',
+  }
+
+  // 현재 적립 현황
+  const currentBalances = useMemo(() => {
+    const balances: { label: string; current: number; monthly: number; color: string }[] = []
+
+    // 퇴직연금 (DC형만 현재 잔액 표시)
+    if (retirementPensionProjection?.type === 'DC' && retirementPensionProjection.currentBalance) {
+      balances.push({
+        label: '퇴직연금',
+        current: retirementPensionProjection.currentBalance,
+        monthly: retirementPensionProjection.monthlyContribution || 0,
+        color: '#007aff',
+      })
+    }
+    if (spouseRetirementPensionProjection?.type === 'DC' && spouseRetirementPensionProjection.currentBalance) {
+      balances.push({
+        label: '배우자 퇴직연금',
+        current: spouseRetirementPensionProjection.currentBalance,
+        monthly: spouseRetirementPensionProjection.monthlyContribution || 0,
+        color: '#5ac8fa',
+      })
+    }
+
+    // 연금저축
+    if (personalPensionProjection.pensionSavings.current > 0 || personalPensionProjection.pensionSavings.monthly > 0) {
+      balances.push({
+        label: '연금저축',
+        current: personalPensionProjection.pensionSavings.current,
+        monthly: personalPensionProjection.pensionSavings.monthly,
+        color: '#34c759',
+      })
+    }
+    if (spousePersonalPensionProjection?.pensionSavings.current) {
+      balances.push({
+        label: '배우자 연금저축',
+        current: spousePersonalPensionProjection.pensionSavings.current,
+        monthly: spousePersonalPensionProjection.pensionSavings.monthly,
+        color: '#86d993',
+      })
+    }
+
+    // IRP
+    if (personalPensionProjection.irp.current > 0 || personalPensionProjection.irp.monthly > 0) {
+      balances.push({
+        label: 'IRP',
+        current: personalPensionProjection.irp.current,
+        monthly: personalPensionProjection.irp.monthly,
+        color: '#ff9500',
+      })
+    }
+    if (spousePersonalPensionProjection?.irp.current) {
+      balances.push({
+        label: '배우자 IRP',
+        current: spousePersonalPensionProjection.irp.current,
+        monthly: spousePersonalPensionProjection.irp.monthly,
+        color: '#ffb84d',
+      })
+    }
+
+    // ISA
+    if (personalPensionProjection.isa.current > 0) {
+      balances.push({
+        label: 'ISA',
+        current: personalPensionProjection.isa.current,
+        monthly: personalPensionProjection.isa.monthly,
+        color: '#af52de',
+      })
+    }
+
+    return balances
+  }, [retirementPensionProjection, spouseRetirementPensionProjection, personalPensionProjection, spousePersonalPensionProjection])
+
+  const hasChartData = chartData.datasets[0].data.length > 0
+
   return (
     <div className={styles.summaryPanel}>
       {/* 예상 월 수령액 */}
@@ -250,6 +462,93 @@ export function PensionSummary({
           )}
         </div>
       </div>
+
+      {/* 연령대별 타임라인 */}
+      {ageTimeline.length > 0 && (
+        <div className={styles.timelineCard}>
+          <h4 className={styles.cardTitle}>연령대별 예상 수령액</h4>
+          <div className={styles.timelineList}>
+            {ageTimeline.map(({ age, monthly, sources }) => (
+              <div key={age} className={styles.timelineItem}>
+                <div className={styles.timelineAge}>{age}세</div>
+                <div className={styles.timelineBar}>
+                  <div
+                    className={styles.timelineProgress}
+                    style={{
+                      width: `${Math.min(100, (monthly / (ageTimeline[ageTimeline.length - 1]?.monthly || 1)) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <div className={styles.timelineAmount}>{formatMoney(monthly)}/월</div>
+              </div>
+            ))}
+          </div>
+          <p className={styles.timelineNote}>
+            각 연령에서 수령 가능한 모든 연금의 합계입니다
+          </p>
+        </div>
+      )}
+
+      {/* 연금 구성비 차트 */}
+      {hasChartData && (
+        <div className={styles.chartCard}>
+          <h4 className={styles.cardTitle}>연금 구성비</h4>
+          <div className={styles.chartWrapper}>
+            <Doughnut data={chartData} options={chartOptions} />
+            <div className={styles.chartCenter}>
+              <span className={styles.chartCenterLabel}>월 수령액</span>
+              <span className={styles.chartCenterValue}>
+                {formatMoney(
+                  totalPensionProjection.nationalPension.monthly +
+                  totalPensionProjection.retirement.monthlyPMT +
+                  totalPensionProjection.personal.monthlyPMT
+                )}
+              </span>
+            </div>
+          </div>
+          <div className={styles.chartLegend}>
+            {chartData.labels.map((label, i) => (
+              <div key={label} className={styles.legendItem}>
+                <span
+                  className={styles.legendDot}
+                  style={{ background: chartData.datasets[0].backgroundColor[i] }}
+                />
+                <span className={styles.legendLabel}>{label}</span>
+                <span className={styles.legendValue}>{formatMoney(chartData.datasets[0].data[i])}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 현재 적립 현황 */}
+      {currentBalances.length > 0 && (
+        <div className={styles.balanceCard}>
+          <h4 className={styles.cardTitle}>현재 적립 현황</h4>
+          <div className={styles.balanceList}>
+            {currentBalances.map(({ label, current, monthly, color }) => (
+              <div key={label} className={styles.balanceItem}>
+                <div className={styles.balanceInfo}>
+                  <span className={styles.balanceDot} style={{ background: color }} />
+                  <span className={styles.balanceLabel}>{label}</span>
+                </div>
+                <div className={styles.balanceValues}>
+                  <span className={styles.balanceCurrent}>{formatMoney(current)}</span>
+                  {monthly > 0 && (
+                    <span className={styles.balanceMonthly}>+{formatMoney(monthly)}/월</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className={styles.balanceTotal}>
+            <span className={styles.balanceTotalLabel}>총 적립액</span>
+            <span className={styles.balanceTotalValue}>
+              {formatMoney(currentBalances.reduce((sum, b) => sum + b.current, 0))}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* 가정 안내 */}
       <div className={styles.assumptionsCard}>

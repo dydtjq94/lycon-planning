@@ -419,6 +419,205 @@
   margin-bottom: 12px;
 }
 
+/* 연령대별 타임라인 */
+.timelineCard {
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.timelineList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timelineItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timelineAge {
+  width: 40px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
+  flex-shrink: 0;
+}
+
+.timelineBar {
+  flex: 1;
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.timelineProgress {
+  height: 100%;
+  background: linear-gradient(90deg, #5856d6, #007aff);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.timelineAmount {
+  width: 100px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.timelineNote {
+  font-size: 12px;
+  color: #86868b;
+  margin: 16px 0 0 0;
+}
+
+/* 연금 구성비 차트 */
+.chartCard {
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.chartWrapper {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 16px;
+}
+
+.chartCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.chartCenterLabel {
+  display: block;
+  font-size: 11px;
+  color: #86868b;
+}
+
+.chartCenterValue {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-top: 2px;
+}
+
+.chartLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  flex: 1;
+  font-size: 13px;
+  color: #1d1d1f;
+}
+
+.legendValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+/* 현재 적립 현황 */
+.balanceCard {
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.balanceList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.balanceItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.balanceInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.balanceDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.balanceLabel {
+  font-size: 14px;
+  color: #1d1d1f;
+}
+
+.balanceValues {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.balanceCurrent {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.balanceMonthly {
+  font-size: 12px;
+  color: #34c759;
+}
+
+.balanceTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e8e8ed;
+}
+
+.balanceTotalLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #86868b;
+}
+
+.balanceTotalValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1d1d1f;
+}
+
 /* 가정 안내 */
 .assumptionsCard {
   background: #fff;

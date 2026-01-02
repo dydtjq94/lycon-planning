@@ -41,6 +41,46 @@ const GROWTH_PRESETS = [
 type ExpenseItem = DashboardExpenseItem;
 type ExpenseType = DashboardExpenseItem["type"];
 type ExpenseFrequency = DashboardExpenseFrequency;
+type RepaymentType = '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환';
+
+// 상환방식별 월 상환액 계산
+function calculateMonthlyPayment(
+  principal: number,
+  annualRate: number,
+  maturityDate: string | null,
+  repaymentType: RepaymentType = '원리금균등상환'
+): number {
+  if (!principal || !maturityDate) return 0;
+
+  const monthlyRate = (annualRate || 0) / 100 / 12;
+  const [year, month] = maturityDate.split('-').map(Number);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+
+  const totalMonths = (year - currentYear) * 12 + (month - currentMonth);
+  if (totalMonths <= 0) return 0;
+
+  switch (repaymentType) {
+    case '만기일시상환':
+      return Math.round(principal * monthlyRate);
+    case '원리금균등상환': {
+      if (monthlyRate === 0) return Math.round(principal / totalMonths);
+      const payment = principal * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) /
+        (Math.pow(1 + monthlyRate, totalMonths) - 1);
+      return Math.round(payment);
+    }
+    case '원금균등상환': {
+      const monthlyPrincipal = principal / totalMonths;
+      const avgInterest = (principal * monthlyRate * (totalMonths + 1)) / 2 / totalMonths;
+      return Math.round(monthlyPrincipal + avgInterest);
+    }
+    case '거치식상환':
+      return Math.round(principal * monthlyRate);
+    default:
+      return 0;
+  }
+}
 
 export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabProps) {
   const currentYear = new Date().getFullYear();
@@ -244,8 +284,128 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
 
   // 시나리오 모드 적용된 표시용 데이터 (한 번만 계산!)
   const isPresetMode = globalSettings.scenarioMode !== "custom";
+
+  // 기본값: 60개월 후 만기, 5% 금리
+  const DEFAULT_LOAN_RATE = 5;
+  const DEFAULT_LOAN_MONTHS = 60;
+
+  // 기본 만기일 계산 (현재 + 60개월)
+  const getDefaultMaturity = () => {
+    const endMonth = ((currentMonth - 1 + DEFAULT_LOAN_MONTHS) % 12) + 1;
+    const endYear = currentYear + Math.floor((currentMonth - 1 + DEFAULT_LOAN_MONTHS) / 12);
+    return `${endYear}-${String(endMonth).padStart(2, '0')}`;
+  };
+
+  // 부채 기반 이자 비용 항목 생성 (동적 계산, 저장하지 않음)
+  const debtExpenseItems = useMemo(() => {
+    const items: ExpenseItem[] = [];
+    const debts = data.debts || [];
+    const defaultMaturity = getDefaultMaturity();
+
+    // 1. 일반 부채 (신용대출, 기타 부채 등)
+    debts.forEach(debt => {
+      if (!debt.amount) return;
+      const maturity = debt.maturity || defaultMaturity;
+      const rate = debt.rate ?? DEFAULT_LOAN_RATE;
+      const monthlyPayment = calculateMonthlyPayment(
+        debt.amount,
+        rate,
+        maturity,
+        (debt.repaymentType || '원리금균등상환') as RepaymentType
+      );
+      if (monthlyPayment > 0) {
+        const [endYear, endMonth] = maturity.split('-').map(Number);
+        items.push({
+          id: `expense-debt-${debt.id}`,
+          type: 'interest',
+          label: `${debt.name} 상환`,
+          amount: monthlyPayment,
+          frequency: 'monthly',
+          startYear: currentYear,
+          startMonth: currentMonth,
+          endType: 'custom',
+          endYear,
+          endMonth,
+          growthRate: 0,
+          rateCategory: 'fixed',
+          sourceType: 'debt',
+          sourceId: debt.id,
+        });
+      }
+    });
+
+    // 2. 주택담보대출
+    if (data.housingHasLoan && data.housingLoan) {
+      const maturity = data.housingLoanMaturity || defaultMaturity;
+      const rate = data.housingLoanRate ?? DEFAULT_LOAN_RATE;
+      const monthlyPayment = calculateMonthlyPayment(
+        data.housingLoan,
+        rate,
+        maturity,
+        (data.housingLoanType || '원리금균등상환') as RepaymentType
+      );
+      if (monthlyPayment > 0) {
+        const [endYear, endMonth] = maturity.split('-').map(Number);
+        items.push({
+          id: 'expense-housing-loan',
+          type: 'interest',
+          label: '주택담보대출 상환',
+          amount: monthlyPayment,
+          frequency: 'monthly',
+          startYear: currentYear,
+          startMonth: currentMonth,
+          endType: 'custom',
+          endYear,
+          endMonth,
+          growthRate: 0,
+          rateCategory: 'fixed',
+          sourceType: 'debt',
+          sourceId: 'housing',
+        });
+      }
+    }
+
+    // 3. 부동산 투자 대출
+    const realEstateProperties = data.realEstateProperties || [];
+    realEstateProperties.forEach(property => {
+      if (property.hasLoan && property.loanAmount) {
+        const maturity = property.loanMaturity || defaultMaturity;
+        const rate = property.loanRate ?? DEFAULT_LOAN_RATE;
+        const monthlyPayment = calculateMonthlyPayment(
+          property.loanAmount,
+          rate,
+          maturity,
+          (property.loanRepaymentType || '원리금균등상환') as RepaymentType
+        );
+        if (monthlyPayment > 0) {
+          const [endYear, endMonth] = maturity.split('-').map(Number);
+          items.push({
+            id: `expense-realestate-${property.id}`,
+            type: 'interest',
+            label: `${property.name} 대출 상환`,
+            amount: monthlyPayment,
+            frequency: 'monthly',
+            startYear: currentYear,
+            startMonth: currentMonth,
+            endType: 'custom',
+            endYear,
+            endMonth,
+            growthRate: 0,
+            rateCategory: 'fixed',
+            sourceType: 'debt',
+            sourceId: property.id,
+          });
+        }
+      }
+    });
+
+    return items;
+  }, [data.debts, data.housingHasLoan, data.housingLoan, data.housingLoanMaturity, data.housingLoanRate, data.housingLoanType, data.realEstateProperties, currentYear, currentMonth]);
+
+  // 사용자 지출 + 부채 지출 합친 표시용 데이터
   const displayItems = useMemo(() => {
-    return expenseItems.map((item) => {
+    const allItems = [...expenseItems, ...debtExpenseItems];
+    return allItems.map((item) => {
       const rateCategory = item.rateCategory || getDefaultRateCategory(item.type);
       const effectiveRate = getEffectiveRate(
         item.growthRate,
@@ -258,7 +418,7 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
         displayGrowthRate: effectiveRate, // 현재 시나리오에서 표시할 상승률
       };
     });
-  }, [expenseItems, globalSettings]);
+  }, [expenseItems, debtExpenseItems, globalSettings]);
 
   // 의료비 섹션 토글 상태
   const [medicalExpanded, setMedicalExpanded] = useState(false);

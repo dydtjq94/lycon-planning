@@ -1,0 +1,198 @@
+.panel {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0 0;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.closeBtn:hover {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+/* 요약 */
+.summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summaryLabel {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.summaryValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.summaryValue.income {
+  color: #3b82f6;
+}
+
+.summaryValue.expense {
+  color: #f97316;
+}
+
+.summaryValue.positive {
+  color: #22c55e;
+}
+
+.summaryValue.negative {
+  color: #ef4444;
+}
+
+.savingsRate {
+  grid-column: span 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.savingsRateLabel {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.savingsRateValue {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.savingsRateValue.good {
+  color: #22c55e;
+}
+
+.savingsRateValue.ok {
+  color: #f59e0b;
+}
+
+.savingsRateValue.bad {
+  color: #ef4444;
+}
+
+/* 섹션 */
+.section {
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px 0;
+}
+
+/* breakdown 리스트 */
+.breakdownList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.breakdownItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+}
+
+.breakdownLabel {
+  font-size: 13px;
+  color: #475569;
+}
+
+.breakdownValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+/* 흐름 시각화 */
+.flowVisualization {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.flowBar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.incomeBar {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 4px;
+}
+
+.expenseBar {
+  height: 100%;
+  background: #f97316;
+  border-radius: 4px;
+}
+
+.flowLabels {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.flowLabel {
+  font-size: 11px;
+  color: #64748b;
+}

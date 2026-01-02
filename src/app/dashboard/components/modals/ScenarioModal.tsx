@@ -36,6 +36,7 @@ export function ScenarioModal({
     incomeGrowthRate: globalSettings.incomeGrowthRate,
     investmentReturnRate: globalSettings.investmentReturnRate,
     realEstateGrowthRate: globalSettings.realEstateGrowthRate,
+    baseRate: globalSettings.baseRate,
   });
 
   // ESC 키로 닫기
@@ -62,6 +63,10 @@ export function ScenarioModal({
       updatedSettings.incomeGrowthRate = customRates.incomeGrowthRate;
       updatedSettings.investmentReturnRate = customRates.investmentReturnRate;
       updatedSettings.realEstateGrowthRate = customRates.realEstateGrowthRate;
+      updatedSettings.baseRate = customRates.baseRate;
+    } else if (isPresetMode && presetRates) {
+      // 프리셋 모드일 때 기준금리도 업데이트
+      updatedSettings.baseRate = presetRates.baseRate;
     }
 
     onUpdate(updatedSettings);
@@ -177,6 +182,22 @@ export function ScenarioModal({
                   <span>%</span>
                 </div>
               </div>
+              <div className={styles.rateRow}>
+                <span className={styles.rateLabel}>기준금리</span>
+                <div className={styles.rateInput}>
+                  <input
+                    type="number"
+                    step="0.25"
+                    value={customRates.baseRate}
+                    onChange={(e) => setCustomRates({
+                      ...customRates,
+                      baseRate: parseFloat(e.target.value) || 0
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span>%</span>
+                </div>
+              </div>
             </div>
           ) : (
             /* 프리셋일 때 상승률 표시 (읽기 전용) */
@@ -196,6 +217,10 @@ export function ScenarioModal({
               <div className={styles.rateRow}>
                 <span className={styles.rateLabel}>부동산 상승률</span>
                 <span className={styles.rateValue}>{presetRates?.realEstateGrowthRate}%</span>
+              </div>
+              <div className={styles.rateRow}>
+                <span className={styles.rateLabel}>기준금리</span>
+                <span className={styles.rateValue}>{presetRates?.baseRate}%</span>
               </div>
             </div>
           )}

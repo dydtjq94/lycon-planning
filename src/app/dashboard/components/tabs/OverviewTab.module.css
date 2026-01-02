@@ -140,6 +140,45 @@
   color: #ff3b30;
 }
 
+/* 차트 섹션 */
+.chartSection {
+  background-color: white;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.chartContent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 차트와 상세 패널 레이아웃 */
+.chartWithDetail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+.chartWithDetail.hasDetail {
+  grid-template-columns: 1fr 320px;
+}
+
+.chartArea {
+  min-width: 0;
+}
+
+.detailArea {
+  min-width: 0;
+}
+
 /* 반응형 */
 @media (max-width: 1024px) {
   .metricsGrid {
@@ -147,6 +186,10 @@
   }
 
   .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .chartWithDetail.hasDetail {
     grid-template-columns: 1fr;
   }
 }

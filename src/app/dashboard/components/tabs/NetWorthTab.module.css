@@ -1,0 +1,89 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 차트 섹션 */
+.chartSection {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.chartTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.chartSubtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.headerInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.infoItem {
+  color: #64748b;
+}
+
+.infoDivider {
+  color: #cbd5e1;
+}
+
+.chartContent {
+  display: flex;
+  gap: 24px;
+}
+
+.chartArea {
+  flex: 1;
+  min-width: 0;
+}
+
+.detailPanel {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+/* 반응형 */
+@media (max-width: 1024px) {
+  .chartHeader {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .chartContent {
+    flex-direction: column;
+  }
+
+  .detailPanel {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .chartSection {
+    padding: 16px;
+  }
+
+  .headerInfo {
+    flex-wrap: wrap;
+  }
+}

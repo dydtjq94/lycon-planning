@@ -8,9 +8,19 @@ import type {
   DebtData,
   RealEstateData,
   SimulationSettings,
+  GlobalSettings,
 } from '@/types'
+import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
 import { migrateOnboardingToFinancialItems, isItemActiveAt } from './dataMigration'
 import { DEFAULT_RATES } from './defaultItems'
+import {
+  calculateRemainingBalance,
+  calculateYearlyPrincipalPayment,
+  calculateYearlyInterestPayment,
+  calculateAnnualPensionWithdrawal,
+  getEffectiveDebtRate,
+  type RepaymentType,
+} from '../utils/loanCalculator'
 
 // ============================================
 // 타입 정의
@@ -72,7 +82,8 @@ export interface SimulationResult {
 export function runSimulation(
   data: OnboardingData,
   settings?: Partial<SimulationSettings>,
-  yearsToSimulate: number = 50
+  yearsToSimulate: number = 50,
+  globalSettings?: GlobalSettings
 ): SimulationResult {
   const currentYear = new Date().getFullYear()
   const birthYear = data.birth_date ? parseInt(data.birth_date.split('-')[0]) : currentYear - 35
@@ -83,9 +94,14 @@ export function runSimulation(
   // OnboardingData를 FinancialItem으로 변환
   const items = migrateOnboardingToFinancialItems(data, 'simulation')
 
-  // 설정값
-  const investmentReturn = (settings?.investmentReturn ?? DEFAULT_RATES.investmentReturn) / 100
-  const inflationRate = (settings?.inflationRate ?? DEFAULT_RATES.expenseGrowth) / 100
+  // 글로벌 설정 (우선순위: globalSettings > data.globalSettings > 기본값)
+  const gs = globalSettings || data.globalSettings || DEFAULT_GLOBAL_SETTINGS
+
+  // 설정값 (GlobalSettings 우선 사용)
+  const investmentReturn = (gs.investmentReturnRate ?? settings?.investmentReturn ?? DEFAULT_RATES.investmentReturn) / 100
+  const inflationRate = (gs.inflationRate ?? settings?.inflationRate ?? DEFAULT_RATES.expenseGrowth) / 100
+  const incomeGrowthRate = (gs.incomeGrowthRate ?? DEFAULT_RATES.incomeGrowth) / 100
+  const realEstateGrowthRate = (gs.realEstateGrowthRate ?? DEFAULT_RATES.realEstateGrowth) / 100
 
   const snapshots: YearlySnapshot[] = []
 
@@ -102,12 +118,15 @@ export function runSimulation(
     // 해당 연도의 활성 항목 필터링
     const activeItems = items.filter(item => isItemActiveAt(item, year, 6))
 
-    // 소득 계산 (성장률 반영)
+    // 소득 계산 (성장률 반영, GlobalSettings 우선)
     const incomeItems = activeItems.filter(i => i.category === 'income')
     const incomeBreakdown = incomeItems.map(item => {
       const incomeData = item.data as IncomeData
-      const growthRate = (incomeData.growthRate || DEFAULT_RATES.incomeGrowth) / 100
-      const amount = incomeData.amount * Math.pow(1 + growthRate, yearsSinceStart) * 12
+      // 개별 항목 성장률 > GlobalSettings > 기본값
+      const itemGrowthRate = incomeData.growthRate !== undefined
+        ? incomeData.growthRate / 100
+        : incomeGrowthRate
+      const amount = incomeData.amount * Math.pow(1 + itemGrowthRate, yearsSinceStart) * 12
       return { title: item.title, amount: Math.round(amount) }
     })
     const totalIncome = incomeBreakdown.reduce((sum, i) => sum + i.amount, 0)
@@ -122,14 +141,17 @@ export function runSimulation(
       return sum
     }, 0)
 
-    // 지출 계산 (물가상승률 반영)
+    // 지출 계산 (물가상승률 반영, GlobalSettings 우선)
     const expenseItems = activeItems.filter(i => i.category === 'expense')
     const expenseBreakdown = expenseItems.map(item => {
       const expenseData = item.data as ExpenseData
-      const growthRate = (expenseData.growthRate || DEFAULT_RATES.expenseGrowth) / 100
+      // 개별 항목 성장률 > GlobalSettings 인플레이션 > 기본값
+      const itemGrowthRate = expenseData.growthRate !== undefined
+        ? expenseData.growthRate / 100
+        : inflationRate
       const itemStartYear = item.start_year || currentYear
       const yearsFromItemStart = Math.max(0, year - itemStartYear)
-      const amount = expenseData.amount * Math.pow(1 + growthRate, yearsFromItemStart) * 12
+      const amount = expenseData.amount * Math.pow(1 + itemGrowthRate, yearsFromItemStart) * 12
       return { title: item.title, amount: Math.round(amount) }
     })
     const totalExpense = expenseBreakdown.reduce((sum, e) => sum + e.amount, 0)
@@ -137,22 +159,41 @@ export function runSimulation(
     // 순현금흐름
     const netCashFlow = totalIncome + pensionIncome - totalExpense
 
-    // 부채 상환 (원리금균등상환 가정, 단순화)
+    // 부채 상환 (정확한 상환 방식별 계산)
     const debtItems = items.filter(i => i.category === 'debt')
     const debtBreakdown = debtItems
       .filter(item => {
-        const endYear = item.end_year || 9999
-        return year <= endYear
+        const itemEndYear = item.end_year || 9999
+        return year <= itemEndYear
       })
       .map(item => {
         const debtData = item.data as DebtData
-        const remainingYears = (item.end_year || currentYear + 30) - year
-        if (remainingYears <= 0) return { title: item.title, amount: 0 }
+        const itemEndYear = item.end_year || currentYear + 30
+        const itemEndMonth = item.end_month || 12
 
-        // 단순화: 남은 기간에 균등 상환
-        const yearlyPayment = (debtData.currentBalance || debtData.principal) / Math.max(1, (item.end_year || currentYear + 30) - currentYear)
-        const remaining = Math.max(0, (debtData.currentBalance || debtData.principal) - yearlyPayment * yearsSinceStart)
-        return { title: item.title, amount: Math.round(remaining) }
+        if (year > itemEndYear) return { title: item.title, amount: 0 }
+
+        // 실효 금리 계산 (변동금리 지원)
+        const effectiveRate = getEffectiveDebtRate(debtData, gs)
+        const maturityDate = `${itemEndYear}-${String(itemEndMonth).padStart(2, '0')}`
+        const repaymentType = debtData.repaymentType || '원리금균등상환'
+
+        // 정확한 잔액 계산
+        const asOfDate = new Date(year, 5, 30) // 6월 30일 기준
+        const balanceResult = calculateRemainingBalance(
+          {
+            principal: debtData.currentBalance || debtData.principal,
+            annualRate: effectiveRate,
+            maturityDate,
+            repaymentType: repaymentType as RepaymentType,
+            loanStartDate: item.start_year
+              ? `${item.start_year}-${String(item.start_month || 1).padStart(2, '0')}`
+              : undefined,
+          },
+          asOfDate
+        )
+
+        return { title: item.title, amount: Math.round(balanceResult.remainingPrincipal) }
       })
     const totalDebts = debtBreakdown.reduce((sum, d) => sum + d.amount, 0)
 
@@ -163,18 +204,37 @@ export function runSimulation(
     if (year < retirementYear) {
       accumulatedPension = accumulatedPension * (1 + investmentReturn)
     } else {
-      // 은퇴 후 연금 인출 (단순화: 20년간 균등 인출)
-      const pensionWithdrawal = accumulatedPension / 20
+      // 은퇴 후 연금 인출 (연금 데이터의 수령 기간 활용)
+      // 각 연금 항목의 수령 기간을 고려한 인출
+      const pensionDataItems = pensionIncomeItems.map(item => item.data as PensionData)
+
+      // 평균 수령 기간 계산 (기본값: 20년)
+      const totalReceivingYears = pensionDataItems.reduce((sum, pd) => {
+        return sum + (pd.paymentYears || pd.receivingYears || 20)
+      }, 0)
+      const avgReceivingYears = pensionDataItems.length > 0
+        ? totalReceivingYears / pensionDataItems.length
+        : 20
+
+      // 연금 현가 기반 인출액 계산
+      const pensionWithdrawal = calculateAnnualPensionWithdrawal(
+        accumulatedPension,
+        avgReceivingYears,
+        investmentReturn * 100
+      )
       accumulatedPension = Math.max(0, accumulatedPension - pensionWithdrawal)
     }
 
-    // 부동산 가치 계산
+    // 부동산 가치 계산 (GlobalSettings 우선)
     const realEstateItems = items.filter(i => i.category === 'real_estate')
     const realEstateValue = realEstateItems.reduce((sum, item) => {
       const reData = item.data as RealEstateData
       if (reData.housingType === '자가') {
-        const growthRate = (reData.appreciationRate || DEFAULT_RATES.realEstateGrowth) / 100
-        return sum + (reData.currentValue || 0) * Math.pow(1 + growthRate, yearsSinceStart)
+        // 개별 항목 상승률 > GlobalSettings > 기본값
+        const itemGrowthRate = reData.appreciationRate !== undefined
+          ? reData.appreciationRate / 100
+          : realEstateGrowthRate
+        return sum + (reData.currentValue || 0) * Math.pow(1 + itemGrowthRate, yearsSinceStart)
       }
       return sum
     }, 0)

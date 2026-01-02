@@ -102,6 +102,42 @@ export function RealEstateTab({ data, onUpdateData }: RealEstateTabProps) {
     return sum + (p.hasRentalIncome ? (p.monthlyRent || 0) : 0)
   }, 0)
 
+  // 순자산 (부동산 자산 - 부동산 대출)
+  const netRealEstateValue = totalRealEstateValue - totalRealEstateLoans
+
+  // LTV 비율 (Loan to Value)
+  const ltvRatio = totalRealEstateValue > 0
+    ? Math.round((totalRealEstateLoans / totalRealEstateValue) * 100)
+    : 0
+
+  // 연간 임대 수익률 (임대 수익이 있는 부동산의 총 가치 대비)
+  const rentalPropertiesValue = realEstateProperties
+    .filter(p => p.hasRentalIncome)
+    .reduce((sum, p) => sum + p.marketValue, 0)
+  const annualRentalYield = rentalPropertiesValue > 0
+    ? ((totalMonthlyRent * 12) / rentalPropertiesValue * 100).toFixed(1)
+    : '0'
+
+  // 평균 대출 금리 계산
+  const loansWithRates: { amount: number; rate: number }[] = []
+  if (data.housingHasLoan && data.housingLoan && data.housingLoanRate) {
+    loansWithRates.push({ amount: data.housingLoan, rate: data.housingLoanRate })
+  }
+  realEstateProperties.forEach(p => {
+    if (p.hasLoan && p.loanAmount && p.loanRate) {
+      loansWithRates.push({ amount: p.loanAmount, rate: p.loanRate })
+    }
+  })
+  const avgLoanRate = loansWithRates.length > 0
+    ? (loansWithRates.reduce((sum, l) => sum + (l.amount * l.rate), 0) /
+       loansWithRates.reduce((sum, l) => sum + l.amount, 0)).toFixed(2)
+    : '0'
+
+  // 레버리지 배율 (자산 / 순자산)
+  const leverageRatio = netRealEstateValue > 0
+    ? (totalRealEstateValue / netRealEstateValue).toFixed(1)
+    : '1.0'
+
   // 거주용 편집 시작
   const startEditHousing = () => {
     let maturityYear = ''
@@ -141,16 +177,40 @@ export function RealEstateTab({ data, onUpdateData }: RealEstateTabProps) {
       loanMaturity = `${housingEditValues.housingLoanMaturityYear}-${String(housingEditValues.housingLoanMaturityMonth).padStart(2, '0')}`
     }
 
+    // 부채 배열 업데이트 (거주용 부동산 대출)
+    let updatedDebts = [...(data.debts || [])]
+    const housingDebtId = 'debt-housing'
+
+    // 기존 거주용 부동산 대출 제거
+    updatedDebts = updatedDebts.filter(d => d.sourceType !== 'housing')
+
+    // 대출이 있으면 새 부채 추가
+    const loanAmount = housingEditValues.housingLoan ? parseFloat(housingEditValues.housingLoan) : null
+    if (housingHasLoan && loanAmount) {
+      const newDebt: DebtInput = {
+        id: housingDebtId,
+        name: '주택담보대출',
+        amount: loanAmount,
+        rate: housingEditValues.housingLoanRate ? parseFloat(housingEditValues.housingLoanRate) : null,
+        maturity: loanMaturity,
+        repaymentType: housingEditValues.housingLoanType as '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환' | null,
+        sourceType: 'housing',
+        sourceId: 'housing',
+      }
+      updatedDebts.push(newDebt)
+    }
+
     onUpdateData({
       housingType: housingType || null,
       housingValue: housingEditValues.housingValue ? parseFloat(housingEditValues.housingValue) : null,
       housingRent: housingEditValues.housingRent ? parseFloat(housingEditValues.housingRent) : null,
       housingMaintenance: housingEditValues.housingMaintenance ? parseFloat(housingEditValues.housingMaintenance) : null,
       housingHasLoan: housingHasLoan,
-      housingLoan: housingEditValues.housingLoan ? parseFloat(housingEditValues.housingLoan) : null,
+      housingLoan: loanAmount,
       housingLoanRate: housingEditValues.housingLoanRate ? parseFloat(housingEditValues.housingLoanRate) : null,
       housingLoanMaturity: loanMaturity,
       housingLoanType: housingEditValues.housingLoanType as '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환' | null,
+      debts: updatedDebts,
     })
     cancelHousingEdit()
   }
@@ -972,70 +1032,115 @@ export function RealEstateTab({ data, onUpdateData }: RealEstateTabProps) {
       <div className={styles.summaryPanel}>
         {hasData ? (
           <>
-            {/* 요약 카드 */}
+            {/* 순자산 요약 카드 */}
             <div className={styles.summaryCard}>
               <div className={styles.totalAssets}>
-                <span className={styles.totalLabel}>총 부동산 자산</span>
-                <span className={styles.totalValue}>{formatMoney(totalRealEstateValue)}</span>
+                <span className={styles.totalLabel}>부동산 순자산</span>
+                <span className={`${styles.totalValue} ${netRealEstateValue >= 0 ? '' : styles.negative}`}>
+                  {formatMoney(netRealEstateValue)}
+                </span>
               </div>
 
-              <div className={styles.subValues}>
-                {data.housingType === '자가' && housingValue > 0 && (
-                  <div className={styles.subValueItem}>
-                    <span className={styles.subLabel}>거주용</span>
-                    <span className={styles.subValue}>{formatMoney(housingValue)}</span>
-                  </div>
-                )}
-                {additionalTotal > 0 && (
-                  <div className={styles.subValueItem}>
-                    <span className={styles.subLabel}>추가 부동산</span>
-                    <span className={styles.subValue}>{formatMoney(additionalTotal)}</span>
-                  </div>
-                )}
+              <div className={styles.assetBreakdown}>
+                <div className={styles.breakdownRow}>
+                  <span className={styles.breakdownLabel}>총 자산</span>
+                  <span className={styles.breakdownValue}>{formatMoney(totalRealEstateValue)}</span>
+                </div>
+                <div className={styles.breakdownRow}>
+                  <span className={styles.breakdownLabel}>총 대출</span>
+                  <span className={styles.breakdownValueNegative}>-{formatMoney(totalRealEstateLoans)}</span>
+                </div>
               </div>
-
-              {totalRealEstateLoans > 0 && (
-                <div className={styles.loanSummary}>
-                  <span className={styles.loanLabel}>총 부동산 대출</span>
-                  <span className={styles.loanValue}>{formatMoney(totalRealEstateLoans)}</span>
-                </div>
-              )}
-
-              {totalMonthlyRent > 0 && (
-                <div className={styles.rentSummary}>
-                  <span className={styles.rentLabel}>월 임대 수익</span>
-                  <span className={styles.rentValue}>{formatMoney(totalMonthlyRent)}</span>
-                </div>
-              )}
             </div>
 
-            {/* 부동산 현황 */}
+            {/* 핵심 지표 카드 */}
+            <div className={styles.metricsCard}>
+              <h4 className={styles.cardTitle}>핵심 지표</h4>
+              <div className={styles.metricsList}>
+                {totalRealEstateLoans > 0 && (
+                  <>
+                    <div className={styles.metricItem}>
+                      <div className={styles.metricHeader}>
+                        <span className={styles.metricLabel}>LTV (담보인정비율)</span>
+                        <span className={`${styles.metricValue} ${ltvRatio > 70 ? styles.warning : ltvRatio > 50 ? styles.caution : ''}`}>
+                          {ltvRatio}%
+                        </span>
+                      </div>
+                      <div className={styles.metricBar}>
+                        <div
+                          className={`${styles.metricFill} ${ltvRatio > 70 ? styles.warning : ltvRatio > 50 ? styles.caution : ''}`}
+                          style={{ width: `${Math.min(ltvRatio, 100)}%` }}
+                        />
+                      </div>
+                      <span className={styles.metricHint}>
+                        {ltvRatio <= 40 ? '안정적 수준' : ltvRatio <= 60 ? '적정 수준' : ltvRatio <= 70 ? '주의 필요' : '위험 수준'}
+                      </span>
+                    </div>
+
+                    <div className={styles.metricItem}>
+                      <div className={styles.metricHeader}>
+                        <span className={styles.metricLabel}>평균 대출 금리</span>
+                        <span className={styles.metricValue}>{avgLoanRate}%</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.metricItem}>
+                      <div className={styles.metricHeader}>
+                        <span className={styles.metricLabel}>레버리지 배율</span>
+                        <span className={styles.metricValue}>{leverageRatio}x</span>
+                      </div>
+                      <span className={styles.metricHint}>자산이 순자산의 {leverageRatio}배</span>
+                    </div>
+                  </>
+                )}
+
+                {totalMonthlyRent > 0 && (
+                  <div className={styles.metricItem}>
+                    <div className={styles.metricHeader}>
+                      <span className={styles.metricLabel}>연간 임대 수익률</span>
+                      <span className={`${styles.metricValue} ${styles.positive}`}>{annualRentalYield}%</span>
+                    </div>
+                    <span className={styles.metricHint}>월 {formatMoney(totalMonthlyRent)} / 연 {formatMoney(totalMonthlyRent * 12)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 자산 구성 */}
             <div className={styles.countCard}>
-              <h4 className={styles.cardTitle}>부동산 현황</h4>
+              <h4 className={styles.cardTitle}>자산 구성</h4>
               <div className={styles.countList}>
-                <div className={styles.countRow}>
-                  <span className={styles.countLabel}>거주용</span>
-                  <span className={styles.countValue}>{hasHousing ? '1건' : '없음'}</span>
-                </div>
-                <div className={styles.countRow}>
-                  <span className={styles.countLabel}>투자용</span>
-                  <span className={styles.countValue}>{investmentProperties.length}건</span>
-                </div>
-                <div className={styles.countRow}>
-                  <span className={styles.countLabel}>임대용</span>
-                  <span className={styles.countValue}>{rentalProperties.length}건</span>
-                </div>
-                <div className={styles.countRow}>
-                  <span className={styles.countLabel}>토지</span>
-                  <span className={styles.countValue}>{landProperties.length}건</span>
-                </div>
+                {data.housingType === '자가' && housingValue > 0 && (
+                  <div className={styles.countRow}>
+                    <span className={styles.countLabel}>거주용</span>
+                    <span className={styles.countValue}>{formatMoney(housingValue)}</span>
+                  </div>
+                )}
+                {investmentTotal > 0 && (
+                  <div className={styles.countRow}>
+                    <span className={styles.countLabel}>투자용 ({investmentProperties.length}건)</span>
+                    <span className={styles.countValue}>{formatMoney(investmentTotal)}</span>
+                  </div>
+                )}
+                {rentalTotal > 0 && (
+                  <div className={styles.countRow}>
+                    <span className={styles.countLabel}>임대용 ({rentalProperties.length}건)</span>
+                    <span className={styles.countValue}>{formatMoney(rentalTotal)}</span>
+                  </div>
+                )}
+                {landTotal > 0 && (
+                  <div className={styles.countRow}>
+                    <span className={styles.countLabel}>토지 ({landProperties.length}건)</span>
+                    <span className={styles.countValue}>{formatMoney(landTotal)}</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* 자산 구성 차트 */}
-            {chartData.values.length > 0 && (
+            {/* 차트 */}
+            {chartData.values.length > 1 && (
               <div className={styles.chartCard}>
-                <h4 className={styles.cardTitle}>부동산 구성</h4>
+                <h4 className={styles.cardTitle}>부동산 포트폴리오</h4>
                 <div className={styles.chartWrapper}>
                   <Doughnut data={doughnutData} options={doughnutOptions} />
                 </div>
@@ -1044,12 +1149,46 @@ export function RealEstateTab({ data, onUpdateData }: RealEstateTabProps) {
                     <div key={label} className={styles.legendItem}>
                       <span className={styles.legendDot} style={{ background: chartData.colors[index] }}></span>
                       <span className={styles.legendLabel}>{label}</span>
-                      <span className={styles.legendValue}>{formatMoney(chartData.values[index])}</span>
+                      <span className={styles.legendValue}>
+                        {Math.round((chartData.values[index] / totalRealEstateValue) * 100)}%
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* 인사이트 카드 */}
+            <div className={styles.insightCard}>
+              <h4 className={styles.cardTitle}>부동산 인사이트</h4>
+              <ul className={styles.insightList}>
+                {ltvRatio > 60 && (
+                  <li className={styles.insightWarning}>
+                    LTV가 {ltvRatio}%로 높습니다. 금리 상승 시 부담이 커질 수 있습니다.
+                  </li>
+                )}
+                {totalMonthlyRent > 0 && parseFloat(annualRentalYield) < 3 && (
+                  <li className={styles.insightWarning}>
+                    임대 수익률({annualRentalYield}%)이 예금 금리보다 낮습니다.
+                  </li>
+                )}
+                {totalMonthlyRent > 0 && parseFloat(annualRentalYield) >= 5 && (
+                  <li className={styles.insightPositive}>
+                    임대 수익률({annualRentalYield}%)이 양호합니다.
+                  </li>
+                )}
+                {data.housingType === '자가' && !data.housingHasLoan && housingValue > 0 && (
+                  <li className={styles.insightPositive}>
+                    자가 주택 대출이 없어 주거 안정성이 높습니다.
+                  </li>
+                )}
+                {realEstateProperties.length === 0 && data.housingType === '자가' && (
+                  <li className={styles.insightNeutral}>
+                    추가 부동산 투자를 고려해 보세요.
+                  </li>
+                )}
+              </ul>
+            </div>
           </>
         ) : (
           <div className={styles.emptyState}>

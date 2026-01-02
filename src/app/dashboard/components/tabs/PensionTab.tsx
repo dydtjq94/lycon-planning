@@ -24,6 +24,7 @@ export function PensionTab({ data, onUpdateData, globalSettings }: PensionTabPro
 
   // 계산 로직 훅 사용
   const {
+    currentAge,
     monthlyIncome,
     spouseMonthlyIncome,
     yearsUntilRetirement,
@@ -189,6 +190,7 @@ export function PensionTab({ data, onUpdateData, globalSettings }: PensionTabPro
         totalPensionProjection={totalPensionProjection}
         nationalPensionData={nationalPensionData}
         isMarried={isMarried}
+        currentAge={currentAge}
       />
     </div>
   )

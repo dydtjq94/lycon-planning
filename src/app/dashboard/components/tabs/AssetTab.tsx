@@ -76,6 +76,60 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
     return sum + (hasFinancing ? (a.loanAmount || 0) : 0)
   }, 0)
 
+  // 순자산 (자산 - 대출/할부)
+  const netAssets = totalAssets - totalLoans
+
+  // 자동차 감가상각 계산 (연 15% 감가 가정)
+  const carDepreciation = useMemo(() => {
+    if (carAssets.length === 0) return { currentValue: 0, depreciation: 0 }
+
+    let totalCurrentValue = 0
+    let totalDepreciation = 0
+
+    carAssets.forEach(car => {
+      const purchaseYear = car.purchaseYear || currentYear
+      const yearsOwned = currentYear - purchaseYear
+      // 감가율: 첫해 20%, 이후 연 15%
+      let depreciationRate = 0.2 // 첫해
+      if (yearsOwned > 0) {
+        depreciationRate = 1 - (0.8 * Math.pow(0.85, yearsOwned))
+      } else {
+        depreciationRate = 0
+      }
+      const currentValue = car.purchaseValue * (1 - depreciationRate)
+      totalCurrentValue += currentValue
+      totalDepreciation += car.purchaseValue - currentValue
+    })
+
+    return {
+      currentValue: Math.round(totalCurrentValue),
+      depreciation: Math.round(totalDepreciation),
+    }
+  }, [carAssets, currentYear])
+
+  // 자산 유동성 분류
+  const liquidityBreakdown = useMemo(() => {
+    // 귀금속: 고유동성, 자동차: 중유동성, 기타: 저유동성
+    return {
+      high: preciousMetalTotal, // 귀금속 - 쉽게 현금화 가능
+      medium: carTotal, // 자동차 - 중고차 시장
+      low: customTotal, // 기타 - 현금화 어려움
+    }
+  }, [preciousMetalTotal, carTotal, customTotal])
+
+  // 자산 대비 대출 비율
+  const loanToAssetRatio = totalAssets > 0
+    ? Math.round((totalLoans / totalAssets) * 100)
+    : 0
+
+  // 가장 가치 있는 자산
+  const mostValuableAsset = useMemo(() => {
+    if (physicalAssets.length === 0) return null
+    return physicalAssets.reduce((max, a) =>
+      a.purchaseValue > max.purchaseValue ? a : max
+    )
+  }, [physicalAssets])
+
   // 편집 시작
   const startAddAsset = (type: PhysicalAssetType) => {
     setEditingAsset({ type, id: null })
@@ -579,59 +633,120 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
       <div className={styles.summaryPanel}>
         {hasData ? (
           <>
-            {/* 요약 카드 */}
+            {/* 순자산 요약 카드 */}
             <div className={styles.summaryCard}>
               <div className={styles.totalAssets}>
-                <span className={styles.totalLabel}>총 실물자산</span>
-                <span className={styles.totalValue}>{formatMoney(totalAssets)}</span>
+                <span className={styles.totalLabel}>실물자산 순자산</span>
+                <span className={`${styles.totalValue} ${netAssets >= 0 ? '' : styles.negative}`}>
+                  {formatMoney(netAssets)}
+                </span>
               </div>
 
-              <div className={styles.subValues}>
-                <div className={styles.subValueItem}>
-                  <span className={styles.subLabel}>자동차</span>
-                  <span className={styles.subValue}>{formatMoney(carTotal)}</span>
+              <div className={styles.assetBreakdown}>
+                <div className={styles.breakdownRow}>
+                  <span className={styles.breakdownLabel}>총 자산 (매입가)</span>
+                  <span className={styles.breakdownValue}>{formatMoney(totalAssets)}</span>
                 </div>
-                <div className={styles.subValueItem}>
-                  <span className={styles.subLabel}>귀금속</span>
-                  <span className={styles.subValue}>{formatMoney(preciousMetalTotal)}</span>
-                </div>
-                <div className={styles.subValueItem}>
-                  <span className={styles.subLabel}>기타</span>
-                  <span className={styles.subValue}>{formatMoney(customTotal)}</span>
-                </div>
-              </div>
-
-              {totalLoans > 0 && (
-                <div className={styles.loanSummary}>
-                  <span className={styles.loanLabel}>관련 대출</span>
-                  <span className={styles.loanValue}>{formatMoney(totalLoans)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* 자산 현황 */}
-            <div className={styles.countCard}>
-              <h4 className={styles.cardTitle}>자산 현황</h4>
-              <div className={styles.countList}>
-                <div className={styles.countRow}>
-                  <span className={styles.countLabel}>자동차</span>
-                  <span className={styles.countValue}>{carAssets.length}대</span>
-                </div>
-                <div className={styles.countRow}>
-                  <span className={styles.countLabel}>귀금속</span>
-                  <span className={styles.countValue}>{preciousMetalAssets.length}건</span>
-                </div>
-                <div className={styles.countRow}>
-                  <span className={styles.countLabel}>기타 자산</span>
-                  <span className={styles.countValue}>{customAssets.length}건</span>
-                </div>
+                {totalLoans > 0 && (
+                  <div className={styles.breakdownRow}>
+                    <span className={styles.breakdownLabel}>대출/할부</span>
+                    <span className={styles.breakdownValueNegative}>-{formatMoney(totalLoans)}</span>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* 핵심 지표 */}
+            <div className={styles.metricsCard}>
+              <h4 className={styles.cardTitle}>핵심 지표</h4>
+              <div className={styles.metricsList}>
+                {/* 자동차 감가상각 */}
+                {carAssets.length > 0 && carDepreciation.depreciation > 0 && (
+                  <div className={styles.metricItem}>
+                    <div className={styles.metricHeader}>
+                      <span className={styles.metricLabel}>자동차 추정 시세</span>
+                      <span className={styles.metricValue}>{formatMoney(carDepreciation.currentValue)}</span>
+                    </div>
+                    <span className={styles.metricHint}>
+                      매입가 대비 -{formatMoney(carDepreciation.depreciation)} 감가
+                    </span>
+                  </div>
+                )}
+
+                {/* 대출 비율 */}
+                {totalLoans > 0 && (
+                  <div className={styles.metricItem}>
+                    <div className={styles.metricHeader}>
+                      <span className={styles.metricLabel}>대출/할부 비율</span>
+                      <span className={`${styles.metricValue} ${loanToAssetRatio > 50 ? styles.caution : ''}`}>
+                        {loanToAssetRatio}%
+                      </span>
+                    </div>
+                    <div className={styles.metricBar}>
+                      <div
+                        className={`${styles.metricFill} ${loanToAssetRatio > 50 ? styles.caution : ''}`}
+                        style={{ width: `${Math.min(loanToAssetRatio, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 가장 가치 있는 자산 */}
+                {mostValuableAsset && (
+                  <div className={styles.metricItem}>
+                    <div className={styles.metricHeader}>
+                      <span className={styles.metricLabel}>최고가 자산</span>
+                      <span className={styles.metricValue}>{formatMoney(mostValuableAsset.purchaseValue)}</span>
+                    </div>
+                    <span className={styles.metricHint}>{mostValuableAsset.name}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 자산 유동성 */}
+            {totalAssets > 0 && (
+              <div className={styles.liquidityCard}>
+                <h4 className={styles.cardTitle}>자산 유동성</h4>
+                <div className={styles.liquidityList}>
+                  {liquidityBreakdown.high > 0 && (
+                    <div className={styles.liquidityRow}>
+                      <div className={styles.liquidityInfo}>
+                        <span className={`${styles.liquidityDot} ${styles.high}`}></span>
+                        <span className={styles.liquidityLabel}>고유동성</span>
+                      </div>
+                      <span className={styles.liquidityValue}>{formatMoney(liquidityBreakdown.high)}</span>
+                      <span className={styles.liquidityHint}>귀금속 - 쉽게 현금화 가능</span>
+                    </div>
+                  )}
+                  {liquidityBreakdown.medium > 0 && (
+                    <div className={styles.liquidityRow}>
+                      <div className={styles.liquidityInfo}>
+                        <span className={`${styles.liquidityDot} ${styles.medium}`}></span>
+                        <span className={styles.liquidityLabel}>중유동성</span>
+                      </div>
+                      <span className={styles.liquidityValue}>{formatMoney(liquidityBreakdown.medium)}</span>
+                      <span className={styles.liquidityHint}>자동차 - 중고차 시장 매각</span>
+                    </div>
+                  )}
+                  {liquidityBreakdown.low > 0 && (
+                    <div className={styles.liquidityRow}>
+                      <div className={styles.liquidityInfo}>
+                        <span className={`${styles.liquidityDot} ${styles.low}`}></span>
+                        <span className={styles.liquidityLabel}>저유동성</span>
+                      </div>
+                      <span className={styles.liquidityValue}>{formatMoney(liquidityBreakdown.low)}</span>
+                      <span className={styles.liquidityHint}>기타 - 매각에 시간 소요</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* 자산 구성 차트 */}
-            {chartData.values.length > 0 && (
+            {chartData.values.length > 1 && (
               <div className={styles.chartCard}>
-                <h4 className={styles.cardTitle}>자산 구성</h4>
+                <h4 className={styles.cardTitle}>자산 포트폴리오</h4>
                 <div className={styles.chartWrapper}>
                   <Doughnut data={doughnutData} options={doughnutOptions} />
                 </div>
@@ -640,12 +755,46 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
                     <div key={label} className={styles.legendItem}>
                       <span className={styles.legendDot} style={{ background: chartData.colors[index] }}></span>
                       <span className={styles.legendLabel}>{label}</span>
-                      <span className={styles.legendValue}>{formatMoney(chartData.values[index])}</span>
+                      <span className={styles.legendValue}>
+                        {Math.round((chartData.values[index] / totalAssets) * 100)}%
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* 인사이트 카드 */}
+            <div className={styles.insightCard}>
+              <h4 className={styles.cardTitle}>자산 인사이트</h4>
+              <ul className={styles.insightList}>
+                {carAssets.length > 0 && carDepreciation.depreciation > 0 && (
+                  <li className={styles.insightWarning}>
+                    자동차 감가상각으로 약 {formatMoney(carDepreciation.depreciation)} 가치 하락
+                  </li>
+                )}
+                {preciousMetalTotal > 0 && (
+                  <li className={styles.insightPositive}>
+                    귀금속({formatMoney(preciousMetalTotal)})은 인플레이션 헤지 자산입니다
+                  </li>
+                )}
+                {loanToAssetRatio > 50 && (
+                  <li className={styles.insightWarning}>
+                    자산 대비 대출 비율({loanToAssetRatio}%)이 높습니다
+                  </li>
+                )}
+                {carAssets.length > 0 && totalLoans === 0 && (
+                  <li className={styles.insightPositive}>
+                    자동차 대출 없이 완납 상태입니다
+                  </li>
+                )}
+                {physicalAssets.length === 1 && (
+                  <li className={styles.insightNeutral}>
+                    자산 분산을 위해 다른 유형의 자산도 고려해 보세요
+                  </li>
+                )}
+              </ul>
+            </div>
           </>
         ) : (
           <div className={styles.emptyState}>

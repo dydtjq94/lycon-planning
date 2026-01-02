@@ -1,2 +1,6 @@
 export { SankeyChart } from './SankeyChart'
 export { AssetSimulationChart } from './AssetSimulationChart'
+export { AssetStackChart } from './AssetStackChart'
+export { YearDetailPanel } from './YearDetailPanel'
+export { CashFlowChart } from './CashFlowChart'
+export { YearCashFlowPanel } from './YearCashFlowPanel'

@@ -532,6 +532,175 @@
   color: #1d1d1f;
 }
 
+/* 자산 분해 */
+.assetBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid #f0f0f0;
+}
+
+.breakdownRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.breakdownLabel {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.breakdownValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.breakdownValueNegative {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ff3b30;
+}
+
+/* 순자산 음수 */
+.negative {
+  color: #ff3b30;
+}
+
+/* 핵심 지표 카드 */
+.metricsCard {
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.metricsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metricItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metricHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metricLabel {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.metricValue {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.metricValue.positive {
+  color: #34c759;
+}
+
+.metricValue.caution {
+  color: #ff9500;
+}
+
+.metricValue.warning {
+  color: #ff3b30;
+}
+
+.metricBar {
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.metricFill {
+  height: 100%;
+  background: #34c759;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.metricFill.caution {
+  background: #ff9500;
+}
+
+.metricFill.warning {
+  background: #ff3b30;
+}
+
+.metricHint {
+  font-size: 12px;
+  color: #a1a1a6;
+}
+
+/* 인사이트 카드 */
+.insightCard {
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.insightList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insightList li {
+  font-size: 13px;
+  line-height: 1.5;
+  padding-left: 12px;
+  position: relative;
+}
+
+.insightList li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+.insightPositive {
+  color: #34c759;
+}
+
+.insightPositive::before {
+  background: #34c759;
+}
+
+.insightWarning {
+  color: #ff9500;
+}
+
+.insightWarning::before {
+  background: #ff9500;
+}
+
+.insightNeutral {
+  color: #86868b;
+}
+
+.insightNeutral::before {
+  background: #86868b;
+}
+
 /* 빈 상태 */
 .emptyState {
   display: flex;
