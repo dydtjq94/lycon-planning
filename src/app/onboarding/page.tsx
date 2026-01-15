@@ -26,16 +26,35 @@ export default function OnboardingPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
+      // 로그인 안됨 → 로그인 페이지로
       if (!user) {
-        setLoading(false);
+        router.replace("/auth/login");
         return;
       }
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("name, gender, birth_date, onboarding_step")
+        .select("name, gender, birth_date, onboarding_step, pin_hash, phone_number")
         .eq("id", user.id)
         .single();
+
+      // PIN 없음 → PIN 설정으로
+      if (!profile?.pin_hash) {
+        router.replace("/auth/pin-setup");
+        return;
+      }
+
+      // 온보딩 완료 + 전화번호 인증 완료 → 대기 화면으로
+      if (profile?.onboarding_step === "completed" && profile?.phone_number) {
+        router.replace("/waiting");
+        return;
+      }
+
+      // 온보딩 완료했지만 전화번호 미인증 → 전화번호 인증으로
+      if (profile?.onboarding_step === "completed") {
+        router.replace("/auth/phone-verify");
+        return;
+      }
 
       if (profile?.name && profile?.birth_date && profile?.gender) {
         // birth_date: "1990-01-01" 형식
@@ -79,22 +98,21 @@ export default function OnboardingPage() {
     bookingDate: string | null;
     bookingTime: string | null;
   }) => {
-    setSaving(true);
+    // 즉시 페이지 이동 (사용자 경험 개선)
+    router.push("/auth/phone-verify");
 
+    // 백그라운드에서 데이터 저장
     const supabase = createClient();
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login");
-        return;
-      }
+      if (!user) return;
 
       // 생년월일 문자열 생성
       const birthDate = `${data.birthYear}-${String(data.birthMonth).padStart(2, "0")}-01`;
 
       // 병렬 실행: 프로필 조회 + 시뮬레이션 조회/생성
-      const [profileResult, simulation] = await Promise.all([
+      const [profileResult] = await Promise.all([
         supabase.from("profiles").select("diagnosis_started_at").eq("id", user.id).single(),
         simulationService.getDefault(),
       ]);
@@ -132,13 +150,8 @@ export default function OnboardingPage() {
 
       // 담당 전문가 환영 메시지 생성 (백그라운드)
       initializePrimaryConversation().catch(console.error);
-
-      // 전화번호 인증으로 이동
-      router.push("/auth/phone-verify");
     } catch (err) {
       console.error("저장 실패:", err);
-    } finally {
-      setSaving(false);
     }
   };
 

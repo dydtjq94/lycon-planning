@@ -56,46 +56,40 @@ export function LoginForm() {
     if (data.user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('phone_number, pin_hash, booking_info')
+        .select('phone_number, pin_hash, onboarding_step')
         .eq('id', data.user.id)
         .single()
 
       // 1. 프로필 없음 → PIN 설정
       if (!profile) {
-        router.push('/auth/pin-setup')
-        router.refresh()
+        router.replace('/auth/pin-setup')
         return
       }
 
       // 2. PIN 미설정 → PIN 설정
       if (!profile.pin_hash) {
-        router.push('/auth/pin-setup')
-        router.refresh()
+        router.replace('/auth/pin-setup')
         return
       }
 
-      // 3. PIN 있고 예약 전 → 온보딩
-      if (!profile.booking_info) {
-        router.push('/onboarding')
-        router.refresh()
+      // 3. 온보딩 미완료 → 온보딩
+      if (profile.onboarding_step !== 'completed') {
+        router.replace('/onboarding')
         return
       }
 
-      // 4. 예약 완료 + 전화번호 미인증 → 전화번호 인증
+      // 4. 전화번호 미인증 → 전화번호 인증
       if (!profile.phone_number) {
-        router.push('/auth/phone-verify')
-        router.refresh()
+        router.replace('/auth/phone-verify')
         return
       }
 
       // 5. 모두 완료 (재방문) → PIN 입력
-      router.push('/auth/pin-verify')
-      router.refresh()
+      router.replace('/auth/pin-verify')
       return
     }
 
-    router.push('/auth/pin-setup')
-    router.refresh()
+    router.replace('/auth/pin-setup')
   }
 
   return (

@@ -14,21 +14,33 @@ export default function PhoneVerifyPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
+      // 로그인 안됨 → 로그인 페이지로
       if (!user) {
-        router.push('/auth/login')
+        router.replace('/auth/login')
         return
       }
 
-      // 이미 번호 인증이 되어있는지 확인
       const { data: profile } = await supabase
         .from('profiles')
-        .select('phone_number')
+        .select('pin_hash, onboarding_step, phone_number')
         .eq('id', user.id)
         .single()
 
+      // PIN 없음 → PIN 설정으로
+      if (!profile?.pin_hash) {
+        router.replace('/auth/pin-setup')
+        return
+      }
+
+      // 온보딩 미완료 → 온보딩으로
+      if (profile?.onboarding_step !== 'completed') {
+        router.replace('/onboarding')
+        return
+      }
+
+      // 이미 전화번호 인증됨 → 대기 화면으로
       if (profile?.phone_number) {
-        // 이미 인증됨 → PIN 설정으로
-        router.push('/auth/pin-setup')
+        router.replace('/waiting')
         return
       }
 

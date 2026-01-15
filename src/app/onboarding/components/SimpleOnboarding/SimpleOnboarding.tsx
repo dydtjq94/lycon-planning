@@ -1,10 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Check, ChevronLeft, ChevronRight, Square, CheckSquare } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./SimpleOnboarding.module.css";
+
+// localStorage 키
+const SURVEY_STORAGE_KEY = "lycon_onboarding_survey";
+const BASIC_INFO_STORAGE_KEY = "lycon_onboarding_basic";
 
 type Step =
   | "welcome"
@@ -503,6 +507,110 @@ export function SimpleOnboarding({
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [isModalClosing, setIsModalClosing] = useState(false);
   const [surveyResponses, setSurveyResponses] = useState<SurveyResponses>({});
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // localStorage에서 저장된 데이터 불러오기
+  useEffect(() => {
+    const loadSavedData = async () => {
+      // 1. localStorage에서 먼저 확인
+      const savedSurvey = localStorage.getItem(SURVEY_STORAGE_KEY);
+      const savedBasicInfo = localStorage.getItem(BASIC_INFO_STORAGE_KEY);
+
+      if (savedSurvey) {
+        try {
+          setSurveyResponses(JSON.parse(savedSurvey));
+        } catch (e) {
+          console.error("설문 응답 파싱 오류:", e);
+        }
+      }
+
+      if (savedBasicInfo) {
+        try {
+          const basicInfo = JSON.parse(savedBasicInfo);
+          if (basicInfo.name && !name) setName(basicInfo.name);
+          if (basicInfo.rrnFront && !rrnFront) setRrnFront(basicInfo.rrnFront);
+          if (basicInfo.rrnBack && !rrnBack) setRrnBack(basicInfo.rrnBack);
+        } catch (e) {
+          console.error("기본 정보 파싱 오류:", e);
+        }
+      }
+
+      // 2. Supabase에서도 확인 (localStorage에 없을 경우 대비)
+      if (!savedSurvey) {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("survey_responses")
+            .eq("id", user.id)
+            .single();
+
+          if (profile?.survey_responses?.onboarding) {
+            setSurveyResponses(profile.survey_responses.onboarding);
+            // localStorage에도 저장
+            localStorage.setItem(
+              SURVEY_STORAGE_KEY,
+              JSON.stringify(profile.survey_responses.onboarding)
+            );
+          }
+        }
+      }
+
+      setIsDataLoaded(true);
+    };
+
+    loadSavedData();
+  }, []);
+
+  // surveyResponses 변경 시 localStorage 즉시 저장 + Supabase 디바운스 저장
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    if (Object.keys(surveyResponses).length === 0) return;
+
+    // 1. localStorage 즉시 저장
+    localStorage.setItem(SURVEY_STORAGE_KEY, JSON.stringify(surveyResponses));
+
+    // 2. Supabase 디바운스 저장 (3초)
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from("profiles")
+          .update({
+            survey_responses: {
+              onboarding: surveyResponses,
+              updated_at: new Date().toISOString(),
+            },
+          })
+          .eq("id", user.id);
+      }
+    }, 3000);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [surveyResponses, isDataLoaded]);
+
+  // 기본 정보 변경 시 localStorage 저장
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    if (!name && !rrnFront && !rrnBack) return;
+
+    localStorage.setItem(
+      BASIC_INFO_STORAGE_KEY,
+      JSON.stringify({ name, rrnFront, rrnBack })
+    );
+  }, [name, rrnFront, rrnBack, isDataLoaded]);
 
   const closePrivacyModal = () => {
     setIsModalClosing(true);
@@ -522,37 +630,38 @@ export function SimpleOnboarding({
     return () => clearTimeout(timer);
   }, []);
 
-  // 매칭 애니메이션 (불규칙한 속도)
+  // 매칭 애니메이션 (빠르게 약 4초)
   useEffect(() => {
     if (step === "matching") {
       let currentProgress = 0;
+      let animationId: NodeJS.Timeout;
 
       const updateProgress = () => {
         if (currentProgress >= 100) {
-          // 버튼 클릭으로만 이동하도록 자동 이동 제거
           return;
         }
 
-        // 불규칙한 증가량 (1~4)
-        const increment = Math.random() * 3 + 1;
-        // 불규칙한 딜레이 (30~150ms)
-        let delay = Math.random() * 120 + 30;
+        // 빠른 증가 (6~12씩 증가)
+        const increment = Math.random() * 6 + 6;
+        // 짧은 딜레이 (250~400ms)
+        let delay = Math.random() * 150 + 250;
 
-        // 특정 구간에서 느리게
-        if (currentProgress > 30 && currentProgress < 50) {
-          delay = Math.random() * 200 + 100;
-        }
-        if (currentProgress > 70 && currentProgress < 90) {
-          delay = Math.random() * 250 + 150;
+        // 마지막에 살짝 느리게
+        if (currentProgress > 85) {
+          delay = Math.random() * 150 + 300;
         }
 
         currentProgress = Math.min(currentProgress + increment, 100);
         setMatchingProgress(currentProgress);
 
-        setTimeout(updateProgress, delay);
+        animationId = setTimeout(updateProgress, delay);
       };
 
       updateProgress();
+
+      return () => {
+        if (animationId) clearTimeout(animationId);
+      };
     }
   }, [step]);
 
@@ -761,10 +870,13 @@ export function SimpleOnboarding({
     else if (step === "program") {
       goToStep("booking");
     } else if (step === "booking") {
-      goToStep("bookingComplete");
-    } else if (step === "bookingComplete") {
+      // 바로 전화번호 인증으로 이동
       const parsed = parseRrn();
       if (parsed) {
+        // 온보딩 완료 시 localStorage 정리
+        localStorage.removeItem(SURVEY_STORAGE_KEY);
+        localStorage.removeItem(BASIC_INFO_STORAGE_KEY);
+
         onComplete({
           name,
           gender: parsed.gender,
@@ -1138,16 +1250,17 @@ export function SimpleOnboarding({
             <span className={styles.surveyProgressSection}>설문 완료</span>
           </div>
           <h1 className={styles.surveyQuestionTitle}>
-            감사합니다!
+            고생하셨어요,<br />
+            {name}님!
           </h1>
           <p className={styles.transitionDesc}>
-            {name}님에게 맞는<br />
-            전문가를 배정해드릴게요.
+            응답을 바탕으로<br />
+            담당 은퇴설계사를 배정해드릴게요.
           </p>
         </div>
         <div className={styles.bottomButtonArea}>
           <button className={styles.primaryButton} onClick={handleNext}>
-            전문가 배정받기
+            담당 전문가 배정받기
           </button>
         </div>
       </div>
@@ -1242,12 +1355,17 @@ export function SimpleOnboarding({
         {/* 매칭 중 */}
         {!isMatched && (
           <div className={styles.matchingContainer}>
-            <div className={styles.matchingBadge}>전문가 배정</div>
-            <h1 className={styles.matchingTitle}>
-              감사합니다, {name}님
-            </h1>
+            {/* 스켈레톤 프로필 카드 */}
+            <div className={styles.skeletonCard}>
+              <div className={styles.skeletonAvatar} />
+              <div className={styles.skeletonInfo}>
+                <div className={styles.skeletonLine} style={{ width: 100 }} />
+                <div className={styles.skeletonLine} style={{ width: 140, height: 20 }} />
+              </div>
+            </div>
+
             <p className={styles.matchingDesc}>
-              담당 전문가를 배정하고 있습니다.
+              전문가 매칭 중...
             </p>
             <div className={styles.matchingProgress}>
               <div
@@ -1505,28 +1623,6 @@ export function SimpleOnboarding({
                   </button>
                 );
               })}
-            </div>
-          </div>
-        )}
-
-        {isBookingComplete && (
-          <div className={styles.bookingSummary}>
-            <div className={styles.bookingSummaryIcon}>
-              <Check size={20} />
-            </div>
-            <div className={styles.bookingSummaryText}>
-              <span className={styles.bookingSummaryDate}>
-                {selectedDate &&
-                  `${
-                    selectedDate.getMonth() + 1
-                  }월 ${selectedDate.getDate()}일 (${
-                    weekdays[selectedDate.getDay()]
-                  })`}{" "}
-                {selectedTime}
-              </span>
-              <span className={styles.bookingSummaryExpert}>
-                손균우 은퇴설계전문가
-              </span>
             </div>
           </div>
         )}

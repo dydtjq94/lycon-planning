@@ -15,7 +15,19 @@ export default function PinSetupPage() {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        router.push('/auth/login')
+        router.replace('/auth/login')
+        return
+      }
+
+      // PIN이 이미 설정되어 있으면 온보딩으로
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('pin_hash')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.pin_hash) {
+        router.replace('/onboarding')
         return
       }
 

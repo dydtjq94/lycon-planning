@@ -17,13 +17,24 @@ export default async function DashboardPage() {
   // 프로필 조회 (설문 응답 포함)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, name, gender, birth_date, target_retirement_age, target_retirement_fund, retirement_lifestyle_ratio, settings, diagnosis_started_at, action_plan_status, investment_profile, survey_responses')
+    .select('id, name, gender, birth_date, target_retirement_age, target_retirement_fund, retirement_lifestyle_ratio, settings, diagnosis_started_at, action_plan_status, investment_profile, survey_responses, pin_verified_at')
     .eq('id', user.id)
     .single()
 
   // 프로필이 없으면 온보딩으로 리다이렉트
   if (!profile) {
     redirect('/onboarding')
+  }
+
+  // PIN 인증 시간 체크 (30분 이내)
+  const PIN_TIMEOUT_MINUTES = 30
+  const pinVerifiedAt = profile?.pin_verified_at as string | null
+  if (!pinVerifiedAt) {
+    redirect('/auth/pin-verify')
+  }
+  const minutesSinceVerified = (Date.now() - new Date(pinVerifiedAt).getTime()) / 1000 / 60
+  if (minutesSinceVerified > PIN_TIMEOUT_MINUTES) {
+    redirect('/auth/pin-verify')
   }
 
   // 가족 구성원 조회

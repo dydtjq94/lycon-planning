@@ -214,6 +214,59 @@ export async function getTotalUnreadCount(): Promise<number> {
   return data?.reduce((sum, c) => sum + (c.unread_count || 0), 0) || 0
 }
 
+// 채팅 데이터 한 번에 로드 (최적화)
+export async function loadChatData(): Promise<{
+  expert: Expert | null
+  conversation: Conversation | null
+  messages: Message[]
+} | null> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  // 1. 기존 primary 대화방 조회 (expert 포함)
+  const { data: existingConv } = await supabase
+    .from('conversations')
+    .select(`*, expert:experts(*), messages(*)`)
+    .eq('user_id', user.id)
+    .eq('is_primary', true)
+    .maybeSingle()
+
+  if (existingConv) {
+    // 메시지 정렬
+    const sortedMessages = (existingConv.messages || []).sort(
+      (a: Message, b: Message) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    )
+    return {
+      expert: existingConv.expert as Expert,
+      conversation: { ...existingConv, messages: undefined } as Conversation,
+      messages: sortedMessages,
+    }
+  }
+
+  // 2. 없으면 생성 (기존 로직)
+  const { data: expert } = await supabase
+    .from('experts')
+    .select('*')
+    .eq('is_active', true)
+    .limit(1)
+    .single()
+
+  if (!expert) return null
+
+  const { data: newConv } = await supabase
+    .from('conversations')
+    .insert({ user_id: user.id, expert_id: expert.id, is_primary: true })
+    .select(`*, expert:experts(*)`)
+    .single()
+
+  return {
+    expert: expert as Expert,
+    conversation: newConv as Conversation,
+    messages: [],
+  }
+}
+
 // 담당 전문가와의 대화 초기화 (온보딩 완료 시 호출)
 export async function initializePrimaryConversation(): Promise<Conversation | null> {
   const expert = await getDefaultExpert()
@@ -225,34 +278,35 @@ export async function initializePrimaryConversation(): Promise<Conversation | nu
   const messages = await getMessages(conversation.id)
   if (messages.length === 0) {
     const supabase = createClient()
+
+    // 첫 번째 메시지: 인사
     await supabase
       .from('messages')
       .insert({
         conversation_id: conversation.id,
         sender_type: 'expert',
-        content: `안녕하세요, 담당 자산관리사 ${expert.name}입니다.
+        content: `안녕하세요, 담당 은퇴설계전문가 ${expert.name}입니다.
 
-은퇴 준비, 어떻게 하고 계셨나요?
-대부분 "나중에", "언젠가" 하다가 정작 중요한 결정을 미루게 됩니다.
+검진 전 궁금한 점 있으시면 편하게 물어보세요.`,
+        is_read: false,
+      })
 
-라이콘은 다릅니다.
-복잡한 재무 상황을 한눈에 정리하고, 은퇴까지 남은 시간 동안 무엇을 어떻게 준비해야 하는지 구체적으로 알려드립니다. 단순한 숫자 계산이 아니라, 당신의 삶에 맞는 전략을 함께 설계합니다.
+    // 두 번째 메시지: 준비사항 안내
+    await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversation.id,
+        sender_type: 'expert',
+        content: `검진 전까지 소득, 지출, 자산, 부채, 연금 정보를 입력해주세요.
 
-이제부터 제가 담당 전문가로서 함께하겠습니다.
-은퇴는 물론, 살면서 마주하는 크고 작은 재무 결정들 - 내 집 마련, 자녀 교육, 노후 의료비까지. 혼자 고민하지 마세요, 함께 결정해드리겠습니다.
-
-질문이 꽤 많을 거예요.
-하지만 이 과정을 거치면, 막연했던 미래가 선명해집니다.
-
-입력을 완료하시면 7일 후 은퇴 진단 플랜을 보내드릴게요.
-그때 다시 인사드리겠습니다.`,
+입력하신 정보를 바탕으로 정확한 은퇴 진단을 도와드리겠습니다.`,
         is_read: false,
       })
 
     // unread_count 업데이트
     await supabase
       .from('conversations')
-      .update({ unread_count: 1 })
+      .update({ unread_count: 2 })
       .eq('id', conversation.id)
   }
 

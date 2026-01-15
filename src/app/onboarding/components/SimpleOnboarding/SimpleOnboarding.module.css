@@ -680,10 +680,10 @@
 }
 
 .skeletonInfo {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  align-items: flex-start;
+  gap: 10px;
 }
 
 .skeletonLine {
@@ -1201,9 +1201,9 @@
 
 .matchingProgressBar {
   height: 100%;
-  background: #007AFF;
+  background: linear-gradient(90deg, #007AFF 0%, #3b9dff 100%);
   border-radius: 2px;
-  transition: width 0.1s ease;
+  transition: width 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 /* 프로그램 소개 */
@@ -1554,40 +1554,37 @@
 
 .bookingSummary {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: #f0fdf4;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 16px 0;
   margin-bottom: 24px;
 }
 
-.bookingSummaryIcon {
-  width: 40px;
-  height: 40px;
-  background: #22c55e;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.bookingSummaryText {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.bookingSummaryDate {
+.bookingSummaryProgram {
   font-size: 16px;
   font-weight: 600;
   color: #1D1D1F;
 }
 
+.bookingSummaryDetails {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bookingSummaryDate {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.bookingSummaryDivider {
+  font-size: 14px;
+  color: #d1d5db;
+}
+
 .bookingSummaryExpert {
-  font-size: 13px;
+  font-size: 14px;
   color: #6b7280;
 }
 

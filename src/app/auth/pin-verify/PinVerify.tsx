@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Lock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -11,6 +11,7 @@ interface RippleEffect {
   x: number
   y: number
   key: string
+  small?: boolean
 }
 
 // Fisher-Yates 셔플 알고리즘
@@ -39,8 +40,9 @@ export function PinVerify() {
   const [loading, setLoading] = useState(false)
   const [keypadNumbers, setKeypadNumbers] = useState<string[]>([])
   const [ripples, setRipples] = useState<RippleEffect[]>([])
-  const [rippleId, setRippleId] = useState(0)
+  const rippleIdRef = useRef(0)
   const [attempts, setAttempts] = useState(0)
+  const [glowButtons, setGlowButtons] = useState<string[]>([])
 
   // 키패드 숫자 셔플
   const shuffleKeypad = useCallback(() => {
@@ -52,33 +54,77 @@ export function PinVerify() {
     shuffleKeypad()
   }, [shuffleKeypad])
 
-  const [glowButtons, setGlowButtons] = useState<string[]>([])
-
   const createRipple = (key: string, element: HTMLButtonElement) => {
     const rect = element.getBoundingClientRect()
     const x = rect.left + rect.width / 2
     const y = rect.top + rect.height / 2
 
-    const newRipple: RippleEffect = {
-      id: rippleId,
-      x,
-      y,
-      key,
-    }
+    // 랜덤하게 다른 버튼들도 선택 (항상 3개)
+    const otherNums = keypadNumbers.filter((n) => n !== key)
+    const randomNums = shuffleArray(otherNums).slice(0, 3)
 
-    setRippleId(prev => prev + 1)
-    setRipples(prev => [...prev, newRipple])
+    // 모든 선택된 버튼들에서 리플 생성
+    const allRipples: RippleEffect[] = []
 
-    // 랜덤하게 다른 버튼들도 글로우 효과
-    const otherNums = keypadNumbers.filter(n => n !== key)
-    const randomCount = Math.floor(Math.random() * 4) + 2
-    const randomNums = shuffleArray(otherNums).slice(0, randomCount)
-    setGlowButtons([key, ...randomNums])
+    // 메인 버튼 리플
+    allRipples.push({ id: rippleIdRef.current++, x, y, key })
 
+    // 랜덤 버튼들 리플
+    randomNums.forEach((num) => {
+      const btn = document.querySelector(
+        `[data-keypad="${num}"]`
+      ) as HTMLButtonElement
+      if (btn) {
+        const btnRect = btn.getBoundingClientRect()
+        allRipples.push({
+          id: rippleIdRef.current++,
+          x: btnRect.left + btnRect.width / 2,
+          y: btnRect.top + btnRect.height / 2,
+          key: num,
+        })
+      }
+    })
+
+    setRipples((prev) => [...prev, ...allRipples])
+
+    // 애니메이션 리트리거를 위해 먼저 초기화
+    setGlowButtons([])
+    requestAnimationFrame(() => {
+      setGlowButtons([key, ...randomNums])
+    })
+
+    // 효과 제거
     setTimeout(() => {
-      setRipples(prev => prev.filter(r => r.id !== newRipple.id))
+      setRipples((prev) =>
+        prev.filter((r) => !allRipples.find((ar) => ar.id === r.id))
+      )
       setGlowButtons([])
-    }, 500)
+    }, 2000)
+  }
+
+  const createDotRipple = (dotIndex: number) => {
+    const dot = document.querySelector(
+      `[data-pin-dot="${dotIndex}"]`
+    ) as HTMLElement
+    if (dot) {
+      const rect = dot.getBoundingClientRect()
+      const x = rect.left + rect.width / 2
+      const y = rect.top + rect.height / 2
+
+      const newRipple: RippleEffect = {
+        id: rippleIdRef.current++,
+        x,
+        y,
+        key: `dot-${dotIndex}`,
+        small: true,
+      }
+
+      setRipples((prev) => [...prev, newRipple])
+
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== newRipple.id))
+      }, 1200)
+    }
   }
 
   const handleNumberClick = (num: string, event: React.MouseEvent<HTMLButtonElement>) => {
@@ -90,11 +136,16 @@ export function PinVerify() {
     const newPin = pin + num
     setPin(newPin)
 
+    // PIN 도트에 리플 효과 추가
+    setTimeout(() => {
+      createDotRipple(newPin.length - 1)
+    }, 50)
+
     // 6자리 완성 시 검증
     if (newPin.length === 6) {
       setTimeout(() => {
         verifyPin(newPin)
-      }, 200)
+      }, 300)
     }
   }
 
@@ -127,6 +178,12 @@ export function PinVerify() {
 
       // 비교
       if (hashedInput === profile.pin_hash) {
+        // PIN 인증 시간 저장
+        await supabase
+          .from('profiles')
+          .update({ pin_verified_at: new Date().toISOString() })
+          .eq('id', user.id)
+
         // 성공 - 웨이팅 화면으로 (서비스 시작 후 dashboard로 변경)
         router.push('/waiting')
         router.refresh()
@@ -168,7 +225,7 @@ export function PinVerify() {
       {ripples.map(ripple => (
         <div
           key={ripple.id}
-          className={styles.globalRipple}
+          className={`${styles.globalRipple} ${ripple.small ? styles.smallRipple : ''}`}
           style={{
             left: ripple.x,
             top: ripple.y,
@@ -179,9 +236,6 @@ export function PinVerify() {
       <main className={styles.main}>
         {/* 헤더 */}
         <div className={styles.header}>
-          <div className={styles.iconWrapper}>
-            <Lock size={28} strokeWidth={1.5} />
-          </div>
           <h1 className={styles.title}>비밀번호 입력</h1>
           <p className={styles.subtitle}>6자리 비밀번호를 입력해주세요</p>
         </div>
@@ -191,10 +245,9 @@ export function PinVerify() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
+              data-pin-dot={i}
               className={`${styles.pinDot} ${i < pin.length ? styles.filled : ''}`}
-            >
-              {i < pin.length && <span className={styles.dotInner} />}
-            </div>
+            />
           ))}
         </div>
 
@@ -213,6 +266,7 @@ export function PinVerify() {
               <button
                 key={num}
                 type="button"
+                data-keypad={num}
                 className={`${styles.keypadButton} ${glowButtons.includes(num) ? styles.glow : ''}`}
                 onClick={(e) => handleNumberClick(num, e)}
                 disabled={loading}
@@ -227,10 +281,11 @@ export function PinVerify() {
               onClick={handleReset}
               disabled={loading}
             >
-              <span className={styles.keypadText}>전체</span>
+              <span className={styles.keypadText}>다시</span>
             </button>
             <button
               type="button"
+              data-keypad={keypadNumbers[9]}
               className={`${styles.keypadButton} ${glowButtons.includes(keypadNumbers[9]) ? styles.glow : ''}`}
               onClick={(e) => handleNumberClick(keypadNumbers[9], e)}
               disabled={loading}
@@ -252,8 +307,14 @@ export function PinVerify() {
         {loading && (
           <div className={styles.loadingOverlay}>
             <Loader2 size={32} className={styles.spinner} />
+            <span>확인 중...</span>
           </div>
         )}
+
+        {/* 안내 문구 */}
+        <p className={styles.notice}>
+          5회 실패 시 자동 로그아웃됩니다.
+        </p>
       </main>
     </div>
   )

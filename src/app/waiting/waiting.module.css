@@ -9,15 +9,26 @@
   min-height: 100vh;
   min-height: 100dvh;
   background: #f5f5f7;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .main {
   width: 100%;
   max-width: 480px;
-  min-height: 100vh;
-  min-height: 100dvh;
-  padding: 0 24px 40px;
+  height: 100vh;
+  height: 100dvh;
+  padding: 110px 24px 80px;
   background: #ffffff;
+  overflow-y: auto;
 }
 
 .loading {
@@ -29,276 +40,346 @@
   font-size: 15px;
 }
 
+/* 고정 헤더 영역 */
+.fixedHeader {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: #ffffff;
+  z-index: 100;
+}
+
 /* 헤더 */
 .header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 20px 0;
+  justify-content: space-between;
+  padding: 14px 20px;
   border-bottom: 1px solid #f3f4f6;
-  margin-bottom: 24px;
 }
 
-.logo {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1d1d1f;
-  letter-spacing: -0.3px;
-}
-
-/* 예약 정보 카드 */
-.bookingCard {
-  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
-  border-radius: 16px;
-  padding: 28px 24px;
-  color: white;
-  margin-bottom: 32px;
-}
-
-.bookingBadge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 16px;
-}
-
-.bookingTitle {
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1.4;
-  margin: 0 0 20px 0;
-}
-
-.bookingDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.bookingItem {
+.headerTitle {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 15px;
-  opacity: 0.95;
-}
-
-.rescheduleBtn {
-  width: 100%;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.rescheduleBtn:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-/* 사전 준비 섹션 */
-.prepSection {
-  margin-bottom: 32px;
-}
-
-.prepHeader {
-  margin-bottom: 20px;
-}
-
-.prepTitle {
-  font-size: 18px;
+  gap: 8px;
+  font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
-  margin: 0 0 8px 0;
-}
-
-.prepDesc {
-  font-size: 14px;
-  color: #6b7280;
-  line-height: 1.5;
+  letter-spacing: -0.3px;
   margin: 0;
 }
 
-.checklist {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.headerLogo {
+  font-weight: 700;
+  color: #007AFF;
 }
 
-.checklistItem {
+.headerDivider {
+  color: #d1d5db;
+  font-weight: 400;
+}
+
+.headerButton {
+  padding: 8px 12px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.headerButton:hover {
+  background: #f9fafb;
+}
+
+/* 탭 콘텐츠 영역 */
+.tabContent {
+  padding-top: 16px;
+  padding-bottom: 24px;
+}
+
+/* 예약 정보 - 카드 */
+.bookingRow {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 20px;
   background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border: none;
+  border-top: 1px solid #f3f4f6;
   cursor: pointer;
-  transition: all 0.2s;
   text-align: left;
 }
 
-.checklistItem:hover {
+.bookingRow:hover {
   background: #f3f4f6;
 }
 
-.checklistItem.checked {
-  background: #f0fdfa;
-  border-color: #14b8a6;
-}
-
-.checkIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #e5e7eb;
-  color: #9ca3af;
-  flex-shrink: 0;
-}
-
-.checklistItem.checked .checkIcon {
-  background: #14b8a6;
-  color: white;
-}
-
-.checkContent {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.checkLabel {
+.bookingLabel {
   font-size: 15px;
-  font-weight: 500;
-  color: #1d1d1f;
-}
-
-.checkDesc {
-  font-size: 13px;
-  color: #9ca3af;
-}
-
-.checkArrow {
-  color: #9ca3af;
-  flex-shrink: 0;
-}
-
-.prepNote {
-  font-size: 13px;
-  color: #9ca3af;
-  margin: 16px 0 0 0;
-}
-
-/* 채팅 섹션 */
-.chatSection {
-  background: #f9fafb;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 32px;
-}
-
-.chatHeader {
-  margin-bottom: 16px;
-}
-
-.chatTitle {
-  font-size: 16px;
   font-weight: 600;
   color: #1d1d1f;
-  margin: 0 0 6px 0;
+  flex-shrink: 0;
 }
 
-.chatDesc {
-  font-size: 14px;
-  color: #6b7280;
+.bookingRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bookingValue {
+  font-size: 15px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.bookingArrow {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+/* 입력 폼 전체 화면 */
+.inputFormContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f5f5f7;
+  z-index: 200;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.inputFormHeader {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+  z-index: 100;
+}
+
+.inputFormTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
   margin: 0;
 }
 
-.chatBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+.inputFormMain {
   width: 100%;
-  padding: 14px;
-  background: #1d1d1f;
-  border: none;
-  border-radius: 10px;
-  color: white;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
+  max-width: 480px;
+  height: 100vh;
+  height: 100dvh;
+  padding: 64px 24px 24px;
+  background: #ffffff;
+  overflow-y: auto;
 }
 
-.chatBtn:hover {
-  background: #374151;
-}
-
-/* 검진 안내 섹션 */
-.infoSection {
-  padding-top: 8px;
-}
-
-.infoTitle {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin: 0 0 20px 0;
-}
-
-.infoList {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.infoItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.infoNum {
+.inputFormPlaceholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: #f3f4f6;
-  border-radius: 50%;
-  font-size: 14px;
-  font-weight: 600;
+  height: 200px;
+  background: #f9fafb;
+  border-radius: 12px;
   color: #6b7280;
-  flex-shrink: 0;
+  font-size: 14px;
 }
 
-.infoText {
+/* 채팅 전체 화면 */
+.chatContainer {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding-top: 2px;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #f5f5f7;
+  animation: slideInRight 0.3s ease-out;
 }
 
-.infoText strong {
-  font-size: 15px;
-  font-weight: 500;
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.chatHeader {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+  z-index: 100;
+}
+
+.backButton {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
   color: #1d1d1f;
+  cursor: pointer;
+  border-radius: 8px;
 }
 
-.infoText span {
-  font-size: 14px;
+.chatHeaderTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.headerSpacer {
+  width: 40px;
+}
+
+.chatMain {
+  width: 100%;
+  max-width: 480px;
+  height: 100vh;
+  height: 100dvh;
+  padding: 64px 16px 0;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* 하단 네비게이션 */
+.bottomNav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  padding: 8px 0;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 100;
+}
+
+.navItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: color 0.2s;
+}
+
+.navItem span {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.navItem.active {
+  color: #007AFF;
+}
+
+.navItem:hover:not(.active) {
   color: #6b7280;
+}
+
+.navIconWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unreadBadge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #FF3B30;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 토스트 */
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 24px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 12px;
+  z-index: 200;
+  animation: toastIn 0.25s ease-out;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.toastMessage {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.toastSub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
 }

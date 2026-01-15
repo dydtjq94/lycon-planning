@@ -17,7 +17,7 @@ export async function GET(request: Request) {
         // 프로필 및 인증 상태 확인
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, phone_number, pin_hash, booking_info')
+          .select('id, phone_number, pin_hash, onboarding_step')
           .eq('id', user.id)
           .single()
 
@@ -31,12 +31,12 @@ export async function GET(request: Request) {
           return NextResponse.redirect(`${origin}/auth/pin-setup`)
         }
 
-        // 3. PIN 있고 예약 전 → 온보딩
-        if (!profile.booking_info) {
+        // 3. 온보딩 미완료 → 온보딩
+        if (profile.onboarding_step !== 'completed') {
           return NextResponse.redirect(`${origin}/onboarding`)
         }
 
-        // 4. 예약 완료 + 전화번호 미인증 → 전화번호 인증
+        // 4. 전화번호 미인증 → 전화번호 인증
         if (!profile.phone_number) {
           return NextResponse.redirect(`${origin}/auth/phone-verify`)
         }

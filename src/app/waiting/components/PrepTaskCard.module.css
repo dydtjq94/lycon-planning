@@ -1,0 +1,111 @@
+/* 컨테이너 */
+.container {
+  margin-bottom: 28px;
+}
+
+/* 메인 타이틀 */
+.mainTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1d1d1f;
+  line-height: 1.4;
+  margin: 0 0 24px 0;
+}
+
+/* 섹션 헤더 */
+.sectionHeader {
+  margin-bottom: 20px;
+}
+
+.sectionTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sectionTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.progress {
+  font-size: 14px;
+  font-weight: 600;
+  color: #007AFF;
+}
+
+/* 프로그레스 바 */
+.progressBar {
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: #007AFF;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* 가이드 텍스트 */
+.guideText {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 20px 0;
+}
+
+/* 준비 항목 카드 */
+.card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.stepBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #007AFF;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  margin-bottom: 14px;
+  letter-spacing: 0.5px;
+}
+
+.title {
+  font-size: 19px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 10px 0;
+}
+
+.description {
+  font-size: 15px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+}
+
+.startButton {
+  width: 100%;
+  padding: 14px 20px;
+  background: #007AFF;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.startButton:hover {
+  background: #0066DD;
+}

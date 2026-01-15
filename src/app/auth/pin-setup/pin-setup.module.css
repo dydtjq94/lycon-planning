@@ -22,7 +22,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(59, 130, 246, 0.15) 0%,
+    rgba(59, 130, 246, 0.2) 0%,
     transparent 70%
   );
   transform: translate(-50%, -50%) scale(0);
@@ -102,17 +102,18 @@
 }
 
 .title {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   color: #ffffff;
-  margin: 0 0 6px 0;
-  letter-spacing: -0.3px;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 16px;
+  color: #94a3b8;
   margin: 0;
+  line-height: 1.5;
 }
 
 /* PIN 표시 */
