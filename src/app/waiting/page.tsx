@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   MessageCircle,
@@ -23,6 +23,25 @@ import { getTotalUnreadCount } from "@/lib/services/messageService";
 import { loadPrepData, saveFamilyData, getNextTaskIndex } from "./services/prepDataService";
 import type { PrepData, PrepTaskId, FamilyMember } from "./types";
 import styles from "./waiting.module.css";
+
+// Suspense로 감싸기 위한 wrapper
+export default function WaitingPage() {
+  return (
+    <Suspense fallback={<WaitingPageLoading />}>
+      <WaitingPageContent />
+    </Suspense>
+  );
+}
+
+function WaitingPageLoading() {
+  return (
+    <div className={styles.container}>
+      <main className={styles.main}>
+        <div className={styles.loading}>불러오는 중...</div>
+      </main>
+    </div>
+  );
+}
 
 interface BookingInfo {
   date: string;
@@ -91,7 +110,7 @@ const PREP_TASKS: PrepTask[] = [
   },
 ];
 
-export default function WaitingPage() {
+function WaitingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
