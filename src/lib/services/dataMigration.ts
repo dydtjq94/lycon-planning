@@ -9,6 +9,7 @@ import type {
   DebtData,
   RealEstateData,
 } from '@/types'
+import { getMedicalExpenseByAge } from '@/types'
 
 // 기본 증가율 설정
 const DEFAULT_RATES = {
@@ -43,7 +44,14 @@ export function migrateOnboardingToFinancialItems(
   const items: FinancialItemInput[] = []
   const currentYear = new Date().getFullYear()
   const birthYear = data.birth_date ? parseInt(data.birth_date.split('-')[0]) : currentYear - 35
-  const retirementYear = birthYear + data.target_retirement_age
+  const retirementYear = birthYear + (data.target_retirement_age || 60)
+
+  // 배우자 정보
+  const spouseBirthYear = data.spouse?.birth_date
+    ? parseInt(data.spouse.birth_date.split('-')[0])
+    : birthYear  // 배우자 생년 없으면 본인과 동일 가정
+  const spouseRetirementAge = data.spouse?.retirement_age || data.target_retirement_age || 60
+  const spouseRetirementYear = spouseBirthYear + spouseRetirementAge
 
   // ============================================
   // 소득 (Income)
@@ -68,16 +76,13 @@ export function migrateOnboardingToFinancialItems(
           : data.laborIncome,
         frequency: 'monthly',
         growthRate: DEFAULT_RATES.incomeGrowth,
+        rateCategory: 'income',
       } as IncomeData,
     })
   }
 
   // 배우자 근로소득
   if (data.spouseLaborIncome && data.spouseLaborIncome > 0) {
-    const spouseRetirementYear = data.spouse?.retirement_age
-      ? birthYear + data.spouse.retirement_age  // 대략적 계산
-      : retirementYear
-
     items.push({
       simulation_id: simulationId,
       category: 'income',
@@ -86,7 +91,7 @@ export function migrateOnboardingToFinancialItems(
       owner: 'spouse',
       start_year: currentYear,
       start_month: 1,
-      end_year: spouseRetirementYear,
+      end_year: spouseRetirementYear,  // 배우자 은퇴년도 사용 (상단에서 계산됨)
       end_month: 12,
       is_fixed_to_retirement_year: false,
       data: {
@@ -95,6 +100,7 @@ export function migrateOnboardingToFinancialItems(
           : data.spouseLaborIncome,
         frequency: 'monthly',
         growthRate: DEFAULT_RATES.incomeGrowth,
+        rateCategory: 'income',
       } as IncomeData,
     })
   }
@@ -118,6 +124,7 @@ export function migrateOnboardingToFinancialItems(
           : data.businessIncome,
         frequency: 'monthly',
         growthRate: DEFAULT_RATES.incomeGrowth,
+        rateCategory: 'income',
       } as IncomeData,
     })
   }
@@ -132,6 +139,8 @@ export function migrateOnboardingToFinancialItems(
       owner: 'spouse',
       start_year: currentYear,
       start_month: 1,
+      end_year: spouseRetirementYear,  // 배우자 은퇴년도 추가
+      end_month: 12,
       is_fixed_to_retirement_year: false,
       data: {
         amount: data.spouseBusinessIncomeFrequency === 'yearly'
@@ -139,6 +148,7 @@ export function migrateOnboardingToFinancialItems(
           : data.spouseBusinessIncome,
         frequency: 'monthly',
         growthRate: DEFAULT_RATES.incomeGrowth,
+        rateCategory: 'income',
       } as IncomeData,
     })
   }
@@ -211,7 +221,7 @@ export function migrateOnboardingToFinancialItems(
     })
   }
 
-  // 관리비 (자가, 전세, 월세 공통)
+  // 관리비 (자가, 전세, 월세 공통) - 상승률 0% 고정
   if (data.housingType && data.housingType !== '해당없음' && data.housingMaintenance && data.housingMaintenance > 0) {
     items.push({
       simulation_id: simulationId,
@@ -224,9 +234,54 @@ export function migrateOnboardingToFinancialItems(
       data: {
         amount: data.housingMaintenance,
         frequency: 'monthly',
-        growthRate: DEFAULT_RATES.expenseGrowth,
+        growthRate: 0,
       } as ExpenseData,
     })
+  }
+
+  // 의료비 (본인) - 나이 기반 자동 생성
+  const currentAge = currentYear - birthYear
+  const selfMedicalExpense = getMedicalExpenseByAge(currentAge)
+  if (selfMedicalExpense > 0) {
+    items.push({
+      simulation_id: simulationId,
+      category: 'expense',
+      type: 'health',
+      title: '의료비',
+      owner: 'self',
+      start_year: currentYear,
+      start_month: 1,
+      data: {
+        amount: selfMedicalExpense,
+        frequency: 'monthly',
+        growthRate: 5.0,  // 물가상승률 + 나이 증가에 따른 의료비 상승
+      } as ExpenseData,
+      memo: '나이대별 평균 의료비 (건강보험통계연보 기준)',
+    })
+  }
+
+  // 의료비 (배우자) - 배우자가 있는 경우만
+  if (data.isMarried && data.spouse?.birth_date) {
+    const spouseBirthYear = parseInt(data.spouse.birth_date.split('-')[0])
+    const spouseCurrentAge = currentYear - spouseBirthYear
+    const spouseMedicalExpense = getMedicalExpenseByAge(spouseCurrentAge)
+    if (spouseMedicalExpense > 0) {
+      items.push({
+        simulation_id: simulationId,
+        category: 'expense',
+        type: 'health',
+        title: '배우자 의료비',
+        owner: 'spouse',
+        start_year: currentYear,
+        start_month: 1,
+        data: {
+          amount: spouseMedicalExpense,
+          frequency: 'monthly',
+          growthRate: 5.0,  // 물가상승률 + 나이 증가에 따른 의료비 상승
+        } as ExpenseData,
+        memo: '나이대별 평균 의료비 (건강보험통계연보 기준)',
+      })
+    }
   }
 
   // ============================================
@@ -239,6 +294,11 @@ export function migrateOnboardingToFinancialItems(
       housingType: data.housingType === '월세' ? '월세' :
                    data.housingType === '전세' ? '전세' : '자가',
       appreciationRate: DEFAULT_RATES.realEstateGrowth,
+    }
+
+    // 자가: 취득 정보
+    if (data.housingType === '자가' && data.housingPurchasePrice) {
+      realEstateData.purchasePrice = data.housingPurchasePrice
     }
 
     // 전세/월세 보증금
@@ -271,6 +331,14 @@ export function migrateOnboardingToFinancialItems(
       }
     }
 
+    // 자가인 경우 취득일자 사용, 아니면 현재 연도
+    const housingStartYear = data.housingType === '자가' && data.housingPurchaseYear
+      ? data.housingPurchaseYear
+      : currentYear
+    const housingStartMonth = data.housingType === '자가' && data.housingPurchaseMonth
+      ? data.housingPurchaseMonth
+      : 1
+
     items.push({
       simulation_id: simulationId,
       category: 'real_estate',
@@ -278,8 +346,8 @@ export function migrateOnboardingToFinancialItems(
       title: data.housingType === '자가' ? '주거용 부동산' :
              data.housingType === '전세' ? '전세 보증금' : '월세 보증금',
       owner: 'common',
-      start_year: currentYear,
-      start_month: 1,
+      start_year: housingStartYear,
+      start_month: housingStartMonth,
       data: realEstateData,
     })
   }
@@ -346,10 +414,12 @@ export function migrateOnboardingToFinancialItems(
           owner: 'common',
           start_year: currentYear,
           start_month: 1,
+          // end_year 없음 = 무기한 (isItemActiveAt에서 9999년까지로 처리)
           data: {
             amount: property.monthlyRent,
             frequency: 'monthly',
-            growthRate: DEFAULT_RATES.incomeGrowth,
+            growthRate: DEFAULT_RATES.realEstateGrowth,
+            rateCategory: 'realEstate',  // 임대 소득은 부동산 상승률 적용
           } as IncomeData,
         })
       }
@@ -447,96 +517,61 @@ export function migrateOnboardingToFinancialItems(
   }
 
   // ============================================
-  // 저축/자산 (Savings/Asset)
+  // 저축/자산 (Savings/Asset) - savingsAccounts 배열에서
   // ============================================
+  if (data.savingsAccounts && data.savingsAccounts.length > 0) {
+    data.savingsAccounts.forEach((account) => {
+      if (account.balance && account.balance > 0) {
+        // 저축 타입 매핑
+        const typeMap: Record<string, 'emergency_fund' | 'savings_account'> = {
+          checking: 'emergency_fund',
+          savings: 'savings_account',
+          deposit: 'savings_account',
+        }
 
-  // 입출금통장
-  if (data.cashCheckingAccount && data.cashCheckingAccount > 0) {
-    items.push({
-      simulation_id: simulationId,
-      category: 'savings',
-      type: 'emergency_fund',
-      title: '입출금통장',
-      owner: 'common',
-      data: {
-        currentBalance: data.cashCheckingAccount,
-        interestRate: data.cashCheckingRate || 0.1,
-      } as SavingsData,
+        items.push({
+          simulation_id: simulationId,
+          category: 'savings',
+          type: typeMap[account.type] || 'savings_account',
+          title: account.name || `저축 계좌`,
+          owner: 'common',
+          data: {
+            currentBalance: account.balance,
+            interestRate: account.interestRate || DEFAULT_RATES.savingsRate,
+          } as SavingsData,
+        })
+      }
     })
   }
 
-  // 정기예금/적금
-  if (data.cashSavingsAccount && data.cashSavingsAccount > 0) {
-    items.push({
-      simulation_id: simulationId,
-      category: 'savings',
-      type: 'savings_account',
-      title: '정기예금/적금',
-      owner: 'common',
-      data: {
-        currentBalance: data.cashSavingsAccount,
-        interestRate: data.cashSavingsRate || DEFAULT_RATES.savingsRate,
-      } as SavingsData,
-    })
-  }
+  // ============================================
+  // 새로운 투자 계좌 (investmentAccounts 배열)
+  // ============================================
+  if (data.investmentAccounts && data.investmentAccounts.length > 0) {
+    data.investmentAccounts.forEach((account) => {
+      if (account.balance && account.balance > 0) {
+        // 투자 타입 매핑
+        const typeMap: Record<string, 'stock' | 'fund' | 'crypto' | 'savings_account'> = {
+          domestic_stock: 'stock',
+          foreign_stock: 'stock',
+          fund: 'fund',
+          bond: 'fund',
+          crypto: 'crypto',
+          other: 'savings_account',
+        }
 
-  // 국내주식
-  if (data.investDomesticStock && data.investDomesticStock > 0) {
-    items.push({
-      simulation_id: simulationId,
-      category: 'savings',
-      type: 'stock',
-      title: '국내주식/ETF',
-      owner: 'common',
-      data: {
-        currentBalance: data.investDomesticStock,
-        interestRate: data.investDomesticRate || DEFAULT_RATES.investmentReturn,
-      } as SavingsData,
-    })
-  }
-
-  // 해외주식
-  if (data.investForeignStock && data.investForeignStock > 0) {
-    items.push({
-      simulation_id: simulationId,
-      category: 'savings',
-      type: 'stock',
-      title: '해외주식/ETF',
-      owner: 'common',
-      data: {
-        currentBalance: data.investForeignStock,
-        interestRate: data.investForeignRate || DEFAULT_RATES.investmentReturn,
-      } as SavingsData,
-    })
-  }
-
-  // 펀드/채권
-  if (data.investFund && data.investFund > 0) {
-    items.push({
-      simulation_id: simulationId,
-      category: 'savings',
-      type: 'fund',
-      title: '펀드/채권',
-      owner: 'common',
-      data: {
-        currentBalance: data.investFund,
-        interestRate: data.investFundRate || DEFAULT_RATES.investmentReturn,
-      } as SavingsData,
-    })
-  }
-
-  // 기타 투자자산 (가상화폐 등)
-  if (data.investOther && data.investOther > 0) {
-    items.push({
-      simulation_id: simulationId,
-      category: 'savings',
-      type: 'crypto',
-      title: '기타 투자자산',
-      owner: 'common',
-      data: {
-        currentBalance: data.investOther,
-        interestRate: data.investOtherRate || 0,
-      } as SavingsData,
+        items.push({
+          simulation_id: simulationId,
+          category: 'savings',
+          type: typeMap[account.type] || 'stock',
+          title: account.name || `투자 계좌`,
+          owner: 'common',
+          data: {
+            currentBalance: account.balance,
+            interestRate: account.expectedReturn || DEFAULT_RATES.investmentReturn,
+          } as SavingsData,
+        })
+      }
     })
   }
 
@@ -631,173 +666,203 @@ export function migrateOnboardingToFinancialItems(
   // 연금 (Pension)
   // ============================================
 
-  // 국민연금 (본인)
+  // 국민연금 (본인) - 연금 자산 항목만 생성 (소득 항목은 연금 탭에서 관리)
   if (data.nationalPension && data.nationalPension > 0) {
+    const selfPensionStartAge = data.nationalPensionStartAge || 65
+    const selfPensionStartYear = birthYear + selfPensionStartAge
+
     items.push({
       simulation_id: simulationId,
       category: 'pension',
       type: 'national',
       title: '국민연금',
       owner: 'self',
-      start_year: birthYear + (data.nationalPensionStartAge || 65),
+      start_year: selfPensionStartYear,
       start_month: 1,
       data: {
         expectedMonthlyAmount: data.nationalPension,
-        paymentStartAge: data.nationalPensionStartAge || 65,
+        paymentStartAge: selfPensionStartAge,
       } as PensionData,
     })
   }
 
-  // 국민연금 (배우자)
+  // 국민연금 (배우자) - 연금 자산 항목만 생성
   if (data.isMarried && data.spouseNationalPension && data.spouseNationalPension > 0) {
+    const spousePensionStartAge = data.spouseNationalPensionStartAge || 65
+    const spousePensionStartYear = spouseBirthYear + spousePensionStartAge  // 배우자 생년 기준
+
     items.push({
       simulation_id: simulationId,
       category: 'pension',
       type: 'national',
       title: '배우자 국민연금',
       owner: 'spouse',
-      start_year: birthYear + (data.spouseNationalPensionStartAge || 65),
+      start_year: spousePensionStartYear,
       start_month: 1,
       data: {
         expectedMonthlyAmount: data.spouseNationalPension,
-        paymentStartAge: data.spouseNationalPensionStartAge || 65,
+        paymentStartAge: spousePensionStartAge,
       } as PensionData,
     })
   }
 
-  // 퇴직연금 (DB형은 근속연수, DC형은 잔액 기준)
+  // 퇴직연금 (DB형은 근속연수, DC형은 잔액 기준) - 연금 자산 항목만 생성
   const hasRetirementPension =
     (data.retirementPensionType === 'DB' && data.yearsOfService && data.yearsOfService > 0) ||
     (data.retirementPensionBalance && data.retirementPensionBalance > 0) ||
     data.retirementPensionType
 
   if (hasRetirementPension) {
+    const retirementStartAge = data.retirementPensionStartAge || data.target_retirement_age || 60
+    const retirementStartYear = birthYear + retirementStartAge
+    const retirementReceivingYears = data.retirementPensionReceivingYears || 10
+
     items.push({
       simulation_id: simulationId,
       category: 'pension',
       type: 'retirement',
       title: '퇴직연금',
       owner: 'self',
-      start_year: birthYear + (data.retirementPensionStartAge || data.target_retirement_age || 60),
+      start_year: retirementStartYear,
       start_month: 1,
       data: {
         currentBalance: data.retirementPensionBalance || 0,
         pensionType: data.retirementPensionType || 'DC',
         yearsOfService: data.yearsOfService,
         receiveType: data.retirementPensionReceiveType === 'annuity' ? 'annuity' : 'lump_sum',
-        receivingYears: data.retirementPensionReceivingYears,
-        paymentStartAge: data.retirementPensionStartAge,
+        receivingYears: retirementReceivingYears,
+        paymentStartAge: retirementStartAge,
         returnRate: DEFAULT_RATES.investmentReturn,
       } as PensionData,
     })
   }
 
-  // 배우자 퇴직연금
+  // 배우자 퇴직연금 - 연금 자산 항목만 생성
   const hasSpouseRetirementPension =
     (data.spouseRetirementPensionType === 'DB' && data.spouseYearsOfService && data.spouseYearsOfService > 0) ||
     (data.spouseRetirementPensionBalance && data.spouseRetirementPensionBalance > 0) ||
     data.spouseRetirementPensionType
 
   if (hasSpouseRetirementPension && data.isMarried) {
+    const spouseRetirementStartAge = data.spouseRetirementPensionStartAge || spouseRetirementAge
+    const spouseRetirementPensionStartYear = spouseBirthYear + spouseRetirementStartAge  // 배우자 생년 기준
+    const spouseRetirementReceivingYears = data.spouseRetirementPensionReceivingYears || 10
+
     items.push({
       simulation_id: simulationId,
       category: 'pension',
       type: 'retirement',
       title: '배우자 퇴직연금',
       owner: 'spouse',
-      start_year: birthYear + (data.spouseRetirementPensionStartAge || data.target_retirement_age || 60),
+      start_year: spouseRetirementPensionStartYear,
       start_month: 1,
       data: {
         currentBalance: data.spouseRetirementPensionBalance || 0,
         pensionType: data.spouseRetirementPensionType || 'DC',
         yearsOfService: data.spouseYearsOfService,
         receiveType: data.spouseRetirementPensionReceiveType === 'annuity' ? 'annuity' : 'lump_sum',
-        receivingYears: data.spouseRetirementPensionReceivingYears,
-        paymentStartAge: data.spouseRetirementPensionStartAge,
+        receivingYears: spouseRetirementReceivingYears,
+        paymentStartAge: spouseRetirementStartAge,
         returnRate: DEFAULT_RATES.investmentReturn,
       } as PensionData,
     })
   }
 
-  // IRP (본인)
+  // IRP (본인) - 연금 자산 항목만 생성
   const hasIrp = (data.irpBalance && data.irpBalance > 0) || (data.irpMonthlyContribution && data.irpMonthlyContribution > 0)
   if (hasIrp) {
+    const irpStartAge = data.irpStartAge || 56
+    const irpStartYear = birthYear + irpStartAge
+    const irpReceivingYears = data.irpReceivingYears || 10
+
     items.push({
       simulation_id: simulationId,
       category: 'pension',
       type: 'irp',
       title: 'IRP',
       owner: 'self',
-      start_year: birthYear + (data.irpStartAge || 56),
+      start_year: irpStartYear,
       start_month: 1,
       data: {
         currentBalance: data.irpBalance || 0,
         monthlyContribution: data.irpMonthlyContribution,
-        paymentStartAge: data.irpStartAge,
-        paymentYears: data.irpReceivingYears,
+        paymentStartAge: irpStartAge,
+        paymentYears: irpReceivingYears,
         returnRate: DEFAULT_RATES.investmentReturn,
       } as PensionData,
     })
   }
 
-  // IRP (배우자)
+  // IRP (배우자) - 연금 자산 항목만 생성
   const hasSpouseIrp = data.isMarried && ((data.spouseIrpBalance && data.spouseIrpBalance > 0) || (data.spouseIrpMonthlyContribution && data.spouseIrpMonthlyContribution > 0))
   if (hasSpouseIrp) {
+    const spouseIrpStartAge = data.spouseIrpStartAge || 56
+    const spouseIrpStartYear = spouseBirthYear + spouseIrpStartAge  // 배우자 생년 기준
+    const spouseIrpReceivingYears = data.spouseIrpReceivingYears || 10
+
     items.push({
       simulation_id: simulationId,
       category: 'pension',
       type: 'irp',
       title: '배우자 IRP',
       owner: 'spouse',
-      start_year: birthYear + (data.spouseIrpStartAge || 56),
+      start_year: spouseIrpStartYear,
       start_month: 1,
       data: {
         currentBalance: data.spouseIrpBalance || 0,
         monthlyContribution: data.spouseIrpMonthlyContribution,
-        paymentStartAge: data.spouseIrpStartAge,
-        paymentYears: data.spouseIrpReceivingYears,
+        paymentStartAge: spouseIrpStartAge,
+        paymentYears: spouseIrpReceivingYears,
         returnRate: DEFAULT_RATES.investmentReturn,
       } as PensionData,
     })
   }
 
-  // 연금저축 (본인)
+  // 연금저축 (본인) - 연금 자산 항목만 생성
   const hasPensionSavings = (data.pensionSavingsBalance && data.pensionSavingsBalance > 0) || (data.pensionSavingsMonthlyContribution && data.pensionSavingsMonthlyContribution > 0)
   if (hasPensionSavings) {
+    const pensionSavingsStartAge = data.pensionSavingsStartAge || 56
+    const pensionSavingsStartYear = birthYear + pensionSavingsStartAge
+    const pensionSavingsReceivingYears = data.pensionSavingsReceivingYears || 10
+
     items.push({
       simulation_id: simulationId,
       category: 'pension',
       type: 'personal',
       title: '연금저축',
       owner: 'self',
-      start_year: birthYear + (data.pensionSavingsStartAge || 56),
+      start_year: pensionSavingsStartYear,
       start_month: 1,
       data: {
         currentBalance: data.pensionSavingsBalance || 0,
         monthlyContribution: data.pensionSavingsMonthlyContribution,
-        paymentStartAge: data.pensionSavingsStartAge,
-        paymentYears: data.pensionSavingsReceivingYears,
+        paymentStartAge: pensionSavingsStartAge,
+        paymentYears: pensionSavingsReceivingYears,
         returnRate: DEFAULT_RATES.investmentReturn,
       } as PensionData,
     })
   }
 
-  // 연금저축 (배우자)
+  // 연금저축 (배우자) - 연금 자산 항목만 생성
   const hasSpousePensionSavings = data.isMarried && ((data.spousePensionSavingsBalance && data.spousePensionSavingsBalance > 0) || (data.spousePensionSavingsMonthlyContribution && data.spousePensionSavingsMonthlyContribution > 0))
   if (hasSpousePensionSavings) {
+    const spousePensionSavingsStartAge = data.spousePensionSavingsStartAge || 56
+    const spousePensionSavingsStartYear = spouseBirthYear + spousePensionSavingsStartAge  // 배우자 생년 기준
+    const spousePensionSavingsReceivingYears = data.spousePensionSavingsReceivingYears || 10
+
     items.push({
       simulation_id: simulationId,
       category: 'pension',
       type: 'personal',
       title: '배우자 연금저축',
       owner: 'spouse',
-      start_year: birthYear + (data.spousePensionSavingsStartAge || 56),
+      start_year: spousePensionSavingsStartYear,
       start_month: 1,
       data: {
         currentBalance: data.spousePensionSavingsBalance || 0,
         monthlyContribution: data.spousePensionSavingsMonthlyContribution,
-        paymentStartAge: data.spousePensionSavingsStartAge,
-        paymentYears: data.spousePensionSavingsReceivingYears,
+        paymentStartAge: spousePensionSavingsStartAge,
+        paymentYears: spousePensionSavingsReceivingYears,
         returnRate: DEFAULT_RATES.investmentReturn,
       } as PensionData,
     })
@@ -813,6 +878,21 @@ export function migrateOnboardingToFinancialItems(
       owner: 'self',
       data: {
         currentBalance: data.isaBalance,
+        interestRate: DEFAULT_RATES.investmentReturn,
+      } as SavingsData,
+    })
+  }
+
+  // ISA (배우자)
+  if (data.isMarried && data.spouseIsaBalance && data.spouseIsaBalance > 0) {
+    items.push({
+      simulation_id: simulationId,
+      category: 'savings',
+      type: 'savings_account',
+      title: '배우자 ISA',
+      owner: 'spouse',
+      data: {
+        currentBalance: data.spouseIsaBalance,
         interestRate: DEFAULT_RATES.investmentReturn,
       } as SavingsData,
     })

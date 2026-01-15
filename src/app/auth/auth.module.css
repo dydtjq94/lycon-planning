@@ -1,87 +1,199 @@
+/* ============================================
+   Auth Pages - 철학 중심 레이아웃
+   ============================================ */
+
 .container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #f9fafb;
-  padding: 0 16px;
-}
-
-.card {
-  width: 100%;
-  max-width: 400px;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
-}
-
-.header {
-  text-align: center;
-  padding: 24px 24px 0;
-}
-
-.title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 8px;
-}
-
-.description {
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.content {
-  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #ffffff;
 }
 
+.main {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0 32px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+/* 상단 히어로 영역 */
+.heroArea {
+  padding: 80px 0 40px;
+}
+
+.brandLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b82f6;
+  letter-spacing: 0.5px;
+  margin: 0 0 20px 0;
+}
+
+.heroTitle {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1d1d1f;
+  line-height: 1.25;
+  margin: 0 0 20px 0;
+  letter-spacing: -1px;
+}
+
+.heroDesc {
+  font-size: 16px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 하단 액션 영역 */
+.actionArea {
+  margin-top: auto;
+  padding-bottom: 48px;
+}
+
+/* 에러 메시지 */
 .error {
-  padding: 12px;
+  padding: 12px 16px;
   font-size: 14px;
   color: #ef4444;
   background-color: #fef2f2;
-  border-radius: 6px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+/* 카카오 버튼 */
+.kakaoButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 54px;
+  background-color: #FEE500;
+  color: #000000;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-bottom: 12px;
+}
+
+.kakaoButton:hover {
+  background-color: #F5DC00;
+}
+
+.kakaoButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.kakaoButton svg {
+  flex-shrink: 0;
+}
+
+/* 이메일 토글 버튼 */
+.emailToggle {
+  width: 100%;
+  height: 54px;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-bottom: 20px;
+}
+
+.emailToggle:hover {
+  background-color: #e5e7eb;
+}
+
+/* 이메일 폼 */
+.emailForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 .label {
   font-size: 14px;
   font-weight: 500;
   color: #374151;
+  margin-bottom: 6px;
 }
 
-.footer {
-  padding: 0 24px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.input {
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 16px;
+  color: #1d1d1f;
+  background: #f9fafb;
+  outline: none;
+  transition: all 0.2s;
 }
 
+.input:focus {
+  border-color: #1d1d1f;
+  background: #ffffff;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+/* 뒤로가기 버튼 */
+.backButton {
+  width: 100%;
+  height: 44px;
+  background-color: transparent;
+  color: #6b7280;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin-top: 4px;
+}
+
+.backButton:hover {
+  color: #374151;
+}
+
+/* 제출 버튼 */
 .submitButton {
   width: 100%;
-  height: 40px;
-  background-color: var(--primary);
+  height: 54px;
+  background-color: #1d1d1f;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
+  margin-top: 4px;
 }
 
 .submitButton:hover {
-  background-color: #1256a3;
+  background-color: #374151;
 }
 
 .submitButton:disabled {
@@ -89,17 +201,108 @@
   cursor: not-allowed;
 }
 
+/* 링크 텍스트 */
 .linkText {
   font-size: 14px;
   text-align: center;
   color: #6b7280;
+  margin: 0;
 }
 
 .link {
-  color: #2563eb;
+  color: #1d1d1f;
   text-decoration: none;
+  font-weight: 600;
 }
 
 .link:hover {
+  text-decoration: underline;
+}
+
+/* 로딩 스피너 */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   아래는 이전 호환용 (사용 안함)
+   ============================================ */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.brandArea {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.brandName {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin: 0 0 8px 0;
+}
+
+.brandTagline {
+  font-size: 15px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin: 0 0 8px 0;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #9ca3af;
+  margin: 0 0 40px 0;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #9ca3af;
+  font-size: 13px;
+  margin: 16px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: #e5e7eb;
+}
+
+.bottomArea {
+  margin-top: auto;
+  padding-top: 40px;
+}
+
+.terms {
+  font-size: 13px;
+  color: #9ca3af;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.terms a {
+  color: #6b7280;
   text-decoration: underline;
 }

@@ -23,9 +23,9 @@ interface PensionSummaryProps {
   settings: GlobalSettings
   retirementPensionProjection: RetirementPensionProjection | null
   spouseRetirementPensionProjection: RetirementPensionProjection | null
-  personalPensionProjection: PersonalPensionProjection
+  personalPensionProjection: PersonalPensionProjection | null
   spousePersonalPensionProjection: PersonalPensionProjection | null
-  totalPensionProjection: TotalPensionProjection
+  totalPensionProjection: TotalPensionProjection | null
   nationalPensionData: {
     self: { monthly: number; startAge: number }
     spouse: { monthly: number; startAge: number } | null
@@ -81,11 +81,13 @@ export function PensionSummary({
         }
 
         // 연금저축
-        const psStartAge = personalPensionProjection.pensionSavings.startAge
-        const psEndAge = psStartAge + personalPensionProjection.pensionSavings.receivingYears
-        if (age >= psStartAge && age < psEndAge) {
-          monthly += personalPensionProjection.pensionSavings.monthlyPMT
-          if (personalPensionProjection.pensionSavings.monthlyPMT > 0) sources.push('연금저축')
+        if (personalPensionProjection) {
+          const psStartAge = personalPensionProjection.pensionSavings.startAge
+          const psEndAge = psStartAge + personalPensionProjection.pensionSavings.receivingYears
+          if (age >= psStartAge && age < psEndAge) {
+            monthly += personalPensionProjection.pensionSavings.monthlyPMT
+            if (personalPensionProjection.pensionSavings.monthlyPMT > 0) sources.push('연금저축')
+          }
         }
         if (spousePersonalPensionProjection) {
           const spsStartAge = spousePersonalPensionProjection.pensionSavings.startAge
@@ -96,11 +98,13 @@ export function PensionSummary({
         }
 
         // IRP
-        const irpStartAge = personalPensionProjection.irp.startAge
-        const irpEndAge = irpStartAge + personalPensionProjection.irp.receivingYears
-        if (age >= irpStartAge && age < irpEndAge) {
-          monthly += personalPensionProjection.irp.monthlyPMT
-          if (personalPensionProjection.irp.monthlyPMT > 0 && !sources.includes('IRP')) sources.push('IRP')
+        if (personalPensionProjection) {
+          const irpStartAge = personalPensionProjection.irp.startAge
+          const irpEndAge = irpStartAge + personalPensionProjection.irp.receivingYears
+          if (age >= irpStartAge && age < irpEndAge) {
+            monthly += personalPensionProjection.irp.monthlyPMT
+            if (personalPensionProjection.irp.monthlyPMT > 0 && !sources.includes('IRP')) sources.push('IRP')
+          }
         }
         if (spousePersonalPensionProjection) {
           const sipStartAge = spousePersonalPensionProjection.irp.startAge
@@ -125,21 +129,31 @@ export function PensionSummary({
   const chartData = useMemo(() => {
     const data: { label: string; value: number; color: string }[] = []
 
-    const nationalTotal = totalPensionProjection.nationalPension.monthly
-    if (nationalTotal > 0) {
-      data.push({ label: '국민연금', value: nationalTotal, color: '#5856d6' })
-    }
+    if (totalPensionProjection) {
+      const nationalTotal = totalPensionProjection.nationalPension.monthly
+      if (nationalTotal > 0) {
+        data.push({ label: '국민연금', value: nationalTotal, color: '#5856d6' })
+      }
 
-    const retirementMonthly = totalPensionProjection.retirement.isAnnuity
-      ? totalPensionProjection.retirement.monthlyPMT
-      : 0
-    if (retirementMonthly > 0) {
-      data.push({ label: '퇴직연금', value: retirementMonthly, color: '#007aff' })
-    }
+      const retirementMonthly = totalPensionProjection.retirement.isAnnuity
+        ? totalPensionProjection.retirement.monthlyPMT
+        : 0
+      if (retirementMonthly > 0) {
+        data.push({ label: '퇴직연금', value: retirementMonthly, color: '#007aff' })
+      }
 
-    const personalMonthly = totalPensionProjection.personal.monthlyPMT
-    if (personalMonthly > 0) {
-      data.push({ label: '개인연금', value: personalMonthly, color: '#34c759' })
+      const personalMonthly = totalPensionProjection.personal.monthlyPMT
+      if (personalMonthly > 0) {
+        data.push({ label: '개인연금', value: personalMonthly, color: '#34c759' })
+      }
+    } else {
+      // fallback: nationalPensionData 사용
+      if (nationalPensionData.self.monthly > 0) {
+        data.push({ label: '국민연금', value: nationalPensionData.self.monthly, color: '#5856d6' })
+      }
+      if (nationalPensionData.spouse && nationalPensionData.spouse.monthly > 0) {
+        data.push({ label: '배우자 국민연금', value: nationalPensionData.spouse.monthly, color: '#8e8ee5' })
+      }
     }
 
     return {
@@ -151,7 +165,7 @@ export function PensionSummary({
         hoverOffset: 4,
       }],
     }
-  }, [totalPensionProjection])
+  }, [totalPensionProjection, nationalPensionData])
 
   const chartOptions = {
     responsive: true,
@@ -195,7 +209,7 @@ export function PensionSummary({
     }
 
     // 연금저축
-    if (personalPensionProjection.pensionSavings.current > 0 || personalPensionProjection.pensionSavings.monthly > 0) {
+    if (personalPensionProjection && (personalPensionProjection.pensionSavings.current > 0 || personalPensionProjection.pensionSavings.monthly > 0)) {
       balances.push({
         label: '연금저축',
         current: personalPensionProjection.pensionSavings.current,
@@ -213,7 +227,7 @@ export function PensionSummary({
     }
 
     // IRP
-    if (personalPensionProjection.irp.current > 0 || personalPensionProjection.irp.monthly > 0) {
+    if (personalPensionProjection && (personalPensionProjection.irp.current > 0 || personalPensionProjection.irp.monthly > 0)) {
       balances.push({
         label: 'IRP',
         current: personalPensionProjection.irp.current,
@@ -231,7 +245,7 @@ export function PensionSummary({
     }
 
     // ISA
-    if (personalPensionProjection.isa.current > 0) {
+    if (personalPensionProjection && personalPensionProjection.isa.current > 0) {
       balances.push({
         label: 'ISA',
         current: personalPensionProjection.isa.current,
@@ -243,7 +257,14 @@ export function PensionSummary({
     return balances
   }, [retirementPensionProjection, spouseRetirementPensionProjection, personalPensionProjection, spousePersonalPensionProjection])
 
-  const hasChartData = chartData.datasets[0].data.length > 0
+  const hasChartData = chartData.datasets[0]?.data.length > 0
+
+  // 총 연금 계산 (null-safe)
+  const totalMonthly = totalPensionProjection
+    ? totalPensionProjection.nationalPension.monthly +
+      totalPensionProjection.retirement.monthlyPMT +
+      totalPensionProjection.personal.monthlyPMT
+    : nationalPensionData.self.monthly + (nationalPensionData.spouse?.monthly || 0)
 
   return (
     <div className={styles.summaryPanel}>
@@ -252,19 +273,15 @@ export function PensionSummary({
         <div className={styles.totalPension}>
           <span className={styles.totalLabel}>예상 월 연금 수령액 {isMarried ? '(합산)' : ''}</span>
           <span className={styles.totalValue}>
-            {formatMoney(
-              totalPensionProjection.nationalPension.monthly +
-              totalPensionProjection.retirement.monthlyPMT +
-              totalPensionProjection.personal.monthlyPMT
-            )}/월
+            {formatMoney(totalMonthly)}/월
           </span>
         </div>
         <div className={styles.subValues}>
           <div className={styles.subValueItem}>
             <span className={styles.subLabel}>국민연금</span>
-            <span className={styles.subValue}>{formatMoney(totalPensionProjection.nationalPension.monthly)}/월</span>
+            <span className={styles.subValue}>{formatMoney(totalPensionProjection?.nationalPension.monthly || (nationalPensionData.self.monthly + (nationalPensionData.spouse?.monthly || 0)))}/월</span>
           </div>
-          {totalPensionProjection.retirement.isAnnuity && (
+          {totalPensionProjection?.retirement.isAnnuity && (
             <div className={styles.subValueItem}>
               <span className={styles.subLabel}>퇴직연금</span>
               <span className={styles.subValue}>{formatMoney(totalPensionProjection.retirement.monthlyPMT)}/월</span>
@@ -272,7 +289,7 @@ export function PensionSummary({
           )}
           <div className={styles.subValueItem}>
             <span className={styles.subLabel}>개인연금</span>
-            <span className={styles.subValue}>{formatMoney(totalPensionProjection.personal.monthlyPMT)}/월</span>
+            <span className={styles.subValue}>{formatMoney(totalPensionProjection?.personal.monthlyPMT || 0)}/월</span>
           </div>
         </div>
       </div>
@@ -370,7 +387,7 @@ export function PensionSummary({
           )}
 
           {/* 본인 연금저축 */}
-          {personalPensionProjection.pensionSavings.futureAtStart > 0 && (
+          {personalPensionProjection && personalPensionProjection.pensionSavings.futureAtStart > 0 && (
             <>
               <div className={styles.breakdownItem}>
                 <div className={styles.breakdownInfo}>
@@ -407,7 +424,7 @@ export function PensionSummary({
           )}
 
           {/* 본인 IRP */}
-          {personalPensionProjection.irp.futureAtStart > 0 && (
+          {personalPensionProjection && personalPensionProjection.irp.futureAtStart > 0 && (
             <>
               <div className={styles.breakdownItem}>
                 <div className={styles.breakdownInfo}>
@@ -444,7 +461,7 @@ export function PensionSummary({
           )}
 
           {/* ISA (본인만) */}
-          {personalPensionProjection.isa.current > 0 && (
+          {personalPensionProjection && personalPensionProjection.isa.current > 0 && (
             <>
               <div className={styles.breakdownItem}>
                 <div className={styles.breakdownInfo}>
@@ -498,20 +515,16 @@ export function PensionSummary({
             <div className={styles.chartCenter}>
               <span className={styles.chartCenterLabel}>월 수령액</span>
               <span className={styles.chartCenterValue}>
-                {formatMoney(
-                  totalPensionProjection.nationalPension.monthly +
-                  totalPensionProjection.retirement.monthlyPMT +
-                  totalPensionProjection.personal.monthlyPMT
-                )}
+                {formatMoney(totalMonthly)}
               </span>
             </div>
           </div>
           <div className={styles.chartLegend}>
-            {chartData.labels.map((label, i) => (
+            {chartData.labels.map((label: string, i: number) => (
               <div key={label} className={styles.legendItem}>
                 <span
                   className={styles.legendDot}
-                  style={{ background: chartData.datasets[0].backgroundColor[i] }}
+                  style={{ background: chartData.datasets[0].backgroundColor[i] as string }}
                 />
                 <span className={styles.legendLabel}>{label}</span>
                 <span className={styles.legendValue}>{formatMoney(chartData.datasets[0].data[i])}</span>

@@ -1,113 +1,123 @@
 'use client'
 
-import { useState } from 'react'
-import { Pencil } from 'lucide-react'
-import type { OnboardingData } from '@/types'
+import { useState, useMemo } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
+import type { PersonalPension, Owner, PersonalPensionType } from '@/types/tables'
 import { formatMoney } from '@/lib/utils'
+import {
+  upsertPersonalPension,
+  deletePersonalPension,
+  PENSION_TYPE_LABELS,
+} from '@/lib/services/personalPensionService'
 import styles from '../PensionTab.module.css'
 
 interface PersonalPensionSectionProps {
-  data: OnboardingData
-  onUpdateData: (updates: Partial<OnboardingData>) => void
-  owner: 'self' | 'spouse'
+  pensions: PersonalPension[]
+  simulationId: string
+  owner: Owner
   ownerLabel: string
+  birthYear: number
+  retirementAge: number
+  onSave: () => void
 }
 
 export function PersonalPensionSection({
-  data,
-  onUpdateData,
+  pensions,
+  simulationId,
   owner,
   ownerLabel,
+  birthYear,
+  retirementAge,
+  onSave,
 }: PersonalPensionSectionProps) {
-  const [editingField, setEditingField] = useState<string | null>(null)
+  const [editingType, setEditingType] = useState<PersonalPensionType | null>(null)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
+  const [isSaving, setIsSaving] = useState(false)
+
+  // 타입별 연금 찾기
+  const pensionSavings = useMemo(
+    () => pensions.find(p => p.pension_type === 'pension_savings') || null,
+    [pensions]
+  )
+  const irp = useMemo(
+    () => pensions.find(p => p.pension_type === 'irp') || null,
+    [pensions]
+  )
 
   const cancelEdit = () => {
-    setEditingField(null)
+    setEditingType(null)
     setEditValues({})
   }
 
-  // 본인 데이터
-  const selfPensionSavings = {
-    balance: data.pensionSavingsBalance,
-    monthly: data.pensionSavingsMonthlyContribution,
-    startAge: data.pensionSavingsStartAge || 56,
-    years: data.pensionSavingsReceivingYears || 20,
-  }
-  const selfIrp = {
-    balance: data.irpBalance,
-    monthly: data.irpMonthlyContribution,
-    startAge: data.irpStartAge || 56,
-    years: data.irpReceivingYears || 20,
+  const startEditPensionSavings = () => {
+    setEditingType('pension_savings')
+    setEditValues({
+      balance: pensionSavings?.current_balance?.toString() || '',
+      monthly: pensionSavings?.monthly_contribution?.toString() || '',
+      startAge: (pensionSavings?.start_age || 56).toString(),
+      years: (pensionSavings?.receiving_years || 20).toString(),
+    })
   }
 
-  // 배우자 데이터
-  const spousePensionSavings = {
-    balance: data.spousePensionSavingsBalance,
-    monthly: data.spousePensionSavingsMonthlyContribution,
-    startAge: data.spousePensionSavingsStartAge || 56,
-    years: data.spousePensionSavingsReceivingYears || 20,
-  }
-  const spouseIrp = {
-    balance: data.spouseIrpBalance,
-    monthly: data.spouseIrpMonthlyContribution,
-    startAge: data.spouseIrpStartAge || 56,
-    years: data.spouseIrpReceivingYears || 20,
+  const startEditIrp = () => {
+    setEditingType('irp')
+    setEditValues({
+      balance: irp?.current_balance?.toString() || '',
+      monthly: irp?.monthly_contribution?.toString() || '',
+      startAge: (irp?.start_age || 56).toString(),
+      years: (irp?.receiving_years || 20).toString(),
+    })
   }
 
-  const pensionSavings = owner === 'self' ? selfPensionSavings : spousePensionSavings
-  const irp = owner === 'self' ? selfIrp : spouseIrp
+  const savePension = async (pensionType: PersonalPensionType) => {
+    setIsSaving(true)
+    try {
+      const validatedStartAge = Math.max(56, parseInt(editValues.startAge) || 56)
 
-  // 연금저축 저장
-  const savePensionSavings = () => {
-    const validatedStartAge = Math.max(56, parseInt(editValues.startAge) || 56)
-
-    if (owner === 'self') {
-      onUpdateData({
-        pensionSavingsBalance: editValues.balance ? parseFloat(editValues.balance) : null,
-        pensionSavingsMonthlyContribution: editValues.monthly ? parseFloat(editValues.monthly) : null,
-        pensionSavingsStartAge: validatedStartAge,
-        pensionSavingsReceivingYears: editValues.years ? parseInt(editValues.years) : 20,
-      })
-    } else {
-      onUpdateData({
-        spousePensionSavingsBalance: editValues.balance ? parseFloat(editValues.balance) : null,
-        spousePensionSavingsMonthlyContribution: editValues.monthly ? parseFloat(editValues.monthly) : null,
-        spousePensionSavingsStartAge: validatedStartAge,
-        spousePensionSavingsReceivingYears: editValues.years ? parseInt(editValues.years) : 20,
-      })
+      await upsertPersonalPension(
+        simulationId,
+        owner,
+        pensionType,
+        {
+          current_balance: editValues.balance ? parseFloat(editValues.balance) : 0,
+          monthly_contribution: editValues.monthly ? parseFloat(editValues.monthly) : null,
+          is_contribution_fixed_to_retirement: true,
+          start_age: validatedStartAge,
+          receiving_years: editValues.years ? parseInt(editValues.years) : 20,
+          return_rate: 5, // 기본 수익률 5%
+        },
+        birthYear,
+        retirementAge
+      )
+      await onSave()
+      cancelEdit()
+    } catch (error) {
+      console.error('Failed to save personal pension:', error)
+    } finally {
+      setIsSaving(false)
     }
-    cancelEdit()
   }
 
-  // IRP 저장
-  const saveIrp = () => {
-    const validatedStartAge = Math.max(56, parseInt(editValues.startAge) || 56)
+  const handleDelete = async (pensionType: PersonalPensionType) => {
+    const pension = pensionType === 'pension_savings' ? pensionSavings : irp
+    if (!pension) return
+    if (!confirm(`${PENSION_TYPE_LABELS[pensionType]} 정보를 삭제하시겠습니까?`)) return
 
-    if (owner === 'self') {
-      onUpdateData({
-        irpBalance: editValues.balance ? parseFloat(editValues.balance) : null,
-        irpMonthlyContribution: editValues.monthly ? parseFloat(editValues.monthly) : null,
-        irpStartAge: validatedStartAge,
-        irpReceivingYears: editValues.years ? parseInt(editValues.years) : 20,
-      })
-    } else {
-      onUpdateData({
-        spouseIrpBalance: editValues.balance ? parseFloat(editValues.balance) : null,
-        spouseIrpMonthlyContribution: editValues.monthly ? parseFloat(editValues.monthly) : null,
-        spouseIrpStartAge: validatedStartAge,
-        spouseIrpReceivingYears: editValues.years ? parseInt(editValues.years) : 20,
-      })
+    setIsSaving(true)
+    try {
+      await deletePersonalPension(pension.id)
+      await onSave()
+    } catch (error) {
+      console.error('Failed to delete personal pension:', error)
+    } finally {
+      setIsSaving(false)
     }
-    cancelEdit()
   }
-
-  const fieldPrefix = owner === 'self' ? '' : 'spouse_'
 
   return (
     <div className={styles.itemList}>
       {/* 연금저축 */}
-      {editingField === `${fieldPrefix}pensionSavings` ? (
+      {editingType === 'pension_savings' ? (
         <div className={styles.editItem}>
           <div className={styles.editRow}>
             <span className={styles.editRowLabel}>잔액</span>
@@ -166,8 +176,16 @@ export function PersonalPensionSection({
             </div>
           </div>
           <div className={styles.editActions}>
-            <button className={styles.cancelBtn} onClick={cancelEdit}>취소</button>
-            <button className={styles.saveBtn} onClick={savePensionSavings}>저장</button>
+            <button className={styles.cancelBtn} onClick={cancelEdit} disabled={isSaving}>
+              취소
+            </button>
+            <button
+              className={styles.saveBtn}
+              onClick={() => savePension('pension_savings')}
+              disabled={isSaving}
+            >
+              {isSaving ? '저장 중...' : '저장'}
+            </button>
           </div>
         </div>
       ) : (
@@ -175,36 +193,34 @@ export function PersonalPensionSection({
           <div className={styles.itemMain}>
             <span className={styles.itemLabel}>{ownerLabel} 연금저축</span>
             <span className={styles.itemAmount}>
-              {pensionSavings.balance ? formatMoney(pensionSavings.balance) : '0'}
+              {pensionSavings?.current_balance ? formatMoney(pensionSavings.current_balance) : '0'}
             </span>
-            {pensionSavings.balance || pensionSavings.monthly ? (
+            {(pensionSavings?.current_balance || pensionSavings?.monthly_contribution) ? (
               <span className={styles.itemMeta}>
-                {pensionSavings.monthly ? `월 ${formatMoney(pensionSavings.monthly)} 납입 | ` : ''}
-                {pensionSavings.startAge}세부터 {pensionSavings.years}년간 수령
+                {pensionSavings?.monthly_contribution ? `월 ${formatMoney(pensionSavings.monthly_contribution)} 납입 | ` : ''}
+                {pensionSavings?.start_age || 56}세부터 {pensionSavings?.receiving_years || 20}년간 수령
               </span>
             ) : null}
           </div>
           <div className={styles.itemActions}>
-            <button
-              className={styles.editBtn}
-              onClick={() => {
-                setEditingField(`${fieldPrefix}pensionSavings`)
-                setEditValues({
-                  balance: pensionSavings.balance?.toString() || '',
-                  monthly: pensionSavings.monthly?.toString() || '',
-                  startAge: pensionSavings.startAge.toString(),
-                  years: pensionSavings.years.toString(),
-                })
-              }}
-            >
+            <button className={styles.editBtn} onClick={startEditPensionSavings}>
               <Pencil size={16} />
             </button>
+            {pensionSavings && (
+              <button
+                className={styles.deleteBtn}
+                onClick={() => handleDelete('pension_savings')}
+                disabled={isSaving}
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {/* IRP */}
-      {editingField === `${fieldPrefix}irp` ? (
+      {editingType === 'irp' ? (
         <div className={styles.editItem}>
           <div className={styles.editRow}>
             <span className={styles.editRowLabel}>잔액</span>
@@ -263,8 +279,16 @@ export function PersonalPensionSection({
             </div>
           </div>
           <div className={styles.editActions}>
-            <button className={styles.cancelBtn} onClick={cancelEdit}>취소</button>
-            <button className={styles.saveBtn} onClick={saveIrp}>저장</button>
+            <button className={styles.cancelBtn} onClick={cancelEdit} disabled={isSaving}>
+              취소
+            </button>
+            <button
+              className={styles.saveBtn}
+              onClick={() => savePension('irp')}
+              disabled={isSaving}
+            >
+              {isSaving ? '저장 중...' : '저장'}
+            </button>
           </div>
         </div>
       ) : (
@@ -272,30 +296,28 @@ export function PersonalPensionSection({
           <div className={styles.itemMain}>
             <span className={styles.itemLabel}>{ownerLabel} IRP</span>
             <span className={styles.itemAmount}>
-              {irp.balance ? formatMoney(irp.balance) : '0'}
+              {irp?.current_balance ? formatMoney(irp.current_balance) : '0'}
             </span>
-            {irp.balance || irp.monthly ? (
+            {(irp?.current_balance || irp?.monthly_contribution) ? (
               <span className={styles.itemMeta}>
-                {irp.monthly ? `월 ${formatMoney(irp.monthly)} 납입 | ` : ''}
-                {irp.startAge}세부터 {irp.years}년간 수령
+                {irp?.monthly_contribution ? `월 ${formatMoney(irp.monthly_contribution)} 납입 | ` : ''}
+                {irp?.start_age || 56}세부터 {irp?.receiving_years || 20}년간 수령
               </span>
             ) : null}
           </div>
           <div className={styles.itemActions}>
-            <button
-              className={styles.editBtn}
-              onClick={() => {
-                setEditingField(`${fieldPrefix}irp`)
-                setEditValues({
-                  balance: irp.balance?.toString() || '',
-                  monthly: irp.monthly?.toString() || '',
-                  startAge: irp.startAge.toString(),
-                  years: irp.years.toString(),
-                })
-              }}
-            >
+            <button className={styles.editBtn} onClick={startEditIrp}>
               <Pencil size={16} />
             </button>
+            {irp && (
+              <button
+                className={styles.deleteBtn}
+                onClick={() => handleDelete('irp')}
+                disabled={isSaving}
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
           </div>
         </div>
       )}

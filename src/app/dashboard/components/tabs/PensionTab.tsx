@@ -1,85 +1,117 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import type { OnboardingData, GlobalSettings } from '@/types'
+import { useMemo } from 'react'
+import type { GlobalSettings } from '@/types'
 import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
 import {
-  usePensionCalculations,
   NationalPensionSection,
   RetirementPensionSection,
   PersonalPensionSection,
   PensionSummary,
 } from './pension'
+import {
+  useNationalPensions,
+  useRetirementPensions,
+  usePersonalPensions,
+  useInvalidateByCategory,
+} from '@/hooks/useFinancialData'
 import styles from './PensionTab.module.css'
 
 interface PensionTabProps {
-  data: OnboardingData
-  onUpdateData: (updates: Partial<OnboardingData>) => void
+  simulationId: string
+  birthYear: number
+  spouseBirthYear?: number | null
+  retirementAge: number
+  isMarried: boolean
   globalSettings?: GlobalSettings
 }
 
-export function PensionTab({ data, onUpdateData, globalSettings }: PensionTabProps) {
+export function PensionTab({
+  simulationId,
+  birthYear,
+  spouseBirthYear,
+  retirementAge,
+  isMarried,
+  globalSettings,
+}: PensionTabProps) {
   const settings = globalSettings || DEFAULT_GLOBAL_SETTINGS
-  const prevIsMarried = useRef(data.isMarried)
+  const currentYear = new Date().getFullYear()
+  const currentAge = currentYear - birthYear
 
-  // 계산 로직 훅 사용
+  // React Query로 데이터 로드 (캐시에서 즉시 가져옴)
   const {
-    currentAge,
-    monthlyIncome,
-    spouseMonthlyIncome,
-    yearsUntilRetirement,
-    spouseYearsUntilRetirement,
-    retirementPensionProjection,
-    spouseRetirementPensionProjection,
-    personalPensionProjection,
-    spousePersonalPensionProjection,
-    totalPensionProjection,
-  } = usePensionCalculations({ data, globalSettings: settings })
+    data: dbNationalPensions = [],
+    isLoading: nationalLoading,
+  } = useNationalPensions(simulationId)
+  const {
+    data: dbRetirementPensions = [],
+    isLoading: retirementLoading,
+  } = useRetirementPensions(simulationId)
+  const {
+    data: dbPersonalPensions = [],
+    isLoading: personalLoading,
+  } = usePersonalPensions(simulationId)
 
-  // 배우자 유무 변경 감지 및 자동 처리
-  useEffect(() => {
-    const wasMarried = prevIsMarried.current
-    const isNowMarried = data.isMarried
+  const invalidate = useInvalidateByCategory(simulationId)
+  const isLoading = nationalLoading || retirementLoading || personalLoading
 
-    // 결혼 상태가 변경되었을 때
-    if (wasMarried !== isNowMarried) {
-      if (!isNowMarried && wasMarried) {
-        // 배우자 삭제됨 → 배우자 연금 데이터 초기화
-        onUpdateData({
-          spouseNationalPension: null,
-          spouseNationalPensionStartAge: null,
-          spouseRetirementPensionType: null,
-          spouseRetirementPensionBalance: null,
-          spouseRetirementPensionReceiveType: null,
-          spouseRetirementPensionStartAge: null,
-          spouseRetirementPensionReceivingYears: null,
-          spouseYearsOfService: null,
-          spousePensionSavingsBalance: null,
-          spousePensionSavingsMonthlyContribution: null,
-          spousePensionSavingsStartAge: null,
-          spousePensionSavingsReceivingYears: null,
-          spouseIrpBalance: null,
-          spouseIrpMonthlyContribution: null,
-          spouseIrpStartAge: null,
-          spouseIrpReceivingYears: null,
-        })
-      }
-      prevIsMarried.current = isNowMarried
-    }
-  }, [data.isMarried, onUpdateData])
+  // 모든 연금 데이터 캐시 무효화
+  const loadPensions = () => {
+    invalidate('nationalPensions')
+    invalidate('retirementPensions')
+    invalidate('personalPensions')
+  }
 
-  const isMarried = data.isMarried === true
+  // owner별 연금 데이터 추출
+  const selfNationalPension = useMemo(
+    () => dbNationalPensions.find(p => p.owner === 'self') || null,
+    [dbNationalPensions]
+  )
+  const dbSpouseNationalPension = useMemo(
+    () => dbNationalPensions.find(p => p.owner === 'spouse') || null,
+    [dbNationalPensions]
+  )
+  const selfRetirementPension = useMemo(
+    () => dbRetirementPensions.find(p => p.owner === 'self') || null,
+    [dbRetirementPensions]
+  )
+  const spouseRetirementPension = useMemo(
+    () => dbRetirementPensions.find(p => p.owner === 'spouse') || null,
+    [dbRetirementPensions]
+  )
+  const selfPersonalPensions = useMemo(
+    () => dbPersonalPensions.filter(p => p.owner === 'self'),
+    [dbPersonalPensions]
+  )
+  const spousePersonalPensions = useMemo(
+    () => dbPersonalPensions.filter(p => p.owner === 'spouse'),
+    [dbPersonalPensions]
+  )
 
-  // 국민연금 데이터 (요약 패널용)
+  // 국민연금 데이터 (요약 패널용) - DB 데이터 사용
   const nationalPensionData = {
     self: {
-      monthly: data.nationalPension || 0,
-      startAge: data.nationalPensionStartAge || 65,
+      monthly: selfNationalPension?.expected_monthly_amount || 0,
+      startAge: selfNationalPension?.start_age || 65,
     },
-    spouse: isMarried ? {
-      monthly: data.spouseNationalPension || 0,
-      startAge: data.spouseNationalPensionStartAge || 65,
+    spouse: isMarried && dbSpouseNationalPension ? {
+      monthly: dbSpouseNationalPension.expected_monthly_amount || 0,
+      startAge: dbSpouseNationalPension.start_age || 65,
     } : null,
+  }
+
+  // 실제 배우자 생년 (없으면 본인과 동일)
+  const effectiveSpouseBirthYear = spouseBirthYear || birthYear
+
+  // 모든 데이터가 없는 경우에만 로딩 표시
+  const hasNoData = dbNationalPensions.length === 0 && dbRetirementPensions.length === 0 && dbPersonalPensions.length === 0
+
+  if (isLoading && hasNoData) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+      </div>
+    )
   }
 
   return (
@@ -98,17 +130,21 @@ export function PensionTab({ data, onUpdateData, globalSettings }: PensionTabPro
 
           <div className={styles.itemList}>
             <NationalPensionSection
-              data={data}
-              onUpdateData={onUpdateData}
+              pension={selfNationalPension}
+              simulationId={simulationId}
               owner="self"
               ownerLabel="본인"
+              birthYear={birthYear}
+              onSave={loadPensions}
             />
             {isMarried && (
               <NationalPensionSection
-                data={data}
-                onUpdateData={onUpdateData}
+                pension={dbSpouseNationalPension}
+                simulationId={simulationId}
                 owner="spouse"
                 ownerLabel="배우자"
+                birthYear={effectiveSpouseBirthYear}
+                onSave={loadPensions}
               />
             )}
           </div>
@@ -125,23 +161,29 @@ export function PensionTab({ data, onUpdateData, globalSettings }: PensionTabPro
 
           <div className={styles.itemList}>
             <RetirementPensionSection
-              data={data}
-              onUpdateData={onUpdateData}
+              pension={selfRetirementPension}
+              simulationId={simulationId}
               owner="self"
               ownerLabel="본인"
-              projection={retirementPensionProjection}
-              monthlyIncome={monthlyIncome}
-              yearsUntilRetirement={yearsUntilRetirement}
+              projection={null}
+              monthlyIncome={0}
+              yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
+              birthYear={birthYear}
+              retirementAge={retirementAge}
+              onSave={loadPensions}
             />
             {isMarried && (
               <RetirementPensionSection
-                data={data}
-                onUpdateData={onUpdateData}
+                pension={spouseRetirementPension}
+                simulationId={simulationId}
                 owner="spouse"
                 ownerLabel="배우자"
-                projection={spouseRetirementPensionProjection}
-                monthlyIncome={spouseMonthlyIncome}
-                yearsUntilRetirement={spouseYearsUntilRetirement}
+                projection={null}
+                monthlyIncome={0}
+                yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
+                birthYear={effectiveSpouseBirthYear}
+                retirementAge={retirementAge}
+                onSave={loadPensions}
               />
             )}
           </div>
@@ -157,10 +199,13 @@ export function PensionTab({ data, onUpdateData, globalSettings }: PensionTabPro
           </p>
 
           <PersonalPensionSection
-            data={data}
-            onUpdateData={onUpdateData}
+            pensions={selfPersonalPensions}
+            simulationId={simulationId}
             owner="self"
             ownerLabel="본인"
+            birthYear={birthYear}
+            retirementAge={retirementAge}
+            onSave={loadPensions}
           />
 
           {isMarried && (
@@ -169,10 +214,13 @@ export function PensionTab({ data, onUpdateData, globalSettings }: PensionTabPro
                 <span className={styles.sectionTitle}>배우자 개인연금</span>
               </div>
               <PersonalPensionSection
-                data={data}
-                onUpdateData={onUpdateData}
+                pensions={spousePersonalPensions}
+                simulationId={simulationId}
                 owner="spouse"
                 ownerLabel="배우자"
+                birthYear={effectiveSpouseBirthYear}
+                retirementAge={retirementAge}
+                onSave={loadPensions}
               />
             </>
           )}
@@ -180,18 +228,10 @@ export function PensionTab({ data, onUpdateData, globalSettings }: PensionTabPro
 
       </div>
 
-      {/* 오른쪽: 예측 요약 */}
-      <PensionSummary
-        settings={settings}
-        retirementPensionProjection={retirementPensionProjection}
-        spouseRetirementPensionProjection={spouseRetirementPensionProjection}
-        personalPensionProjection={personalPensionProjection}
-        spousePersonalPensionProjection={spousePersonalPensionProjection}
-        totalPensionProjection={totalPensionProjection}
-        nationalPensionData={nationalPensionData}
-        isMarried={isMarried}
-        currentAge={currentAge}
-      />
+      {/* 오른쪽: 인사이트 */}
+      <div className={styles.insightPanel}>
+        {/* TODO: 인사이트 내용 추가 예정 */}
+      </div>
     </div>
   )
 }

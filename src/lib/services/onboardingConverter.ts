@@ -229,7 +229,6 @@ export function convertToExpenseItems(data: OnboardingData): DashboardExpenseIte
       endMonth: 12,
       growthRate: DEFAULT_RATES.inflation,
       rateCategory: 'inflation',
-      sourceType: 'housing',
     })
   }
 
@@ -249,7 +248,6 @@ export function convertToExpenseItems(data: OnboardingData): DashboardExpenseIte
       endMonth: 12,
       growthRate: DEFAULT_RATES.inflation,
       rateCategory: 'inflation',
-      sourceType: 'housing',
     })
   }
 
@@ -265,38 +263,8 @@ export function convertToExpenseItems(data: OnboardingData): DashboardExpenseIte
 // ============================================
 
 export function convertToSavingsAccounts(data: OnboardingData): SavingsAccount[] {
-  // 이미 savingsAccounts가 있으면 그대로 반환
-  if (data.savingsAccounts && data.savingsAccounts.length > 0) {
-    return data.savingsAccounts
-  }
-
-  const accounts: SavingsAccount[] = []
-
-  // deprecated 필드에서 변환 (cashCheckingAccount, cashSavingsAccount)
-  if (data.cashCheckingAccount !== null && data.cashCheckingAccount > 0) {
-    accounts.push({
-      id: generateId(),
-      type: 'checking',
-      name: '입출금통장',
-      balance: data.cashCheckingAccount,
-      interestRate: data.cashCheckingRate || 0.1,
-    })
-  }
-
-  if (data.cashSavingsAccount !== null && data.cashSavingsAccount > 0) {
-    const { year: currentYear, month: currentMonth } = getCurrentYearMonth()
-    accounts.push({
-      id: generateId(),
-      type: 'deposit',
-      name: '정기예금/적금',
-      balance: data.cashSavingsAccount,
-      interestRate: data.cashSavingsRate || 3.0,
-      maturityYear: currentYear + 1,
-      maturityMonth: currentMonth,
-    })
-  }
-
-  return accounts
+  // savingsAccounts 배열 반환 (없으면 빈 배열)
+  return data.savingsAccounts || []
 }
 
 // ============================================
@@ -304,55 +272,8 @@ export function convertToSavingsAccounts(data: OnboardingData): SavingsAccount[]
 // ============================================
 
 export function convertToInvestmentAccounts(data: OnboardingData): InvestmentAccount[] {
-  // 이미 investmentAccounts가 있으면 그대로 반환
-  if (data.investmentAccounts && data.investmentAccounts.length > 0) {
-    return data.investmentAccounts
-  }
-
-  const accounts: InvestmentAccount[] = []
-
-  // deprecated 필드에서 변환
-  if (data.investDomesticStock !== null && data.investDomesticStock > 0) {
-    accounts.push({
-      id: generateId(),
-      type: 'domestic_stock',
-      name: '국내주식/ETF',
-      balance: data.investDomesticStock,
-      expectedReturn: data.investDomesticRate || DEFAULT_RATES.investment,
-    })
-  }
-
-  if (data.investForeignStock !== null && data.investForeignStock > 0) {
-    accounts.push({
-      id: generateId(),
-      type: 'foreign_stock',
-      name: '해외주식/ETF',
-      balance: data.investForeignStock,
-      expectedReturn: data.investForeignRate || DEFAULT_RATES.investment,
-    })
-  }
-
-  if (data.investFund !== null && data.investFund > 0) {
-    accounts.push({
-      id: generateId(),
-      type: 'fund',
-      name: '펀드/채권',
-      balance: data.investFund,
-      expectedReturn: data.investFundRate || DEFAULT_RATES.investment,
-    })
-  }
-
-  if (data.investOther !== null && data.investOther > 0) {
-    accounts.push({
-      id: generateId(),
-      type: 'other',
-      name: '기타 투자자산',
-      balance: data.investOther,
-      expectedReturn: data.investOtherRate || 0,
-    })
-  }
-
-  return accounts
+  // investmentAccounts 배열 반환 (없으면 빈 배열)
+  return data.investmentAccounts || []
 }
 
 // ============================================
@@ -478,12 +399,8 @@ export function hasSimplifiedData(data: OnboardingData): boolean {
     (data.businessIncome !== null && data.businessIncome > 0) ||
     (data.spouseBusinessIncome !== null && data.spouseBusinessIncome > 0) ||
     (data.livingExpenses !== null && data.livingExpenses > 0) ||
-    (data.cashCheckingAccount !== null && data.cashCheckingAccount > 0) ||
-    (data.cashSavingsAccount !== null && data.cashSavingsAccount > 0) ||
-    (data.investDomesticStock !== null && data.investDomesticStock > 0) ||
-    (data.investForeignStock !== null && data.investForeignStock > 0) ||
-    (data.investFund !== null && data.investFund > 0) ||
-    (data.investOther !== null && data.investOther > 0)
+    (data.savingsAccounts && data.savingsAccounts.length > 0) ||
+    (data.investmentAccounts && data.investmentAccounts.length > 0)
   )
 }
 

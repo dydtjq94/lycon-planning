@@ -6,7 +6,7 @@
   --card-foreground: #292524;
   --popover: #ffffff;
   --popover-foreground: #292524;
-  --primary: #D97706;
+  --primary: #007AFF;
   --primary-foreground: #ffffff;
   --secondary: #F59E0B;
   --secondary-foreground: #ffffff;
@@ -32,7 +32,7 @@
   --card-foreground: #FAFAF9;
   --popover: #292524;
   --popover-foreground: #FAFAF9;
-  --primary: #F59E0B;
+  --primary: #0A84FF;
   --primary-foreground: #1C1917;
   --secondary: #D97706;
   --secondary-foreground: #1C1917;
@@ -58,4 +58,19 @@ body {
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* 모든 input, select, textarea, button에 outline 제거 */
+input,
+select,
+textarea,
+button {
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+  outline: none;
 }

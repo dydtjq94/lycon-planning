@@ -554,8 +554,8 @@
   background: #e8e8ed;
 }
 
-/* ========== 오른쪽: 대시보드 패널 ========== */
-.summaryPanel {
+/* ========== 오른쪽: 인사이트 패널 ========== */
+.insightPanel {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -749,7 +749,7 @@
     padding-bottom: 32px;
   }
 
-  .summaryPanel {
+  .insightPanel {
     margin: 0;
     padding: 24px 20px 48px;
   }
@@ -911,4 +911,13 @@
   font-size: 14px;
   color: #86868b;
   padding: 16px 0;
+}
+
+.loadingState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #86868b;
+  font-size: 14px;
 }

@@ -1,52 +1,56 @@
 'use client'
 
 import { useState } from 'react'
-import { Pencil } from 'lucide-react'
-import type { OnboardingData } from '@/types'
+import { Pencil, Trash2 } from 'lucide-react'
+import type { RetirementPension, Owner, RetirementPensionType, ReceiveType } from '@/types/tables'
 import { formatMoney } from '@/lib/utils'
+import {
+  upsertRetirementPension,
+  deleteRetirementPension,
+  PENSION_TYPE_LABELS,
+} from '@/lib/services/retirementPensionService'
 import type { RetirementPensionProjection } from './usePensionCalculations'
 import styles from '../PensionTab.module.css'
 
 interface RetirementPensionSectionProps {
-  data: OnboardingData
-  onUpdateData: (updates: Partial<OnboardingData>) => void
-  owner: 'self' | 'spouse'
+  pension: RetirementPension | null
+  simulationId: string
+  owner: Owner
   ownerLabel: string
   projection: RetirementPensionProjection | null
   monthlyIncome: number
   yearsUntilRetirement: number
+  birthYear: number
+  retirementAge: number
+  onSave: () => void
 }
 
 export function RetirementPensionSection({
-  data,
-  onUpdateData,
+  pension,
+  simulationId,
   owner,
   ownerLabel,
   projection,
   monthlyIncome,
   yearsUntilRetirement,
+  birthYear,
+  retirementAge,
+  onSave,
 }: RetirementPensionSectionProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
-
-  // 본인 또는 배우자 데이터 선택
-  const pensionType = owner === 'self' ? data.retirementPensionType : data.spouseRetirementPensionType
-  const yearsOfService = owner === 'self' ? data.yearsOfService : data.spouseYearsOfService
-  const balance = owner === 'self' ? data.retirementPensionBalance : data.spouseRetirementPensionBalance
-  const receiveType = owner === 'self' ? data.retirementPensionReceiveType : data.spouseRetirementPensionReceiveType
-  const startAge = owner === 'self' ? data.retirementPensionStartAge : data.spouseRetirementPensionStartAge
-  const receivingYears = owner === 'self' ? data.retirementPensionReceivingYears : data.spouseRetirementPensionReceivingYears
+  const [isSaving, setIsSaving] = useState(false)
 
   const startEdit = () => {
-    const isDB = pensionType === 'DB' || pensionType === 'severance'
+    const isDB = pension?.pension_type === 'db' || pension?.pension_type === 'severance'
     setIsEditing(true)
     setEditValues({
-      type: isDB ? 'DB' : pensionType === 'DC' || pensionType === 'corporate_irp' ? 'DC' : '',
-      years: yearsOfService?.toString() || '',
-      balance: balance?.toString() || '',
-      receiveType: receiveType || 'annuity',
-      startAge: (startAge || 56).toString(),
-      receivingYears: (receivingYears || 10).toString(),
+      type: isDB ? 'DB' : pension?.pension_type === 'dc' || pension?.pension_type === 'corporate_irp' ? 'DC' : '',
+      years: pension?.years_of_service?.toString() || '',
+      balance: pension?.current_balance?.toString() || '',
+      receiveType: pension?.receive_type || 'annuity',
+      startAge: (pension?.start_age || 56).toString(),
+      receivingYears: (pension?.receiving_years || 10).toString(),
     })
   }
 
@@ -55,31 +59,54 @@ export function RetirementPensionSection({
     setEditValues({})
   }
 
-  const saveEdit = () => {
-    // 수령 시작 나이 56세 이상 검증
-    const validatedStartAge = Math.max(56, parseInt(editValues.startAge) || 56)
+  const saveEdit = async () => {
+    if (!editValues.type) return
 
-    if (owner === 'self') {
-      onUpdateData({
-        retirementPensionType: editValues.type as 'DB' | 'DC' | null,
-        yearsOfService: editValues.type === 'DB' && editValues.years ? parseInt(editValues.years) : null,
-        retirementPensionBalance: editValues.type === 'DC' && editValues.balance ? parseFloat(editValues.balance) : null,
-        retirementPensionReceiveType: editValues.receiveType as 'lump_sum' | 'annuity' | null,
-        retirementPensionStartAge: editValues.receiveType === 'annuity' ? validatedStartAge : null,
-        retirementPensionReceivingYears: editValues.receiveType === 'annuity' && editValues.receivingYears ? parseInt(editValues.receivingYears) : null,
-      })
-    } else {
-      onUpdateData({
-        spouseRetirementPensionType: editValues.type as 'DB' | 'DC' | null,
-        spouseYearsOfService: editValues.type === 'DB' && editValues.years ? parseInt(editValues.years) : null,
-        spouseRetirementPensionBalance: editValues.type === 'DC' && editValues.balance ? parseFloat(editValues.balance) : null,
-        spouseRetirementPensionReceiveType: editValues.receiveType as 'lump_sum' | 'annuity' | null,
-        spouseRetirementPensionStartAge: editValues.receiveType === 'annuity' ? validatedStartAge : null,
-        spouseRetirementPensionReceivingYears: editValues.receiveType === 'annuity' && editValues.receivingYears ? parseInt(editValues.receivingYears) : null,
-      })
+    setIsSaving(true)
+    try {
+      const validatedStartAge = Math.max(56, parseInt(editValues.startAge) || 56)
+      const pensionType: RetirementPensionType = editValues.type === 'DB' ? 'db' : 'dc'
+      const receiveType = editValues.receiveType as ReceiveType
+
+      await upsertRetirementPension(
+        simulationId,
+        owner,
+        {
+          pension_type: pensionType,
+          current_balance: editValues.type === 'DC' && editValues.balance ? parseFloat(editValues.balance) : null,
+          years_of_service: editValues.type === 'DB' && editValues.years ? parseInt(editValues.years) : null,
+          receive_type: receiveType,
+          start_age: receiveType === 'annuity' ? validatedStartAge : null,
+          receiving_years: receiveType === 'annuity' && editValues.receivingYears ? parseInt(editValues.receivingYears) : null,
+          return_rate: 5, // 기본 수익률 5%
+        },
+        birthYear,
+        retirementAge,
+        monthlyIncome
+      )
+      await onSave()
+      setIsEditing(false)
+      setEditValues({})
+    } catch (error) {
+      console.error('Failed to save retirement pension:', error)
+    } finally {
+      setIsSaving(false)
     }
-    setIsEditing(false)
-    setEditValues({})
+  }
+
+  const handleDelete = async () => {
+    if (!pension) return
+    if (!confirm('퇴직연금 정보를 삭제하시겠습니까?')) return
+
+    setIsSaving(true)
+    try {
+      await deleteRetirementPension(pension.id)
+      await onSave()
+    } catch (error) {
+      console.error('Failed to delete retirement pension:', error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   if (isEditing) {
@@ -196,16 +223,19 @@ export function RetirementPensionSection({
         )}
 
         <div className={styles.editActions}>
-          <button className={styles.cancelBtn} onClick={cancelEdit}>취소</button>
-          <button className={styles.saveBtn} onClick={saveEdit}>저장</button>
+          <button className={styles.cancelBtn} onClick={cancelEdit} disabled={isSaving}>
+            취소
+          </button>
+          <button className={styles.saveBtn} onClick={saveEdit} disabled={isSaving}>
+            {isSaving ? '저장 중...' : '저장'}
+          </button>
         </div>
       </div>
     )
   }
 
-  if (pensionType) {
-    const isDBType = pensionType === 'DB' || pensionType === 'severance'
-    const isDCType = pensionType === 'DC' || pensionType === 'corporate_irp'
+  if (pension) {
+    const isDBType = pension.pension_type === 'db' || pension.pension_type === 'severance'
 
     return (
       <div className={styles.pensionItem}>
@@ -215,23 +245,23 @@ export function RetirementPensionSection({
           </span>
           <span className={styles.itemAmount}>
             {projection
-              ? receiveType === 'annuity' && projection.monthlyPMT
+              ? pension.receive_type === 'annuity' && projection.monthlyPMT
                 ? `${formatMoney(projection.monthlyPMT)}/월`
                 : formatMoney(projection.totalAmount)
               : '계산 불가'}
           </span>
           <span className={styles.itemMeta}>
             {isDBType
-              ? yearsOfService
-                ? `현재 ${yearsOfService}년 → 퇴직 시 ${yearsOfService + yearsUntilRetirement}년 근속`
+              ? pension.years_of_service
+                ? `현재 ${pension.years_of_service}년 → 퇴직 시 ${pension.years_of_service + yearsUntilRetirement}년 근속`
                 : '근속연수를 입력하세요'
-              : balance
-                ? `현재 잔액 ${formatMoney(balance)}`
+              : pension.current_balance
+                ? `현재 잔액 ${formatMoney(pension.current_balance)}`
                 : '현재 잔액을 입력하세요'
             }
-            {receiveType === 'annuity'
-              ? ` | ${startAge || 56}세부터 ${receivingYears || 10}년간 연금 수령`
-              : receiveType === 'lump_sum'
+            {pension.receive_type === 'annuity'
+              ? ` | ${pension.start_age || 56}세부터 ${pension.receiving_years || 10}년간 연금 수령`
+              : pension.receive_type === 'lump_sum'
                 ? ' | 일시금 수령'
                 : ''
             }
@@ -241,6 +271,9 @@ export function RetirementPensionSection({
         <div className={styles.itemActions}>
           <button className={styles.editBtn} onClick={startEdit}>
             <Pencil size={16} />
+          </button>
+          <button className={styles.deleteBtn} onClick={handleDelete} disabled={isSaving}>
+            <Trash2 size={16} />
           </button>
         </div>
       </div>

@@ -1,169 +1,358 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { GripVertical } from 'lucide-react'
+import type { GlobalSettings, CashFlowRule, CashFlowAccountType } from '@/types'
+import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
+import type { Income, Expense, PersonalPension, Savings } from '@/types/tables'
+import { runSimulationFromItems } from '@/lib/services/simulationEngine'
 import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-} from 'chart.js'
-import { Doughnut } from 'react-chartjs-2'
-import type { OnboardingData, SimulationSettings, GlobalSettings } from '@/types'
-import { runSimulation } from '@/lib/services/simulationEngine'
+  useFinancialItems,
+  useIncomes,
+  useExpenses,
+  usePersonalPensions,
+  useSavingsData,
+} from '@/hooks/useFinancialData'
 import { calculateEndYear } from '@/lib/utils/chartDataTransformer'
+import { formatMoney } from '@/lib/utils'
 import { CashFlowChart, YearCashFlowPanel, SankeyChart } from '../charts'
 import styles from './CashFlowOverviewTab.module.css'
 
-ChartJS.register(ArcElement, Tooltip, Legend)
-
 interface CashFlowOverviewTabProps {
-  data: OnboardingData
-  settings: SimulationSettings
+  simulationId: string
+  birthYear: number
+  spouseBirthYear?: number | null
+  retirementAge: number
   globalSettings?: GlobalSettings
 }
 
-// 금액 포맷팅
-function formatMoney(amount: number): string {
-  if (Math.abs(amount) >= 10000) {
-    const uk = amount / 10000
-    return `${uk.toFixed(1).replace(/\.0$/, '')}억`
-  }
-  return `${amount.toLocaleString()}만원`
+const ACCOUNT_TYPE_LABELS: Record<CashFlowAccountType, string> = {
+  pension_savings: '연금저축',
+  irp: 'IRP',
+  isa: 'ISA',
+  savings: '예적금',
+  investment: '투자',
+  checking: '입출금통장',
 }
 
-// 나이 계산
-function calculateAge(birthDate: string): number {
-  if (!birthDate) return 35
-  const today = new Date()
-  const birth = new Date(birthDate)
-  let age = today.getFullYear() - birth.getFullYear()
-  const monthDiff = today.getMonth() - birth.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--
-  }
-  return age
+const ACCOUNT_TYPE_COLORS: Record<CashFlowAccountType, string> = {
+  pension_savings: '#5856d6',
+  irp: '#007aff',
+  isa: '#34c759',
+  savings: '#ff9500',
+  investment: '#af52de',
+  checking: '#8e8e93',
 }
 
-export function CashFlowOverviewTab({ data, settings, globalSettings }: CashFlowOverviewTabProps) {
+// DB 데이터 기반 동적 규칙 생성
+interface DynamicRulesData {
+  personalPensions: PersonalPension[]
+  savings: Savings[]
+}
+
+function generateDynamicRules(data: DynamicRulesData): CashFlowRule[] {
+  const rules: CashFlowRule[] = []
+  let priority = 1
+
+  // 개인연금에서 연금저축, IRP, ISA 추출
+  data.personalPensions.forEach(pension => {
+    const ownerLabel = pension.owner === 'spouse' ? ' (배우자)' : ''
+
+    if (pension.pension_type === 'pension_savings') {
+      rules.push({
+        id: `pension_savings_${pension.id}`,
+        accountType: 'pension_savings',
+        name: `연금저축${ownerLabel}`,
+        priority: priority++,
+        allocationType: 'fixed',
+        monthlyAmount: pension.monthly_contribution || 50,
+        annualLimit: 600,
+        isEnabled: true,
+      })
+    } else if (pension.pension_type === 'irp') {
+      rules.push({
+        id: `irp_${pension.id}`,
+        accountType: 'irp',
+        name: `IRP${ownerLabel}`,
+        priority: priority++,
+        allocationType: 'fixed',
+        monthlyAmount: pension.monthly_contribution || 25,
+        annualLimit: 300,
+        isEnabled: true,
+      })
+    } else if (pension.pension_type === 'isa') {
+      rules.push({
+        id: `isa_${pension.id}`,
+        accountType: 'isa',
+        name: `ISA${ownerLabel}`,
+        priority: priority++,
+        allocationType: 'fixed',
+        monthlyAmount: pension.monthly_contribution || 167,
+        annualLimit: 2000,
+        isEnabled: true,
+      })
+    }
+  })
+
+  // 저축 계좌 (예적금)
+  data.savings
+    .filter(s => ['savings', 'deposit'].includes(s.type))
+    .forEach(account => {
+      rules.push({
+        id: `savings_${account.id}`,
+        accountType: 'savings',
+        name: account.title || '정기예금/적금',
+        priority: priority++,
+        allocationType: 'fixed',
+        monthlyAmount: account.monthly_contribution || 50,
+        isEnabled: true,
+      })
+    })
+
+  // 투자 계좌
+  data.savings
+    .filter(s => ['domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto'].includes(s.type))
+    .forEach(account => {
+      rules.push({
+        id: `investment_${account.id}`,
+        accountType: 'investment',
+        name: account.title || '투자',
+        priority: priority++,
+        allocationType: 'fixed',
+        monthlyAmount: account.monthly_contribution || 50,
+        isEnabled: true,
+      })
+    })
+
+  // 입출금통장은 항상 마지막에 추가 (나머지 전액)
+  rules.push({
+    id: 'checking_default',
+    accountType: 'checking',
+    name: '입출금통장',
+    priority: 99,
+    allocationType: 'remainder',
+    isEnabled: true,
+  })
+
+  return rules
+}
+
+// 월 잉여금 계산
+function calculateMonthlySurplus(incomes: Income[], expenses: Expense[]): number {
+  const currentYear = new Date().getFullYear()
+
+  // 현재 활성 소득 합산
+  const monthlyIncome = incomes
+    .filter(income => {
+      if (!income.is_active) return false
+      // source_type이 있는 연동 소득(연금소득 등)은 제외 (은퇴 후 소득)
+      if (income.source_type) return false
+      // 시작/종료 연도 체크
+      if (income.start_year && income.start_year > currentYear) return false
+      if (income.end_year && income.end_year < currentYear) return false
+      return true
+    })
+    .reduce((sum, income) => {
+      const amount = income.frequency === 'yearly' ? income.amount / 12 : income.amount
+      return sum + amount
+    }, 0)
+
+  // 현재 활성 지출 합산
+  const monthlyExpense = expenses
+    .filter(expense => {
+      if (!expense.is_active) return false
+      if (expense.start_year && expense.start_year > currentYear) return false
+      if (expense.end_year && expense.end_year < currentYear) return false
+      return true
+    })
+    .reduce((sum, expense) => {
+      const amount = expense.frequency === 'yearly' ? expense.amount / 12 : expense.amount
+      return sum + amount
+    }, 0)
+
+  return monthlyIncome - monthlyExpense
+}
+
+export function CashFlowOverviewTab({
+  simulationId,
+  birthYear,
+  spouseBirthYear,
+  retirementAge,
+  globalSettings,
+}: CashFlowOverviewTabProps) {
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
 
   const currentYear = new Date().getFullYear()
-  const currentAge = calculateAge(data.birth_date)
-  const retirementAge = data.target_retirement_age || 60
 
   // 시뮬레이션 설정
-  const birthYear = data.birth_date ? parseInt(data.birth_date.split('-')[0]) : currentYear - 35
-  const spouseBirthYear = data.spouse?.birth_date ? parseInt(data.spouse.birth_date.split('-')[0]) : null
   const simulationEndYear = calculateEndYear(birthYear, spouseBirthYear)
   const yearsToSimulate = simulationEndYear - currentYear
   const retirementYear = birthYear + retirementAge
 
+  // 프로필 정보
+  const profile = useMemo(() => ({
+    birthYear,
+    retirementAge,
+    spouseBirthYear: spouseBirthYear || undefined,
+  }), [birthYear, retirementAge, spouseBirthYear])
+
+  // React Query로 데이터 로드 (캐시에서 즉시 가져옴)
+  const { data: items = [], isLoading: itemsLoading } = useFinancialItems(simulationId, profile)
+  const { data: incomes = [], isLoading: incomesLoading } = useIncomes(simulationId)
+  const { data: expenses = [], isLoading: expensesLoading } = useExpenses(simulationId)
+  const { data: personalPensions = [], isLoading: pensionsLoading } = usePersonalPensions(simulationId)
+  const { data: savingsData = [], isLoading: savingsLoading } = useSavingsData(simulationId)
+
+  // 전체 로딩 상태
+  const loading = itemsLoading || incomesLoading || expensesLoading || pensionsLoading || savingsLoading
+
   // 시뮬레이션 실행
   const simulationResult = useMemo(() => {
-    return runSimulation(data, settings, yearsToSimulate, globalSettings)
-  }, [data, settings, yearsToSimulate, globalSettings])
+    if (items.length === 0) {
+      return {
+        startYear: currentYear,
+        endYear: simulationEndYear,
+        retirementYear,
+        snapshots: [],
+        summary: {
+          currentNetWorth: 0,
+          retirementNetWorth: 0,
+          peakNetWorth: 0,
+          peakNetWorthYear: currentYear,
+          yearsToFI: null,
+          fiTarget: 0,
+        },
+      }
+    }
 
-  // 현재 연도 스냅샷
-  const currentSnapshot = simulationResult.snapshots.find(s => s.year === currentYear) || simulationResult.snapshots[0]
+    const gs = globalSettings || DEFAULT_GLOBAL_SETTINGS
+
+    return runSimulationFromItems(
+      items,
+      {
+        birthYear,
+        retirementAge,
+        spouseBirthYear: spouseBirthYear || undefined,
+      },
+      gs,
+      yearsToSimulate
+    )
+  }, [items, birthYear, retirementAge, spouseBirthYear, globalSettings, yearsToSimulate, currentYear, simulationEndYear, retirementYear])
 
   // 선택된 연도 스냅샷
   const selectedSnapshot = selectedYear
     ? simulationResult.snapshots.find(s => s.year === selectedYear)
     : null
 
-  // 현재 월간 현금흐름 계산
-  const monthlyIncome = currentSnapshot ? Math.round(currentSnapshot.totalIncome / 12) : 0
-  const monthlyExpense = currentSnapshot ? Math.round(currentSnapshot.totalExpense / 12) : 0
-  const monthlySavings = monthlyIncome - monthlyExpense
-  const savingsRate = monthlyIncome > 0 ? Math.round((monthlySavings / monthlyIncome) * 100) : 0
+  // 현금흐름도 연도 선택 상태 (기본값: 현재 연도)
+  const [sankeyYear, setSankeyYear] = useState<number>(currentYear)
 
-  // 국민연금 시작 나이
-  const nationalPensionStartAge = data.nationalPensionStartAge || 65
-  const nationalPensionStartYear = birthYear + nationalPensionStartAge
+  // 슬라이더 진행률 계산
+  const sliderProgress = useMemo(() => {
+    const totalYears = simulationEndYear - currentYear
+    const currentPos = sankeyYear - currentYear
+    return totalYears > 0 ? (currentPos / totalYears) * 100 : 0
+  }, [sankeyYear, currentYear, simulationEndYear])
 
-  // 은퇴 후 현금흐름 계산 (은퇴 직후 첫 해)
-  const retirementSnapshot = simulationResult.snapshots.find(s => s.year === retirementYear)
-  const postRetirementIncome = retirementSnapshot ? retirementSnapshot.totalIncome : 0
-  const postRetirementExpense = retirementSnapshot ? retirementSnapshot.totalExpense : 0
-  const cashFlowGap = postRetirementIncome - postRetirementExpense
-  const hasGap = cashFlowGap < 0
+  // 현재 나이 계산
+  const currentAge = currentYear - birthYear
+  const sankeyAge = sankeyYear - birthYear
 
-  // 연금 구성 (국민연금 수령 시작 연도 기준)
-  const pensionSnapshot = simulationResult.snapshots.find(s => s.year === nationalPensionStartYear)
-  const nationalPension = data.nationalPension || 0
-  const retirementPensionMonthly = Math.round((data.retirementPensionBalance || 0) / 20 / 12)
-  const personalPensionMonthly = Math.round(((data.irpBalance || 0) + (data.pensionSavingsBalance || 0)) / 20 / 12)
-  const totalPensionMonthly = nationalPension + retirementPensionMonthly + personalPensionMonthly
+  // 분배 규칙 상태
+  const [rules, setRules] = useState<CashFlowRule[]>([])
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
-  // 소득 구성 차트 (현재)
-  const incomeItems: { name: string; value: number; color: string }[] = []
-  if (data.laborIncome) incomeItems.push({ name: '본인 근로', value: data.laborIncome, color: '#3b82f6' })
-  if (data.spouseLaborIncome) incomeItems.push({ name: '배우자 근로', value: data.spouseLaborIncome, color: '#8b5cf6' })
-  if (data.businessIncome) incomeItems.push({ name: '본인 사업', value: data.businessIncome, color: '#22c55e' })
-  if (data.spouseBusinessIncome) incomeItems.push({ name: '배우자 사업', value: data.spouseBusinessIncome, color: '#14b8a6' })
+  // 규칙 초기화: DB 데이터 기반 동적 생성
+  useEffect(() => {
+    if (!loading && (personalPensions.length > 0 || savingsData.length > 0)) {
+      setRules(generateDynamicRules({ personalPensions, savings: savingsData }))
+    }
+  }, [loading, personalPensions, savingsData])
 
-  const doughnutData = {
-    labels: incomeItems.map(i => i.name),
-    datasets: [{
-      data: incomeItems.map(i => i.value),
-      backgroundColor: incomeItems.map(i => i.color),
-      borderWidth: 0,
-    }],
+  // 월 잉여금 계산
+  const monthlySurplus = useMemo(() => {
+    return calculateMonthlySurplus(incomes, expenses)
+  }, [incomes, expenses])
+
+  // 분배 시뮬레이션
+  const allocation = useMemo(() => {
+    const result: Record<string, number> = {}
+    let remaining = monthlySurplus
+
+    const sortedRules = [...rules]
+      .filter(r => r.isEnabled)
+      .sort((a, b) => a.priority - b.priority)
+
+    for (const rule of sortedRules) {
+      if (rule.allocationType === 'remainder') {
+        // 입출금통장은 음수 허용 (잉여금이 마이너스여도 표시)
+        result[rule.id] = remaining
+        break
+      }
+
+      const targetAmount = rule.monthlyAmount || 0
+      const allocated = Math.min(targetAmount, Math.max(0, remaining))
+      result[rule.id] = allocated
+      remaining -= allocated
+    }
+
+    return result
+  }, [rules, monthlySurplus])
+
+  // 드래그 앤 드롭
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index)
   }
 
-  const doughnutOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (context: { label: string; parsed: number }) =>
-            `${context.label}: ${formatMoney(context.parsed)}`,
-        },
-      },
-    },
-    cutout: '70%',
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    if (draggedIndex === null || draggedIndex === index) return
+
+    const sortableRules = rules.filter(r => r.allocationType !== 'remainder')
+    const remainderRule = rules.find(r => r.allocationType === 'remainder')
+
+    const newSortable = [...sortableRules]
+    const draggedRule = newSortable[draggedIndex]
+    newSortable.splice(draggedIndex, 1)
+    newSortable.splice(index, 0, draggedRule)
+
+    // 우선순위 재설정
+    newSortable.forEach((rule, i) => {
+      rule.priority = i + 1
+    })
+
+    const newRules = remainderRule ? [...newSortable, remainderRule] : newSortable
+    setRules(newRules)
+    setDraggedIndex(index)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null)
+  }
+
+  // 규칙 업데이트
+  const updateRule = (id: string, updates: Partial<CashFlowRule>) => {
+    const newRules = rules.map(r => r.id === id ? { ...r, ...updates } : r)
+    setRules(newRules)
+  }
+
+  // 규칙 활성화/비활성화
+  const toggleRule = (id: string) => {
+    const newRules = rules.map(r => r.id === id ? { ...r, isEnabled: !r.isEnabled } : r)
+    setRules(newRules)
+  }
+
+  // 나머지 규칙과 정렬 가능한 규칙 분리
+  const remainderRule = rules.find(r => r.allocationType === 'remainder')
+  const sortableRules = rules.filter(r => r.allocationType !== 'remainder')
+
+  // 캐시된 데이터가 없고 로딩 중일 때만 로딩 표시
+  if (loading && items.length === 0) {
+    return <div className={styles.loadingState}>데이터를 불러오는 중...</div>
   }
 
   return (
     <div className={styles.container}>
-      {/* 히어로 섹션 */}
-      <div className={styles.hero}>
-        <div className={styles.heroMain}>
-          <div className={styles.cashFlowBlock}>
-            <p className={styles.cashFlowLabel}>월 순현금흐름</p>
-            <p className={`${styles.cashFlowValue} ${monthlySavings >= 0 ? styles.positive : styles.negative}`}>
-              {monthlySavings >= 0 ? '+' : ''}{formatMoney(monthlySavings)}
-            </p>
-            <p className={styles.cashFlowSub}>
-              수입 {formatMoney(monthlyIncome)} - 지출 {formatMoney(monthlyExpense)}
-            </p>
-          </div>
-
-          <div className={styles.statsGrid}>
-            <div className={styles.statCard}>
-              <p className={styles.statLabel}>월 수입</p>
-              <p className={`${styles.statValue} ${styles.blue}`}>{formatMoney(monthlyIncome)}</p>
-            </div>
-            <div className={styles.statCard}>
-              <p className={styles.statLabel}>월 지출</p>
-              <p className={`${styles.statValue} ${styles.negative}`}>{formatMoney(monthlyExpense)}</p>
-            </div>
-            <div className={styles.statCard}>
-              <p className={styles.statLabel}>저축률</p>
-              <p className={`${styles.statValue} ${savingsRate >= 30 ? styles.positive : ''}`}>{savingsRate}%</p>
-              <p className={styles.statSub}>{savingsRate >= 30 ? '우수' : savingsRate >= 15 ? '적정' : '개선 필요'}</p>
-            </div>
-            <div className={styles.statCard}>
-              <p className={styles.statLabel}>은퇴까지</p>
-              <p className={styles.statValue}>{Math.max(0, retirementAge - currentAge)}년</p>
-              <p className={styles.statSub}>{retirementAge}세 목표</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* 현금흐름 시뮬레이션 차트 */}
       <div className={styles.chartSection}>
         <div className={styles.chartHeader}>
@@ -193,133 +382,197 @@ export function CashFlowOverviewTab({ data, settings, globalSettings }: CashFlow
         </div>
       </div>
 
-      {/* Sankey 차트 - 현재 현금흐름도 */}
+      {/* 현금흐름도 */}
       <div className={styles.chartSection}>
         <div className={styles.chartHeader}>
           <div>
-            <h3 className={styles.chartTitle}>현재 현금흐름도</h3>
+            <h3 className={styles.chartTitle}>현금흐름도</h3>
             <p className={styles.chartSubtitle}>돈이 어디서 오고 어디로 가는지 한눈에 확인하세요</p>
           </div>
+          {/* 연도 선택 슬라이더 */}
+          <div className={styles.yearSliderWrapper}>
+            <div className={styles.yearDisplay}>
+              <span className={styles.yearValue}>{sankeyYear}년</span>
+              <span className={styles.ageValue}>({sankeyAge}세)</span>
+            </div>
+            <div className={styles.sliderContainer}>
+              <span className={styles.sliderLabel}>{currentYear}</span>
+              <div className={styles.sliderTrack}>
+                <div
+                  className={styles.sliderProgress}
+                  style={{ width: `${sliderProgress}%` }}
+                />
+                <input
+                  type="range"
+                  min={currentYear}
+                  max={simulationEndYear}
+                  value={sankeyYear}
+                  onChange={(e) => setSankeyYear(parseInt(e.target.value))}
+                  className={styles.sliderInput}
+                />
+              </div>
+              <span className={styles.sliderLabel}>{simulationEndYear}</span>
+            </div>
+          </div>
         </div>
-        <SankeyChart data={data} />
+        <SankeyChart
+          simulationResult={simulationResult}
+          selectedYear={sankeyYear}
+        />
       </div>
 
-      {/* 하단 카드 그리드 */}
-      <div className={styles.bottomGrid}>
-        {/* 저축률 + 소득 구성 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {/* 저축률 */}
-          <div className={`${styles.card} ${styles.savingsRateCard}`}>
-            <div className={styles.savingsRateHeader}>
-              <span className={styles.savingsRateTitle}>저축률</span>
-              <span className={styles.savingsRateValue}>목표 30%</span>
+      {/* 현금 흐름 분배 설정 */}
+      <div className={styles.chartSection}>
+        <div className={styles.chartHeader}>
+          <div>
+            <h3 className={styles.chartTitle}>현금 흐름 분배</h3>
+            <p className={styles.chartSubtitle}>잉여금을 어떤 순서로 어디에 분배할지 설정하세요</p>
+          </div>
+          <div className={styles.surplusDisplay}>
+            <span className={styles.surplusLabel}>월 잉여금</span>
+            <span className={`${styles.surplusValue} ${monthlySurplus < 0 ? styles.negative : ''}`}>
+              {formatMoney(monthlySurplus)}
+            </span>
+          </div>
+        </div>
+
+        <div className={styles.distributionContent}>
+          {/* 분배 규칙 리스트 */}
+          <div className={styles.rulesContainer}>
+            <div className={styles.rulesHeader}>
+              <span className={styles.rulesHeaderItem}>순위</span>
+              <span className={styles.rulesHeaderItem}>계좌</span>
+              <span className={styles.rulesHeaderItem}>목표 금액</span>
+              <span className={styles.rulesHeaderItem}>실제 분배</span>
+              <span className={styles.rulesHeaderItem}>상태</span>
             </div>
-            <div className={styles.savingsRateProgress}>
-              <div className={styles.savingsRateFill} style={{ width: `${Math.min(savingsRate, 100)}%` }} />
-            </div>
-            <div className={styles.savingsRateStats}>
-              <span className={styles.savingsRatePercent}>{savingsRate}%</span>
-              <span className={styles.savingsRateHint}>
-                {savingsRate >= 30 ? '목표 달성!' : `${30 - savingsRate}% 더 저축하면 목표 달성`}
-              </span>
+
+            <div className={styles.rulesList}>
+              {sortableRules.map((rule, index) => (
+                <div
+                  key={rule.id}
+                  className={`${styles.ruleItem} ${draggedIndex === index ? styles.dragging : ''} ${!rule.isEnabled ? styles.disabled : ''}`}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className={styles.ruleHandle}>
+                    <GripVertical size={16} />
+                  </div>
+
+                  <div className={styles.rulePriority}>{index + 1}</div>
+
+                  <div className={styles.ruleInfo}>
+                    <span
+                      className={styles.ruleDot}
+                      style={{ background: ACCOUNT_TYPE_COLORS[rule.accountType] }}
+                    />
+                    <span className={styles.ruleName}>{rule.name}</span>
+                    {rule.annualLimit && (
+                      <span className={styles.ruleLimit}>연 {formatMoney(rule.annualLimit)} 한도</span>
+                    )}
+                  </div>
+
+                  <div className={styles.ruleAmount}>
+                    <input
+                      type="number"
+                      className={styles.amountInput}
+                      value={rule.monthlyAmount || ''}
+                      onChange={e => updateRule(rule.id, { monthlyAmount: parseFloat(e.target.value) || 0 })}
+                      onWheel={e => (e.target as HTMLElement).blur()}
+                      disabled={!rule.isEnabled}
+                    />
+                    <span className={styles.amountUnit}>만원/월</span>
+                  </div>
+
+                  <div className={styles.ruleAllocation}>
+                    {rule.isEnabled && allocation[rule.id] !== undefined && (
+                      <span className={allocation[rule.id] < (rule.monthlyAmount || 0) ? styles.insufficient : ''}>
+                        {formatMoney(allocation[rule.id])}
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    className={`${styles.toggleBtn} ${rule.isEnabled ? styles.active : ''}`}
+                    onClick={() => toggleRule(rule.id)}
+                  >
+                    {rule.isEnabled ? '활성' : '비활성'}
+                  </button>
+                </div>
+              ))}
+
+              {/* 나머지 (입출금통장) - 항상 고정 */}
+              {remainderRule && (
+                <div className={`${styles.ruleItem} ${styles.remainderRule}`}>
+                  <div className={styles.ruleHandle} style={{ visibility: 'hidden' }}>
+                    <GripVertical size={16} />
+                  </div>
+
+                  <div className={styles.rulePriority} style={{ background: '#8e8e93' }}>-</div>
+
+                  <div className={styles.ruleInfo}>
+                    <span
+                      className={styles.ruleDot}
+                      style={{ background: ACCOUNT_TYPE_COLORS[remainderRule.accountType] }}
+                    />
+                    <span className={styles.ruleName}>{remainderRule.name}</span>
+                    <span className={styles.ruleLimit}>나머지 전액</span>
+                  </div>
+
+                  <div className={styles.ruleAmount}>
+                    <span className={styles.remainderText}>자동</span>
+                  </div>
+
+                  <div className={styles.ruleAllocation}>
+                    <span className={allocation[remainderRule.id] < 0 ? styles.negative : ''}>
+                      {formatMoney(allocation[remainderRule.id] || 0)}
+                    </span>
+                  </div>
+
+                  <div style={{ width: 60 }} />
+                </div>
+              )}
             </div>
           </div>
 
-          {/* 소득 구성 */}
-          {monthlyIncome > 0 && (
-            <div className={styles.card}>
-              <h4 className={styles.cardTitle}>소득 구성</h4>
-              <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-                <div style={{ width: 140, height: 140 }}>
-                  <Doughnut data={doughnutData} options={doughnutOptions} />
-                </div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {incomeItems.map((item) => (
-                    <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: item.color, flexShrink: 0 }} />
-                      <span style={{ flex: 1, fontSize: 13, color: '#64748b' }}>{item.name}</span>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{formatMoney(item.value)}</span>
-                    </div>
-                  ))}
-                </div>
+          {/* 분배 결과 바 */}
+          {monthlySurplus > 0 && (
+            <div className={styles.summarySection}>
+              <div className={styles.summaryBar}>
+                {rules.filter(r => r.isEnabled && allocation[r.id] > 0).map(rule => (
+                  <div
+                    key={rule.id}
+                    className={styles.summarySegment}
+                    style={{
+                      width: `${(allocation[rule.id] / monthlySurplus) * 100}%`,
+                      background: ACCOUNT_TYPE_COLORS[rule.accountType],
+                    }}
+                    title={`${rule.name}: ${formatMoney(allocation[rule.id])}`}
+                  />
+                ))}
+              </div>
+              <div className={styles.summaryLegend}>
+                {rules.filter(r => r.isEnabled && allocation[r.id] > 0).map(rule => (
+                  <div key={rule.id} className={styles.legendItem}>
+                    <span
+                      className={styles.legendDot}
+                      style={{ background: ACCOUNT_TYPE_COLORS[rule.accountType] }}
+                    />
+                    <span className={styles.legendName}>{rule.name}</span>
+                    <span className={styles.legendValue}>{formatMoney(allocation[rule.id])}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
-        </div>
 
-        {/* 은퇴 후 현금흐름 + 연금 구성 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {/* 은퇴 후 현금흐름 갭 */}
-          <div className={`${styles.card} ${styles.gapCard} ${hasGap ? styles.hasGap : styles.noGap}`}>
-            <div className={styles.gapHeader}>
-              <span className={styles.gapTitle}>은퇴 후 현금흐름</span>
-              <span className={`${styles.gapValue} ${hasGap ? styles.negative : styles.positive}`}>
-                {hasGap ? '' : '+'}{formatMoney(cashFlowGap)}/년
-              </span>
+          {monthlySurplus <= 0 && (
+            <div className={styles.warningMessage}>
+              월 잉여금이 없습니다. 소득을 늘리거나 지출을 줄여주세요.
             </div>
-            <div className={styles.gapDetails}>
-              <div className={styles.gapRow}>
-                <span className={styles.gapLabel}>예상 수입 (연금 등)</span>
-                <span className={styles.gapAmount}>{formatMoney(postRetirementIncome)}/년</span>
-              </div>
-              <div className={styles.gapRow}>
-                <span className={styles.gapLabel}>예상 지출</span>
-                <span className={styles.gapAmount}>{formatMoney(postRetirementExpense)}/년</span>
-              </div>
-            </div>
-            {hasGap && (
-              <p className={styles.gapHint}>
-                은퇴 후 매년 {formatMoney(Math.abs(cashFlowGap))} 부족 예상
-              </p>
-            )}
-          </div>
-
-          {/* 연금 구성 */}
-          <div className={styles.card}>
-            <h4 className={styles.cardTitle}>은퇴 후 연금 구성</h4>
-            <div className={styles.pensionList}>
-              <div className={styles.pensionItem}>
-                <div className={styles.pensionHeader}>
-                  <span className={styles.pensionName}>국민연금</span>
-                  <span className={styles.pensionAmount}>{formatMoney(nationalPension)}/월</span>
-                </div>
-                <div className={styles.pensionBar}>
-                  <div
-                    className={`${styles.pensionFill} ${styles.national}`}
-                    style={{ width: totalPensionMonthly > 0 ? `${(nationalPension / totalPensionMonthly) * 100}%` : '0%' }}
-                  />
-                </div>
-              </div>
-              <div className={styles.pensionItem}>
-                <div className={styles.pensionHeader}>
-                  <span className={styles.pensionName}>퇴직연금</span>
-                  <span className={styles.pensionAmount}>{formatMoney(retirementPensionMonthly)}/월</span>
-                </div>
-                <div className={styles.pensionBar}>
-                  <div
-                    className={`${styles.pensionFill} ${styles.retirement}`}
-                    style={{ width: totalPensionMonthly > 0 ? `${(retirementPensionMonthly / totalPensionMonthly) * 100}%` : '0%' }}
-                  />
-                </div>
-              </div>
-              <div className={styles.pensionItem}>
-                <div className={styles.pensionHeader}>
-                  <span className={styles.pensionName}>개인연금</span>
-                  <span className={styles.pensionAmount}>{formatMoney(personalPensionMonthly)}/월</span>
-                </div>
-                <div className={styles.pensionBar}>
-                  <div
-                    className={`${styles.pensionFill} ${styles.personal}`}
-                    style={{ width: totalPensionMonthly > 0 ? `${(personalPensionMonthly / totalPensionMonthly) * 100}%` : '0%' }}
-                  />
-                </div>
-              </div>
-              <div className={styles.pensionTotal}>
-                <span className={styles.pensionTotalLabel}>총 연금 소득</span>
-                <span className={styles.pensionTotalValue}>{formatMoney(totalPensionMonthly)}/월</span>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

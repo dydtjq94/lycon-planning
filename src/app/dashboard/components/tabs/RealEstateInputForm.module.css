@@ -1,0 +1,571 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  width: 100%;
+  padding: 0 32px;
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 32px 0 24px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 24px;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 10px;
+  color: #6b7280;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.backButton:hover {
+  background: #e5e7eb;
+}
+
+.headerInfo {
+  flex: 1;
+}
+
+.missionLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #007aff;
+  margin: 0 0 4px 0;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+/* 메인 컨텐츠 */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 빈 상태 */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background-color: #f9fafb;
+  border-radius: 10px;
+}
+
+.emptyIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.emptyText {
+  font-size: 15px;
+  color: #374151;
+  margin: 0 0 20px 0;
+}
+
+.emptyActions {
+  display: flex;
+  gap: 10px;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background-color: #007aff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  background-color: #0066d6;
+}
+
+.noPropertyButton {
+  padding: 10px 18px;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.noPropertyButton:hover {
+  background: #e5e7eb;
+}
+
+/* 없음 선택됨 */
+.noPropertySelected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  background-color: #f9fafb;
+  border-radius: 10px;
+  gap: 12px;
+}
+
+.noPropertySelected p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.changeButton {
+  padding: 8px 14px;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.changeButton:hover {
+  background: #e5e7eb;
+}
+
+/* 부동산 항목 */
+.propertyCard {
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 20px;
+}
+
+.propertyCard:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.cardIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: #007aff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardTitle {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.removeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.removeButton:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+}
+
+/* 섹션 */
+.section {
+  margin-bottom: 16px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* 필드 */
+.field {
+  margin-bottom: 12px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+/* 입력 필드 */
+.textInput {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #f5f5f7;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.textInput:focus {
+  background: #fff;
+  border-color: #007aff;
+  outline: none;
+}
+
+.textInput::placeholder {
+  color: #9ca3af;
+}
+
+.inputWithUnit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.numberInput {
+  width: 120px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #f5f5f7;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  text-align: right;
+}
+
+.numberInput:focus {
+  background: #fff;
+  border-color: #007aff;
+  outline: none;
+}
+
+.numberInput::placeholder {
+  color: #9ca3af;
+  text-align: left;
+}
+
+.numberInput::-webkit-outer-spin-button,
+.numberInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.unit {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.formatted {
+  display: block;
+  font-size: 12px;
+  color: #007aff;
+  margin-top: 4px;
+}
+
+/* 버튼 그룹 */
+.buttonGroup {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.buttonGroupSmall {
+  display: flex;
+  gap: 4px;
+}
+
+.optionButton {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+  background-color: #f5f5f7;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.optionButton:hover {
+  background-color: #e5e7eb;
+}
+
+.optionButton.selected {
+  background-color: #007aff;
+  color: #fff;
+}
+
+.optionButtonSmall {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+  background-color: #f5f5f7;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.optionButtonSmall:hover {
+  background-color: #e5e7eb;
+}
+
+.optionButtonSmall.selected {
+  background-color: #007aff;
+  color: #fff;
+}
+
+/* 토글 */
+.toggle {
+  display: flex;
+}
+
+.toggleButton {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  background-color: #f5f5f7;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.toggleButton.active {
+  background-color: #007aff;
+  color: white;
+}
+
+/* 대출 필드 */
+.loanFields {
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 필드 행 */
+.fieldRow {
+  display: flex;
+  gap: 12px;
+}
+
+.fieldHalf {
+  flex: 1;
+}
+
+/* 날짜 입력 */
+.dateInputs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.yearInput {
+  width: 64px;
+  padding: 8px 6px;
+  font-size: 13px;
+  background: #f5f5f7;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.yearInput:focus {
+  background: #fff;
+  border-color: #007aff;
+  outline: none;
+}
+
+.monthInput {
+  width: 44px;
+  padding: 8px 6px;
+  font-size: 13px;
+  background: #f5f5f7;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.monthInput:focus {
+  background: #fff;
+  border-color: #007aff;
+  outline: none;
+}
+
+.yearInput::-webkit-outer-spin-button,
+.yearInput::-webkit-inner-spin-button,
+.monthInput::-webkit-outer-spin-button,
+.monthInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.dateSeparator {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* 추가 버튼 */
+.addMoreButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  background-color: transparent;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.addMoreButton:hover {
+  border-color: #007aff;
+  color: #007aff;
+}
+
+/* 푸터 */
+.footer {
+  margin-top: auto;
+  padding: 24px 0;
+  display: flex;
+  gap: 12px;
+}
+
+.buttonRow {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.submitButton {
+  flex: 1;
+  padding: 14px 24px;
+  background-color: #007aff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submitButton:hover {
+  background-color: #0066d6;
+}
+
+.submitButton:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.skipButton {
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.skipButton:hover {
+  background: #e5e7eb;
+}
+
+/* 반응형 */
+@media (max-width: 640px) {
+  .container {
+    padding: 0 16px;
+  }
+
+  .header {
+    padding: 24px 0 20px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .fieldRow {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .numberInput {
+    width: 100px;
+  }
+
+  .buttonRow {
+    flex-direction: column;
+  }
+}

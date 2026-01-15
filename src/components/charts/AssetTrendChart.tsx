@@ -35,6 +35,13 @@ export function AssetTrendChart({ data, retirementAge, currentAge }: AssetTrendC
         display: false,
       },
       tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#1d1d1f',
+        bodyColor: '#1d1d1f',
+        borderColor: 'rgba(0, 0, 0, 0.1)',
+        borderWidth: 1,
+        padding: 12,
+        boxPadding: 6,
         callbacks: {
           label: (context: { parsed: { y: number } }) => {
             const value = context.parsed.y

@@ -1,0 +1,1 @@
+export { SimpleOnboarding } from "./SimpleOnboarding";

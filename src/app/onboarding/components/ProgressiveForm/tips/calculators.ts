@@ -71,15 +71,19 @@ export function calculateSavingsRate(data: OnboardingData): number {
 export function calculateTotalFinancialAssets(data: OnboardingData): number {
   let total = 0
 
-  // 현금성 자산
-  total += data.cashCheckingAccount || 0
-  total += data.cashSavingsAccount || 0
+  // 저축 계좌
+  if (data.savingsAccounts) {
+    data.savingsAccounts.forEach(account => {
+      total += account.balance || 0
+    })
+  }
 
-  // 투자자산
-  total += data.investDomesticStock || 0
-  total += data.investForeignStock || 0
-  total += data.investFund || 0
-  total += data.investOther || 0
+  // 투자 계좌
+  if (data.investmentAccounts) {
+    data.investmentAccounts.forEach(account => {
+      total += account.balance || 0
+    })
+  }
 
   return total
 }
@@ -639,8 +643,15 @@ export function analyzeIncomeStability(data: OnboardingData): {
     recommendedMonths = 6
   }
 
-  // 현재 비상금 개월 수
-  const cash = (data.cashCheckingAccount || 0) + (data.cashSavingsAccount || 0)
+  // 현재 비상금 개월 수 (저축 계좌 중 checking, savings 타입 합산)
+  let cash = 0
+  if (data.savingsAccounts) {
+    data.savingsAccounts.forEach(account => {
+      if (account.type === 'checking' || account.type === 'savings') {
+        cash += account.balance || 0
+      }
+    })
+  }
   const monthlyExpense = calculateMonthlyExpense(data)
   const currentEmergencyMonths = monthlyExpense > 0
     ? Math.round(cash / monthlyExpense)

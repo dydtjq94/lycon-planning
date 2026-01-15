@@ -1,10 +1,4 @@
-export { financialService, simulationService, financialItemService } from './financialService'
-export {
-  migrateOnboardingToFinancialItems,
-  extractProfileInfo,
-  getMonthlyAmount,
-  isItemActiveAt,
-} from './dataMigration'
+export { simulationService } from './simulationService'
 export {
   DEFAULT_RATES,
   createDefaultFinancialItems,
@@ -16,15 +10,17 @@ export {
   calculateInflatedAmount,
   calculatePostRetirementExpense,
 } from './defaultItems'
-export { linkedItemService } from './linkedItemService'
 export {
   runSimulation,
+  runSimulationFromItems,
   calculateCurrentState,
   calculateRetirementGoalProgress,
   calculateMilestones,
   type YearlySnapshot,
   type SimulationResult,
+  type SimulationProfile,
   type CurrentFinancialState,
   type GoalProgress,
   type Milestone,
 } from './simulationEngine'
+export { loadFinancialItemsFromDB } from './dbToFinancialItems'

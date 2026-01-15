@@ -9,71 +9,71 @@ import {
   Legend,
 } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
-import type { OnboardingData, PhysicalAsset, PhysicalAssetType, AssetFinancingType, AssetLoanRepaymentType, DebtInput } from '@/types'
+import type { PhysicalAsset, FinancingType, LoanRepaymentType } from '@/types/tables'
 import { formatMoney } from '@/lib/utils'
+import { usePhysicalAssets, useInvalidateByCategory } from '@/hooks/useFinancialData'
+import {
+  createPhysicalAsset,
+  updatePhysicalAsset,
+  deletePhysicalAsset,
+  dbTypeToUIType,
+  uiTypeToDBType,
+  UIAssetType,
+  ASSET_TYPE_LABELS,
+  FINANCING_TYPE_LABELS,
+  REPAYMENT_TYPE_LABELS,
+} from '@/lib/services/physicalAssetService'
 import styles from './AssetTab.module.css'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
 interface AssetTabProps {
-  data: OnboardingData
-  onUpdateData: (updates: Partial<OnboardingData>) => void
-}
-
-// 타입별 라벨
-const ASSET_TYPE_LABELS: Record<PhysicalAssetType, string> = {
-  car: '자동차',
-  precious_metal: '귀금속/금',
-  custom: '기타 자산',
+  simulationId: string
 }
 
 // 색상
-const COLORS: Record<PhysicalAssetType, string> = {
+const COLORS: Record<UIAssetType, string> = {
   car: '#5856d6',
   precious_metal: '#ffcc00',
   custom: '#8e8e93',
 }
 
-// 금융 타입 라벨
-const FINANCING_TYPE_LABELS: Record<AssetFinancingType, string> = {
-  none: '없음',
-  loan: '대출 있음',
-  installment: '할부 있음',
-}
-
-// 상환방식 라벨
-const REPAYMENT_TYPE_LABELS: Record<string, string> = {
-  '만기일시상환': '만기일시',
-  '원리금균등상환': '원리금균등',
-  '원금균등상환': '원금균등',
-}
-
-export function AssetTab({ data, onUpdateData }: AssetTabProps) {
+export function AssetTab({ simulationId }: AssetTabProps) {
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth() + 1
 
-  // 편집 상태
-  const [editingAsset, setEditingAsset] = useState<{ type: PhysicalAssetType, id: string | null } | null>(null)
-  const [editValues, setEditValues] = useState<Record<string, string>>({})
+  // React Query로 데이터 로드 (캐시에서 즉시 가져옴)
+  const { data: dbAssets = [], isLoading } = usePhysicalAssets(simulationId)
+  const invalidate = useInvalidateByCategory(simulationId)
 
-  // 데이터 가져오기
-  const physicalAssets = data.physicalAssets || []
+  // 편집 상태
+  const [editingAsset, setEditingAsset] = useState<{ type: UIAssetType, id: string | null } | null>(null)
+  const [editValues, setEditValues] = useState<Record<string, string>>({})
+  const [isSaving, setIsSaving] = useState(false)
 
   // 타입별 필터링
-  const carAssets = physicalAssets.filter(a => a.type === 'car')
-  const preciousMetalAssets = physicalAssets.filter(a => a.type === 'precious_metal')
-  const customAssets = physicalAssets.filter(a => a.type === 'custom')
+  const carAssets = useMemo(
+    () => dbAssets.filter(a => dbTypeToUIType(a.type) === 'car'),
+    [dbAssets]
+  )
+  const preciousMetalAssets = useMemo(
+    () => dbAssets.filter(a => dbTypeToUIType(a.type) === 'precious_metal'),
+    [dbAssets]
+  )
+  const customAssets = useMemo(
+    () => dbAssets.filter(a => dbTypeToUIType(a.type) === 'custom'),
+    [dbAssets]
+  )
 
-  // 합계 계산 (매입가 기준)
-  const carTotal = carAssets.reduce((sum, a) => sum + a.purchaseValue, 0)
-  const preciousMetalTotal = preciousMetalAssets.reduce((sum, a) => sum + a.purchaseValue, 0)
-  const customTotal = customAssets.reduce((sum, a) => sum + a.purchaseValue, 0)
+  // 합계 계산 (현재 가치 기준)
+  const carTotal = carAssets.reduce((sum, a) => sum + a.current_value, 0)
+  const preciousMetalTotal = preciousMetalAssets.reduce((sum, a) => sum + a.current_value, 0)
+  const customTotal = customAssets.reduce((sum, a) => sum + a.current_value, 0)
   const totalAssets = carTotal + preciousMetalTotal + customTotal
 
   // 대출/할부 합계
-  const totalLoans = physicalAssets.reduce((sum, a) => {
-    const hasFinancing = a.financingType === 'loan' || a.financingType === 'installment'
-    return sum + (hasFinancing ? (a.loanAmount || 0) : 0)
+  const totalLoans = dbAssets.reduce((sum, a) => {
+    return sum + (a.has_loan ? (a.loan_amount || 0) : 0)
   }, 0)
 
   // 순자산 (자산 - 대출/할부)
@@ -84,21 +84,22 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
     if (carAssets.length === 0) return { currentValue: 0, depreciation: 0 }
 
     let totalCurrentValue = 0
+    let totalPurchaseValue = 0
     let totalDepreciation = 0
 
     carAssets.forEach(car => {
-      const purchaseYear = car.purchaseYear || currentYear
+      const purchaseYear = car.purchase_year || currentYear
+      const purchaseValue = car.purchase_price || car.current_value
       const yearsOwned = currentYear - purchaseYear
       // 감가율: 첫해 20%, 이후 연 15%
-      let depreciationRate = 0.2 // 첫해
+      let depreciationRate = 0
       if (yearsOwned > 0) {
         depreciationRate = 1 - (0.8 * Math.pow(0.85, yearsOwned))
-      } else {
-        depreciationRate = 0
       }
-      const currentValue = car.purchaseValue * (1 - depreciationRate)
+      const currentValue = purchaseValue * (1 - depreciationRate)
       totalCurrentValue += currentValue
-      totalDepreciation += car.purchaseValue - currentValue
+      totalPurchaseValue += purchaseValue
+      totalDepreciation += purchaseValue - currentValue
     })
 
     return {
@@ -109,11 +110,10 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
 
   // 자산 유동성 분류
   const liquidityBreakdown = useMemo(() => {
-    // 귀금속: 고유동성, 자동차: 중유동성, 기타: 저유동성
     return {
-      high: preciousMetalTotal, // 귀금속 - 쉽게 현금화 가능
-      medium: carTotal, // 자동차 - 중고차 시장
-      low: customTotal, // 기타 - 현금화 어려움
+      high: preciousMetalTotal,
+      medium: carTotal,
+      low: customTotal,
     }
   }, [preciousMetalTotal, carTotal, customTotal])
 
@@ -124,18 +124,18 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
 
   // 가장 가치 있는 자산
   const mostValuableAsset = useMemo(() => {
-    if (physicalAssets.length === 0) return null
-    return physicalAssets.reduce((max, a) =>
-      a.purchaseValue > max.purchaseValue ? a : max
+    if (dbAssets.length === 0) return null
+    return dbAssets.reduce((max, a) =>
+      a.current_value > max.current_value ? a : max
     )
-  }, [physicalAssets])
+  }, [dbAssets])
 
   // 편집 시작
-  const startAddAsset = (type: PhysicalAssetType) => {
+  const startAddAsset = (type: UIAssetType) => {
     setEditingAsset({ type, id: null })
     setEditValues({
-      name: '',
-      purchaseValue: '',
+      title: '',
+      currentValue: '',
       purchaseYear: currentYear.toString(),
       purchaseMonth: currentMonth.toString(),
       financingType: 'none',
@@ -148,28 +148,20 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
   }
 
   const startEditAsset = (asset: PhysicalAsset) => {
-    setEditingAsset({ type: asset.type, id: asset.id })
-
-    // 만기를 년/월로 분리
-    let maturityYear = ''
-    let maturityMonth = ''
-    if (asset.loanMaturity) {
-      const [y, m] = asset.loanMaturity.split('-')
-      maturityYear = y || ''
-      maturityMonth = m || ''
-    }
+    const uiType = dbTypeToUIType(asset.type)
+    setEditingAsset({ type: uiType, id: asset.id })
 
     setEditValues({
-      name: asset.name,
-      purchaseValue: asset.purchaseValue.toString(),
-      purchaseYear: asset.purchaseYear?.toString() || currentYear.toString(),
-      purchaseMonth: asset.purchaseMonth?.toString() || currentMonth.toString(),
-      financingType: asset.financingType || 'none',
-      loanAmount: asset.loanAmount?.toString() || '',
-      loanRate: asset.loanRate?.toString() || '',
-      loanMaturityYear: maturityYear,
-      loanMaturityMonth: maturityMonth,
-      loanRepaymentType: asset.loanRepaymentType || '',
+      title: asset.title,
+      currentValue: asset.current_value.toString(),
+      purchaseYear: asset.purchase_year?.toString() || currentYear.toString(),
+      purchaseMonth: asset.purchase_month?.toString() || currentMonth.toString(),
+      financingType: asset.has_loan ? (asset.financing_type || 'loan') : 'none',
+      loanAmount: asset.loan_amount?.toString() || '',
+      loanRate: asset.loan_rate?.toString() || '',
+      loanMaturityYear: asset.loan_maturity_year?.toString() || '',
+      loanMaturityMonth: asset.loan_maturity_month?.toString() || '',
+      loanRepaymentType: asset.loan_repayment_type || '',
     })
   }
 
@@ -179,93 +171,68 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
   }
 
   // 저장
-  const saveAsset = () => {
-    if (!editingAsset || !editValues.name || !editValues.purchaseValue) return
+  const saveAsset = async () => {
+    if (!editingAsset || !editValues.title || !editValues.currentValue) return
+    setIsSaving(true)
 
-    const financingType = (editValues.financingType || 'none') as AssetFinancingType
-    const hasFinancing = financingType !== 'none'
+    try {
+      const financingType = editValues.financingType as FinancingType | 'none'
+      const hasFinancing = financingType !== 'none'
 
-    // 만기 조합
-    let loanMaturity: string | undefined
-    if (hasFinancing && editValues.loanMaturityYear && editValues.loanMaturityMonth) {
-      loanMaturity = `${editValues.loanMaturityYear}-${editValues.loanMaturityMonth.padStart(2, '0')}`
-    }
+      // 할부는 항상 원리금균등상환
+      const repaymentType: LoanRepaymentType | null = financingType === 'installment'
+        ? '원리금균등상환'
+        : (editValues.loanRepaymentType as LoanRepaymentType || null)
 
-    const assetId = editingAsset.id || `asset-${Date.now()}`
-
-    // 할부는 항상 원리금균등상환
-    const repaymentType: AssetLoanRepaymentType = financingType === 'installment'
-      ? '원리금균등상환'
-      : (editValues.loanRepaymentType as AssetLoanRepaymentType || null)
-
-    const newAsset: PhysicalAsset = {
-      id: assetId,
-      type: editingAsset.type,
-      name: editValues.name,
-      purchaseValue: parseFloat(editValues.purchaseValue) || 0,
-      purchaseYear: editValues.purchaseYear ? parseInt(editValues.purchaseYear) : undefined,
-      purchaseMonth: editValues.purchaseMonth ? parseInt(editValues.purchaseMonth) : undefined,
-      // 대출/할부 정보
-      financingType: financingType,
-      loanAmount: hasFinancing ? (parseFloat(editValues.loanAmount) || undefined) : undefined,
-      loanRate: hasFinancing ? (parseFloat(editValues.loanRate) || undefined) : undefined,
-      loanMaturity: hasFinancing ? loanMaturity : undefined,
-      loanRepaymentType: hasFinancing ? repaymentType : undefined,
-    }
-
-    let updatedAssets: PhysicalAsset[]
-    if (editingAsset.id) {
-      updatedAssets = physicalAssets.map(a => a.id === editingAsset.id ? newAsset : a)
-    } else {
-      updatedAssets = [...physicalAssets, newAsset]
-    }
-
-    // 부채 배열 업데이트 (대출/할부가 있는 경우)
-    let updatedDebts = [...(data.debts || [])]
-    const debtId = `debt-asset-${assetId}`
-
-    // 기존 연동 부채 제거
-    updatedDebts = updatedDebts.filter(d => d.sourceId !== assetId)
-
-    // 대출/할부가 있으면 새 부채 추가
-    if (hasFinancing && newAsset.loanAmount) {
-      const debtName = financingType === 'loan'
-        ? `${editValues.name} 대출`
-        : `${editValues.name} 할부`
-
-      const newDebt: DebtInput = {
-        id: debtId,
-        name: debtName,
-        amount: newAsset.loanAmount,
-        rate: newAsset.loanRate || null,
-        maturity: newAsset.loanMaturity || null,
-        repaymentType: newAsset.loanRepaymentType || null,
-        sourceType: 'physicalAsset',
-        sourceId: assetId,
+      const input = {
+        simulation_id: simulationId,
+        type: uiTypeToDBType(editingAsset.type),
+        title: editValues.title,
+        current_value: parseFloat(editValues.currentValue) || 0,
+        purchase_price: parseFloat(editValues.currentValue) || 0, // 현재는 현재가치 = 매입가
+        purchase_year: editValues.purchaseYear ? parseInt(editValues.purchaseYear) : null,
+        purchase_month: editValues.purchaseMonth ? parseInt(editValues.purchaseMonth) : null,
+        has_loan: hasFinancing,
+        financing_type: hasFinancing ? financingType as FinancingType : null,
+        loan_amount: hasFinancing && editValues.loanAmount ? parseFloat(editValues.loanAmount) : null,
+        loan_rate: hasFinancing && editValues.loanRate ? parseFloat(editValues.loanRate) : null,
+        loan_maturity_year: hasFinancing && editValues.loanMaturityYear ? parseInt(editValues.loanMaturityYear) : null,
+        loan_maturity_month: hasFinancing && editValues.loanMaturityMonth ? parseInt(editValues.loanMaturityMonth) : null,
+        loan_repayment_type: hasFinancing ? repaymentType : null,
       }
-      updatedDebts.push(newDebt)
-    }
 
-    onUpdateData({
-      physicalAssets: updatedAssets,
-      debts: updatedDebts,
-    })
-    cancelEdit()
+      if (editingAsset.id) {
+        await updatePhysicalAsset(editingAsset.id, input)
+      } else {
+        await createPhysicalAsset(input)
+      }
+
+      invalidate('physicalAssets')
+      cancelEdit()
+    } catch (error) {
+      console.error('Failed to save asset:', error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // 삭제
-  const deleteAsset = (id: string) => {
-    const updatedAssets = physicalAssets.filter(a => a.id !== id)
-    // 연동된 부채도 삭제
-    const updatedDebts = (data.debts || []).filter(d => d.sourceId !== id)
-    onUpdateData({
-      physicalAssets: updatedAssets,
-      debts: updatedDebts,
-    })
+  const handleDelete = async (id: string) => {
+    if (!confirm('이 자산을 삭제하시겠습니까?')) return
+    setIsSaving(true)
+
+    try {
+      await deletePhysicalAsset(id)
+      invalidate('physicalAssets')
+    } catch (error) {
+      console.error('Failed to delete asset:', error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // 편집 폼 렌더링
-  const renderEditForm = (type: PhysicalAssetType) => {
+  const renderEditForm = (type: UIAssetType) => {
     const isCarType = type === 'car'
     const namePlaceholder = type === 'car'
       ? '예: BMW 5시리즈, 테슬라 모델3'
@@ -273,7 +240,7 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
         ? '예: 금 50g, 금반지'
         : '예: 미술품, 수집품'
 
-    const financingType = (editValues.financingType || 'none') as AssetFinancingType
+    const financingType = (editValues.financingType || 'none') as FinancingType | 'none'
     const hasFinancing = financingType !== 'none'
     const amountLabel = financingType === 'loan' ? '대출금액' : '할부금액'
     const rateLabel = financingType === 'loan' ? '대출금리' : '할부금리'
@@ -286,8 +253,8 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
             <input
               type="text"
               className={styles.editInputWide}
-              value={editValues.name || ''}
-              onChange={e => setEditValues({ ...editValues, name: e.target.value })}
+              value={editValues.title || ''}
+              onChange={e => setEditValues({ ...editValues, title: e.target.value })}
               placeholder={namePlaceholder}
               autoFocus
             />
@@ -299,8 +266,8 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
             <input
               type="number"
               className={styles.editInput}
-              value={editValues.purchaseValue || ''}
-              onChange={e => setEditValues({ ...editValues, purchaseValue: e.target.value })}
+              value={editValues.currentValue || ''}
+              onChange={e => setEditValues({ ...editValues, currentValue: e.target.value })}
               onWheel={e => (e.target as HTMLElement).blur()}
               placeholder="0"
             />
@@ -436,8 +403,10 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
         )}
 
         <div className={styles.editActions}>
-          <button className={styles.cancelBtn} onClick={cancelEdit}>취소</button>
-          <button className={styles.saveBtn} onClick={saveAsset}>저장</button>
+          <button className={styles.cancelBtn} onClick={cancelEdit} disabled={isSaving}>취소</button>
+          <button className={styles.saveBtn} onClick={saveAsset} disabled={isSaving}>
+            {isSaving ? '저장 중...' : '저장'}
+          </button>
         </div>
       </div>
     )
@@ -445,30 +414,31 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
 
   // 자산 아이템 렌더링
   const renderAssetItem = (asset: PhysicalAsset) => {
-    const hasFinancing = asset.financingType === 'loan' || asset.financingType === 'installment'
-    const financingLabel = asset.financingType === 'loan' ? '대출' : '할부'
+    const hasFinancing = asset.has_loan
+    const financingLabel = asset.financing_type === 'loan' ? '대출' : '할부'
+    const uiType = dbTypeToUIType(asset.type)
 
     // 취득일 표시
-    const purchaseDate = asset.purchaseYear
-      ? `${asset.purchaseYear}년${asset.purchaseMonth ? ` ${asset.purchaseMonth}월` : ''}`
+    const purchaseDate = asset.purchase_year
+      ? `${asset.purchase_year}년${asset.purchase_month ? ` ${asset.purchase_month}월` : ''}`
       : null
 
     return (
       <div key={asset.id} className={styles.assetItem}>
         <div className={styles.itemMain}>
-          <span className={styles.itemLabel}>{ASSET_TYPE_LABELS[asset.type]}</span>
-          <span className={styles.itemAmount}>{formatMoney(asset.purchaseValue)}</span>
-          <span className={styles.itemName}>{asset.name}</span>
+          <span className={styles.itemLabel}>{ASSET_TYPE_LABELS[uiType]}</span>
+          <span className={styles.itemAmount}>{formatMoney(asset.current_value)}</span>
+          <span className={styles.itemName}>{asset.title}</span>
           {purchaseDate && (
             <span className={styles.itemMeta}>
               {purchaseDate} 취득
             </span>
           )}
-          {hasFinancing && asset.loanAmount && (
+          {hasFinancing && asset.loan_amount && (
             <span className={styles.itemLoan}>
-              {financingLabel} {formatMoney(asset.loanAmount)}
-              {asset.loanRate && ` | ${asset.loanRate}%`}
-              {asset.loanMaturity && ` | ${asset.loanMaturity} 만기`}
+              {financingLabel} {formatMoney(asset.loan_amount)}
+              {asset.loan_rate && ` | ${asset.loan_rate}%`}
+              {asset.loan_maturity_year && ` | ${asset.loan_maturity_year}.${String(asset.loan_maturity_month || 1).padStart(2, '0')} 만기`}
             </span>
           )}
         </div>
@@ -481,7 +451,8 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
           </button>
           <button
             className={styles.deleteBtn}
-            onClick={() => deleteAsset(asset.id)}
+            onClick={() => handleDelete(asset.id)}
+            disabled={isSaving}
           >
             <Trash2 size={16} />
           </button>
@@ -496,14 +467,15 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
     const values: number[] = []
     const colors: string[] = []
 
-    physicalAssets.forEach(asset => {
-      labels.push(asset.name)
-      values.push(asset.purchaseValue)
-      colors.push(COLORS[asset.type])
+    dbAssets.forEach(asset => {
+      const uiType = dbTypeToUIType(asset.type)
+      labels.push(asset.title)
+      values.push(asset.current_value)
+      colors.push(COLORS[uiType])
     })
 
     return { labels, values, colors }
-  }, [physicalAssets])
+  }, [dbAssets])
 
   const doughnutData = {
     labels: chartData.labels,
@@ -532,6 +504,14 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
 
   const hasData = totalAssets > 0
 
+  if (isLoading && dbAssets.length === 0) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.container}>
       {/* 왼쪽: 자산 입력 */}
@@ -541,9 +521,6 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
         <section className={styles.assetSection}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionTitle}>자동차</span>
-            {carTotal > 0 && (
-              <span className={styles.sectionTotal}>{formatMoney(carTotal)}</span>
-            )}
           </div>
           <p className={styles.sectionDesc}>
             보유 중인 자동차. 대출/할부가 있으면 부채에 자동 연동됩니다.
@@ -570,9 +547,6 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
         <section className={styles.assetSection}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionTitle}>귀금속/금</span>
-            {preciousMetalTotal > 0 && (
-              <span className={styles.sectionTotal}>{formatMoney(preciousMetalTotal)}</span>
-            )}
           </div>
           <p className={styles.sectionDesc}>
             금, 은, 다이아몬드 등 귀금속. 장기적으로 가치가 상승하는 실물 자산.
@@ -599,9 +573,6 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
         <section className={styles.assetSection}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionTitle}>기타 자산</span>
-            {customTotal > 0 && (
-              <span className={styles.sectionTotal}>{formatMoney(customTotal)}</span>
-            )}
           </div>
           <p className={styles.sectionDesc}>
             미술품, 수집품, 고가 장비 등 기타 실물 자산.
@@ -629,179 +600,9 @@ export function AssetTab({ data, onUpdateData }: AssetTabProps) {
         </p>
       </div>
 
-      {/* 오른쪽: 요약 */}
-      <div className={styles.summaryPanel}>
-        {hasData ? (
-          <>
-            {/* 순자산 요약 카드 */}
-            <div className={styles.summaryCard}>
-              <div className={styles.totalAssets}>
-                <span className={styles.totalLabel}>실물자산 순자산</span>
-                <span className={`${styles.totalValue} ${netAssets >= 0 ? '' : styles.negative}`}>
-                  {formatMoney(netAssets)}
-                </span>
-              </div>
-
-              <div className={styles.assetBreakdown}>
-                <div className={styles.breakdownRow}>
-                  <span className={styles.breakdownLabel}>총 자산 (매입가)</span>
-                  <span className={styles.breakdownValue}>{formatMoney(totalAssets)}</span>
-                </div>
-                {totalLoans > 0 && (
-                  <div className={styles.breakdownRow}>
-                    <span className={styles.breakdownLabel}>대출/할부</span>
-                    <span className={styles.breakdownValueNegative}>-{formatMoney(totalLoans)}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 핵심 지표 */}
-            <div className={styles.metricsCard}>
-              <h4 className={styles.cardTitle}>핵심 지표</h4>
-              <div className={styles.metricsList}>
-                {/* 자동차 감가상각 */}
-                {carAssets.length > 0 && carDepreciation.depreciation > 0 && (
-                  <div className={styles.metricItem}>
-                    <div className={styles.metricHeader}>
-                      <span className={styles.metricLabel}>자동차 추정 시세</span>
-                      <span className={styles.metricValue}>{formatMoney(carDepreciation.currentValue)}</span>
-                    </div>
-                    <span className={styles.metricHint}>
-                      매입가 대비 -{formatMoney(carDepreciation.depreciation)} 감가
-                    </span>
-                  </div>
-                )}
-
-                {/* 대출 비율 */}
-                {totalLoans > 0 && (
-                  <div className={styles.metricItem}>
-                    <div className={styles.metricHeader}>
-                      <span className={styles.metricLabel}>대출/할부 비율</span>
-                      <span className={`${styles.metricValue} ${loanToAssetRatio > 50 ? styles.caution : ''}`}>
-                        {loanToAssetRatio}%
-                      </span>
-                    </div>
-                    <div className={styles.metricBar}>
-                      <div
-                        className={`${styles.metricFill} ${loanToAssetRatio > 50 ? styles.caution : ''}`}
-                        style={{ width: `${Math.min(loanToAssetRatio, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* 가장 가치 있는 자산 */}
-                {mostValuableAsset && (
-                  <div className={styles.metricItem}>
-                    <div className={styles.metricHeader}>
-                      <span className={styles.metricLabel}>최고가 자산</span>
-                      <span className={styles.metricValue}>{formatMoney(mostValuableAsset.purchaseValue)}</span>
-                    </div>
-                    <span className={styles.metricHint}>{mostValuableAsset.name}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 자산 유동성 */}
-            {totalAssets > 0 && (
-              <div className={styles.liquidityCard}>
-                <h4 className={styles.cardTitle}>자산 유동성</h4>
-                <div className={styles.liquidityList}>
-                  {liquidityBreakdown.high > 0 && (
-                    <div className={styles.liquidityRow}>
-                      <div className={styles.liquidityInfo}>
-                        <span className={`${styles.liquidityDot} ${styles.high}`}></span>
-                        <span className={styles.liquidityLabel}>고유동성</span>
-                      </div>
-                      <span className={styles.liquidityValue}>{formatMoney(liquidityBreakdown.high)}</span>
-                      <span className={styles.liquidityHint}>귀금속 - 쉽게 현금화 가능</span>
-                    </div>
-                  )}
-                  {liquidityBreakdown.medium > 0 && (
-                    <div className={styles.liquidityRow}>
-                      <div className={styles.liquidityInfo}>
-                        <span className={`${styles.liquidityDot} ${styles.medium}`}></span>
-                        <span className={styles.liquidityLabel}>중유동성</span>
-                      </div>
-                      <span className={styles.liquidityValue}>{formatMoney(liquidityBreakdown.medium)}</span>
-                      <span className={styles.liquidityHint}>자동차 - 중고차 시장 매각</span>
-                    </div>
-                  )}
-                  {liquidityBreakdown.low > 0 && (
-                    <div className={styles.liquidityRow}>
-                      <div className={styles.liquidityInfo}>
-                        <span className={`${styles.liquidityDot} ${styles.low}`}></span>
-                        <span className={styles.liquidityLabel}>저유동성</span>
-                      </div>
-                      <span className={styles.liquidityValue}>{formatMoney(liquidityBreakdown.low)}</span>
-                      <span className={styles.liquidityHint}>기타 - 매각에 시간 소요</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* 자산 구성 차트 */}
-            {chartData.values.length > 1 && (
-              <div className={styles.chartCard}>
-                <h4 className={styles.cardTitle}>자산 포트폴리오</h4>
-                <div className={styles.chartWrapper}>
-                  <Doughnut data={doughnutData} options={doughnutOptions} />
-                </div>
-                <div className={styles.legendList}>
-                  {chartData.labels.map((label, index) => (
-                    <div key={label} className={styles.legendItem}>
-                      <span className={styles.legendDot} style={{ background: chartData.colors[index] }}></span>
-                      <span className={styles.legendLabel}>{label}</span>
-                      <span className={styles.legendValue}>
-                        {Math.round((chartData.values[index] / totalAssets) * 100)}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 인사이트 카드 */}
-            <div className={styles.insightCard}>
-              <h4 className={styles.cardTitle}>자산 인사이트</h4>
-              <ul className={styles.insightList}>
-                {carAssets.length > 0 && carDepreciation.depreciation > 0 && (
-                  <li className={styles.insightWarning}>
-                    자동차 감가상각으로 약 {formatMoney(carDepreciation.depreciation)} 가치 하락
-                  </li>
-                )}
-                {preciousMetalTotal > 0 && (
-                  <li className={styles.insightPositive}>
-                    귀금속({formatMoney(preciousMetalTotal)})은 인플레이션 헤지 자산입니다
-                  </li>
-                )}
-                {loanToAssetRatio > 50 && (
-                  <li className={styles.insightWarning}>
-                    자산 대비 대출 비율({loanToAssetRatio}%)이 높습니다
-                  </li>
-                )}
-                {carAssets.length > 0 && totalLoans === 0 && (
-                  <li className={styles.insightPositive}>
-                    자동차 대출 없이 완납 상태입니다
-                  </li>
-                )}
-                {physicalAssets.length === 1 && (
-                  <li className={styles.insightNeutral}>
-                    자산 분산을 위해 다른 유형의 자산도 고려해 보세요
-                  </li>
-                )}
-              </ul>
-            </div>
-          </>
-        ) : (
-          <div className={styles.emptyState}>
-            <Package size={40} />
-            <p>실물 자산을 추가하면<br />분석 결과가 표시됩니다</p>
-          </div>
-        )}
+      {/* 오른쪽: 인사이트 */}
+      <div className={styles.insightPanel}>
+        {/* TODO: 인사이트 내용 추가 예정 */}
       </div>
     </div>
   )

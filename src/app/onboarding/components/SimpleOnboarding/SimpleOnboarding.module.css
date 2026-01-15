@@ -1,0 +1,1832 @@
+/* ============================================
+   Simple Onboarding - 5단계 플로우
+   ============================================ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  height: 100dvh;
+  background: #f5f5f7;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 숨겨진 회원탈퇴 버튼 (테스트용) */
+.hiddenDeleteButton {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 60px;
+  height: 60px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 9999;
+}
+
+.container.initialLoad {
+  opacity: 0;
+}
+
+.container.loaded {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 헤더 */
+.header {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0 12px;
+  background: #FFFFFF;
+  z-index: 10;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1D1D1F;
+  letter-spacing: -0.3px;
+}
+
+/* 메인 */
+.main {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  flex: 1;
+  padding: 48px 32px 120px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: #FFFFFF;
+}
+
+/* 스텝 콘텐츠 */
+.stepContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.main.animating .stepContent {
+  opacity: 0;
+}
+
+/* 타이틀 */
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1D1D1F;
+  line-height: 1.3;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: 17px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0 0 40px 0;
+}
+
+/* 환영 화면 */
+.welcomeBadge {
+  display: inline-block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #007AFF;
+  letter-spacing: -0.3px;
+  margin-bottom: 24px;
+}
+
+/* 큰 타이틀 */
+.titleLarge {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1D1D1F;
+  line-height: 1.3;
+  margin: 0 0 20px 0;
+  letter-spacing: -0.5px;
+}
+
+.subtitleLarge {
+  font-size: 19px;
+  color: #6b7280;
+  line-height: 1.7;
+  margin: 0 0 40px 0;
+}
+
+.welcomeFeatures {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.welcomeFeature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: #374151;
+}
+
+.welcomeFeature svg {
+  color: #22c55e;
+  flex-shrink: 0;
+}
+
+/* 미션 페이지 */
+.missionDesc {
+  font-size: 19px;
+  color: #6b7280;
+  line-height: 1.7;
+  margin: 0 0 24px 0;
+}
+
+/* 사명 페이지 */
+.missionIntro {
+  font-size: 17px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0 0 32px 0;
+}
+
+.missionList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.missionItem {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.missionNumber {
+  font-size: 14px;
+  font-weight: 700;
+  color: #007AFF;
+  flex-shrink: 0;
+  width: 28px;
+}
+
+.missionText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.missionText strong {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1D1D1F;
+}
+
+.missionText span {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* 통계 페이지 */
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.statItem {
+  padding: 24px;
+  background: #f9fafb;
+  border-radius: 16px;
+}
+
+.statHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.statNumber {
+  font-size: 40px;
+  font-weight: 700;
+  color: #1D1D1F;
+}
+
+.statBadge {
+  font-size: 14px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.statVs {
+  font-size: 20px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.statTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.statSub {
+  font-size: 15px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.statSource {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.problemText {
+  font-size: 17px;
+  color: #1D1D1F;
+  line-height: 1.7;
+  text-align: center;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* 검진 시작 안내 */
+.readyDesc {
+  font-size: 19px;
+  color: #6b7280;
+  line-height: 1.7;
+  margin: 0 0 40px 0;
+}
+
+.trustList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.trustItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.trustLabel {
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.trustValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1D1D1F;
+}
+
+/* 개인정보 보호 링크 */
+.privacyLink {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #6b7280;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+}
+
+/* 모달 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.modalOverlay.closing {
+  opacity: 0;
+}
+
+.modalContent {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  max-height: 80vh;
+  overflow-y: auto;
+  transform: translateY(0);
+  transition: transform 0.3s ease;
+}
+
+.modalOverlay:not(.closing) .modalContent {
+  animation: slideUp 0.3s ease;
+}
+
+.modalContent.closing {
+  transform: translateY(100%);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1D1D1F;
+  margin: 0;
+}
+
+.modalClose {
+  font-size: 15px;
+  color: #007AFF;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.modalBody {
+  padding: 24px;
+}
+
+.privacyItem {
+  margin-bottom: 24px;
+}
+
+.privacyItem:last-child {
+  margin-bottom: 0;
+}
+
+.privacyItemTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1D1D1F;
+  margin-bottom: 8px;
+}
+
+.privacyItemDesc {
+  font-size: 15px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* 폼 그룹 */
+.formGroup {
+  margin-bottom: 28px;
+}
+
+.label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 10px;
+}
+
+/* 텍스트 입력 */
+.textInput {
+  width: 100%;
+  padding: 16px 18px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #1D1D1F;
+  background: #F5F5F7;
+  border: none;
+  border-radius: 12px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.textInput:focus {
+  background: #EBEBED;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+.textInput::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* 성별 버튼 */
+.genderButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.genderButton {
+  flex: 1;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+  background: #F5F5F7;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.genderButton:hover {
+  background: #EBEBED;
+}
+
+.genderButton.selected {
+  background: #EBF5FF;
+  border-color: #007AFF;
+  color: #007AFF;
+}
+
+/* 주민등록번호 입력 */
+.rrnInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rrnInput {
+  width: 140px;
+  padding: 16px 18px;
+  font-size: 20px;
+  font-weight: 500;
+  color: #1D1D1F;
+  background: #F5F5F7;
+  border: none;
+  border-radius: 12px;
+  outline: none;
+  transition: all 0.2s ease;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.rrnInput:focus {
+  background: #EBEBED;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+.rrnInput::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+
+.rrnDash {
+  font-size: 24px;
+  color: #9ca3af;
+  font-weight: 300;
+}
+
+.rrnBackInput {
+  width: 48px;
+  padding: 16px 0;
+  font-size: 20px;
+  font-weight: 500;
+  color: #1D1D1F;
+  background: #F5F5F7;
+  border: none;
+  border-radius: 12px;
+  outline: none;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.rrnBackInput:focus {
+  background: #EBEBED;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+.rrnBackInput::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.rrnMask {
+  font-size: 20px;
+  color: #9ca3af;
+  letter-spacing: 3px;
+}
+
+.rrnHint {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 10px 0 0 0;
+}
+
+/* 하단 버튼 영역 */
+.bottomButtonArea {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  padding: 16px 32px 32px;
+  background: linear-gradient(to top, #FFFFFF 70%, rgba(255, 255, 255, 0));
+  z-index: 10;
+}
+
+/* 기본 버튼 */
+.primaryButton {
+  width: 100%;
+  padding: 18px 24px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #FFFFFF;
+  background: #007AFF;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s ease;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: #0066D6;
+}
+
+.primaryButton:disabled {
+  background: #C7C7CC;
+  cursor: not-allowed;
+}
+
+/* 매칭 화면 */
+.matchingContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-bottom: 60px;
+}
+
+.matchingBadge {
+  font-size: 14px;
+  font-weight: 600;
+  color: #007AFF;
+  margin-bottom: 16px;
+}
+
+.matchingTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1D1D1F;
+  line-height: 1.4;
+  margin: 0 0 16px 0;
+}
+
+.matchingDesc {
+  font-size: 17px;
+  color: #6b7280;
+  margin: 0 0 32px 0;
+}
+
+/* 스켈레톤 카드 */
+.skeletonCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 28px;
+  background: #F9FAFB;
+  border-radius: 16px;
+  margin-bottom: 32px;
+  min-width: 280px;
+  transition: all 0.4s ease;
+}
+
+.skeletonCard.matched {
+  animation: cardReveal 0.5s ease;
+}
+
+.skeletonAvatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: transparent;
+  transition: all 0.3s ease;
+}
+
+.skeletonAvatar.revealed {
+  background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+  animation: none;
+  color: white;
+}
+
+.skeletonInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.skeletonLine {
+  height: 16px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  transition: all 0.3s ease;
+}
+
+.skeletonRole {
+  width: 100px;
+  height: 14px;
+}
+
+.skeletonRole.revealed {
+  background: none;
+  animation: none;
+  width: auto;
+  height: auto;
+}
+
+.skeletonRole.revealed span {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.skeletonName {
+  width: 80px;
+  height: 22px;
+}
+
+.skeletonName.revealed {
+  background: none;
+  animation: none;
+  width: auto;
+  height: auto;
+}
+
+.skeletonName.revealed span {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1D1D1F;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes cardReveal {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.progressBar {
+  width: 200px;
+  height: 4px;
+  background: #E5E7EB;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.progressFill {
+  height: 100%;
+  background: #007AFF;
+  border-radius: 2px;
+  transition: width 0.1s ease;
+}
+
+/* 매칭 완료 뱃지 */
+.matchedBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #34C759 0%, #30B350 100%);
+  border-radius: 24px;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 8px;
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* 전문가 카드 */
+.expertCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #F9FAFB;
+  border-radius: 16px;
+  opacity: 0.5;
+  transition: all 0.4s ease;
+}
+
+.expertCard.revealed {
+  opacity: 1;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  animation: fadeInUp 0.5s ease;
+}
+
+.expertAvatar {
+  width: 56px;
+  height: 56px;
+  background: #e5e7eb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 20px;
+  font-weight: 600;
+  transition: all 0.4s ease;
+}
+
+.expertCard.revealed .expertAvatar {
+  background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+  color: white;
+}
+
+.expertInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.expertName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1D1D1F;
+}
+
+.expertRole {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* 편지지 */
+.letterPaper {
+  background: #FFFEF8;
+  border-radius: 12px;
+  padding: 24px 24px 20px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  animation: fadeInUp 0.5s ease 0.2s both;
+}
+
+.letterText {
+  font-size: 15px;
+  color: #374151;
+  line-height: 1.5;
+  margin: 0;
+  padding: 8px 0 6px;
+  border-bottom: 1px solid #e8e6df;
+}
+
+.letterGap {
+  height: 12px;
+}
+
+.letterLine {
+  margin: 0;
+  height: 36px;
+  border-bottom: 1px solid #e8e6df;
+}
+
+.letterSignature {
+  font-size: 15px;
+  color: #374151;
+  line-height: 1.8;
+  margin: 0;
+  text-align: right;
+  padding-top: 8px;
+  font-style: italic;
+}
+
+/* 티켓 카드 */
+.ticketHeader {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.ticketHeaderLabel {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #007AFF;
+  margin-bottom: 8px;
+}
+
+.ticketHeaderTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1D1D1F;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.ticketWrapper {
+  position: relative;
+  margin-bottom: 32px;
+  animation: ticketDrop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes ticketDrop {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px) rotateX(20deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0);
+  }
+}
+
+.ticketCard {
+  position: relative;
+  background: linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 50%, #1a1a1a 100%);
+  border-radius: 16px;
+  overflow: visible;
+  color: white;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.ticketShine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.ticketShine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 60%,
+    transparent 100%
+  );
+  animation: glassShine 4s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+@keyframes glassShine {
+  0% {
+    left: -100%;
+  }
+  50%, 100% {
+    left: 150%;
+  }
+}
+
+.ticketTop {
+  position: relative;
+  padding: 32px 24px 28px;
+  text-align: center;
+}
+
+.ticketTop::before {
+  content: '';
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, rgba(201, 169, 98, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.ticketTop::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 60%);
+  border-radius: 16px 16px 0 0;
+  pointer-events: none;
+}
+
+.ticketLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #C9A962;
+  margin-bottom: 16px;
+}
+
+.ticketTitle {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  background: linear-gradient(180deg, #fff 0%, #d4d4d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.ticketDesc {
+  font-size: 13px;
+  line-height: 2;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  letter-spacing: 0.3px;
+}
+
+.ticketDivider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 24px;
+}
+
+.ticketNotchLeft,
+.ticketNotchRight {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: #fff;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.ticketNotchLeft {
+  left: -12px;
+}
+
+.ticketNotchRight {
+  right: -12px;
+}
+
+.ticketDashedLine {
+  flex: 1;
+  height: 1px;
+  margin: 0 20px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(201, 169, 98, 0.4) 0px,
+    rgba(201, 169, 98, 0.4) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+.ticketBottom {
+  padding: 16px 24px 20px;
+}
+
+.ticketTimeline {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.timelineItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.timelineDayToday {
+  font-size: 14px;
+  font-weight: 700;
+  color: #C9A962;
+}
+
+.timelineDay {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.timelineDayName {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: -2px;
+}
+
+.timelineText {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  margin-top: 4px;
+}
+
+.ticketGuide {
+  font-size: 15px;
+  color: #6b7280;
+  line-height: 1.6;
+  text-align: center;
+  margin: 0 0 32px 0;
+}
+
+/* 결제 섹션 */
+.checkoutSection {
+  width: 100%;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 12px;
+  margin: 24px 0 24px;
+}
+
+.benefitsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.benefitItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.benefitCheck {
+  color: #22c55e;
+  flex-shrink: 0;
+}
+
+.checkoutRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.checkoutLabel {
+  font-size: 15px;
+  color: #1a1a1a;
+}
+
+.checkoutPrice {
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.checkoutDiscount {
+  font-size: 14px;
+  color: #007aff;
+}
+
+.checkoutDiscountPrice {
+  font-size: 14px;
+  color: #007aff;
+  font-weight: 500;
+}
+
+.checkoutDivider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 16px 0;
+}
+
+.checkoutTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.checkoutTotalLabel {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.checkoutTotalPrice {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+/* 매칭 프로그레스 바 */
+.matchingProgress {
+  width: 200px;
+  height: 4px;
+  background: #E5E7EB;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.matchingProgressBar {
+  height: 100%;
+  background: #007AFF;
+  border-radius: 2px;
+  transition: width 0.1s ease;
+}
+
+/* 프로그램 소개 */
+.programHeader {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.programTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1D1D1F;
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+}
+
+.programTitleSub {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.programTarget {
+  font-size: 17px;
+  color: #1D1D1F;
+  margin: 0 0 6px 0;
+  font-weight: 600;
+}
+
+.programExpert {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* 프로그램 설명 */
+.programDesc {
+  font-size: 17px;
+  color: #374151;
+  line-height: 1.8;
+  margin: 0 0 24px 0;
+  text-align: justify;
+  text-justify: inter-character;
+}
+
+/* 소요시간/비용 메타 */
+.programMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 0;
+  padding: 16px 20px;
+  background: #f9fafb;
+  border-radius: 10px;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.metaLabel {
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.metaValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1D1D1F;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.metaOriginal {
+  font-size: 15px;
+  color: #9ca3af;
+  text-decoration: line-through;
+  font-weight: 400;
+}
+
+.metaFree {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.metaNote {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 8px 0 24px 0;
+}
+
+/* CHECK POINT */
+.checkpoint {
+  margin-bottom: 28px;
+}
+
+.checkpointTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1D1D1F;
+  margin-bottom: 12px;
+}
+
+.checkpointList {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.8;
+}
+
+.checkpointList li {
+  margin: 0;
+}
+
+/* 검진 항목 표 */
+.checkupTableSection {
+  margin-bottom: 28px;
+}
+
+.checkupTableTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1D1D1F;
+  margin: 0 0 16px 0;
+}
+
+.checkupTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+}
+
+.checkupTable th {
+  background: #1D1D1F;
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #fff;
+  font-size: 14px;
+  border: 1px solid #1D1D1F;
+}
+
+.thCategory {
+  width: 80px;
+}
+
+.thItems {
+  width: 40%;
+}
+
+.thDiagnosis {
+  width: auto;
+}
+
+.checkupTable td {
+  padding: 14px 12px;
+  border: 1px solid #e5e7eb;
+  vertical-align: top;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.tdCategory {
+  font-weight: 700;
+  color: #1D1D1F;
+  background: #f5f5f7;
+}
+
+.tdItems {
+  color: #374151;
+}
+
+.tdDiagnosis {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* 검진 후 제공 */
+.programAfter {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.programAfterTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1D1D1F;
+  margin-bottom: 10px;
+}
+
+.programAfterList {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.8;
+}
+
+.programAfterList li {
+  margin: 0;
+}
+
+/* 비용 섹션 */
+.programCost {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #fff;
+  border: 2px solid #1D1D1F;
+}
+
+.costRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.costLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1D1D1F;
+}
+
+.costValue {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.costOriginal {
+  font-size: 14px;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.costFree {
+  font-size: 20px;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.costNote {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 8px 0 0 0;
+}
+
+/* 예약 화면 */
+.bookingSection {
+  margin-bottom: 24px;
+}
+
+.bookingLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.dateGrid {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.dateItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 64px;
+  padding: 8px;
+  background: #f5f5f7;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dateItem:hover:not(:disabled) {
+  background: #ebebed;
+}
+
+.dateItem.selected {
+  background: #007AFF;
+  border-color: #007AFF;
+}
+
+.dateItem.selected .dateWeekday,
+.dateItem.selected .dateDay {
+  color: #fff;
+}
+
+.dateItem.weekend {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dateWeekday {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 2px;
+}
+
+.dateDay {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1D1D1F;
+}
+
+.timeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.timeItem {
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #374151;
+  background: #f5f5f7;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.timeItem:hover {
+  background: #ebebed;
+}
+
+.timeItem.selected {
+  background: #007AFF;
+  border-color: #007AFF;
+  color: #fff;
+}
+
+.bookingSummary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f0fdf4;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.bookingSummaryIcon {
+  width: 40px;
+  height: 40px;
+  background: #22c55e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.bookingSummaryText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bookingSummaryDate {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1D1D1F;
+}
+
+.bookingSummaryExpert {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* 스피너 */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 예약 완료 화면 */
+.bookingCompleteContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-bottom: 60px;
+}
+
+.bookingCompleteIcon {
+  width: 72px;
+  height: 72px;
+  background: #22c55e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-bottom: 24px;
+  animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.bookingCompleteTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1D1D1F;
+  margin: 0 0 24px 0;
+}
+
+.bookingCompleteInfo {
+  padding: 20px 32px;
+  background: #f9fafb;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.bookingCompleteDate {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1D1D1F;
+  margin: 0 0 4px 0;
+}
+
+.bookingCompleteExpert {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.bookingCompleteDesc {
+  font-size: 15px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 전환 화면 */
+.transitionContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-bottom: 60px;
+}
+
+.transitionTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1D1D1F;
+  line-height: 1.4;
+  margin: 0 0 20px 0;
+  letter-spacing: -0.5px;
+}
+
+.transitionDesc {
+  font-size: 18px;
+  color: #6b7280;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* 설문 인트로 */
+.surveyIntroContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.surveySection {
+  font-size: 14px;
+  font-weight: 600;
+  color: #007AFF;
+  margin-bottom: 16px;
+}
+
+.surveyIntroTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1D1D1F;
+  line-height: 1.3;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.5px;
+}
+
+.surveyIntroDesc {
+  font-size: 17px;
+  color: #6b7280;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* 설문 질문 */
+.surveyQuestionContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.surveyProgress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.surveyProgressSection {
+  font-size: 14px;
+  font-weight: 600;
+  color: #007AFF;
+}
+
+.surveyProgressCount {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.surveyQuestionTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1D1D1F;
+  line-height: 1.4;
+  margin: 0 0 24px 0;
+  letter-spacing: -0.3px;
+}
+
+.surveyMultipleHint {
+  font-size: 14px;
+  color: #9ca3af;
+  margin: -16px 0 24px 0;
+}
+
+.surveyOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.surveyOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 18px 20px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+  background: #f5f5f7;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.surveyOption:hover {
+  background: #ebebed;
+}
+
+.surveyOption.selected {
+  background: #EBF5FF;
+  border-color: #007AFF;
+  color: #007AFF;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  color: #9ca3af;
+}
+
+.surveyOption.selected .checkbox {
+  color: #007AFF;
+}
+
+/* 반응형 */
+@media (max-width: 480px) {
+  .main {
+    padding: 40px 24px 100px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .matchingTitle {
+    font-size: 24px;
+  }
+
+  .programTitle {
+    font-size: 24px;
+  }
+
+  .checkupCategory {
+    width: 80px;
+  }
+}

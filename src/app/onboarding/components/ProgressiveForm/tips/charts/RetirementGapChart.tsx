@@ -49,8 +49,18 @@ function analyzeRetirementGapInManwon(data: OnboardingData) {
   const totalGapFund = monthlyExpenseNeeded * 12 * gapYears
 
   // 현재 준비된 자금 (금융자산 총합)
-  const cashAssets = (data.cashCheckingAccount || 0) + (data.cashSavingsAccount || 0)
-  const investmentAssets = (data.investDomesticStock || 0) + (data.investForeignStock || 0) + (data.investFund || 0) + (data.investOther || 0)
+  let cashAssets = 0
+  if (data.savingsAccounts) {
+    data.savingsAccounts.forEach(account => {
+      cashAssets += account.balance || 0
+    })
+  }
+  let investmentAssets = 0
+  if (data.investmentAccounts) {
+    data.investmentAccounts.forEach(account => {
+      investmentAssets += account.balance || 0
+    })
+  }
   const currentAssets = cashAssets + investmentAssets
 
   // 준비율

@@ -4,96 +4,7 @@
   gap: 24px;
 }
 
-/* 히어로 섹션 - 현금흐름 메인 */
-.hero {
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-}
-
-.heroMain {
-  display: flex;
-  align-items: center;
-  gap: 48px;
-  margin-bottom: 24px;
-}
-
-.cashFlowBlock {
-  flex-shrink: 0;
-}
-
-.cashFlowLabel {
-  font-size: 13px;
-  color: #78716c;
-  margin-bottom: 4px;
-}
-
-.cashFlowValue {
-  font-size: 42px;
-  font-weight: 700;
-  color: #1e293b;
-  line-height: 1.1;
-}
-
-.cashFlowValue.positive {
-  color: #22c55e;
-}
-
-.cashFlowValue.negative {
-  color: #ef4444;
-}
-
-.cashFlowSub {
-  font-size: 13px;
-  color: #94a3b8;
-  margin-top: 4px;
-}
-
-/* 핵심 지표 그리드 */
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  flex: 1;
-}
-
-.statCard {
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 12px;
-}
-
-.statLabel {
-  font-size: 12px;
-  color: #64748b;
-  margin-bottom: 4px;
-}
-
-.statValue {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.statValue.positive {
-  color: #22c55e;
-}
-
-.statValue.negative {
-  color: #ef4444;
-}
-
-.statValue.blue {
-  color: #3b82f6;
-}
-
-.statSub {
-  font-size: 11px;
-  color: #94a3b8;
-  margin-top: 2px;
-}
-
-/* 현금흐름 시뮬레이션 차트 섹션 */
+/* 차트 섹션 */
 .chartSection {
   background: white;
   border-radius: 16px;
@@ -135,320 +46,390 @@
   flex-shrink: 0;
 }
 
-/* 하단 카드 그리드 */
-.bottomGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-.card {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-}
-
-.cardTitle {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0 0 16px 0;
-}
-
-/* 저축률 트렌드 */
-.savingsRateCard {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-}
-
-.savingsRateHeader {
+/* 연도 슬라이더 */
+.yearSliderWrapper {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.yearDisplay {
+  display: flex;
   align-items: baseline;
-  margin-bottom: 12px;
+  gap: 6px;
 }
 
-.savingsRateTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: #065f46;
-}
-
-.savingsRateValue {
-  font-size: 13px;
-  color: #047857;
-}
-
-.savingsRateProgress {
-  height: 8px;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.savingsRateFill {
-  height: 100%;
-  background: #10b981;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.savingsRateStats {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.savingsRatePercent {
-  font-size: 24px;
+.yearValue {
+  font-size: 18px;
   font-weight: 700;
-  color: #065f46;
+  color: #1e293b;
 }
 
-.savingsRateHint {
+.ageValue {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.sliderContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sliderLabel {
   font-size: 12px;
-  color: #047857;
+  color: #94a3b8;
+  min-width: 40px;
+}
+
+.sliderLabel:first-child {
   text-align: right;
 }
 
-/* 은퇴 후 현금흐름 갭 */
-.gapCard {
-  padding: 24px;
+.sliderTrack {
+  position: relative;
+  width: 200px;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
 }
 
-.gapCard.hasGap {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+.sliderProgress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #007aff, #5856d6);
+  border-radius: 3px;
+  pointer-events: none;
 }
 
-.gapCard.noGap {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+.sliderInput {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  transform: translateY(-50%);
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
 }
 
-.gapHeader {
+.sliderInput::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border: 2px solid #007aff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sliderInput::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.sliderInput::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: white;
+  border: 2px solid #007aff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* 분배 설정 섹션 */
+.surplusDisplay {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 16px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
 }
 
-.gapTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
+.surplusLabel {
+  font-size: 12px;
+  color: #64748b;
 }
 
-.gapValue {
+.surplusValue {
   font-size: 20px;
   font-weight: 700;
+  color: #10b981;
 }
 
-.gapValue.negative {
-  color: #dc2626;
+.surplusValue.negative {
+  color: #ef4444;
 }
 
-.gapValue.positive {
-  color: #059669;
+.distributionContent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.gapDetails {
+.rulesContainer {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.gapRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-}
-
-.gapLabel {
-  color: #64748b;
-}
-
-.gapAmount {
-  font-weight: 500;
-  color: #1e293b;
-}
-
-.gapHint {
-  font-size: 12px;
-  color: #dc2626;
-  margin-top: 12px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 6px;
-}
-
-/* 연금 구성 */
-.pensionList {
-  display: flex;
-  flex-direction: column;
+.rulesHeader {
+  display: grid;
+  grid-template-columns: 24px 40px 1fr 140px 100px 60px;
   gap: 12px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.pensionItem {
+.rulesHeaderItem {
+  text-align: left;
+}
+
+.rulesHeaderItem:nth-child(4),
+.rulesHeaderItem:nth-child(5) {
+  text-align: right;
+}
+
+.rulesList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
-.pensionHeader {
-  display: flex;
-  justify-content: space-between;
+.ruleItem {
+  display: grid;
+  grid-template-columns: 24px 40px 1fr 140px 100px 60px;
+  gap: 12px;
   align-items: center;
-}
-
-.pensionName {
-  font-size: 13px;
-  color: #64748b;
-}
-
-.pensionAmount {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.pensionBar {
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.pensionFill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.pensionFill.national {
-  background: #3b82f6;
-}
-
-.pensionFill.retirement {
-  background: #22c55e;
-}
-
-.pensionFill.personal {
-  background: #f59e0b;
-}
-
-.pensionTotal {
-  margin-top: 12px;
   padding: 12px;
   background: #f8fafc;
   border-radius: 8px;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.ruleItem:hover {
+  background: #f1f5f9;
+}
+
+.ruleItem.dragging {
+  opacity: 0.5;
+  background: #e2e8f0;
+}
+
+.ruleItem.disabled {
+  opacity: 0.5;
+}
+
+.ruleItem.remainderRule {
+  background: #f1f5f9;
+  border: 1px dashed #cbd5e1;
+}
+
+.ruleHandle {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  cursor: grab;
 }
 
-.pensionTotalLabel {
-  font-size: 13px;
-  color: #64748b;
+.ruleHandle:active {
+  cursor: grabbing;
 }
 
-.pensionTotalValue {
-  font-size: 17px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-/* Sankey 패널 */
-.sankeyPanel {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.sankeyHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.sankeyTitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.sankeyYear {
-  font-size: 13px;
-  color: #64748b;
-}
-
-.sankeyClose {
+.rulePriority {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
-  background: transparent;
-  border: none;
+  background: #007aff;
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ruleInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ruleDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ruleName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ruleLimit {
+  font-size: 11px;
   color: #94a3b8;
-  cursor: pointer;
-  border-radius: 4px;
+  flex-shrink: 0;
 }
 
-.sankeyClose:hover {
-  background: #e2e8f0;
+.ruleAmount {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.amountInput {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: right;
+  background: white;
+}
+
+.amountInput:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.amountInput:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.amountInput::-webkit-outer-spin-button,
+.amountInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.amountUnit {
+  font-size: 12px;
   color: #64748b;
+  white-space: nowrap;
 }
 
-.sankeyChart {
-  height: 280px;
+.remainderText {
+  font-size: 14px;
+  color: #64748b;
+  font-style: italic;
 }
 
-.sankeySummary {
+.ruleAllocation {
+  text-align: right;
+  font-size: 14px;
+  font-weight: 500;
+  color: #10b981;
+}
+
+.ruleAllocation .insufficient {
+  color: #f59e0b;
+}
+
+.ruleAllocation .negative {
+  color: #ef4444;
+}
+
+.toggleBtn {
+  padding: 4px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: white;
+  font-size: 12px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toggleBtn.active {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+/* 분배 결과 요약 */
+.summarySection {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 12px;
   padding-top: 16px;
   border-top: 1px solid #e2e8f0;
 }
 
-.sankeyRow {
+.summaryBar {
   display: flex;
-  justify-content: space-between;
+  height: 24px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.summarySegment {
+  height: 100%;
+  min-width: 4px;
+  transition: width 0.3s ease;
+}
+
+.summaryLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.legendItem {
+  display: flex;
   align-items: center;
+  gap: 6px;
   font-size: 13px;
 }
 
-.sankeyLabel {
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legendName {
   color: #64748b;
 }
 
-.sankeyValue {
+.legendValue {
   font-weight: 500;
   color: #1e293b;
 }
 
-.sankeyValue.positive {
-  color: #22c55e;
-}
-
-.sankeyValue.negative {
-  color: #ef4444;
+.warningMessage {
+  padding: 16px;
+  background: #fef3c7;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #92400e;
+  text-align: center;
 }
 
 /* 반응형 */
 @media (max-width: 1024px) {
-  .heroMain {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 24px;
-  }
-
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .chartContent {
     flex-direction: column;
   }
@@ -457,30 +438,71 @@
     width: 100%;
   }
 
-  .bottomGrid {
-    grid-template-columns: 1fr;
+  .chartHeader {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .yearSliderWrapper {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .sliderTrack {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .surplusDisplay {
+    align-items: flex-start;
+  }
+
+  .rulesHeader {
+    display: none;
+  }
+
+  .ruleItem {
+    grid-template-columns: 24px 32px 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px 12px;
+  }
+
+  .ruleInfo {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .ruleAmount {
+    grid-column: 1 / 3;
+    grid-row: 2;
+    justify-content: flex-start;
+    padding-left: 36px;
+  }
+
+  .ruleAllocation {
+    grid-column: 3;
+    grid-row: 2;
+    text-align: left;
+  }
+
+  .toggleBtn {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+  }
+
+  .ruleItem {
+    position: relative;
   }
 }
 
-@media (max-width: 640px) {
-  .hero {
-    padding: 20px;
-  }
-
-  .cashFlowValue {
-    font-size: 32px;
-  }
-
-  .statsGrid {
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  .statCard {
-    padding: 12px;
-  }
-
-  .statValue {
-    font-size: 16px;
-  }
+/* 로딩 상태 */
+.loadingState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
+  color: #86868b;
+  font-size: 14px;
 }

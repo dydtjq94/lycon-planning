@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { Plus, Trash2, TrendingDown, Pencil, ChevronDown, ChevronUp, Info, CreditCard } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { Plus, Trash2, TrendingDown, Pencil, ChevronDown, ChevronUp, Info, CreditCard, Link, Building2 } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,21 +12,37 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import type {
-  OnboardingData,
   DashboardExpenseItem,
   DashboardExpenseFrequency,
   GlobalSettings,
 } from "@/types";
-import { DEFAULT_GLOBAL_SETTINGS, getMedicalExpenseByAge, MEDICAL_EXPENSE_INFO, MEDICAL_EXPENSE_BY_AGE } from "@/types";
+import type { Expense } from "@/types/tables";
+import type { SimulationResult } from "@/lib/services/simulationEngine";
+import { DEFAULT_GLOBAL_SETTINGS, MEDICAL_EXPENSE_INFO, MEDICAL_EXPENSE_BY_AGE } from "@/types";
 import { formatMoney, getDefaultRateCategory, getEffectiveRate } from "@/lib/utils";
+import { CHART_COLORS, categorizeExpense } from "@/lib/utils/tooltipCategories";
+import { useExpenses, useInvalidateByCategory } from "@/hooks/useFinancialData";
+import {
+  createExpense,
+  updateExpense,
+  deleteExpense,
+  dbTypeToUIType,
+  uiTypeToDBType,
+  type UIExpenseType,
+} from "@/lib/services/expenseService";
 import styles from "./ExpenseTab.module.css";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 interface ExpenseTabProps {
-  data: OnboardingData;
-  onUpdateData: (updates: Partial<OnboardingData>) => void;
+  simulationId: string;
+  birthYear: number;
+  spouseBirthYear?: number | null;
+  retirementAge: number;
+  spouseRetirementAge?: number;
+  isMarried: boolean;
   globalSettings: GlobalSettings;
+  simulationResult: SimulationResult;
 }
 
 // 상승률 프리셋 (물가상승률 기준)
@@ -41,76 +57,33 @@ const GROWTH_PRESETS = [
 type ExpenseItem = DashboardExpenseItem;
 type ExpenseType = DashboardExpenseItem["type"];
 type ExpenseFrequency = DashboardExpenseFrequency;
-type RepaymentType = '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환';
 
-// 상환방식별 월 상환액 계산
-function calculateMonthlyPayment(
-  principal: number,
-  annualRate: number,
-  maturityDate: string | null,
-  repaymentType: RepaymentType = '원리금균등상환'
-): number {
-  if (!principal || !maturityDate) return 0;
-
-  const monthlyRate = (annualRate || 0) / 100 / 12;
-  const [year, month] = maturityDate.split('-').map(Number);
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-
-  const totalMonths = (year - currentYear) * 12 + (month - currentMonth);
-  if (totalMonths <= 0) return 0;
-
-  switch (repaymentType) {
-    case '만기일시상환':
-      return Math.round(principal * monthlyRate);
-    case '원리금균등상환': {
-      if (monthlyRate === 0) return Math.round(principal / totalMonths);
-      const payment = principal * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) /
-        (Math.pow(1 + monthlyRate, totalMonths) - 1);
-      return Math.round(payment);
-    }
-    case '원금균등상환': {
-      const monthlyPrincipal = principal / totalMonths;
-      const avgInterest = (principal * monthlyRate * (totalMonths + 1)) / 2 / totalMonths;
-      return Math.round(monthlyPrincipal + avgInterest);
-    }
-    case '거치식상환':
-      return Math.round(principal * monthlyRate);
-    default:
-      return 0;
-  }
-}
-
-export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabProps) {
+export function ExpenseTab({
+  simulationId,
+  birthYear,
+  spouseBirthYear,
+  retirementAge,
+  spouseRetirementAge = 60,
+  isMarried,
+  globalSettings,
+  simulationResult,
+}: ExpenseTabProps) {
   const currentYear = new Date().getFullYear();
 
   // 현재 나이 계산
-  const currentAge = useMemo(() => {
-    if (!data.birth_date) return 35;
-    const birthYear = new Date(data.birth_date).getFullYear();
-    return currentYear - birthYear;
-  }, [data.birth_date, currentYear]);
-
-  const retirementAge = data.target_retirement_age || 60;
+  const currentAge = currentYear - birthYear;
   const selfRetirementYear = currentYear + (retirementAge - currentAge);
 
   // 배우자 나이 계산
-  const spouseCurrentAge = useMemo(() => {
-    if (!data.spouse?.birth_date) return null;
-    const spouseBirthYear = new Date(data.spouse.birth_date).getFullYear();
-    return currentYear - spouseBirthYear;
-  }, [data.spouse?.birth_date, currentYear]);
-
-  const spouseRetirementAge = data.spouse?.retirement_age || 60;
+  const spouseCurrentAge = spouseBirthYear ? currentYear - spouseBirthYear : null;
 
   // 배우자 은퇴년도
   const spouseRetirementYear = useMemo(() => {
-    if (!data.spouse?.birth_date || spouseCurrentAge === null) return selfRetirementYear;
+    if (!spouseBirthYear || spouseCurrentAge === null) return selfRetirementYear;
     return currentYear + (spouseRetirementAge - spouseCurrentAge);
-  }, [data.spouse, currentYear, selfRetirementYear, spouseCurrentAge, spouseRetirementAge]);
+  }, [spouseBirthYear, currentYear, selfRetirementYear, spouseCurrentAge, spouseRetirementAge]);
 
-  const hasSpouse = data.isMarried && data.spouse;
+  const hasSpouse = isMarried && spouseBirthYear;
   const currentMonth = new Date().getMonth() + 1;
 
   // 특정 연도의 나이 계산
@@ -142,270 +115,73 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
     return (end.year - item.startYear) * 12 + (end.month - item.startMonth);
   };
 
-  // 지출 항목 상태 (저장된 데이터 우선, 없으면 온보딩에서 마이그레이션)
-  const [expenseItems, setExpenseItems] = useState<ExpenseItem[]>(() => {
-    // 저장된 expenseItems가 있으면 사용
-    if (data.expenseItems && data.expenseItems.length > 0) {
-      return data.expenseItems;
-    }
+  // React Query로 지출 데이터 로드 (캐시에서 즉시 가져옴)
+  const { data: dbExpenses = [], isLoading } = useExpenses(simulationId);
+  const invalidate = useInvalidateByCategory(simulationId);
 
-    // 없으면 온보딩 데이터에서 마이그레이션
-    const items: ExpenseItem[] = [];
-    const month = new Date().getMonth() + 1;
+  // DB 지출 데이터를 UI용 ExpenseItem으로 변환
+  const expenseItems = useMemo<ExpenseItem[]>(() => {
+    return dbExpenses.map((expense) => {
+      // endType 결정: retirement_link 기반
+      let endType: ExpenseItem["endType"] = "custom";
+      if (expense.retirement_link === 'self') {
+        endType = 'self-retirement';
+      } else if (expense.retirement_link === 'spouse') {
+        endType = 'spouse-retirement';
+      }
 
-    // 나이 계산 (마이그레이션용)
-    const birthYear = data.birth_date
-      ? new Date(data.birth_date).getFullYear()
-      : currentYear - 35;
-    const age = currentYear - birthYear;
-    const retireAge = data.target_retirement_age || 60;
-    const retireYear = currentYear + (retireAge - age);
-    const age100Year = currentYear + (100 - age);
+      return {
+        id: expense.id,
+        type: dbTypeToUIType(expense.type),
+        label: expense.title,
+        amount: expense.amount,
+        frequency: expense.frequency,
+        startYear: expense.start_year,
+        startMonth: expense.start_month,
+        endType,
+        endYear: expense.end_year,
+        endMonth: expense.end_month,
+        growthRate: expense.growth_rate,
+        rateCategory: expense.rate_category,
+        sourceType: expense.source_type || undefined,
+        sourceId: expense.source_id || undefined,
+      };
+    });
+  }, [dbExpenses]);
 
-    // 생활비 -> 고정비로 마이그레이션
-    if (data.livingExpenses && data.livingExpenses > 0) {
-      const livingExpenseAmount = data.livingExpenses;
-      const livingFrequency = data.livingExpensesFrequency || "monthly";
+  // 시나리오 모드 여부 (individual이 아니면 시나리오 적용 중)
+  const isScenarioMode = globalSettings.scenarioMode !== "individual";
 
-      // 현재 생활비 (은퇴 전까지)
-      items.push({
-        id: "fixed-living",
-        type: "fixed",
-        label: "생활비",
-        amount: livingExpenseAmount,
-        frequency: livingFrequency,
+  // simulationResult에서 현재 연도의 부채 관련 지출 추출
+  const debtExpensesFromSimulation = useMemo(() => {
+    const currentSnapshot = simulationResult.snapshots.find(s => s.year === currentYear);
+    if (!currentSnapshot) return [];
+
+    // expenseBreakdown에서 이자/원금상환 항목 추출
+    return currentSnapshot.expenseBreakdown
+      .filter(item => item.title.includes('이자') || item.title.includes('원금상환'))
+      .map((item, index) => ({
+        id: `sim-debt-${index}`,
+        type: 'interest' as const,
+        label: item.title,
+        amount: Math.round(item.amount / 12), // 연간 → 월간
+        frequency: 'monthly' as const,
         startYear: currentYear,
-        startMonth: month,
-        endType: "self-retirement",
-        endYear: null,
-        endMonth: null,
-        growthRate: DEFAULT_GLOBAL_SETTINGS.inflationRate,
-        rateCategory: "inflation",
-      });
-
-      // 은퇴 후 생활비 자동 추가 (현재 생활비의 70%를 물가상승률 적용)
-      const yearsUntilRetirement = retireYear - currentYear;
-      if (yearsUntilRetirement > 0) {
-        const monthlyAmount = livingFrequency === "yearly"
-          ? livingExpenseAmount / 12
-          : livingExpenseAmount;
-        const inflationRate = DEFAULT_GLOBAL_SETTINGS.inflationRate; // 2.5%
-
-        // 은퇴 시점의 생활비 (물가상승률 적용)
-        const retirementAmount = monthlyAmount * Math.pow(1 + inflationRate / 100, yearsUntilRetirement);
-
-        // 은퇴 후 생활비 = 70%
-        const postRetirementAmount = Math.round(retirementAmount * 0.7);
-
-        items.push({
-          id: "fixed-retirement-living",
-          type: "fixed",
-          label: "은퇴 후 생활비",
-          amount: postRetirementAmount,
-          frequency: "monthly",
-          startYear: retireYear + 1,
-          startMonth: 1,
-          endType: "custom",
-          endYear: age100Year,
-          endMonth: 12,
-          growthRate: inflationRate,
-          rateCategory: "inflation",
-        });
-      }
-    }
-
-    // 의료비 자동 생성 (나이대별)
-    const ageKeys = Object.keys(MEDICAL_EXPENSE_BY_AGE).map(Number).sort((a, b) => a - b);
-
-    // 본인 의료비
-    for (let i = 0; i < ageKeys.length; i++) {
-      const startAge = ageKeys[i];
-      const endAge = i < ageKeys.length - 1 ? ageKeys[i + 1] - 1 : 100;
-      const startYear = birthYear + startAge;
-      const endYear = birthYear + endAge;
-
-      // 이미 지난 기간은 스킵
-      if (endYear < currentYear) continue;
-
-      const amount = MEDICAL_EXPENSE_BY_AGE[startAge];
-      items.push({
-        id: `medical-self-${startAge}`,
-        type: "medical",
-        label: `본인 의료비 (${startAge}대)`,
-        amount,
-        frequency: "monthly",
-        startYear: Math.max(startYear, currentYear),
         startMonth: 1,
-        endType: "custom",
-        endYear,
+        endType: 'custom' as const,
+        endYear: currentYear + 10,
         endMonth: 12,
-        growthRate: 3, // 의료비는 물가상승률보다 높게
-        rateCategory: "inflation",
-      });
-    }
+        growthRate: 0,
+        rateCategory: 'fixed' as const,
+        sourceType: 'debt' as const,
+        sourceId: `sim-${index}`,
+        displayGrowthRate: 0,
+      }));
+  }, [simulationResult, currentYear]);
 
-    // 배우자 의료비 (배우자가 있는 경우)
-    if (data.spouse?.birth_date) {
-      const spouseBirthYear = new Date(data.spouse.birth_date).getFullYear();
-
-      for (let i = 0; i < ageKeys.length; i++) {
-        const startAge = ageKeys[i];
-        const endAge = i < ageKeys.length - 1 ? ageKeys[i + 1] - 1 : 100;
-        const startYear = spouseBirthYear + startAge;
-        const endYear = spouseBirthYear + endAge;
-
-        if (endYear < currentYear) continue;
-
-        const amount = MEDICAL_EXPENSE_BY_AGE[startAge];
-        items.push({
-          id: `medical-spouse-${startAge}`,
-          type: "medical",
-          label: `배우자 의료비 (${startAge}대)`,
-          amount,
-          frequency: "monthly",
-          startYear: Math.max(startYear, currentYear),
-          startMonth: 1,
-          endType: "custom",
-          endYear,
-          endMonth: 12,
-          growthRate: 3,
-          rateCategory: "inflation",
-        });
-      }
-    }
-
-    return items;
-  });
-
-  // expenseItems 변경 시 DB에 저장
-  useEffect(() => {
-    onUpdateData({ expenseItems });
-  }, [expenseItems]);
-
-  // 시나리오 모드 적용된 표시용 데이터 (한 번만 계산!)
-  const isPresetMode = globalSettings.scenarioMode !== "custom";
-
-  // 기본값: 60개월 후 만기, 5% 금리
-  const DEFAULT_LOAN_RATE = 5;
-  const DEFAULT_LOAN_MONTHS = 60;
-
-  // 기본 만기일 계산 (현재 + 60개월)
-  const getDefaultMaturity = () => {
-    const endMonth = ((currentMonth - 1 + DEFAULT_LOAN_MONTHS) % 12) + 1;
-    const endYear = currentYear + Math.floor((currentMonth - 1 + DEFAULT_LOAN_MONTHS) / 12);
-    return `${endYear}-${String(endMonth).padStart(2, '0')}`;
-  };
-
-  // 부채 기반 이자 비용 항목 생성 (동적 계산, 저장하지 않음)
-  const debtExpenseItems = useMemo(() => {
-    const items: ExpenseItem[] = [];
-    const debts = data.debts || [];
-    const defaultMaturity = getDefaultMaturity();
-
-    // 1. 일반 부채 (신용대출, 기타 부채 등)
-    debts.forEach(debt => {
-      if (!debt.amount) return;
-      const maturity = debt.maturity || defaultMaturity;
-      const rate = debt.rate ?? DEFAULT_LOAN_RATE;
-      const monthlyPayment = calculateMonthlyPayment(
-        debt.amount,
-        rate,
-        maturity,
-        (debt.repaymentType || '원리금균등상환') as RepaymentType
-      );
-      if (monthlyPayment > 0) {
-        const [endYear, endMonth] = maturity.split('-').map(Number);
-        items.push({
-          id: `expense-debt-${debt.id}`,
-          type: 'interest',
-          label: `${debt.name} 상환`,
-          amount: monthlyPayment,
-          frequency: 'monthly',
-          startYear: currentYear,
-          startMonth: currentMonth,
-          endType: 'custom',
-          endYear,
-          endMonth,
-          growthRate: 0,
-          rateCategory: 'fixed',
-          sourceType: 'debt',
-          sourceId: debt.id,
-        });
-      }
-    });
-
-    // 2. 주택담보대출
-    if (data.housingHasLoan && data.housingLoan) {
-      const maturity = data.housingLoanMaturity || defaultMaturity;
-      const rate = data.housingLoanRate ?? DEFAULT_LOAN_RATE;
-      const monthlyPayment = calculateMonthlyPayment(
-        data.housingLoan,
-        rate,
-        maturity,
-        (data.housingLoanType || '원리금균등상환') as RepaymentType
-      );
-      if (monthlyPayment > 0) {
-        const [endYear, endMonth] = maturity.split('-').map(Number);
-        items.push({
-          id: 'expense-housing-loan',
-          type: 'interest',
-          label: '주택담보대출 상환',
-          amount: monthlyPayment,
-          frequency: 'monthly',
-          startYear: currentYear,
-          startMonth: currentMonth,
-          endType: 'custom',
-          endYear,
-          endMonth,
-          growthRate: 0,
-          rateCategory: 'fixed',
-          sourceType: 'debt',
-          sourceId: 'housing',
-        });
-      }
-    }
-
-    // 3. 부동산 투자 대출
-    const realEstateProperties = data.realEstateProperties || [];
-    realEstateProperties.forEach(property => {
-      if (property.hasLoan && property.loanAmount) {
-        const maturity = property.loanMaturity || defaultMaturity;
-        const rate = property.loanRate ?? DEFAULT_LOAN_RATE;
-        const monthlyPayment = calculateMonthlyPayment(
-          property.loanAmount,
-          rate,
-          maturity,
-          (property.loanRepaymentType || '원리금균등상환') as RepaymentType
-        );
-        if (monthlyPayment > 0) {
-          const [endYear, endMonth] = maturity.split('-').map(Number);
-          items.push({
-            id: `expense-realestate-${property.id}`,
-            type: 'interest',
-            label: `${property.name} 대출 상환`,
-            amount: monthlyPayment,
-            frequency: 'monthly',
-            startYear: currentYear,
-            startMonth: currentMonth,
-            endType: 'custom',
-            endYear,
-            endMonth,
-            growthRate: 0,
-            rateCategory: 'fixed',
-            sourceType: 'debt',
-            sourceId: property.id,
-          });
-        }
-      }
-    });
-
-    return items;
-  }, [data.debts, data.housingHasLoan, data.housingLoan, data.housingLoanMaturity, data.housingLoanRate, data.housingLoanType, data.realEstateProperties, currentYear, currentMonth]);
-
-  // 사용자 지출 + 부채 지출 합친 표시용 데이터
+  // 사용자 지출 표시용 데이터 (부채 지출은 simulationResult에서 가져옴)
   const displayItems = useMemo(() => {
-    const allItems = [...expenseItems, ...debtExpenseItems];
-    return allItems.map((item) => {
+    return expenseItems.map((item) => {
       const rateCategory = item.rateCategory || getDefaultRateCategory(item.type);
       const effectiveRate = getEffectiveRate(
         item.growthRate,
@@ -418,7 +194,7 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
         displayGrowthRate: effectiveRate, // 현재 시나리오에서 표시할 상승률
       };
     });
-  }, [expenseItems, debtExpenseItems, globalSettings]);
+  }, [expenseItems, globalSettings]);
 
   // 의료비 섹션 토글 상태
   const [medicalExpanded, setMedicalExpanded] = useState(false);
@@ -444,7 +220,8 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
   const variableItems = displayItems.filter((i) => i.type === "variable");
   const onetimeItems = displayItems.filter((i) => i.type === "onetime");
   const medicalItems = displayItems.filter((i) => i.type === "medical");
-  const interestItems = displayItems.filter((i) => i.type === "interest");
+  // interestItems는 simulationResult에서 가져옴 (Single Source of Truth)
+  const interestItems = debtExpensesFromSimulation;
   const housingItems = displayItems.filter((i) => i.type === "housing");
 
   // 월 지출로 변환 (frequency 고려)
@@ -476,12 +253,19 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
     return currentYear >= item.startYear && currentYear <= endYear;
   };
 
-  // 월 총 지출 (현재 연도에 해당하는 항목만)
+  // 월 총 지출 (현재 연도에 해당하는 항목만 + simulationResult의 부채 지출)
   const monthlyExpense = useMemo(() => {
-    return displayItems
+    // 일반 지출
+    const regularExpense = displayItems
       .filter((item) => isCurrentYearItem(item) && item.type !== "onetime")
       .reduce((sum, item) => sum + toMonthlyAmount(item), 0);
-  }, [displayItems, currentYear, selfRetirementYear, spouseRetirementYear]);
+
+    // 부채 지출 (simulationResult에서 - 이미 월간으로 변환됨)
+    const debtExpense = debtExpensesFromSimulation
+      .reduce((sum, item) => sum + item.amount, 0);
+
+    return regularExpense + debtExpense;
+  }, [displayItems, debtExpensesFromSimulation, currentYear, selfRetirementYear, spouseRetirementYear]);
 
   // 은퇴까지 총 지출 (상승률 반영, 은퇴 전에 시작하는 항목만)
   const lifetimeExpense = useMemo(() => {
@@ -526,21 +310,15 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
       variable: variableItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
       onetime: onetimeItems.filter(isCurrentYearItem).reduce((s, i) => s + i.amount, 0),
       medical: currentMedicalItems.reduce((s, i) => s + toMonthlyAmount(i), 0),
-      interest: interestItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
+      // interest는 simulationResult에서 가져온 데이터 사용 (이미 월간으로 변환됨)
+      interest: debtExpensesFromSimulation.reduce((s, i) => s + i.amount, 0),
       housing: housingItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
     }),
-    [fixedItems, variableItems, onetimeItems, currentMedicalItems, interestItems, housingItems, currentYear, selfRetirementYear, spouseRetirementYear]
+    [fixedItems, variableItems, onetimeItems, currentMedicalItems, debtExpensesFromSimulation, housingItems, currentYear, selfRetirementYear, spouseRetirementYear]
   );
 
-  // 차트 데이터 - 100세까지 표시
+  // 차트 데이터 - simulationResult에서 직접 가져옴 (Single Source of Truth)
   const projectionData = useMemo(() => {
-    // 본인/배우자 중 나중에 100세 되는 해까지
-    const selfAge100Year = currentYear + (100 - currentAge);
-    const spouseAge100Year = spouseCurrentAge !== null
-      ? currentYear + (100 - spouseCurrentAge)
-      : selfAge100Year;
-    const maxYear = Math.max(selfAge100Year, spouseAge100Year);
-    const yearsUntilEnd = Math.max(0, maxYear - currentYear);
     const labels: string[] = [];
     const fixedData: number[] = [];
     const variableData: number[] = [];
@@ -549,8 +327,7 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
     const interestData: number[] = [];
     const housingData: number[] = [];
 
-    for (let i = 0; i <= yearsUntilEnd; i++) {
-      const year = currentYear + i;
+    simulationResult.snapshots.forEach((snapshot) => {
       let fixedTotal = 0;
       let variableTotal = 0;
       let onetimeTotal = 0;
@@ -558,46 +335,77 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
       let interestTotal = 0;
       let housingTotal = 0;
 
-      displayItems.forEach((item) => {
-        if (item.type === "onetime") {
-          if (year === item.startYear) {
+      // expenseBreakdown을 type 필드로 정확히 분류
+      snapshot.expenseBreakdown.forEach((item: { title: string; amount: number; type?: string }) => {
+        const itemType = item.type || '';
+        switch (itemType) {
+          // 고정비
+          case 'insurance':
+          case 'subscription':
+          case 'maintenance':
+            fixedTotal += item.amount;
+            break;
+          // 생활비/변동비
+          case 'living':
+          case 'food':
+          case 'transport':
+          case 'education':
+          case 'child':
+          case 'leisure':
+          case 'parents':
+          case 'other':
+            variableTotal += item.amount;
+            break;
+          // 의료비
+          case 'health':
+          case 'medical':
+            medicalTotal += item.amount;
+            break;
+          // 대출/이자
+          case 'loan':
+          case 'interest':
+            interestTotal += item.amount;
+            break;
+          // 주거비
+          case 'housing':
+          case 'rent':
+            housingTotal += item.amount;
+            break;
+          // 일시 지출
+          case 'travel':
+          case 'wedding':
+          case 'onetime':
             onetimeTotal += item.amount;
-          }
-          return;
-        }
-
-        const end = getEndYearMonth(item);
-        if (year >= item.startYear && year <= end.year) {
-          const startM = year === item.startYear ? item.startMonth : 1;
-          const endM = year === end.year ? end.month : 12;
-          const monthsInYear = Math.max(0, endM - startM + 1);
-          const yearsFromStart = year - item.startYear;
-          // displayGrowthRate 사용 (이미 시나리오 적용됨)
-          const monthlyAmount =
-            item.frequency === "yearly" ? item.amount / 12 : item.amount;
-          const grownAmount =
-            monthlyAmount * Math.pow(1 + item.displayGrowthRate / 100, yearsFromStart);
-          const yearAmount = Math.round(grownAmount * monthsInYear);
-
-          if (item.type === "fixed") fixedTotal += yearAmount;
-          else if (item.type === "variable") variableTotal += yearAmount;
-          else if (item.type === "medical") medicalTotal += yearAmount;
-          else if (item.type === "interest") interestTotal += yearAmount;
-          else if (item.type === "housing") housingTotal += yearAmount;
+            break;
+          default:
+            // type이 없으면 키워드 기반 분류로 폴백
+            if (itemType === '') {
+              const category = categorizeExpense(item.title);
+              switch (category.id) {
+                case 'fixed': fixedTotal += item.amount; break;
+                case 'living': variableTotal += item.amount; break;
+                case 'medical': medicalTotal += item.amount; break;
+                case 'loan': interestTotal += item.amount; break;
+                case 'housing': housingTotal += item.amount; break;
+                default: variableTotal += item.amount;
+              }
+            } else {
+              variableTotal += item.amount;
+            }
         }
       });
 
-      labels.push(`${year}`);
+      labels.push(`${snapshot.year}`);
       fixedData.push(fixedTotal);
       variableData.push(variableTotal);
       onetimeData.push(onetimeTotal);
       medicalData.push(medicalTotal);
       interestData.push(interestTotal);
       housingData.push(housingTotal);
-    }
+    });
 
     return { labels, fixedData, variableData, onetimeData, medicalData, interestData, housingData };
-  }, [displayItems, currentYear, currentAge, spouseCurrentAge, selfRetirementYear, spouseRetirementYear]);
+  }, [simulationResult]);
 
   // 차트 데이터셋
   const chartDatasets = useMemo(() => {
@@ -606,42 +414,42 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
       datasets.push({
         label: "고정비",
         data: projectionData.fixedData,
-        backgroundColor: "#ff3b30",
+        backgroundColor: CHART_COLORS.expense.fixed,
       });
     }
     if (projectionData.variableData.some((v) => v > 0)) {
       datasets.push({
         label: "변동비",
         data: projectionData.variableData,
-        backgroundColor: "#ff9500",
+        backgroundColor: CHART_COLORS.expense.variable,
       });
     }
     if (projectionData.onetimeData.some((v) => v > 0)) {
       datasets.push({
         label: "일시",
         data: projectionData.onetimeData,
-        backgroundColor: "#af52de",
+        backgroundColor: CHART_COLORS.expense.onetime,
       });
     }
     if (projectionData.medicalData.some((v) => v > 0)) {
       datasets.push({
         label: "의료비",
         data: projectionData.medicalData,
-        backgroundColor: "#007aff",
+        backgroundColor: CHART_COLORS.expense.medical,
       });
     }
     if (projectionData.interestData.some((v) => v > 0)) {
       datasets.push({
         label: "이자",
         data: projectionData.interestData,
-        backgroundColor: "#5856d6",
+        backgroundColor: CHART_COLORS.expense.interest,
       });
     }
     if (projectionData.housingData.some((v) => v > 0)) {
       datasets.push({
         label: "주거",
         data: projectionData.housingData,
-        backgroundColor: "#34c759",
+        backgroundColor: CHART_COLORS.expense.housing,
       });
     }
     return datasets;
@@ -664,19 +472,21 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
       tooltipEl = document.createElement("div");
       tooltipEl.className = "chart-tooltip";
       tooltipEl.style.cssText = `
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-radius: 12px;
         border: 1px solid rgba(0, 0, 0, 0.06);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
         pointer-events: none;
         position: absolute;
         transform: translate(-50%, 0);
         transition: all 0.15s ease;
         padding: 14px 18px;
         font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        min-width: 180px;
+        white-space: nowrap;
+        z-index: 100;
+        min-width: 200px;
       `;
       chart.canvas.parentNode?.appendChild(tooltipEl);
     }
@@ -816,101 +626,110 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
     },
   };
 
-  // 나이대별 의료비 자동 생성
-  const generateMedicalExpenses = () => {
-    const newItems: ExpenseItem[] = [];
+  // 나이대별 의료비 자동 생성 (DB)
+  const generateMedicalExpenses = async () => {
+    if (!simulationId) return;
+
     const ageKeys = Object.keys(MEDICAL_EXPENSE_BY_AGE).map(Number).sort((a, b) => a - b);
 
-    // 본인 의료비 생성
-    const selfBirthYear = data.birth_date
-      ? new Date(data.birth_date).getFullYear()
-      : currentYear - 35;
+    try {
+      // 기존 의료비 항목 삭제
+      const medicalItems = dbExpenses.filter((e) => e.type === "medical");
+      for (const item of medicalItems) {
+        await deleteExpense(item.id);
+      }
 
-    for (let i = 0; i < ageKeys.length; i++) {
-      const startAge = ageKeys[i];
-      const endAge = i < ageKeys.length - 1 ? ageKeys[i + 1] - 1 : 100;
-      const startYear = selfBirthYear + startAge;
-      const endYear = selfBirthYear + endAge;
-
-      // 이미 지난 기간은 스킵, 현재 연도 이후만 생성
-      if (endYear < currentYear) continue;
-
-      const amount = MEDICAL_EXPENSE_BY_AGE[startAge];
-      newItems.push({
-        id: `medical-self-${startAge}-${Date.now()}`,
-        type: "medical",
-        label: `본인 의료비 (${startAge}대)`,
-        amount,
-        frequency: "monthly",
-        startYear: Math.max(startYear, currentYear),
-        startMonth: 1,
-        endType: "custom",
-        endYear,
-        endMonth: 12,
-        growthRate: 3, // 의료비는 물가상승률보다 높게
-        rateCategory: "inflation",
-      });
-    }
-
-    // 배우자 의료비 생성 (배우자가 있는 경우)
-    if (data.spouse?.birth_date) {
-      const spouseBirthYear = new Date(data.spouse.birth_date).getFullYear();
-
+      // 본인 의료비 생성
       for (let i = 0; i < ageKeys.length; i++) {
         const startAge = ageKeys[i];
         const endAge = i < ageKeys.length - 1 ? ageKeys[i + 1] - 1 : 100;
-        const startYear = spouseBirthYear + startAge;
-        const endYear = spouseBirthYear + endAge;
+        const startYear = birthYear + startAge;
+        const endYear = birthYear + endAge;
 
         if (endYear < currentYear) continue;
 
         const amount = MEDICAL_EXPENSE_BY_AGE[startAge];
-        newItems.push({
-          id: `medical-spouse-${startAge}-${Date.now()}`,
+        await createExpense({
+          simulation_id: simulationId,
           type: "medical",
-          label: `배우자 의료비 (${startAge}대)`,
+          title: `본인 의료비 (${startAge}대)`,
           amount,
           frequency: "monthly",
-          startYear: Math.max(startYear, currentYear),
-          startMonth: 1,
-          endType: "custom",
-          endYear,
-          endMonth: 12,
-          growthRate: 3,
-          rateCategory: "inflation",
+          start_year: Math.max(startYear, currentYear),
+          start_month: 1,
+          end_year: endYear,
+          end_month: 12,
+          is_fixed_to_retirement: false,
+          growth_rate: 3,
+          rate_category: "inflation",
         });
       }
-    }
 
-    // 기존 의료비 항목 제거 후 새로 추가
-    const nonMedicalItems = expenseItems.filter((i) => i.type !== "medical");
-    setExpenseItems([...nonMedicalItems, ...newItems]);
-    setMedicalExpanded(true);
+      // 배우자 의료비 생성 (배우자가 있는 경우)
+      if (isMarried && spouseBirthYear) {
+        for (let i = 0; i < ageKeys.length; i++) {
+          const startAge = ageKeys[i];
+          const endAge = i < ageKeys.length - 1 ? ageKeys[i + 1] - 1 : 100;
+          const startYear = spouseBirthYear + startAge;
+          const endYear = spouseBirthYear + endAge;
+
+          if (endYear < currentYear) continue;
+
+          const amount = MEDICAL_EXPENSE_BY_AGE[startAge];
+          await createExpense({
+            simulation_id: simulationId,
+            type: "medical",
+            title: `배우자 의료비 (${startAge}대)`,
+            amount,
+            frequency: "monthly",
+            start_year: Math.max(startYear, currentYear),
+            start_month: 1,
+            end_year: endYear,
+            end_month: 12,
+            is_fixed_to_retirement: false,
+            growth_rate: 3,
+            rate_category: "inflation",
+          });
+        }
+      }
+
+      invalidate('expenses');
+      setMedicalExpanded(true);
+    } catch (error) {
+      console.error("Failed to generate medical expenses:", error);
+    }
   };
 
-  // 항목 추가
-  const handleAdd = () => {
-    if (!addingType || !newAmount) return;
+  // 항목 추가 (DB)
+  const handleAdd = async () => {
+    if (!addingType || !newAmount || !simulationId) return;
 
     const isOnetime = addingType === "onetime";
+    // 지출은 기본적으로 본인 은퇴까지
+    const retirementLink = isOnetime ? null : 'self';
 
-    const newItem: ExpenseItem = {
-      id: Date.now().toString(),
-      type: addingType,
-      label: newLabel || getDefaultLabel(addingType),
-      amount: parseFloat(newAmount),
-      frequency: isOnetime ? "monthly" : newFrequency,
-      startYear: isOnetime ? newOnetimeYear : currentYear,
-      startMonth: isOnetime ? newOnetimeMonth : currentMonth,
-      endType: isOnetime ? "custom" : "self-retirement",
-      endYear: isOnetime ? newOnetimeYear : null,
-      endMonth: isOnetime ? newOnetimeMonth : null,
-      growthRate: isOnetime ? 0 : DEFAULT_GLOBAL_SETTINGS.inflationRate,
-      rateCategory: getDefaultRateCategory(addingType),
-    };
-
-    setExpenseItems((prev) => [...prev, newItem]);
-    resetAddForm();
+    try {
+      await createExpense({
+        simulation_id: simulationId,
+        type: uiTypeToDBType(addingType),
+        title: newLabel || getDefaultLabel(addingType),
+        amount: parseFloat(newAmount),
+        frequency: isOnetime ? "monthly" : newFrequency,
+        start_year: isOnetime ? newOnetimeYear : currentYear,
+        start_month: isOnetime ? newOnetimeMonth : currentMonth,
+        // retirement_link가 있으면 end_year는 null - 시뮬레이션 시점에 동적 계산
+        end_year: isOnetime ? newOnetimeYear : null,
+        end_month: isOnetime ? newOnetimeMonth : null,
+        is_fixed_to_retirement: !isOnetime,
+        retirement_link: retirementLink,
+        growth_rate: isOnetime ? 0 : DEFAULT_GLOBAL_SETTINGS.inflationRate,
+        rate_category: getDefaultRateCategory(addingType),
+      });
+      invalidate('expenses');
+      resetAddForm();
+    } catch (error) {
+      console.error("Failed to add expense:", error);
+    }
   };
 
   const getDefaultLabel = (type: ExpenseType): string => {
@@ -932,12 +751,18 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
     setNewOnetimeMonth(currentMonth);
   };
 
-  // 항목 삭제
-  const handleDelete = (id: string) => {
-    setExpenseItems((prev) => prev.filter((item) => item.id !== id));
-    if (editingId === id) {
-      setEditingId(null);
-      setEditForm(null);
+  // 항목 삭제 (DB)
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteExpense(id);
+      invalidate('expenses');
+      if (editingId === id) {
+        setEditingId(null);
+        setEditForm(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete expense:", error);
+      alert("연동된 지출은 원본에서 삭제해주세요");
     }
   };
 
@@ -963,8 +788,8 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
     setCustomRateInput("");
   };
 
-  // 편집 저장
-  const saveEdit = () => {
+  // 편집 저장 (DB)
+  const saveEdit = async () => {
     if (!editForm) return;
     const finalForm = isCustomRateMode
       ? {
@@ -972,10 +797,40 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
           growthRate: customRateInput === "" ? 0 : parseFloat(customRateInput),
         }
       : editForm;
-    setExpenseItems((prev) =>
-      prev.map((item) => (item.id === finalForm.id ? finalForm : item))
-    );
-    cancelEdit();
+
+    const isFixedToRetirement = finalForm.endType === "self-retirement" || finalForm.endType === "spouse-retirement";
+
+    // retirement_link 결정: endType에 따라 'self', 'spouse', null
+    const retirementLink = finalForm.endType === 'self-retirement'
+      ? 'self'
+      : finalForm.endType === 'spouse-retirement'
+        ? 'spouse'
+        : null;
+
+    // retirement_link가 있으면 end_year는 null - 시뮬레이션 시점에 동적 계산
+    const endYearToSave = retirementLink ? null : finalForm.endYear;
+    const endMonthToSave = retirementLink ? null : finalForm.endMonth;
+
+    try {
+      await updateExpense(finalForm.id, {
+        type: uiTypeToDBType(finalForm.type),
+        title: finalForm.label,
+        amount: finalForm.amount,
+        frequency: finalForm.frequency,
+        start_year: finalForm.startYear,
+        start_month: finalForm.startMonth,
+        end_year: endYearToSave,
+        end_month: endMonthToSave,
+        is_fixed_to_retirement: isFixedToRetirement,
+        retirement_link: retirementLink,
+        growth_rate: finalForm.growthRate,
+        rate_category: finalForm.rateCategory,
+      });
+      invalidate('expenses');
+      cancelEdit();
+    } catch (error) {
+      console.error("Failed to update expense:", error);
+    }
   };
 
   // 기간 표시
@@ -989,8 +844,10 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
     if (item.endType === "self-retirement") return `${startStr} ~ 본인 은퇴`;
     if (item.endType === "spouse-retirement") return `${startStr} ~ 배우자 은퇴`;
 
-    const end = getEndYearMonth(item);
-    const endStr = `${end.year}.${String(end.month).padStart(2, "0")}`;
+    // 종료일이 없으면 "시작일 ~" 형식으로 표시
+    if (!item.endYear) return `${startStr} ~`;
+
+    const endStr = `${item.endYear}.${String(item.endMonth || 12).padStart(2, "0")}`;
     return `${startStr} ~ ${endStr}`;
   };
 
@@ -1353,6 +1210,24 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
             );
           }
 
+          // 연동 항목 여부 확인
+          const isLinked = !!item.sourceType;
+
+          // 연동 배지 정보
+          const getLinkedBadge = () => {
+            if (!item.sourceType) return null;
+            switch (item.sourceType) {
+              case "debt":
+                return { label: "부채", icon: <CreditCard size={12} /> };
+              case "real_estate":
+                return { label: "부동산", icon: <Building2 size={12} /> };
+              default:
+                return { label: "연동", icon: <Link size={12} /> };
+            }
+          };
+
+          const linkedBadge = getLinkedBadge();
+
           // 읽기 모드 - displayGrowthRate 사용 (이미 시나리오 적용됨)
           return (
             <div key={item.id} className={styles.expenseItem}>
@@ -1364,23 +1239,30 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
                 <span className={styles.itemMeta}>
                   {item.type === "onetime"
                     ? formatPeriod(item)
-                    : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isPresetMode ? " (시나리오)" : ""}`}
+                    : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
                 </span>
               </div>
-              <div className={styles.itemActions}>
-                <button
-                  className={styles.editBtn}
-                  onClick={() => startEdit(item)}
-                >
-                  <Pencil size={16} />
-                </button>
-                <button
-                  className={styles.deleteBtn}
-                  onClick={() => handleDelete(item.id)}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
+              {isLinked && linkedBadge ? (
+                <div className={styles.linkedBadge}>
+                  {linkedBadge.icon}
+                  <span>{linkedBadge.label} 연동</span>
+                </div>
+              ) : (
+                <div className={styles.itemActions}>
+                  <button
+                    className={styles.editBtn}
+                    onClick={() => startEdit(item)}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -1506,6 +1388,15 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
       </div>
     </div>
   );
+
+  // 캐시된 데이터가 없고 로딩 중일 때만 로딩 표시
+  if (isLoading && dbExpenses.length === 0) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -1655,7 +1546,7 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
                             </span>
                           </span>
                           <span className={styles.itemMeta}>
-                            {`${item.startYear}년 ~ ${item.endYear}년 | 연 ${item.displayGrowthRate}% 상승${isPresetMode ? " (시나리오)" : ""}`}
+                            {`${item.startYear}년 ~ ${item.endYear}년 | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
                           </span>
                         </div>
                         <div className={styles.itemActions}>
@@ -1703,69 +1594,31 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
           housingItems,
           "부동산 탭에서 등록한 월세, 관리비가 표시됩니다"
         )}
-        {/* 이자 비용 섹션 - 부채에서 연동 */}
+        {/* 이자 비용 섹션 - simulationResult에서 가져옴 (Single Source of Truth) */}
         <div className={styles.expenseSection}>
           <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>이자 비용</span>
+            <span className={styles.sectionTitle}>이자/원금 상환</span>
           </div>
           <p className={styles.sectionDesc}>부채 탭에서 등록한 대출 상환금이 표시됩니다</p>
 
           <div className={styles.itemList}>
-            {interestItems.map((item) => {
-              const isLinked = item.sourceType === 'debt';
-              const isEditing = editingId === item.id;
-
-              // 연동된 항목은 읽기 전용
-              if (isLinked) {
-                return (
-                  <div key={item.id} className={styles.expenseItem}>
-                    <div className={styles.itemMain}>
-                      <span className={styles.itemLabel}>{item.label}</span>
-                      <span className={styles.itemAmount}>
-                        {formatAmountWithFreq(item)}
-                      </span>
-                      <span className={styles.itemMeta}>
-                        {formatPeriod(item)}
-                      </span>
-                    </div>
-                    <div className={styles.linkedBadge}>
-                      <CreditCard size={12} />
-                      <span>부채</span>
-                    </div>
-                  </div>
-                );
-              }
-
-              // 수동 입력 항목
-              if (isEditing && editForm) {
-                return (
-                  <div key={item.id} className={styles.editItem}>
-                    {/* 기존 편집 로직 */}
-                  </div>
-                );
-              }
-              return (
-                <div key={item.id} className={styles.expenseItem}>
-                  <div className={styles.itemMain}>
-                    <span className={styles.itemLabel}>{item.label}</span>
-                    <span className={styles.itemAmount}>
-                      {formatAmountWithFreq(item)}
-                    </span>
-                    <span className={styles.itemMeta}>
-                      {formatPeriod(item)} | 연 {item.displayGrowthRate}% 상승
-                    </span>
-                  </div>
-                  <div className={styles.itemActions}>
-                    <button className={styles.editBtn} onClick={() => startEdit(item)}>
-                      <Pencil size={16} />
-                    </button>
-                    <button className={styles.deleteBtn} onClick={() => handleDelete(item.id)}>
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+            {interestItems.map((item) => (
+              <div key={item.id} className={styles.expenseItem}>
+                <div className={styles.itemMain}>
+                  <span className={styles.itemLabel}>{item.label}</span>
+                  <span className={styles.itemAmount}>
+                    {formatMoney(item.amount)}/월
+                  </span>
+                  <span className={styles.itemMeta}>
+                    연간 {formatMoney(item.amount * 12)}
+                  </span>
                 </div>
-              );
-            })}
+                <div className={styles.linkedBadge}>
+                  <CreditCard size={12} />
+                  <span>부채 연동</span>
+                </div>
+              </div>
+            ))}
 
             {interestItems.length === 0 && (
               <p className={styles.emptyText}>
@@ -1776,65 +1629,9 @@ export function ExpenseTab({ data, onUpdateData, globalSettings }: ExpenseTabPro
         </div>
       </div>
 
-      {/* 오른쪽: 요약 */}
-      <div className={styles.summaryPanel}>
-        {monthlyExpense > 0 ? (
-          <>
-            <div className={styles.summaryCard}>
-              <div className={styles.totalExpense}>
-                <span className={styles.totalLabel}>월 총 지출</span>
-                <span className={styles.totalValue}>
-                  {formatMoney(monthlyExpense)}
-                </span>
-              </div>
-              <div className={styles.subValues}>
-                <div className={styles.subValueItem}>
-                  <span className={styles.subLabel}>연 지출</span>
-                  <span className={styles.subValue}>
-                    {formatMoney(monthlyExpense * 12)}
-                  </span>
-                </div>
-                <div className={styles.subValueItem}>
-                  <span className={styles.subLabel}>은퇴까지 총 지출</span>
-                  <span className={styles.subValue}>
-                    {formatMoney(lifetimeExpense)}
-                  </span>
-                </div>
-              </div>
-              <div className={styles.retirementInfo}>
-                <div className={styles.retirementItem}>
-                  <span className={styles.retirementLabel}>본인 은퇴</span>
-                  <span className={styles.retirementValue}>
-                    {selfRetirementYear}년 ({retirementAge}세)
-                  </span>
-                </div>
-                {hasSpouse && spouseCurrentAge !== null && (
-                  <div className={styles.retirementItem}>
-                    <span className={styles.retirementLabel}>배우자 은퇴</span>
-                    <span className={styles.retirementValue}>
-                      {spouseRetirementYear}년 ({spouseRetirementAge}세)
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 지출 전망 차트 */}
-            {projectionData.labels.length > 1 && (
-              <div className={styles.chartCard}>
-                <h4 className={styles.cardTitle}>연간 지출 전망</h4>
-                <div className={styles.chartWrapper}>
-                  <Bar data={barChartData} options={barChartOptions} />
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className={styles.emptyState}>
-            <TrendingDown size={40} />
-            <p>지출을 추가하면 분석 결과가 표시됩니다</p>
-          </div>
-        )}
+      {/* 오른쪽: 인사이트 */}
+      <div className={styles.insightPanel}>
+        {/* TODO: 인사이트 내용 추가 예정 */}
       </div>
     </div>
   );

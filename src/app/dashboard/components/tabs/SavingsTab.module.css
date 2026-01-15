@@ -332,8 +332,8 @@
   line-height: 1.6;
 }
 
-/* ========== 오른쪽: 요약 패널 ========== */
-.summaryPanel {
+/* ========== 오른쪽: 인사이트 패널 ========== */
+.insightPanel {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -543,6 +543,16 @@
   line-height: 1.5;
 }
 
+/* 로딩 상태 */
+.loadingState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #86868b;
+  font-size: 14px;
+}
+
 /* 반응형 */
 @media (max-width: 1024px) {
   .container {
@@ -555,7 +565,7 @@
     padding-bottom: 32px;
   }
 
-  .summaryPanel {
+  .insightPanel {
     margin: 0;
     padding: 24px 20px 48px;
   }

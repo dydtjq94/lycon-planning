@@ -1369,3 +1369,411 @@
 .noMaturityButton:hover {
   background: #d2d2d7;
 }
+
+/* 기본 정보 섹션 (3단계 Essential) */
+.basicInfoSection {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 지출 섹션 */
+.expenseSection {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 힌트 텍스트 */
+.hint {
+  font-size: 15px;
+  color: #86868b;
+  margin-top: 16px;
+  line-height: 1.5;
+}
+
+/* ========================================
+   Part 2: 알아가기 - 단일 입력 스타일
+   ======================================== */
+
+.singleInputSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 400px;
+}
+
+/* 큰 텍스트 입력 (이름) */
+.largeTextInput {
+  width: 100%;
+  padding: 16px 0;
+  font-size: 32px;
+  font-weight: 600;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 2px solid #d2d2d7;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  transition: border-color 0.2s ease;
+  letter-spacing: -0.5px;
+}
+
+.largeTextInput:focus {
+  border-bottom-color: #007aff;
+}
+
+.largeTextInput::placeholder {
+  color: #d2d2d7;
+}
+
+/* 큰 날짜 입력 (생년월일) */
+.largeDateInput {
+  width: 100%;
+  max-width: 280px;
+  padding: 16px 0;
+  font-size: 32px;
+  font-weight: 600;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 2px solid #d2d2d7;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  transition: border-color 0.2s ease;
+  letter-spacing: -0.5px;
+}
+
+.largeDateInput:focus {
+  border-bottom-color: #007aff;
+}
+
+/* 나이 정보 텍스트 */
+.ageInfo {
+  font-size: 17px;
+  color: #86868b;
+  margin: 0;
+}
+
+/* 은퇴 나이 입력 그룹 */
+.retirementAgeInput {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.largeNumberInput {
+  width: 120px;
+  padding: 16px 0;
+  font-size: 32px;
+  font-weight: 600;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 2px solid #d2d2d7;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  transition: border-color 0.2s ease;
+  letter-spacing: -0.5px;
+  text-align: left;
+}
+
+.largeNumberInput:focus {
+  border-bottom-color: #007aff;
+}
+
+.largeNumberInput::placeholder {
+  color: #d2d2d7;
+}
+
+.largeNumberInput::-webkit-outer-spin-button,
+.largeNumberInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.largeNumberInput[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.largeUnit {
+  font-size: 24px;
+  color: #86868b;
+  font-weight: 500;
+}
+
+/* 남은 기간 정보 */
+.yearsLeftInfo {
+  font-size: 17px;
+  color: #86868b;
+  margin: 0;
+}
+
+/* ========================================
+   Part 1: 목적 선택 스타일
+   ======================================== */
+
+.purposeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.purposeOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.purposeOption {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  font-size: 17px;
+  font-weight: 500;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.purposeOption:hover {
+  background: #e8e8ed;
+}
+
+.purposeOptionActive {
+  background: #007aff;
+  color: white;
+  border-color: #007aff;
+}
+
+.purposeOptionActive:hover {
+  background: #0066d6;
+}
+
+.purposeCheck {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.purposeLabel {
+  line-height: 1.4;
+}
+
+.purposeHint {
+  font-size: 15px;
+  color: #86868b;
+  margin: 0;
+}
+
+/* 공감 메시지 섹션 */
+.empathySection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.empathyMessage {
+  font-size: 20px;
+  font-weight: 500;
+  color: #1d1d1f;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-line;
+}
+
+/* ========================================
+   Part 3: 가족 스타일
+   ======================================== */
+
+/* 예/아니오 선택 섹션 */
+.yesNoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.yesNoButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.yesNoButton {
+  padding: 20px 24px;
+  font-size: 17px;
+  font-weight: 500;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.yesNoButton:hover {
+  background: #e8e8ed;
+}
+
+.yesNoButtonActive {
+  background: #007aff;
+  color: white;
+  border-color: #007aff;
+}
+
+.yesNoButtonActive:hover {
+  background: #0066d6;
+}
+
+/* 배우자 정보 섹션 */
+.spouseInfoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.infoRow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.infoLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.infoInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.infoAgeDisplay {
+  font-size: 17px;
+  color: #86868b;
+}
+
+/* 작은 버튼 그룹 */
+.smallButtonGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.smallButton {
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.smallButton:hover {
+  background: #e8e8ed;
+}
+
+.smallButtonActive {
+  background: #007aff;
+  color: white;
+}
+
+.smallButtonActive:hover {
+  background: #0066d6;
+}
+
+/* 자녀 정보 섹션 */
+.childrenInfoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 480px;
+}
+
+/* ========================================
+   Part 5: 완료 스타일
+   ======================================== */
+
+.completeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.completeSection .completeTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin: 0;
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+}
+
+.completeSection .completeDescription {
+  font-size: 17px;
+  color: #86868b;
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.completeSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: #f5f5f7;
+  border-radius: 16px;
+}
+
+.summaryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summaryLabel {
+  font-size: 15px;
+  color: #86868b;
+}
+
+.summaryValue {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+}

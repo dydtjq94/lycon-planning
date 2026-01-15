@@ -19,15 +19,21 @@ interface AssetPieChartProps {
 }
 
 export function AssetPieChart({ data }: AssetPieChartProps) {
-  // 현금성 자산
-  const cashAssets = (data.cashCheckingAccount || 0) + (data.cashSavingsAccount || 0)
+  // 현금성 자산 (저축 계좌)
+  let cashAssets = 0
+  if (data.savingsAccounts) {
+    data.savingsAccounts.forEach(account => {
+      cashAssets += account.balance || 0
+    })
+  }
 
-  // 투자자산
-  const investAssets =
-    (data.investDomesticStock || 0) +
-    (data.investForeignStock || 0) +
-    (data.investFund || 0) +
-    (data.investOther || 0)
+  // 투자자산 (투자 계좌)
+  let investAssets = 0
+  if (data.investmentAccounts) {
+    data.investmentAccounts.forEach(account => {
+      investAssets += account.balance || 0
+    })
+  }
 
   const totalAssets = cashAssets + investAssets
 

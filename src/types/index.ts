@@ -86,7 +86,7 @@ export const RATE_CATEGORY_LABELS: Record<RateCategory, string> = {
 }
 
 // 소득 연동 출처 타입
-export type IncomeSourceType = 'realEstate' | 'manual'
+export type IncomeSourceType = 'realEstate' | 'manual' | 'national_pension' | 'retirement_pension' | 'personal_pension' | 'real_estate'
 
 // 소득 항목 (대시보드용)
 export interface DashboardIncomeItem {
@@ -115,7 +115,7 @@ export type DashboardExpenseType = 'fixed' | 'variable' | 'onetime' | 'medical' 
 export type DashboardExpenseFrequency = 'monthly' | 'yearly'
 
 // 지출 연동 출처 타입
-export type ExpenseSourceType = 'debt' | 'housing' | 'manual'
+export type ExpenseSourceType = 'debt' | 'real_estate' | 'insurance'
 
 // 지출 항목 (대시보드용)
 export interface DashboardExpenseItem {
@@ -217,8 +217,14 @@ export interface PhysicalAsset {
   loanRepaymentType?: AssetLoanRepaymentType  // 상환방식
 }
 
+// 온보딩 목적 타입
+export type OnboardingPurpose = 'retirement_fund' | 'savings_check' | 'pension_calc' | 'asset_organize' | 'dont_know'
+
 // 온보딩 데이터
 export interface OnboardingData {
+  // 온보딩 목적 (Part 1에서 선택, 다중 선택 가능)
+  purposes?: OnboardingPurpose[]
+
   // Step 1: 기본 정보
   name: string
   gender: Gender | null  // 성별
@@ -262,6 +268,9 @@ export interface OnboardingData {
   // 거주용 부동산
   housingType: '자가' | '전세' | '월세' | '해당없음' | null  // 거주 형태
   housingValue: number | null      // 자가: 시세, 전세/월세: 보증금
+  housingPurchaseYear: number | null     // 자가: 취득 연도
+  housingPurchaseMonth: number | null    // 자가: 취득 월
+  housingPurchasePrice: number | null    // 자가: 취득가 (만원)
   housingRent: number | null       // 월세: 월세
   housingMaintenance: number | null  // 관리비 (자가, 전세, 월세 공통)
   housingHasLoan: boolean          // 대출 여부
@@ -282,21 +291,7 @@ export interface OnboardingData {
   // 추가 부동산 (투자용, 임대용, 토지 - 거주용 제외)
   realEstateProperties: RealEstateProperty[]
 
-  // 금융자산 - 현금성 자산 (deprecated - 하위 호환용)
-  cashCheckingAccount: number | null      // 입출금통장
-  cashCheckingRate: number | null         // 입출금통장 금리
-  cashSavingsAccount: number | null       // 정기예금/적금
-  cashSavingsRate: number | null          // 정기예금/적금 금리
-
-  // 금융자산 - 투자자산 (deprecated - 하위 호환용)
-  investDomesticStock: number | null      // 국내주식 및 ETF
-  investDomesticRate: number | null       // 국내주식 수익률
-  investForeignStock: number | null       // 해외주식 및 ETF
-  investForeignRate: number | null        // 해외주식 수익률
-  investFund: number | null               // 펀드 및 채권
-  investFundRate: number | null           // 펀드 수익률
-  investOther: number | null              // 기타 투자자산 (가상화폐, P2P 등)
-  investOtherRate: number | null          // 기타 수익률
+  // 금융자산 없음 여부
   hasNoAsset: boolean | null              // null = 아직 선택 안함, true = 금융자산 없음
 
   // 부채 목록
@@ -488,7 +483,7 @@ export interface GlobalSettings {
 
 // 기본 글로벌 설정
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
-  scenarioMode: 'custom',
+  scenarioMode: 'individual',
   inflationRate: 2.5,
   incomeGrowthRate: 3.3,
   investmentReturnRate: 5,
@@ -571,7 +566,7 @@ export type FinancialCategory =
 export type OwnerType = 'self' | 'spouse' | 'child' | 'common'
 
 // 재무 항목 타입 (카테고리별)
-export type IncomeType = 'labor' | 'business' | 'side_income' | 'rental' | 'dividend' | 'other'
+export type IncomeType = 'labor' | 'business' | 'side_income' | 'rental' | 'dividend' | 'pension' | 'regular' | 'onetime' | 'other'
 export type ExpenseType = 'living' | 'housing' | 'maintenance' | 'education' | 'child' | 'insurance' | 'transport' | 'health' | 'travel' | 'parents' | 'wedding' | 'leisure' | 'other'
 export type SavingsType = 'emergency_fund' | 'savings_account' | 'stock' | 'fund' | 'crypto' | 'other'
 export type PensionType = 'national' | 'retirement' | 'personal' | 'irp' | 'severance'
@@ -597,6 +592,7 @@ export interface IncomeData {
   amount: number                    // 금액 (만원)
   frequency: 'monthly' | 'yearly'   // 지급 주기
   growthRate: number                // 연간 증가율 (%)
+  rateCategory?: RateCategory       // 상승률 카테고리 (시나리오 모드용)
 }
 
 // 지출 데이터
@@ -604,6 +600,7 @@ export interface ExpenseData {
   amount: number                    // 금액 (만원)
   frequency: 'monthly' | 'yearly'   // 지출 주기
   growthRate: number                // 연간 증가율 (%, 보통 물가상승률)
+  rateCategory?: RateCategory       // 상승률 카테고리 (시나리오 모드용)
 }
 
 // 저축 데이터
@@ -612,6 +609,9 @@ export interface SavingsData {
   monthlyContribution?: number      // 월 납입액 (만원)
   interestRate?: number             // 이자율/수익률 (%)
   targetAmount?: number             // 목표 금액 (만원)
+  // 원본 타입 저장 (DB 타입과 다를 수 있음)
+  originalSavingsType?: SavingsAccountType      // 저축 계좌 원본 타입
+  originalInvestmentType?: InvestmentAccountType // 투자 계좌 원본 타입
 }
 
 // 연금 데이터 (유형별로 다른 필드 사용)
@@ -641,6 +641,14 @@ export interface AssetData {
   purchasePrice?: number            // 매입가 (만원)
   appreciationRate?: number         // 연간 상승률 (%)
   interestRate?: number             // 이자율 (예금 등)
+  // 원본 타입 저장 (DB 타입과 다를 수 있음)
+  originalAssetType?: PhysicalAssetType
+  // 금융 정보 (대출/할부)
+  financingType?: AssetFinancingType
+  loanAmount?: number               // 대출/할부 금액 (만원)
+  loanRate?: number                 // 금리 (%)
+  loanMaturity?: string             // 만기 (YYYY-MM)
+  loanRepaymentType?: AssetLoanRepaymentType
 }
 
 // 부채 데이터
@@ -672,6 +680,9 @@ export interface RealEstateData {
   loanMaturityYear?: number         // 대출 만기 연도
   loanMaturityMonth?: number        // 대출 만기 월
   loanRepaymentType?: '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환'
+
+  // 원본 타입 저장 (DB 타입과 다를 수 있음)
+  originalUsageType?: RealEstateUsageType
 }
 
 // 통합 데이터 타입

@@ -2,16 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
-import type { OnboardingData, FamilyMemberInput, Gender } from "@/types";
+import type { FamilyMemberInput, Gender } from "@/types";
+import type { ProfileBasics, FamilyMember } from "@/contexts/FinancialContext";
+import { createClient } from "@/lib/supabase/client";
 import styles from "./Modal.module.css";
 
 interface FamilyModalProps {
-  data: OnboardingData;
-  onUpdate: (updates: Partial<OnboardingData>) => void;
+  profile: ProfileBasics;
+  familyMembers: FamilyMember[];
   onClose: () => void;
+  onSaved?: () => void;
 }
 
-export function FamilyModal({ data, onUpdate, onClose }: FamilyModalProps) {
+export function FamilyModal({ profile, familyMembers, onClose, onSaved }: FamilyModalProps) {
   // ESC 키로 닫기
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -23,23 +26,40 @@ export function FamilyModal({ data, onUpdate, onClose }: FamilyModalProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  const [name, setName] = useState(data.name || "");
-  const [birthDate, setBirthDate] = useState(data.birth_date || "");
-  const [gender, setGender] = useState<Gender | null>(data.gender || null);
+  // 기존 가족 구성원에서 추출
+  const existingSpouse = familyMembers.find(fm => fm.relationship === 'spouse');
+  const existingChildren = familyMembers.filter(fm => fm.relationship === 'child');
+
+  const [name, setName] = useState(profile.name || "");
+  const [birthDate, setBirthDate] = useState(profile.birth_date || "");
+  const [gender, setGender] = useState<Gender | null>(profile.gender || null);
   const [retirementAge, setRetirementAge] = useState(
-    data.target_retirement_age || 60
+    profile.target_retirement_age || 60
   );
 
   // 배우자
-  const [isMarried, setIsMarried] = useState(data.isMarried || false);
+  const [isMarried, setIsMarried] = useState(!!existingSpouse);
   const [spouse, setSpouse] = useState<FamilyMemberInput | null>(
-    data.spouse || null
+    existingSpouse ? {
+      relationship: 'spouse',
+      name: existingSpouse.name,
+      birth_date: existingSpouse.birth_date || '',
+      gender: existingSpouse.gender || undefined,
+      retirement_age: existingSpouse.retirement_age || 60,
+    } : null
   );
 
   // 자녀
   const [children, setChildren] = useState<FamilyMemberInput[]>(
-    data.children || []
+    existingChildren.map(child => ({
+      relationship: 'child',
+      name: child.name,
+      birth_date: child.birth_date || '',
+      gender: child.gender || undefined,
+    }))
   );
+
+  const [isSaving, setIsSaving] = useState(false);
 
   // 배우자 추가/수정
   const handleSpouseChange = (
@@ -82,18 +102,67 @@ export function FamilyModal({ data, onUpdate, onClose }: FamilyModalProps) {
   };
 
   // 저장
-  const handleSave = () => {
-    onUpdate({
-      name,
-      birth_date: birthDate,
-      gender,
-      target_retirement_age: retirementAge,
-      isMarried,
-      spouse: isMarried ? spouse : null,
-      children,
-      hasChildren: children.length > 0,
-    });
-    onClose();
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const supabase = createClient();
+
+      // 1. 프로필 업데이트
+      await supabase
+        .from('profiles')
+        .update({
+          name,
+          birth_date: birthDate || null,
+          gender,
+          target_retirement_age: retirementAge,
+        })
+        .eq('id', profile.id);
+
+      // 2. 기존 가족 구성원 삭제
+      await supabase
+        .from('family_members')
+        .delete()
+        .eq('profile_id', profile.id);
+
+      // 3. 새 가족 구성원 추가
+      const newFamilyMembers = [];
+
+      // 배우자 추가
+      if (isMarried && spouse) {
+        newFamilyMembers.push({
+          profile_id: profile.id,
+          relationship: 'spouse',
+          name: spouse.name || '배우자',
+          birth_date: spouse.birth_date || null,
+          gender: spouse.gender || null,
+          retirement_age: spouse.retirement_age || 60,
+        });
+      }
+
+      // 자녀 추가
+      for (const child of children) {
+        newFamilyMembers.push({
+          profile_id: profile.id,
+          relationship: 'child',
+          name: child.name,
+          birth_date: child.birth_date || null,
+          gender: child.gender || null,
+        });
+      }
+
+      if (newFamilyMembers.length > 0) {
+        await supabase
+          .from('family_members')
+          .insert(newFamilyMembers);
+      }
+
+      onSaved?.();
+      onClose();
+    } catch (error) {
+      console.error('Failed to save family data:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // 배경 클릭 시 닫기
@@ -349,11 +418,11 @@ export function FamilyModal({ data, onUpdate, onClose }: FamilyModalProps) {
         </div>
 
         <div className={styles.footer}>
-          <button className={styles.cancelBtn} onClick={onClose}>
+          <button className={styles.cancelBtn} onClick={onClose} disabled={isSaving}>
             취소
           </button>
-          <button className={styles.applyBtn} onClick={handleSave}>
-            저장
+          <button className={styles.applyBtn} onClick={handleSave} disabled={isSaving}>
+            {isSaving ? '저장 중...' : '저장'}
           </button>
         </div>
       </div>

@@ -55,8 +55,15 @@ function analyzeIncomeStabilityInManwon(data: OnboardingData) {
     recommendedEmergencyMonths = 9
   }
 
-  // 현재 비상금 (현금성 자산)
-  const currentEmergencyFund = (data.cashCheckingAccount || 0) + (data.cashSavingsAccount || 0)
+  // 현재 비상금 (현금성 자산 - savingsAccounts에서 checking, savings 타입 합산)
+  let currentEmergencyFund = 0
+  if (data.savingsAccounts) {
+    data.savingsAccounts.forEach(account => {
+      if (account.type === 'checking' || account.type === 'savings') {
+        currentEmergencyFund += account.balance || 0
+      }
+    })
+  }
   const monthlyExpense = data.livingExpenses || 300
   const currentEmergencyMonths = monthlyExpense > 0
     ? Math.round(currentEmergencyFund / monthlyExpense)

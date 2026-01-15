@@ -9,8 +9,15 @@ interface AssetSummaryChartProps {
 }
 
 export function AssetSummaryChart({ data }: AssetSummaryChartProps) {
-  // 입출금통장 (즉시 사용 가능한 현금)
-  const cash = data.cashCheckingAccount || 0
+  // 입출금통장 (즉시 사용 가능한 현금) - savingsAccounts에서 checking 타입 합산
+  let cash = 0
+  if (data.savingsAccounts) {
+    data.savingsAccounts.forEach(account => {
+      if (account.type === 'checking') {
+        cash += account.balance || 0
+      }
+    })
+  }
   // 월 생활비
   const monthlyExpense = data.livingExpenses || 0
 

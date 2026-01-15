@@ -6,6 +6,45 @@
 - **코드 복사 금지**: 구조와 로직만 참고, 직접 복사하지 않음
 - **기술 스택 다름**: reference는 React/Firebase, 현재는 Next.js/Supabase
 
+## Supabase 테이블 구조 (매우 중요!)
+
+### 반드시 MCP 도구로 확인
+- **테이블 조작 전 필수 확인**: 데이터 저장/수정/삭제 전에 반드시 `mcp__supabase__list_tables`로 실제 컬럼명 확인
+- **추측 금지**: 컬럼명을 추측하지 말고 항상 실제 스키마 확인
+- **외래키 관계 확인**: 테이블 간 관계는 foreign_key_constraints에서 확인
+
+### 테이블별 핵심 컬럼 (자주 혼동됨)
+```
+profiles
+├── id (uuid) - auth.users.id와 연결
+└── 사용자 기본 정보
+
+family_members
+├── user_id (uuid) - profiles.id와 연결 (profile_id 아님!)
+└── 가족 구성원 정보
+
+simulations
+├── profile_id (uuid) - profiles.id와 연결
+└── 시뮬레이션 정보
+
+incomes, expenses, debts, savings, real_estates,
+physical_assets, insurances, national_pensions,
+retirement_pensions, personal_pensions
+├── simulation_id (uuid) - simulations.id와 연결
+└── 각 재무 데이터
+```
+
+### 코드 작성 시 규칙
+- **family_members는 user_id**: `.eq("user_id", profile.id)` 사용
+- **재무 데이터는 simulation_id**: `.eq("simulation_id", simulation.id)` 사용
+- **profiles는 id**: `.eq("id", user.id)` 사용
+
+### 데이터 타입 주의
+- **금액**: integer (만원 단위) - NOT bigint
+- **비율**: numeric (예: 5.0, 2.5)
+- **날짜**: date (YYYY-MM-DD) 또는 year/month 분리
+- **boolean**: true/false, 기본값 확인 필수
+
 ## CSS 스타일
 
 - **CSS Modules 사용**: Tailwind 사용 금지

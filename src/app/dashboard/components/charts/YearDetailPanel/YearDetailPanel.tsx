@@ -3,12 +3,18 @@
 import { X } from 'lucide-react'
 import type { YearlySnapshot } from '@/lib/services/simulationEngine'
 import { getYearDetail, formatTooltipValue, ASSET_COLORS } from '@/lib/utils/chartDataTransformer'
+import { categorizeAsset } from '@/lib/utils/tooltipCategories'
 import styles from './YearDetailPanel.module.css'
 
 interface YearDetailPanelProps {
   snapshots: YearlySnapshot[]
   year: number
   onClose: () => void
+}
+
+// 중앙화된 색상 시스템 사용 (tooltipCategories.ts)
+function getAssetColor(title: string): string {
+  return categorizeAsset(title).color
 }
 
 export function YearDetailPanel({ snapshots, year, onClose }: YearDetailPanelProps) {
@@ -60,27 +66,27 @@ export function YearDetailPanel({ snapshots, year, onClose }: YearDetailPanelPro
         {/* 자산 breakdown */}
         <div className={styles.section}>
           <div className={styles.sectionTitle}>자산</div>
-          <div className={styles.row}>
-            <span className={styles.rowLabel}>
-              <span className={styles.dot} style={{ backgroundColor: ASSET_COLORS.financialAssets }} />
-              금융자산
-            </span>
-            <span className={styles.rowValue}>{formatTooltipValue(detail.financialAssets)}</span>
-          </div>
-          <div className={styles.row}>
-            <span className={styles.rowLabel}>
-              <span className={styles.dot} style={{ backgroundColor: ASSET_COLORS.realEstate }} />
-              부동산
-            </span>
-            <span className={styles.rowValue}>{formatTooltipValue(detail.realEstate)}</span>
-          </div>
-          <div className={styles.row}>
-            <span className={styles.rowLabel}>
-              <span className={styles.dot} style={{ backgroundColor: ASSET_COLORS.pension }} />
-              연금
-            </span>
-            <span className={styles.rowValue}>{formatTooltipValue(detail.pension)}</span>
-          </div>
+          {detail.assetBreakdown.map((item, idx) => (
+            <div key={idx} className={styles.row}>
+              <span className={styles.rowLabel}>
+                <span
+                  className={styles.dot}
+                  style={{ backgroundColor: getAssetColor(item.title) }}
+                />
+                {item.title}
+              </span>
+              <span className={styles.rowValue}>{formatTooltipValue(item.amount)}</span>
+            </div>
+          ))}
+          {detail.pensionBreakdown.map((item, idx) => (
+            <div key={`pension-${idx}`} className={styles.row}>
+              <span className={styles.rowLabel}>
+                <span className={styles.dot} style={{ backgroundColor: ASSET_COLORS.pension }} />
+                {item.title}
+              </span>
+              <span className={styles.rowValue}>{formatTooltipValue(item.amount)}</span>
+            </div>
+          ))}
           <div className={styles.rowTotal}>
             <span>총 자산</span>
             <span>{formatTooltipValue(detail.totalAssets)}</span>

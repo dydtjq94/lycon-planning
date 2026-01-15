@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { Plus, Trash2, TrendingUp, Pencil, X, Check, ExternalLink, Building2 } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { Plus, Trash2, TrendingUp, Pencil, X, Check, ExternalLink, Building2, Link } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,21 +12,37 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import type {
-  OnboardingData,
   DashboardIncomeItem,
   DashboardIncomeFrequency,
   GlobalSettings,
 } from "@/types";
+import type { SimulationResult } from "@/lib/services/simulationEngine";
+import type { Income, IncomeInput, IncomeType as DBIncomeType } from "@/types/tables";
 import { DEFAULT_GLOBAL_SETTINGS } from "@/types";
 import { formatMoney, getDefaultRateCategory, getEffectiveRate } from "@/lib/utils";
+import { CHART_COLORS, categorizeIncome } from "@/lib/utils/tooltipCategories";
+import { useIncomes, useInvalidateByCategory } from "@/hooks/useFinancialData";
+import {
+  createIncome,
+  updateIncome,
+  deleteIncome,
+  INCOME_TYPE_LABELS,
+  INCOME_TYPE_DEFAULTS,
+  getSourceLabel,
+} from "@/lib/services/incomeService";
 import styles from "./IncomeTab.module.css";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 interface IncomeTabProps {
-  data: OnboardingData;
-  onUpdateData: (updates: Partial<OnboardingData>) => void;
+  simulationId: string;
+  birthYear: number;
+  spouseBirthYear?: number | null;
+  retirementAge: number;
+  spouseRetirementAge?: number;
+  isMarried: boolean;
   globalSettings: GlobalSettings;
+  simulationResult: SimulationResult;
 }
 
 // 상승률 프리셋 (숫자만)
@@ -43,35 +59,36 @@ type IncomeType = DashboardIncomeItem["type"];
 type EndType = DashboardIncomeItem["endType"];
 type IncomeFrequency = DashboardIncomeFrequency;
 
-export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps) {
+export function IncomeTab({
+  simulationId,
+  birthYear,
+  spouseBirthYear,
+  retirementAge,
+  spouseRetirementAge = 60,
+  isMarried,
+  globalSettings,
+  simulationResult,
+}: IncomeTabProps) {
   const currentYear = new Date().getFullYear();
 
-  // 현재 나이 계산
-  const currentAge = useMemo(() => {
-    if (!data.birth_date) return 35;
-    const birthYear = new Date(data.birth_date).getFullYear();
-    return currentYear - birthYear;
-  }, [data.birth_date, currentYear]);
+  // React Query로 소득 데이터 로드 (캐시에서 즉시 가져옴)
+  const { data: dbIncomes = [], isLoading } = useIncomes(simulationId);
+  const invalidate = useInvalidateByCategory(simulationId);
 
-  const retirementAge = data.target_retirement_age || 60;
+  // 현재 나이 계산
+  const currentAge = currentYear - birthYear;
   const selfRetirementYear = currentYear + (retirementAge - currentAge);
 
   // 배우자 나이 계산
-  const spouseCurrentAge = useMemo(() => {
-    if (!data.spouse?.birth_date) return null;
-    const spouseBirthYear = new Date(data.spouse.birth_date).getFullYear();
-    return currentYear - spouseBirthYear;
-  }, [data.spouse?.birth_date, currentYear]);
-
-  const spouseRetirementAge = data.spouse?.retirement_age || 60;
+  const spouseCurrentAge = spouseBirthYear ? currentYear - spouseBirthYear : null;
 
   // 배우자 은퇴년도
   const spouseRetirementYear = useMemo(() => {
-    if (!data.spouse?.birth_date || spouseCurrentAge === null) return selfRetirementYear;
+    if (!spouseBirthYear || spouseCurrentAge === null) return selfRetirementYear;
     return currentYear + (spouseRetirementAge - spouseCurrentAge);
-  }, [data.spouse, currentYear, selfRetirementYear, spouseCurrentAge, spouseRetirementAge]);
+  }, [spouseBirthYear, currentYear, selfRetirementYear, spouseCurrentAge, spouseRetirementAge]);
 
-  const hasSpouse = data.isMarried && data.spouse;
+  const hasSpouse = isMarried && spouseBirthYear;
 
   // 특정 연도의 나이 계산
   const getAgeAtYear = (year: number, isSelf: boolean): number | null => {
@@ -103,99 +120,65 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
     return (end.year - item.startYear) * 12 + (end.month - item.startMonth);
   };
 
-  // 소득 항목 상태 (저장된 데이터 우선, 없으면 기존 필드에서 마이그레이션)
-  const [incomeItems, setIncomeItems] = useState<IncomeItem[]>(() => {
-    // 저장된 incomeItems가 있으면 사용
-    if (data.incomeItems && data.incomeItems.length > 0) {
-      return data.incomeItems;
-    }
+  // DB 소득을 IncomeItem 형식으로 변환
+  const dbTypeToUIType = (dbType: DBIncomeType): IncomeType => {
+    const typeMap: Record<DBIncomeType, IncomeType> = {
+      labor: 'labor',
+      business: 'business',
+      rental: 'rental',
+      pension: 'pension',
+      dividend: 'regular',
+      side: 'regular',
+      other: 'regular',
+    };
+    return typeMap[dbType] || 'regular';
+  };
 
-    // 없으면 기존 필드에서 마이그레이션
-    const items: IncomeItem[] = [];
-    const month = new Date().getMonth() + 1;
+  // DB 소득 데이터를 UI용 IncomeItem으로 변환
+  const incomeItems = useMemo<IncomeItem[]>(() => {
+    return dbIncomes.map((income) => {
+      // endType 결정: retirement_link 기반
+      let endType: EndType = 'custom';
+      if (income.retirement_link === 'self') {
+        endType = 'self-retirement';
+      } else if (income.retirement_link === 'spouse') {
+        endType = 'spouse-retirement';
+      }
 
-    if (data.laborIncome && data.laborIncome > 0) {
-      items.push({
-        id: "labor-self",
-        type: "labor",
-        label: "본인",
-        owner: "self",
-        amount: data.laborIncome,
-        frequency: data.laborIncomeFrequency || "monthly",
-        startYear: currentYear,
-        startMonth: month,
-        endType: "self-retirement",
-        endYear: null,
-        endMonth: null,
-        growthRate: DEFAULT_GLOBAL_SETTINGS.incomeGrowthRate,
-        rateCategory: "income",
-      });
-    }
+      return {
+        id: income.id,
+        type: dbTypeToUIType(income.type),
+        label: income.title,
+        owner: income.owner,
+        amount: income.amount,
+        frequency: income.frequency,
+        startYear: income.start_year,
+        startMonth: income.start_month,
+        endType,
+        endYear: income.end_year,
+        endMonth: income.end_month,
+        growthRate: income.growth_rate,
+        rateCategory: income.rate_category,
+        // 연동 정보 (null을 undefined로 변환)
+        sourceType: income.source_type || undefined,
+        sourceId: income.source_id || undefined,
+        isSystem: income.source_type !== null, // 연동된 항목은 시스템 생성
+      };
+    });
+  }, [dbIncomes]);
 
-    if (data.spouseLaborIncome && data.spouseLaborIncome > 0) {
-      items.push({
-        id: "labor-spouse",
-        type: "labor",
-        label: "배우자",
-        owner: "spouse",
-        amount: data.spouseLaborIncome,
-        frequency: data.spouseLaborIncomeFrequency || "monthly",
-        startYear: currentYear,
-        startMonth: month,
-        endType: "spouse-retirement",
-        endYear: null,
-        endMonth: null,
-        growthRate: DEFAULT_GLOBAL_SETTINGS.incomeGrowthRate,
-        rateCategory: "income",
-      });
-    }
+  // incomeItems 변경은 더 이상 onUpdateData로 저장하지 않음 (DB에서 직접 관리)
+  // 기존 레거시 호환을 위해 빈 함수 유지
+  const setIncomeItems = (_updater: IncomeItem[] | ((prev: IncomeItem[]) => IncomeItem[])) => {
+    // DB 기반이므로 직접 상태 변경하지 않음
+    // 대신 loadIncomes()를 호출하여 새로고침
+    console.warn('setIncomeItems is deprecated. Use incomeService directly.');
+  };
 
-    if (data.businessIncome && data.businessIncome > 0) {
-      items.push({
-        id: "business-self",
-        type: "business",
-        label: "본인",
-        owner: "self",
-        amount: data.businessIncome,
-        frequency: data.businessIncomeFrequency || "monthly",
-        startYear: currentYear,
-        startMonth: month,
-        endType: "self-retirement",
-        endYear: null,
-        endMonth: null,
-        growthRate: DEFAULT_GLOBAL_SETTINGS.incomeGrowthRate,
-        rateCategory: "income",
-      });
-    }
+  // DB에서 직접 관리하므로 더 이상 onUpdateData로 저장하지 않음
 
-    if (data.spouseBusinessIncome && data.spouseBusinessIncome > 0) {
-      items.push({
-        id: "business-spouse",
-        type: "business",
-        label: "배우자",
-        owner: "spouse",
-        amount: data.spouseBusinessIncome,
-        frequency: data.spouseBusinessIncomeFrequency || "monthly",
-        startYear: currentYear,
-        startMonth: month,
-        endType: "spouse-retirement",
-        endYear: null,
-        endMonth: null,
-        growthRate: DEFAULT_GLOBAL_SETTINGS.incomeGrowthRate,
-        rateCategory: "income",
-      });
-    }
-
-    return items;
-  });
-
-  // incomeItems 변경 시 DB에 저장
-  useEffect(() => {
-    onUpdateData({ incomeItems });
-  }, [incomeItems]);
-
-  // 시나리오 모드 적용된 표시용 데이터 (한 번만 계산!)
-  const isPresetMode = globalSettings.scenarioMode !== "custom";
+  // 시나리오 모드 여부 (individual이 아니면 시나리오 적용 중)
+  const isScenarioMode = globalSettings.scenarioMode !== "individual";
   const displayItems = useMemo(() => {
     return incomeItems.map((item) => {
       const rateCategory = item.rateCategory || getDefaultRateCategory(item.type);
@@ -234,349 +217,8 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
   const regularItems = displayItems.filter((i) => i.type === "regular");
   const onetimeItems = displayItems.filter((i) => i.type === "onetime");
   const rentalItems = displayItems.filter((i) => i.type === "rental");
-  const userPensionItems = displayItems.filter((i) => i.type === "pension");
-
-  // 연금 탭에서 자동 생성되는 연금 소득 항목
-  const computedPensionItems = useMemo((): DisplayItem[] => {
-    const items: DisplayItem[] = [];
-    const lifeExpectancy = globalSettings.lifeExpectancy || 100;
-    const investmentReturnRate = globalSettings.investmentReturnRate / 100;
-
-    // PMT 계산 함수
-    const calculatePMT = (presentValue: number, years: number, annualRate: number) => {
-      if (years <= 0 || presentValue <= 0) return 0;
-      if (annualRate === 0) return presentValue / years;
-      const r = annualRate;
-      const n = years;
-      const factor = Math.pow(1 + r, n);
-      return presentValue * (r * factor) / (factor - 1);
-    };
-
-    // 미래가치 계산 (적립)
-    const calculateFV = (balance: number, monthlyContribution: number, years: number) => {
-      let fv = balance;
-      for (let i = 0; i < years; i++) {
-        fv = (fv + monthlyContribution * 12) * (1 + investmentReturnRate);
-      }
-      return fv;
-    };
-
-    // 1. 국민연금
-    if (data.nationalPension && data.nationalPension > 0) {
-      const startAge = data.nationalPensionStartAge || 65;
-      const startYear = currentYear + (startAge - currentAge);
-      const endYear = currentYear + (lifeExpectancy - currentAge);
-      items.push({
-        id: 'pension-national',
-        type: 'pension' as const,
-        label: '국민연금',
-        amount: data.nationalPension,
-        frequency: 'monthly' as const,
-        owner: 'self' as const,
-        startYear,
-        startMonth: 1,
-        endType: 'custom' as const,
-        endAge: lifeExpectancy,
-        endYear,
-        endMonth: 12,
-        growthRate: 0,
-        rateCategory: 'fixed' as const,
-        displayGrowthRate: 0,
-        isSystem: true,
-      });
-    }
-
-    // 2. 연금저축
-    if (data.pensionSavingsBalance && data.pensionSavingsBalance > 0) {
-      const startAge = data.pensionSavingsStartAge || 56;
-      const receivingYears = data.pensionSavingsReceivingYears || 20;
-      const startYear = currentYear + (startAge - currentAge);
-      const yearsUntilStart = Math.max(0, startAge - currentAge);
-
-      // 수령 시작 시점의 적립액
-      const futureValue = calculateFV(data.pensionSavingsBalance, 0, yearsUntilStart);
-      // 연간 PMT → 월 PMT
-      const annualPMT = calculatePMT(futureValue, receivingYears, investmentReturnRate);
-      const monthlyPMT = Math.round(annualPMT / 12);
-
-      if (monthlyPMT > 0) {
-        items.push({
-          id: 'pension-savings',
-          type: 'pension' as const,
-          label: '연금저축',
-          amount: monthlyPMT,
-          frequency: 'monthly' as const,
-          owner: 'self' as const,
-          startYear,
-          startMonth: 1,
-          endType: 'custom' as const,
-          endYear: startYear + receivingYears - 1,
-          endMonth: 12,
-          growthRate: 0,
-          rateCategory: 'fixed' as const,
-          displayGrowthRate: 0,
-          isSystem: true,
-        });
-      }
-    }
-
-    // 3. IRP
-    if (data.irpBalance && data.irpBalance > 0) {
-      const startAge = data.irpStartAge || 56;
-      const receivingYears = data.irpReceivingYears || 20;
-      const startYear = currentYear + (startAge - currentAge);
-      const yearsUntilStart = Math.max(0, startAge - currentAge);
-
-      const futureValue = calculateFV(data.irpBalance, 0, yearsUntilStart);
-      const annualPMT = calculatePMT(futureValue, receivingYears, investmentReturnRate);
-      const monthlyPMT = Math.round(annualPMT / 12);
-
-      if (monthlyPMT > 0) {
-        items.push({
-          id: 'pension-irp',
-          type: 'pension' as const,
-          label: 'IRP',
-          amount: monthlyPMT,
-          frequency: 'monthly' as const,
-          owner: 'self' as const,
-          startYear,
-          startMonth: 1,
-          endType: 'custom' as const,
-          endYear: startYear + receivingYears - 1,
-          endMonth: 12,
-          growthRate: 0,
-          rateCategory: 'fixed' as const,
-          displayGrowthRate: 0,
-          isSystem: true,
-        });
-      }
-    }
-
-    // 4. 퇴직연금 (기본값: 연금 수령, 일시금 선택 시만 제외)
-    if (data.retirementPensionType && data.retirementPensionType !== 'unknown' && data.retirementPensionReceiveType !== 'lump_sum') {
-      const startAge = data.retirementPensionStartAge || 56;
-      const receivingYears = data.retirementPensionReceivingYears || 10;
-      const startYear = currentYear + (startAge - currentAge);
-      const retirementAge = data.target_retirement_age || 60;
-
-      // 퇴직연금 일시금 계산
-      const isDBType = data.retirementPensionType === 'DB' || data.retirementPensionType === 'severance';
-      let totalAmount = 0;
-
-      if (isDBType && data.laborIncome) {
-        const monthlyIncome = data.laborIncomeFrequency === 'yearly' ? data.laborIncome / 12 : data.laborIncome;
-        const yearsOfService = data.yearsOfService || 0;
-        const yearsUntilRetirement = Math.max(0, retirementAge - currentAge);
-        const totalYearsAtRetirement = yearsOfService + yearsUntilRetirement;
-        const incomeGrowthRate = globalSettings.incomeGrowthRate / 100;
-        const finalMonthlySalary = monthlyIncome * Math.pow(1 + incomeGrowthRate, yearsUntilRetirement);
-        totalAmount = finalMonthlySalary * totalYearsAtRetirement;
-      } else if (!isDBType && data.retirementPensionBalance && data.laborIncome) {
-        const monthlyIncome = data.laborIncomeFrequency === 'yearly' ? data.laborIncome / 12 : data.laborIncome;
-        const monthlyContribution = monthlyIncome * 0.0833;
-        const yearsUntilRetirement = Math.max(0, retirementAge - currentAge);
-        let futureValue = data.retirementPensionBalance;
-        for (let i = 0; i < yearsUntilRetirement; i++) {
-          futureValue = (futureValue + monthlyContribution * 12) * (1 + investmentReturnRate);
-        }
-        totalAmount = futureValue;
-      }
-
-      if (totalAmount > 0) {
-        // 퇴직 시점부터 수령 시작까지 추가 운용
-        const yearsUntilReceive = Math.max(0, startAge - retirementAge);
-        const valueAtReceiveStart = totalAmount * Math.pow(1 + investmentReturnRate, yearsUntilReceive);
-
-        // PMT 계산
-        const r = investmentReturnRate;
-        const n = receivingYears;
-        const factor = Math.pow(1 + r, n);
-        const annualPMT = r === 0 ? valueAtReceiveStart / n : valueAtReceiveStart * (r * factor) / (factor - 1);
-        const monthlyPMT = Math.round(annualPMT / 12);
-
-        if (monthlyPMT > 0) {
-          items.push({
-            id: 'pension-retirement',
-            type: 'pension' as const,
-            label: '퇴직연금',
-            amount: monthlyPMT,
-            frequency: 'monthly' as const,
-            owner: 'self' as const,
-            startYear,
-            startMonth: 1,
-            endType: 'custom' as const,
-            endYear: startYear + receivingYears - 1,
-            endMonth: 12,
-            growthRate: 0,
-            rateCategory: 'fixed' as const,
-            displayGrowthRate: 0,
-            isSystem: true,
-          });
-        }
-      }
-    }
-
-    // === 배우자 연금 ===
-    const hasWorkingSpouse = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
-    if (hasWorkingSpouse && spouseCurrentAge !== null) {
-      const spouseLifeExpectancy = globalSettings.lifeExpectancy || 100;
-
-      // 5. 배우자 국민연금
-      if (data.spouseNationalPension && data.spouseNationalPension > 0) {
-        const startAge = data.spouseNationalPensionStartAge || 65;
-        const startYear = currentYear + (startAge - spouseCurrentAge);
-        const endYear = currentYear + (spouseLifeExpectancy - spouseCurrentAge);
-        items.push({
-          id: 'pension-spouse-national',
-          type: 'pension' as const,
-          label: '배우자 국민연금',
-          amount: data.spouseNationalPension,
-          frequency: 'monthly' as const,
-          owner: 'spouse' as const,
-          startYear,
-          startMonth: 1,
-          endType: 'custom' as const,
-          endAge: spouseLifeExpectancy,
-          endYear,
-          endMonth: 12,
-          growthRate: 0,
-          rateCategory: 'fixed' as const,
-          displayGrowthRate: 0,
-          isSystem: true,
-        });
-      }
-
-      // 6. 배우자 연금저축
-      if (data.spousePensionSavingsBalance && data.spousePensionSavingsBalance > 0) {
-        const startAge = data.spousePensionSavingsStartAge || 56;
-        const receivingYears = data.spousePensionSavingsReceivingYears || 20;
-        const startYear = currentYear + (startAge - spouseCurrentAge);
-        const yearsUntilStart = Math.max(0, startAge - spouseCurrentAge);
-
-        const futureValue = calculateFV(data.spousePensionSavingsBalance, 0, yearsUntilStart);
-        const annualPMT = calculatePMT(futureValue, receivingYears, investmentReturnRate);
-        const monthlyPMT = Math.round(annualPMT / 12);
-
-        if (monthlyPMT > 0) {
-          items.push({
-            id: 'pension-spouse-savings',
-            type: 'pension' as const,
-            label: '배우자 연금저축',
-            amount: monthlyPMT,
-            frequency: 'monthly' as const,
-            owner: 'spouse' as const,
-            startYear,
-            startMonth: 1,
-            endType: 'custom' as const,
-            endYear: startYear + receivingYears - 1,
-            endMonth: 12,
-            growthRate: 0,
-            rateCategory: 'fixed' as const,
-            displayGrowthRate: 0,
-            isSystem: true,
-          });
-        }
-      }
-
-      // 7. 배우자 IRP
-      if (data.spouseIrpBalance && data.spouseIrpBalance > 0) {
-        const startAge = data.spouseIrpStartAge || 56;
-        const receivingYears = data.spouseIrpReceivingYears || 20;
-        const startYear = currentYear + (startAge - spouseCurrentAge);
-        const yearsUntilStart = Math.max(0, startAge - spouseCurrentAge);
-
-        const futureValue = calculateFV(data.spouseIrpBalance, 0, yearsUntilStart);
-        const annualPMT = calculatePMT(futureValue, receivingYears, investmentReturnRate);
-        const monthlyPMT = Math.round(annualPMT / 12);
-
-        if (monthlyPMT > 0) {
-          items.push({
-            id: 'pension-spouse-irp',
-            type: 'pension' as const,
-            label: '배우자 IRP',
-            amount: monthlyPMT,
-            frequency: 'monthly' as const,
-            owner: 'spouse' as const,
-            startYear,
-            startMonth: 1,
-            endType: 'custom' as const,
-            endYear: startYear + receivingYears - 1,
-            endMonth: 12,
-            growthRate: 0,
-            rateCategory: 'fixed' as const,
-            displayGrowthRate: 0,
-            isSystem: true,
-          });
-        }
-      }
-
-      // 8. 배우자 퇴직연금
-      if (data.spouseRetirementPensionType && data.spouseRetirementPensionType !== 'unknown' && data.spouseRetirementPensionReceiveType !== 'lump_sum') {
-        const startAge = data.spouseRetirementPensionStartAge || 56;
-        const receivingYears = data.spouseRetirementPensionReceivingYears || 10;
-        const startYear = currentYear + (startAge - spouseCurrentAge);
-        const spouseRetireAge = data.spouse?.retirement_age || 60;
-
-        const isDBType = data.spouseRetirementPensionType === 'DB' || data.spouseRetirementPensionType === 'severance';
-        let totalAmount = 0;
-
-        if (isDBType && data.spouseLaborIncome) {
-          const monthlyIncome = data.spouseLaborIncomeFrequency === 'yearly' ? data.spouseLaborIncome / 12 : data.spouseLaborIncome;
-          const yearsOfService = data.spouseYearsOfService || 0;
-          const yearsUntilRetirement = Math.max(0, spouseRetireAge - spouseCurrentAge);
-          const totalYearsAtRetirement = yearsOfService + yearsUntilRetirement;
-          const incomeGrowthRate = globalSettings.incomeGrowthRate / 100;
-          const finalMonthlySalary = monthlyIncome * Math.pow(1 + incomeGrowthRate, yearsUntilRetirement);
-          totalAmount = finalMonthlySalary * totalYearsAtRetirement;
-        } else if (!isDBType && data.spouseRetirementPensionBalance && data.spouseLaborIncome) {
-          const monthlyIncome = data.spouseLaborIncomeFrequency === 'yearly' ? data.spouseLaborIncome / 12 : data.spouseLaborIncome;
-          const monthlyContribution = monthlyIncome * 0.0833;
-          const yearsUntilRetirement = Math.max(0, spouseRetireAge - spouseCurrentAge);
-          let futureValue = data.spouseRetirementPensionBalance;
-          for (let i = 0; i < yearsUntilRetirement; i++) {
-            futureValue = (futureValue + monthlyContribution * 12) * (1 + investmentReturnRate);
-          }
-          totalAmount = futureValue;
-        }
-
-        if (totalAmount > 0) {
-          const yearsUntilReceive = Math.max(0, startAge - spouseRetireAge);
-          const valueAtReceiveStart = totalAmount * Math.pow(1 + investmentReturnRate, yearsUntilReceive);
-
-          const r = investmentReturnRate;
-          const n = receivingYears;
-          const factor = Math.pow(1 + r, n);
-          const annualPMT = r === 0 ? valueAtReceiveStart / n : valueAtReceiveStart * (r * factor) / (factor - 1);
-          const monthlyPMT = Math.round(annualPMT / 12);
-
-          if (monthlyPMT > 0) {
-            items.push({
-              id: 'pension-spouse-retirement',
-              type: 'pension' as const,
-              label: '배우자 퇴직연금',
-              amount: monthlyPMT,
-              frequency: 'monthly' as const,
-              owner: 'spouse' as const,
-              startYear,
-              startMonth: 1,
-              endType: 'custom' as const,
-              endYear: startYear + receivingYears - 1,
-              endMonth: 12,
-              growthRate: 0,
-              rateCategory: 'fixed' as const,
-              displayGrowthRate: 0,
-              isSystem: true,
-            });
-          }
-        }
-      }
-    }
-
-    return items;
-  }, [data, currentAge, spouseCurrentAge, currentYear, globalSettings]);
-
-  // 연금 항목 = 사용자 입력 + 자동 계산
-  const pensionItems = [...userPensionItems, ...computedPensionItems];
+  // 연금 소득은 연금 탭에서 자동 생성되어 DB에 저장됨 (handleUpdateData에서 처리)
+  const pensionItems = displayItems.filter((i) => i.type === "pension");
 
   // 월 소득으로 변환 (frequency 고려)
   const toMonthlyAmount = (item: IncomeItem): number => {
@@ -665,15 +307,8 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
     ]
   );
 
-  // 차트 데이터 (연간 합계, 소득 유형별로 분리) - 100세까지 표시
+  // 차트 데이터 - simulationResult에서 직접 가져옴 (Single Source of Truth)
   const projectionData = useMemo(() => {
-    // 본인/배우자 중 나중에 100세 되는 해까지
-    const selfAge100Year = currentYear + (100 - currentAge);
-    const spouseAge100Year = spouseCurrentAge !== null
-      ? currentYear + (100 - spouseCurrentAge)
-      : selfAge100Year;
-    const maxYear = Math.max(selfAge100Year, spouseAge100Year);
-    const yearsUntilEnd = Math.max(0, maxYear - currentYear);
     const labels: string[] = [];
     const laborData: number[] = [];
     const businessData: number[] = [];
@@ -682,8 +317,7 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
     const rentalData: number[] = [];
     const pensionData: number[] = [];
 
-    for (let i = 0; i <= yearsUntilEnd; i++) {
-      const year = currentYear + i;
+    simulationResult.snapshots.forEach((snapshot) => {
       let laborTotal = 0;
       let businessTotal = 0;
       let regularTotal = 0;
@@ -691,47 +325,63 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
       let rentalTotal = 0;
       let pensionTotal = 0;
 
-      // 모든 소득 항목 (사용자 입력 + 시스템 생성 연금)
-      const allItems = [...displayItems, ...computedPensionItems];
-
-      allItems.forEach((item) => {
-        // 일시적 소득: 해당 연도/월에만 한 번 추가
-        if (item.type === "onetime") {
-          if (year === item.startYear) {
+      // incomeBreakdown을 type 필드로 정확히 분류
+      snapshot.incomeBreakdown.forEach((item: { title: string; amount: number; type?: string }) => {
+        // type 필드가 있으면 직접 사용, 없으면 키워드 기반 분류
+        const itemType = item.type || '';
+        switch (itemType) {
+          case 'labor':
+            laborTotal += item.amount;
+            break;
+          case 'business':
+            businessTotal += item.amount;
+            break;
+          case 'pension':
+          case 'national':      // 국민연금
+          case 'retirement':    // 퇴직연금
+          case 'personal':      // 개인연금
+          case 'irp':           // IRP
+            pensionTotal += item.amount;
+            break;
+          case 'rental':
+            rentalTotal += item.amount;
+            break;
+          case 'dividend':
+          case 'interest':
+          case 'financial':
+            regularTotal += item.amount;
+            break;
+          case 'bonus':
+          case 'onetime':
+          case 'inheritance':
+          case 'gift':
             onetimeTotal += item.amount;
-          }
-          return;
-        }
-
-        const end = getEndYearMonth(item);
-        if (year >= item.startYear && year <= end.year) {
-          const startM = year === item.startYear ? item.startMonth : 1;
-          const endM = year === end.year ? end.month : 12;
-          const monthsInYear = Math.max(0, endM - startM + 1);
-          const yearsFromStart = year - item.startYear;
-          // displayGrowthRate 사용 (이미 시나리오 적용됨)
-          const monthlyAmount =
-            item.frequency === "yearly" ? item.amount / 12 : item.amount;
-          const grownAmount =
-            monthlyAmount * Math.pow(1 + item.displayGrowthRate / 100, yearsFromStart);
-          const yearAmount = Math.round(grownAmount * monthsInYear);
-
-          if (item.type === "labor") laborTotal += yearAmount;
-          else if (item.type === "business") businessTotal += yearAmount;
-          else if (item.type === "regular") regularTotal += yearAmount;
-          else if (item.type === "rental") rentalTotal += yearAmount;
-          else if (item.type === "pension") pensionTotal += yearAmount;
+            break;
+          default:
+            // type이 없으면 키워드 기반 분류로 폴백
+            if (itemType === '') {
+              const category = categorizeIncome(item.title);
+              switch (category.id) {
+                case 'labor': laborTotal += item.amount; break;
+                case 'business': businessTotal += item.amount; break;
+                case 'pension': pensionTotal += item.amount; break;
+                case 'rental': rentalTotal += item.amount; break;
+                default: regularTotal += item.amount;
+              }
+            } else {
+              regularTotal += item.amount;
+            }
         }
       });
 
-      labels.push(`${year}`);
+      labels.push(`${snapshot.year}`);
       laborData.push(laborTotal);
       businessData.push(businessTotal);
       regularData.push(regularTotal);
       onetimeData.push(onetimeTotal);
       rentalData.push(rentalTotal);
       pensionData.push(pensionTotal);
-    }
+    });
 
     return {
       labels,
@@ -742,7 +392,7 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
       rentalData,
       pensionData,
     };
-  }, [displayItems, computedPensionItems, currentYear, currentAge, spouseCurrentAge, selfRetirementYear, spouseRetirementYear]);
+  }, [simulationResult]);
 
   // 차트에 표시할 데이터셋 (값이 있는 것만)
   const chartDatasets = useMemo(() => {
@@ -751,42 +401,42 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
       datasets.push({
         label: "근로",
         data: projectionData.laborData,
-        backgroundColor: "#007aff",
+        backgroundColor: CHART_COLORS.income.labor,
       });
     }
     if (projectionData.businessData.some((v) => v > 0)) {
       datasets.push({
         label: "사업",
         data: projectionData.businessData,
-        backgroundColor: "#34c759",
+        backgroundColor: CHART_COLORS.income.business,
       });
     }
     if (projectionData.regularData.some((v) => v > 0)) {
       datasets.push({
         label: "정기",
         data: projectionData.regularData,
-        backgroundColor: "#ff9500",
+        backgroundColor: CHART_COLORS.income.regular,
       });
     }
     if (projectionData.onetimeData.some((v) => v > 0)) {
       datasets.push({
         label: "일시",
         data: projectionData.onetimeData,
-        backgroundColor: "#af52de",
+        backgroundColor: CHART_COLORS.income.onetime,
       });
     }
     if (projectionData.rentalData.some((v) => v > 0)) {
       datasets.push({
         label: "임대",
         data: projectionData.rentalData,
-        backgroundColor: "#ff3b30",
+        backgroundColor: CHART_COLORS.income.rental,
       });
     }
     if (projectionData.pensionData.some((v) => v > 0)) {
       datasets.push({
         label: "연금",
         data: projectionData.pensionData,
-        backgroundColor: "#5856d6",
+        backgroundColor: CHART_COLORS.income.pension,
       });
     }
     return datasets;
@@ -809,19 +459,21 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
       tooltipEl = document.createElement("div");
       tooltipEl.className = "chart-tooltip";
       tooltipEl.style.cssText = `
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-radius: 12px;
         border: 1px solid rgba(0, 0, 0, 0.06);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
         pointer-events: none;
         position: absolute;
         transform: translate(-50%, 0);
         transition: all 0.15s ease;
         padding: 14px 18px;
         font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        min-width: 180px;
+        white-space: nowrap;
+        z-index: 100;
+        min-width: 200px;
       `;
       chart.canvas.parentNode?.appendChild(tooltipEl);
     }
@@ -981,13 +633,24 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
     },
   };
 
-  // 항목 추가
-  const handleAdd = () => {
-    if (!addingType || !newAmount) return;
+  // UI 타입을 DB 타입으로 변환
+  const uiTypeToDbType = (uiType: IncomeType): DBIncomeType => {
+    const typeMap: Record<IncomeType, DBIncomeType> = {
+      labor: 'labor',
+      business: 'business',
+      rental: 'rental',
+      pension: 'pension',
+      regular: 'other',
+      onetime: 'other',
+    };
+    return typeMap[uiType] || 'other';
+  };
+
+  // 항목 추가 (DB에 저장)
+  const handleAdd = async () => {
+    if (!addingType || !newAmount || !simulationId) return;
 
     const defaultLabel = newOwner === "self" ? "본인" : "배우자";
-    const defaultEndType =
-      newOwner === "self" ? "self-retirement" : "spouse-retirement";
 
     // 타입별 기본 라벨
     const getDefaultLabel = () => {
@@ -1001,24 +664,38 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
 
     // 일시적 소득은 선택한 년/월에 한 번만 발생
     const isOnetime = addingType === "onetime";
+    const isFixedToRetirement = !isOnetime && (newOwner === "self" || newOwner === "spouse");
 
-    const newItem: IncomeItem = {
-      id: Date.now().toString(),
-      type: addingType,
-      label: getDefaultLabel(),
+    // 새 소득의 기본 retirement_link는 owner 기준 (본인 소득 → 본인 은퇴, 배우자 소득 → 배우자 은퇴)
+    const defaultRetirementLink = isFixedToRetirement
+      ? (newOwner === 'spouse' ? 'spouse' : 'self')
+      : null;
+
+    const incomeInput: IncomeInput = {
+      simulation_id: simulationId,
+      type: uiTypeToDbType(addingType),
+      title: getDefaultLabel(),
       owner: newOwner,
       amount: parseFloat(newAmount),
-      frequency: isOnetime ? "monthly" : newFrequency, // 일시적 소득은 frequency 무의미
-      startYear: isOnetime ? newOnetimeYear : currentYear,
-      startMonth: isOnetime ? newOnetimeMonth : currentMonth,
-      endType: isOnetime ? "custom" : defaultEndType,
-      endYear: isOnetime ? newOnetimeYear : null,
-      endMonth: isOnetime ? newOnetimeMonth : null,
-      growthRate: isOnetime ? 0 : DEFAULT_GLOBAL_SETTINGS.incomeGrowthRate,
-      rateCategory: getDefaultRateCategory(addingType),
+      frequency: isOnetime ? "monthly" : newFrequency,
+      start_year: isOnetime ? newOnetimeYear : currentYear,
+      start_month: isOnetime ? newOnetimeMonth : currentMonth,
+      // retirement_link가 있으면 end_year는 null - 시뮬레이션 시점에 동적 계산
+      end_year: isOnetime ? newOnetimeYear : null,
+      end_month: isOnetime ? newOnetimeMonth : null,
+      is_fixed_to_retirement: isFixedToRetirement,
+      retirement_link: defaultRetirementLink,
+      growth_rate: isOnetime ? 0 : DEFAULT_GLOBAL_SETTINGS.incomeGrowthRate,
+      rate_category: getDefaultRateCategory(addingType) as any,
     };
 
-    setIncomeItems((prev) => [...prev, newItem]);
+    try {
+      await createIncome(incomeInput);
+      invalidate('incomes'); // 캐시 무효화 (소득 + items)
+    } catch (error) {
+      console.error('Failed to create income:', error);
+    }
+
     setAddingType(null);
     setNewOwner("self");
     setNewLabel("");
@@ -1028,9 +705,15 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
     setNewOnetimeMonth(currentMonth);
   };
 
-  // 항목 삭제
-  const handleDelete = (id: string) => {
-    setIncomeItems((prev) => prev.filter((item) => item.id !== id));
+  // 항목 삭제 (DB에서 삭제)
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteIncome(id);
+      invalidate('incomes'); // 캐시 무효화 (소득 + items)
+    } catch (error) {
+      console.error('Failed to delete income:', error);
+      alert(error instanceof Error ? error.message : '삭제 실패');
+    }
     if (editingId === id) {
       setEditingId(null);
       setEditForm(null);
@@ -1059,18 +742,47 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
     setCustomRateInput("");
   };
 
-  // 편집 저장
-  const saveEdit = () => {
+  // 편집 저장 (DB에 저장)
+  const saveEdit = async () => {
     if (!editForm) return;
-    const finalForm = isCustomRateMode
-      ? {
-          ...editForm,
-          growthRate: customRateInput === "" ? 0 : parseFloat(customRateInput),
-        }
-      : editForm;
-    setIncomeItems((prev) =>
-      prev.map((item) => (item.id === finalForm.id ? finalForm : item))
-    );
+
+    const finalGrowthRate = isCustomRateMode
+      ? (customRateInput === "" ? 0 : parseFloat(customRateInput))
+      : editForm.growthRate;
+
+    const isFixedToRetirement = editForm.endType === 'self-retirement' || editForm.endType === 'spouse-retirement';
+
+    try {
+      // retirement_link 결정: endType에 따라 'self', 'spouse', null
+      const retirementLink = editForm.endType === 'self-retirement'
+        ? 'self'
+        : editForm.endType === 'spouse-retirement'
+          ? 'spouse'
+          : null;
+
+      // retirement_link가 있으면 end_year는 null - 시뮬레이션 시점에 동적 계산
+      const endYearToSave = retirementLink ? null : editForm.endYear;
+      const endMonthToSave = retirementLink ? null : editForm.endMonth;
+
+      await updateIncome(editForm.id, {
+        title: editForm.label,
+        owner: editForm.owner,
+        amount: editForm.amount,
+        frequency: editForm.frequency,
+        start_year: editForm.startYear,
+        start_month: editForm.startMonth,
+        end_year: endYearToSave,
+        end_month: endMonthToSave,
+        is_fixed_to_retirement: isFixedToRetirement,
+        retirement_link: retirementLink,
+        growth_rate: finalGrowthRate,
+        rate_category: editForm.rateCategory as any,
+      });
+      invalidate('incomes'); // 캐시 무효화 (소득 + items)
+    } catch (error) {
+      console.error('Failed to update income:', error);
+    }
+
     setEditingId(null);
     setEditForm(null);
     setIsCustomRateMode(false);
@@ -1099,8 +811,10 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
       return `${startStr} ~ 배우자 은퇴`;
     }
 
-    const end = getEndYearMonth(item);
-    const endStr = `${end.year}.${String(end.month).padStart(2, "0")}`;
+    // 종료일이 없으면 "시작일 ~" 형식으로 표시
+    if (!item.endYear) return `${startStr} ~`;
+
+    const endStr = `${item.endYear}.${String(item.endMonth || 12).padStart(2, "0")}`;
     return `${startStr} ~ ${endStr}`;
   };
 
@@ -1529,8 +1243,26 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
           }
 
           // 읽기 모드 - displayGrowthRate 사용 (이미 시나리오 적용됨)
-          const isLinkedFromRealEstate = item.sourceType === 'realEstate';
-          const isReadOnly = item.isSystem || isLinkedFromRealEstate;
+          const isLinked = item.sourceType !== null && item.sourceType !== undefined;
+          const isReadOnly = item.isSystem || isLinked;
+
+          // 연동 소스 라벨 및 아이콘
+          const getLinkedBadge = () => {
+            if (!item.sourceType) return null;
+            switch (item.sourceType) {
+              case 'national_pension':
+                return { label: '국민연금', icon: <Link size={12} /> };
+              case 'retirement_pension':
+                return { label: '퇴직연금', icon: <Link size={12} /> };
+              case 'personal_pension':
+                return { label: '개인연금', icon: <Link size={12} /> };
+              case 'real_estate':
+                return { label: '부동산', icon: <Building2 size={12} /> };
+              default:
+                return { label: '연동', icon: <Link size={12} /> };
+            }
+          };
+          const linkedBadge = getLinkedBadge();
 
           return (
             <div key={item.id} className={styles.incomeItem}>
@@ -1546,13 +1278,13 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
                     ? formatPeriod(item)
                     : isReadOnly
                     ? formatPeriod(item)
-                    : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isPresetMode ? " (시나리오)" : ""}`}
+                    : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
                 </span>
               </div>
-              {isLinkedFromRealEstate ? (
+              {linkedBadge ? (
                 <div className={styles.linkedBadge}>
-                  <Building2 size={12} />
-                  <span>부동산</span>
+                  {linkedBadge.icon}
+                  <span>{linkedBadge.label}</span>
                 </div>
               ) : !isReadOnly && (
                 <div className={styles.itemActions}>
@@ -1740,6 +1472,15 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
     </div>
   );
 
+  // 캐시된 데이터가 없고 로딩 중일 때만 로딩 표시
+  if (isLoading && dbIncomes.length === 0) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container}>
       {/* 왼쪽: 소득 입력 */}
@@ -1780,66 +1521,9 @@ export function IncomeTab({ data, onUpdateData, globalSettings }: IncomeTabProps
         </p>
       </div>
 
-      {/* 오른쪽: 요약 */}
-      <div className={styles.summaryPanel}>
-        {monthlyIncome > 0 ? (
-          <>
-            {/* 총 소득 요약 */}
-            <div className={styles.summaryCard}>
-              <div className={styles.totalIncome}>
-                <span className={styles.totalLabel}>월 총 소득</span>
-                <span className={styles.totalValue}>
-                  {formatMoney(monthlyIncome)}
-                </span>
-              </div>
-              <div className={styles.subValues}>
-                <div className={styles.subValueItem}>
-                  <span className={styles.subLabel}>연 소득</span>
-                  <span className={styles.subValue}>
-                    {formatMoney(monthlyIncome * 12)}
-                  </span>
-                </div>
-                <div className={styles.subValueItem}>
-                  <span className={styles.subLabel}>은퇴까지 총 소득</span>
-                  <span className={styles.subValue}>
-                    {formatMoney(lifetimeIncome)}
-                  </span>
-                </div>
-              </div>
-              <div className={styles.retirementInfo}>
-                <div className={styles.retirementItem}>
-                  <span className={styles.retirementLabel}>본인 은퇴</span>
-                  <span className={styles.retirementValue}>
-                    {selfRetirementYear}년 ({retirementAge}세)
-                  </span>
-                </div>
-                {hasSpouse && spouseCurrentAge !== null && (
-                  <div className={styles.retirementItem}>
-                    <span className={styles.retirementLabel}>배우자 은퇴</span>
-                    <span className={styles.retirementValue}>
-                      {spouseRetirementYear}년 ({spouseRetirementAge}세)
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 소득 전망 차트 */}
-            {projectionData.labels.length > 1 && (
-              <div className={styles.chartCard}>
-                <h4 className={styles.cardTitle}>연간 소득 전망</h4>
-                <div className={styles.chartWrapper}>
-                  <Bar data={barChartData} options={barChartOptions} />
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className={styles.emptyState}>
-            <TrendingUp size={40} />
-            <p>소득을 추가하면 분석 결과가 표시됩니다</p>
-          </div>
-        )}
+      {/* 오른쪽: 인사이트 */}
+      <div className={styles.insightPanel}>
+        {/* TODO: 인사이트 내용 추가 예정 */}
       </div>
     </div>
   );

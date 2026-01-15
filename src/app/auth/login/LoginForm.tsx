@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Input } from '@/components/ui/input'
 import styles from '../auth.module.css'
 
 export function LoginForm() {
@@ -13,15 +13,35 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showEmailForm, setShowEmailForm] = useState(false)
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleKakaoLogin = async () => {
+    setError(null)
+    setLoading(true)
+
+    const supabase = createClient()
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+    }
+  }
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
     const supabase = createClient()
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
@@ -32,56 +52,146 @@ export function LoginForm() {
       return
     }
 
-    router.push('/dashboard')
+    // 인증 상태 확인 후 적절한 페이지로 이동
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('phone_number, pin_hash, booking_info')
+        .eq('id', data.user.id)
+        .single()
+
+      // 1. 프로필 없음 → PIN 설정
+      if (!profile) {
+        router.push('/auth/pin-setup')
+        router.refresh()
+        return
+      }
+
+      // 2. PIN 미설정 → PIN 설정
+      if (!profile.pin_hash) {
+        router.push('/auth/pin-setup')
+        router.refresh()
+        return
+      }
+
+      // 3. PIN 있고 예약 전 → 온보딩
+      if (!profile.booking_info) {
+        router.push('/onboarding')
+        router.refresh()
+        return
+      }
+
+      // 4. 예약 완료 + 전화번호 미인증 → 전화번호 인증
+      if (!profile.phone_number) {
+        router.push('/auth/phone-verify')
+        router.refresh()
+        return
+      }
+
+      // 5. 모두 완료 (재방문) → PIN 입력
+      router.push('/auth/pin-verify')
+      router.refresh()
+      return
+    }
+
+    router.push('/auth/pin-setup')
     router.refresh()
   }
 
   return (
     <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>로그인</h1>
-          <p className={styles.description}>Lycon에 오신 것을 환영합니다</p>
+      <main className={styles.main}>
+        {/* 상단: 철학/미션 */}
+        <div className={styles.heroArea}>
+          <p className={styles.brandLabel}>Lycon Finance Group</p>
+          <h1 className={styles.heroTitle}>
+            은퇴 후에도<br />
+            당신다운 삶을<br />
+            살 수 있도록
+          </h1>
+          <p className={styles.heroDesc}>
+            재무 전문가와 함께<br />
+            나만의 은퇴 시나리오를 설계하세요
+          </p>
         </div>
-        <form onSubmit={handleLogin}>
-          <div className={styles.content}>
-            {error && <div className={styles.error}>{error}</div>}
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="email">이메일</label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="example@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label} htmlFor="password">비밀번호</label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-          <div className={styles.footer}>
-            <button type="submit" className={styles.submitButton} disabled={loading}>
-              {loading ? '로그인 중...' : '로그인'}
-            </button>
-            <p className={styles.linkText}>
-              계정이 없으신가요?{' '}
-              <Link href="/auth/signup" className={styles.link}>
-                회원가입
-              </Link>
-            </p>
-          </div>
-        </form>
-      </div>
+
+        {/* 하단: 버튼 영역 */}
+        <div className={styles.actionArea}>
+          {error && <div className={styles.error}>{error}</div>}
+
+          {!showEmailForm ? (
+            <>
+              <button
+                type="button"
+                className={styles.kakaoButton}
+                onClick={handleKakaoLogin}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 size={20} className={styles.spinner} />
+                ) : (
+                  <>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.47 1.607 4.647 4.023 5.897-.125.48-.45 1.737-.516 2.008-.082.334.122.33.258.24.106-.07 1.693-1.15 2.378-1.615.598.088 1.22.135 1.857.135 5.523 0 10-3.477 10-7.665C20 6.477 17.523 3 12 3z"/>
+                    </svg>
+                    <span>카카오로 로그인</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className={styles.emailToggle}
+                onClick={() => setShowEmailForm(true)}
+              >
+                이메일로 로그인
+              </button>
+
+              <p className={styles.linkText}>
+                계정이 없으신가요?{' '}
+                <Link href="/auth/signup" className={styles.link}>
+                  회원가입
+                </Link>
+              </p>
+            </>
+          ) : (
+            <form onSubmit={handleEmailLogin} className={styles.emailForm}>
+              <div className={styles.formGroup}>
+                <input
+                  id="email"
+                  type="email"
+                  className={styles.input}
+                  placeholder="이메일"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <input
+                  id="password"
+                  type="password"
+                  className={styles.input}
+                  placeholder="비밀번호"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <button type="submit" className={styles.submitButton} disabled={loading}>
+                {loading ? <Loader2 size={20} className={styles.spinner} /> : '로그인'}
+              </button>
+              <button
+                type="button"
+                className={styles.backButton}
+                onClick={() => setShowEmailForm(false)}
+              >
+                다른 방법으로 로그인
+              </button>
+            </form>
+          )}
+        </div>
+      </main>
     </div>
   )
 }

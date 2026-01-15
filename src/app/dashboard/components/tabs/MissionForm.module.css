@@ -1,0 +1,227 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  width: 100%;
+  padding: 0 32px;
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 32px 0 24px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 24px;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 10px;
+  color: #6b7280;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.backButton:hover {
+  background: #e5e7eb;
+}
+
+.headerInfo {
+  flex: 1;
+}
+
+.missionLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #007aff;
+  margin-bottom: 4px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+/* 폼 */
+.form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* 단일 선택 옵션 */
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.optionBtn {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  background: #f5f5f7;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.optionBtn:hover {
+  background: #e5e7eb;
+}
+
+.optionBtn.selected {
+  background: #007aff;
+  color: #fff;
+}
+
+/* 복수 선택 태그 */
+.optionsTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tagBtn {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #f5f5f7;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.tagBtn:hover {
+  border-color: #007aff;
+  color: #007aff;
+}
+
+.tagBtn.selected {
+  background: #007aff;
+  border-color: #007aff;
+  color: #fff;
+}
+
+/* 숫자 입력 */
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.numberInput {
+  width: 120px;
+  padding: 10px 14px;
+  font-size: 15px;
+  color: #1a1a1a;
+  background: #f5f5f7;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  text-align: right;
+}
+
+.numberInput:focus {
+  background: #fff;
+  border-color: #007aff;
+  outline: none;
+}
+
+.numberInput::placeholder {
+  color: #9ca3af;
+  text-align: left;
+}
+
+.numberInput::-webkit-outer-spin-button,
+.numberInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.unit {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* 하단 */
+.footer {
+  margin-top: auto;
+  padding: 24px 0;
+  display: flex;
+  gap: 12px;
+}
+
+.skipBtn {
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.skipBtn:hover {
+  background: #e5e7eb;
+}
+
+.completeBtn {
+  flex: 1;
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.completeBtn:hover:not(:disabled) {
+  background: #0066d6;
+}
+
+.completeBtn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 16px;
+  }
+
+  .header {
+    padding: 24px 0 20px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+}

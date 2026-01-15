@@ -1,63 +1,86 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import type { OnboardingData, SimulationSettings, GlobalSettings } from '@/types'
-import { runSimulation } from '@/lib/services/simulationEngine'
+import type { GlobalSettings } from '@/types'
+import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
+import { runSimulationFromItems } from '@/lib/services/simulationEngine'
+import { useFinancialItems } from '@/hooks/useFinancialData'
 import { calculateEndYear } from '@/lib/utils/chartDataTransformer'
 import { AssetStackChart, YearDetailPanel } from '../charts'
 import styles from './NetWorthTab.module.css'
 
 interface NetWorthTabProps {
-  data: OnboardingData
-  settings: SimulationSettings
+  simulationId: string
+  birthYear: number
+  spouseBirthYear?: number | null
+  retirementAge: number
   globalSettings?: GlobalSettings
 }
 
-// 금액 포맷팅
-function formatMoney(amount: number): string {
-  if (Math.abs(amount) >= 10000) {
-    const uk = amount / 10000
-    return `${uk.toFixed(1).replace(/\.0$/, '')}억`
-  }
-  return `${amount.toLocaleString()}만원`
-}
-
-// 나이 계산
-function calculateAge(birthDate: string): number {
-  if (!birthDate) return 35
-  const today = new Date()
-  const birth = new Date(birthDate)
-  let age = today.getFullYear() - birth.getFullYear()
-  const monthDiff = today.getMonth() - birth.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--
-  }
-  return age
-}
-
-export function NetWorthTab({ data, settings, globalSettings }: NetWorthTabProps) {
+export function NetWorthTab({
+  simulationId,
+  birthYear,
+  spouseBirthYear,
+  retirementAge,
+  globalSettings,
+}: NetWorthTabProps) {
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
 
-  const currentAge = calculateAge(data.birth_date)
-  const retirementAge = data.target_retirement_age || 60
+  const currentYear = new Date().getFullYear()
+  const currentAge = currentYear - birthYear
 
   // 시뮬레이션 설정
-  const birthYear = data.birth_date ? parseInt(data.birth_date.split('-')[0]) : new Date().getFullYear() - 35
-  const spouseBirthYear = data.spouse?.birth_date ? parseInt(data.spouse.birth_date.split('-')[0]) : null
   const simulationEndYear = calculateEndYear(birthYear, spouseBirthYear)
-  const yearsToSimulate = simulationEndYear - new Date().getFullYear()
+  const yearsToSimulate = simulationEndYear - currentYear
   const retirementYear = birthYear + retirementAge
+
+  // 프로필 정보
+  const profile = useMemo(() => ({
+    birthYear,
+    retirementAge,
+    spouseBirthYear: spouseBirthYear || undefined,
+  }), [birthYear, retirementAge, spouseBirthYear])
+
+  // React Query로 데이터 로드 (캐시에서 즉시 가져옴)
+  const { data: items = [], isLoading } = useFinancialItems(simulationId, profile)
 
   // 시뮬레이션 실행
   const simulationResult = useMemo(() => {
-    return runSimulation(data, settings, yearsToSimulate, globalSettings)
-  }, [data, settings, yearsToSimulate, globalSettings])
+    if (items.length === 0) {
+      // 빈 시뮬레이션 결과 반환
+      return {
+        startYear: currentYear,
+        endYear: simulationEndYear,
+        retirementYear,
+        snapshots: [],
+        summary: {
+          currentNetWorth: 0,
+          retirementNetWorth: 0,
+          peakNetWorth: 0,
+          peakNetWorthYear: currentYear,
+          yearsToFI: null,
+          fiTarget: 0,
+        },
+      }
+    }
 
-  // 현재 순자산 계산
-  const currentSnapshot = simulationResult.snapshots[0]
-  const netWorth = currentSnapshot?.netWorth || 0
-  const totalAssets = currentSnapshot?.totalAssets || 0
-  const totalDebts = currentSnapshot?.totalDebts || 0
+    const gs = globalSettings || DEFAULT_GLOBAL_SETTINGS
+
+    return runSimulationFromItems(
+      items,
+      {
+        birthYear,
+        retirementAge,
+        spouseBirthYear: spouseBirthYear || undefined,
+      },
+      gs,
+      yearsToSimulate
+    )
+  }, [items, birthYear, retirementAge, spouseBirthYear, globalSettings, yearsToSimulate, currentYear, simulationEndYear, retirementYear])
+
+  if (isLoading && items.length === 0) {
+    return <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+  }
 
   return (
     <div className={styles.container}>
@@ -66,9 +89,7 @@ export function NetWorthTab({ data, settings, globalSettings }: NetWorthTabProps
         <div className={styles.chartHeader}>
           <div>
             <h3 className={styles.chartTitle}>자산 시뮬레이션</h3>
-            <p className={styles.chartSubtitle}>
-              현재 순자산 {formatMoney(netWorth)} (자산 {formatMoney(totalAssets)} - 부채 {formatMoney(totalDebts)})
-            </p>
+            <p className={styles.chartSubtitle}>연도를 클릭하면 상세 내역을 확인할 수 있습니다</p>
           </div>
           <div className={styles.headerInfo}>
             <span className={styles.infoItem}>현재 {currentAge}세</span>

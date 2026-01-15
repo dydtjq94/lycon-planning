@@ -9,13 +9,18 @@ interface YearCashFlowPanelProps {
   onClose: () => void
 }
 
-// 금액 포맷팅
+// 금액 포맷팅 (억+만원 단위로 상세 표시)
 function formatMoney(amount: number): string {
-  if (Math.abs(amount) >= 10000) {
-    const uk = amount / 10000
-    return `${uk.toFixed(1).replace(/\.0$/, '')}억`
+  const absAmount = Math.abs(amount)
+  if (absAmount >= 10000) {
+    const uk = Math.floor(absAmount / 10000)
+    const man = Math.round(absAmount % 10000)
+    if (man === 0) {
+      return `${uk}억원`
+    }
+    return `${uk}억 ${man.toLocaleString()}만원`
   }
-  return `${amount.toLocaleString()}만원`
+  return `${absAmount.toLocaleString()}만원`
 }
 
 export function YearCashFlowPanel({ snapshot, onClose }: YearCashFlowPanelProps) {
@@ -38,7 +43,7 @@ export function YearCashFlowPanel({ snapshot, onClose }: YearCashFlowPanelProps)
       {/* 요약 */}
       <div className={styles.summary}>
         <div className={styles.summaryItem}>
-          <span className={styles.summaryLabel}>연간 수입</span>
+          <span className={styles.summaryLabel}>연간 소득</span>
           <span className={`${styles.summaryValue} ${styles.income}`}>{formatMoney(totalIncome)}</span>
         </div>
         <div className={styles.summaryItem}>
@@ -59,10 +64,10 @@ export function YearCashFlowPanel({ snapshot, onClose }: YearCashFlowPanelProps)
         </div>
       </div>
 
-      {/* 수입 상세 */}
+      {/* 소득 상세 */}
       {incomeBreakdown.length > 0 && (
         <div className={styles.section}>
-          <h4 className={styles.sectionTitle}>수입 상세</h4>
+          <h4 className={styles.sectionTitle}>소득 상세</h4>
           <div className={styles.breakdownList}>
             {incomeBreakdown.map((item, idx) => (
               <div key={idx} className={styles.breakdownItem}>
@@ -104,7 +109,7 @@ export function YearCashFlowPanel({ snapshot, onClose }: YearCashFlowPanelProps)
           />
         </div>
         <div className={styles.flowLabels}>
-          <span className={styles.flowLabel}>수입 대비 지출 {totalIncome > 0 ? Math.round((totalExpense / totalIncome) * 100) : 0}%</span>
+          <span className={styles.flowLabel}>소득 대비 지출 {totalIncome > 0 ? Math.round((totalExpense / totalIncome) * 100) : 0}%</span>
         </div>
       </div>
     </div>

@@ -1,0 +1,226 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+/* 진행률 */
+.progress {
+  margin-bottom: 48px;
+}
+
+.progressText {
+  display: block;
+  font-size: 13px;
+  color: #86868b;
+  margin-bottom: 8px;
+  text-align: right;
+}
+
+.progressBar {
+  height: 4px;
+  background: #e8e8ed;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: #007aff;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* 질문 영역 */
+.questionSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.questionText {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1d1d1f;
+  line-height: 1.4;
+  margin: 0 0 32px 0;
+  word-break: keep-all;
+}
+
+/* 선택지 */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.optionButton {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: #fff;
+  border: 1px solid #d2d2d7;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.optionButton:hover {
+  border-color: #007aff;
+}
+
+.optionButton.selected {
+  border-color: #007aff;
+  background: #f0f7ff;
+  color: #007aff;
+  font-weight: 500;
+}
+
+/* 복수 선택 체크박스 */
+.multiOption {
+  gap: 12px;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d2d2d7;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.optionButton.selected .checkbox {
+  background: #007aff;
+  border-color: #007aff;
+}
+
+.checkmark {
+  width: 10px;
+  height: 6px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg);
+  margin-bottom: 2px;
+}
+
+/* 숫자/금액 입력 */
+.inputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.numberInput {
+  width: 160px;
+  padding: 16px 20px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1d1d1f;
+  background: #fff;
+  border: 1px solid #d2d2d7;
+  border-radius: 12px;
+  outline: none;
+  text-align: center;
+}
+
+.numberInput:focus {
+  border-color: #007aff;
+}
+
+.numberInput::placeholder {
+  color: #c7c7cc;
+  font-weight: 400;
+}
+
+/* 스핀 버튼 제거 */
+.numberInput::-webkit-outer-spin-button,
+.numberInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.unit {
+  font-size: 18px;
+  color: #86868b;
+}
+
+/* 네비게이션 */
+.navigation {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 32px;
+}
+
+.prevButton {
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #86868b;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.prevButton:hover {
+  color: #1d1d1f;
+}
+
+.nextButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.nextButton:hover {
+  background: #0066d6;
+}
+
+.nextButton:disabled {
+  background: #d2d2d7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 24px 16px;
+  }
+
+  .questionText {
+    font-size: 20px;
+    margin-bottom: 24px;
+  }
+
+  .optionButton {
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+
+  .numberInput {
+    width: 140px;
+    font-size: 20px;
+    padding: 14px 16px;
+  }
+}

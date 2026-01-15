@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import type { OnboardingData, FamilyMemberInput, DebtInput } from "@/types";
-import { type RowId, rows } from "../ProgressiveForm/types";
+import type { OnboardingData } from "@/types";
+import { type RowId, rows, hasWorkingSpouse, purposeOptions, purposeEmpathy } from "../ProgressiveForm/types";
+import type { OnboardingPurpose } from "@/types";
 import { formatMoney } from "../ProgressiveForm/tips/formatUtils";
 import { NumberInput } from "./NumberInput";
 import styles from "./GuideInput.module.css";
@@ -20,66 +21,62 @@ interface GuideInputProps {
   isLastStep: boolean;
 }
 
-// 각 행에 대한 질문과 설명
-const rowQuestions: Record<RowId, { question: string; description?: string }> =
-  {
-    name: {
-      question: "이름을 알려주세요",
-      description: "이름은 맞춤형 리포트에, 성별은 기대수명 계산에 활용됩니다.",
-    },
-    birth_date: {
-      question: "생년월일을 알려주세요",
-      description: "정확한 나이 계산을 위해 필요해요.",
-    },
-    children: {
-      question: "자녀가 있으신가요?",
-      description: "자녀의 교육비, 양육비 계획에 반영됩니다.",
-    },
-    retirement_age: {
-      question: "몇 살에 은퇴하고 싶으세요?",
-      description: "목표 은퇴 나이를 설정해주세요.",
-    },
-    retirement_fund: {
-      question: "은퇴할 때 자산 목표는 얼마인가요?",
-      description: "은퇴 시점에 모으고 싶은 총 자산이에요.",
-    },
-    labor_income: {
-      question: "월 근로소득이 얼마인가요?",
-      description: "세후 실수령액 기준으로 입력해주세요.",
-    },
-    business_income: {
-      question: "사업소득이 있으신가요?",
-      description: "사업, 프리랜서 등으로 얻는 소득이에요.",
-    },
-    living_expenses: {
-      question: "월 평균 생활비는 얼마인가요?",
-      description: "주거비, 식비, 교통비 등 모든 지출을 포함해요.",
-    },
-    realEstate: {
-      question: "현재 거주 형태는 어떻게 되나요?",
-      description: "자가, 전세, 월세 중에서 선택해주세요.",
-    },
-    asset: {
-      question: "바로 쓸 수 있는 현금이 얼마나 있나요?",
-      description: "입출금통장, 파킹통장 등 즉시 인출 가능한 금액이에요.",
-    },
-    debt: {
-      question: "부채가 있으신가요?",
-      description: "대출, 카드론 등 모든 부채를 입력해주세요.",
-    },
-    national_pension: {
-      question: "국민연금 예상 수령액을 알고 계신가요?",
-      description: "국민연금공단에서 확인할 수 있어요.",
-    },
-    retirement_pension: {
-      question: "퇴직연금 또는 퇴직금이 있으신가요?",
-      description: "회사에서 적립 중인 퇴직연금 또는 퇴직금이에요.",
-    },
-    personal_pension: {
-      question: "개인연금에 얼마나 모았나요?",
-      description: "IRP, 연금저축에 지금까지 쌓인 금액이에요.",
-    },
-  };
+// 각 스텝에 대한 질문과 설명
+const stepQuestions: Partial<Record<RowId, { question: string; description?: string }>> = {
+  // Part 1: 목적
+  purpose: {
+    question: "Lycon에서 뭘 해보고 싶으세요?",
+    description: "여러 개 선택해도 괜찮아요.",
+  },
+  purpose_empathy: {
+    question: "", // 공감 메시지 화면 - 질문 없음
+  },
+  // Part 2: 알아가기
+  name: {
+    question: "어떻게 불러드리면 될까요?",
+  },
+  birth: {
+    question: "몇 년생이세요?",
+  },
+  retirement_age: {
+    question: "은퇴는 언제쯤 생각하고 계세요?",
+  },
+  // Part 3: 가족
+  spouse: {
+    question: "결혼하셨나요?",
+  },
+  spouse_info: {
+    question: "배우자분에 대해 알려주세요",
+  },
+  children: {
+    question: "자녀가 있으신가요?",
+  },
+  children_info: {
+    question: "자녀 정보를 입력해주세요",
+    description: "교육비 계획에 활용돼요.",
+  },
+  // Part 4: 재무
+  income: {
+    question: "월 소득이 대략 얼마인가요?",
+    description: "정확하지 않아도 괜찮아요, 나중에 수정할 수 있어요.",
+  },
+  expense: {
+    question: "월 생활비는 대략 얼마 정도 쓰세요?",
+    description: "주거비, 식비, 교통비 등 모두 포함해서요.",
+  },
+  // Part 5: 완료
+  complete: {
+    question: "", // 완료 화면 - 질문 없음
+  },
+  // 하위 호환성 (deprecated)
+  basic_info: {
+    question: "기본 정보를 알려주세요",
+    description: "생년월일과 은퇴 목표 나이가 필요해요.",
+  },
+};
+
+// 하위 호환성
+const rowQuestions = stepQuestions;
 
 export function GuideInput({
   data,
@@ -231,53 +228,419 @@ export function GuideInput({
   );
 }
 
-// 각 행에 맞는 입력 UI 렌더링
+// 각 스텝에 맞는 입력 UI 렌더링
 function renderInputForRow(
   rowId: RowId,
   data: OnboardingData,
   onUpdateData: (updates: Partial<OnboardingData>) => void
 ) {
   switch (rowId) {
+    // ========================================
+    // Part 1: 목적
+    // ========================================
+    case "purpose":
+      const selectedPurposes = data.purposes || [];
+      const togglePurpose = (purposeId: OnboardingPurpose) => {
+        const current = data.purposes || [];
+        if (current.includes(purposeId)) {
+          onUpdateData({ purposes: current.filter(p => p !== purposeId) });
+        } else {
+          onUpdateData({ purposes: [...current, purposeId] });
+        }
+      };
+      return (
+        <div className={styles.purposeSection}>
+          <div className={styles.purposeOptions}>
+            {purposeOptions.map((option) => (
+              <button
+                key={option.id}
+                className={`${styles.purposeOption} ${
+                  selectedPurposes.includes(option.id) ? styles.purposeOptionActive : ""
+                }`}
+                onClick={() => togglePurpose(option.id)}
+              >
+                <span className={styles.purposeCheck}>
+                  {selectedPurposes.includes(option.id) ? "✓" : ""}
+                </span>
+                <span className={styles.purposeLabel}>{option.label}</span>
+              </button>
+            ))}
+          </div>
+          {selectedPurposes.length > 0 && (
+            <p className={styles.purposeHint}>
+              {selectedPurposes.length}개 선택됨
+            </p>
+          )}
+        </div>
+      );
+
+    case "purpose_empathy":
+      const purposes = data.purposes || [];
+      if (purposes.length === 0) {
+        return null;
+      }
+      return (
+        <div className={styles.empathySection}>
+          {purposes.map((purposeId, index) => (
+            <p key={purposeId} className={styles.empathyMessage}>
+              {purposeEmpathy[purposeId]}
+            </p>
+          ))}
+        </div>
+      );
+
+    // ========================================
+    // Part 2: 알아가기
+    // ========================================
     case "name":
       return (
-        <div className={styles.nameSection}>
+        <div className={styles.singleInputSection}>
           <input
             type="text"
-            className={styles.textInput}
+            className={styles.largeTextInput}
             value={data.name}
             onChange={(e) => onUpdateData({ name: e.target.value })}
-            placeholder="이름 입력"
+            placeholder="이름을 입력해주세요"
             autoFocus
           />
-          <div className={styles.genderButtons}>
+        </div>
+      );
+
+    case "birth":
+      return (
+        <div className={styles.singleInputSection}>
+          <input
+            type="date"
+            className={styles.largeDateInput}
+            value={data.birth_date}
+            onChange={(e) => onUpdateData({ birth_date: e.target.value })}
+            min="1900-01-01"
+            max="2099-12-31"
+          />
+          {data.birth_date && (
+            <p className={styles.ageInfo}>
+              만 {calculateAge(data.birth_date)}세
+            </p>
+          )}
+        </div>
+      );
+
+    case "retirement_age":
+      return (
+        <div className={styles.singleInputSection}>
+          <div className={styles.retirementAgeInput}>
+            <NumberInput
+              className={styles.largeNumberInput}
+              value={data.target_retirement_age || ""}
+              onChange={(e) =>
+                onUpdateData({
+                  target_retirement_age: parseInt(e.target.value) || 0,
+                })
+              }
+              placeholder="55"
+              min={30}
+              max={100}
+            />
+            <span className={styles.largeUnit}>세</span>
+          </div>
+          {data.birth_date && data.target_retirement_age > 0 && (
+            <p className={styles.yearsLeftInfo}>
+              {(() => {
+                const age = calculateAge(data.birth_date);
+                const yearsLeft = data.target_retirement_age - age;
+                if (yearsLeft > 0) {
+                  return `앞으로 ${yearsLeft}년 남았어요`;
+                } else if (yearsLeft === 0) {
+                  return "올해가 은퇴 목표 연도예요";
+                } else {
+                  return `이미 ${Math.abs(yearsLeft)}년 지났어요`;
+                }
+              })()}
+            </p>
+          )}
+        </div>
+      );
+
+    // ========================================
+    // Part 3: 가족
+    // ========================================
+    case "spouse":
+      return (
+        <div className={styles.yesNoSection}>
+          <div className={styles.yesNoButtons}>
             <button
-              className={`${styles.genderButton} ${
-                data.gender === "male" ? styles.genderButtonActive : ""
+              className={`${styles.yesNoButton} ${
+                data.isMarried === true ? styles.yesNoButtonActive : ""
               }`}
-              onClick={() => onUpdateData({ gender: "male" })}
-              type="button"
+              onClick={() =>
+                onUpdateData({
+                  isMarried: true,
+                  spouse: {
+                    relationship: "spouse",
+                    name: "배우자",
+                    gender: "female",
+                    birth_date: "",
+                  },
+                })
+              }
             >
-              남자
+              네, 결혼했어요
             </button>
             <button
-              className={`${styles.genderButton} ${
-                data.gender === "female" ? styles.genderButtonActive : ""
+              className={`${styles.yesNoButton} ${
+                data.isMarried === false ? styles.yesNoButtonActive : ""
               }`}
-              onClick={() => onUpdateData({ gender: "female" })}
-              type="button"
+              onClick={() =>
+                onUpdateData({
+                  isMarried: false,
+                  spouse: null,
+                  spouseLaborIncome: null,
+                  spouseBusinessIncome: null,
+                })
+              }
             >
-              여자
+              아니요
             </button>
           </div>
         </div>
       );
 
-    case "birth_date":
+    case "spouse_info":
+      if (!data.isMarried) {
+        return null;
+      }
       return (
-        <div className={styles.birthDateSection}>
+        <div className={styles.spouseInfoSection}>
+          {/* 배우자 생년월일 */}
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>생년월일</span>
+            <div className={styles.infoInputGroup}>
+              <input
+                type="date"
+                className={styles.largeDateInput}
+                value={data.spouse?.birth_date || ""}
+                onChange={(e) =>
+                  onUpdateData({
+                    spouse: { ...data.spouse!, birth_date: e.target.value },
+                  })
+                }
+                min="1900-01-01"
+                max="2099-12-31"
+              />
+              {data.spouse?.birth_date && (
+                <span className={styles.infoAgeDisplay}>
+                  만 {calculateAge(data.spouse.birth_date)}세
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* 배우자 소득 여부 */}
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>소득 유무</span>
+            <div className={styles.smallButtonGroup}>
+              <button
+                className={`${styles.smallButton} ${
+                  data.spouse?.retirement_age !== undefined
+                    ? styles.smallButtonActive
+                    : ""
+                }`}
+                onClick={() =>
+                  onUpdateData({
+                    spouse: { ...data.spouse!, retirement_age: 55 },
+                  })
+                }
+              >
+                소득 있음
+              </button>
+              <button
+                className={`${styles.smallButton} ${
+                  data.spouse?.retirement_age === undefined
+                    ? styles.smallButtonActive
+                    : ""
+                }`}
+                onClick={() =>
+                  onUpdateData({
+                    spouse: { ...data.spouse!, retirement_age: undefined },
+                    spouseLaborIncome: null,
+                    spouseBusinessIncome: null,
+                  })
+                }
+              >
+                소득 없음
+              </button>
+            </div>
+          </div>
+
+          {/* 배우자 은퇴 나이 (소득이 있는 경우) */}
+          {data.spouse?.retirement_age !== undefined && (
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>은퇴 나이</span>
+              <div className={styles.retirementAgeInput}>
+                <NumberInput
+                  className={styles.largeNumberInput}
+                  value={data.spouse.retirement_age || ""}
+                  onChange={(e) =>
+                    onUpdateData({
+                      spouse: {
+                        ...data.spouse!,
+                        retirement_age: parseInt(e.target.value) || 0,
+                      },
+                    })
+                  }
+                  placeholder="55"
+                  min={30}
+                  max={100}
+                />
+                <span className={styles.largeUnit}>세</span>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
+    case "children":
+      return (
+        <div className={styles.yesNoSection}>
+          <div className={styles.yesNoButtons}>
+            <button
+              className={`${styles.yesNoButton} ${
+                data.hasChildren === true ? styles.yesNoButtonActive : ""
+              }`}
+              onClick={() =>
+                onUpdateData({
+                  hasChildren: true,
+                  children: data.children.length > 0 ? data.children : [],
+                })
+              }
+            >
+              네, 있어요
+            </button>
+            <button
+              className={`${styles.yesNoButton} ${
+                data.hasChildren === false ? styles.yesNoButtonActive : ""
+              }`}
+              onClick={() =>
+                onUpdateData({
+                  hasChildren: false,
+                  children: [],
+                })
+              }
+            >
+              아니요
+            </button>
+          </div>
+        </div>
+      );
+
+    case "children_info":
+      if (!data.hasChildren) {
+        return null;
+      }
+      const addChild = (genderType: "male" | "female") => {
+        const childCount = data.children.filter(c => c.gender === genderType).length + 1;
+        const newChild = {
+          relationship: "child" as const,
+          name: genderType === "male" ? `아들${childCount > 1 ? childCount : ""}` : `딸${childCount > 1 ? childCount : ""}`,
+          gender: genderType,
+          birth_date: "",
+        };
+        onUpdateData({
+          children: [...data.children, newChild],
+        });
+      };
+      const updateChildBirthDate = (index: number, birthDate: string) => {
+        const updatedChildren = data.children.map((child, i) =>
+          i === index ? { ...child, birth_date: birthDate } : child
+        );
+        onUpdateData({ children: updatedChildren });
+      };
+      const removeChild = (index: number) => {
+        const updatedChildren = data.children.filter((_, i) => i !== index);
+        onUpdateData({
+          children: updatedChildren,
+          hasChildren: updatedChildren.length > 0,
+        });
+      };
+      return (
+        <div className={styles.childrenInfoSection}>
+          {/* 자녀 목록 */}
+          {data.children.length > 0 && (
+            <div className={styles.childrenList}>
+              {data.children.map((child, index) => (
+                <div key={index} className={styles.childItem}>
+                  <span className={styles.childLabel}>
+                    {child.gender === "male" ? "아들" : "딸"}
+                  </span>
+                  <input
+                    type="date"
+                    className={styles.childDateInput}
+                    value={child.birth_date || ""}
+                    onChange={(e) => updateChildBirthDate(index, e.target.value)}
+                    min="1990-01-01"
+                    max="2099-12-31"
+                  />
+                  {child.birth_date && (
+                    <span className={styles.childAge}>
+                      만 {calculateAge(child.birth_date)}세
+                    </span>
+                  )}
+                  <button
+                    className={styles.childDeleteButton}
+                    onClick={() => removeChild(index)}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 자녀 추가 버튼 */}
+          <div className={styles.childrenAddButtons}>
+            <button
+              className={styles.addChildButton}
+              onClick={() => addChild("male")}
+            >
+              + 아들 추가
+            </button>
+            <button
+              className={styles.addChildButton}
+              onClick={() => addChild("female")}
+            >
+              + 딸 추가
+            </button>
+          </div>
+
+          {data.children.length === 0 && (
+            <p className={styles.childrenHint}>
+              자녀 정보를 추가해주세요
+            </p>
+          )}
+        </div>
+      );
+
+    // ========================================
+    // 하위 호환성 (deprecated)
+    // ========================================
+    case "basic_info":
+      return (
+        <div className={styles.basicInfoSection}>
+          {/* 이름 */}
+          <div className={styles.personRow}>
+            <span className={styles.personLabel}>이름</span>
+            <input
+              type="text"
+              className={styles.textInput}
+              value={data.name}
+              onChange={(e) => onUpdateData({ name: e.target.value })}
+              placeholder="이름 입력"
+            />
+          </div>
+
           {/* 본인 생년월일 */}
           <div className={styles.personRow}>
-            <span className={styles.personLabel}>본인</span>
+            <span className={styles.personLabel}>생년월일</span>
             <div className={styles.dateInputGroup}>
               <input
                 type="date"
@@ -296,7 +659,27 @@ function renderInputForRow(
             </div>
           </div>
 
-          {/* 배우자 선택 */}
+          {/* 은퇴 나이 */}
+          <div className={styles.personRow}>
+            <span className={styles.personLabel}>은퇴 나이</span>
+            <div className={styles.numberInputGroupInline}>
+              <NumberInput
+                className={styles.numberInputSmall}
+                value={data.target_retirement_age || ""}
+                onChange={(e) =>
+                  onUpdateData({
+                    target_retirement_age: parseInt(e.target.value) || 0,
+                  })
+                }
+                placeholder="55"
+                min={30}
+                max={100}
+              />
+              <span className={styles.unit}>세</span>
+            </div>
+          </div>
+
+          {/* 배우자 추가 */}
           <div className={styles.spouseSection}>
             {data.isMarried === null || data.isMarried === false ? (
               <button
@@ -316,110 +699,35 @@ function renderInputForRow(
                 + 배우자 추가
               </button>
             ) : (
-              <div className={styles.personRow}>
-                <span className={styles.personLabel}>배우자</span>
-                <div className={styles.dateInputGroup}>
-                  <input
-                    type="date"
-                    className={styles.dateInput}
-                    value={data.spouse?.birth_date || ""}
-                    onChange={(e) =>
-                      onUpdateData({
-                        spouse: { ...data.spouse!, birth_date: e.target.value },
-                      })
-                    }
-                    min="1900-01-01"
-                    max="2099-12-31"
-                  />
-                  {data.spouse?.birth_date && (
-                    <span className={styles.ageDisplay}>
-                      {calculateKoreanAge(data.spouse.birth_date)}세 (만{" "}
-                      {calculateAge(data.spouse.birth_date)}세)
-                    </span>
-                  )}
-                </div>
-                <button
-                  className={styles.removeSpouseButton}
-                  onClick={() =>
-                    onUpdateData({
-                      isMarried: false,
-                      spouse: null,
-                      spouseLaborIncome: null,
-                      spouseBusinessIncome: null,
-                    })
-                  }
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-
-    case "retirement_age":
-      return (
-        <div className={styles.retirementAgeSection}>
-          {/* 본인 은퇴 나이 */}
-          <div className={styles.personRow}>
-            <span className={styles.personLabel}>본인</span>
-            <div className={styles.numberInputGroupInline}>
-              <NumberInput
-                className={styles.numberInputSmall}
-                value={data.target_retirement_age || ""}
-                onChange={(e) =>
-                  onUpdateData({
-                    target_retirement_age: parseInt(e.target.value) || 0,
-                  })
-                }
-                placeholder="60"
-                min={30}
-                max={100}
-              />
-              <span className={styles.unit}>세</span>
-            </div>
-          </div>
-
-          {/* 배우자 은퇴 나이 */}
-          {data.isMarried && data.spouse && (
-            <div className={styles.spouseSection}>
-              {data.spouse.retirement_age === undefined ? (
-                <button
-                  className={styles.addSpouseButton}
-                  onClick={() =>
-                    onUpdateData({
-                      spouse: { ...data.spouse!, retirement_age: 55 },
-                    })
-                  }
-                >
-                  + 배우자 은퇴 나이 추가
-                </button>
-              ) : (
+              <>
                 <div className={styles.personRow}>
-                  <span className={styles.personLabel}>배우자</span>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={data.spouse.retirement_age || ""}
+                  <span className={styles.personLabel}>배우자 생년월일</span>
+                  <div className={styles.dateInputGroup}>
+                    <input
+                      type="date"
+                      className={styles.dateInput}
+                      value={data.spouse?.birth_date || ""}
                       onChange={(e) =>
                         onUpdateData({
-                          spouse: {
-                            ...data.spouse!,
-                            retirement_age: parseInt(e.target.value) || 0,
-                          },
+                          spouse: { ...data.spouse!, birth_date: e.target.value },
                         })
                       }
-                      placeholder="55"
-                      min={30}
-                      max={100}
+                      min="1900-01-01"
+                      max="2099-12-31"
                     />
-                    <span className={styles.unit}>세</span>
+                    {data.spouse?.birth_date && (
+                      <span className={styles.ageDisplay}>
+                        {calculateKoreanAge(data.spouse.birth_date)}세 (만{" "}
+                        {calculateAge(data.spouse.birth_date)}세)
+                      </span>
+                    )}
                   </div>
                   <button
                     className={styles.removeSpouseButton}
                     onClick={() =>
                       onUpdateData({
-                        spouse: { ...data.spouse!, retirement_age: undefined },
+                        isMarried: false,
+                        spouse: null,
                         spouseLaborIncome: null,
                         spouseBusinessIncome: null,
                       })
@@ -428,41 +736,65 @@ function renderInputForRow(
                     <X size={16} />
                   </button>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-      );
 
-    case "retirement_fund":
-      const fundValue = data.target_retirement_fund || 0;
-      return (
-        <div className={styles.numberInputWithDisplay}>
-          <div className={styles.numberInputGroup}>
-            <NumberInput
-              className={styles.numberInput}
-              value={data.target_retirement_fund || ""}
-              onChange={(e) =>
-                onUpdateData({
-                  target_retirement_fund: parseFloat(e.target.value) || 0,
-                })
-              }
-              placeholder="100000"
-            />
-            <span className={styles.unit}>만원</span>
+                {/* 배우자 은퇴 나이 (소득이 있는 경우) */}
+                {data.spouse?.retirement_age === undefined ? (
+                  <button
+                    className={styles.addSpouseButton}
+                    onClick={() =>
+                      onUpdateData({
+                        spouse: { ...data.spouse!, retirement_age: 55 },
+                      })
+                    }
+                  >
+                    + 배우자도 소득이 있어요
+                  </button>
+                ) : (
+                  <div className={styles.personRow}>
+                    <span className={styles.personLabel}>배우자 은퇴 나이</span>
+                    <div className={styles.numberInputGroupInline}>
+                      <NumberInput
+                        className={styles.numberInputSmall}
+                        value={data.spouse.retirement_age || ""}
+                        onChange={(e) =>
+                          onUpdateData({
+                            spouse: {
+                              ...data.spouse!,
+                              retirement_age: parseInt(e.target.value) || 0,
+                            },
+                          })
+                        }
+                        placeholder="55"
+                        min={30}
+                        max={100}
+                      />
+                      <span className={styles.unit}>세</span>
+                    </div>
+                    <button
+                      className={styles.removeSpouseButton}
+                      onClick={() =>
+                        onUpdateData({
+                          spouse: { ...data.spouse!, retirement_age: undefined },
+                          spouseLaborIncome: null,
+                          spouseBusinessIncome: null,
+                        })
+                      }
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
-          {fundValue > 0 && (
-            <div className={styles.amountDisplay}>{formatMoney(fundValue)}</div>
-          )}
         </div>
       );
 
-    case "labor_income":
-      const hasWorkingSpouse =
-        data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
+    case "income":
+      const hasSpouseIncome = hasWorkingSpouse(data);
       return (
         <div className={styles.incomeSection}>
-          {/* 본인 근로소득 */}
+          {/* 본인 소득 */}
           <div className={styles.personRow}>
             <span className={styles.personLabel}>본인</span>
             <div className={styles.inputWithAmount}>
@@ -488,8 +820,8 @@ function renderInputForRow(
             </div>
           </div>
 
-          {/* 배우자 근로소득 (배우자 은퇴 나이가 설정된 경우) */}
-          {hasWorkingSpouse && (
+          {/* 배우자 소득 (배우자 은퇴 나이가 설정된 경우) */}
+          {hasSpouseIncome && (
             <div className={styles.personRow}>
               <span className={styles.personLabel}>배우자</span>
               <div className={styles.inputWithAmount}>
@@ -520,80 +852,17 @@ function renderInputForRow(
               </div>
             </div>
           )}
+
+          <p className={styles.hint}>
+            사업소득, 기타소득은 대시보드에서 추가할 수 있어요.
+          </p>
         </div>
       );
 
-    case "business_income":
-      const hasWorkingSpouseForBiz =
-        data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
-      return (
-        <div className={styles.incomeSection}>
-          {/* 본인 사업소득 */}
-          <div className={styles.personRow}>
-            <span className={styles.personLabel}>본인</span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={data.businessIncome !== null ? data.businessIncome : ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      businessIncome:
-                        value === "" ? null : parseFloat(value) || 0,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원/월</span>
-              </div>
-              {(data.businessIncome || 0) > 0 && (
-                <div className={styles.amountDisplay}>
-                  {formatMoney(data.businessIncome || 0)}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 배우자 사업소득 (배우자 은퇴 나이가 설정된 경우) */}
-          {hasWorkingSpouseForBiz && (
-            <div className={styles.personRow}>
-              <span className={styles.personLabel}>배우자</span>
-              <div className={styles.inputWithAmount}>
-                <div className={styles.numberInputGroupInline}>
-                  <NumberInput
-                    className={styles.numberInputSmall}
-                    value={
-                      data.spouseBusinessIncome !== null
-                        ? data.spouseBusinessIncome
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      onUpdateData({
-                        spouseBusinessIncome:
-                          value === "" ? null : parseFloat(value) || 0,
-                      });
-                    }}
-                    placeholder="0"
-                  />
-                  <span className={styles.unit}>만원/월</span>
-                </div>
-                {(data.spouseBusinessIncome || 0) > 0 && (
-                  <div className={styles.amountDisplay}>
-                    {formatMoney(data.spouseBusinessIncome || 0)}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      );
-
-    case "living_expenses":
+    case "expense":
       const expenseValue = data.livingExpenses || 0;
       return (
-        <div className={styles.numberInputWithDisplay}>
+        <div className={styles.expenseSection}>
           <div className={styles.numberInputGroup}>
             <NumberInput
               className={styles.numberInput}
@@ -613,867 +882,62 @@ function renderInputForRow(
               {formatMoney(expenseValue)}
             </div>
           )}
-        </div>
-      );
-
-    case "realEstate":
-      return (
-        <div className={styles.realEstateSection}>
-          <div className={styles.buttonGroup}>
-            {(["자가", "전세", "월세", "해당없음"] as const).map((type) => (
-              <button
-                key={type}
-                className={`${styles.optionButton} ${
-                  data.housingType === type ? styles.optionButtonActive : ""
-                }`}
-                onClick={() => onUpdateData({ housingType: type })}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-
-          {/* 자가: 시세 + 관리비 입력 */}
-          {data.housingType === "자가" && (
-            <div className={styles.realEstateInputs}>
-              <div className={styles.realEstateRow}>
-                <span className={styles.realEstateLabel}>시세</span>
-                <div className={styles.inputWithAmount}>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={data.housingValue !== null ? data.housingValue : ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({
-                          housingValue:
-                            value === "" ? null : parseFloat(value) || 0,
-                        });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원</span>
-                  </div>
-                  {(data.housingValue || 0) > 0 && (
-                    <div className={styles.amountDisplay}>
-                      {formatMoney(data.housingValue || 0)}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className={styles.realEstateRow}>
-                <span className={styles.realEstateLabel}>관리비</span>
-                <div className={styles.inputWithAmount}>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={data.housingMaintenance !== null ? data.housingMaintenance : ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({
-                          housingMaintenance:
-                            value === "" ? null : parseFloat(value) || 0,
-                        });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원/월</span>
-                  </div>
-                  {(data.housingMaintenance || 0) > 0 && (
-                    <div className={styles.amountDisplay}>
-                      {formatMoney(data.housingMaintenance || 0)}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 전세: 보증금 + 관리비 입력 */}
-          {data.housingType === "전세" && (
-            <div className={styles.realEstateInputs}>
-              <div className={styles.realEstateRow}>
-                <span className={styles.realEstateLabel}>보증금</span>
-                <div className={styles.inputWithAmount}>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={data.housingValue !== null ? data.housingValue : ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({
-                          housingValue:
-                            value === "" ? null : parseFloat(value) || 0,
-                        });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원</span>
-                  </div>
-                  {(data.housingValue || 0) > 0 && (
-                    <div className={styles.amountDisplay}>
-                      {formatMoney(data.housingValue || 0)}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className={styles.realEstateRow}>
-                <span className={styles.realEstateLabel}>관리비</span>
-                <div className={styles.inputWithAmount}>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={data.housingMaintenance !== null ? data.housingMaintenance : ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({
-                          housingMaintenance:
-                            value === "" ? null : parseFloat(value) || 0,
-                        });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원/월</span>
-                  </div>
-                  {(data.housingMaintenance || 0) > 0 && (
-                    <div className={styles.amountDisplay}>
-                      {formatMoney(data.housingMaintenance || 0)}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 월세: 보증금 + 월세 + 관리비 입력 */}
-          {data.housingType === "월세" && (
-            <div className={styles.realEstateInputs}>
-              <div className={styles.realEstateRow}>
-                <span className={styles.realEstateLabel}>보증금</span>
-                <div className={styles.inputWithAmount}>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={data.housingValue !== null ? data.housingValue : ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({
-                          housingValue:
-                            value === "" ? null : parseFloat(value) || 0,
-                        });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원</span>
-                  </div>
-                  {(data.housingValue || 0) > 0 && (
-                    <div className={styles.amountDisplay}>
-                      {formatMoney(data.housingValue || 0)}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className={styles.realEstateRow}>
-                <span className={styles.realEstateLabel}>월세</span>
-                <div className={styles.inputWithAmount}>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={data.housingRent !== null ? data.housingRent : ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({
-                          housingRent:
-                            value === "" ? null : parseFloat(value) || 0,
-                        });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원/월</span>
-                  </div>
-                  {(data.housingRent || 0) > 0 && (
-                    <div className={styles.amountDisplay}>
-                      {formatMoney(data.housingRent || 0)}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className={styles.realEstateRow}>
-                <span className={styles.realEstateLabel}>관리비</span>
-                <div className={styles.inputWithAmount}>
-                  <div className={styles.numberInputGroupInline}>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={data.housingMaintenance !== null ? data.housingMaintenance : ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({
-                          housingMaintenance:
-                            value === "" ? null : parseFloat(value) || 0,
-                        });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원/월</span>
-                  </div>
-                  {(data.housingMaintenance || 0) > 0 && (
-                    <div className={styles.amountDisplay}>
-                      {formatMoney(data.housingMaintenance || 0)}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 대출 추가 (자가, 전세, 월세 공통) */}
-          {data.housingType && data.housingType !== "해당없음" && (
-            <>
-              {!data.housingHasLoan ? (
-                <button
-                  className={styles.addButton}
-                  onClick={() => onUpdateData({ housingHasLoan: true })}
-                >
-                  +{" "}
-                  {data.housingType === "자가"
-                    ? "주택담보대출"
-                    : "전월세보증금대출"}{" "}
-                  추가
-                </button>
-              ) : (
-                <div className={styles.debtCard}>
-                  <div className={styles.debtCardHeader}>
-                    <span className={styles.debtNameDisplay}>
-                      {data.housingType === "자가"
-                        ? "주택담보대출"
-                        : "전월세보증금대출"}
-                    </span>
-                    <button
-                      className={styles.debtDeleteButton}
-                      onClick={() =>
-                        onUpdateData({
-                          housingHasLoan: false,
-                          housingLoan: null,
-                          housingLoanRate: null,
-                          housingLoanMaturity: null,
-                          housingLoanType: null,
-                        })
-                      }
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                  <div className={styles.debtRow}>
-                    <span className={styles.debtLabel}>금액</span>
-                    <div className={styles.inputWithAmount}>
-                      <div className={styles.debtInputGroup}>
-                        <NumberInput
-                          className={styles.debtInput}
-                          value={
-                            data.housingLoan !== null ? data.housingLoan : ""
-                          }
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            onUpdateData({
-                              housingLoan:
-                                value === "" ? null : parseFloat(value) || 0,
-                            });
-                          }}
-                          placeholder="0"
-                        />
-                        <span className={styles.debtUnit}>만원</span>
-                      </div>
-                      {(data.housingLoan || 0) > 0 && (
-                        <div className={styles.amountDisplay}>
-                          {formatMoney(data.housingLoan || 0)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      );
-
-    case "asset":
-      // 간소화된 현금 보유 입력: 입출금통장만
-      const checkingValue = data.cashCheckingAccount || 0;
-
-      return (
-        <div className={styles.pensionSection}>
-          <div className={styles.pensionRow}>
-            <span className={styles.pensionLabel}>입출금통장</span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={data.cashCheckingAccount !== null ? data.cashCheckingAccount : ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      cashCheckingAccount: value === "" ? null : parseFloat(value) || 0,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              {checkingValue > 0 && (
-                <div className={styles.amountDisplay}>
-                  {formatMoney(checkingValue)}
-                </div>
-              )}
-            </div>
-          </div>
-          <p className={styles.pensionHint}>
-            없으면 0을 입력하세요. 투자자산, 절세계좌 등은 대시보드에서 관리해요.
+          <p className={styles.hint}>
+            부동산, 부채, 연금 등은 대시보드에서 상세히 입력할 수 있어요.
           </p>
         </div>
       );
 
-    case "children":
+    // ========================================
+    // Part 5: 완료
+    // ========================================
+    case "complete":
       return (
-        <div className={styles.childrenSection}>
-          {/* 자녀 목록 */}
-          {data.children.length > 0 && (
-            <div className={styles.childrenList}>
-              {data.children.map((child, index) => (
-                <div key={index} className={styles.personRow}>
-                  <span className={styles.personLabel}>
-                    {child.gender === "male" ? "아들" : "딸"}
-                  </span>
-                  <div className={styles.dateInputGroup}>
-                    <input
-                      type="date"
-                      className={styles.dateInput}
-                      value={child.birth_date || ""}
-                      onChange={(e) => {
-                        const newChildren = [...data.children];
-                        newChildren[index] = {
-                          ...newChildren[index],
-                          birth_date: e.target.value,
-                        };
-                        onUpdateData({ children: newChildren });
-                      }}
-                      min="1990-01-01"
-                      max="2099-12-31"
-                    />
-                    {child.birth_date && (
-                      <span className={styles.ageDisplay}>
-                        {calculateKoreanAge(child.birth_date)}세 (만{" "}
-                        {calculateAge(child.birth_date)}세)
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    className={styles.removeSpouseButton}
-                    onClick={() => {
-                      const newChildren = data.children.filter(
-                        (_, i) => i !== index
-                      );
-                      onUpdateData({ children: newChildren });
-                    }}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* 추가 버튼 */}
-          <div className={styles.childrenAddButtons}>
-            <button
-              className={styles.addChildButton}
-              onClick={() => {
-                const newChild: FamilyMemberInput = {
-                  relationship: "child",
-                  name: `아들 ${
-                    data.children.filter((c) => c.gender === "male").length + 1
-                  }`,
-                  gender: "male",
-                  birth_date: "",
-                };
-                onUpdateData({ children: [...data.children, newChild] });
-              }}
-            >
-              + 아들 추가
-            </button>
-            <button
-              className={styles.addChildButton}
-              onClick={() => {
-                const newChild: FamilyMemberInput = {
-                  relationship: "child",
-                  name: `딸 ${
-                    data.children.filter((c) => c.gender === "female").length +
-                    1
-                  }`,
-                  gender: "female",
-                  birth_date: "",
-                };
-                onUpdateData({ children: [...data.children, newChild] });
-              }}
-            >
-              + 딸 추가
-            </button>
-          </div>
-
-          {data.children.length === 0 && (
-            <p className={styles.childrenHint}>
-              자녀가 없으면 그냥 다음으로 넘어가세요
-            </p>
-          )}
-        </div>
-      );
-
-    case "debt":
-      return (
-        <div className={styles.debtSection}>
-          {/* 부채 목록 */}
-          {data.debts.length > 0 && (
-            <div className={styles.debtList}>
-              {data.debts.map((debt, index) => (
-                <div key={index} className={styles.debtCard}>
-                  {/* 헤더: 대출명 + 삭제 */}
-                  <div className={styles.debtCardHeader}>
-                    <input
-                      type="text"
-                      className={styles.debtNameInput}
-                      value={debt.name}
-                      onChange={(e) => {
-                        const newDebts = [...data.debts];
-                        newDebts[index] = {
-                          ...newDebts[index],
-                          name: e.target.value,
-                        };
-                        onUpdateData({ debts: newDebts });
-                      }}
-                      placeholder="대출명"
-                    />
-                    <button
-                      className={styles.debtDeleteButton}
-                      onClick={() => {
-                        const newDebts = data.debts.filter(
-                          (_, i) => i !== index
-                        );
-                        onUpdateData({ debts: newDebts });
-                      }}
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-
-                  {/* 금액 */}
-                  <div className={styles.debtRow}>
-                    <span className={styles.debtLabel}>금액</span>
-                    <div className={styles.inputWithAmount}>
-                      <div className={styles.debtInputGroup}>
-                        <NumberInput
-                          className={styles.debtInput}
-                          value={debt.amount !== null ? debt.amount : ""}
-                          onChange={(e) => {
-                            const newDebts = [...data.debts];
-                            const value = e.target.value;
-                            newDebts[index] = {
-                              ...newDebts[index],
-                              amount:
-                                value === "" ? null : parseFloat(value) || 0,
-                            };
-                            onUpdateData({ debts: newDebts });
-                          }}
-                          placeholder="0"
-                        />
-                        <span className={styles.debtUnit}>만원</span>
-                      </div>
-                      {(debt.amount || 0) > 0 && (
-                        <div className={styles.amountDisplay}>
-                          {formatMoney(debt.amount || 0)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* 부채 추가 / 부채 없음 버튼 */}
-          <div className={styles.debtButtons}>
-            <button
-              className={styles.addDebtButton}
-              onClick={() => {
-                const newDebt: DebtInput = {
-                  id: `debt-${Date.now()}`,
-                  name: "",
-                  amount: null,
-                  rate: null,
-                  maturity: null,
-                  repaymentType: null,
-                };
-                onUpdateData({
-                  hasNoDebt: false,
-                  debts: [...data.debts, newDebt],
-                });
-              }}
-            >
-              + 부채 추가
-            </button>
-            <button
-              className={`${styles.noDebtButton} ${
-                data.hasNoDebt === true ? styles.noDebtButtonActive : ""
-              }`}
-              onClick={() => {
-                onUpdateData({ hasNoDebt: true, debts: [] });
-              }}
-            >
-              부채 없음
-            </button>
-          </div>
-        </div>
-      );
-
-    case "national_pension":
-      // 예상 국민연금 수령액 계산 (본인)
-      const monthlyIncome = (data.laborIncome || 0) + (data.businessIncome || 0);
-      const retirementAge = data.target_retirement_age || 60;
-      const estimatedPension = (() => {
-        if (monthlyIncome <= 0) return 0;
-        const grossIncome = Math.round(monthlyIncome / 0.85);
-        const aValue = 309;
-        const bValue = Math.min(Math.max(grossIncome, 40), 637);
-        const contributionYears = Math.max(0, Math.min(retirementAge, 60) - 27);
-        return Math.round((aValue + bValue) * contributionYears * 0.005);
-      })();
-
-      // 배우자 예상 국민연금 수령액 계산
-      const spouseMonthlyIncome = (data.spouseLaborIncome || 0) + (data.spouseBusinessIncome || 0);
-      const spouseRetirementAge = data.spouse?.retirement_age || 60;
-      const spouseEstimatedPension = (() => {
-        if (spouseMonthlyIncome <= 0) return 0;
-        const grossIncome = Math.round(spouseMonthlyIncome / 0.85);
-        const aValue = 309;
-        const bValue = Math.min(Math.max(grossIncome, 40), 637);
-        const contributionYears = Math.max(0, Math.min(spouseRetirementAge, 60) - 27);
-        return Math.round((aValue + bValue) * contributionYears * 0.005);
-      })();
-
-      const hasWorkingSpouseForPension =
-        data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
-
-      return (
-        <div className={styles.pensionSection}>
-          {/* 본인 국민연금 */}
-          <div className={styles.personRow}>
-            <span className={styles.personLabel}>본인</span>
-            <div className={styles.inputWithAmount}>
-              <div className={styles.numberInputGroupInline}>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={data.nationalPension != null ? data.nationalPension : ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      nationalPension:
-                        value === "" ? null : parseFloat(value) || 0,
-                      hasNoPension: false,
-                    });
-                  }}
-                  placeholder={estimatedPension > 0 ? String(estimatedPension) : "0"}
-                />
-                <span className={styles.unit}>만원/월</span>
-              </div>
-              {(data.nationalPension || 0) > 0 && (
-                <div className={styles.amountDisplay}>
-                  {formatMoney(data.nationalPension || 0)}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 배우자 국민연금 (배우자 은퇴 나이가 설정된 경우) */}
-          {hasWorkingSpouseForPension && (
-            <div className={styles.personRow}>
-              <span className={styles.personLabel}>배우자</span>
-              <div className={styles.inputWithAmount}>
-                <div className={styles.numberInputGroupInline}>
-                  <NumberInput
-                    className={styles.numberInputSmall}
-                    value={data.spouseNationalPension != null ? data.spouseNationalPension : ""}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      onUpdateData({
-                        spouseNationalPension:
-                          value === "" ? null : parseFloat(value) || 0,
-                      });
-                    }}
-                    placeholder={spouseEstimatedPension > 0 ? String(spouseEstimatedPension) : "0"}
-                  />
-                  <span className={styles.unit}>만원/월</span>
-                </div>
-                {(data.spouseNationalPension || 0) > 0 && (
-                  <div className={styles.amountDisplay}>
-                    {formatMoney(data.spouseNationalPension || 0)}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          <p className={styles.pensionHint}>
-            정확한 금액은 국민연금공단에서 확인하세요.
+        <div className={styles.completeSection}>
+          <h2 className={styles.completeTitle}>
+            {data.name}님, 준비가 완료됐어요
+          </h2>
+          <p className={styles.completeDescription}>
+            입력하신 정보를 바탕으로{"\n"}
+            은퇴 계획을 분석해드릴게요.
           </p>
-        </div>
-      );
-
-    case "retirement_pension":
-      // DC형/기업IRP vs DB형/퇴직금 구분
-      const isDCType = data.retirementPensionType === "DC" || data.retirementPensionType === "corporate_irp";
-      const isDBType = data.retirementPensionType === "DB" || data.retirementPensionType === "severance";
-      const isUnknownType = data.retirementPensionType === "unknown";
-      const hasWorkingSpouseForRetirement = data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
-      const spouseIsDCType = data.spouseRetirementPensionType === "DC" || data.spouseRetirementPensionType === "corporate_irp";
-      const spouseIsDBType = data.spouseRetirementPensionType === "DB" || data.spouseRetirementPensionType === "severance";
-      const spouseIsUnknownType = data.spouseRetirementPensionType === "unknown";
-
-      return (
-        <div className={styles.pensionSection}>
-          {/* 본인 퇴직연금 */}
-          <div className={styles.personRow}>
-            <span className={styles.personLabel}>본인</span>
-            <div className={styles.retirementPensionInputs}>
-              <div className={styles.buttonGroupSmall}>
-                <button
-                  className={`${styles.typeButton} ${isDCType ? styles.typeButtonActive : ""}`}
-                  onClick={() => onUpdateData({ retirementPensionType: "DC", hasNoPension: false })}
-                >
-                  DC형/기업IRP
-                </button>
-                <button
-                  className={`${styles.typeButton} ${isDBType ? styles.typeButtonActive : ""}`}
-                  onClick={() => onUpdateData({ retirementPensionType: "DB", hasNoPension: false })}
-                >
-                  DB형/퇴직금
-                </button>
-                <button
-                  className={`${styles.typeButton} ${isUnknownType ? styles.typeButtonActive : ""}`}
-                  onClick={() => onUpdateData({ retirementPensionType: "unknown", hasNoPension: false })}
-                >
-                  모름
-                </button>
+          <div className={styles.completeSummary}>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryLabel}>목표 은퇴 나이</span>
+              <span className={styles.summaryValue}>{data.target_retirement_age}세</span>
+            </div>
+            {data.isMarried && (
+              <div className={styles.summaryItem}>
+                <span className={styles.summaryLabel}>가족 구성</span>
+                <span className={styles.summaryValue}>
+                  배우자{data.children.length > 0 ? `, 자녀 ${data.children.length}명` : ""}
+                </span>
               </div>
-              {isDCType && (
-                <div className={styles.numberInputGroupInline}>
-                  <span className={styles.inputLabel}>적립금</span>
-                  <NumberInput
-                    className={styles.numberInputSmall}
-                    value={data.retirementPensionBalance != null ? data.retirementPensionBalance : ""}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      onUpdateData({ retirementPensionBalance: value === "" ? null : parseFloat(value) || 0 });
-                    }}
-                    placeholder="0"
-                  />
-                  <span className={styles.unit}>만원</span>
-                </div>
-              )}
-              {isDBType && (
-                <div className={styles.numberInputGroupInline}>
-                  <span className={styles.inputLabel}>근속</span>
-                  <NumberInput
-                    className={styles.numberInputSmall}
-                    value={data.yearsOfService != null ? data.yearsOfService : ""}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      onUpdateData({ yearsOfService: value === "" ? null : parseInt(value) || 0 });
-                    }}
-                    placeholder="0"
-                    min={0}
-                    max={50}
-                  />
-                  <span className={styles.unit}>년</span>
-                </div>
-              )}
-              {isUnknownType && (
-                <p className={styles.pensionHint}>
-                  대시보드에서 나중에 추가할 수 있어요.
-                </p>
-              )}
+            )}
+            {!data.isMarried && data.children.length > 0 && (
+              <div className={styles.summaryItem}>
+                <span className={styles.summaryLabel}>가족 구성</span>
+                <span className={styles.summaryValue}>자녀 {data.children.length}명</span>
+              </div>
+            )}
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryLabel}>월 소득</span>
+              <span className={styles.summaryValue}>
+                {formatMoney((data.laborIncome || 0) + (data.spouseLaborIncome || 0))}
+              </span>
+            </div>
+            <div className={styles.summaryItem}>
+              <span className={styles.summaryLabel}>월 지출</span>
+              <span className={styles.summaryValue}>{formatMoney(data.livingExpenses || 0)}</span>
             </div>
           </div>
-
-          {/* 배우자 퇴직연금 (배우자가 일하는 경우) */}
-          {hasWorkingSpouseForRetirement && (
-            <div className={styles.personRow}>
-              <span className={styles.personLabel}>배우자</span>
-              <div className={styles.retirementPensionInputs}>
-                <div className={styles.buttonGroupSmall}>
-                  <button
-                    className={`${styles.typeButton} ${spouseIsDCType ? styles.typeButtonActive : ""}`}
-                    onClick={() => onUpdateData({ spouseRetirementPensionType: "DC" })}
-                  >
-                    DC형/기업IRP
-                  </button>
-                  <button
-                    className={`${styles.typeButton} ${spouseIsDBType ? styles.typeButtonActive : ""}`}
-                    onClick={() => onUpdateData({ spouseRetirementPensionType: "DB" })}
-                  >
-                    DB형/퇴직금
-                  </button>
-                  <button
-                    className={`${styles.typeButton} ${spouseIsUnknownType ? styles.typeButtonActive : ""}`}
-                    onClick={() => onUpdateData({ spouseRetirementPensionType: "unknown" })}
-                  >
-                    모름
-                  </button>
-                </div>
-                {spouseIsDCType && (
-                  <div className={styles.numberInputGroupInline}>
-                    <span className={styles.inputLabel}>적립금</span>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={data.spouseRetirementPensionBalance != null ? data.spouseRetirementPensionBalance : ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({ spouseRetirementPensionBalance: value === "" ? null : parseFloat(value) || 0 });
-                      }}
-                      placeholder="0"
-                    />
-                    <span className={styles.unit}>만원</span>
-                  </div>
-                )}
-                {spouseIsDBType && (
-                  <div className={styles.numberInputGroupInline}>
-                    <span className={styles.inputLabel}>근속</span>
-                    <NumberInput
-                      className={styles.numberInputSmall}
-                      value={data.spouseYearsOfService != null ? data.spouseYearsOfService : ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        onUpdateData({ spouseYearsOfService: value === "" ? null : parseInt(value) || 0 });
-                      }}
-                      placeholder="0"
-                      min={0}
-                      max={50}
-                    />
-                    <span className={styles.unit}>년</span>
-                  </div>
-                )}
-                {spouseIsUnknownType && (
-                  <p className={styles.pensionHint}>
-                    대시보드에서 나중에 추가할 수 있어요.
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      );
-
-    case "personal_pension":
-      const hasWorkingSpouseForPersonalPension =
-        data.spouse?.retirement_age != null && data.spouse.retirement_age > 0;
-      return (
-        <div className={styles.pensionSection}>
-          {/* 본인 개인연금 */}
-          <div className={styles.personRow}>
-            <span className={styles.personLabel}>본인</span>
-            <div className={styles.retirementPensionInputs}>
-              <div className={styles.numberInputGroupInline}>
-                <span className={styles.inputLabel}>IRP</span>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={data.irpBalance != null ? data.irpBalance : ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      irpBalance: value === "" ? null : parseFloat(value) || 0,
-                      hasNoPension: false,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <div className={styles.numberInputGroupInline}>
-                <span className={styles.inputLabel}>연금저축</span>
-                <NumberInput
-                  className={styles.numberInputSmall}
-                  value={
-                    data.pensionSavingsBalance != null
-                      ? data.pensionSavingsBalance
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    onUpdateData({
-                      pensionSavingsBalance:
-                        value === "" ? null : parseFloat(value) || 0,
-                      hasNoPension: false,
-                    });
-                  }}
-                  placeholder="0"
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 배우자 개인연금 (배우자가 일하는 경우) */}
-          {hasWorkingSpouseForPersonalPension && (
-            <div className={styles.personRow}>
-              <span className={styles.personLabel}>배우자</span>
-              <div className={styles.retirementPensionInputs}>
-                <div className={styles.numberInputGroupInline}>
-                  <span className={styles.inputLabel}>IRP</span>
-                  <NumberInput
-                    className={styles.numberInputSmall}
-                    value={data.spouseIrpBalance != null ? data.spouseIrpBalance : ""}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      onUpdateData({
-                        spouseIrpBalance: value === "" ? null : parseFloat(value) || 0,
-                      });
-                    }}
-                    placeholder="0"
-                  />
-                  <span className={styles.unit}>만원</span>
-                </div>
-                <div className={styles.numberInputGroupInline}>
-                  <span className={styles.inputLabel}>연금저축</span>
-                  <NumberInput
-                    className={styles.numberInputSmall}
-                    value={
-                      data.spousePensionSavingsBalance != null
-                        ? data.spousePensionSavingsBalance
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      onUpdateData({
-                        spousePensionSavingsBalance:
-                          value === "" ? null : parseFloat(value) || 0,
-                      });
-                    }}
-                    placeholder="0"
-                  />
-                  <span className={styles.unit}>만원</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <p className={styles.pensionHint}>
-            없으면 0을 입력하세요. ISA는 절세 투자계좌라 저축/투자에서 관리해요.
-          </p>
         </div>
       );
 
     default:
       return (
         <p className={styles.placeholder}>
-          이 항목은 오른쪽 스프레드시트에서 입력해주세요.
+          이 항목은 대시보드에서 입력해주세요.
         </p>
       );
   }

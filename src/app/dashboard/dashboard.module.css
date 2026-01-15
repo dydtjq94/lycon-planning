@@ -1,31 +1,24 @@
 /* 레이아웃 */
 .layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
   background-color: #ffffff;
 }
 
 /* 메인 영역 */
 .main {
   flex: 1;
-  margin-left: 56px;
   height: 100vh;
   background-color: #ffffff;
-  transition: margin-left 0.2s ease;
   overflow: hidden;
-  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-.mainExpanded {
-  margin-left: 220px;
-}
-
-/* 헤더 */
+/* 헤더 - Main 안에 포함 */
 .header {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 56px;
-  right: 0;
   z-index: 100;
   display: flex;
   justify-content: space-between;
@@ -34,11 +27,6 @@
   padding: 0 32px;
   background-color: white;
   border-bottom: 1px solid #e7e5e4;
-  transition: left 0.2s ease;
-}
-
-.mainExpanded .header {
-  left: 220px;
 }
 
 .pageTitle {
@@ -91,10 +79,58 @@
   }
 }
 
+/* 스케줄 헤더 (홈 탭) */
+.scheduleHeader {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.scheduleBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #007aff 0%, #0055d4 100%);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.scheduleTimeline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.scheduleItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scheduleValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #292524;
+}
+
+.scheduleLabel {
+  font-size: 13px;
+  color: #78716c;
+}
+
+.scheduleDivider {
+  width: 1px;
+  height: 14px;
+  background-color: #d6d3d1;
+}
+
 /* 콘텐츠 */
 .content {
-  height: 100%;
-  padding: 72px 24px 24px 24px; /* 48px 헤더 + 24px 여백 */
+  flex: 1;
+  padding: 24px;
   overflow-y: auto;
   overflow-x: hidden;
 }

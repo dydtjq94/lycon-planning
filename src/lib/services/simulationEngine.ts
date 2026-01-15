@@ -1,5 +1,6 @@
 import type {
   OnboardingData,
+  FinancialItem,
   FinancialItemInput,
   IncomeData,
   ExpenseData,
@@ -12,6 +13,14 @@ import type {
 } from '@/types'
 import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
 import { migrateOnboardingToFinancialItems, isItemActiveAt } from './dataMigration'
+
+// 프로필 정보 (시뮬레이션용)
+export interface SimulationProfile {
+  birthYear: number
+  retirementAge: number
+  spouseBirthYear?: number
+  spouseRetirementAge?: number
+}
 import { DEFAULT_RATES } from './defaultItems'
 import {
   calculateRemainingBalance,
@@ -21,6 +30,13 @@ import {
   getEffectiveDebtRate,
   type RepaymentType,
 } from '../utils/loanCalculator'
+import {
+  getActiveMonthsInYear,
+  calculateYearlyAmountWithProrating,
+  calculateYearlyInterestWithProrating,
+  calculateRemainingBalanceAtYearEnd,
+} from '../utils/monthlyCalculation'
+import { getEffectiveRate, getDefaultRateCategory } from '../utils'
 
 // ============================================
 // 타입 정의
@@ -48,8 +64,8 @@ export interface YearlySnapshot {
   netWorth: number           // 순자산 (자산 - 부채)
 
   // 상세 breakdown
-  incomeBreakdown: { title: string; amount: number }[]
-  expenseBreakdown: { title: string; amount: number }[]
+  incomeBreakdown: { title: string; amount: number; type?: string }[]
+  expenseBreakdown: { title: string; amount: number; type?: string }[]
   assetBreakdown: { title: string; amount: number }[]
   debtBreakdown: { title: string; amount: number }[]
   pensionBreakdown: { title: string; amount: number }[]
@@ -87,9 +103,16 @@ export function runSimulation(
 ): SimulationResult {
   const currentYear = new Date().getFullYear()
   const birthYear = data.birth_date ? parseInt(data.birth_date.split('-')[0]) : currentYear - 35
+  const spouseBirthYear = data.spouse?.birth_date ? parseInt(data.spouse.birth_date.split('-')[0]) : null
   const currentAge = currentYear - birthYear
   const retirementYear = birthYear + (data.target_retirement_age || 60)
   const endYear = currentYear + yearsToSimulate
+
+  // owner에 따른 생년 반환 (연금 수령 시작 연도 계산용)
+  const getOwnerBirthYear = (owner?: string) => {
+    if (owner === 'spouse' && spouseBirthYear) return spouseBirthYear
+    return birthYear
+  }
 
   // OnboardingData를 FinancialItem으로 변환
   const items = migrateOnboardingToFinancialItems(data, 'simulation')
@@ -97,9 +120,20 @@ export function runSimulation(
   // 글로벌 설정 (우선순위: globalSettings > data.globalSettings > 기본값)
   const gs = globalSettings || data.globalSettings || DEFAULT_GLOBAL_SETTINGS
 
-  // 설정값 (GlobalSettings 우선 사용)
-  const investmentReturn = (gs.investmentReturnRate ?? settings?.investmentReturn ?? DEFAULT_RATES.investmentReturn) / 100
-  const inflationRate = (gs.inflationRate ?? settings?.inflationRate ?? DEFAULT_RATES.expenseGrowth) / 100
+  // 설정값 (GlobalSettings + 시나리오 모드 적용)
+  const investmentReturn = getEffectiveRate(
+    gs.investmentReturnRate ?? settings?.investmentReturn ?? DEFAULT_RATES.investmentReturn,
+    'investment',
+    gs.scenarioMode,
+    gs
+  ) / 100
+  const inflationRate = getEffectiveRate(
+    gs.inflationRate ?? settings?.inflationRate ?? DEFAULT_RATES.expenseGrowth,
+    'inflation',
+    gs.scenarioMode,
+    gs
+  ) / 100
+  // incomeGrowthRate, realEstateGrowthRate는 항목별로 적용하므로 여기서는 기본값만 저장
   const incomeGrowthRate = (gs.incomeGrowthRate ?? DEFAULT_RATES.incomeGrowth) / 100
   const realEstateGrowthRate = (gs.realEstateGrowthRate ?? DEFAULT_RATES.realEstateGrowth) / 100
 
@@ -118,46 +152,76 @@ export function runSimulation(
     // 해당 연도의 활성 항목 필터링
     const activeItems = items.filter(item => isItemActiveAt(item, year, 6))
 
+    // owner를 한글로 변환
+    const ownerLabels: Record<string, string> = {
+      self: '본인',
+      spouse: '배우자',
+      child: '자녀',
+      common: '공동',
+    }
+
     // 소득 계산 (성장률 반영, GlobalSettings 우선)
     const incomeItems = activeItems.filter(i => i.category === 'income')
     const incomeBreakdown = incomeItems.map(item => {
       const incomeData = item.data as IncomeData
-      // 개별 항목 성장률 > GlobalSettings > 기본값
-      const itemGrowthRate = incomeData.growthRate !== undefined
-        ? incomeData.growthRate / 100
-        : incomeGrowthRate
+      // rateCategory 기반으로 시나리오 상승률 적용
+      const rateCategory = incomeData.rateCategory || getDefaultRateCategory(item.type)
+      const baseRate = incomeData.growthRate ?? gs.incomeGrowthRate
+      const effectiveRate = getEffectiveRate(baseRate, rateCategory, gs.scenarioMode, gs)
+      const itemGrowthRate = effectiveRate / 100
       const amount = incomeData.amount * Math.pow(1 + itemGrowthRate, yearsSinceStart) * 12
-      return { title: item.title, amount: Math.round(amount) }
+      // 형식: "title | owner"
+      const ownerLabel = item.owner ? ownerLabels[item.owner] || '' : ''
+      const displayTitle = ownerLabel ? `${item.title} | ${ownerLabel}` : item.title
+      return { title: displayTitle, amount: Math.round(amount), type: item.type }
     })
-    const totalIncome = incomeBreakdown.reduce((sum, i) => sum + i.amount, 0)
 
-    // 연금 수령 (은퇴 후)
-    const pensionIncomeItems = activeItems.filter(i => i.category === 'pension')
-    const pensionIncome = pensionIncomeItems.reduce((sum, item) => {
-      const pensionData = item.data as PensionData
-      if (pensionData.expectedMonthlyAmount && year >= (item.start_year || 0)) {
-        return sum + pensionData.expectedMonthlyAmount * 12
-      }
-      return sum
-    }, 0)
+    // 총 소득 (연금/임대 소득도 category: 'income'으로 저장되므로 별도 처리 불필요)
+    const totalIncome = incomeBreakdown.reduce((sum, i) => sum + i.amount, 0)
 
     // 지출 계산 (물가상승률 반영, GlobalSettings 우선)
     const expenseItems = activeItems.filter(i => i.category === 'expense')
-    const expenseBreakdown = expenseItems.map(item => {
+    const regularExpenseBreakdown = expenseItems.map(item => {
       const expenseData = item.data as ExpenseData
-      // 개별 항목 성장률 > GlobalSettings 인플레이션 > 기본값
-      const itemGrowthRate = expenseData.growthRate !== undefined
-        ? expenseData.growthRate / 100
-        : inflationRate
+      // rateCategory 기반으로 시나리오 상승률 적용
+      const rateCategory = expenseData.rateCategory || getDefaultRateCategory(item.type)
+      const baseRate = expenseData.growthRate ?? gs.inflationRate
+      const effectiveRate = getEffectiveRate(baseRate, rateCategory, gs.scenarioMode, gs)
+      const itemGrowthRate = effectiveRate / 100
       const itemStartYear = item.start_year || currentYear
       const yearsFromItemStart = Math.max(0, year - itemStartYear)
       const amount = expenseData.amount * Math.pow(1 + itemGrowthRate, yearsFromItemStart) * 12
-      return { title: item.title, amount: Math.round(amount) }
+      // 형식: "지출명 | owner"
+      const ownerLabel = item.owner ? ownerLabels[item.owner] || '' : ''
+      const displayTitle = ownerLabel ? `${item.title} | ${ownerLabel}` : item.title
+      return { title: displayTitle, amount: Math.round(amount), type: item.type }
     })
+
+    // 월세 지출 계산
+    const realEstateItemsForRent = activeItems.filter(i => i.category === 'real_estate')
+    const rentExpenseBreakdown: { title: string; amount: number }[] = []
+    realEstateItemsForRent.forEach(item => {
+      const reData = item.data as RealEstateData
+      if (reData.housingType === '월세' && reData.monthlyRent && reData.monthlyRent > 0) {
+        const itemStartYear = item.start_year || currentYear
+        const yearsFromStart = Math.max(0, year - itemStartYear)
+        const adjustedRent = reData.monthlyRent * Math.pow(1 + inflationRate, yearsFromStart) * 12
+        // 형식: "월세 | owner"
+        const ownerLabel = item.owner ? ownerLabels[item.owner] || '' : ''
+        const rentTitle = ownerLabel ? `${item.title} 월세 | ${ownerLabel}` : `${item.title} 월세`
+        rentExpenseBreakdown.push({
+          title: rentTitle,
+          amount: Math.round(adjustedRent)
+        })
+      }
+    })
+
+    // 전체 지출 = 일반 지출 + 월세 지출
+    const expenseBreakdown = [...regularExpenseBreakdown, ...rentExpenseBreakdown]
     const totalExpense = expenseBreakdown.reduce((sum, e) => sum + e.amount, 0)
 
     // 순현금흐름
-    const netCashFlow = totalIncome + pensionIncome - totalExpense
+    const netCashFlow = totalIncome - totalExpense
 
     // 부채 상환 (정확한 상환 방식별 계산)
     const debtItems = items.filter(i => i.category === 'debt')
@@ -206,7 +270,8 @@ export function runSimulation(
     } else {
       // 은퇴 후 연금 인출 (연금 데이터의 수령 기간 활용)
       // 각 연금 항목의 수령 기간을 고려한 인출
-      const pensionDataItems = pensionIncomeItems.map(item => item.data as PensionData)
+      const pensionAssetItems = items.filter(i => i.category === 'pension')
+      const pensionDataItems = pensionAssetItems.map(item => item.data as PensionData)
 
       // 평균 수령 기간 계산 (기본값: 20년)
       const totalReceivingYears = pensionDataItems.reduce((sum, pd) => {
@@ -230,10 +295,10 @@ export function runSimulation(
     const realEstateValue = realEstateItems.reduce((sum, item) => {
       const reData = item.data as RealEstateData
       if (reData.housingType === '자가') {
-        // 개별 항목 상승률 > GlobalSettings > 기본값
-        const itemGrowthRate = reData.appreciationRate !== undefined
-          ? reData.appreciationRate / 100
-          : realEstateGrowthRate
+        // rateCategory 기반으로 시나리오 상승률 적용
+        const baseRate = reData.appreciationRate ?? gs.realEstateGrowthRate
+        const effectiveRate = getEffectiveRate(baseRate, 'realEstate', gs.scenarioMode, gs)
+        const itemGrowthRate = effectiveRate / 100
         return sum + (reData.currentValue || 0) * Math.pow(1 + itemGrowthRate, yearsSinceStart)
       }
       return sum
@@ -248,15 +313,92 @@ export function runSimulation(
       return sum
     }, 0)
 
-    // 자산 breakdown
+    // 자산 breakdown - 개별 항목으로 상세 표시
     const assetBreakdown: { title: string; amount: number }[] = []
-    if (realEstateValue > 0) assetBreakdown.push({ title: '부동산', amount: Math.round(realEstateValue) })
-    if (depositValue > 0) assetBreakdown.push({ title: '전세보증금', amount: Math.round(depositValue) })
-    if (accumulatedSavings > 0) assetBreakdown.push({ title: '금융자산', amount: Math.round(accumulatedSavings) })
 
-    // 연금 breakdown
+    // 부동산 개별 항목
+    realEstateItems.forEach(item => {
+      const reData = item.data as RealEstateData
+      if (reData.housingType === '자가' && reData.currentValue && reData.currentValue > 0) {
+        // rateCategory 기반으로 시나리오 상승률 적용
+        const baseRate = reData.appreciationRate ?? gs.realEstateGrowthRate
+        const effectiveRate = getEffectiveRate(baseRate, 'realEstate', gs.scenarioMode, gs)
+        const itemGrowthRate = effectiveRate / 100
+        const value = reData.currentValue * Math.pow(1 + itemGrowthRate, yearsSinceStart)
+        const ownerLabel = item.owner ? ownerLabels[item.owner] || '' : ''
+        const displayTitle = ownerLabel ? `${item.title} | ${ownerLabel}` : item.title
+        assetBreakdown.push({ title: displayTitle, amount: Math.round(value) })
+      }
+    })
+
+    // 전세보증금 개별 항목
+    realEstateItems.forEach(item => {
+      const reData = item.data as RealEstateData
+      if ((reData.housingType === '전세' || reData.housingType === '월세') && reData.deposit && reData.deposit > 0) {
+        const ownerLabel = item.owner ? ownerLabels[item.owner] || '' : ''
+        const displayTitle = ownerLabel ? `${item.title} 보증금 | ${ownerLabel}` : `${item.title} 보증금`
+        assetBreakdown.push({ title: displayTitle, amount: Math.round(reData.deposit) })
+      }
+    })
+
+    // 금융자산 개별 항목으로 표시
+    const savingsItems = items.filter(i => i.category === 'savings')
+    if (accumulatedSavings > 0 && savingsItems.length > 0) {
+      // 저축 항목별 초기 잔액 비율로 분배
+      const totalInitialSavings = savingsItems.reduce((sum, item) => {
+        const savingsData = item.data as SavingsData
+        return sum + (savingsData.currentBalance || 0)
+      }, 0)
+
+      if (totalInitialSavings > 0) {
+        savingsItems.forEach(item => {
+          const savingsData = item.data as SavingsData
+          const initialBalance = savingsData.currentBalance || 0
+          const ratio = initialBalance / totalInitialSavings
+          const currentValue = accumulatedSavings * ratio
+          if (currentValue > 0) {
+            const ownerLabel = item.owner ? ownerLabels[item.owner] || '' : ''
+            const displayTitle = ownerLabel ? `${item.title} | ${ownerLabel}` : item.title
+            assetBreakdown.push({ title: displayTitle, amount: Math.round(currentValue) })
+          }
+        })
+      } else {
+        // 초기 잔액이 없지만 누적 저축이 있는 경우
+        assetBreakdown.push({ title: '금융자산', amount: Math.round(accumulatedSavings) })
+      }
+    } else if (accumulatedSavings > 0) {
+      assetBreakdown.push({ title: '금융자산', amount: Math.round(accumulatedSavings) })
+    }
+
+    // 연금 breakdown - 개별 연금 항목으로 표시
+    const pensionBreakdownItems = items.filter(i => i.category === 'pension')
     const pensionBreakdown: { title: string; amount: number }[] = []
-    if (accumulatedPension > 0) pensionBreakdown.push({ title: '연금자산', amount: Math.round(accumulatedPension) })
+
+    if (accumulatedPension > 0 && pensionBreakdownItems.length > 0) {
+      // 연금 항목별 초기 잔액 비율로 분배
+      const totalInitialPension = pensionBreakdownItems.reduce((sum, item) => {
+        const pensionData = item.data as PensionData
+        return sum + (pensionData.currentBalance || 0)
+      }, 0)
+
+      if (totalInitialPension > 0) {
+        pensionBreakdownItems.forEach(item => {
+          const pensionData = item.data as PensionData
+          const initialBalance = pensionData.currentBalance || 0
+          const ratio = initialBalance / totalInitialPension
+          const currentValue = accumulatedPension * ratio
+          if (currentValue > 0) {
+            const ownerLabel = item.owner ? ownerLabels[item.owner] || '' : ''
+            const displayTitle = ownerLabel ? `${item.title} | ${ownerLabel}` : item.title
+            pensionBreakdown.push({ title: displayTitle, amount: Math.round(currentValue) })
+          }
+        })
+      } else {
+        pensionBreakdown.push({ title: '연금자산', amount: Math.round(accumulatedPension) })
+      }
+    } else if (accumulatedPension > 0) {
+      pensionBreakdown.push({ title: '연금자산', amount: Math.round(accumulatedPension) })
+    }
 
     // 총자산
     const financialAssets = Math.round(accumulatedSavings)
@@ -269,7 +411,379 @@ export function runSimulation(
     snapshots.push({
       year,
       age,
-      totalIncome: Math.round(totalIncome + pensionIncome),
+      totalIncome: Math.round(totalIncome),
+      totalExpense: Math.round(totalExpense),
+      netCashFlow: Math.round(netCashFlow),
+      totalAssets,
+      realEstateValue: Math.round(realEstateValue + depositValue),
+      financialAssets,
+      pensionAssets,
+      totalDebts,
+      netWorth,
+      incomeBreakdown,
+      expenseBreakdown,
+      assetBreakdown,
+      debtBreakdown,
+      pensionBreakdown,
+    })
+  }
+
+  // 요약 지표 계산
+  const currentSnapshot = snapshots[0]
+  const retirementSnapshot = snapshots.find(s => s.year === retirementYear) || currentSnapshot
+  const peakSnapshot = snapshots.reduce((max, s) => s.netWorth > max.netWorth ? s : max, snapshots[0])
+
+  // FI 목표 (연간 지출 x 25)
+  const annualExpense = currentSnapshot.totalExpense
+  const fiTarget = annualExpense * 25
+  const fiSnapshot = snapshots.find(s => s.netWorth >= fiTarget)
+
+  return {
+    startYear: currentYear,
+    endYear,
+    retirementYear,
+    snapshots,
+    summary: {
+      currentNetWorth: currentSnapshot.netWorth,
+      retirementNetWorth: retirementSnapshot.netWorth,
+      peakNetWorth: peakSnapshot.netWorth,
+      peakNetWorthYear: peakSnapshot.year,
+      yearsToFI: fiSnapshot ? fiSnapshot.year - currentYear : null,
+      fiTarget,
+    },
+  }
+}
+
+/**
+ * FinancialItem[]에서 직접 시뮬레이션 실행
+ * - 데이터 변환 없이 바로 사용
+ * - 대시보드에서 사용
+ */
+export function runSimulationFromItems(
+  items: FinancialItem[],
+  profile: SimulationProfile,
+  globalSettings: GlobalSettings,
+  yearsToSimulate: number = 50
+): SimulationResult {
+  const currentYear = new Date().getFullYear()
+  const { birthYear, retirementAge, spouseBirthYear } = profile
+  const retirementYear = birthYear + retirementAge
+  const endYear = currentYear + yearsToSimulate
+
+  // owner에 따른 생년 반환 (연금 수령 시작 연도 계산용)
+  const getOwnerBirthYear = (owner?: string) => {
+    if (owner === 'spouse' && spouseBirthYear) return spouseBirthYear
+    return birthYear
+  }
+
+  // 글로벌 설정
+  const gs = globalSettings || DEFAULT_GLOBAL_SETTINGS
+
+  // 설정값 (GlobalSettings + 시나리오 모드 적용)
+  const investmentReturn = getEffectiveRate(
+    gs.investmentReturnRate ?? DEFAULT_RATES.investmentReturn,
+    'investment',
+    gs.scenarioMode,
+    gs
+  ) / 100
+  const inflationRate = getEffectiveRate(
+    gs.inflationRate ?? DEFAULT_RATES.expenseGrowth,
+    'inflation',
+    gs.scenarioMode,
+    gs
+  ) / 100
+  // incomeGrowthRate, realEstateGrowthRate는 항목별로 적용하므로 여기서는 기본값만 저장
+  const incomeGrowthRate = (gs.incomeGrowthRate ?? DEFAULT_RATES.incomeGrowth) / 100
+  const realEstateGrowthRate = (gs.realEstateGrowthRate ?? DEFAULT_RATES.realEstateGrowth) / 100
+
+  const snapshots: YearlySnapshot[] = []
+
+  // 초기 자산 상태 계산
+  let accumulatedSavings = calculateInitialSavingsFromItems(items)
+  let accumulatedPension = calculateInitialPensionFromItems(items)
+
+  // 연도별 시뮬레이션
+  for (let year = currentYear; year <= endYear; year++) {
+    const age = year - birthYear
+    const yearsSinceStart = year - currentYear
+
+    // 해당 연도의 활성 항목 필터링
+    const activeItems = items.filter(item => isItemActiveAt(item, year, 6))
+
+    // 소득 타입 한글 매핑
+    const incomeTypeLabels: Record<string, string> = {
+      labor: '근로소득',
+      business: '사업소득',
+      rental: '임대소득',
+      pension: '연금소득',
+      dividend: '배당소득',
+      interest: '이자소득',
+      bonus: '상여금',
+      other: '기타소득',
+    }
+
+    // owner를 한글로 변환
+    const ownerLabels: Record<string, string> = {
+      self: '본인',
+      spouse: '배우자',
+      child: '자녀',
+      common: '공동',
+    }
+
+    // 소득 계산 (월별 일할 계산 + 상승률 반영)
+    const incomeItems = activeItems.filter(i => i.category === 'income')
+    const incomeBreakdown = incomeItems.map(item => {
+      const incomeData = item.data as IncomeData
+      // rateCategory 기반으로 시나리오 상승률 적용
+      const rateCategory = incomeData.rateCategory || getDefaultRateCategory(item.type)
+      const baseRate = incomeData.growthRate ?? gs.incomeGrowthRate
+      const effectiveRate = getEffectiveRate(baseRate, rateCategory, gs.scenarioMode, gs)
+      const itemGrowthRate = effectiveRate / 100
+
+      // 월 기준 금액
+      const monthlyAmount = incomeData.frequency === 'yearly'
+        ? incomeData.amount / 12
+        : incomeData.amount
+
+      // 월별 일할 계산으로 연간 금액 산출
+      const amount = calculateYearlyAmountWithProrating(
+        monthlyAmount,
+        itemGrowthRate,
+        item.start_year || currentYear,
+        item.start_month || 1,
+        item.end_year,
+        item.end_month,
+        year
+      )
+      // 형식: "타입 | owner" (예: "근로소득 | 본인")
+      const ownerLabel = ownerLabels[item.owner] || ''
+      const typeLabel = incomeTypeLabels[item.type] || item.type
+      const displayTitle = ownerLabel ? `${typeLabel} | ${ownerLabel}` : typeLabel
+      return { title: displayTitle, amount: Math.round(amount), type: item.type }
+    })
+    // 총 소득 (연금/임대 소득도 category: 'income'으로 저장되므로 별도 처리 불필요)
+    const totalIncome = incomeBreakdown.reduce((sum, i) => sum + i.amount, 0)
+
+    // 지출 계산 (월별 일할 계산 + 물가상승률 반영)
+    const expenseItems = activeItems.filter(i => i.category === 'expense')
+    const regularExpenseBreakdown = expenseItems.map(item => {
+      const expenseData = item.data as ExpenseData
+      // rateCategory 기반으로 시나리오 상승률 적용
+      const rateCategory = expenseData.rateCategory || getDefaultRateCategory(item.type)
+      const baseRate = expenseData.growthRate ?? gs.inflationRate
+      const effectiveRate = getEffectiveRate(baseRate, rateCategory, gs.scenarioMode, gs)
+      const itemGrowthRate = effectiveRate / 100
+
+      // 월 기준 금액
+      const monthlyAmount = expenseData.frequency === 'yearly'
+        ? expenseData.amount / 12
+        : expenseData.amount
+
+      // 월별 일할 계산으로 연간 금액 산출
+      const amount = calculateYearlyAmountWithProrating(
+        monthlyAmount,
+        itemGrowthRate,
+        item.start_year || currentYear,
+        item.start_month || 1,
+        item.end_year,
+        item.end_month,
+        year
+      )
+      // 형식: "지출명 | owner" (예: "생활비 | 공동")
+      const ownerLabel = ownerLabels[item.owner] || ''
+      const displayTitle = ownerLabel ? `${item.title} | ${ownerLabel}` : item.title
+      return { title: displayTitle, amount: Math.round(amount), type: item.type }
+    })
+
+    // 전체 지출 = 지출 테이블 데이터만 사용 (연동 지출 포함)
+    // 부채 이자/원금, 월세 등은 이미 expenses 테이블에 연동 지출로 저장됨
+    const expenseBreakdown = [...regularExpenseBreakdown]
+    const totalExpense = expenseBreakdown.reduce((sum, e) => sum + e.amount, 0)
+
+    // 순현금흐름
+    const netCashFlow = totalIncome - totalExpense
+
+    // 부채 잔액 계산 (연도 말 기준)
+    const debtItems = items.filter(i => i.category === 'debt')
+    const debtBreakdown = debtItems
+      .filter(item => {
+        const itemStartYear = item.start_year || currentYear
+        const itemEndYear = item.end_year || 9999
+        return year >= itemStartYear && year <= itemEndYear
+      })
+      .map(item => {
+        const debtData = item.data as DebtData
+        const itemStartYear = item.start_year || currentYear
+        const itemStartMonth = item.start_month || 1
+        const itemEndYear = item.end_year || currentYear + 30
+        const itemEndMonth = item.end_month || 12
+
+        const effectiveRate = getEffectiveDebtRate(debtData, gs)
+        const principal = debtData.currentBalance || debtData.principal || 0
+        const repaymentType = (debtData.repaymentType || '원리금균등상환') as '만기일시상환' | '원리금균등상환' | '원금균등상환'
+
+        // 연도 말 기준 잔액 계산
+        const remainingBalance = calculateRemainingBalanceAtYearEnd(
+          principal,
+          effectiveRate,
+          itemStartYear,
+          itemStartMonth,
+          itemEndYear,
+          itemEndMonth,
+          year,
+          repaymentType
+        )
+
+        return { title: item.title, amount: remainingBalance }
+      })
+    const totalDebts = debtBreakdown.reduce((sum, d) => sum + d.amount, 0)
+
+    // 금융자산 성장 (투자수익률 반영)
+    accumulatedSavings = accumulatedSavings * (1 + investmentReturn) + Math.max(0, netCashFlow)
+
+    // 연금자산 성장
+    if (year < retirementYear) {
+      accumulatedPension = accumulatedPension * (1 + investmentReturn)
+    } else {
+      // 은퇴 후 연금 인출
+      const pensionItems = items.filter(i => i.category === 'pension')
+      const pensionDataItems = pensionItems.map(item => item.data as PensionData)
+      const totalReceivingYears = pensionDataItems.reduce((sum, pd) => {
+        return sum + (pd.paymentYears || pd.receivingYears || 20)
+      }, 0)
+      const avgReceivingYears = pensionDataItems.length > 0
+        ? totalReceivingYears / pensionDataItems.length
+        : 20
+      const pensionWithdrawal = calculateAnnualPensionWithdrawal(
+        accumulatedPension,
+        avgReceivingYears,
+        investmentReturn * 100
+      )
+      accumulatedPension = Math.max(0, accumulatedPension - pensionWithdrawal)
+    }
+
+    // 부동산 가치 계산
+    const realEstateItems = items.filter(i => i.category === 'real_estate')
+    const realEstateValue = realEstateItems.reduce((sum, item) => {
+      const reData = item.data as RealEstateData
+      if (reData.housingType === '자가' || !reData.housingType) {
+        // rateCategory 기반으로 시나리오 상승률 적용
+        const baseRate = reData.appreciationRate ?? gs.realEstateGrowthRate
+        const effectiveRate = getEffectiveRate(baseRate, 'realEstate', gs.scenarioMode, gs)
+        const itemGrowthRate = effectiveRate / 100
+        return sum + (reData.currentValue || 0) * Math.pow(1 + itemGrowthRate, yearsSinceStart)
+      }
+      return sum
+    }, 0)
+
+    // 전세보증금
+    const depositValue = realEstateItems.reduce((sum, item) => {
+      const reData = item.data as RealEstateData
+      if (reData.housingType === '전세' || reData.housingType === '월세') {
+        return sum + (reData.deposit || 0)
+      }
+      return sum
+    }, 0)
+
+    // 자산 breakdown - 개별 항목으로 상세 표시
+    const assetBreakdown: { title: string; amount: number }[] = []
+
+    // 부동산 개별 항목
+    realEstateItems.forEach(item => {
+      const reData = item.data as RealEstateData
+      if ((reData.housingType === '자가' || !reData.housingType) && reData.currentValue && reData.currentValue > 0) {
+        // rateCategory 기반으로 시나리오 상승률 적용
+        const baseRate = reData.appreciationRate ?? gs.realEstateGrowthRate
+        const effectiveRate = getEffectiveRate(baseRate, 'realEstate', gs.scenarioMode, gs)
+        const itemGrowthRate = effectiveRate / 100
+        const value = reData.currentValue * Math.pow(1 + itemGrowthRate, yearsSinceStart)
+        const ownerLabel = ownerLabels[item.owner] || ''
+        const displayTitle = ownerLabel ? `${item.title} | ${ownerLabel}` : item.title
+        assetBreakdown.push({ title: displayTitle, amount: Math.round(value) })
+      }
+    })
+
+    // 전세보증금 개별 항목
+    realEstateItems.forEach(item => {
+      const reData = item.data as RealEstateData
+      if ((reData.housingType === '전세' || reData.housingType === '월세') && reData.deposit && reData.deposit > 0) {
+        const ownerLabel = ownerLabels[item.owner] || ''
+        const displayTitle = ownerLabel ? `${item.title} 보증금 | ${ownerLabel}` : `${item.title} 보증금`
+        assetBreakdown.push({ title: displayTitle, amount: Math.round(reData.deposit) })
+      }
+    })
+
+    // 금융자산 개별 항목으로 표시
+    const savingsItems = items.filter(i => i.category === 'savings')
+    if (accumulatedSavings > 0 && savingsItems.length > 0) {
+      // 저축 항목별 초기 잔액 비율로 분배
+      const totalInitialSavings = savingsItems.reduce((sum, item) => {
+        const savingsData = item.data as SavingsData
+        return sum + (savingsData.currentBalance || 0)
+      }, 0)
+
+      if (totalInitialSavings > 0) {
+        savingsItems.forEach(item => {
+          const savingsData = item.data as SavingsData
+          const initialBalance = savingsData.currentBalance || 0
+          const ratio = initialBalance / totalInitialSavings
+          const currentValue = accumulatedSavings * ratio
+          if (currentValue > 0) {
+            const ownerLabel = ownerLabels[item.owner] || ''
+            const displayTitle = ownerLabel ? `${item.title} | ${ownerLabel}` : item.title
+            assetBreakdown.push({ title: displayTitle, amount: Math.round(currentValue) })
+          }
+        })
+      } else {
+        // 초기 잔액이 없지만 누적 저축이 있는 경우
+        assetBreakdown.push({ title: '금융자산', amount: Math.round(accumulatedSavings) })
+      }
+    } else if (accumulatedSavings > 0) {
+      assetBreakdown.push({ title: '금융자산', amount: Math.round(accumulatedSavings) })
+    }
+
+    // 연금 breakdown - 개별 연금 항목으로 표시
+    const pensionBreakdownItems = items.filter(i => i.category === 'pension')
+    const pensionBreakdown: { title: string; amount: number }[] = []
+
+    if (accumulatedPension > 0 && pensionBreakdownItems.length > 0) {
+      // 연금 항목별 초기 잔액 비율로 분배
+      const totalInitialPension = pensionBreakdownItems.reduce((sum, item) => {
+        const pensionData = item.data as PensionData
+        return sum + (pensionData.currentBalance || 0)
+      }, 0)
+
+      if (totalInitialPension > 0) {
+        pensionBreakdownItems.forEach(item => {
+          const pensionData = item.data as PensionData
+          const initialBalance = pensionData.currentBalance || 0
+          const ratio = initialBalance / totalInitialPension
+          const currentValue = accumulatedPension * ratio
+          if (currentValue > 0) {
+            const ownerLabel = ownerLabels[item.owner] || ''
+            const displayTitle = ownerLabel ? `${item.title} | ${ownerLabel}` : item.title
+            pensionBreakdown.push({ title: displayTitle, amount: Math.round(currentValue) })
+          }
+        })
+      } else {
+        pensionBreakdown.push({ title: '연금자산', amount: Math.round(accumulatedPension) })
+      }
+    } else if (accumulatedPension > 0) {
+      pensionBreakdown.push({ title: '연금자산', amount: Math.round(accumulatedPension) })
+    }
+
+    // 총자산
+    const financialAssets = Math.round(accumulatedSavings)
+    const pensionAssets = Math.round(accumulatedPension)
+    const totalAssets = Math.round(realEstateValue + depositValue + financialAssets + pensionAssets)
+
+    // 순자산
+    const netWorth = totalAssets - totalDebts
+
+    snapshots.push({
+      year,
+      age,
+      totalIncome: Math.round(totalIncome),
       totalExpense: Math.round(totalExpense),
       netCashFlow: Math.round(netCashFlow),
       totalAssets,
@@ -343,6 +857,25 @@ function calculateInitialDebt(items: FinancialItemInput[]): number {
     }, 0)
 }
 
+// FinancialItem[] 용 헬퍼 함수
+function calculateInitialSavingsFromItems(items: FinancialItem[]): number {
+  return items
+    .filter(i => i.category === 'savings')
+    .reduce((sum, item) => {
+      const data = item.data as SavingsData
+      return sum + (data.currentBalance || 0)
+    }, 0)
+}
+
+function calculateInitialPensionFromItems(items: FinancialItem[]): number {
+  return items
+    .filter(i => i.category === 'pension')
+    .reduce((sum, item) => {
+      const data = item.data as PensionData
+      return sum + (data.currentBalance || 0)
+    }, 0)
+}
+
 // ============================================
 // 간단한 현재 상태 계산 (대시보드용)
 // ============================================
@@ -401,13 +934,19 @@ export function calculateCurrentState(data: OnboardingData): CurrentFinancialSta
   const depositAssets = (data.housingType === '전세' || data.housingType === '월세')
     ? (data.housingValue || 0) : 0
 
-  // 금융자산
-  const cashAssets = (data.cashCheckingAccount || 0) + (data.cashSavingsAccount || 0)
-  const investmentAssets =
-    (data.investDomesticStock || 0) +
-    (data.investForeignStock || 0) +
-    (data.investFund || 0) +
-    (data.investOther || 0)
+  // 금융자산 (savingsAccounts, investmentAccounts 배열에서 합산)
+  let cashAssets = 0
+  if (data.savingsAccounts) {
+    data.savingsAccounts.forEach(account => {
+      cashAssets += account.balance || 0
+    })
+  }
+  let investmentAssets = 0
+  if (data.investmentAccounts) {
+    data.investmentAccounts.forEach(account => {
+      investmentAssets += account.balance || 0
+    })
+  }
 
   // 연금자산
   const pensionAssets =

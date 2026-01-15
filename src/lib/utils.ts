@@ -7,17 +7,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// 금액 포맷팅 (만원 단위 입력)
+// 금액 포맷팅 (만원 단위 입력, 억+만원 단위로 상세 표시)
 export function formatMoney(amount: number): string {
-  if (Math.abs(amount) >= 10000) {
-    const uk = Math.floor(amount / 10000)
-    const man = amount % 10000
+  const absAmount = Math.abs(amount)
+  if (absAmount >= 10000) {
+    const uk = Math.floor(absAmount / 10000)
+    const man = Math.round(absAmount % 10000)
     if (man === 0) {
       return `${uk}억`
     }
     return `${uk}억 ${man.toLocaleString()}만`
   }
-  return `${amount.toLocaleString()}만원`
+  return `${absAmount.toLocaleString()}만원`
 }
 
 // 시나리오 모드에 따른 실제 적용 상승률 계산

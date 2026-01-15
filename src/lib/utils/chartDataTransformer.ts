@@ -3,6 +3,7 @@
  */
 
 import type { YearlySnapshot, SimulationResult } from '@/lib/services/simulationEngine'
+import { CHART_COLORS } from './tooltipCategories'
 
 // Chart.js 데이터셋 타입
 export interface ChartDataset {
@@ -11,7 +12,7 @@ export interface ChartDataset {
   backgroundColor: string
   borderColor?: string
   borderWidth?: number
-  stack: 'positive' | 'negative'
+  stack: string
 }
 
 // 변환된 차트 데이터
@@ -21,13 +22,13 @@ export interface TransformedChartData {
   snapshots: YearlySnapshot[]
 }
 
-// 자산 카테고리 색상
+// 자산 카테고리 색상 (CHART_COLORS에서 가져옴)
 export const ASSET_COLORS = {
-  financialAssets: '#22c55e',  // 금융자산 (green)
-  realEstate: '#3b82f6',       // 부동산 (blue)
-  pension: '#eab308',          // 연금 (yellow)
-  cash: '#a855f7',             // 현금 (purple)
-  debt: '#ef4444',             // 부채 (red)
+  financialAssets: CHART_COLORS.asset.financial,
+  realEstate: CHART_COLORS.asset.realEstate,
+  pension: CHART_COLORS.asset.pension,
+  cash: CHART_COLORS.asset.cash,
+  debt: CHART_COLORS.negative,
 } as const
 
 // 카테고리 라벨
@@ -76,35 +77,35 @@ export function transformSimulationToChartData(
   // 라벨 생성 (연도)
   const labels = filteredSnapshots.map(s => String(s.year))
 
-  // 데이터셋 생성
+  // 데이터셋 생성 (모두 같은 stack으로 통일 - 음수 값은 자동으로 아래로 쌓임)
   const datasets: ChartDataset[] = [
     {
       label: ASSET_LABELS.financialAssets,
       data: filteredSnapshots.map(s => s.financialAssets),
       backgroundColor: ASSET_COLORS.financialAssets,
-      stack: 'positive',
+      stack: 'stack',
     },
     {
       label: ASSET_LABELS.realEstate,
       data: filteredSnapshots.map(s => s.realEstateValue),
       backgroundColor: ASSET_COLORS.realEstate,
-      stack: 'positive',
+      stack: 'stack',
     },
     {
       label: ASSET_LABELS.pension,
       data: filteredSnapshots.map(s => s.pensionAssets),
       backgroundColor: ASSET_COLORS.pension,
-      stack: 'positive',
+      stack: 'stack',
     },
   ]
 
-  // 부채 표시 여부
+  // 부채 표시 여부 (음수로 변환해서 아래로 쌓이게)
   if (showDebt) {
     datasets.push({
       label: ASSET_LABELS.debt,
-      data: filteredSnapshots.map(s => -s.totalDebts), // 음수로 표시
+      data: filteredSnapshots.map(s => -s.totalDebts),
       backgroundColor: ASSET_COLORS.debt,
-      stack: 'negative',
+      stack: 'stack',
     })
   }
 
@@ -170,6 +171,7 @@ export interface YearDetail {
   expenseBreakdown: { title: string; amount: number }[]
   assetBreakdown: { title: string; amount: number }[]
   debtBreakdown: { title: string; amount: number }[]
+  pensionBreakdown: { title: string; amount: number }[]
   // 전년 대비
   netWorthChange?: number
   netWorthChangePercent?: number
@@ -206,6 +208,7 @@ export function getYearDetail(
     expenseBreakdown: snapshot.expenseBreakdown,
     assetBreakdown: snapshot.assetBreakdown,
     debtBreakdown: snapshot.debtBreakdown,
+    pensionBreakdown: snapshot.pensionBreakdown,
     // 전년 대비
     netWorthChange: prevSnapshot ? snapshot.netWorth - prevSnapshot.netWorth : undefined,
     netWorthChangePercent: prevSnapshot && prevSnapshot.netWorth !== 0

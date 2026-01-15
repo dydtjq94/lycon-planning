@@ -47,9 +47,20 @@ function calculateAge(birthDate: string): number {
 function calculateNetWorth(data: OnboardingData): number {
   const realEstateAsset = data.housingType === '자가' ? (data.housingValue || 0) : 0
   const depositAsset = data.housingType === '전세' ? (data.housingValue || 0) : 0
-  const cashAssets = (data.cashCheckingAccount || 0) + (data.cashSavingsAccount || 0)
-  const investAssets = (data.investDomesticStock || 0) + (data.investForeignStock || 0) +
-    (data.investFund || 0) + (data.investOther || 0)
+  // 저축 계좌
+  let cashAssets = 0
+  if (data.savingsAccounts) {
+    data.savingsAccounts.forEach(account => {
+      cashAssets += account.balance || 0
+    })
+  }
+  // 투자 계좌
+  let investAssets = 0
+  if (data.investmentAccounts) {
+    data.investmentAccounts.forEach(account => {
+      investAssets += account.balance || 0
+    })
+  }
   const pensionAssets = (data.retirementPensionBalance || 0) +
     (data.irpBalance || 0) + (data.pensionSavingsBalance || 0) + (data.isaBalance || 0)
   const totalAssets = realEstateAsset + depositAsset + cashAssets + investAssets + pensionAssets
@@ -132,6 +143,13 @@ export function AssetSimulationChart({ data, settings }: AssetSimulationChartPro
         display: false,
       },
       tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#1d1d1f',
+        bodyColor: '#1d1d1f',
+        borderColor: 'rgba(0, 0, 0, 0.1)',
+        borderWidth: 1,
+        padding: 12,
+        boxPadding: 6,
         callbacks: {
           label: (context: TooltipItem<'line'>) => {
             const value = context.parsed.y ?? 0
