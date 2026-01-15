@@ -40,24 +40,22 @@ export async function POST(request: Request) {
       })
       .eq('id', user.id)
 
-    // 알리고 SMS 발송
-    const formData = new FormData()
-    formData.append('key', process.env.ALIGO_API_KEY!)
-    formData.append('user_id', process.env.ALIGO_USER_ID!)
-    formData.append('sender', process.env.ALIGO_SENDER!)
-    formData.append('receiver', cleanPhone)
-    formData.append('msg', `[Lycon] 인증번호는 ${verificationCode} 입니다.`)
-    formData.append('msg_type', 'SMS')
+    // CloudType FastAPI를 통해 SMS 발송 (고정 IP 사용)
+    const FASTAPI_URL = process.env.FASTAPI_URL
 
-    const response = await fetch('https://apis.aligo.in/send/', {
+    const response = await fetch(`${FASTAPI_URL}/sms/send-verification`, {
       method: 'POST',
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: cleanPhone,
+        code: verificationCode,
+      }),
     })
 
     const result = await response.json()
 
-    if (result.result_code !== '1') {
-      console.error('알리고 SMS 발송 실패:', result)
+    if (!result.success) {
+      console.error('SMS 발송 실패:', result)
       return NextResponse.json({
         error: result.message || 'SMS 발송에 실패했습니다',
         detail: result

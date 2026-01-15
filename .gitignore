@@ -40,6 +40,7 @@ yarn-error.log*
 /lycon-landing
 /reference_project
 /docs
+/reference_fastAPI
 
 # typescript
 *.tsbuildinfo
