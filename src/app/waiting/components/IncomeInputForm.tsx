@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { ArrowLeft, Plus, X } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
-import { AmountInput, ToggleGroup, TypeSelect, OwnerSelect, FrequencyToggle } from "./inputs";
+import { AmountInput, OwnerSelect, FrequencyToggle } from "./inputs";
 import styles from "./IncomeInputForm.module.css";
 
 // 온보딩 소득 구간 레이블
@@ -15,18 +14,18 @@ const INCOME_RANGE_LABELS: Record<string, string> = {
   over_12000: "1.2억 초과",
 };
 
-// 추가 소득 유형
-const ADDITIONAL_INCOME_TYPES = [
+// 소득 유형
+const INCOME_TYPES = [
+  { value: "labor", label: "근로소득" },
   { value: "business", label: "사업소득" },
   { value: "other", label: "기타소득" },
 ] as const;
 
-type AdditionalIncomeType = typeof ADDITIONAL_INCOME_TYPES[number]["value"];
-
-interface AdditionalIncome {
-  type: AdditionalIncomeType;
+interface IncomeFormItem {
+  type: string;
+  title: string;
   owner: "self" | "spouse";
-  amount: number;
+  amount: number | null;
   frequency: "monthly" | "yearly";
 }
 
@@ -35,7 +34,12 @@ export interface IncomeFormData {
   selfLaborFrequency: "monthly" | "yearly";
   spouseLaborIncome: number;
   spouseLaborFrequency: "monthly" | "yearly";
-  additionalIncomes: AdditionalIncome[];
+  additionalIncomes: {
+    type: string;
+    owner: "self" | "spouse";
+    amount: number;
+    frequency: "monthly" | "yearly";
+  }[];
 }
 
 interface IncomeInputFormProps {
@@ -55,91 +59,112 @@ export function IncomeInputForm({
   onSave,
   surveyIncomeRange,
 }: IncomeInputFormProps) {
-  // 근로소득
-  const [selfLaborIncome, setSelfLaborIncome] = useState(initialData?.selfLaborIncome ?? 0);
-  const [selfLaborFrequency, setSelfLaborFrequency] = useState<"monthly" | "yearly">(
-    initialData?.selfLaborFrequency ?? "monthly"
-  );
-  const [spouseLaborIncome, setSpouseLaborIncome] = useState(initialData?.spouseLaborIncome ?? 0);
-  const [spouseLaborFrequency, setSpouseLaborFrequency] = useState<"monthly" | "yearly">(
-    initialData?.spouseLaborFrequency ?? "monthly"
-  );
+  // 소득 항목들
+  const [items, setItems] = useState<IncomeFormItem[]>(() => {
+    const result: IncomeFormItem[] = [];
 
-  // 추가 소득
-  const [hasAdditional, setHasAdditional] = useState<boolean | null>(
-    initialData?.additionalIncomes && initialData.additionalIncomes.length > 0
-      ? true
-      : isCompleted
-      ? false
-      : null
-  );
-  const [additionalIncomes, setAdditionalIncomes] = useState<AdditionalIncome[]>(
-    initialData?.additionalIncomes ?? []
-  );
+    // 본인 근로소득 (기본)
+    result.push({
+      type: "labor",
+      title: "본인 근로소득",
+      owner: "self",
+      amount: initialData?.selfLaborIncome ?? null,
+      frequency: initialData?.selfLaborFrequency ?? "monthly",
+    });
 
-  const [saving, setSaving] = useState(false);
-
-  // 추가 소득 관리
-  const addAdditionalIncome = () => {
-    setAdditionalIncomes([
-      ...additionalIncomes,
-      { type: "business", owner: "self", amount: 0, frequency: "monthly" },
-    ]);
-  };
-
-  const removeAdditionalIncome = (index: number) => {
-    const updated = additionalIncomes.filter((_, i) => i !== index);
-    setAdditionalIncomes(updated);
-    if (updated.length === 0) {
-      setHasAdditional(false);
-    }
-  };
-
-  const updateAdditionalIncome = (
-    index: number,
-    field: keyof AdditionalIncome,
-    value: string | number
-  ) => {
-    const updated = [...additionalIncomes];
-    updated[index] = { ...updated[index], [field]: value };
-    setAdditionalIncomes(updated);
-  };
-
-  // 월 소득 합계 계산
-  const calculateMonthlyTotal = () => {
-    let total = 0;
-
-    // 본인 근로소득
-    total += selfLaborFrequency === "monthly" ? selfLaborIncome : Math.round(selfLaborIncome / 12);
-
-    // 배우자 근로소득
+    // 배우자 근로소득 (배우자 있을 때)
     if (hasSpouse) {
-      total += spouseLaborFrequency === "monthly" ? spouseLaborIncome : Math.round(spouseLaborIncome / 12);
+      result.push({
+        type: "labor",
+        title: "배우자 근로소득",
+        owner: "spouse",
+        amount: initialData?.spouseLaborIncome ?? null,
+        frequency: initialData?.spouseLaborFrequency ?? "monthly",
+      });
     }
 
     // 추가 소득
-    for (const income of additionalIncomes) {
-      total += income.frequency === "monthly" ? income.amount : Math.round(income.amount / 12);
+    if (initialData?.additionalIncomes) {
+      for (const inc of initialData.additionalIncomes) {
+        const typeLabel = INCOME_TYPES.find(t => t.value === inc.type)?.label || "";
+        const ownerLabel = inc.owner === "self" ? "본인" : "배우자";
+        result.push({
+          type: inc.type,
+          title: `${ownerLabel} ${typeLabel}`,
+          owner: inc.owner,
+          amount: inc.amount,
+          frequency: inc.frequency,
+        });
+      }
     }
 
-    return total;
+    return result;
+  });
+
+  const [saving, setSaving] = useState(false);
+
+  // 항목 추가
+  const addItem = (type: string) => {
+    const typeLabel = INCOME_TYPES.find(t => t.value === type)?.label || "";
+    setItems([
+      ...items,
+      {
+        type,
+        title: `본인 ${typeLabel}`,
+        owner: "self",
+        amount: null,
+        frequency: "monthly",
+      },
+    ]);
+  };
+
+  // 항목 삭제
+  const removeItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  // 항목 업데이트
+  const updateItem = (
+    index: number,
+    field: keyof IncomeFormItem,
+    value: string | number | null
+  ) => {
+    const updated = [...items];
+    updated[index] = { ...updated[index], [field]: value };
+
+    if (field === "owner") {
+      const typeLabel = INCOME_TYPES.find(t => t.value === updated[index].type)?.label || "";
+      const ownerLabel = value === "self" ? "본인" : "배우자";
+      updated[index].title = `${ownerLabel} ${typeLabel}`;
+    }
+
+    setItems(updated);
   };
 
   // 저장
   const handleSave = async () => {
-    if (hasAdditional === null) {
-      alert("추가 소득 여부를 선택해주세요.");
-      return;
-    }
-
     setSaving(true);
     try {
+      // 근로소득 추출
+      const selfLabor = items.find(i => i.type === "labor" && i.owner === "self");
+      const spouseLabor = items.find(i => i.type === "labor" && i.owner === "spouse");
+
+      // 추가 소득 추출
+      const additionalIncomes = items
+        .filter(i => i.type !== "labor" && i.amount !== null && i.amount > 0)
+        .map(i => ({
+          type: i.type,
+          owner: i.owner,
+          amount: i.amount as number,
+          frequency: i.frequency,
+        }));
+
       await onSave({
-        selfLaborIncome,
-        selfLaborFrequency,
-        spouseLaborIncome: hasSpouse ? spouseLaborIncome : 0,
-        spouseLaborFrequency,
-        additionalIncomes: hasAdditional ? additionalIncomes.filter(inc => inc.amount > 0) : [],
+        selfLaborIncome: selfLabor?.amount ?? 0,
+        selfLaborFrequency: selfLabor?.frequency ?? "monthly",
+        spouseLaborIncome: spouseLabor?.amount ?? 0,
+        spouseLaborFrequency: spouseLabor?.frequency ?? "monthly",
+        additionalIncomes,
       });
     } catch (error) {
       console.error("저장 실패:", error);
@@ -149,8 +174,10 @@ export function IncomeInputForm({
     }
   };
 
-  const monthlyTotal = calculateMonthlyTotal();
-  const canSave = hasAdditional !== null;
+  // 근로소득 항목들
+  const laborItems = items.filter(i => i.type === "labor");
+  // 추가 소득 항목들 (사업소득, 기타소득)
+  const additionalItems = items.filter(i => i.type !== "labor");
 
   return (
     <div className={styles.container}>
@@ -181,113 +208,106 @@ export function IncomeInputForm({
             </div>
             <p className={styles.sectionHint}>세후 기준, 일을 안하시면 0원</p>
 
-            {/* 본인 근로소득 */}
-            <div className={styles.incomeRow}>
-              <span className={styles.incomeLabel}>본인</span>
-              <div className={styles.incomeInputGroup}>
-                <AmountInput
-                  value={selfLaborIncome}
-                  onChange={(v) => setSelfLaborIncome(v ?? 0)}
-                  showFormatted={false}
-                />
-                <FrequencyToggle
-                  value={selfLaborFrequency}
-                  onChange={setSelfLaborFrequency}
-                />
-              </div>
+            <div className={styles.itemList}>
+              {laborItems.map((item, idx) => {
+                const originalIndex = items.findIndex(i => i === item);
+                return (
+                  <div key={originalIndex} className={styles.incomeItem}>
+                    <div className={styles.itemHeader}>
+                      <span className={styles.itemType}>
+                        {item.owner === "self" ? "본인" : "배우자"}
+                      </span>
+                    </div>
+                    <div className={styles.itemFields}>
+                      <div className={styles.fieldRow}>
+                        <AmountInput
+                          value={item.amount}
+                          onChange={(v) => updateItem(originalIndex, "amount", v)}
+                          showFormatted={false}
+                        />
+                        <FrequencyToggle
+                          value={item.frequency}
+                          onChange={(v) => updateItem(originalIndex, "frequency", v)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-
-            {/* 배우자 근로소득 (배우자 있을 때만) */}
-            {hasSpouse && (
-              <div className={styles.incomeRow}>
-                <span className={styles.incomeLabel}>배우자</span>
-                <div className={styles.incomeInputGroup}>
-                  <AmountInput
-                    value={spouseLaborIncome}
-                    onChange={(v) => setSpouseLaborIncome(v ?? 0)}
-                    showFormatted={false}
-                  />
-                  <FrequencyToggle
-                    value={spouseLaborFrequency}
-                    onChange={setSpouseLaborFrequency}
-                  />
-                </div>
-              </div>
-            )}
           </section>
 
           {/* 추가 소득 섹션 */}
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>추가 소득</span>
-              <ToggleGroup
-                value={hasAdditional}
-                onChange={(v) => {
-                  setHasAdditional(v);
-                  if (v && additionalIncomes.length === 0) addAdditionalIncome();
-                  if (!v) setAdditionalIncomes([]);
-                }}
-              />
             </div>
-            <p className={styles.sectionHint}>사업소득, 기타소득</p>
+            <p className={styles.sectionHint}>사업소득, 기타소득 등이 있다면 추가해주세요</p>
 
-            {hasAdditional && (
-              <div className={styles.additionalList}>
-                {additionalIncomes.map((income, index) => (
-                  <div key={index} className={styles.additionalItem}>
-                    <div className={styles.additionalTop}>
-                      <TypeSelect
-                        value={income.type}
-                        onChange={(v) => updateAdditionalIncome(index, "type", v)}
-                        options={ADDITIONAL_INCOME_TYPES}
-                      />
-                      <OwnerSelect
-                        value={income.owner}
-                        onChange={(v) => updateAdditionalIncome(index, "owner", v)}
-                        show={hasSpouse}
-                      />
-                      <button
-                        className={styles.removeBtn}
-                        onClick={() => removeAdditionalIncome(index)}
-                      >
-                        <X size={18} />
-                      </button>
+            {/* 추가된 항목들 */}
+            {additionalItems.length > 0 && (
+              <div className={styles.itemList}>
+                {additionalItems.map((item) => {
+                  const originalIndex = items.findIndex(i => i === item);
+                  const typeLabel = INCOME_TYPES.find(t => t.value === item.type)?.label || "";
+                  return (
+                    <div key={originalIndex} className={styles.incomeItem}>
+                      <div className={styles.itemHeader}>
+                        <span className={styles.itemType}>{typeLabel}</span>
+                        <div className={styles.itemHeaderRight}>
+                          <OwnerSelect
+                            value={item.owner}
+                            onChange={(v) => updateItem(originalIndex, "owner", v)}
+                            show={hasSpouse}
+                          />
+                          <button
+                            className={styles.removeBtn}
+                            onClick={() => removeItem(originalIndex)}
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                      </div>
+                      <div className={styles.itemFields}>
+                        <div className={styles.fieldRow}>
+                          <AmountInput
+                            value={item.amount}
+                            onChange={(v) => updateItem(originalIndex, "amount", v)}
+                            showFormatted={false}
+                          />
+                          <FrequencyToggle
+                            value={item.frequency}
+                            onChange={(v) => updateItem(originalIndex, "frequency", v)}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className={styles.additionalBottom}>
-                      <AmountInput
-                        value={income.amount}
-                        onChange={(v) => updateAdditionalIncome(index, "amount", v ?? 0)}
-                        showFormatted={false}
-                      />
-                      <FrequencyToggle
-                        value={income.frequency}
-                        onChange={(v) => updateAdditionalIncome(index, "frequency", v)}
-                      />
-                    </div>
-                  </div>
-                ))}
-                <button className={styles.addBtn} onClick={addAdditionalIncome}>
-                  <Plus size={16} />
-                  <span>소득 추가</span>
-                </button>
+                  );
+                })}
               </div>
             )}
-          </section>
 
-          {/* 합계 */}
-          {monthlyTotal > 0 && (
-            <div className={styles.totalBox}>
-              <span className={styles.totalLabel}>월 소득 합계</span>
-              <span className={styles.totalValue}>{formatMoney(monthlyTotal)}</span>
+            {/* 추가 버튼들 */}
+            <div className={styles.addButtons}>
+              {INCOME_TYPES.filter(t => t.value !== "labor").map((type) => (
+                <button
+                  key={type.value}
+                  className={styles.addChip}
+                  onClick={() => addItem(type.value)}
+                >
+                  <Plus size={14} />
+                  <span>{type.label}</span>
+                </button>
+              ))}
             </div>
-          )}
+          </section>
         </main>
 
         <div className={styles.bottomArea}>
           <button
             className={styles.saveButton}
             onClick={handleSave}
-            disabled={saving || !canSave}
+            disabled={saving}
           >
             {saving ? "저장 중..." : "저장하기"}
           </button>

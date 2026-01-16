@@ -69,16 +69,12 @@ export function ChatRoom({ userId }: ChatRoomProps) {
     initChat();
   }, [userId]);
 
-  // 초기 로딩 완료 시 즉시 맨 아래로 (눈에 안 보이게)
-  const isInitialMount = useRef(true);
+  // 로딩 완료 후 스크롤 (useLayoutEffect로 렌더링 전에 처리)
   useLayoutEffect(() => {
-    if (!loading && messages.length > 0 && isInitialMount.current) {
-      isInitialMount.current = false;
-      if (messageListRef.current) {
-        messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
-      }
+    if (!loading && messageListRef.current) {
+      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
-  }, [loading, messages.length]);
+  }, [loading]);
 
   // Realtime 구독
   useEffect(() => {

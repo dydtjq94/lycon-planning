@@ -132,6 +132,10 @@ export function SavingsInputForm({
         </header>
 
         <main className={styles.main}>
+          <p className={styles.sectionHint}>
+            현재 보유 중인 예적금 계좌를 추가해주세요
+          </p>
+
           {/* 추가된 항목들 */}
           {items.length > 0 && (
             <div className={styles.itemList}>

@@ -1,25 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
-import { AmountInput, ToggleGroup } from "./inputs";
+import { ArrowLeft, Plus, X } from "lucide-react";
+import { AmountInput, OwnerSelect } from "./inputs";
 import styles from "./PensionInputForm.module.css";
+
+// 개인연금 유형
+const PERSONAL_PENSION_TYPES = [
+  { value: "pension_savings", label: "연금저축" },
+  { value: "irp", label: "IRP" },
+] as const;
 
 export interface PensionFormData {
   // 국민연금
   hasNationalPension: boolean;
-  selfNationalPensionExpected: number; // 월 예상 수령액
+  selfNationalPensionExpected: number;
   spouseNationalPensionExpected: number;
   // 퇴직연금
   hasRetirementPension: boolean;
-  selfRetirementBalance: number; // 현재 잔액
+  selfRetirementBalance: number;
   spouseRetirementBalance: number;
   // 개인연금
   hasPersonalPension: boolean;
   selfPersonalBalance: number;
-  selfPersonalMonthly: number; // 월 납입액
+  selfPersonalMonthly: number;
   spousePersonalBalance: number;
   spousePersonalMonthly: number;
+}
+
+interface PersonalPensionItem {
+  type: string;
+  owner: "self" | "spouse";
+  balance: number | null;
+  monthlyDeposit: number | null;
 }
 
 interface PensionInputFormProps {
@@ -38,67 +51,111 @@ export function PensionInputForm({
   onSave,
 }: PensionInputFormProps) {
   // 국민연금
-  const [hasNationalPension, setHasNationalPension] = useState<boolean | null>(
-    initialData?.hasNationalPension ?? (isCompleted ? false : null)
+  const [selfNationalPension, setSelfNationalPension] = useState<number | null>(
+    initialData?.selfNationalPensionExpected ?? null
   );
-  const [selfNationalPensionExpected, setSelfNationalPensionExpected] = useState(
-    initialData?.selfNationalPensionExpected ?? 0
-  );
-  const [spouseNationalPensionExpected, setSpouseNationalPensionExpected] = useState(
-    initialData?.spouseNationalPensionExpected ?? 0
+  const [spouseNationalPension, setSpouseNationalPension] = useState<number | null>(
+    initialData?.spouseNationalPensionExpected ?? null
   );
 
-  // 퇴직연금
-  const [hasRetirementPension, setHasRetirementPension] = useState<boolean | null>(
-    initialData?.hasRetirementPension ?? (isCompleted ? false : null)
+  // 퇴직연금/퇴직금
+  const [selfRetirement, setSelfRetirement] = useState<number | null>(
+    initialData?.selfRetirementBalance ?? null
   );
-  const [selfRetirementBalance, setSelfRetirementBalance] = useState(
-    initialData?.selfRetirementBalance ?? 0
-  );
-  const [spouseRetirementBalance, setSpouseRetirementBalance] = useState(
-    initialData?.spouseRetirementBalance ?? 0
+  const [spouseRetirement, setSpouseRetirement] = useState<number | null>(
+    initialData?.spouseRetirementBalance ?? null
   );
 
   // 개인연금
-  const [hasPersonalPension, setHasPersonalPension] = useState<boolean | null>(
-    initialData?.hasPersonalPension ?? (isCompleted ? false : null)
-  );
-  const [selfPersonalBalance, setSelfPersonalBalance] = useState(
-    initialData?.selfPersonalBalance ?? 0
-  );
-  const [selfPersonalMonthly, setSelfPersonalMonthly] = useState(
-    initialData?.selfPersonalMonthly ?? 0
-  );
-  const [spousePersonalBalance, setSpousePersonalBalance] = useState(
-    initialData?.spousePersonalBalance ?? 0
-  );
-  const [spousePersonalMonthly, setSpousePersonalMonthly] = useState(
-    initialData?.spousePersonalMonthly ?? 0
-  );
+  const [personalPensions, setPersonalPensions] = useState<PersonalPensionItem[]>(() => {
+    const items: PersonalPensionItem[] = [];
+
+    // 기존 데이터에서 개인연금 복원
+    if (initialData?.hasPersonalPension) {
+      if (initialData.selfPersonalBalance > 0 || initialData.selfPersonalMonthly > 0) {
+        items.push({
+          type: "pension_savings",
+          owner: "self",
+          balance: initialData.selfPersonalBalance || null,
+          monthlyDeposit: initialData.selfPersonalMonthly || null,
+        });
+      }
+      if (hasSpouse && (initialData.spousePersonalBalance > 0 || initialData.spousePersonalMonthly > 0)) {
+        items.push({
+          type: "pension_savings",
+          owner: "spouse",
+          balance: initialData.spousePersonalBalance || null,
+          monthlyDeposit: initialData.spousePersonalMonthly || null,
+        });
+      }
+    }
+
+    return items;
+  });
 
   const [saving, setSaving] = useState(false);
 
+  // 개인연금 추가
+  const addPersonalPension = (type: string) => {
+    setPersonalPensions([
+      ...personalPensions,
+      {
+        type,
+        owner: "self",
+        balance: null,
+        monthlyDeposit: null,
+      },
+    ]);
+  };
+
+  // 개인연금 삭제
+  const removePersonalPension = (index: number) => {
+    setPersonalPensions(personalPensions.filter((_, i) => i !== index));
+  };
+
+  // 개인연금 업데이트
+  const updatePersonalPension = (
+    index: number,
+    field: keyof PersonalPensionItem,
+    value: string | number | null
+  ) => {
+    const updated = [...personalPensions];
+    updated[index] = { ...updated[index], [field]: value };
+    setPersonalPensions(updated);
+  };
+
   // 저장
   const handleSave = async () => {
-    if (hasNationalPension === null || hasRetirementPension === null || hasPersonalPension === null) {
-      alert("모든 항목을 선택해주세요.");
-      return;
-    }
-
     setSaving(true);
     try {
+      // 개인연금 합산 (본인/배우자)
+      let selfPersonalBalance = 0;
+      let selfPersonalMonthly = 0;
+      let spousePersonalBalance = 0;
+      let spousePersonalMonthly = 0;
+
+      for (const item of personalPensions) {
+        if (item.owner === "self") {
+          selfPersonalBalance += item.balance ?? 0;
+          selfPersonalMonthly += item.monthlyDeposit ?? 0;
+        } else {
+          spousePersonalBalance += item.balance ?? 0;
+          spousePersonalMonthly += item.monthlyDeposit ?? 0;
+        }
+      }
+
       await onSave({
-        hasNationalPension,
-        selfNationalPensionExpected: hasNationalPension ? selfNationalPensionExpected : 0,
-        spouseNationalPensionExpected: hasNationalPension && hasSpouse ? spouseNationalPensionExpected : 0,
-        hasRetirementPension,
-        selfRetirementBalance: hasRetirementPension ? selfRetirementBalance : 0,
-        spouseRetirementBalance: hasRetirementPension && hasSpouse ? spouseRetirementBalance : 0,
-        hasPersonalPension,
-        selfPersonalBalance: hasPersonalPension ? selfPersonalBalance : 0,
-        selfPersonalMonthly: hasPersonalPension ? selfPersonalMonthly : 0,
-        spousePersonalBalance: hasPersonalPension && hasSpouse ? spousePersonalBalance : 0,
-        spousePersonalMonthly: hasPersonalPension && hasSpouse ? spousePersonalMonthly : 0,
+        hasNationalPension: (selfNationalPension ?? 0) > 0 || (spouseNationalPension ?? 0) > 0,
+        selfNationalPensionExpected: selfNationalPension ?? 0,
+        spouseNationalPensionExpected: spouseNationalPension ?? 0,
+        hasRetirementPension: (selfRetirement ?? 0) > 0 || (spouseRetirement ?? 0) > 0,
+        selfRetirementBalance: selfRetirement ?? 0,
+        spouseRetirementBalance: spouseRetirement ?? 0,
+        hasPersonalPension: personalPensions.length > 0,
+        selfPersonalBalance,
+        selfPersonalMonthly,
+        spousePersonalBalance,
+        spousePersonalMonthly,
       });
     } catch (error) {
       console.error("저장 실패:", error);
@@ -107,11 +164,6 @@ export function PensionInputForm({
       setSaving(false);
     }
   };
-
-  const canSave =
-    hasNationalPension !== null &&
-    hasRetirementPension !== null &&
-    hasPersonalPension !== null;
 
   return (
     <div className={styles.container}>
@@ -125,130 +177,166 @@ export function PensionInputForm({
         </header>
 
         <main className={styles.main}>
-          {/* 국민연금 섹션 */}
+          {/* 국민(공적)연금 섹션 */}
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>국민연금</span>
-              <ToggleGroup
-                value={hasNationalPension}
-                onChange={setHasNationalPension}
-              />
+              <span className={styles.sectionTitle}>국민(공적)연금</span>
             </div>
-            <p className={styles.sectionHint}>예상 월 수령액 (국민연금공단 조회)</p>
+            <p className={styles.sectionHint}>
+              국민연금공단에서 예상 월 수령액을 조회할 수 있어요
+            </p>
 
-            {hasNationalPension && (
-              <div className={styles.inputList}>
-                <div className={styles.inputRow}>
-                  <span className={styles.inputLabel}>본인</span>
-                  <AmountInput
-                    value={selfNationalPensionExpected}
-                    onChange={(v) => setSelfNationalPensionExpected(v ?? 0)}
-                    showFormatted={false}
-                  />
+            <div className={styles.itemList}>
+              <div className={styles.pensionItem}>
+                <div className={styles.itemHeader}>
+                  <span className={styles.itemType}>본인</span>
                 </div>
-                {hasSpouse && (
-                  <div className={styles.inputRow}>
-                    <span className={styles.inputLabel}>배우자</span>
+                <div className={styles.itemFields}>
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>예상 수령액</span>
                     <AmountInput
-                      value={spouseNationalPensionExpected}
-                      onChange={(v) => setSpouseNationalPensionExpected(v ?? 0)}
+                      value={selfNationalPension}
+                      onChange={setSelfNationalPension}
                       showFormatted={false}
                     />
+                    <span className={styles.fieldUnit}>/월</span>
                   </div>
-                )}
+                </div>
               </div>
-            )}
+
+              {hasSpouse && (
+                <div className={styles.pensionItem}>
+                  <div className={styles.itemHeader}>
+                    <span className={styles.itemType}>배우자</span>
+                  </div>
+                  <div className={styles.itemFields}>
+                    <div className={styles.fieldRow}>
+                      <span className={styles.fieldLabel}>예상 수령액</span>
+                      <AmountInput
+                        value={spouseNationalPension}
+                        onChange={setSpouseNationalPension}
+                        showFormatted={false}
+                      />
+                      <span className={styles.fieldUnit}>/월</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </section>
 
-          {/* 퇴직연금 섹션 */}
+          {/* 퇴직연금/퇴직금 섹션 */}
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>퇴직연금</span>
-              <ToggleGroup
-                value={hasRetirementPension}
-                onChange={setHasRetirementPension}
-              />
+              <span className={styles.sectionTitle}>퇴직연금/퇴직금</span>
             </div>
-            <p className={styles.sectionHint}>DC형/IRP 현재 적립금</p>
+            <p className={styles.sectionHint}>
+              DC형, DB형, 퇴직금 등 현재 적립된 금액
+            </p>
 
-            {hasRetirementPension && (
-              <div className={styles.inputList}>
-                <div className={styles.inputRow}>
-                  <span className={styles.inputLabel}>본인</span>
-                  <AmountInput
-                    value={selfRetirementBalance}
-                    onChange={(v) => setSelfRetirementBalance(v ?? 0)}
-                  />
+            <div className={styles.itemList}>
+              <div className={styles.pensionItem}>
+                <div className={styles.itemHeader}>
+                  <span className={styles.itemType}>본인</span>
                 </div>
-                {hasSpouse && (
-                  <div className={styles.inputRow}>
-                    <span className={styles.inputLabel}>배우자</span>
+                <div className={styles.itemFields}>
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>적립금</span>
                     <AmountInput
-                      value={spouseRetirementBalance}
-                      onChange={(v) => setSpouseRetirementBalance(v ?? 0)}
+                      value={selfRetirement}
+                      onChange={setSelfRetirement}
                     />
                   </div>
-                )}
+                </div>
               </div>
-            )}
+
+              {hasSpouse && (
+                <div className={styles.pensionItem}>
+                  <div className={styles.itemHeader}>
+                    <span className={styles.itemType}>배우자</span>
+                  </div>
+                  <div className={styles.itemFields}>
+                    <div className={styles.fieldRow}>
+                      <span className={styles.fieldLabel}>적립금</span>
+                      <AmountInput
+                        value={spouseRetirement}
+                        onChange={setSpouseRetirement}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </section>
 
           {/* 개인연금 섹션 */}
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>개인연금</span>
-              <ToggleGroup
-                value={hasPersonalPension}
-                onChange={setHasPersonalPension}
-              />
             </div>
-            <p className={styles.sectionHint}>연금저축, IRP 등</p>
+            <p className={styles.sectionHint}>
+              연금저축, IRP 등 개인이 가입한 연금 상품
+            </p>
 
-            {hasPersonalPension && (
-              <div className={styles.inputList}>
-                {/* 본인 */}
-                <div className={styles.personSection}>
-                  <span className={styles.personLabel}>본인</span>
-                  <div className={styles.inputRow}>
-                    <span className={styles.inputLabel}>적립금</span>
-                    <AmountInput
-                      value={selfPersonalBalance}
-                      onChange={(v) => setSelfPersonalBalance(v ?? 0)}
-                    />
-                  </div>
-                  <div className={styles.inputRow}>
-                    <span className={styles.inputLabel}>월 납입</span>
-                    <AmountInput
-                      value={selfPersonalMonthly}
-                      onChange={(v) => setSelfPersonalMonthly(v ?? 0)}
-                      showFormatted={false}
-                    />
-                  </div>
-                </div>
-
-                {/* 배우자 */}
-                {hasSpouse && (
-                  <div className={styles.personSection}>
-                    <span className={styles.personLabel}>배우자</span>
-                    <div className={styles.inputRow}>
-                      <span className={styles.inputLabel}>적립금</span>
-                      <AmountInput
-                        value={spousePersonalBalance}
-                        onChange={(v) => setSpousePersonalBalance(v ?? 0)}
-                      />
+            {/* 추가된 개인연금 항목들 */}
+            {personalPensions.length > 0 && (
+              <div className={styles.itemList}>
+                {personalPensions.map((item, index) => {
+                  const typeLabel = PERSONAL_PENSION_TYPES.find(t => t.value === item.type)?.label || "";
+                  return (
+                    <div key={index} className={styles.pensionItem}>
+                      <div className={styles.itemHeader}>
+                        <span className={styles.itemType}>{typeLabel}</span>
+                        <div className={styles.itemHeaderRight}>
+                          <OwnerSelect
+                            value={item.owner}
+                            onChange={(v) => updatePersonalPension(index, "owner", v)}
+                            show={hasSpouse}
+                          />
+                          <button
+                            className={styles.removeBtn}
+                            onClick={() => removePersonalPension(index)}
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                      </div>
+                      <div className={styles.itemFields}>
+                        <div className={styles.fieldRow}>
+                          <span className={styles.fieldLabel}>적립금</span>
+                          <AmountInput
+                            value={item.balance}
+                            onChange={(v) => updatePersonalPension(index, "balance", v)}
+                          />
+                        </div>
+                        <div className={styles.fieldRow}>
+                          <span className={styles.fieldLabel}>월 납입액</span>
+                          <AmountInput
+                            value={item.monthlyDeposit}
+                            onChange={(v) => updatePersonalPension(index, "monthlyDeposit", v)}
+                            showFormatted={false}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className={styles.inputRow}>
-                      <span className={styles.inputLabel}>월 납입</span>
-                      <AmountInput
-                        value={spousePersonalMonthly}
-                        onChange={(v) => setSpousePersonalMonthly(v ?? 0)}
-                        showFormatted={false}
-                      />
-                    </div>
-                  </div>
-                )}
+                  );
+                })}
               </div>
             )}
+
+            {/* 추가 버튼들 */}
+            <div className={styles.addButtons}>
+              {PERSONAL_PENSION_TYPES.map((type) => (
+                <button
+                  key={type.value}
+                  className={styles.addChip}
+                  onClick={() => addPersonalPension(type.value)}
+                >
+                  <Plus size={14} />
+                  <span>{type.label}</span>
+                </button>
+              ))}
+            </div>
           </section>
         </main>
 
@@ -256,7 +344,7 @@ export function PensionInputForm({
           <button
             className={styles.saveButton}
             onClick={handleSave}
-            disabled={saving || !canSave}
+            disabled={saving}
           >
             {saving ? "저장 중..." : "저장하기"}
           </button>

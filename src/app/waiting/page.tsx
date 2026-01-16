@@ -14,7 +14,9 @@ import {
   InvestmentInputForm,
   DebtInputForm,
   IncomeInputForm,
-  PensionInputForm,
+  NationalPensionInputForm,
+  RetirementPensionInputForm,
+  PersonalPensionInputForm,
   ExpenseInputForm,
   ProgramDetailView,
   Toast,
@@ -30,7 +32,9 @@ import {
   saveInvestmentData,
   saveDebtData,
   saveIncomeData,
-  savePensionData,
+  saveNationalPensionData,
+  saveRetirementPensionData,
+  savePersonalPensionData,
   saveExpenseData,
   getNextTaskIndex,
 } from "./services/prepDataService";
@@ -44,9 +48,13 @@ import type {
 } from "./types";
 import type {
   IncomeFormData,
-  PensionFormData,
   ExpenseFormData,
 } from "./components";
+import type {
+  NationalPensionData,
+  RetirementPensionData,
+  PersonalPensionItem,
+} from "./types";
 import styles from "./waiting.module.css";
 
 // Suspense로 감싸기 위한 wrapper
@@ -154,9 +162,21 @@ const PREP_TASKS: PrepTask[] = [
     status: "pending",
   },
   {
-    id: "pension",
-    title: "연금",
-    description: "국민연금, 퇴직연금, 개인연금 정보를 입력해주세요.",
+    id: "nationalPension",
+    title: "국민(공적)연금",
+    description: "국민연금공단에서 예상 수령액을 조회해주세요.",
+    status: "pending",
+  },
+  {
+    id: "retirementPension",
+    title: "퇴직연금/퇴직금",
+    description: "DC형, DB형, 퇴직금 등 적립금을 입력해주세요.",
+    status: "pending",
+  },
+  {
+    id: "personalPension",
+    title: "개인연금",
+    description: "연금저축, IRP 등 개인연금 정보를 입력해주세요.",
     status: "pending",
   },
   {
@@ -206,7 +226,9 @@ function WaitingPageContent() {
       "investment",
       "debt",
       "income",
-      "pension",
+      "nationalPension",
+      "retirementPension",
+      "personalPension",
       "expense",
     ];
 
@@ -568,20 +590,58 @@ function WaitingPageContent() {
     );
   }
 
-  // 연금 입력 폼
-  if (activeInputForm === "pension" && prepData) {
-    const isCompleted = prepData.completed.pension;
+  // 국민(공적)연금 입력 폼
+  if (activeInputForm === "nationalPension" && prepData) {
+    const isCompleted = prepData.completed.nationalPension;
     const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
     return (
-      <PensionInputForm
+      <NationalPensionInputForm
         hasSpouse={hasSpouse}
-        initialData={null} // TODO: 기존 데이터 로드 구현
+        initialData={prepData.nationalPension}
         isCompleted={isCompleted}
         onClose={handleCloseInputForm}
-        onSave={async (data: PensionFormData) => {
+        onSave={async (data: NationalPensionData) => {
           if (!userId) return;
-          await savePensionData(userId, data);
-          await handleSaveComplete("pension", !isCompleted);
+          await saveNationalPensionData(userId, data);
+          await handleSaveComplete("nationalPension", !isCompleted);
+        }}
+      />
+    );
+  }
+
+  // 퇴직연금/퇴직금 입력 폼
+  if (activeInputForm === "retirementPension" && prepData) {
+    const isCompleted = prepData.completed.retirementPension;
+    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
+    return (
+      <RetirementPensionInputForm
+        hasSpouse={hasSpouse}
+        initialData={prepData.retirementPension}
+        isCompleted={isCompleted}
+        onClose={handleCloseInputForm}
+        onSave={async (data: RetirementPensionData) => {
+          if (!userId) return;
+          await saveRetirementPensionData(userId, data);
+          await handleSaveComplete("retirementPension", !isCompleted);
+        }}
+      />
+    );
+  }
+
+  // 개인연금 입력 폼
+  if (activeInputForm === "personalPension" && prepData) {
+    const isCompleted = prepData.completed.personalPension;
+    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
+    return (
+      <PersonalPensionInputForm
+        hasSpouse={hasSpouse}
+        initialData={prepData.personalPension}
+        isCompleted={isCompleted}
+        onClose={handleCloseInputForm}
+        onSave={async (data: PersonalPensionItem[]) => {
+          if (!userId) return;
+          await savePersonalPensionData(userId, data);
+          await handleSaveComplete("personalPension", !isCompleted);
         }}
       />
     );

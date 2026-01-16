@@ -180,6 +180,10 @@ export function InvestmentInputForm({
         </header>
 
         <main className={styles.main}>
+          <p className={styles.sectionHint}>
+            주식, 코인 등 현재 보유 중인 투자 자산을 추가해주세요
+          </p>
+
           {/* 추가된 항목들 */}
           {items.length > 0 && (
             <div className={styles.itemList}>
@@ -214,7 +218,7 @@ export function InvestmentInputForm({
                         />
                       </div>
                       <div className={styles.fieldRow}>
-                        <span className={styles.fieldLabel}>예상 수익률</span>
+                        <span className={styles.fieldLabel}>현재 수익률</span>
                         <RateInput
                           value={item.expectedReturn ?? null}
                           onChange={(v) => updateItem(index, "expectedReturn", v)}

@@ -246,6 +246,9 @@ export function DebtInputForm({
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>대출</span>
             </div>
+            <p className={styles.sectionHint}>
+              신용대출, 학자금대출 등 현재 상환 중인 대출이 있다면 추가해주세요
+            </p>
 
             {/* 추가된 대출 항목들 */}
             {loanItems.length > 0 && (
@@ -312,6 +315,9 @@ export function DebtInputForm({
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>할부</span>
             </div>
+            <p className={styles.sectionHint}>
+              1년 이상 남은 할부만 작성해주세요 (자동차, 가전 등)
+            </p>
 
             {/* 추가된 할부 항목들 */}
             {installmentItems.length > 0 && (

@@ -109,8 +109,35 @@ export interface PrepCompleted {
   investment: boolean;   // 투자 계좌
   debt: boolean;
   income: boolean;
-  pension: boolean;
+  nationalPension: boolean;    // 국민(공적)연금
+  retirementPension: boolean;  // 퇴직연금/퇴직금
+  personalPension: boolean;    // 개인연금
   expense: boolean;
+}
+
+// 공적연금 유형
+export type PublicPensionType = "national" | "government" | "military" | "private_school";
+
+// 국민(공적)연금 데이터
+export interface NationalPensionData {
+  selfType: PublicPensionType;       // 본인 연금 유형
+  selfExpectedAmount: number;        // 본인 예상 월 수령액
+  spouseType: PublicPensionType;     // 배우자 연금 유형
+  spouseExpectedAmount: number;      // 배우자 예상 월 수령액
+}
+
+// 퇴직연금 데이터
+export interface RetirementPensionData {
+  selfBalance: number;     // 본인 적립금
+  spouseBalance: number;   // 배우자 적립금
+}
+
+// 개인연금 항목
+export interface PersonalPensionItem {
+  type: string;               // pension_savings, irp
+  owner: "self" | "spouse";
+  balance: number;            // 적립금
+  monthlyDeposit: number;     // 월 납입액
 }
 
 // 전체 준비사항 데이터
@@ -121,7 +148,9 @@ export interface PrepData {
   investment: InvestmentAccountData | null; // 투자 계좌
   debt: DebtItem[];
   income: IncomeItem[];
-  pension: PensionItem[];
+  nationalPension: NationalPensionData | null;    // 국민(공적)연금
+  retirementPension: RetirementPensionData | null; // 퇴직연금/퇴직금
+  personalPension: PersonalPensionItem[];          // 개인연금
   expense: ExpenseItem[];
   completed: PrepCompleted;
 }

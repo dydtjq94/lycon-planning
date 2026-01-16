@@ -9,12 +9,12 @@ import type {
   FinancialAssetItem,
   InvestmentAccountData,
   DebtItem,
-  IncomeItem,
-  PensionItem,
-  ExpenseItem,
+  NationalPensionData,
+  RetirementPensionData,
+  PersonalPensionItem,
+  PublicPensionType,
 } from "../types";
 import type { IncomeFormData } from "../components/IncomeInputForm";
-import type { PensionFormData } from "../components/PensionInputForm";
 import type { ExpenseFormData } from "../components/ExpenseInputForm";
 
 const DEFAULT_COMPLETED: PrepCompleted = {
@@ -24,7 +24,9 @@ const DEFAULT_COMPLETED: PrepCompleted = {
   investment: false,
   debt: false,
   income: false,
-  pension: false,
+  nationalPension: false,
+  retirementPension: false,
+  personalPension: false,
   expense: false,
 };
 
@@ -36,7 +38,9 @@ const TASK_ORDER: PrepTaskId[] = [
   "investment",
   "debt",
   "income",
-  "pension",
+  "nationalPension",
+  "retirementPension",
+  "personalPension",
   "expense",
 ];
 
@@ -50,7 +54,7 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
   const simulation = await simulationService.getDefault();
 
   // 병렬로 모든 데이터 로드
-  const [profileResult, familyResult, housingResult, savingsResult, debtsResult] = await Promise.all([
+  const [profileResult, familyResult, housingResult, savingsResult, debtsResult, pensionsResult] = await Promise.all([
     supabase
       .from("profiles")
       .select("survey_responses")
@@ -80,6 +84,12 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
           .select("*")
           .eq("simulation_id", simulation.id)
           .is("source_type", null) // 직접 입력한 부채만 (housing 연동 제외)
+      : Promise.resolve({ data: [] }),
+    simulation
+      ? supabase
+          .from("pensions")
+          .select("*")
+          .eq("simulation_id", simulation.id)
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -193,6 +203,49 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
     monthlyPayment: d.monthly_payment as number | undefined,
   }));
 
+  // 공적연금 유형 목록
+  const publicPensionTypes = ["national", "government", "military", "private_school"];
+
+  // 국민(공적)연금 데이터 변환
+  let nationalPension: NationalPensionData | null = null;
+  const publicPensions = (pensionsResult.data || []).filter(
+    (p: Record<string, unknown>) => publicPensionTypes.includes(p.type as string)
+  );
+  if (publicPensions.length > 0) {
+    const selfPension = publicPensions.find((p: Record<string, unknown>) => p.owner === "self");
+    const spousePension = publicPensions.find((p: Record<string, unknown>) => p.owner === "spouse");
+    nationalPension = {
+      selfType: (selfPension?.type as PublicPensionType) || "national",
+      selfExpectedAmount: (selfPension?.expected_monthly_amount as number) || 0,
+      spouseType: (spousePension?.type as PublicPensionType) || "national",
+      spouseExpectedAmount: (spousePension?.expected_monthly_amount as number) || 0,
+    };
+  }
+
+  // 퇴직연금 데이터 변환
+  let retirementPension: RetirementPensionData | null = null;
+  const retirementPensions = (pensionsResult.data || []).filter(
+    (p: Record<string, unknown>) => p.type === "retirement"
+  );
+  if (retirementPensions.length > 0) {
+    const selfRetirement = retirementPensions.find((p: Record<string, unknown>) => p.owner === "self");
+    const spouseRetirement = retirementPensions.find((p: Record<string, unknown>) => p.owner === "spouse");
+    retirementPension = {
+      selfBalance: (selfRetirement?.current_balance as number) || 0,
+      spouseBalance: (spouseRetirement?.current_balance as number) || 0,
+    };
+  }
+
+  // 개인연금 데이터 변환
+  const personalPension: PersonalPensionItem[] = (pensionsResult.data || [])
+    .filter((p: Record<string, unknown>) => p.type === "personal")
+    .map((p: Record<string, unknown>) => ({
+      type: (p.title as string)?.includes("IRP") ? "irp" : "pension_savings",
+      owner: p.owner as "self" | "spouse",
+      balance: (p.current_balance as number) || 0,
+      monthlyDeposit: (p.monthly_contribution as number) || 0,
+    }));
+
   return {
     family: (familyResult.data || []) as FamilyMember[],
     housing,
@@ -200,7 +253,9 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
     investment,
     debt,
     income: [], // TODO: 구현
-    pension: [], // TODO: 구현
+    nationalPension,
+    retirementPension,
+    personalPension,
     expense: [], // TODO: 구현
     completed,
   };
@@ -642,12 +697,131 @@ export async function saveIncomeData(
   await markTaskCompleted(userId, "income");
 }
 
+// 공적연금 유형 목록
+const PUBLIC_PENSION_TYPES = ["national", "government", "military", "private_school"];
+
 /**
- * 연금 데이터 저장
+ * 국민(공적)연금 데이터 저장
  */
-export async function savePensionData(
+export async function saveNationalPensionData(
   userId: string,
-  data: PensionFormData
+  data: NationalPensionData
+): Promise<void> {
+  const supabase = createClient();
+
+  // 시뮬레이션 ID 가져오기
+  const simulation = await simulationService.getDefault();
+  if (!simulation) {
+    throw new Error("시뮬레이션을 찾을 수 없습니다.");
+  }
+
+  // 기존 공적연금 삭제 (national, government, military, private_school)
+  await supabase
+    .from("pensions")
+    .delete()
+    .eq("simulation_id", simulation.id)
+    .in("type", PUBLIC_PENSION_TYPES);
+
+  // 새 공적연금 데이터 구성
+  const pensions: Array<{
+    simulation_id: string;
+    type: string;
+    owner: string;
+    expected_monthly_amount: number;
+  }> = [];
+
+  if (data.selfExpectedAmount > 0) {
+    pensions.push({
+      simulation_id: simulation.id,
+      type: data.selfType, // 선택한 공적연금 유형 저장
+      owner: "self",
+      expected_monthly_amount: data.selfExpectedAmount,
+    });
+  }
+
+  if (data.spouseExpectedAmount > 0) {
+    pensions.push({
+      simulation_id: simulation.id,
+      type: data.spouseType, // 선택한 공적연금 유형 저장
+      owner: "spouse",
+      expected_monthly_amount: data.spouseExpectedAmount,
+    });
+  }
+
+  // 연금 삽입
+  if (pensions.length > 0) {
+    const { error } = await supabase.from("pensions").insert(pensions);
+    if (error) throw error;
+  }
+
+  // 완료 상태 업데이트
+  await markTaskCompleted(userId, "nationalPension");
+}
+
+/**
+ * 퇴직연금/퇴직금 데이터 저장
+ */
+export async function saveRetirementPensionData(
+  userId: string,
+  data: RetirementPensionData
+): Promise<void> {
+  const supabase = createClient();
+
+  // 시뮬레이션 ID 가져오기
+  const simulation = await simulationService.getDefault();
+  if (!simulation) {
+    throw new Error("시뮬레이션을 찾을 수 없습니다.");
+  }
+
+  // 기존 퇴직연금 삭제
+  await supabase
+    .from("pensions")
+    .delete()
+    .eq("simulation_id", simulation.id)
+    .eq("type", "retirement");
+
+  // 새 퇴직연금 데이터 구성
+  const pensions: Array<{
+    simulation_id: string;
+    type: string;
+    owner: string;
+    current_balance: number;
+  }> = [];
+
+  if (data.selfBalance > 0) {
+    pensions.push({
+      simulation_id: simulation.id,
+      type: "retirement",
+      owner: "self",
+      current_balance: data.selfBalance,
+    });
+  }
+
+  if (data.spouseBalance > 0) {
+    pensions.push({
+      simulation_id: simulation.id,
+      type: "retirement",
+      owner: "spouse",
+      current_balance: data.spouseBalance,
+    });
+  }
+
+  // 연금 삽입
+  if (pensions.length > 0) {
+    const { error } = await supabase.from("pensions").insert(pensions);
+    if (error) throw error;
+  }
+
+  // 완료 상태 업데이트
+  await markTaskCompleted(userId, "retirementPension");
+}
+
+/**
+ * 개인연금 데이터 저장
+ */
+export async function savePersonalPensionData(
+  userId: string,
+  items: PersonalPensionItem[]
 ): Promise<void> {
   const supabase = createClient();
   const currentYear = new Date().getFullYear();
@@ -659,84 +833,40 @@ export async function savePensionData(
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
 
-  // 기존 연금 삭제
+  // 기존 개인연금 삭제
   await supabase
     .from("pensions")
     .delete()
-    .eq("simulation_id", simulation.id);
+    .eq("simulation_id", simulation.id)
+    .eq("type", "personal");
 
-  // 새 연금 데이터 구성
+  // 새 개인연금 데이터 구성
   const pensions: Array<{
     simulation_id: string;
     type: string;
+    title: string;
     owner: string;
-    expected_monthly_amount?: number;
-    current_balance?: number;
-    monthly_contribution?: number;
-    contribution_start_year?: number;
-    contribution_start_month?: number;
+    current_balance: number;
+    monthly_contribution: number;
+    contribution_start_year: number;
+    contribution_start_month: number;
   }> = [];
 
-  // 국민연금
-  if (data.hasNationalPension) {
-    if (data.selfNationalPensionExpected > 0) {
-      pensions.push({
-        simulation_id: simulation.id,
-        type: "national",
-        owner: "self",
-        expected_monthly_amount: data.selfNationalPensionExpected,
-      });
-    }
-    if (data.spouseNationalPensionExpected > 0) {
-      pensions.push({
-        simulation_id: simulation.id,
-        type: "national",
-        owner: "spouse",
-        expected_monthly_amount: data.spouseNationalPensionExpected,
-      });
-    }
-  }
+  for (const item of items) {
+    if (item.balance > 0 || item.monthlyDeposit > 0) {
+      const typeLabels: Record<string, string> = {
+        pension_savings: "연금저축",
+        irp: "IRP",
+      };
+      const ownerLabel = item.owner === "self" ? "본인" : "배우자";
 
-  // 퇴직연금
-  if (data.hasRetirementPension) {
-    if (data.selfRetirementBalance > 0) {
-      pensions.push({
-        simulation_id: simulation.id,
-        type: "retirement",
-        owner: "self",
-        current_balance: data.selfRetirementBalance,
-      });
-    }
-    if (data.spouseRetirementBalance > 0) {
-      pensions.push({
-        simulation_id: simulation.id,
-        type: "retirement",
-        owner: "spouse",
-        current_balance: data.spouseRetirementBalance,
-      });
-    }
-  }
-
-  // 개인연금
-  if (data.hasPersonalPension) {
-    if (data.selfPersonalBalance > 0 || data.selfPersonalMonthly > 0) {
       pensions.push({
         simulation_id: simulation.id,
         type: "personal",
-        owner: "self",
-        current_balance: data.selfPersonalBalance || 0,
-        monthly_contribution: data.selfPersonalMonthly || 0,
-        contribution_start_year: currentYear,
-        contribution_start_month: currentMonth,
-      });
-    }
-    if (data.spousePersonalBalance > 0 || data.spousePersonalMonthly > 0) {
-      pensions.push({
-        simulation_id: simulation.id,
-        type: "personal",
-        owner: "spouse",
-        current_balance: data.spousePersonalBalance || 0,
-        monthly_contribution: data.spousePersonalMonthly || 0,
+        title: `${ownerLabel} ${typeLabels[item.type] || item.type}`,
+        owner: item.owner,
+        current_balance: item.balance,
+        monthly_contribution: item.monthlyDeposit,
         contribution_start_year: currentYear,
         contribution_start_month: currentMonth,
       });
@@ -750,7 +880,7 @@ export async function savePensionData(
   }
 
   // 완료 상태 업데이트
-  await markTaskCompleted(userId, "pension");
+  await markTaskCompleted(userId, "personalPension");
 }
 
 /**

@@ -79,6 +79,13 @@
   overflow-y: auto;
 }
 
+/* 섹션 힌트 */
+.sectionHint {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0 0 16px 0;
+}
+
 /* 아이템 리스트 */
 .itemList {
   display: flex;

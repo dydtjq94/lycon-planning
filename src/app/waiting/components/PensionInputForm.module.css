@@ -79,6 +79,64 @@
   overflow-y: auto;
 }
 
+/* 연금 유형 안내 */
+.pensionTypeGuide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 14px 16px;
+  background: #f9fafb;
+  border-radius: 10px;
+  margin-bottom: 24px;
+}
+
+.pensionTypeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pensionTypeName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.pensionTypeDesc {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 연금 유형 선택 칩 */
+.typeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.typeChip {
+  padding: 8px 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.typeChip:hover {
+  border-color: #d1d5db;
+}
+
+.typeChip.active {
+  background: #007AFF;
+  border-color: #007AFF;
+  color: #ffffff;
+}
+
 /* 섹션 */
 .section {
   margin-bottom: 32px;
@@ -103,49 +161,114 @@
   margin: 0 0 16px 0;
 }
 
-/* 입력 리스트 */
-.inputList {
+/* 아이템 리스트 */
+.itemList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
-/* 입력 행 */
-.inputRow {
+.pensionItem {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.pensionItem:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.itemHeader {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.inputLabel {
-  width: 50px;
+.itemType {
   font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.itemHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.itemFields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fieldRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fieldLabel {
+  font-size: 13px;
   font-weight: 500;
+  color: #6b7280;
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.fieldUnit {
+  font-size: 14px;
   color: #6b7280;
   flex-shrink: 0;
 }
 
-/* 개인별 섹션 (개인연금용) */
-.personSection {
-  padding: 14px;
+/* 추가 버튼들 */
+.addButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.addChip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
   background: #f9fafb;
-  border-radius: 10px;
-}
-
-.personSection .inputRow {
-  margin-bottom: 10px;
-}
-
-.personSection .inputRow:last-child {
-  margin-bottom: 0;
-}
-
-.personLabel {
-  display: block;
+  border: 1px dashed #d1d5db;
+  border-radius: 20px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.addChip:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
   color: #1d1d1f;
-  margin-bottom: 12px;
+}
+
+/* 삭제 버튼 */
+.removeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: #d1d5db;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.removeBtn:hover {
+  color: #9ca3af;
 }
 
 /* 하단 영역 */
