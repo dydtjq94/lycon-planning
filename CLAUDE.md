@@ -59,6 +59,30 @@ import styles from './Component.module.css'
 <div className={styles.container}>
 ```
 
+## 스켈레톤 로딩 애니메이션
+
+- **방향 통일**: 모든 shimmer 애니메이션은 왼쪽 → 오른쪽으로 이동
+- **px 단위 사용**: 퍼센트(%) 대신 픽셀(px) 단위 사용
+- **속도**: 1.5s infinite
+
+```css
+/* 스켈레톤 shimmer 애니메이션 (복사해서 사용) */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+```
+
 ## 컴포넌트 분리
 
 - **작게 쪼갤수록 좋다**: 쪼개면 비효율인건 쪼개지말기

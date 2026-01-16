@@ -14,14 +14,16 @@ import {
   PrepTaskCard,
   CompletedItems,
   FamilyInputForm,
+  HousingInputForm,
+  FinancialAssetInputForm,
   IncomeInputForm,
   ProgramDetailView,
   type PrepTask,
   type CompletedTask,
 } from "./components";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
-import { loadPrepData, saveFamilyData, saveIncomeData, getNextTaskIndex } from "./services/prepDataService";
-import type { PrepData, PrepTaskId, FamilyMember } from "./types";
+import { loadPrepData, saveFamilyData, saveHousingData, saveFinancialData, saveIncomeData, getNextTaskIndex } from "./services/prepDataService";
+import type { PrepData, PrepTaskId, FamilyMember, HousingData, FinancialAssetItem } from "./types";
 import type { IncomeFormData } from "./components";
 import styles from "./waiting.module.css";
 
@@ -99,33 +101,39 @@ const PREP_TASKS: PrepTask[] = [
     status: "pending",
   },
   {
-    id: "income",
-    title: "소득 정보",
-    description: "본인과 배우자의 소득 정보를 입력해주세요.",
+    id: "housing",
+    title: "거주 부동산",
+    description: "현재 거주 형태와 관련 대출 정보를 입력해주세요.",
     status: "pending",
   },
   {
-    id: "expense",
-    title: "지출 정보",
-    description: "월 생활비와 고정 지출을 입력해주세요.",
-    status: "pending",
-  },
-  {
-    id: "asset",
-    title: "자산 정보",
-    description: "예적금, 투자, 부동산 등 보유 자산을 입력해주세요.",
+    id: "financial",
+    title: "금융 자산",
+    description: "저축 계좌, 투자 계좌 정보를 입력해주세요.",
     status: "pending",
   },
   {
     id: "debt",
-    title: "부채 정보 입력",
-    description: "대출 잔액, 이자율, 상환 기간 등을 입력해주세요.",
+    title: "부채",
+    description: "보유 중인 대출 정보를 입력해주세요.",
+    status: "pending",
+  },
+  {
+    id: "income",
+    title: "소득",
+    description: "본인과 배우자의 소득 정보를 입력해주세요.",
     status: "pending",
   },
   {
     id: "pension",
-    title: "연금 정보 입력",
+    title: "연금",
     description: "국민연금, 퇴직연금, 개인연금 정보를 입력해주세요.",
+    status: "pending",
+  },
+  {
+    id: "expense",
+    title: "지출",
+    description: "월 생활비를 입력해주세요.",
     status: "pending",
   },
 ];
@@ -157,7 +165,7 @@ function WaitingPageContent() {
   const completedTasks = useMemo((): CompletedTask[] => {
     if (!prepData) return [];
     const tasks: CompletedTask[] = [];
-    const order: PrepTaskId[] = ["family", "income", "expense", "asset", "debt", "pension"];
+    const order: PrepTaskId[] = ["family", "housing", "financial", "debt", "income", "pension", "expense"];
 
     order.forEach((taskId, index) => {
       if (prepData.completed[taskId]) {
@@ -404,6 +412,42 @@ function WaitingPageContent() {
         }}
         surveyMaritalStatus={surveyResponses?.marital_status}
         surveyChildren={surveyResponses?.children}
+      />
+    );
+  }
+
+  // 거주 부동산 입력 폼
+  if (activeInputForm === "housing" && prepData) {
+    const isCompleted = prepData.completed.housing;
+    return (
+      <HousingInputForm
+        initialData={prepData.housing}
+        isCompleted={isCompleted}
+        onClose={handleCloseInputForm}
+        onSave={async (data: HousingData) => {
+          if (!userId) return;
+          await saveHousingData(userId, data);
+          await handleSaveComplete("housing", !isCompleted);
+        }}
+      />
+    );
+  }
+
+  // 금융 자산 입력 폼
+  if (activeInputForm === "financial" && prepData) {
+    const isCompleted = prepData.completed.financial;
+    const hasSpouse = prepData.family.some(m => m.relationship === "spouse");
+    return (
+      <FinancialAssetInputForm
+        hasSpouse={hasSpouse}
+        initialData={prepData.financial}
+        isCompleted={isCompleted}
+        onClose={handleCloseInputForm}
+        onSave={async (data: FinancialAssetItem[]) => {
+          if (!userId) return;
+          await saveFinancialData(userId, data);
+          await handleSaveComplete("financial", !isCompleted);
+        }}
       />
     );
   }

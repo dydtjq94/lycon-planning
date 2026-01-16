@@ -29,6 +29,20 @@ const PARENT_OPTIONS: { value: ParentRelation; label: string }[] = [
   { value: "mother_in_law", label: "장모/시어머니" },
 ];
 
+// 온보딩 응답 레이블
+const MARITAL_STATUS_LABELS: Record<string, string> = {
+  single: "미혼",
+  married: "기혼",
+  divorced: "이혼/별거",
+};
+
+const CHILDREN_LABELS: Record<string, string> = {
+  none: "없음",
+  one: "1명",
+  two: "2명",
+  three_plus: "3명 이상",
+};
+
 // 생년월일 유효성 검증 (YYMMDD)
 function validateBirthDate(yymmdd: string): { valid: boolean; error?: string } {
   if (yymmdd.length === 0) return { valid: true }; // 빈 값은 허용
@@ -149,7 +163,8 @@ export function FamilyInputForm({
         else if (p.name === "장인/시아버지") initSelectedParents.add("father_in_law");
         else if (p.name === "장모/시어머니") initSelectedParents.add("mother_in_law");
       });
-    } else if (isCompleted) {
+    } else {
+      // 데이터가 없으면 기본값 "없음"
       initHasParents = false;
     }
 
@@ -287,6 +302,18 @@ export function FamilyInputForm({
         </header>
 
         <main className={styles.main}>
+          {/* 온보딩 힌트 */}
+          {(surveyMaritalStatus || surveyChildren) && (
+            <div className={styles.hintBox}>
+              <span className={styles.hintLabel}>온보딩 응답</span>
+              <span className={styles.hintValue}>
+                {surveyMaritalStatus && MARITAL_STATUS_LABELS[surveyMaritalStatus]}
+                {surveyMaritalStatus && surveyChildren && ", "}
+                {surveyChildren && `자녀 ${CHILDREN_LABELS[surveyChildren]}`}
+              </span>
+            </div>
+          )}
+
           {/* 배우자 */}
           <section className={styles.section}>
             <div className={styles.sectionHeader}>

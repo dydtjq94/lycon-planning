@@ -3,10 +3,17 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import styles from "./phone-verify.module.css";
 
 type Step = "phone" | "code";
 const CODE_LENGTH = 6;
+
+interface BookingInfo {
+  date: string;
+  time: string;
+  expert: string;
+}
 
 export function PhoneVerify() {
   const router = useRouter();
@@ -16,7 +23,33 @@ export function PhoneVerify() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [bookingInfo, setBookingInfo] = useState<BookingInfo | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(true);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // 예약 정보 로드
+  useEffect(() => {
+    const loadBookingInfo = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setBookingLoading(false);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("booking_info")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.booking_info) {
+        setBookingInfo(profile.booking_info);
+      }
+      setBookingLoading(false);
+    };
+    loadBookingInfo();
+  }, []);
 
   // 개별 숫자 입력 핸들러
   const handleDigitChange = (index: number, value: string) => {
@@ -59,6 +92,15 @@ export function PhoneVerify() {
       return () => clearTimeout(timer);
     }
   }, [countdown]);
+
+  // 인증번호 입력 단계로 넘어가면 첫 번째 입력칸에 포커스
+  useEffect(() => {
+    if (step === "code") {
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 100);
+    }
+  }, [step]);
 
   // 인증번호 발송
   const handleSendCode = async () => {
@@ -151,6 +193,21 @@ export function PhoneVerify() {
                 <br />
                 전화번호 인증이 필요합니다
               </h1>
+              <div className={styles.bookingSummary}>
+                {bookingLoading ? (
+                  <>
+                    <div className={`${styles.skeleton} ${styles.skeletonTitle}`} />
+                    <div className={`${styles.skeleton} ${styles.skeletonDetail}`} />
+                  </>
+                ) : bookingInfo ? (
+                  <>
+                    <div className={styles.bookingTitle}>기본형 종합 재무검진 (은퇴 진단)</div>
+                    <div className={styles.bookingDetail}>
+                      {new Date(bookingInfo.date).toLocaleDateString("ko-KR", { month: "long", day: "numeric" })} {bookingInfo.time} | {bookingInfo.expert} 은퇴 설계 전문가
+                    </div>
+                  </>
+                ) : null}
+              </div>
             </>
           ) : (
             <>

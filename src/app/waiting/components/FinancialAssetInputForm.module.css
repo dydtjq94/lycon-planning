@@ -79,29 +79,6 @@
   overflow-y: auto;
 }
 
-/* 온보딩 힌트 */
-.hintBox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
-  background: #f9fafb;
-  border-radius: 8px;
-  margin-bottom: 24px;
-}
-
-.hintLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: #9ca3af;
-}
-
-.hintValue {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1d1d1f;
-}
-
 /* 섹션 */
 .section {
   margin-bottom: 32px;
@@ -111,7 +88,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .sectionTitle {
@@ -123,7 +100,7 @@
 .sectionHint {
   font-size: 13px;
   color: #9ca3af;
-  margin: -8px 0 12px 0;
+  margin: 0 0 16px 0;
 }
 
 /* 토글 그룹 (없음/있음) */
@@ -149,124 +126,142 @@
   color: #1d1d1f;
 }
 
-/* 입력 행 */
-.inputRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.inputColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
+/* 아이템 리스트 */
 .itemList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+}
+
+.assetItem {
+  padding: 14px;
+  background: #f9fafb;
+  border-radius: 10px;
+}
+
+.itemTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .itemRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
 
-.childItem {
+.itemRow:last-child {
+  margin-bottom: 0;
+}
+
+.itemLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.inputGroup {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
 }
 
-/* 생년월일 입력 */
-.birthInput {
-  width: 120px;
-  padding: 10px 12px;
-  background: none;
+/* 유형 선택 */
+.typeSelect {
+  flex: 1;
+  padding: 8px 10px;
+  background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   color: #1d1d1f;
+  cursor: pointer;
 }
 
-.birthInput:focus {
+.typeSelect:focus {
   outline: none;
   border-color: #1d1d1f;
 }
 
-.birthInput::placeholder {
-  color: #d1d5db;
-}
-
-.birthInput.inputError {
-  border-color: #ef4444;
-}
-
-.birthInput.inputError:focus {
-  border-color: #ef4444;
-}
-
-/* 에러 텍스트 */
-.errorText {
-  font-size: 12px;
-  color: #ef4444;
-  margin-left: 2px;
-}
-
-/* 나이 텍스트 */
-.ageText {
-  font-size: 13px;
-  color: #6b7280;
-  flex-shrink: 0;
-}
-
-/* 성별 토글 */
-.genderToggle {
-  display: flex;
-  gap: 4px;
-}
-
-.genderBtn {
-  padding: 8px 12px;
-  background: none;
+/* 소유자 선택 */
+.ownerSelect {
+  width: 70px;
+  padding: 8px 10px;
+  background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 13px;
-  font-weight: 500;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.genderBtn.active {
-  border-color: #1d1d1f;
   color: #1d1d1f;
+  cursor: pointer;
 }
 
-/* 부모님 다중 선택 */
-.parentOptions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.ownerSelect:focus {
+  outline: none;
+  border-color: #1d1d1f;
 }
 
-.parentBtn {
-  padding: 10px 16px;
-  background: none;
+/* 금액 입력 */
+.amountInput {
+  width: 100px;
+  padding: 10px 12px;
+  background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 500;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: all 0.15s;
+  color: #1d1d1f;
+  text-align: right;
 }
 
-.parentBtn.active {
+.amountInput:focus {
+  outline: none;
   border-color: #1d1d1f;
+}
+
+.amountInput::placeholder {
+  color: #d1d5db;
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.amountInput::-webkit-outer-spin-button,
+.amountInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 수익률 입력 */
+.rateInput {
+  width: 70px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
   color: #1d1d1f;
+  text-align: right;
+}
+
+.rateInput:focus {
+  outline: none;
+  border-color: #1d1d1f;
+}
+
+.rateInput::placeholder {
+  color: #d1d5db;
+}
+
+.rateInput::-webkit-outer-spin-button,
+.rateInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.unit {
+  font-size: 14px;
+  color: #6b7280;
+  flex-shrink: 0;
 }
 
 /* 삭제 버튼 */
@@ -281,6 +276,7 @@
   color: #d1d5db;
   cursor: pointer;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .removeBtn:hover {
@@ -303,6 +299,29 @@
 
 .addBtn:hover {
   color: #6b7280;
+}
+
+/* 합계 박스 */
+.totalBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #f0f9ff;
+  border-radius: 10px;
+  margin-top: 8px;
+}
+
+.totalLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.totalValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #007AFF;
 }
 
 /* 하단 영역 */
@@ -339,14 +358,4 @@
 .saveButton:disabled {
   background: #d1d5db;
   cursor: not-allowed;
-}
-
-/* 로딩 */
-.loadingText {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: #9ca3af;
-  font-size: 15px;
 }

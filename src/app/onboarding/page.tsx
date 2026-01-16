@@ -16,7 +16,6 @@ interface InitialData {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
   const [initialData, setInitialData] = useState<InitialData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -98,10 +97,6 @@ export default function OnboardingPage() {
     bookingDate: string | null;
     bookingTime: string | null;
   }) => {
-    // 즉시 페이지 이동 (사용자 경험 개선)
-    router.push("/auth/phone-verify");
-
-    // 백그라운드에서 데이터 저장
     const supabase = createClient();
 
     try {
@@ -111,45 +106,54 @@ export default function OnboardingPage() {
       // 생년월일 문자열 생성
       const birthDate = `${data.birthYear}-${String(data.birthMonth).padStart(2, "0")}-01`;
 
-      // 병렬 실행: 프로필 조회 + 시뮬레이션 조회/생성
-      const [profileResult] = await Promise.all([
-        supabase.from("profiles").select("diagnosis_started_at").eq("id", user.id).single(),
-        simulationService.getDefault(),
-      ]);
-
-      const existingProfile = profileResult.data;
-
-      // 프로필 저장 (설문 응답 + 예약 정보 포함)
+      // 1. 필수 데이터 먼저 저장 (페이지 이동 전)
       await supabase.from("profiles").upsert({
         id: user.id,
         name: data.name,
         gender: data.gender,
         birth_date: birthDate,
-        settings: {
-          inflationRate: 2.5,
-          investmentReturn: 5.0,
-          lifeExpectancy: 100,
-        },
-        // 온보딩 설문 응답 저장
-        survey_responses: {
-          onboarding: data.surveyResponses,
-          completed_at: new Date().toISOString(),
-        },
-        // 예약 정보 저장
+        onboarding_step: "completed",
         booking_info: data.bookingDate ? {
           date: data.bookingDate,
           time: data.bookingTime,
           expert: "손균우",
           booked_at: new Date().toISOString(),
         } : null,
-        // 온보딩 완료 표시
-        onboarding_step: "completed",
-        diagnosis_started_at: existingProfile?.diagnosis_started_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
 
-      // 담당 전문가 환영 메시지 생성 (백그라운드)
-      initializePrimaryConversation().catch(console.error);
+      // 2. 페이지 이동
+      router.push("/auth/phone-verify");
+
+      // 3. 나머지는 백그라운드에서 저장
+      const saveRest = async () => {
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("diagnosis_started_at")
+          .eq("id", user.id)
+          .single();
+
+        await supabase.from("profiles").update({
+          settings: {
+            inflationRate: 2.5,
+            investmentReturn: 5.0,
+            lifeExpectancy: 100,
+          },
+          survey_responses: {
+            onboarding: data.surveyResponses,
+            completed_at: new Date().toISOString(),
+          },
+          diagnosis_started_at: existingProfile?.diagnosis_started_at || new Date().toISOString(),
+        }).eq("id", user.id);
+
+        // 시뮬레이션 생성
+        await simulationService.getDefault();
+
+        // 담당 전문가 환영 메시지 생성
+        await initializePrimaryConversation();
+      };
+
+      saveRest().catch(console.error);
     } catch (err) {
       console.error("저장 실패:", err);
     }
@@ -162,7 +166,6 @@ export default function OnboardingPage() {
   return (
     <SimpleOnboarding
       onComplete={handleComplete}
-      isSaving={saving}
       initialData={initialData}
     />
   );

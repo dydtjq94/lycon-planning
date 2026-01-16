@@ -410,10 +410,10 @@
 
 @keyframes shimmer {
   0% {
-    background-position: -200% 0;
+    background-position: -200px 0;
   }
   100% {
-    background-position: 200% 0;
+    background-position: 200px 0;
   }
 }
 
@@ -434,7 +434,7 @@
   width: 140px;
   height: 20px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
 }
@@ -481,7 +481,7 @@
   width: 24px;
   height: 24px;
   background: linear-gradient(90deg, #e8e8e8 25%, #d8d8d8 50%, #e8e8e8 75%);
-  background-size: 200% 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 50%;
 }
@@ -489,7 +489,7 @@
 .skeletonText {
   height: 14px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
   margin-bottom: 10px;
@@ -500,7 +500,7 @@
   height: 48px;
   margin-top: 16px;
   background: linear-gradient(90deg, #e0e0e0 25%, #d0d0d0 50%, #e0e0e0 75%);
-  background-size: 200% 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 12px;
 }

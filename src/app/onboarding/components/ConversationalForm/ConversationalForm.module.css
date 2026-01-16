@@ -668,7 +668,7 @@
   height: 80px;
   border-radius: 50%;
   background: linear-gradient(90deg, #E5E5EA 25%, #F0F0F5 50%, #E5E5EA 75%);
-  background-size: 200% 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
 
@@ -677,7 +677,7 @@
   height: 20px;
   border-radius: 4px;
   background: linear-gradient(90deg, #E5E5EA 25%, #F0F0F5 50%, #E5E5EA 75%);
-  background-size: 200% 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
 
@@ -686,16 +686,16 @@
   height: 16px;
   border-radius: 4px;
   background: linear-gradient(90deg, #E5E5EA 25%, #F0F0F5 50%, #E5E5EA 75%);
-  background-size: 200% 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
 
 @keyframes shimmer {
   0% {
-    background-position: 200% 0;
+    background-position: -200px 0;
   }
   100% {
-    background-position: -200% 0;
+    background-position: 200px 0;
   }
 }
 

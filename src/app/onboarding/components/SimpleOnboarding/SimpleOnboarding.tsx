@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Check, ChevronLeft, ChevronRight, Square, CheckSquare } from "lucide-react";
+import { Square, CheckSquare } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./SimpleOnboarding.module.css";
 
@@ -44,8 +44,7 @@ type Step =
   | "surveyComplete"
   | "matching"
   | "program"
-  | "booking"
-  | "bookingComplete";
+  | "booking";
 
 // 설문 섹션 정의
 interface SurveySection {
@@ -75,7 +74,10 @@ const SURVEY_SECTIONS: SurveySection[] = [
         type: "multiple",
         options: [
           { value: "retirement_worry", label: "은퇴 후 생활이 걱정돼요" },
-          { value: "financial_checkup", label: "내 재정 상태를 점검받고 싶어요" },
+          {
+            value: "financial_checkup",
+            label: "내 재정 상태를 점검받고 싶어요",
+          },
           { value: "asset_management", label: "자산 관리 방법을 알고 싶어요" },
           { value: "strategy", label: "연금/투자 전략이 궁금해요" },
           { value: "expert_advice", label: "전문가 조언이 필요해요" },
@@ -191,11 +193,11 @@ const SURVEY_SECTIONS: SurveySection[] = [
         question: "한 달에 저축이나 투자는\n얼마나 하세요?",
         type: "single",
         options: [
-          { value: "over_300", label: "300만원 이상" },
-          { value: "100_300", label: "100~300만원" },
-          { value: "50_100", label: "50~100만원" },
-          { value: "under_50", label: "50만원 미만" },
           { value: "none", label: "거의 못 하고 있어요" },
+          { value: "under_50", label: "50만원 미만" },
+          { value: "50_100", label: "50~100만원" },
+          { value: "100_300", label: "100~300만원" },
+          { value: "over_300", label: "300만원 이상" },
         ],
       },
     ],
@@ -233,7 +235,8 @@ const SURVEY_SECTIONS: SurveySection[] = [
         question: "지금 하고 계신\n투자가 있나요?",
         type: "multiple",
         options: [
-          { value: "stock", label: "주식" },
+          { value: "stock_domestic", label: "국내 주식" },
+          { value: "stock_foreign", label: "해외 주식" },
           { value: "etf", label: "ETF" },
           { value: "fund", label: "펀드" },
           { value: "bond", label: "채권" },
@@ -279,7 +282,10 @@ const SURVEY_SECTIONS: SurveySection[] = [
         options: [
           { value: "pension_shortage", label: "연금만으론 부족할 것 같다" },
           { value: "medical", label: "의료비/간병비가 걱정된다" },
-          { value: "children_balance", label: "자녀 지원과 노후 준비 사이 균형" },
+          {
+            value: "children_balance",
+            label: "자녀 지원과 노후 준비 사이 균형",
+          },
           { value: "dont_know", label: "뭐부터 해야 할지 모르겠다" },
           { value: "no_worry", label: "딱히 걱정 없다" },
         ],
@@ -310,7 +316,6 @@ interface SimpleOnboardingProps {
     bookingDate: string | null;
     bookingTime: string | null;
   }) => void;
-  isSaving?: boolean;
   initialData?: InitialData | null;
 }
 
@@ -425,7 +430,6 @@ const CHECKUP_ITEMS = [
 
 export function SimpleOnboarding({
   onComplete,
-  isSaving = false,
   initialData,
 }: SimpleOnboardingProps) {
   const router = useRouter();
@@ -435,21 +439,43 @@ export function SimpleOnboarding({
   const decodeStepFromUrl = (encoded: string): Step | null => {
     try {
       // base64 패딩 복구
-      const padded = encoded + "==".slice(0, (4 - encoded.length % 4) % 4);
+      const padded = encoded + "==".slice(0, (4 - (encoded.length % 4)) % 4);
       const decoded = atob(padded);
       const validStepsForDecode: Step[] = [
-        "welcome", "mission", "problem", "ready", "basicInfo",
+        "welcome",
+        "mission",
+        "problem",
+        "ready",
+        "basicInfo",
         // Part 1
-        "part1_q1", "transition1",
+        "part1_q1",
+        "transition1",
         // Part 2
-        "part2_q1", "part2_q2", "part2_q3", "part2_q4", "transition2",
+        "part2_q1",
+        "part2_q2",
+        "part2_q3",
+        "part2_q4",
+        "transition2",
         // Part 3
-        "part3_q1", "part3_q2", "part3_q3", "part3_q4", "part3_q5", "transition3",
+        "part3_q1",
+        "part3_q2",
+        "part3_q3",
+        "part3_q4",
+        "part3_q5",
+        "transition3",
         // Part 4
-        "part4_q1", "part4_q2", "part4_q3", "transition4",
+        "part4_q1",
+        "part4_q2",
+        "part4_q3",
+        "transition4",
         // Part 5
-        "part5_q1", "part5_q2", "part5_q3", "surveyComplete",
-        "matching", "program", "booking", "bookingComplete"
+        "part5_q1",
+        "part5_q2",
+        "part5_q3",
+        "surveyComplete",
+        "matching",
+        "program",
+        "booking",
       ];
       if (validStepsForDecode.includes(decoded as Step)) {
         return decoded as Step;
@@ -461,18 +487,40 @@ export function SimpleOnboarding({
   };
 
   const validSteps: Step[] = [
-    "welcome", "mission", "problem", "ready", "basicInfo",
+    "welcome",
+    "mission",
+    "problem",
+    "ready",
+    "basicInfo",
     // Part 1
-    "part1_q1", "transition1",
+    "part1_q1",
+    "transition1",
     // Part 2
-    "part2_q1", "part2_q2", "part2_q3", "part2_q4", "transition2",
+    "part2_q1",
+    "part2_q2",
+    "part2_q3",
+    "part2_q4",
+    "transition2",
     // Part 3
-    "part3_q1", "part3_q2", "part3_q3", "part3_q4", "part3_q5", "transition3",
+    "part3_q1",
+    "part3_q2",
+    "part3_q3",
+    "part3_q4",
+    "part3_q5",
+    "transition3",
     // Part 4
-    "part4_q1", "part4_q2", "part4_q3", "transition4",
+    "part4_q1",
+    "part4_q2",
+    "part4_q3",
+    "transition4",
     // Part 5
-    "part5_q1", "part5_q2", "part5_q3", "surveyComplete",
-    "matching", "program", "booking", "bookingComplete"
+    "part5_q1",
+    "part5_q2",
+    "part5_q3",
+    "surveyComplete",
+    "matching",
+    "program",
+    "booking",
   ];
 
   // URL에서 초기 step 읽기
@@ -489,7 +537,10 @@ export function SimpleOnboarding({
       return oldStep as Step;
     }
     // 저장된 단계가 있으면 사용
-    if (initialData?.savedStep && validSteps.includes(initialData.savedStep as Step)) {
+    if (
+      initialData?.savedStep &&
+      validSteps.includes(initialData.savedStep as Step)
+    ) {
       return initialData.savedStep as Step;
     }
     return "welcome";
@@ -540,7 +591,9 @@ export function SimpleOnboarding({
       // 2. Supabase에서도 확인 (localStorage에 없을 경우 대비)
       if (!savedSurvey) {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
           const { data: profile } = await supabase
             .from("profiles")
@@ -580,7 +633,9 @@ export function SimpleOnboarding({
 
     debounceTimerRef.current = setTimeout(async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         await supabase
           .from("profiles")
@@ -688,7 +743,9 @@ export function SimpleOnboarding({
   const saveStepToDb = async (stepToSave: Step) => {
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         await supabase
           .from("profiles")
@@ -870,7 +927,7 @@ export function SimpleOnboarding({
     else if (step === "program") {
       goToStep("booking");
     } else if (step === "booking") {
-      // 바로 전화번호 인증으로 이동
+      // 전화번호 인증으로 이동
       const parsed = parseRrn();
       if (parsed) {
         // 온보딩 완료 시 localStorage 정리
@@ -1008,41 +1065,19 @@ export function SimpleOnboarding({
     </div>
   );
 
-  // 4. 검진 시작 안내
+  // 4. 문진표 작성 안내
   const renderReady = () => (
     <div className={styles.stepContent}>
       <div className={styles.welcomeBadge}>Lycon Finance Group</div>
       <h1 className={styles.titleLarge}>
-        이제 검진을
+        먼저 간단한 문진표를
         <br />
-        시작해볼까요?
+        작성해주세요
       </h1>
-      <p className={styles.readyDesc}>
-        간단한 정보 입력 후
-        <br />
-        전담 전문가가 배정됩니다.
-      </p>
-      <div className={styles.trustList}>
-        <div className={styles.trustItem}>
-          <div className={styles.trustLabel}>전문 자격</div>
-          <div className={styles.trustValue}>CFP®, AFPK 보유</div>
-        </div>
-        <div className={styles.trustItem}>
-          <div className={styles.trustLabel}>검진 건수</div>
-          <div className={styles.trustValue}>500건+</div>
-        </div>
-        <div className={styles.trustItem}>
-          <div className={styles.trustLabel}>소요 시간</div>
-          <div className={styles.trustValue}>약 30분</div>
-        </div>
-        <div className={styles.trustItem}>
-          <div className={styles.trustLabel}>검진 비용</div>
-          <div className={styles.trustValue}>첫 검진 무료</div>
-        </div>
-      </div>
+      <p className={styles.readyDesc}>맞춤 진단을 위해 필요해요</p>
       <div className={styles.bottomButtonArea}>
         <button className={styles.primaryButton} onClick={handleNext}>
-          검진 시작하기
+          시작하기
         </button>
       </div>
     </div>
@@ -1250,11 +1285,13 @@ export function SimpleOnboarding({
             <span className={styles.surveyProgressSection}>설문 완료</span>
           </div>
           <h1 className={styles.surveyQuestionTitle}>
-            고생하셨어요,<br />
+            고생하셨어요,
+            <br />
             {name}님!
           </h1>
           <p className={styles.transitionDesc}>
-            응답을 바탕으로<br />
+            응답을 바탕으로
+            <br />
             담당 은퇴설계사를 배정해드릴게요.
           </p>
         </div>
@@ -1360,13 +1397,14 @@ export function SimpleOnboarding({
               <div className={styles.skeletonAvatar} />
               <div className={styles.skeletonInfo}>
                 <div className={styles.skeletonLine} style={{ width: 100 }} />
-                <div className={styles.skeletonLine} style={{ width: 140, height: 20 }} />
+                <div
+                  className={styles.skeletonLine}
+                  style={{ width: 140, height: 20 }}
+                />
               </div>
             </div>
 
-            <p className={styles.matchingDesc}>
-              전문가 매칭 중...
-            </p>
+            <p className={styles.matchingDesc}>전문가 배정 중...</p>
             <div className={styles.matchingProgress}>
               <div
                 className={styles.matchingProgressBar}
@@ -1473,7 +1511,8 @@ export function SimpleOnboarding({
           </div>
         </div>
         <p className={styles.metaNote}>
-          * 대면 상담 시 추가 비용이 발생할 수 있으며, 소요 시간은 약 1시간입니다.
+          * 대면 상담 시 추가 비용이 발생할 수 있으며, 소요 시간은 약
+          1시간입니다.
         </p>
 
         {/* CHECK POINT */}
@@ -1549,14 +1588,24 @@ export function SimpleOnboarding({
         ["10:00", "11:00", "14:00", "16:00", "19:00"],
         ["10:00", "11:00", "13:00", "15:00", "17:00", "19:00"],
         ["10:00", "11:00", "14:00", "15:00", "16:00", "18:00", "19:00"],
-        ["10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00", "19:00"],
+        [
+          "10:00",
+          "11:00",
+          "13:00",
+          "14:00",
+          "15:00",
+          "16:00",
+          "17:00",
+          "19:00",
+        ],
       ];
       return slots[dateIndex] || slots[slots.length - 1];
     };
     const selectedDateIndex = selectedDate
-      ? dates.findIndex(d => d.toDateString() === selectedDate.toDateString())
+      ? dates.findIndex((d) => d.toDateString() === selectedDate.toDateString())
       : -1;
-    const timeSlots = selectedDateIndex >= 0 ? getTimeSlots(selectedDateIndex) : [];
+    const timeSlots =
+      selectedDateIndex >= 0 ? getTimeSlots(selectedDateIndex) : [];
     const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 
     const formatDate = (date: Date) => {
@@ -1582,7 +1631,8 @@ export function SimpleOnboarding({
           <div className={styles.dateGrid}>
             {dates.map((date, index) => {
               const { month, day, weekday } = formatDate(date);
-              const isSelected = selectedDate?.toDateString() === date.toDateString();
+              const isSelected =
+                selectedDate?.toDateString() === date.toDateString();
               const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
               return (
@@ -1631,58 +1681,9 @@ export function SimpleOnboarding({
           <button
             className={styles.primaryButton}
             onClick={handleNext}
-            disabled={!isBookingComplete || isSaving}
+            disabled={!isBookingComplete}
           >
-            {isSaving ? (
-              <Loader2 size={20} className={styles.spinner} />
-            ) : (
-              "예약 완료"
-            )}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // 예약 완료 확인 화면
-  const renderBookingComplete = () => {
-    const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-
-    return (
-      <div className={styles.stepContent}>
-        <div className={styles.bookingCompleteContainer}>
-          <div className={styles.bookingCompleteIcon}>
-            <Check size={32} />
-          </div>
-          <h1 className={styles.bookingCompleteTitle}>
-            예약이 완료되었습니다
-          </h1>
-          <div className={styles.bookingCompleteInfo}>
-            <p className={styles.bookingCompleteDate}>
-              {selectedDate &&
-                `${selectedDate.getMonth() + 1}월 ${selectedDate.getDate()}일 (${weekdays[selectedDate.getDay()]})`}{" "}
-              {selectedTime}
-            </p>
-            <p className={styles.bookingCompleteExpert}>
-              손균우 은퇴설계전문가
-            </p>
-          </div>
-          <p className={styles.bookingCompleteDesc}>
-            예약 확정을 위해<br />
-            전화번호 인증이 필요합니다.
-          </p>
-        </div>
-        <div className={styles.bottomButtonArea}>
-          <button
-            className={styles.primaryButton}
-            onClick={handleNext}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <Loader2 size={20} className={styles.spinner} />
-            ) : (
-              "전화번호 인증하기"
-            )}
+            예약 완료
           </button>
         </div>
       </div>
@@ -1756,8 +1757,6 @@ export function SimpleOnboarding({
         return renderProgram();
       case "booking":
         return renderBooking();
-      case "bookingComplete":
-        return renderBookingComplete();
       default:
         return null;
     }
@@ -1778,13 +1777,13 @@ export function SimpleOnboarding({
       }`}
     >
       {/* 회원탈퇴 버튼 (테스트용) */}
-      <button
-        className={styles.deleteButton}
-        onClick={handleDeleteAccount}
-      >
+      <button className={styles.deleteButton} onClick={handleDeleteAccount}>
         탈퇴
       </button>
-      <main ref={mainRef} className={`${styles.main} ${isAnimating ? styles.animating : ""}`}>
+      <main
+        ref={mainRef}
+        className={`${styles.main} ${isAnimating ? styles.animating : ""}`}
+      >
         {renderStep()}
       </main>
     </div>

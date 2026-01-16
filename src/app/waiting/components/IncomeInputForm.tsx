@@ -16,9 +16,6 @@ const INCOME_RANGE_LABELS: Record<string, string> = {
 // 추가 소득 유형
 const ADDITIONAL_INCOME_TYPES = [
   { value: "business", label: "사업소득" },
-  { value: "rental", label: "임대소득" },
-  { value: "side", label: "부업소득" },
-  { value: "dividend", label: "배당/이자소득" },
   { value: "other", label: "기타소득" },
 ] as const;
 
@@ -180,7 +177,7 @@ export function IncomeInputForm({
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>근로소득</span>
             </div>
-            <p className={styles.sectionHint}>세전 기준, 일을 안하시면 0원</p>
+            <p className={styles.sectionHint}>세후 기준, 일을 안하시면 0원</p>
 
             {/* 본인 근로소득 */}
             <div className={styles.incomeRow}>
@@ -195,14 +192,20 @@ export function IncomeInputForm({
                   onWheel={(e) => (e.target as HTMLElement).blur()}
                 />
                 <span className={styles.unit}>만원</span>
-                <select
-                  className={styles.frequencySelect}
-                  value={selfLaborFrequency}
-                  onChange={(e) => setSelfLaborFrequency(e.target.value as "monthly" | "yearly")}
-                >
-                  <option value="monthly">월</option>
-                  <option value="yearly">연</option>
-                </select>
+                <div className={styles.frequencyToggle}>
+                  <button
+                    className={`${styles.freqBtn} ${selfLaborFrequency === "monthly" ? styles.active : ""}`}
+                    onClick={() => setSelfLaborFrequency("monthly")}
+                  >
+                    월
+                  </button>
+                  <button
+                    className={`${styles.freqBtn} ${selfLaborFrequency === "yearly" ? styles.active : ""}`}
+                    onClick={() => setSelfLaborFrequency("yearly")}
+                  >
+                    연
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -220,14 +223,20 @@ export function IncomeInputForm({
                     onWheel={(e) => (e.target as HTMLElement).blur()}
                   />
                   <span className={styles.unit}>만원</span>
-                  <select
-                    className={styles.frequencySelect}
-                    value={spouseLaborFrequency}
-                    onChange={(e) => setSpouseLaborFrequency(e.target.value as "monthly" | "yearly")}
-                  >
-                    <option value="monthly">월</option>
-                    <option value="yearly">연</option>
-                  </select>
+                  <div className={styles.frequencyToggle}>
+                    <button
+                      className={`${styles.freqBtn} ${spouseLaborFrequency === "monthly" ? styles.active : ""}`}
+                      onClick={() => setSpouseLaborFrequency("monthly")}
+                    >
+                      월
+                    </button>
+                    <button
+                      className={`${styles.freqBtn} ${spouseLaborFrequency === "yearly" ? styles.active : ""}`}
+                      onClick={() => setSpouseLaborFrequency("yearly")}
+                    >
+                      연
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -260,7 +269,7 @@ export function IncomeInputForm({
                 </button>
               </div>
             </div>
-            <p className={styles.sectionHint}>사업소득, 임대소득, 부업 등</p>
+            <p className={styles.sectionHint}>사업소득, 기타소득</p>
 
             {hasAdditional && (
               <div className={styles.additionalList}>
@@ -311,16 +320,20 @@ export function IncomeInputForm({
                         onWheel={(e) => (e.target as HTMLElement).blur()}
                       />
                       <span className={styles.unit}>만원</span>
-                      <select
-                        className={styles.frequencySelect}
-                        value={income.frequency}
-                        onChange={(e) =>
-                          updateAdditionalIncome(index, "frequency", e.target.value as "monthly" | "yearly")
-                        }
-                      >
-                        <option value="monthly">월</option>
-                        <option value="yearly">연</option>
-                      </select>
+                      <div className={styles.frequencyToggle}>
+                        <button
+                          className={`${styles.freqBtn} ${income.frequency === "monthly" ? styles.active : ""}`}
+                          onClick={() => updateAdditionalIncome(index, "frequency", "monthly")}
+                        >
+                          월
+                        </button>
+                        <button
+                          className={`${styles.freqBtn} ${income.frequency === "yearly" ? styles.active : ""}`}
+                          onClick={() => updateAdditionalIncome(index, "frequency", "yearly")}
+                        >
+                          연
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

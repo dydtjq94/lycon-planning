@@ -45,6 +45,7 @@ export function PinSetup() {
   const [loading, setLoading] = useState(false);
   const [keypadNumbers, setKeypadNumbers] = useState<string[]>([]);
   const [ripples, setRipples] = useState<RippleEffect[]>([]);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const rippleIdRef = useRef(0);
 
   // 키패드 숫자 셔플
@@ -162,11 +163,15 @@ export function PinSetup() {
     // 6자리 완성 시
     if (newPin.length === 6) {
       if (step === "create") {
-        // 첫 번째 입력 완료 -> 확인 단계로 (0.6초 후)
+        // 첫 번째 입력 완료 -> 확인 단계로 (부드러운 전환)
         setTimeout(() => {
-          setCreatedPin(newPin);
-          setStep("confirm");
-        }, 600);
+          setIsTransitioning(true);
+          setTimeout(() => {
+            setCreatedPin(newPin);
+            setStep("confirm");
+            setIsTransitioning(false);
+          }, 250);
+        }, 400);
       } else {
         // 확인 입력 완료 -> 검증
         setTimeout(() => {
@@ -210,10 +215,11 @@ export function PinSetup() {
       // PIN 해시화
       const hashedPin = await hashPin(finalPin);
 
-      // Supabase profiles 테이블에 해시된 PIN 저장
+      // Supabase profiles 테이블에 해시된 PIN 저장 + 인증 시간 설정
+      const now = new Date().toISOString();
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ pin_hash: hashedPin })
+        .update({ pin_hash: hashedPin, pin_verified_at: now })
         .eq("id", user.id);
 
       if (updateError) {
@@ -222,6 +228,7 @@ export function PinSetup() {
           id: user.id,
           name: user.email?.split("@")[0] || "사용자",
           pin_hash: hashedPin,
+          pin_verified_at: now,
           updated_at: new Date().toISOString(),
         });
 
@@ -261,7 +268,7 @@ export function PinSetup() {
 
       <main className={styles.main}>
         {/* 헤더 */}
-        <div className={styles.header}>
+        <div className={`${styles.header} ${isTransitioning ? styles.fadeOut : styles.fadeIn}`}>
           <h1 className={styles.title}>
             {step === "create" ? "보안 비밀번호 설정" : "비밀번호 확인"}
           </h1>
@@ -273,7 +280,7 @@ export function PinSetup() {
         </div>
 
         {/* PIN 표시 */}
-        <div className={styles.pinDisplay}>
+        <div className={`${styles.pinDisplay} ${isTransitioning ? styles.fadeOut : styles.fadeIn}`}>
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}

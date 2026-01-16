@@ -395,7 +395,7 @@
     background-position: -200px 0;
   }
   100% {
-    background-position: calc(200px + 100%) 0;
+    background-position: 200px 0;
   }
 }
 
@@ -411,7 +411,7 @@
   height: 44px;
   border-radius: 12px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-  background-size: 200px 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
 
@@ -420,7 +420,7 @@
   height: 40px;
   border-radius: 10px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-  background-size: 200px 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   flex-shrink: 0;
 }
@@ -430,7 +430,7 @@
   height: 32px;
   border-radius: 10px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-  background-size: 200px 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   flex-shrink: 0;
 }
@@ -447,7 +447,7 @@
   height: 14px;
   border-radius: 4px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-  background-size: 200px 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
 
@@ -456,7 +456,7 @@
   height: 12px;
   border-radius: 4px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-  background-size: 200px 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
 
@@ -471,7 +471,7 @@
   height: 48px;
   border-radius: 4px 18px 18px 18px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-  background-size: 200px 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
 
@@ -480,7 +480,7 @@
   height: 72px;
   border-radius: 4px 18px 18px 18px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-  background-size: 200px 100%;
+  background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
 
