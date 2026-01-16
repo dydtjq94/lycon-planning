@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft, Plus, X } from "lucide-react";
 import type { FamilyMember, PrepTaskId } from "../types";
+import { ToggleGroup } from "./inputs";
 import styles from "./FamilyInputForm.module.css";
 
 interface Child {
@@ -318,20 +319,10 @@ export function FamilyInputForm({
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>배우자</span>
-              <div className={styles.toggleGroup}>
-                <button
-                  className={`${styles.toggleBtn} ${hasSpouse === false ? styles.active : ""}`}
-                  onClick={() => setHasSpouse(false)}
-                >
-                  없음
-                </button>
-                <button
-                  className={`${styles.toggleBtn} ${hasSpouse === true ? styles.active : ""}`}
-                  onClick={() => setHasSpouse(true)}
-                >
-                  있음
-                </button>
-              </div>
+              <ToggleGroup
+                value={hasSpouse}
+                onChange={setHasSpouse}
+              />
             </div>
 
             {hasSpouse && (() => {
@@ -363,26 +354,14 @@ export function FamilyInputForm({
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>자녀</span>
-              <div className={styles.toggleGroup}>
-                <button
-                  className={`${styles.toggleBtn} ${hasChildren === false ? styles.active : ""}`}
-                  onClick={() => {
-                    setHasChildren(false);
-                    setChildren([]);
-                  }}
-                >
-                  없음
-                </button>
-                <button
-                  className={`${styles.toggleBtn} ${hasChildren === true ? styles.active : ""}`}
-                  onClick={() => {
-                    setHasChildren(true);
-                    if (children.length === 0) addChild();
-                  }}
-                >
-                  있음
-                </button>
-              </div>
+              <ToggleGroup
+                value={hasChildren}
+                onChange={(v) => {
+                  setHasChildren(v);
+                  if (v && children.length === 0) addChild();
+                  if (!v) setChildren([]);
+                }}
+              />
             </div>
 
             {hasChildren && children.length > 0 && (
@@ -439,23 +418,13 @@ export function FamilyInputForm({
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>부양 부모님</span>
-              <div className={styles.toggleGroup}>
-                <button
-                  className={`${styles.toggleBtn} ${hasParents === false ? styles.active : ""}`}
-                  onClick={() => {
-                    setHasParents(false);
-                    setSelectedParents(new Set());
-                  }}
-                >
-                  없음
-                </button>
-                <button
-                  className={`${styles.toggleBtn} ${hasParents === true ? styles.active : ""}`}
-                  onClick={() => setHasParents(true)}
-                >
-                  있음
-                </button>
-              </div>
+              <ToggleGroup
+                value={hasParents}
+                onChange={(v) => {
+                  setHasParents(v);
+                  if (!v) setSelectedParents(new Set());
+                }}
+              />
             </div>
             <p className={styles.sectionHint}>경제적으로 부양하는 부모님</p>
 

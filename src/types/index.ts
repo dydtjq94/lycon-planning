@@ -669,7 +669,7 @@ export interface RealEstateData {
   appreciationRate?: number         // 연간 상승률 (%)
 
   // 거주용
-  housingType?: '자가' | '전세' | '월세'
+  housingType?: '자가' | '전세' | '월세' | '무상'
   deposit?: number                  // 보증금 (만원)
   monthlyRent?: number              // 월세 (만원)
 

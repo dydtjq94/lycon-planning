@@ -7,17 +7,21 @@ import type {
   FamilyMember,
   HousingData,
   FinancialAssetItem,
+  InvestmentAccountData,
   DebtItem,
   IncomeItem,
   PensionItem,
   ExpenseItem,
 } from "../types";
 import type { IncomeFormData } from "../components/IncomeInputForm";
+import type { PensionFormData } from "../components/PensionInputForm";
+import type { ExpenseFormData } from "../components/ExpenseInputForm";
 
 const DEFAULT_COMPLETED: PrepCompleted = {
   family: false,
   housing: false,
-  financial: false,
+  savings: false,
+  investment: false,
   debt: false,
   income: false,
   pension: false,
@@ -28,7 +32,8 @@ const DEFAULT_COMPLETED: PrepCompleted = {
 const TASK_ORDER: PrepTaskId[] = [
   "family",
   "housing",
-  "financial",
+  "savings",
+  "investment",
   "debt",
   "income",
   "pension",
@@ -45,7 +50,7 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
   const simulation = await simulationService.getDefault();
 
   // 병렬로 모든 데이터 로드
-  const [profileResult, familyResult, housingResult, savingsResult] = await Promise.all([
+  const [profileResult, familyResult, housingResult, savingsResult, debtsResult] = await Promise.all([
     supabase
       .from("profiles")
       .select("survey_responses")
@@ -69,6 +74,13 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
           .select("*")
           .eq("simulation_id", simulation.id)
       : Promise.resolve({ data: [] }),
+    simulation
+      ? supabase
+          .from("debts")
+          .select("*")
+          .eq("simulation_id", simulation.id)
+          .is("source_type", null) // 직접 입력한 부채만 (housing 연동 제외)
+      : Promise.resolve({ data: [] }),
   ]);
 
   // 완료 상태 파싱
@@ -83,7 +95,7 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
   if (housingResult.data) {
     const h = housingResult.data;
     housing = {
-      housingType: h.housing_type as "자가" | "전세" | "월세",
+      housingType: h.housing_type as "자가" | "전세" | "월세" | "무상",
       currentValue: h.current_value || undefined,
       deposit: h.deposit || undefined,
       monthlyRent: h.monthly_rent || undefined,
@@ -96,32 +108,97 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
       loanMaturityYear: h.loan_maturity_year || undefined,
       loanMaturityMonth: h.loan_maturity_month || undefined,
       loanRepaymentType: h.loan_repayment_type || undefined,
+      graceEndYear: h.grace_end_year || undefined,
+      graceEndMonth: h.grace_end_month || undefined,
     };
   }
 
-  // 금융 자산 데이터 변환
-  const financial: FinancialAssetItem[] = (savingsResult.data || []).map((s: Record<string, unknown>) => {
-    // 저축 계좌 타입 (checking, savings, deposit)
-    const savingsTypes = ["checking", "savings", "deposit"];
-    const category = savingsTypes.includes(s.type as string) ? "savings" : "investment";
-
-    return {
+  // 저축 계좌 데이터 변환
+  const savingsTypes = ["checking", "savings", "deposit"];
+  const savings: FinancialAssetItem[] = (savingsResult.data || [])
+    .filter((s: Record<string, unknown>) => savingsTypes.includes(s.type as string))
+    .map((s: Record<string, unknown>) => ({
       id: s.id as string,
-      category: category as "savings" | "investment",
+      category: "savings" as const,
       type: s.type as string,
       title: s.title as string,
       owner: s.owner as "self" | "spouse",
       currentBalance: s.current_balance as number,
-      monthlyContribution: s.monthly_contribution as number | undefined,
+      monthlyDeposit: s.monthly_contribution as number | undefined,
+      maturityYear: s.maturity_year as number | undefined,
+      maturityMonth: s.maturity_month as number | undefined,
       expectedReturn: s.expected_return as number | undefined,
+    }));
+
+  // 투자 계좌 데이터 변환 (새 형식)
+  // 증권 계좌는 type='other', title='증권 계좌'로 저장됨
+  const securitiesData = (savingsResult.data || []).find(
+    (s: Record<string, unknown>) => s.type === "other" && s.title === "증권 계좌"
+  );
+  const cryptoData = (savingsResult.data || []).find(
+    (s: Record<string, unknown>) => s.type === "crypto"
+  );
+
+  // 금 현물 데이터 로드 (physical_assets 테이블)
+  const { data: goldData } = await supabase
+    .from("physical_assets")
+    .select("*")
+    .eq("simulation_id", simulation.id)
+    .eq("type", "precious_metal")
+    .eq("title", "금 현물")
+    .single();
+
+  // 투자 데이터 구성
+  let investment: InvestmentAccountData | null = null;
+  if (securitiesData || cryptoData || goldData) {
+    // memo에서 투자 유형 파싱
+    let investmentTypes: string[] = [];
+    if (securitiesData?.memo) {
+      try {
+        const parsed = JSON.parse(securitiesData.memo as string);
+        investmentTypes = parsed.investmentTypes || [];
+      } catch {
+        // JSON 파싱 실패 시 빈 배열
+      }
+    }
+
+    investment = {
+      securities: {
+        balance: (securitiesData?.current_balance as number) || 0,
+        investmentTypes,
+      },
     };
-  });
+
+    if (cryptoData) {
+      investment.crypto = {
+        balance: cryptoData.current_balance as number,
+      };
+    }
+
+    if (goldData) {
+      investment.gold = {
+        balance: goldData.current_value as number,
+      };
+    }
+  }
+
+  // 부채 데이터 변환
+  const debt: DebtItem[] = (debtsResult.data || []).map((d: Record<string, unknown>) => ({
+    id: d.id as string,
+    type: d.type as string,
+    title: d.title as string,
+    principal: d.principal as number,
+    currentBalance: d.current_balance as number,
+    interestRate: d.interest_rate as number,
+    monthlyPayment: d.monthly_payment as number | undefined,
+  }));
 
   return {
     family: (familyResult.data || []) as FamilyMember[],
     housing,
-    financial,
-    debt: [], // TODO: 구현
+    savings,
+    investment,
+    debt,
     income: [], // TODO: 구현
     pension: [], // TODO: 구현
     expense: [], // TODO: 구현
@@ -208,6 +285,11 @@ export async function saveHousingData(
     realEstate.loan_repayment_type = data.loanRepaymentType || "원리금균등";
     realEstate.loan_start_year = currentYear;
     realEstate.loan_start_month = currentMonth;
+    // 거치식 - 거치 종료 시점
+    if (data.loanRepaymentType === "거치식") {
+      realEstate.grace_end_year = data.graceEndYear || currentYear + 3;
+      realEstate.grace_end_month = data.graceEndMonth || 12;
+    }
   }
 
   // 부동산 삽입
@@ -219,9 +301,9 @@ export async function saveHousingData(
 }
 
 /**
- * 금융 자산 데이터 저장
+ * 저축 계좌 데이터 저장
  */
-export async function saveFinancialData(
+export async function saveSavingsData(
   userId: string,
   items: FinancialAssetItem[]
 ): Promise<void> {
@@ -235,14 +317,17 @@ export async function saveFinancialData(
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
 
-  // 기존 금융 자산 삭제 (source_type이 null인 것만 - 직접 입력한 자산)
+  // 저축 타입들
+  const savingsTypes = ["checking", "savings", "deposit"];
+
+  // 기존 저축 계좌 삭제
   await supabase
     .from("savings")
     .delete()
     .eq("simulation_id", simulation.id)
-    .is("memo", null); // memo가 null인 것만 삭제 (직접 입력)
+    .in("type", savingsTypes);
 
-  // 새 금융 자산 데이터 구성
+  // 새 저축 계좌 데이터 구성
   const savings: Array<{
     simulation_id: string;
     type: string;
@@ -251,6 +336,8 @@ export async function saveFinancialData(
     current_balance: number;
     monthly_contribution: number;
     expected_return: number | null;
+    maturity_year: number | null;
+    maturity_month: number | null;
     contribution_start_year: number;
     contribution_start_month: number;
     is_contribution_fixed_to_retirement: boolean;
@@ -263,22 +350,190 @@ export async function saveFinancialData(
       title: item.title || `${item.owner === "self" ? "본인" : "배우자"} ${item.type}`,
       owner: item.owner,
       current_balance: item.currentBalance,
-      monthly_contribution: item.monthlyContribution || 0,
-      expected_return: item.category === "investment" ? (item.expectedReturn || 7) : null,
+      monthly_contribution: item.monthlyDeposit || 0,
+      expected_return: item.expectedReturn || null, // 적금/정기예금 금리
+      maturity_year: item.maturityYear || null,
+      maturity_month: item.maturityMonth || null,
       contribution_start_year: currentYear,
       contribution_start_month: currentMonth,
       is_contribution_fixed_to_retirement: true,
     });
   }
 
-  // 금융 자산 삽입
+  // 저축 계좌 삽입
   if (savings.length > 0) {
     const { error } = await supabase.from("savings").insert(savings);
     if (error) throw error;
   }
 
   // 완료 상태 업데이트
-  await markTaskCompleted(userId, "financial");
+  await markTaskCompleted(userId, "savings");
+}
+
+/**
+ * 투자 계좌 데이터 저장
+ */
+export async function saveInvestmentData(
+  userId: string,
+  data: InvestmentAccountData
+): Promise<void> {
+  const supabase = createClient();
+
+  // 시뮬레이션 ID 가져오기
+  const simulation = await simulationService.getDefault();
+  if (!simulation) {
+    throw new Error("시뮬레이션을 찾을 수 없습니다.");
+  }
+
+  // 기존 투자 계좌 삭제 (savings 테이블)
+  // 1. 증권 계좌 삭제 (type='other', title='증권 계좌')
+  await supabase
+    .from("savings")
+    .delete()
+    .eq("simulation_id", simulation.id)
+    .eq("type", "other")
+    .eq("title", "증권 계좌");
+
+  // 2. 코인 거래소 삭제
+  await supabase
+    .from("savings")
+    .delete()
+    .eq("simulation_id", simulation.id)
+    .eq("type", "crypto");
+
+  // 기존 금 현물 삭제 (physical_assets 테이블)
+  await supabase
+    .from("physical_assets")
+    .delete()
+    .eq("simulation_id", simulation.id)
+    .eq("type", "precious_metal")
+    .eq("title", "금 현물");
+
+  // 새 투자 데이터 저장
+  const savingsToInsert: Array<{
+    simulation_id: string;
+    type: string;
+    title: string;
+    owner: string;
+    current_balance: number;
+    expected_return: number | null;
+    memo: string | null;
+  }> = [];
+
+  // 1. 증권 계좌 (type: 'other'로 저장, title로 구분)
+  if (data.securities && data.securities.balance > 0) {
+    savingsToInsert.push({
+      simulation_id: simulation.id,
+      type: "other",
+      title: "증권 계좌",
+      owner: "self",
+      current_balance: data.securities.balance,
+      expected_return: 7, // 기본 수익률
+      memo: data.securities.investmentTypes.length > 0
+        ? JSON.stringify({ investmentTypes: data.securities.investmentTypes })
+        : null,
+    });
+  }
+
+  // 2. 코인 거래소
+  if (data.crypto && data.crypto.balance > 0) {
+    savingsToInsert.push({
+      simulation_id: simulation.id,
+      type: "crypto",
+      title: "코인 거래소",
+      owner: "self",
+      current_balance: data.crypto.balance,
+      expected_return: 10, // 코인 기본 수익률 (높은 변동성)
+      memo: null,
+    });
+  }
+
+  // savings 테이블에 삽입
+  if (savingsToInsert.length > 0) {
+    const { error } = await supabase.from("savings").insert(savingsToInsert);
+    if (error) throw error;
+  }
+
+  // 3. 금 현물 (physical_assets 테이블)
+  if (data.gold && data.gold.balance > 0) {
+    const { error } = await supabase.from("physical_assets").insert({
+      simulation_id: simulation.id,
+      type: "precious_metal",
+      title: "금 현물",
+      owner: "self",
+      current_value: data.gold.balance,
+      annual_rate: 3, // 금 기본 상승률
+    });
+    if (error) throw error;
+  }
+
+  // 완료 상태 업데이트
+  await markTaskCompleted(userId, "investment");
+}
+
+/**
+ * 부채 데이터 저장
+ */
+export async function saveDebtData(
+  userId: string,
+  items: DebtItem[]
+): Promise<void> {
+  const supabase = createClient();
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+
+  // 시뮬레이션 ID 가져오기
+  const simulation = await simulationService.getDefault();
+  if (!simulation) {
+    throw new Error("시뮬레이션을 찾을 수 없습니다.");
+  }
+
+  // 기존 부채 삭제 (source_type이 null인 것만 - 직접 입력한 부채)
+  await supabase
+    .from("debts")
+    .delete()
+    .eq("simulation_id", simulation.id)
+    .is("source_type", null);
+
+  // 새 부채 데이터 구성
+  const debts: Array<{
+    simulation_id: string;
+    type: string;
+    title: string;
+    principal: number;
+    current_balance: number;
+    interest_rate: number;
+    repayment_type: string;
+    maturity_year: number;
+    maturity_month: number;
+    start_year: number;
+    start_month: number;
+  }> = [];
+
+  for (const item of items) {
+    debts.push({
+      simulation_id: simulation.id,
+      type: item.type,
+      title: item.title,
+      principal: item.principal,
+      current_balance: item.currentBalance || item.principal,
+      interest_rate: item.interestRate,
+      repayment_type: "원리금균등",
+      maturity_year: currentYear + 5,
+      maturity_month: 12,
+      start_year: currentYear,
+      start_month: currentMonth,
+    });
+  }
+
+  // 부채 삽입
+  if (debts.length > 0) {
+    const { error } = await supabase.from("debts").insert(debts);
+    if (error) throw error;
+  }
+
+  // 완료 상태 업데이트
+  await markTaskCompleted(userId, "debt");
 }
 
 /**
@@ -385,6 +640,208 @@ export async function saveIncomeData(
 
   // 완료 상태 업데이트
   await markTaskCompleted(userId, "income");
+}
+
+/**
+ * 연금 데이터 저장
+ */
+export async function savePensionData(
+  userId: string,
+  data: PensionFormData
+): Promise<void> {
+  const supabase = createClient();
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+
+  // 시뮬레이션 ID 가져오기
+  const simulation = await simulationService.getDefault();
+  if (!simulation) {
+    throw new Error("시뮬레이션을 찾을 수 없습니다.");
+  }
+
+  // 기존 연금 삭제
+  await supabase
+    .from("pensions")
+    .delete()
+    .eq("simulation_id", simulation.id);
+
+  // 새 연금 데이터 구성
+  const pensions: Array<{
+    simulation_id: string;
+    type: string;
+    owner: string;
+    expected_monthly_amount?: number;
+    current_balance?: number;
+    monthly_contribution?: number;
+    contribution_start_year?: number;
+    contribution_start_month?: number;
+  }> = [];
+
+  // 국민연금
+  if (data.hasNationalPension) {
+    if (data.selfNationalPensionExpected > 0) {
+      pensions.push({
+        simulation_id: simulation.id,
+        type: "national",
+        owner: "self",
+        expected_monthly_amount: data.selfNationalPensionExpected,
+      });
+    }
+    if (data.spouseNationalPensionExpected > 0) {
+      pensions.push({
+        simulation_id: simulation.id,
+        type: "national",
+        owner: "spouse",
+        expected_monthly_amount: data.spouseNationalPensionExpected,
+      });
+    }
+  }
+
+  // 퇴직연금
+  if (data.hasRetirementPension) {
+    if (data.selfRetirementBalance > 0) {
+      pensions.push({
+        simulation_id: simulation.id,
+        type: "retirement",
+        owner: "self",
+        current_balance: data.selfRetirementBalance,
+      });
+    }
+    if (data.spouseRetirementBalance > 0) {
+      pensions.push({
+        simulation_id: simulation.id,
+        type: "retirement",
+        owner: "spouse",
+        current_balance: data.spouseRetirementBalance,
+      });
+    }
+  }
+
+  // 개인연금
+  if (data.hasPersonalPension) {
+    if (data.selfPersonalBalance > 0 || data.selfPersonalMonthly > 0) {
+      pensions.push({
+        simulation_id: simulation.id,
+        type: "personal",
+        owner: "self",
+        current_balance: data.selfPersonalBalance || 0,
+        monthly_contribution: data.selfPersonalMonthly || 0,
+        contribution_start_year: currentYear,
+        contribution_start_month: currentMonth,
+      });
+    }
+    if (data.spousePersonalBalance > 0 || data.spousePersonalMonthly > 0) {
+      pensions.push({
+        simulation_id: simulation.id,
+        type: "personal",
+        owner: "spouse",
+        current_balance: data.spousePersonalBalance || 0,
+        monthly_contribution: data.spousePersonalMonthly || 0,
+        contribution_start_year: currentYear,
+        contribution_start_month: currentMonth,
+      });
+    }
+  }
+
+  // 연금 삽입
+  if (pensions.length > 0) {
+    const { error } = await supabase.from("pensions").insert(pensions);
+    if (error) throw error;
+  }
+
+  // 완료 상태 업데이트
+  await markTaskCompleted(userId, "pension");
+}
+
+/**
+ * 지출 데이터 저장
+ */
+export async function saveExpenseData(
+  userId: string,
+  data: ExpenseFormData
+): Promise<void> {
+  const supabase = createClient();
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+
+  // 시뮬레이션 ID 가져오기
+  const simulation = await simulationService.getDefault();
+  if (!simulation) {
+    throw new Error("시뮬레이션을 찾을 수 없습니다.");
+  }
+
+  // 기존 지출 삭제 (source_type이 null인 것만 - 직접 입력한 지출)
+  await supabase
+    .from("expenses")
+    .delete()
+    .eq("simulation_id", simulation.id)
+    .is("source_type", null);
+
+  // 새 지출 데이터 구성
+  const expenses: Array<{
+    simulation_id: string;
+    type: string;
+    title: string;
+    amount: number;
+    frequency: string;
+    start_year: number;
+    start_month: number;
+    growth_rate: number;
+    rate_category: string;
+  }> = [];
+
+  // 기본 생활비
+  if (data.livingExpense > 0) {
+    expenses.push({
+      simulation_id: simulation.id,
+      type: "living",
+      title: "기본 생활비",
+      amount: data.livingExpense,
+      frequency: "monthly",
+      start_year: currentYear,
+      start_month: currentMonth,
+      growth_rate: 3.0,
+      rate_category: "expense",
+    });
+  }
+
+  // 추가 지출
+  if (data.hasAdditionalExpense) {
+    for (const expense of data.additionalExpenses) {
+      const typeLabels: Record<string, string> = {
+        food: "식비",
+        transport: "교통비",
+        communication: "통신비",
+        insurance: "보험료",
+        medical: "의료비",
+        education: "교육비",
+        leisure: "여가/문화",
+        clothing: "의류/미용",
+        other: "기타",
+      };
+
+      expenses.push({
+        simulation_id: simulation.id,
+        type: expense.type,
+        title: expense.title || typeLabels[expense.type] || expense.type,
+        amount: expense.amount,
+        frequency: expense.frequency,
+        start_year: currentYear,
+        start_month: currentMonth,
+        growth_rate: 3.0,
+        rate_category: "expense",
+      });
+    }
+  }
+
+  // 지출 삽입
+  if (expenses.length > 0) {
+    const { error } = await supabase.from("expenses").insert(expenses);
+    if (error) throw error;
+  }
+
+  // 완료 상태 업데이트
+  await markTaskCompleted(userId, "expense");
 }
 
 /**

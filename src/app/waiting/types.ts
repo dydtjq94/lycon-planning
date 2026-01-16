@@ -9,7 +9,7 @@ export interface FamilyMember {
 
 // 거주 부동산
 export interface HousingData {
-  housingType: "자가" | "전세" | "월세";
+  housingType: "자가" | "전세" | "월세" | "무상";
   // 자가
   currentValue?: number; // 시세 (만원)
   // 전세/월세
@@ -25,10 +25,13 @@ export interface HousingData {
   loanRateType?: "fixed" | "floating"; // 고정/변동
   loanMaturityYear?: number;
   loanMaturityMonth?: number;
-  loanRepaymentType?: string; // 상환방식
+  loanRepaymentType?: string; // 상환방식 (원리금균등, 원금균등, 거치식, 만기일시)
+  // 거치식 - 거치 종료 시점
+  graceEndYear?: number;
+  graceEndMonth?: number;
 }
 
-// 금융 자산
+// 금융 자산 - 저축 계좌
 export interface FinancialAssetItem {
   id?: string;
   category: "savings" | "investment"; // 저축 계좌 / 투자 계좌
@@ -36,8 +39,27 @@ export interface FinancialAssetItem {
   title: string;
   owner: "self" | "spouse";
   currentBalance: number; // 잔액 (만원)
-  monthlyContribution?: number; // 월 납입금 (만원)
-  expectedReturn?: number; // 예상 수익률 (%)
+  monthlyDeposit?: number; // 월 납입금 - 적금 (만원)
+  maturityYear?: number; // 만기 년도
+  maturityMonth?: number; // 만기 월 (1-12)
+  expectedReturn?: number; // 예상 수익률/금리 (%)
+}
+
+// 투자 계좌 데이터
+export interface InvestmentAccountData {
+  // 증권 계좌 (선택)
+  securities?: {
+    balance: number; // 평가금액 (만원)
+    investmentTypes: string[]; // 투자 유형 (domestic_stock, foreign_stock, domestic_etf, foreign_etf, fund, bond)
+  };
+  // 코인 거래소 (선택)
+  crypto?: {
+    balance: number;
+  };
+  // 금 현물 (선택)
+  gold?: {
+    balance: number;
+  };
 }
 
 export interface IncomeItem {
@@ -83,7 +105,8 @@ export interface PensionItem {
 export interface PrepCompleted {
   family: boolean;
   housing: boolean;
-  financial: boolean;
+  savings: boolean;      // 저축 계좌
+  investment: boolean;   // 투자 계좌
   debt: boolean;
   income: boolean;
   pension: boolean;
@@ -94,7 +117,8 @@ export interface PrepCompleted {
 export interface PrepData {
   family: FamilyMember[];
   housing: HousingData | null;
-  financial: FinancialAssetItem[];
+  savings: FinancialAssetItem[];           // 저축 계좌
+  investment: InvestmentAccountData | null; // 투자 계좌
   debt: DebtItem[];
   income: IncomeItem[];
   pension: PensionItem[];

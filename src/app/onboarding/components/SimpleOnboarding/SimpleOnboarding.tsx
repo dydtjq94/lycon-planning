@@ -974,7 +974,7 @@ export function SimpleOnboarding({
   // 1. 라이콘 소개
   const renderWelcome = () => (
     <div className={styles.stepContent}>
-      <div className={styles.welcomeBadge}>Lycon Finance Group</div>
+      <div className={styles.welcomeBadge}>Lycon | Retirement</div>
       <h1 className={styles.titleLarge}>
         은퇴 준비,
         <br />
@@ -998,7 +998,7 @@ export function SimpleOnboarding({
   // 2. 라이콘 소개
   const renderMission = () => (
     <div className={styles.stepContent}>
-      <div className={styles.welcomeBadge}>Lycon Finance Group</div>
+      <div className={styles.welcomeBadge}>Lycon | Retirement</div>
       <h1 className={styles.titleLarge}>
         전문가의 자산 관리,
         <br />더 이상 특권이 아닙니다
@@ -1026,7 +1026,7 @@ export function SimpleOnboarding({
   // 3. 왜 은퇴 진단이 필요한가
   const renderProblem = () => (
     <div className={styles.stepContent}>
-      <div className={styles.welcomeBadge}>Lycon Finance Group</div>
+      <div className={styles.welcomeBadge}>Lycon | Retirement</div>
       <h1 className={styles.titleLarge}>
         왜 은퇴 진단이
         <br />
@@ -1068,7 +1068,7 @@ export function SimpleOnboarding({
   // 4. 문진표 작성 안내
   const renderReady = () => (
     <div className={styles.stepContent}>
-      <div className={styles.welcomeBadge}>Lycon Finance Group</div>
+      <div className={styles.welcomeBadge}>Lycon | Retirement</div>
       <h1 className={styles.titleLarge}>
         먼저 간단한 문진표를
         <br />
@@ -1496,7 +1496,7 @@ export function SimpleOnboarding({
         <div className={styles.programMeta}>
           <div className={styles.metaItem}>
             <span className={styles.metaLabel}>진행방식</span>
-            <span className={styles.metaValue}>전화 또는 대면</span>
+            <span className={styles.metaValue}>온라인 또는 대면</span>
           </div>
           <div className={styles.metaItem}>
             <span className={styles.metaLabel}>소요시간</span>

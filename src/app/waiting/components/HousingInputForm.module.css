@@ -103,29 +103,44 @@
   margin: 0 0 16px 0;
 }
 
+/* 금액 포맷 표시 */
+.formattedAmount {
+  font-size: 13px;
+  color: #007AFF;
+  margin: 6px 0 0 0;
+}
+
 /* 거주 형태 선택 */
 .typeOptions {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .typeBtn {
-  flex: 1;
-  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
   background: none;
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: #6b7280;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .typeBtn.active {
   border-color: #1d1d1f;
-  background: #1d1d1f;
-  color: #ffffff;
+  color: #1d1d1f;
+}
+
+.typeHint {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9ca3af;
 }
 
 /* 입력 행 */

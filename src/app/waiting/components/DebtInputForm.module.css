@@ -84,13 +84,6 @@
   margin-bottom: 32px;
 }
 
-.categoryLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: #9ca3af;
-  margin-bottom: 6px;
-}
-
 .sectionHeader {
   display: flex;
   align-items: center;
@@ -108,6 +101,45 @@
   font-size: 13px;
   color: #9ca3af;
   margin: 0 0 16px 0;
+}
+
+/* 연동 배지 */
+.linkedBadge {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* 연동된 항목 (읽기 전용) */
+.linkedItem {
+  padding: 14px;
+  background: #f9fafb;
+  border-radius: 10px;
+}
+
+.linkedRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.linkedRow:last-child {
+  margin-bottom: 0;
+}
+
+.linkedLabel {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.linkedValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
 }
 
 /* 금액 포맷 표시 */
@@ -148,12 +180,12 @@
   margin-bottom: 16px;
 }
 
-.assetItem {
+.debtItem {
   padding-bottom: 16px;
   border-bottom: 1px solid #f3f4f6;
 }
 
-.assetItem:last-of-type {
+.debtItem:last-of-type {
   border-bottom: none;
   padding-bottom: 0;
 }
@@ -196,34 +228,38 @@
   padding-top: 10px;
 }
 
-.itemTop {
+/* 추가 버튼들 */
+.addButtons {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
-.itemRow {
+.addChip {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.itemRow:last-child {
-  margin-bottom: 0;
-}
-
-.itemLabel {
+  gap: 4px;
+  padding: 8px 14px;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
   color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
 }
 
-.itemTypeLabel {
-  font-size: 13px;
-  font-weight: 600;
+.addChip:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
   color: #1d1d1f;
+}
+
+.emptyHint {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0;
 }
 
 .inputGroup {
@@ -294,7 +330,7 @@
   margin: 0;
 }
 
-/* 수익률 입력 */
+/* 금리 입력 */
 .rateInput {
   width: 70px;
   padding: 10px 12px;
@@ -321,10 +357,56 @@
   margin: 0;
 }
 
+/* 년도 입력 */
+.yearInput {
+  width: 80px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1d1d1f;
+  text-align: right;
+}
+
+.yearInput:focus {
+  outline: none;
+  border-color: #1d1d1f;
+}
+
+.yearInput::-webkit-outer-spin-button,
+.yearInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .unit {
   font-size: 14px;
   color: #6b7280;
   flex-shrink: 0;
+}
+
+/* 상환 방식 선택 */
+.repaymentOptions {
+  display: flex;
+  gap: 6px;
+}
+
+.repaymentBtn {
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.repaymentBtn.active {
+  border-color: #1d1d1f;
+  color: #1d1d1f;
 }
 
 /* 삭제 버튼 */
@@ -346,35 +428,7 @@
   color: #9ca3af;
 }
 
-/* 추가 버튼들 */
-.addButtons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.addChip {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 14px;
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.addChip:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-  color: #1d1d1f;
-}
-
-/* 추가 버튼 (기존) */
+/* 추가 버튼 */
 .addBtn {
   display: flex;
   align-items: center;
@@ -398,7 +452,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  background: #f0f9ff;
+  background: #fef2f2;
   border-radius: 10px;
   margin-top: 8px;
 }
@@ -412,7 +466,7 @@
 .totalValue {
   font-size: 18px;
   font-weight: 700;
-  color: #007AFF;
+  color: #ef4444;
 }
 
 /* 하단 영역 */

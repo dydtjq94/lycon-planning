@@ -84,15 +84,21 @@
 }
 
 .logoText {
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 700;
   color: #1a1a1a;
   letter-spacing: -0.03em;
 }
 
+@media (min-width: 480px) {
+  .logoText {
+    font-size: 18px;
+  }
+}
+
 @media (min-width: 768px) {
   .logoText {
-    font-size: 22px;
+    font-size: 20px;
   }
 }
 
@@ -125,7 +131,13 @@
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
+}
+
+@media (min-width: 480px) {
+  .headerActions {
+    gap: 16px;
+  }
 }
 
 .btnLogin {
@@ -171,16 +183,26 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 24px;
-  font-size: 15px;
+  padding: 12px 18px;
+  font-size: 14px;
   font-weight: 500;
   border-radius: 9999px;
   transition: all 0.25s ease;
-  min-height: 48px;
+  min-height: 44px;
   letter-spacing: -0.01em;
   text-decoration: none;
   border: none;
   cursor: pointer;
+}
+
+@media (min-width: 480px) {
+  .btnPrimary,
+  .btnSecondary,
+  .btnOutline {
+    padding: 14px 24px;
+    font-size: 15px;
+    min-height: 48px;
+  }
 }
 
 @media (min-width: 768px) {
@@ -260,8 +282,8 @@
    Hero Section
    ============================================= */
 .hero {
-  min-height: 100vh;
-  padding-top: 64px;
+  min-height: auto;
+  padding: 100px 0 0px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -272,7 +294,9 @@
 
 @media (min-width: 768px) {
   .hero {
+    min-height: 100vh;
     padding-top: 72px;
+    padding-bottom: 0;
   }
 }
 
@@ -369,8 +393,14 @@
 }
 
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .heroSubtitle {
@@ -413,6 +443,557 @@
     width: auto;
     max-width: none;
   }
+}
+
+/* =============================================
+   Story Sections (스토리라인)
+   ============================================= */
+.storySection {
+  padding: 64px 0;
+  background: #ffffff;
+}
+
+.storySectionGray {
+  padding: 64px 0;
+  background: #fafafa;
+}
+
+@media (min-width: 480px) {
+  .storySection,
+  .storySectionGray {
+    padding: 80px 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .storySection,
+  .storySectionGray {
+    padding: 120px 0;
+  }
+}
+
+.storyContainer {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.storyTitle {
+  font-size: clamp(28px, 5vw, 44px);
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.3;
+  margin-bottom: 40px;
+  letter-spacing: -0.03em;
+}
+
+.storyQuestions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.storyQuestions p {
+  font-size: clamp(18px, 3vw, 24px);
+  color: #525252;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.storyDesc {
+  font-size: clamp(17px, 2.5vw, 20px);
+  color: #525252;
+  line-height: 1.8;
+}
+
+/* Story Highlight Section (강조 - 해결책) */
+.storySectionHighlight {
+  padding: 64px 0;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+@media (min-width: 480px) {
+  .storySectionHighlight {
+    padding: 80px 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .storySectionHighlight {
+    padding: 120px 0;
+  }
+}
+
+.storyTitleLight {
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+  margin-bottom: 32px;
+  letter-spacing: -0.03em;
+}
+
+.storyDescLight {
+  font-size: clamp(17px, 2.5vw, 22px);
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.8;
+}
+
+/* Process Section (과정) */
+.processSection {
+  padding: 80px 0;
+  background: #fafafa;
+}
+
+@media (min-width: 768px) {
+  .processSection {
+    padding: 120px 0;
+  }
+}
+
+.processGrid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .processGrid {
+    flex-direction: row;
+    justify-content: center;
+    gap: 32px;
+  }
+}
+
+.processStep {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 40px 32px;
+  text-align: center;
+  flex: 1;
+  max-width: 280px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.25s ease;
+}
+
+.processStep:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+}
+
+.processNumber {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 auto 24px;
+}
+
+.processTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+}
+
+.processDesc {
+  font-size: 15px;
+  color: #525252;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.processArrow {
+  font-size: 24px;
+  color: #d4d4d4;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .processArrow {
+    display: block;
+  }
+}
+
+/* =============================================
+   Complexity Section (어려운 용어들)
+   ============================================= */
+.complexitySection {
+  padding: 56px 0;
+  background: #fafafa;
+}
+
+@media (min-width: 480px) {
+  .complexitySection {
+    padding: 72px 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .complexitySection {
+    padding: 100px 0;
+  }
+}
+
+.complexityContainer {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.complexityTitle {
+  font-size: clamp(22px, 4vw, 36px);
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.4;
+  margin-bottom: 32px;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 768px) {
+  .complexityTitle {
+    margin-bottom: 48px;
+  }
+}
+
+.complexityTerms {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.complexityTerm {
+  display: inline-block;
+  padding: 12px 20px;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 9999px;
+  font-size: 14px;
+  color: #525252;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+@media (min-width: 768px) {
+  .complexityTerm {
+    padding: 14px 24px;
+    font-size: 15px;
+  }
+}
+
+.complexityTerm:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.complexityMessage {
+  font-size: clamp(17px, 2.5vw, 20px);
+  color: #525252;
+  line-height: 1.8;
+}
+
+.complexityMessage strong {
+  color: #1a1a1a;
+}
+
+/* =============================================
+   Checkup Program Section (재무검진)
+   ============================================= */
+.checkupSection {
+  padding: 56px 0;
+  background: #ffffff;
+}
+
+@media (min-width: 480px) {
+  .checkupSection {
+    padding: 72px 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .checkupSection {
+    padding: 100px 0;
+  }
+}
+
+.checkupContainer {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.checkupBadge {
+  display: inline-block;
+  padding: 8px 16px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 9999px;
+  margin-bottom: 24px;
+}
+
+.checkupTitle {
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  letter-spacing: -0.03em;
+}
+
+.checkupSubtitle {
+  font-size: 16px;
+  color: #525252;
+  margin: 0 0 40px;
+}
+
+.checkupTags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.checkupTags span {
+  padding: 10px 20px;
+  background: #f5f5f5;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.checkupInfo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  font-size: 15px;
+  color: #525252;
+}
+
+.checkupDot {
+  width: 4px;
+  height: 4px;
+  background: #d4d4d4;
+  border-radius: 50%;
+}
+
+.priceOriginal {
+  text-decoration: line-through;
+  color: #a3a3a3;
+  font-weight: 400;
+}
+
+.priceFree {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.checkupNote {
+  font-size: 14px;
+  color: #737373;
+  margin: 0 0 32px;
+  line-height: 1.6;
+}
+
+.checkupCta {
+  display: inline-flex;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.checkupCta:hover {
+  background: #1d4ed8;
+}
+
+/* =============================================
+   Service Section (새로운 심플 버전)
+   ============================================= */
+.serviceSection {
+  padding: 80px 0;
+  background: #fafafa;
+}
+
+@media (min-width: 768px) {
+  .serviceSection {
+    padding: 120px 0;
+  }
+}
+
+.serviceGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .serviceGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+  }
+}
+
+.serviceCard {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 40px;
+  text-align: center;
+  border: 1px solid #f0f0f0;
+  transition: all 0.25s ease;
+}
+
+@media (min-width: 768px) {
+  .serviceCard {
+    padding: 56px 48px;
+  }
+}
+
+.serviceCard:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+}
+
+.serviceIcon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 32px;
+  color: #2563eb;
+}
+
+.serviceIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.serviceTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 768px) {
+  .serviceTitle {
+    font-size: 28px;
+  }
+}
+
+.serviceDesc {
+  font-size: 16px;
+  color: #525252;
+  line-height: 1.7;
+  margin-bottom: 32px;
+}
+
+@media (min-width: 768px) {
+  .serviceDesc {
+    font-size: 17px;
+  }
+}
+
+.servicePoints {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.servicePoints li {
+  font-size: 15px;
+  color: #525252;
+  padding: 12px 0;
+  padding-left: 28px;
+  position: relative;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.servicePoints li:last-child {
+  border-bottom: none;
+}
+
+.servicePoints li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background: #2563eb;
+  border-radius: 50%;
+}
+
+/* =============================================
+   CTA Section (새로운 심플 버전)
+   ============================================= */
+.ctaSection {
+  padding: 56px 0;
+  background: linear-gradient(135deg, #1a1a1a 0%, #333333 100%);
+  text-align: center;
+}
+
+@media (min-width: 480px) {
+  .ctaSection {
+    padding: 72px 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .ctaSection {
+    padding: 100px 0;
+  }
+}
+
+.ctaTitle {
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 24px;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+}
+
+.ctaDesc {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 32px;
+  line-height: 1.7;
+}
+
+@media (min-width: 480px) {
+  .ctaDesc {
+    font-size: 16px;
+    margin-bottom: 40px;
+  }
+}
+
+.ctaNote {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 24px;
+  margin-bottom: 0;
 }
 
 /* =============================================
@@ -887,7 +1468,7 @@
 }
 
 .stepPoints li::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0.6em;
@@ -1561,8 +2142,12 @@
   color: #ffffff;
 }
 
-.statusBar25 { width: 25%; }
-.statusBar85 { width: 85%; }
+.statusBar25 {
+  width: 25%;
+}
+.statusBar85 {
+  width: 85%;
+}
 
 /* Final Result Card */
 .finalResultCard {
@@ -1711,7 +2296,7 @@
 }
 
 .finalResultSideWithout .finalResultPoints li::before {
-  content: 'x';
+  content: "x";
   position: absolute;
   left: 0;
   color: #dc2626;
@@ -1723,7 +2308,7 @@
 }
 
 .finalResultSideWith .finalResultPoints li::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   color: #16a34a;
@@ -1810,15 +2395,15 @@
 .resultDifference {
   text-align: center;
   padding: 24px;
-  background: #F3F7FF;
+  background: #f3f7ff;
   border-radius: 16px;
-  border: 1px solid #A8C4F5;
+  border: 1px solid #a8c4f5;
 }
 
 .differenceLabel {
   display: block;
   font-size: 14px;
-  color: #355CDE;
+  color: #355cde;
   margin-bottom: 8px;
 }
 
@@ -1826,7 +2411,7 @@
   display: block;
   font-size: 24px;
   font-weight: 800;
-  color: #355CDE;
+  color: #355cde;
 }
 
 @media (max-width: 768px) {
@@ -1951,10 +2536,16 @@
   line-height: 1.3;
 }
 
-.caseCardGray .caseCardTitle { color: #424242; }
-.caseCardBlueLight .caseCardTitle { color: #1e40af; }
+.caseCardGray .caseCardTitle {
+  color: #424242;
+}
+.caseCardBlueLight .caseCardTitle {
+  color: #1e40af;
+}
 .caseCardBlueMedium .caseCardTitle,
-.caseCardBlueDark .caseCardTitle { color: #ffffff; }
+.caseCardBlueDark .caseCardTitle {
+  color: #ffffff;
+}
 
 .caseCardDesc {
   font-size: 14px;
@@ -1963,10 +2554,18 @@
   flex-grow: 1;
 }
 
-.caseCardGray .caseCardDesc { color: #616161; }
-.caseCardBlueLight .caseCardDesc { color: #3b82f6; }
-.caseCardBlueMedium .caseCardDesc { color: rgba(255, 255, 255, 0.85); }
-.caseCardBlueDark .caseCardDesc { color: rgba(255, 255, 255, 0.8); }
+.caseCardGray .caseCardDesc {
+  color: #616161;
+}
+.caseCardBlueLight .caseCardDesc {
+  color: #3b82f6;
+}
+.caseCardBlueMedium .caseCardDesc {
+  color: rgba(255, 255, 255, 0.85);
+}
+.caseCardBlueDark .caseCardDesc {
+  color: rgba(255, 255, 255, 0.8);
+}
 
 .caseCardResult {
   display: flex;
@@ -1989,10 +2588,18 @@
   letter-spacing: 0.05em;
 }
 
-.caseCardGray .resultLabel { color: #757575; }
-.caseCardBlueLight .resultLabel { color: #60a5fa; }
-.caseCardBlueMedium .resultLabel { color: rgba(255, 255, 255, 0.7); }
-.caseCardBlueDark .resultLabel { color: rgba(255, 255, 255, 0.6); }
+.caseCardGray .resultLabel {
+  color: #757575;
+}
+.caseCardBlueLight .resultLabel {
+  color: #60a5fa;
+}
+.caseCardBlueMedium .resultLabel {
+  color: rgba(255, 255, 255, 0.7);
+}
+.caseCardBlueDark .resultLabel {
+  color: rgba(255, 255, 255, 0.6);
+}
 
 .resultValue {
   font-size: 24px;
@@ -2000,10 +2607,16 @@
   letter-spacing: -0.02em;
 }
 
-.caseCardGray .resultValue { color: #424242; }
-.caseCardBlueLight .resultValue { color: #1e40af; }
+.caseCardGray .resultValue {
+  color: #424242;
+}
+.caseCardBlueLight .resultValue {
+  color: #1e40af;
+}
 .caseCardBlueMedium .resultValue,
-.caseCardBlueDark .resultValue { color: #ffffff; }
+.caseCardBlueDark .resultValue {
+  color: #ffffff;
+}
 
 .btnCase {
   display: inline-flex;
@@ -2080,7 +2693,7 @@
 }
 
 .brandStory::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -2270,7 +2883,7 @@
 }
 
 .storyPoints li::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0.6em;
@@ -2282,7 +2895,11 @@
 
 .storyFinale {
   text-align: center;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(37, 99, 235, 0.05) 0%,
+    rgba(37, 99, 235, 0.1) 100%
+  );
   padding: 48px;
   border-radius: 16px;
   margin-top: 32px;
@@ -2718,7 +3335,7 @@
 }
 
 .pricingFeatures li::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 12px;

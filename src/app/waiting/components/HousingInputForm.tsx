@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import type { HousingData } from "../types";
+import { AmountInput, RateInput, ToggleGroup } from "./inputs";
 import styles from "./HousingInputForm.module.css";
 
 // 거주 형태 옵션
@@ -10,13 +11,7 @@ const HOUSING_TYPES = [
   { value: "자가", label: "자가" },
   { value: "전세", label: "전세" },
   { value: "월세", label: "월세 (반전세)" },
-] as const;
-
-// 상환 방식 옵션
-const REPAYMENT_TYPES = [
-  { value: "원리금균등", label: "원리금균등" },
-  { value: "원금균등", label: "원금균등" },
-  { value: "만기일시", label: "만기일시" },
+  { value: "무상", label: "무상 거주", hint: "부모님 집, 사택 등" },
 ] as const;
 
 interface HousingInputFormProps {
@@ -33,35 +28,26 @@ export function HousingInputForm({
   onSave,
 }: HousingInputFormProps) {
   // 거주 형태
-  const [housingType, setHousingType] = useState<"자가" | "전세" | "월세" | null>(
+  const [housingType, setHousingType] = useState<"자가" | "전세" | "월세" | "무상" | null>(
     initialData?.housingType ?? null
   );
 
   // 자가
-  const [currentValue, setCurrentValue] = useState(initialData?.currentValue ?? 0);
+  const [currentValue, setCurrentValue] = useState<number | null>(initialData?.currentValue ?? null);
 
   // 전세/월세
-  const [deposit, setDeposit] = useState(initialData?.deposit ?? 0);
-  const [monthlyRent, setMonthlyRent] = useState(initialData?.monthlyRent ?? 0);
+  const [deposit, setDeposit] = useState<number | null>(initialData?.deposit ?? null);
+  const [monthlyRent, setMonthlyRent] = useState<number | null>(initialData?.monthlyRent ?? null);
 
   // 공통
-  const [maintenanceFee, setMaintenanceFee] = useState(initialData?.maintenanceFee ?? 0);
+  const [maintenanceFee, setMaintenanceFee] = useState<number | null>(initialData?.maintenanceFee ?? null);
 
   // 대출
   const [hasLoan, setHasLoan] = useState<boolean | null>(
     initialData?.hasLoan ?? (isCompleted ? false : null)
   );
-  const [loanAmount, setLoanAmount] = useState(initialData?.loanAmount ?? 0);
-  const [loanRate, setLoanRate] = useState(initialData?.loanRate ?? 0);
-  const [loanRateType, setLoanRateType] = useState<"fixed" | "floating">(
-    initialData?.loanRateType ?? "fixed"
-  );
-  const [loanRepaymentType, setLoanRepaymentType] = useState(
-    initialData?.loanRepaymentType ?? "원리금균등"
-  );
-  const [loanMaturityYear, setLoanMaturityYear] = useState(
-    initialData?.loanMaturityYear ?? new Date().getFullYear() + 20
-  );
+  const [loanAmount, setLoanAmount] = useState<number | null>(initialData?.loanAmount ?? null);
+  const [loanRate, setLoanRate] = useState<number | null>(initialData?.loanRate ?? null);
 
   const [saving, setSaving] = useState(false);
 
@@ -71,7 +57,8 @@ export function HousingInputForm({
       alert("거주 형태를 선택해주세요.");
       return;
     }
-    if (hasLoan === null) {
+    // 무상 거주가 아닌 경우에만 대출 여부 확인
+    if (housingType !== "무상" && hasLoan === null) {
       alert("대출 여부를 선택해주세요.");
       return;
     }
@@ -80,17 +67,14 @@ export function HousingInputForm({
     try {
       const data: HousingData = {
         housingType,
-        currentValue: housingType === "자가" ? currentValue : undefined,
-        deposit: housingType !== "자가" ? deposit : undefined,
-        monthlyRent: housingType === "월세" ? monthlyRent : undefined,
-        maintenanceFee: maintenanceFee > 0 ? maintenanceFee : undefined,
-        hasLoan,
+        currentValue: housingType === "자가" ? (currentValue ?? undefined) : undefined,
+        deposit: (housingType === "전세" || housingType === "월세") ? (deposit ?? undefined) : undefined,
+        monthlyRent: housingType === "월세" ? (monthlyRent ?? undefined) : undefined,
+        maintenanceFee: maintenanceFee && maintenanceFee > 0 ? maintenanceFee : undefined,
+        hasLoan: housingType === "무상" ? false : !!hasLoan,
         loanType: hasLoan ? (housingType === "자가" ? "mortgage" : "jeonse") : undefined,
-        loanAmount: hasLoan ? loanAmount : undefined,
-        loanRate: hasLoan ? loanRate : undefined,
-        loanRateType: hasLoan ? loanRateType : undefined,
-        loanMaturityYear: hasLoan ? loanMaturityYear : undefined,
-        loanRepaymentType: hasLoan ? loanRepaymentType : undefined,
+        loanAmount: hasLoan ? (loanAmount ?? undefined) : undefined,
+        loanRate: hasLoan ? (loanRate ?? undefined) : undefined,
       };
       await onSave(data);
     } catch (error) {
@@ -101,7 +85,8 @@ export function HousingInputForm({
     }
   };
 
-  const canSave = housingType !== null && hasLoan !== null;
+  // 무상 거주는 대출이 없으므로 바로 저장 가능
+  const canSave = housingType !== null && (housingType === "무상" || hasLoan !== null);
   const loanLabel = housingType === "자가" ? "주택담보대출" : "전월세보증금대출";
 
   return (
@@ -128,11 +113,16 @@ export function HousingInputForm({
                   className={`${styles.typeBtn} ${housingType === type.value ? styles.active : ""}`}
                   onClick={() => {
                     setHousingType(type.value);
-                    // 대출 여부 초기화
-                    if (!isCompleted) setHasLoan(null);
+                    // 무상 거주는 대출 없음
+                    if (type.value === "무상") {
+                      setHasLoan(false);
+                    } else if (!isCompleted) {
+                      setHasLoan(null);
+                    }
                   }}
                 >
                   {type.label}
+                  {"hint" in type && <span className={styles.typeHint}>({type.hint})</span>}
                 </button>
               ))}
             </div>
@@ -144,17 +134,10 @@ export function HousingInputForm({
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionTitle}>현재 시세</span>
               </div>
-              <div className={styles.inputRow}>
-                <input
-                  type="number"
-                  className={styles.amountInput}
-                  placeholder="0"
-                  value={currentValue || ""}
-                  onChange={(e) => setCurrentValue(parseInt(e.target.value) || 0)}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
+              <AmountInput
+                value={currentValue}
+                onChange={(v) => setCurrentValue(v || null)}
+              />
             </section>
           )}
 
@@ -164,17 +147,10 @@ export function HousingInputForm({
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionTitle}>보증금</span>
               </div>
-              <div className={styles.inputRow}>
-                <input
-                  type="number"
-                  className={styles.amountInput}
-                  placeholder="0"
-                  value={deposit || ""}
-                  onChange={(e) => setDeposit(parseInt(e.target.value) || 0)}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
+              <AmountInput
+                value={deposit}
+                onChange={(v) => setDeposit(v || null)}
+              />
             </section>
           )}
 
@@ -184,17 +160,10 @@ export function HousingInputForm({
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionTitle}>월세</span>
               </div>
-              <div className={styles.inputRow}>
-                <input
-                  type="number"
-                  className={styles.amountInput}
-                  placeholder="0"
-                  value={monthlyRent || ""}
-                  onChange={(e) => setMonthlyRent(parseInt(e.target.value) || 0)}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
+              <AmountInput
+                value={monthlyRent}
+                onChange={(v) => setMonthlyRent(v || null)}
+              />
             </section>
           )}
 
@@ -205,119 +174,42 @@ export function HousingInputForm({
                 <span className={styles.sectionTitle}>관리비</span>
               </div>
               <p className={styles.sectionHint}>없으면 0원</p>
-              <div className={styles.inputRow}>
-                <input
-                  type="number"
-                  className={styles.amountInput}
-                  placeholder="0"
-                  value={maintenanceFee || ""}
-                  onChange={(e) => setMaintenanceFee(parseInt(e.target.value) || 0)}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
+              <AmountInput
+                value={maintenanceFee}
+                onChange={(v) => setMaintenanceFee(v || null)}
+              />
             </section>
           )}
 
-          {/* 대출 여부 */}
-          {housingType && (
+          {/* 대출 여부 (무상 거주 제외) */}
+          {housingType && housingType !== "무상" && (
             <section className={styles.section}>
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionTitle}>{loanLabel}</span>
-                <div className={styles.toggleGroup}>
-                  <button
-                    className={`${styles.toggleBtn} ${hasLoan === false ? styles.active : ""}`}
-                    onClick={() => setHasLoan(false)}
-                  >
-                    없음
-                  </button>
-                  <button
-                    className={`${styles.toggleBtn} ${hasLoan === true ? styles.active : ""}`}
-                    onClick={() => setHasLoan(true)}
-                  >
-                    있음
-                  </button>
-                </div>
+                <ToggleGroup
+                  value={hasLoan}
+                  onChange={setHasLoan}
+                />
               </div>
 
               {hasLoan && (
                 <div className={styles.loanDetails}>
                   {/* 대출 잔액 */}
                   <div className={styles.loanRow}>
-                    <span className={styles.loanLabel}>대출 잔액</span>
-                    <div className={styles.inputRow}>
-                      <input
-                        type="number"
-                        className={styles.amountInput}
-                        placeholder="0"
-                        value={loanAmount || ""}
-                        onChange={(e) => setLoanAmount(parseInt(e.target.value) || 0)}
-                        onWheel={(e) => (e.target as HTMLElement).blur()}
-                      />
-                      <span className={styles.unit}>만원</span>
-                    </div>
+                    <span className={styles.loanLabel}>남은 금액</span>
+                    <AmountInput
+                      value={loanAmount}
+                      onChange={(v) => setLoanAmount(v || null)}
+                    />
                   </div>
 
                   {/* 금리 */}
                   <div className={styles.loanRow}>
                     <span className={styles.loanLabel}>금리</span>
-                    <div className={styles.inputRow}>
-                      <input
-                        type="number"
-                        className={styles.rateInput}
-                        placeholder="0.0"
-                        value={loanRate || ""}
-                        onChange={(e) => setLoanRate(parseFloat(e.target.value) || 0)}
-                        onWheel={(e) => (e.target as HTMLElement).blur()}
-                        step="0.1"
-                      />
-                      <span className={styles.unit}>%</span>
-                      <div className={styles.rateToggle}>
-                        <button
-                          className={`${styles.rateBtn} ${loanRateType === "fixed" ? styles.active : ""}`}
-                          onClick={() => setLoanRateType("fixed")}
-                        >
-                          고정
-                        </button>
-                        <button
-                          className={`${styles.rateBtn} ${loanRateType === "floating" ? styles.active : ""}`}
-                          onClick={() => setLoanRateType("floating")}
-                        >
-                          변동
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 상환 방식 */}
-                  <div className={styles.loanRow}>
-                    <span className={styles.loanLabel}>상환 방식</span>
-                    <div className={styles.repaymentOptions}>
-                      {REPAYMENT_TYPES.map((type) => (
-                        <button
-                          key={type.value}
-                          className={`${styles.repaymentBtn} ${loanRepaymentType === type.value ? styles.active : ""}`}
-                          onClick={() => setLoanRepaymentType(type.value)}
-                        >
-                          {type.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 만기 년도 */}
-                  <div className={styles.loanRow}>
-                    <span className={styles.loanLabel}>만기</span>
-                    <div className={styles.inputRow}>
-                      <input
-                        type="number"
-                        className={styles.yearInput}
-                        value={loanMaturityYear}
-                        onChange={(e) => setLoanMaturityYear(parseInt(e.target.value) || 2045)}
-                        onWheel={(e) => (e.target as HTMLElement).blur()}
-                      />
-                      <span className={styles.unit}>년</span>
-                    </div>
+                    <RateInput
+                      value={loanRate}
+                      onChange={(v) => setLoanRate(v || null)}
+                    />
                   </div>
                 </div>
               )}

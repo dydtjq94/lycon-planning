@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Image as ImageIcon, X } from "lucide-react";
 import {
   loadChatData,
   sendMessage,
   markMessagesAsRead,
+  uploadChatImage,
   type Message,
   type Conversation,
   type Expert,
@@ -26,8 +28,11 @@ export function ChatRoom({ userId }: ChatRoomProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingSendRef = useRef(false);
   const justSentRef = useRef(false);
+  const [pendingImages, setPendingImages] = useState<{ file: File; preview: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   // 메시지 목록 맨 아래로 스크롤
   const scrollToBottom = useCallback((smooth = true) => {
@@ -115,10 +120,11 @@ export function ChatRoom({ userId }: ChatRoomProps) {
 
   // 메시지 전송 (낙관적 UI)
   const handleSend = async () => {
-    if (!conversation || !newMessage.trim() || sending) return;
+    if (!conversation || (!newMessage.trim() && pendingImages.length === 0) || sending || uploading) return;
 
     const content = newMessage.trim();
     const tempId = `temp-${Date.now()}`;
+    const imagesToUpload = [...pendingImages];
 
     // 즉시 UI에 표시 (낙관적 업데이트)
     const tempMessage: Message = {
@@ -126,26 +132,55 @@ export function ChatRoom({ userId }: ChatRoomProps) {
       conversation_id: conversation.id,
       sender_type: 'user',
       content,
+      attachments: imagesToUpload.map((img) => img.preview),
       is_read: false,
       created_at: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, tempMessage]);
     setNewMessage("");
+    setPendingImages([]);
     setTimeout(scrollToBottom, 100);
 
     // 백그라운드에서 서버 전송
     try {
-      const msg = await sendMessage(conversation.id, content);
+      setUploading(true);
+
+      // 이미지 업로드
+      const uploadedUrls: string[] = [];
+      for (const img of imagesToUpload) {
+        const url = await uploadChatImage(img.file);
+        uploadedUrls.push(url);
+      }
+
+      // 업로드된 이미지 미리 로드 (깜빡임 방지)
+      if (uploadedUrls.length > 0) {
+        await Promise.all(uploadedUrls.map(url => {
+          return new Promise<void>((resolve) => {
+            const img = new window.Image();
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+            img.src = url;
+          });
+        }));
+      }
+
+      const msg = await sendMessage(conversation.id, content, uploadedUrls.length > 0 ? uploadedUrls : undefined);
       // 임시 메시지를 실제 메시지로 교체
       setMessages((prev) =>
         prev.map((m) => m.id === tempId ? msg : m)
       );
+
+      // preview URL 해제
+      imagesToUpload.forEach((img) => URL.revokeObjectURL(img.preview));
     } catch (error) {
       console.error("메시지 전송 오류:", error);
       // 실패시 임시 메시지 제거하고 입력창에 복원
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setNewMessage(content);
+      setPendingImages(imagesToUpload);
+    } finally {
+      setUploading(false);
     }
 
     inputRef.current?.focus();
@@ -177,6 +212,35 @@ export function ChatRoom({ userId }: ChatRoomProps) {
       justSentRef.current = true;
       handleSend();
     }
+  };
+
+  // 이미지 선택 핸들러
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newImages: { file: File; preview: string }[] = [];
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith("image/")) {
+        const preview = URL.createObjectURL(file);
+        newImages.push({ file, preview });
+      }
+    });
+
+    setPendingImages((prev) => [...prev, ...newImages]);
+    // input 초기화 (같은 파일 재선택 가능하도록)
+    e.target.value = "";
+  };
+
+  // 이미지 제거
+  const removeImage = (index: number) => {
+    setPendingImages((prev) => {
+      const removed = prev[index];
+      if (removed) {
+        URL.revokeObjectURL(removed.preview);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   // 시간 포맷
@@ -323,19 +387,64 @@ export function ChatRoom({ userId }: ChatRoomProps) {
                     {msg.sender_type === "expert" && firstInGroup && (
                       <span className={styles.senderName}>{expert.name}</span>
                     )}
-                    <div
-                      className={`${styles.messageBubble} ${
-                        msg.sender_type === "user"
-                          ? styles.userBubble
-                          : styles.expertBubble
-                      }`}
-                    >
-                      <p className={styles.messageText}>{msg.content}</p>
-                    </div>
-                    {lastInGroup && (
-                      <span className={styles.messageTime}>
-                        {formatTime(msg.created_at)}
-                      </span>
+                    {/* 이미지는 버블 밖에 표시 */}
+                    {msg.attachments && msg.attachments.length > 0 && (
+                      <div className={`${styles.imageWithTime} ${
+                        msg.sender_type === "user" ? styles.imageWithTimeUser : ""
+                      } ${msg.content ? styles.imageWithContent : ""}`}>
+                        {lastInGroup && !msg.content && msg.sender_type === "user" && (
+                          <span className={styles.messageTime}>
+                            {formatTime(msg.created_at)}
+                          </span>
+                        )}
+                        <div className={styles.messageImages}>
+                          {msg.attachments.map((url, imgIdx) => (
+                            <img
+                              key={imgIdx}
+                              src={url}
+                              alt="첨부 이미지"
+                              className={styles.messageImage}
+                            />
+                          ))}
+                        </div>
+                        {lastInGroup && !msg.content && msg.sender_type === "expert" && (
+                          <span className={styles.messageTime}>
+                            {formatTime(msg.created_at)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {/* 텍스트는 버블 안에 표시 (마지막 메시지는 시간과 함께) */}
+                    {msg.content && (
+                      <div className={`${styles.bubbleWithTime} ${
+                        msg.sender_type === "user" ? styles.bubbleWithTimeUser : ""
+                      }`}>
+                        {lastInGroup && msg.sender_type === "user" && (
+                          <span className={styles.messageTime}>
+                            {formatTime(msg.created_at)}
+                          </span>
+                        )}
+                        <div
+                          className={`${styles.messageBubble} ${
+                            msg.sender_type === "user"
+                              ? styles.userBubble
+                              : styles.expertBubble
+                          } ${
+                            firstInGroup
+                              ? msg.sender_type === "user"
+                                ? styles.userBubbleTail
+                                : styles.expertBubbleTail
+                              : ""
+                          }`}
+                        >
+                          <p className={styles.messageText}>{msg.content}</p>
+                        </div>
+                        {lastInGroup && msg.sender_type === "expert" && (
+                          <span className={styles.messageTime}>
+                            {formatTime(msg.created_at)}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -349,6 +458,23 @@ export function ChatRoom({ userId }: ChatRoomProps) {
       {/* 메시지 입력 */}
       <div className={styles.inputArea}>
         <div className={styles.inputWrapper}>
+          {/* 이미지 프리뷰 */}
+          {pendingImages.length > 0 && (
+            <div className={styles.imagePreviewRow}>
+              {pendingImages.map((img, idx) => (
+                <div key={idx} className={styles.imagePreviewItem}>
+                  <img src={img.preview} alt="첨부 이미지" className={styles.previewImage} />
+                  <button
+                    type="button"
+                    className={styles.removeImageButton}
+                    onClick={() => removeImage(idx)}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <textarea
             ref={inputRef}
             className={styles.input}
@@ -357,15 +483,31 @@ export function ChatRoom({ userId }: ChatRoomProps) {
             onKeyDown={handleKeyDown}
             onCompositionEnd={handleCompositionEnd}
             placeholder="메시지 입력"
-            disabled={sending}
+            disabled={sending || uploading}
           />
           <div className={styles.sendButtonRow}>
             <button
+              type="button"
+              className={styles.attachButton}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              <ImageIcon size={20} />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className={styles.hiddenInput}
+              onChange={handleImageSelect}
+            />
+            <button
               className={styles.sendButton}
               onClick={handleSend}
-              disabled={!newMessage.trim() || sending}
+              disabled={(!newMessage.trim() && pendingImages.length === 0) || sending || uploading}
             >
-              전송
+              {uploading ? "업로드 중..." : "전송"}
             </button>
           </div>
         </div>

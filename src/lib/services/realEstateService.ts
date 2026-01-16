@@ -407,6 +407,7 @@ export const HOUSING_TYPE_LABELS: Record<HousingType, string> = {
   '자가': '자가',
   '전세': '전세',
   '월세': '월세',
+  '무상': '무상 거주',
 }
 
 export const REPAYMENT_TYPE_LABELS: Record<LoanRepaymentType, string> = {

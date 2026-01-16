@@ -14,9 +14,9 @@ export function formatMoney(amount: number): string {
     const uk = Math.floor(absAmount / 10000)
     const man = Math.round(absAmount % 10000)
     if (man === 0) {
-      return `${uk}억`
+      return `${uk.toLocaleString()}억원`
     }
-    return `${uk}억 ${man.toLocaleString()}만`
+    return `${uk.toLocaleString()}억 ${man.toLocaleString()}만원`
   }
   return `${absAmount.toLocaleString()}만원`
 }

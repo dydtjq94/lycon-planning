@@ -238,7 +238,7 @@ export interface PersonalPensionInput {
 // ============================================
 
 export type RealEstateType = 'residence' | 'investment' | 'rental' | 'land'
-export type HousingType = '자가' | '전세' | '월세'
+export type HousingType = '자가' | '전세' | '월세' | '무상'
 export type LoanRepaymentType = '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환'
 
 export interface RealEstate {
@@ -279,6 +279,8 @@ export interface RealEstate {
   loan_maturity_year: number | null
   loan_maturity_month: number | null
   loan_repayment_type: LoanRepaymentType | null
+  grace_end_year: number | null
+  grace_end_month: number | null
 
   // 매도
   sell_year: number | null
@@ -322,6 +324,8 @@ export interface RealEstateInput {
   loan_maturity_year?: number | null
   loan_maturity_month?: number | null
   loan_repayment_type?: LoanRepaymentType | null
+  grace_end_year?: number | null
+  grace_end_month?: number | null
   sell_year?: number | null
   sell_month?: number | null
   memo?: string | null

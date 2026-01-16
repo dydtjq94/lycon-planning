@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { ArrowLeft, Plus, X } from "lucide-react";
+import { formatMoney } from "@/lib/utils";
+import { AmountInput, ToggleGroup, TypeSelect, OwnerSelect, FrequencyToggle } from "./inputs";
 import styles from "./IncomeInputForm.module.css";
 
 // 온보딩 소득 구간 레이블
@@ -183,29 +185,15 @@ export function IncomeInputForm({
             <div className={styles.incomeRow}>
               <span className={styles.incomeLabel}>본인</span>
               <div className={styles.incomeInputGroup}>
-                <input
-                  type="number"
-                  className={styles.amountInput}
-                  placeholder="0"
-                  value={selfLaborIncome || ""}
-                  onChange={(e) => setSelfLaborIncome(parseInt(e.target.value) || 0)}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
+                <AmountInput
+                  value={selfLaborIncome}
+                  onChange={(v) => setSelfLaborIncome(v ?? 0)}
+                  showFormatted={false}
                 />
-                <span className={styles.unit}>만원</span>
-                <div className={styles.frequencyToggle}>
-                  <button
-                    className={`${styles.freqBtn} ${selfLaborFrequency === "monthly" ? styles.active : ""}`}
-                    onClick={() => setSelfLaborFrequency("monthly")}
-                  >
-                    월
-                  </button>
-                  <button
-                    className={`${styles.freqBtn} ${selfLaborFrequency === "yearly" ? styles.active : ""}`}
-                    onClick={() => setSelfLaborFrequency("yearly")}
-                  >
-                    연
-                  </button>
-                </div>
+                <FrequencyToggle
+                  value={selfLaborFrequency}
+                  onChange={setSelfLaborFrequency}
+                />
               </div>
             </div>
 
@@ -214,29 +202,15 @@ export function IncomeInputForm({
               <div className={styles.incomeRow}>
                 <span className={styles.incomeLabel}>배우자</span>
                 <div className={styles.incomeInputGroup}>
-                  <input
-                    type="number"
-                    className={styles.amountInput}
-                    placeholder="0"
-                    value={spouseLaborIncome || ""}
-                    onChange={(e) => setSpouseLaborIncome(parseInt(e.target.value) || 0)}
-                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  <AmountInput
+                    value={spouseLaborIncome}
+                    onChange={(v) => setSpouseLaborIncome(v ?? 0)}
+                    showFormatted={false}
                   />
-                  <span className={styles.unit}>만원</span>
-                  <div className={styles.frequencyToggle}>
-                    <button
-                      className={`${styles.freqBtn} ${spouseLaborFrequency === "monthly" ? styles.active : ""}`}
-                      onClick={() => setSpouseLaborFrequency("monthly")}
-                    >
-                      월
-                    </button>
-                    <button
-                      className={`${styles.freqBtn} ${spouseLaborFrequency === "yearly" ? styles.active : ""}`}
-                      onClick={() => setSpouseLaborFrequency("yearly")}
-                    >
-                      연
-                    </button>
-                  </div>
+                  <FrequencyToggle
+                    value={spouseLaborFrequency}
+                    onChange={setSpouseLaborFrequency}
+                  />
                 </div>
               </div>
             )}
@@ -246,28 +220,14 @@ export function IncomeInputForm({
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>추가 소득</span>
-              <div className={styles.toggleGroup}>
-                <button
-                  className={`${styles.toggleBtn} ${hasAdditional === false ? styles.active : ""}`}
-                  onClick={() => {
-                    setHasAdditional(false);
-                    setAdditionalIncomes([]);
-                  }}
-                >
-                  없음
-                </button>
-                <button
-                  className={`${styles.toggleBtn} ${hasAdditional === true ? styles.active : ""}`}
-                  onClick={() => {
-                    setHasAdditional(true);
-                    if (additionalIncomes.length === 0) {
-                      addAdditionalIncome();
-                    }
-                  }}
-                >
-                  있음
-                </button>
-              </div>
+              <ToggleGroup
+                value={hasAdditional}
+                onChange={(v) => {
+                  setHasAdditional(v);
+                  if (v && additionalIncomes.length === 0) addAdditionalIncome();
+                  if (!v) setAdditionalIncomes([]);
+                }}
+              />
             </div>
             <p className={styles.sectionHint}>사업소득, 기타소득</p>
 
@@ -276,31 +236,16 @@ export function IncomeInputForm({
                 {additionalIncomes.map((income, index) => (
                   <div key={index} className={styles.additionalItem}>
                     <div className={styles.additionalTop}>
-                      <select
-                        className={styles.typeSelect}
+                      <TypeSelect
                         value={income.type}
-                        onChange={(e) =>
-                          updateAdditionalIncome(index, "type", e.target.value as AdditionalIncomeType)
-                        }
-                      >
-                        {ADDITIONAL_INCOME_TYPES.map((type) => (
-                          <option key={type.value} value={type.value}>
-                            {type.label}
-                          </option>
-                        ))}
-                      </select>
-                      {hasSpouse && (
-                        <select
-                          className={styles.ownerSelect}
-                          value={income.owner}
-                          onChange={(e) =>
-                            updateAdditionalIncome(index, "owner", e.target.value as "self" | "spouse")
-                          }
-                        >
-                          <option value="self">본인</option>
-                          <option value="spouse">배우자</option>
-                        </select>
-                      )}
+                        onChange={(v) => updateAdditionalIncome(index, "type", v)}
+                        options={ADDITIONAL_INCOME_TYPES}
+                      />
+                      <OwnerSelect
+                        value={income.owner}
+                        onChange={(v) => updateAdditionalIncome(index, "owner", v)}
+                        show={hasSpouse}
+                      />
                       <button
                         className={styles.removeBtn}
                         onClick={() => removeAdditionalIncome(index)}
@@ -309,31 +254,15 @@ export function IncomeInputForm({
                       </button>
                     </div>
                     <div className={styles.additionalBottom}>
-                      <input
-                        type="number"
-                        className={styles.amountInput}
-                        placeholder="0"
-                        value={income.amount || ""}
-                        onChange={(e) =>
-                          updateAdditionalIncome(index, "amount", parseInt(e.target.value) || 0)
-                        }
-                        onWheel={(e) => (e.target as HTMLElement).blur()}
+                      <AmountInput
+                        value={income.amount}
+                        onChange={(v) => updateAdditionalIncome(index, "amount", v ?? 0)}
+                        showFormatted={false}
                       />
-                      <span className={styles.unit}>만원</span>
-                      <div className={styles.frequencyToggle}>
-                        <button
-                          className={`${styles.freqBtn} ${income.frequency === "monthly" ? styles.active : ""}`}
-                          onClick={() => updateAdditionalIncome(index, "frequency", "monthly")}
-                        >
-                          월
-                        </button>
-                        <button
-                          className={`${styles.freqBtn} ${income.frequency === "yearly" ? styles.active : ""}`}
-                          onClick={() => updateAdditionalIncome(index, "frequency", "yearly")}
-                        >
-                          연
-                        </button>
-                      </div>
+                      <FrequencyToggle
+                        value={income.frequency}
+                        onChange={(v) => updateAdditionalIncome(index, "frequency", v)}
+                      />
                     </div>
                   </div>
                 ))}
@@ -349,7 +278,7 @@ export function IncomeInputForm({
           {monthlyTotal > 0 && (
             <div className={styles.totalBox}>
               <span className={styles.totalLabel}>월 소득 합계</span>
-              <span className={styles.totalValue}>{monthlyTotal.toLocaleString()}만원</span>
+              <span className={styles.totalValue}>{formatMoney(monthlyTotal)}</span>
             </div>
           )}
         </main>

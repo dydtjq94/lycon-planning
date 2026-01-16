@@ -2,12 +2,7 @@
 
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  MessageCircle,
-  ArrowLeft,
-  ChevronRight,
-  Home,
-} from "lucide-react";
+import { MessageCircle, ArrowLeft, ChevronRight, Home } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   ChatRoom,
@@ -15,16 +10,43 @@ import {
   CompletedItems,
   FamilyInputForm,
   HousingInputForm,
-  FinancialAssetInputForm,
+  SavingsInputForm,
+  InvestmentInputForm,
+  DebtInputForm,
   IncomeInputForm,
+  PensionInputForm,
+  ExpenseInputForm,
   ProgramDetailView,
+  Toast,
   type PrepTask,
   type CompletedTask,
 } from "./components";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
-import { loadPrepData, saveFamilyData, saveHousingData, saveFinancialData, saveIncomeData, getNextTaskIndex } from "./services/prepDataService";
-import type { PrepData, PrepTaskId, FamilyMember, HousingData, FinancialAssetItem } from "./types";
-import type { IncomeFormData } from "./components";
+import {
+  loadPrepData,
+  saveFamilyData,
+  saveHousingData,
+  saveSavingsData,
+  saveInvestmentData,
+  saveDebtData,
+  saveIncomeData,
+  savePensionData,
+  saveExpenseData,
+  getNextTaskIndex,
+} from "./services/prepDataService";
+import type {
+  PrepData,
+  PrepTaskId,
+  FamilyMember,
+  HousingData,
+  FinancialAssetItem,
+  DebtItem,
+} from "./types";
+import type {
+  IncomeFormData,
+  PensionFormData,
+  ExpenseFormData,
+} from "./components";
 import styles from "./waiting.module.css";
 
 // Suspense로 감싸기 위한 wrapper
@@ -78,6 +100,7 @@ interface SurveyResponses {
   income_range?: string;
   monthly_expense?: string;
   monthly_investment?: string;
+  saving_style?: string;
   investment_exp?: string[];
   pension_awareness?: string;
 }
@@ -107,9 +130,15 @@ const PREP_TASKS: PrepTask[] = [
     status: "pending",
   },
   {
-    id: "financial",
-    title: "금융 자산",
-    description: "저축 계좌, 투자 계좌 정보를 입력해주세요.",
+    id: "savings",
+    title: "금융 자산 - 저축 계좌",
+    description: "입출금 통장, 적금, 예금 정보를 입력해주세요.",
+    status: "pending",
+  },
+  {
+    id: "investment",
+    title: "금융 자산 - 투자 계좌",
+    description: "주식, 펀드, 채권, 암호화폐 등 정보를 입력해주세요.",
     status: "pending",
   },
   {
@@ -149,9 +178,14 @@ function WaitingPageContent() {
     return tab === "chat" ? "chat" : "checkup";
   });
   const [unreadCount, setUnreadCount] = useState(0);
-  const [activeInputForm, setActiveInputForm] = useState<PrepTaskId | null>(null);
+  const [activeInputForm, setActiveInputForm] = useState<PrepTaskId | null>(
+    null
+  );
   const [showProgramDetail, setShowProgramDetail] = useState(false);
-  const [toast, setToast] = useState<{ message: string; subMessage?: string } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    subMessage?: string;
+  } | null>(null);
 
   // 준비사항 데이터 (통합)
   const [prepData, setPrepData] = useState<PrepData | null>(null);
@@ -165,11 +199,20 @@ function WaitingPageContent() {
   const completedTasks = useMemo((): CompletedTask[] => {
     if (!prepData) return [];
     const tasks: CompletedTask[] = [];
-    const order: PrepTaskId[] = ["family", "housing", "financial", "debt", "income", "pension", "expense"];
+    const order: PrepTaskId[] = [
+      "family",
+      "housing",
+      "savings",
+      "investment",
+      "debt",
+      "income",
+      "pension",
+      "expense",
+    ];
 
     order.forEach((taskId, index) => {
       if (prepData.completed[taskId]) {
-        const task = PREP_TASKS.find(t => t.id === taskId);
+        const task = PREP_TASKS.find((t) => t.id === taskId);
         if (task) {
           tasks.push({ id: taskId, title: task.title, stepNumber: index + 1 });
         }
@@ -225,7 +268,7 @@ function WaitingPageContent() {
         return;
       }
 
-      const PIN_TIMEOUT_MINUTES = 30;
+      const PIN_TIMEOUT_MINUTES = 60;
       const pinVerifiedAt = profileData?.pin_verified_at;
       if (!pinVerifiedAt) {
         router.replace("/auth/pin-verify");
@@ -259,7 +302,6 @@ function WaitingPageContent() {
   // 토스트 표시
   const showToast = (message: string, subMessage?: string) => {
     setToast({ message, subMessage });
-    setTimeout(() => setToast(null), 3000);
   };
 
   // 회원 탈퇴 (테스트용)
@@ -276,7 +318,10 @@ function WaitingPageContent() {
   };
 
   // 데이터 저장 완료 처리
-  const handleSaveComplete = async (taskId: PrepTaskId, isFirstSave: boolean) => {
+  const handleSaveComplete = async (
+    taskId: PrepTaskId,
+    isFirstSave: boolean
+  ) => {
     if (!prepData || !userId) return;
 
     // prepData 다시 로드 (DB에서 최신 데이터 가져오기)
@@ -339,15 +384,24 @@ function WaitingPageContent() {
         </div>
         {/* 스켈레톤 예약 정보 */}
         <div className={styles.skeletonBooking}>
-          <div className={styles.skeletonText} style={{ width: 80, marginBottom: 0 }} />
-          <div className={styles.skeletonText} style={{ width: 140, marginBottom: 0 }} />
+          <div
+            className={styles.skeletonText}
+            style={{ width: 80, marginBottom: 0 }}
+          />
+          <div
+            className={styles.skeletonText}
+            style={{ width: 140, marginBottom: 0 }}
+          />
         </div>
         {/* 스켈레톤 메인 */}
         <main className={styles.skeletonMain}>
           <div className={styles.skeletonCard}>
             <div className={styles.skeletonCardHeader}>
               <div className={styles.skeletonBadge} />
-              <div className={styles.skeletonText} style={{ width: 60, marginBottom: 0 }} />
+              <div
+                className={styles.skeletonText}
+                style={{ width: 60, marginBottom: 0 }}
+              />
             </div>
             <div className={styles.skeletonText} style={{ width: "70%" }} />
             <div className={styles.skeletonText} style={{ width: "50%" }} />
@@ -433,20 +487,61 @@ function WaitingPageContent() {
     );
   }
 
-  // 금융 자산 입력 폼
-  if (activeInputForm === "financial" && prepData) {
-    const isCompleted = prepData.completed.financial;
-    const hasSpouse = prepData.family.some(m => m.relationship === "spouse");
+  // 저축 계좌 입력 폼
+  if (activeInputForm === "savings" && prepData) {
+    const isCompleted = prepData.completed.savings || false;
+    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
     return (
-      <FinancialAssetInputForm
+      <SavingsInputForm
         hasSpouse={hasSpouse}
-        initialData={prepData.financial}
+        initialData={prepData.savings || []}
         isCompleted={isCompleted}
         onClose={handleCloseInputForm}
         onSave={async (data: FinancialAssetItem[]) => {
           if (!userId) return;
-          await saveFinancialData(userId, data);
-          await handleSaveComplete("financial", !isCompleted);
+          await saveSavingsData(userId, data);
+          await handleSaveComplete("savings", !isCompleted);
+        }}
+      />
+    );
+  }
+
+  // 투자 계좌 입력 폼
+  if (activeInputForm === "investment" && prepData) {
+    const isCompleted = prepData.completed.investment || false;
+    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
+    return (
+      <InvestmentInputForm
+        hasSpouse={hasSpouse}
+        initialData={prepData.investment}
+        isCompleted={isCompleted}
+        onClose={handleCloseInputForm}
+        onSave={async (data) => {
+          if (!userId) return;
+          await saveInvestmentData(userId, data);
+          await handleSaveComplete("investment", !isCompleted);
+        }}
+        surveyInvestmentExp={surveyResponses?.investment_exp}
+        surveySavingStyle={surveyResponses?.saving_style}
+      />
+    );
+  }
+
+  // 부채 입력 폼
+  if (activeInputForm === "debt" && prepData) {
+    const isCompleted = prepData.completed.debt;
+    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
+    return (
+      <DebtInputForm
+        hasSpouse={hasSpouse}
+        housingData={prepData.housing}
+        initialData={prepData.debt}
+        isCompleted={isCompleted}
+        onClose={handleCloseInputForm}
+        onSave={async (data: DebtItem[]) => {
+          if (!userId) return;
+          await saveDebtData(userId, data);
+          await handleSaveComplete("debt", !isCompleted);
         }}
       />
     );
@@ -456,7 +551,7 @@ function WaitingPageContent() {
   if (activeInputForm === "income" && prepData) {
     const isCompleted = prepData.completed.income;
     // 배우자 유무 확인
-    const hasSpouse = prepData.family.some(m => m.relationship === "spouse");
+    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
     return (
       <IncomeInputForm
         hasSpouse={hasSpouse}
@@ -469,6 +564,44 @@ function WaitingPageContent() {
           await handleSaveComplete("income", !isCompleted);
         }}
         surveyIncomeRange={surveyResponses?.income_range}
+      />
+    );
+  }
+
+  // 연금 입력 폼
+  if (activeInputForm === "pension" && prepData) {
+    const isCompleted = prepData.completed.pension;
+    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
+    return (
+      <PensionInputForm
+        hasSpouse={hasSpouse}
+        initialData={null} // TODO: 기존 데이터 로드 구현
+        isCompleted={isCompleted}
+        onClose={handleCloseInputForm}
+        onSave={async (data: PensionFormData) => {
+          if (!userId) return;
+          await savePensionData(userId, data);
+          await handleSaveComplete("pension", !isCompleted);
+        }}
+      />
+    );
+  }
+
+  // 지출 입력 폼
+  if (activeInputForm === "expense" && prepData) {
+    const isCompleted = prepData.completed.expense;
+    return (
+      <ExpenseInputForm
+        housingData={prepData.housing}
+        initialData={null} // TODO: 기존 데이터 로드 구현
+        isCompleted={isCompleted}
+        onClose={handleCloseInputForm}
+        onSave={async (data: ExpenseFormData) => {
+          if (!userId) return;
+          await saveExpenseData(userId, data);
+          await handleSaveComplete("expense", !isCompleted);
+        }}
+        surveyMonthlyExpense={surveyResponses?.monthly_expense}
       />
     );
   }
@@ -507,7 +640,7 @@ function WaitingPageContent() {
       <div className={styles.fixedHeader}>
         <header className={styles.header}>
           <h1 className={styles.headerTitle}>
-            <span className={styles.headerLogo}>Lycon Finance Group</span>
+            <span className={styles.headerLogo}>Lycon | Retirement</span>
           </h1>
         </header>
 
@@ -568,14 +701,17 @@ function WaitingPageContent() {
       </nav>
 
       {/* 토스트 */}
-      {toast && (
-        <div className={styles.toast}>
-          <span className={styles.toastMessage}>{toast.message}</span>
-          {toast.subMessage && (
-            <span className={styles.toastSub}>{toast.subMessage}</span>
-          )}
-        </div>
-      )}
+      <Toast
+        message={
+          toast
+            ? toast.subMessage
+              ? `${toast.message} - ${toast.subMessage}`
+              : toast.message
+            : ""
+        }
+        isVisible={!!toast}
+        onClose={() => setToast(null)}
+      />
     </div>
   );
 }

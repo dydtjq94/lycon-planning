@@ -27,6 +27,7 @@ export interface Message {
   conversation_id: string
   sender_type: 'expert' | 'user'
   content: string
+  attachments?: string[]  // 이미지 URL 배열
   is_read: boolean
   created_at: string
 }
@@ -123,7 +124,11 @@ export async function getMessages(conversationId: string): Promise<Message[]> {
 }
 
 // 메시지 전송
-export async function sendMessage(conversationId: string, content: string): Promise<Message> {
+export async function sendMessage(
+  conversationId: string,
+  content: string,
+  attachments?: string[]
+): Promise<Message> {
   const supabase = createClient()
 
   const { data, error } = await supabase
@@ -132,6 +137,7 @@ export async function sendMessage(conversationId: string, content: string): Prom
       conversation_id: conversationId,
       sender_type: 'user',
       content,
+      attachments: attachments || [],
     })
     .select()
     .single()
@@ -145,6 +151,28 @@ export async function sendMessage(conversationId: string, content: string): Prom
     .eq('id', conversationId)
 
   return data
+}
+
+// 이미지 업로드
+export async function uploadChatImage(file: File): Promise<string> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${user.id}/${Date.now()}.${fileExt}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('chat-attachments')
+    .upload(fileName, file)
+
+  if (uploadError) throw uploadError
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('chat-attachments')
+    .getPublicUrl(fileName)
+
+  return publicUrl
 }
 
 // 메시지 읽음 처리
