@@ -96,9 +96,12 @@ export function PhoneVerify() {
   // 인증번호 입력 단계로 넘어가면 첫 번째 입력칸에 포커스
   useEffect(() => {
     if (step === "code") {
-      setTimeout(() => {
-        inputRefs.current[0]?.focus();
-      }, 100);
+      // 렌더링 완료 후 포커스 (requestAnimationFrame 사용)
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          inputRefs.current[0]?.focus();
+        }, 50);
+      });
     }
   }, [step]);
 
@@ -123,15 +126,16 @@ export function PhoneVerify() {
 
       if (!response.ok) {
         setError(result.error || "인증번호 발송에 실패했습니다");
+        setLoading(false);
         return;
       }
 
+      setLoading(false);
       setStep("code");
       setCountdown(180); // 3분 타이머
     } catch (err) {
       console.error("인증번호 발송 오류:", err);
       setError("인증번호 발송에 실패했습니다. 다시 시도해주세요.");
-    } finally {
       setLoading(false);
     }
   };
@@ -277,7 +281,6 @@ export function PhoneVerify() {
                     onPaste={handlePaste}
                     maxLength={1}
                     disabled={loading}
-                    autoFocus={i === 0}
                   />
                 ))}
               </div>

@@ -116,7 +116,7 @@ const SURVEY_SECTIONS: SurveySection[] = [
       },
       {
         id: "financial_goal",
-        question: "지금 가장 중요한\n재정 목표는요?",
+        question: "지금 가장 중요한\n목표는요?",
         type: "single",
         options: [
           { value: "retirement", label: "편안한 노후" },
