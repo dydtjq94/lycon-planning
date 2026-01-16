@@ -20,8 +20,9 @@ import {
   type CompletedTask,
 } from "./components";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
-import { loadPrepData, saveFamilyData, getNextTaskIndex } from "./services/prepDataService";
+import { loadPrepData, saveFamilyData, saveIncomeData, getNextTaskIndex } from "./services/prepDataService";
 import type { PrepData, PrepTaskId, FamilyMember } from "./types";
+import type { IncomeFormData } from "./components";
 import styles from "./waiting.module.css";
 
 // Suspense로 감싸기 위한 wrapper
@@ -36,8 +37,27 @@ export default function WaitingPage() {
 function WaitingPageLoading() {
   return (
     <div className={styles.container}>
-      <main className={styles.main}>
-        <div className={styles.loading}>불러오는 중...</div>
+      {/* 스켈레톤 헤더 */}
+      <div className={styles.skeletonHeader}>
+        <div className={styles.skeletonLogo} />
+      </div>
+      {/* 스켈레톤 예약 정보 */}
+      <div className={styles.skeletonBooking}>
+        <div className={styles.skeletonText} style={{ width: 80 }} />
+        <div className={styles.skeletonText} style={{ width: 140 }} />
+      </div>
+      {/* 스켈레톤 메인 */}
+      <main className={styles.skeletonMain}>
+        {/* 카드 스켈레톤 */}
+        <div className={styles.skeletonCard}>
+          <div className={styles.skeletonCardHeader}>
+            <div className={styles.skeletonBadge} />
+            <div className={styles.skeletonText} style={{ width: 60 }} />
+          </div>
+          <div className={styles.skeletonText} style={{ width: "70%" }} />
+          <div className={styles.skeletonText} style={{ width: "50%" }} />
+          <div className={styles.skeletonButton} />
+        </div>
       </main>
     </div>
   );
@@ -234,27 +254,30 @@ function WaitingPageContent() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  // 회원 탈퇴 (테스트용)
+  const handleDeleteAccount = async () => {
+    if (!confirm("정말 탈퇴하시겠습니까?\n모든 데이터가 삭제됩니다.")) return;
+    await fetch("/api/auth/delete-account", { method: "POST" });
+    router.push("/");
+    router.refresh();
+  };
+
   // 입력 폼 시작
   const handleStartTask = (taskId: string) => {
     setActiveInputForm(taskId as PrepTaskId);
   };
 
   // 데이터 저장 완료 처리
-  const handleSaveComplete = (taskId: PrepTaskId, isFirstSave: boolean) => {
-    if (!prepData) return;
+  const handleSaveComplete = async (taskId: PrepTaskId, isFirstSave: boolean) => {
+    if (!prepData || !userId) return;
 
-    // completed 상태 업데이트
-    setPrepData({
-      ...prepData,
-      completed: {
-        ...prepData.completed,
-        [taskId]: true,
-      },
-    });
+    // prepData 다시 로드 (DB에서 최신 데이터 가져오기)
+    const updatedData = await loadPrepData(userId);
+    setPrepData(updatedData);
 
     // 토스트 표시
     if (isFirstSave) {
-      const nextIndex = currentTaskIndex + 1;
+      const nextIndex = getNextTaskIndex(updatedData.completed);
       const nextTask = PREP_TASKS[nextIndex];
       if (nextTask) {
         showToast("저장되었습니다", `다음: ${nextTask.title}`);
@@ -302,8 +325,26 @@ function WaitingPageContent() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <main className={styles.main}>
-          <div className={styles.loading}>불러오는 중...</div>
+        {/* 스켈레톤 헤더 */}
+        <div className={styles.skeletonHeader}>
+          <div className={styles.skeletonLogo} />
+        </div>
+        {/* 스켈레톤 예약 정보 */}
+        <div className={styles.skeletonBooking}>
+          <div className={styles.skeletonText} style={{ width: 80, marginBottom: 0 }} />
+          <div className={styles.skeletonText} style={{ width: 140, marginBottom: 0 }} />
+        </div>
+        {/* 스켈레톤 메인 */}
+        <main className={styles.skeletonMain}>
+          <div className={styles.skeletonCard}>
+            <div className={styles.skeletonCardHeader}>
+              <div className={styles.skeletonBadge} />
+              <div className={styles.skeletonText} style={{ width: 60, marginBottom: 0 }} />
+            </div>
+            <div className={styles.skeletonText} style={{ width: "70%" }} />
+            <div className={styles.skeletonText} style={{ width: "50%" }} />
+            <div className={styles.skeletonButton} />
+          </div>
         </main>
       </div>
     );
@@ -359,13 +400,7 @@ function WaitingPageContent() {
         onSave={async (data: FamilyMember[]) => {
           if (!userId) return;
           await saveFamilyData(userId, data);
-          // prepData 업데이트
-          setPrepData({
-            ...prepData,
-            family: data,
-            completed: { ...prepData.completed, family: true },
-          });
-          handleSaveComplete("family", !isCompleted);
+          await handleSaveComplete("family", !isCompleted);
         }}
         surveyMaritalStatus={surveyResponses?.marital_status}
         surveyChildren={surveyResponses?.children}
@@ -373,13 +408,22 @@ function WaitingPageContent() {
     );
   }
 
-  // 소득 입력 폼 (TODO: 리팩토링 필요)
-  if (activeInputForm === "income") {
-    const isCompleted = prepData?.completed.income || false;
+  // 소득 입력 폼
+  if (activeInputForm === "income" && prepData) {
+    const isCompleted = prepData.completed.income;
+    // 배우자 유무 확인
+    const hasSpouse = prepData.family.some(m => m.relationship === "spouse");
     return (
       <IncomeInputForm
+        hasSpouse={hasSpouse}
+        initialData={null} // TODO: 기존 데이터 로드 구현
+        isCompleted={isCompleted}
         onClose={handleCloseInputForm}
-        onComplete={() => handleSaveComplete("income", !isCompleted)}
+        onSave={async (data: IncomeFormData) => {
+          if (!userId) return;
+          await saveIncomeData(userId, data);
+          await handleSaveComplete("income", !isCompleted);
+        }}
         surveyIncomeRange={surveyResponses?.income_range}
       />
     );
@@ -410,6 +454,11 @@ function WaitingPageContent() {
 
   return (
     <div className={styles.container}>
+      {/* 회원탈퇴 버튼 (테스트용) */}
+      <button className={styles.deleteButton} onClick={handleDeleteAccount}>
+        탈퇴
+      </button>
+
       {/* 고정 헤더 영역 */}
       <div className={styles.fixedHeader}>
         <header className={styles.header}>

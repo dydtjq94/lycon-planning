@@ -29,9 +29,42 @@ const PARENT_OPTIONS: { value: ParentRelation; label: string }[] = [
   { value: "mother_in_law", label: "장모/시어머니" },
 ];
 
+// 생년월일 유효성 검증 (YYMMDD)
+function validateBirthDate(yymmdd: string): { valid: boolean; error?: string } {
+  if (yymmdd.length === 0) return { valid: true }; // 빈 값은 허용
+  if (yymmdd.length !== 6) return { valid: false, error: "6자리를 입력해주세요" };
+  if (!/^\d{6}$/.test(yymmdd)) return { valid: false, error: "숫자만 입력해주세요" };
+
+  const mm = parseInt(yymmdd.slice(2, 4));
+  const dd = parseInt(yymmdd.slice(4, 6));
+
+  // 월 검증 (1-12)
+  if (mm < 1 || mm > 12) return { valid: false, error: "월은 01~12 사이로" };
+
+  // 일 검증
+  const yy = parseInt(yymmdd.slice(0, 2));
+  const year = yy > 50 ? 1900 + yy : 2000 + yy;
+  const daysInMonth = new Date(year, mm, 0).getDate(); // 해당 월의 마지막 날
+
+  if (dd < 1 || dd > daysInMonth) {
+    return { valid: false, error: `일은 01~${daysInMonth} 사이로` };
+  }
+
+  // 미래 날짜 검증
+  const birthDate = new Date(year, mm - 1, dd);
+  if (birthDate > new Date()) {
+    return { valid: false, error: "미래 날짜는 불가" };
+  }
+
+  return { valid: true };
+}
+
 // 생년월일 파싱 (YYMMDD → 나이)
 function parseAge(birthDate: string): number | null {
   if (birthDate.length !== 6) return null;
+  const validation = validateBirthDate(birthDate);
+  if (!validation.valid) return null;
+
   const yy = parseInt(birthDate.slice(0, 2));
   const year = yy > 50 ? 1900 + yy : 2000 + yy;
   return new Date().getFullYear() - year;
@@ -40,6 +73,9 @@ function parseAge(birthDate: string): number | null {
 // YYMMDD → YYYY-MM-DD 변환
 function convertToISODate(yymmdd: string): string | null {
   if (yymmdd.length !== 6) return null;
+  const validation = validateBirthDate(yymmdd);
+  if (!validation.valid) return null;
+
   const yy = parseInt(yymmdd.slice(0, 2));
   const mm = yymmdd.slice(2, 4);
   const dd = yymmdd.slice(4, 6);
@@ -171,6 +207,23 @@ export function FamilyInputForm({
       return;
     }
 
+    // 생년월일 유효성 검증
+    if (hasSpouse && spouseBirthDate) {
+      const spouseValidation = validateBirthDate(spouseBirthDate);
+      if (!spouseValidation.valid) {
+        alert(`배우자 생년월일: ${spouseValidation.error}`);
+        return;
+      }
+    }
+
+    for (let i = 0; i < children.length; i++) {
+      const childValidation = validateBirthDate(children[i].birthDate);
+      if (!childValidation.valid) {
+        alert(`자녀 ${i + 1} 생년월일: ${childValidation.error}`);
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       // 저장할 데이터 구성
@@ -254,21 +307,29 @@ export function FamilyInputForm({
               </div>
             </div>
 
-            {hasSpouse && (
-              <div className={styles.inputRow}>
-                <input
-                  type="text"
-                  className={styles.birthInput}
-                  placeholder="생년월일 6자리"
-                  value={spouseBirthDate}
-                  onChange={(e) => setSpouseBirthDate(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  maxLength={6}
-                />
-                {parseAge(spouseBirthDate) && (
-                  <span className={styles.ageText}>{parseAge(spouseBirthDate)}세</span>
-                )}
-              </div>
-            )}
+            {hasSpouse && (() => {
+              const validation = validateBirthDate(spouseBirthDate);
+              return (
+                <div className={styles.inputColumn}>
+                  <div className={styles.inputRow}>
+                    <input
+                      type="text"
+                      className={`${styles.birthInput} ${!validation.valid ? styles.inputError : ""}`}
+                      placeholder="생년월일 6자리"
+                      value={spouseBirthDate}
+                      onChange={(e) => setSpouseBirthDate(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      maxLength={6}
+                    />
+                    {parseAge(spouseBirthDate) !== null && (
+                      <span className={styles.ageText}>{parseAge(spouseBirthDate)}세</span>
+                    )}
+                  </div>
+                  {!validation.valid && validation.error && (
+                    <span className={styles.errorText}>{validation.error}</span>
+                  )}
+                </div>
+              );
+            })()}
           </section>
 
           {/* 자녀 */}
@@ -299,38 +360,46 @@ export function FamilyInputForm({
 
             {hasChildren && children.length > 0 && (
               <div className={styles.itemList}>
-                {children.map((child, index) => (
-                  <div key={index} className={styles.itemRow}>
-                    <div className={styles.genderToggle}>
-                      <button
-                        className={`${styles.genderBtn} ${child.gender === "son" ? styles.active : ""}`}
-                        onClick={() => updateChild(index, "gender", "son")}
-                      >
-                        아들
-                      </button>
-                      <button
-                        className={`${styles.genderBtn} ${child.gender === "daughter" ? styles.active : ""}`}
-                        onClick={() => updateChild(index, "gender", "daughter")}
-                      >
-                        딸
-                      </button>
+                {children.map((child, index) => {
+                  const validation = validateBirthDate(child.birthDate);
+                  return (
+                    <div key={index} className={styles.childItem}>
+                      <div className={styles.itemRow}>
+                        <div className={styles.genderToggle}>
+                          <button
+                            className={`${styles.genderBtn} ${child.gender === "son" ? styles.active : ""}`}
+                            onClick={() => updateChild(index, "gender", "son")}
+                          >
+                            아들
+                          </button>
+                          <button
+                            className={`${styles.genderBtn} ${child.gender === "daughter" ? styles.active : ""}`}
+                            onClick={() => updateChild(index, "gender", "daughter")}
+                          >
+                            딸
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          className={`${styles.birthInput} ${!validation.valid ? styles.inputError : ""}`}
+                          placeholder="생년월일 6자리"
+                          value={child.birthDate}
+                          onChange={(e) => updateChild(index, "birthDate", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          maxLength={6}
+                        />
+                        {parseAge(child.birthDate) !== null && (
+                          <span className={styles.ageText}>{parseAge(child.birthDate)}세</span>
+                        )}
+                        <button className={styles.removeBtn} onClick={() => removeChild(index)}>
+                          <X size={18} />
+                        </button>
+                      </div>
+                      {!validation.valid && validation.error && (
+                        <span className={styles.errorText}>{validation.error}</span>
+                      )}
                     </div>
-                    <input
-                      type="text"
-                      className={styles.birthInput}
-                      placeholder="생년월일 6자리"
-                      value={child.birthDate}
-                      onChange={(e) => updateChild(index, "birthDate", e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      maxLength={6}
-                    />
-                    {parseAge(child.birthDate) && (
-                      <span className={styles.ageText}>{parseAge(child.birthDate)}세</span>
-                    )}
-                    <button className={styles.removeBtn} onClick={() => removeChild(index)}>
-                      <X size={18} />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
                 <button className={styles.addBtn} onClick={addChild}>
                   <Plus size={16} />
                   <span>자녀 추가</span>

@@ -133,6 +133,12 @@
   gap: 10px;
 }
 
+.inputColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .itemList {
   display: flex;
   flex-direction: column;
@@ -143,6 +149,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.childItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 /* 생년월일 입력 */
@@ -163,6 +175,21 @@
 
 .birthInput::placeholder {
   color: #d1d5db;
+}
+
+.birthInput.inputError {
+  border-color: #ef4444;
+}
+
+.birthInput.inputError:focus {
+  border-color: #ef4444;
+}
+
+/* 에러 텍스트 */
+.errorText {
+  font-size: 12px;
+  color: #ef4444;
+  margin-left: 2px;
 }
 
 /* 나이 텍스트 */

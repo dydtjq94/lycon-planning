@@ -1777,12 +1777,13 @@ export function SimpleOnboarding({
         isInitialLoad ? styles.initialLoad : styles.loaded
       }`}
     >
-      {/* 숨겨진 회원탈퇴 버튼 (테스트용) */}
+      {/* 회원탈퇴 버튼 (테스트용) */}
       <button
-        className={styles.hiddenDeleteButton}
+        className={styles.deleteButton}
         onClick={handleDeleteAccount}
-        aria-label="회원탈퇴"
-      />
+      >
+        탈퇴
+      </button>
       <main ref={mainRef} className={`${styles.main} ${isAnimating ? styles.animating : ""}`}>
         {renderStep()}
       </main>
