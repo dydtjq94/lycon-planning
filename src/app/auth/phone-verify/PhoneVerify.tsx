@@ -26,6 +26,7 @@ export function PhoneVerify() {
   const [bookingInfo, setBookingInfo] = useState<BookingInfo | null>(null);
   const [bookingLoading, setBookingLoading] = useState(true);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
 
   // 예약 정보 로드
   useEffect(() => {
@@ -115,6 +116,9 @@ export function PhoneVerify() {
     setError(null);
     setLoading(true);
 
+    // 키보드 유지를 위해 숨겨진 input에 먼저 포커스
+    hiddenInputRef.current?.focus();
+
     try {
       const response = await fetch("/api/sms/send", {
         method: "POST",
@@ -183,6 +187,15 @@ export function PhoneVerify() {
 
   return (
     <div className={styles.container}>
+      {/* 키보드 유지용 숨겨진 input */}
+      <input
+        ref={hiddenInputRef}
+        type="text"
+        inputMode="numeric"
+        style={{ position: "absolute", left: "-9999px", opacity: 0 }}
+        aria-hidden="true"
+        tabIndex={-1}
+      />
       <main className={styles.main}>
         {/* 히어로 영역 */}
         <div className={styles.heroArea}>
