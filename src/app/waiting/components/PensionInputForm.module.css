@@ -81,13 +81,45 @@
 
 /* 연금 유형 안내 */
 .pensionTypeGuide {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  padding: 14px 16px;
+  padding: 16px;
   background: #f9fafb;
   border-radius: 10px;
   margin-bottom: 24px;
+}
+
+.guideTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  margin: 0 0 6px 0;
+  line-height: 1.5;
+}
+
+.guideSubtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.guideLinkInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #007AFF;
+  text-decoration: none;
+  margin-bottom: 8px;
+}
+
+.guideLinkInline:hover {
+  text-decoration: underline;
+}
+
+.pensionTypeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
 }
 
 .pensionTypeRow {
@@ -105,6 +137,26 @@
 .pensionTypeDesc {
   font-size: 12px;
   color: #9ca3af;
+}
+
+/* 조회 링크 */
+.lookupLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 16px;
+  padding: 10px 14px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #007AFF;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.lookupLink:hover {
+  background: #e0f2fe;
 }
 
 /* 연금 유형 선택 칩 */
@@ -206,16 +258,16 @@
 
 .fieldRow {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
 }
 
 .fieldLabel {
   font-size: 13px;
   font-weight: 500;
   color: #6b7280;
-  width: 70px;
-  flex-shrink: 0;
+  padding-top: 10px;
+  white-space: nowrap;
 }
 
 .fieldUnit {
@@ -223,6 +275,45 @@
   color: #6b7280;
   flex-shrink: 0;
 }
+
+.inputWithUnit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.smallInput {
+  width: 80px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #1d1d1f;
+  text-align: right;
+}
+
+.smallInput:focus {
+  outline: none;
+  border-color: #007AFF;
+}
+
+.smallInput::placeholder {
+  color: #d1d5db;
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.smallInput::-webkit-outer-spin-button,
+.smallInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.fieldHint {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 8px;
+}
+
 
 /* 추가 버튼들 */
 .addButtons {

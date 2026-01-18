@@ -540,6 +540,68 @@
   line-height: 1.8;
 }
 
+.expertNetwork {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.expertMain {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.expertMainTitle {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.expertMainDesc {
+  display: block;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.expertPartners {
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.expertPartnersLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 16px;
+  letter-spacing: 0.05em;
+}
+
+.expertList {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: center;
+  gap: 10px 16px;
+}
+
+.expertList span {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.expertList span em {
+  font-style: normal;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: 4px;
+}
+
 /* Process Section (과정) */
 .processSection {
   padding: 80px 0;
@@ -823,6 +885,50 @@
 
 .checkupCta:hover {
   background: #1d4ed8;
+}
+
+/* 기업 마키 */
+.companyMarquee {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.companyLabel {
+  display: block;
+  font-size: 13px;
+  color: #a3a3a3;
+  margin-bottom: 20px;
+}
+
+.marqueeWrapper {
+  overflow: hidden;
+  width: 100%;
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.marqueeContent {
+  display: flex;
+  gap: 32px;
+  animation: marquee 30s linear infinite;
+  width: max-content;
+}
+
+.marqueeContent span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #737373;
+  white-space: nowrap;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 /* =============================================

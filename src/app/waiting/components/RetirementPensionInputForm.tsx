@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { AmountInput } from "./inputs";
-import type { RetirementPensionData } from "../types";
+import type { RetirementPensionData, RetirementPensionType } from "../types";
 import styles from "./PensionInputForm.module.css";
+
+const PENSION_TYPES = [
+  { value: "db", label: "퇴직금/DB형" },
+  { value: "dc", label: "DC형" },
+  { value: "none", label: "모름" },
+] as const;
 
 interface RetirementPensionInputFormProps {
   hasSpouse: boolean;
@@ -21,8 +27,23 @@ export function RetirementPensionInputForm({
   onClose,
   onSave,
 }: RetirementPensionInputFormProps) {
+  // 본인
+  const [selfType, setSelfType] = useState<RetirementPensionType>(
+    initialData?.selfType ?? "db"
+  );
+  const [selfYearsWorked, setSelfYearsWorked] = useState<number | null>(
+    initialData?.selfYearsWorked ?? null
+  );
   const [selfBalance, setSelfBalance] = useState<number | null>(
     initialData?.selfBalance ?? null
+  );
+
+  // 배우자
+  const [spouseType, setSpouseType] = useState<RetirementPensionType>(
+    initialData?.spouseType ?? "db"
+  );
+  const [spouseYearsWorked, setSpouseYearsWorked] = useState<number | null>(
+    initialData?.spouseYearsWorked ?? null
   );
   const [spouseBalance, setSpouseBalance] = useState<number | null>(
     initialData?.spouseBalance ?? null
@@ -34,8 +55,12 @@ export function RetirementPensionInputForm({
     setSaving(true);
     try {
       await onSave({
-        selfBalance: selfBalance ?? 0,
-        spouseBalance: spouseBalance ?? 0,
+        selfType,
+        selfYearsWorked: selfType === "db" ? selfYearsWorked : null,
+        selfBalance: selfType === "dc" ? selfBalance : null,
+        spouseType,
+        spouseYearsWorked: spouseType === "db" ? spouseYearsWorked : null,
+        spouseBalance: spouseType === "dc" ? spouseBalance : null,
       });
     } catch (error) {
       console.error("저장 실패:", error);
@@ -57,45 +82,142 @@ export function RetirementPensionInputForm({
         </header>
 
         <main className={styles.main}>
-          <section className={styles.section}>
-            <p className={styles.sectionHint}>
-              DC형, DB형, 퇴직금 등 현재 적립된 금액
+          {/* 안내 */}
+          <div className={styles.pensionTypeGuide}>
+            <p className={styles.guideTitle}>
+              퇴직금/DB형은 회사가 관리하여 금액을 모르는 경우가 많아요.
             </p>
+            <a
+              href="https://100lifeplan.fss.or.kr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.guideLinkInline}
+            >
+              <ExternalLink size={14} />
+              <span>DC형은 통합연금포털에서 조회할 수 있어요</span>
+            </a>
+            <p className={styles.guideSubtitle}>
+              지금 모르면 넘어가도 괜찮아요. 언제든 수정할 수 있습니다.
+            </p>
+          </div>
 
-            <div className={styles.itemList}>
-              <div className={styles.pensionItem}>
-                <div className={styles.itemHeader}>
-                  <span className={styles.itemType}>본인</span>
+          {/* 본인 */}
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionTitle}>본인</span>
+            </div>
+
+            {/* 유형 선택 */}
+            <div className={styles.typeChips}>
+              {PENSION_TYPES.map((type) => (
+                <button
+                  key={type.value}
+                  className={`${styles.typeChip} ${selfType === type.value ? styles.active : ""}`}
+                  onClick={() => setSelfType(type.value)}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+
+            {/* DB형: 근속연수 입력 */}
+            {selfType === "db" && (
+              <div className={styles.itemFields}>
+                <div className={styles.fieldRow}>
+                  <span className={styles.fieldLabel}>현재 근속연수</span>
+                  <div className={styles.inputWithUnit}>
+                    <input
+                      type="number"
+                      className={styles.smallInput}
+                      value={selfYearsWorked ?? ""}
+                      onChange={(e) =>
+                        setSelfYearsWorked(e.target.value ? Number(e.target.value) : null)
+                      }
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                      placeholder="0"
+                    />
+                    <span className={styles.fieldUnit}>년</span>
+                  </div>
                 </div>
+                <p className={styles.fieldHint}>
+                  65세 은퇴 시점의 예상 퇴직금을 계산합니다
+                </p>
+              </div>
+            )}
+
+            {/* DC형: 현재 잔액 입력 */}
+            {selfType === "dc" && (
+              <div className={styles.itemFields}>
+                <div className={styles.fieldRow}>
+                  <span className={styles.fieldLabel}>현재 잔액</span>
+                  <AmountInput
+                    value={selfBalance}
+                    onChange={setSelfBalance}
+                  />
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* 배우자 */}
+          {hasSpouse && (
+            <section className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>배우자</span>
+              </div>
+
+              {/* 유형 선택 */}
+              <div className={styles.typeChips}>
+                {PENSION_TYPES.map((type) => (
+                  <button
+                    key={type.value}
+                    className={`${styles.typeChip} ${spouseType === type.value ? styles.active : ""}`}
+                    onClick={() => setSpouseType(type.value)}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* DB형: 근속연수 입력 */}
+              {spouseType === "db" && (
                 <div className={styles.itemFields}>
                   <div className={styles.fieldRow}>
-                    <span className={styles.fieldLabel}>적립금</span>
+                    <span className={styles.fieldLabel}>현재 근속연수</span>
+                    <div className={styles.inputWithUnit}>
+                      <input
+                        type="number"
+                        className={styles.smallInput}
+                        value={spouseYearsWorked ?? ""}
+                        onChange={(e) =>
+                          setSpouseYearsWorked(e.target.value ? Number(e.target.value) : null)
+                        }
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
+                        placeholder="0"
+                      />
+                      <span className={styles.fieldUnit}>년</span>
+                    </div>
+                  </div>
+                  <p className={styles.fieldHint}>
+                    65세 은퇴 시점의 예상 퇴직금을 계산합니다
+                  </p>
+                </div>
+              )}
+
+              {/* DC형: 현재 잔액 입력 */}
+              {spouseType === "dc" && (
+                <div className={styles.itemFields}>
+                  <div className={styles.fieldRow}>
+                    <span className={styles.fieldLabel}>현재 잔액</span>
                     <AmountInput
-                      value={selfBalance}
-                      onChange={setSelfBalance}
+                      value={spouseBalance}
+                      onChange={setSpouseBalance}
                     />
                   </div>
                 </div>
-              </div>
-
-              {hasSpouse && (
-                <div className={styles.pensionItem}>
-                  <div className={styles.itemHeader}>
-                    <span className={styles.itemType}>배우자</span>
-                  </div>
-                  <div className={styles.itemFields}>
-                    <div className={styles.fieldRow}>
-                      <span className={styles.fieldLabel}>적립금</span>
-                      <AmountInput
-                        value={spouseBalance}
-                        onChange={setSpouseBalance}
-                      />
-                    </div>
-                  </div>
-                </div>
               )}
-            </div>
-          </section>
+            </section>
+          )}
         </main>
 
         <div className={styles.bottomArea}>

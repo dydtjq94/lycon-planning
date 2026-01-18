@@ -126,130 +126,86 @@
   margin: 0 0 16px 0;
 }
 
-/* 연동 배지 */
-.linkedBadge {
-  font-size: 11px;
-  font-weight: 500;
+.totalAmount {
+  font-size: 14px;
+  font-weight: 600;
   color: #007AFF;
-  background: #e0f2fe;
-  padding: 4px 8px;
-  border-radius: 4px;
 }
 
-/* 연동 항목 */
-.linkedItem {
-  padding: 14px;
-  background: #f9fafb;
-  border-radius: 10px;
+/* 지출 리스트 */
+.expenseList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
-.linkedRow {
+.expenseRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 0;
+  padding: 14px 0;
+  border-bottom: 1px solid #f3f4f6;
 }
 
-.linkedRow:not(:last-child) {
-  border-bottom: 1px solid #e5e7eb;
+.expenseRow:last-child {
+  border-bottom: none;
 }
 
-.linkedLabel {
-  font-size: 14px;
-  color: #6b7280;
+.expenseInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.linkedValue {
+.expenseLabel {
   font-size: 14px;
   font-weight: 500;
   color: #1d1d1f;
 }
 
-/* 항목 리스트 */
-.itemList {
+.expenseDesc {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 배지 */
+.badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: #007AFF;
+  background: #e0f2fe;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+/* 자동 반영 리스트 */
+.autoList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
 }
 
-/* 지출 항목 */
-.expenseItem {
-  padding: 14px;
-  background: #f9fafb;
-  border-radius: 10px;
-}
-
-.itemTop {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.itemBottom {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* 삭제 버튼 */
-.removeBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: none;
-  border: none;
-  color: #d1d5db;
-  cursor: pointer;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-.removeBtn:hover {
-  color: #9ca3af;
-}
-
-/* 추가 버튼 */
-.addBtn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 0;
-  background: none;
-  border: none;
-  font-size: 13px;
-  font-weight: 500;
-  color: #9ca3af;
-  cursor: pointer;
-}
-
-.addBtn:hover {
-  color: #6b7280;
-}
-
-/* 합계 박스 */
-.totalBox {
+.autoRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  background: #fef3c7;
-  border-radius: 10px;
-  margin-top: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
 }
 
-.totalLabel {
+.autoRow:last-child {
+  border-bottom: none;
+}
+
+.autoLabel {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.autoAmount {
   font-size: 14px;
   font-weight: 500;
-  color: #92400e;
-}
-
-.totalValue {
-  font-size: 18px;
-  font-weight: 700;
-  color: #d97706;
+  color: #1d1d1f;
 }
 
 /* 하단 영역 */

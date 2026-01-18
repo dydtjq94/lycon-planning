@@ -74,3 +74,12 @@ textarea:focus,
 button:focus {
   outline: none;
 }
+
+/* 모바일에서 input 포커스 시 자동 확대 방지 (iOS Safari) */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

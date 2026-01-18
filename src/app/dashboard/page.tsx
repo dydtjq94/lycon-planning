@@ -26,16 +26,9 @@ export default async function DashboardPage() {
     redirect('/onboarding')
   }
 
-  // PIN 인증 시간 체크 (30분 이내)
-  const PIN_TIMEOUT_MINUTES = 30
-  const pinVerifiedAt = profile?.pin_verified_at as string | null
-  if (!pinVerifiedAt) {
-    redirect('/auth/pin-verify')
-  }
-  const minutesSinceVerified = (Date.now() - new Date(pinVerifiedAt).getTime()) / 1000 / 60
-  if (minutesSinceVerified > PIN_TIMEOUT_MINUTES) {
-    redirect('/auth/pin-verify')
-  }
+  // 현재는 대시보드 접근 차단 - waiting 페이지로 리다이렉트
+  // (waiting에서 상태에 따라 적절한 페이지로 다시 리다이렉트됨)
+  redirect('/waiting')
 
   // 가족 구성원 조회
   const { data: familyMembers } = await supabase

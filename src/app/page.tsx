@@ -176,6 +176,23 @@ export default function LandingPage() {
               <br />
               맞춤 전략으로 함께 준비하세요.
             </p>
+            <div className={styles.expertNetwork}>
+              <div className={styles.expertMain}>
+                <span className={styles.expertMainTitle}>은퇴설계 전문가</span>
+                <span className={styles.expertMainDesc}>당신의 담당 전문가로서 전체 과정을 함께합니다</span>
+              </div>
+              <div className={styles.expertPartners}>
+                <span className={styles.expertPartnersLabel}>협력 전문가 네트워크</span>
+                <div className={styles.expertList}>
+                  <span>세무사 <em>세금/절세</em></span>
+                  <span>회계사 <em>자산관리</em></span>
+                  <span>변호사 <em>법률자문</em></span>
+                  <span>부동산 전문가 <em>부동산</em></span>
+                  <span>노무사 <em>퇴직금</em></span>
+                  <span>자산운용사 <em>투자</em></span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -221,6 +238,54 @@ export default function LandingPage() {
             >
               예약하기
             </Link>
+
+            <div className={styles.companyMarquee}>
+              <span className={styles.companyLabel}>이런 기업의 직장인들이 검진받았습니다</span>
+              <div className={styles.marqueeWrapper}>
+                <div className={styles.marqueeContent}>
+                  <span>삼성전자</span>
+                  <span>Google</span>
+                  <span>현대자동차</span>
+                  <span>네이버</span>
+                  <span>Apple</span>
+                  <span>SK하이닉스</span>
+                  <span>Amazon</span>
+                  <span>카카오</span>
+                  <span>LG전자</span>
+                  <span>Microsoft</span>
+                  <span>포스코</span>
+                  <span>Tesla</span>
+                  <span>KT</span>
+                  <span>Meta</span>
+                  <span>한화</span>
+                  <span>NVIDIA</span>
+                  <span>기아</span>
+                  <span>Intel</span>
+                  <span>롯데</span>
+                  <span>Adobe</span>
+                  <span>삼성전자</span>
+                  <span>Google</span>
+                  <span>현대자동차</span>
+                  <span>네이버</span>
+                  <span>Apple</span>
+                  <span>SK하이닉스</span>
+                  <span>Amazon</span>
+                  <span>카카오</span>
+                  <span>LG전자</span>
+                  <span>Microsoft</span>
+                  <span>포스코</span>
+                  <span>Tesla</span>
+                  <span>KT</span>
+                  <span>Meta</span>
+                  <span>한화</span>
+                  <span>NVIDIA</span>
+                  <span>기아</span>
+                  <span>Intel</span>
+                  <span>롯데</span>
+                  <span>Adobe</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

@@ -1,17 +1,41 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { AmountInput } from "./inputs";
 import type { NationalPensionData, PublicPensionType } from "../types";
 import styles from "./PensionInputForm.module.css";
 
 // 공적연금 유형
 const PENSION_TYPES = [
-  { value: "national", label: "국민연금", desc: "일반 국민" },
-  { value: "government", label: "공무원연금", desc: "공무원" },
-  { value: "military", label: "군인연금", desc: "직업군인" },
-  { value: "private_school", label: "사학연금", desc: "사립학교 교직원" },
+  {
+    value: "national",
+    label: "국민연금",
+    desc: "일반 국민",
+    link: "https://csa.nps.or.kr/ohkd/ntpsidnty/anpninq/UHKD7101M0.do",
+    linkText: "NPS 내연금 알아보기",
+  },
+  {
+    value: "government",
+    label: "공무원연금",
+    desc: "공무원",
+    link: "https://www.geps.or.kr",
+    linkText: "공무원연금공단 (GEPS)",
+  },
+  {
+    value: "military",
+    label: "군인연금",
+    desc: "직업군인",
+    link: "https://www.mps.mil.kr",
+    linkText: "국방부 군인연금",
+  },
+  {
+    value: "private_school",
+    label: "사학연금",
+    desc: "사립학교 교직원",
+    link: "https://www.tp.or.kr",
+    linkText: "사학연금공단",
+  },
 ] as const;
 
 interface NationalPensionInputFormProps {
@@ -78,12 +102,12 @@ export function NationalPensionInputForm({
         <main className={styles.main}>
           {/* 연금 유형 안내 */}
           <div className={styles.pensionTypeGuide}>
-            {PENSION_TYPES.map((type) => (
-              <div key={type.value} className={styles.pensionTypeRow}>
-                <span className={styles.pensionTypeName}>{type.label}</span>
-                <span className={styles.pensionTypeDesc}>{type.desc}</span>
-              </div>
-            ))}
+            <p className={styles.guideTitle}>
+              가입하신 연금을 선택하고, 해당 공단에서 예상 수령액을 조회해주세요.
+            </p>
+            <p className={styles.guideSubtitle}>
+              지금 모르면 0원으로 넘어가도 괜찮아요. 언제든 수정할 수 있습니다.
+            </p>
           </div>
 
           {/* 본인 */}
@@ -104,6 +128,17 @@ export function NationalPensionInputForm({
                 </button>
               ))}
             </div>
+
+            {/* 선택한 연금 유형의 조회 링크 */}
+            <a
+              href={PENSION_TYPES.find((t) => t.value === selfType)?.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.lookupLink}
+            >
+              <ExternalLink size={14} />
+              <span>{PENSION_TYPES.find((t) => t.value === selfType)?.linkText}에서 조회</span>
+            </a>
 
             <div className={styles.itemFields}>
               <div className={styles.fieldRow}>
@@ -137,6 +172,17 @@ export function NationalPensionInputForm({
                   </button>
                 ))}
               </div>
+
+              {/* 선택한 연금 유형의 조회 링크 */}
+              <a
+                href={PENSION_TYPES.find((t) => t.value === spouseType)?.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.lookupLink}
+              >
+                <ExternalLink size={14} />
+                <span>{PENSION_TYPES.find((t) => t.value === spouseType)?.linkText}에서 조회</span>
+              </a>
 
               <div className={styles.itemFields}>
                 <div className={styles.fieldRow}>

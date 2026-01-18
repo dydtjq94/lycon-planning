@@ -126,10 +126,17 @@ export interface NationalPensionData {
   spouseExpectedAmount: number;      // 배우자 예상 월 수령액
 }
 
+// 퇴직연금 유형
+export type RetirementPensionType = "db" | "dc" | "none";
+
 // 퇴직연금 데이터
 export interface RetirementPensionData {
-  selfBalance: number;     // 본인 적립금
-  spouseBalance: number;   // 배우자 적립금
+  selfType: RetirementPensionType;      // 퇴직금/DB형, DC형, 없음
+  selfYearsWorked: number | null;       // DB형: 근속연수
+  selfBalance: number | null;           // DC형: 현재 잔액
+  spouseType: RetirementPensionType;
+  spouseYearsWorked: number | null;
+  spouseBalance: number | null;
 }
 
 // 개인연금 항목
@@ -138,6 +145,19 @@ export interface PersonalPensionItem {
   owner: "self" | "spouse";
   balance: number;            // 적립금
   monthlyDeposit: number;     // 월 납입액
+}
+
+// 지출 데이터
+export interface ExpenseData {
+  livingExpense: number;
+  livingExpenseDetails?: {
+    food?: number;
+    transport?: number;
+    shopping?: number;
+    leisure?: number;
+  };
+  fixedExpenses: Array<{ type: string; title: string; amount: number; frequency: "monthly" | "yearly" }>;
+  variableExpenses: Array<{ type: string; title: string; amount: number; frequency: "monthly" | "yearly" }>;
 }
 
 // 전체 준비사항 데이터
@@ -151,7 +171,7 @@ export interface PrepData {
   nationalPension: NationalPensionData | null;    // 국민(공적)연금
   retirementPension: RetirementPensionData | null; // 퇴직연금/퇴직금
   personalPension: PersonalPensionItem[];          // 개인연금
-  expense: ExpenseItem[];
+  expense: ExpenseData | null;
   completed: PrepCompleted;
 }
 

@@ -653,13 +653,19 @@ function WaitingPageContent() {
     return (
       <ExpenseInputForm
         housingData={prepData.housing}
-        initialData={null} // TODO: 기존 데이터 로드 구현
+        debtData={prepData.debt}
+        initialData={prepData.expense}
         isCompleted={isCompleted}
         onClose={handleCloseInputForm}
         onSave={async (data: ExpenseFormData) => {
           if (!userId) return;
-          await saveExpenseData(userId, data);
-          await handleSaveComplete("expense", !isCompleted);
+          try {
+            await saveExpenseData(userId, data);
+            await handleSaveComplete("expense", !isCompleted);
+          } catch (error) {
+            console.error("page onSave error:", error);
+            throw error;
+          }
         }}
         surveyMonthlyExpense={surveyResponses?.monthly_expense}
       />
@@ -731,6 +737,21 @@ function WaitingPageContent() {
               totalSteps={PREP_TASKS.length}
               onStart={handleStartTask}
             />
+          )}
+
+          {/* 2. 모든 준비 완료 시 */}
+          {currentTaskIndex >= PREP_TASKS.length && (
+            <div className={styles.completionCard}>
+              <h2 className={styles.completionTitle}>준비가 완료되었습니다</h2>
+              <p className={styles.completionDesc}>
+                {bookingInfo
+                  ? `${formatBookingDate(bookingInfo.date, bookingInfo.time)} 검진에서 만나요!`
+                  : "검진 일정을 확인해주세요"}
+              </p>
+              <p className={styles.completionHint}>
+                아래에서 입력한 정보를 수정할 수 있어요
+              </p>
+            </div>
           )}
 
           {/* 3. 입력 완료한 항목들 */}

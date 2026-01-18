@@ -11,6 +11,7 @@ import type {
   DebtItem,
   NationalPensionData,
   RetirementPensionData,
+  RetirementPensionType,
   PersonalPensionItem,
   PublicPensionType,
 } from "../types";
@@ -54,7 +55,7 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
   const simulation = await simulationService.getDefault();
 
   // 병렬로 모든 데이터 로드
-  const [profileResult, familyResult, housingResult, savingsResult, debtsResult, pensionsResult] = await Promise.all([
+  const [profileResult, familyResult, housingResult, savingsResult, debtsResult, pensionsResult, expensesResult] = await Promise.all([
     supabase
       .from("profiles")
       .select("survey_responses")
@@ -90,6 +91,13 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
           .from("pensions")
           .select("*")
           .eq("simulation_id", simulation.id)
+      : Promise.resolve({ data: [] }),
+    simulation
+      ? supabase
+          .from("expenses")
+          .select("*")
+          .eq("simulation_id", simulation.id)
+          .is("source_type", null)
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -224,27 +232,76 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
 
   // 퇴직연금 데이터 변환
   let retirementPension: RetirementPensionData | null = null;
+  const retirementPensionTypes = ["retirement_db", "retirement_dc"];
   const retirementPensions = (pensionsResult.data || []).filter(
-    (p: Record<string, unknown>) => p.type === "retirement"
+    (p: Record<string, unknown>) => retirementPensionTypes.includes(p.type as string)
   );
   if (retirementPensions.length > 0) {
     const selfRetirement = retirementPensions.find((p: Record<string, unknown>) => p.owner === "self");
     const spouseRetirement = retirementPensions.find((p: Record<string, unknown>) => p.owner === "spouse");
+
+    const getSelfType = (): RetirementPensionType => {
+      if (!selfRetirement) return "db";
+      return selfRetirement.type === "retirement_dc" ? "dc" : "db";
+    };
+    const getSpouseType = (): RetirementPensionType => {
+      if (!spouseRetirement) return "db";
+      return spouseRetirement.type === "retirement_dc" ? "dc" : "db";
+    };
+
     retirementPension = {
-      selfBalance: (selfRetirement?.current_balance as number) || 0,
-      spouseBalance: (spouseRetirement?.current_balance as number) || 0,
+      selfType: getSelfType(),
+      selfYearsWorked: (selfRetirement?.years_worked as number) || null,
+      selfBalance: (selfRetirement?.current_balance as number) || null,
+      spouseType: getSpouseType(),
+      spouseYearsWorked: (spouseRetirement?.years_worked as number) || null,
+      spouseBalance: (spouseRetirement?.current_balance as number) || null,
     };
   }
 
-  // 개인연금 데이터 변환
-  const personalPension: PersonalPensionItem[] = (pensionsResult.data || [])
-    .filter((p: Record<string, unknown>) => p.type === "personal")
-    .map((p: Record<string, unknown>) => ({
-      type: (p.title as string)?.includes("IRP") ? "irp" : "pension_savings",
+  // 개인연금 데이터 로드 (personal_pensions 테이블)
+  const { data: personalPensionsData } = simulation
+    ? await supabase
+        .from("personal_pensions")
+        .select("*")
+        .eq("simulation_id", simulation.id)
+    : { data: [] };
+
+  const personalPension: PersonalPensionItem[] = (personalPensionsData || []).map(
+    (p: Record<string, unknown>) => ({
+      type: p.pension_type as string,
       owner: p.owner as "self" | "spouse",
       balance: (p.current_balance as number) || 0,
-      monthlyDeposit: (p.monthly_contribution as number) || 0,
-    }));
+      monthlyDeposit: 0,
+    })
+  );
+
+  // 지출 데이터 파싱 (변동 생활비 카테고리별)
+  const expenseData = expensesResult.data || [];
+  const livingExpenseDetails: {
+    food?: number;
+    transport?: number;
+    shopping?: number;
+    leisure?: number;
+  } = {};
+
+  for (const exp of expenseData) {
+    const expRecord = exp as Record<string, unknown>;
+    const type = expRecord.type as string;
+    const amount = expRecord.amount as number;
+
+    if (type === "food") livingExpenseDetails.food = amount;
+    else if (type === "transport") livingExpenseDetails.transport = amount;
+    else if (type === "shopping") livingExpenseDetails.shopping = amount;
+    else if (type === "leisure") livingExpenseDetails.leisure = amount;
+  }
+
+  // 총 생활비 계산
+  const totalLivingExpense =
+    (livingExpenseDetails.food || 0) +
+    (livingExpenseDetails.transport || 0) +
+    (livingExpenseDetails.shopping || 0) +
+    (livingExpenseDetails.leisure || 0);
 
   return {
     family: (familyResult.data || []) as FamilyMember[],
@@ -256,7 +313,12 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
     nationalPension,
     retirementPension,
     personalPension,
-    expense: [], // TODO: 구현
+    expense: {
+      livingExpense: totalLivingExpense,
+      livingExpenseDetails,
+      fixedExpenses: [],
+      variableExpenses: [],
+    },
     completed,
   };
 }
@@ -697,9 +759,6 @@ export async function saveIncomeData(
   await markTaskCompleted(userId, "income");
 }
 
-// 공적연금 유형 목록
-const PUBLIC_PENSION_TYPES = ["national", "government", "military", "private_school"];
-
 /**
  * 국민(공적)연금 데이터 저장
  */
@@ -715,42 +774,45 @@ export async function saveNationalPensionData(
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
 
-  // 기존 공적연금 삭제 (national, government, military, private_school)
+  // 기존 국민연금 삭제
   await supabase
-    .from("pensions")
+    .from("national_pensions")
     .delete()
-    .eq("simulation_id", simulation.id)
-    .in("type", PUBLIC_PENSION_TYPES);
+    .eq("simulation_id", simulation.id);
 
-  // 새 공적연금 데이터 구성
+  // 새 국민연금 데이터 구성
+  // memo에 공적연금 유형 저장 (국민연금 테이블은 type 필드가 없음)
   const pensions: Array<{
     simulation_id: string;
-    type: string;
     owner: string;
     expected_monthly_amount: number;
+    start_age: number;
+    memo: string | null;
   }> = [];
 
   if (data.selfExpectedAmount > 0) {
     pensions.push({
       simulation_id: simulation.id,
-      type: data.selfType, // 선택한 공적연금 유형 저장
       owner: "self",
       expected_monthly_amount: data.selfExpectedAmount,
+      start_age: 65,
+      memo: data.selfType !== "national" ? data.selfType : null,
     });
   }
 
   if (data.spouseExpectedAmount > 0) {
     pensions.push({
       simulation_id: simulation.id,
-      type: data.spouseType, // 선택한 공적연금 유형 저장
       owner: "spouse",
       expected_monthly_amount: data.spouseExpectedAmount,
+      start_age: 65,
+      memo: data.spouseType !== "national" ? data.spouseType : null,
     });
   }
 
   // 연금 삽입
   if (pensions.length > 0) {
-    const { error } = await supabase.from("pensions").insert(pensions);
+    const { error } = await supabase.from("national_pensions").insert(pensions);
     if (error) throw error;
   }
 
@@ -775,40 +837,47 @@ export async function saveRetirementPensionData(
 
   // 기존 퇴직연금 삭제
   await supabase
-    .from("pensions")
+    .from("retirement_pensions")
     .delete()
-    .eq("simulation_id", simulation.id)
-    .eq("type", "retirement");
+    .eq("simulation_id", simulation.id);
 
   // 새 퇴직연금 데이터 구성
   const pensions: Array<{
     simulation_id: string;
-    type: string;
+    pension_type: string;
     owner: string;
-    current_balance: number;
+    current_balance: number | null;
+    years_of_service: number | null;
+    receive_type: string;
   }> = [];
 
-  if (data.selfBalance > 0) {
+  // 본인
+  if (data.selfType !== "none") {
     pensions.push({
       simulation_id: simulation.id,
-      type: "retirement",
+      pension_type: data.selfType, // db or dc
       owner: "self",
-      current_balance: data.selfBalance,
+      current_balance: data.selfType === "dc" ? data.selfBalance : null,
+      years_of_service: data.selfType === "db" ? data.selfYearsWorked : null,
+      receive_type: "lump_sum",
     });
   }
 
-  if (data.spouseBalance > 0) {
+  // 배우자
+  if (data.spouseType !== "none") {
     pensions.push({
       simulation_id: simulation.id,
-      type: "retirement",
+      pension_type: data.spouseType, // db or dc
       owner: "spouse",
-      current_balance: data.spouseBalance,
+      current_balance: data.spouseType === "dc" ? data.spouseBalance : null,
+      years_of_service: data.spouseType === "db" ? data.spouseYearsWorked : null,
+      receive_type: "lump_sum",
     });
   }
 
-  // 연금 삽입
+  // 퇴직연금 삽입
   if (pensions.length > 0) {
-    const { error } = await supabase.from("pensions").insert(pensions);
+    const { error } = await supabase.from("retirement_pensions").insert(pensions);
     if (error) throw error;
   }
 
@@ -824,8 +893,6 @@ export async function savePersonalPensionData(
   items: PersonalPensionItem[]
 ): Promise<void> {
   const supabase = createClient();
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
 
   // 시뮬레이션 ID 가져오기
   const simulation = await simulationService.getDefault();
@@ -835,47 +902,42 @@ export async function savePersonalPensionData(
 
   // 기존 개인연금 삭제
   await supabase
-    .from("pensions")
+    .from("personal_pensions")
     .delete()
-    .eq("simulation_id", simulation.id)
-    .eq("type", "personal");
+    .eq("simulation_id", simulation.id);
 
   // 새 개인연금 데이터 구성
   const pensions: Array<{
     simulation_id: string;
-    type: string;
-    title: string;
+    pension_type: string;
     owner: string;
     current_balance: number;
     monthly_contribution: number;
-    contribution_start_year: number;
-    contribution_start_month: number;
+    is_contribution_fixed_to_retirement: boolean;
+    start_age: number;
+    receiving_years: number;
+    return_rate: number;
   }> = [];
 
   for (const item of items) {
-    if (item.balance > 0 || item.monthlyDeposit > 0) {
-      const typeLabels: Record<string, string> = {
-        pension_savings: "연금저축",
-        irp: "IRP",
-      };
-      const ownerLabel = item.owner === "self" ? "본인" : "배우자";
-
+    if (item.balance > 0) {
       pensions.push({
         simulation_id: simulation.id,
-        type: "personal",
-        title: `${ownerLabel} ${typeLabels[item.type] || item.type}`,
+        pension_type: item.type, // irp, pension_savings_tax, pension_savings_invest, isa
         owner: item.owner,
         current_balance: item.balance,
-        monthly_contribution: item.monthlyDeposit,
-        contribution_start_year: currentYear,
-        contribution_start_month: currentMonth,
+        monthly_contribution: 0,
+        is_contribution_fixed_to_retirement: true,
+        start_age: 55,
+        receiving_years: 10,
+        return_rate: 5,
       });
     }
   }
 
   // 연금 삽입
   if (pensions.length > 0) {
-    const { error } = await supabase.from("pensions").insert(pensions);
+    const { error } = await supabase.from("personal_pensions").insert(pensions);
     if (error) throw error;
   }
 
@@ -890,22 +952,30 @@ export async function saveExpenseData(
   userId: string,
   data: ExpenseFormData
 ): Promise<void> {
+  console.log("saveExpenseData called with:", JSON.stringify(data, null, 2));
+
   const supabase = createClient();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
   // 시뮬레이션 ID 가져오기
   const simulation = await simulationService.getDefault();
+  console.log("simulation:", simulation?.id);
   if (!simulation) {
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
 
   // 기존 지출 삭제 (source_type이 null인 것만 - 직접 입력한 지출)
-  await supabase
+  const { error: deleteError } = await supabase
     .from("expenses")
     .delete()
     .eq("simulation_id", simulation.id)
     .is("source_type", null);
+
+  if (deleteError) {
+    console.error("Delete error:", deleteError);
+    throw deleteError;
+  }
 
   // 새 지출 데이터 구성
   const expenses: Array<{
@@ -918,57 +988,94 @@ export async function saveExpenseData(
     start_month: number;
     growth_rate: number;
     rate_category: string;
+    expense_category: string;
   }> = [];
 
-  // 기본 생활비
-  if (data.livingExpense > 0) {
-    expenses.push({
-      simulation_id: simulation.id,
-      type: "living",
-      title: "기본 생활비",
-      amount: data.livingExpense,
-      frequency: "monthly",
-      start_year: currentYear,
-      start_month: currentMonth,
-      growth_rate: 3.0,
-      rate_category: "expense",
-    });
-  }
+  // 변동 생활비 카테고리별 저장
+  const livingExpenseLabels: Record<string, string> = {
+    food: "식비",
+    transport: "교통비",
+    shopping: "쇼핑/미용비",
+    leisure: "유흥/여가비",
+  };
 
-  // 추가 지출
-  if (data.hasAdditionalExpense) {
-    for (const expense of data.additionalExpenses) {
-      const typeLabels: Record<string, string> = {
-        food: "식비",
-        transport: "교통비",
-        communication: "통신비",
-        insurance: "보험료",
-        medical: "의료비",
-        education: "교육비",
-        leisure: "여가/문화",
-        clothing: "의류/미용",
-        other: "기타",
-      };
+  if (data.livingExpenseDetails) {
+    const details = data.livingExpenseDetails;
 
+    if (details.food && details.food > 0) {
       expenses.push({
         simulation_id: simulation.id,
-        type: expense.type,
-        title: expense.title || typeLabels[expense.type] || expense.type,
-        amount: expense.amount,
-        frequency: expense.frequency,
+        type: "food",
+        title: livingExpenseLabels.food,
+        amount: details.food,
+        frequency: "monthly",
         start_year: currentYear,
         start_month: currentMonth,
         growth_rate: 3.0,
-        rate_category: "expense",
+        rate_category: "inflation",
+        expense_category: "variable",
+      });
+    }
+
+    if (details.transport && details.transport > 0) {
+      expenses.push({
+        simulation_id: simulation.id,
+        type: "transport",
+        title: livingExpenseLabels.transport,
+        amount: details.transport,
+        frequency: "monthly",
+        start_year: currentYear,
+        start_month: currentMonth,
+        growth_rate: 3.0,
+        rate_category: "inflation",
+        expense_category: "variable",
+      });
+    }
+
+    if (details.shopping && details.shopping > 0) {
+      expenses.push({
+        simulation_id: simulation.id,
+        type: "shopping",
+        title: livingExpenseLabels.shopping,
+        amount: details.shopping,
+        frequency: "monthly",
+        start_year: currentYear,
+        start_month: currentMonth,
+        growth_rate: 3.0,
+        rate_category: "inflation",
+        expense_category: "variable",
+      });
+    }
+
+    if (details.leisure && details.leisure > 0) {
+      expenses.push({
+        simulation_id: simulation.id,
+        type: "leisure",
+        title: livingExpenseLabels.leisure,
+        amount: details.leisure,
+        frequency: "monthly",
+        start_year: currentYear,
+        start_month: currentMonth,
+        growth_rate: 3.0,
+        rate_category: "inflation",
+        expense_category: "variable",
       });
     }
   }
 
   // 지출 삽입
   if (expenses.length > 0) {
+    console.log("Inserting expenses:", expenses);
     const { error } = await supabase.from("expenses").insert(expenses);
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase insert error - message:", error.message);
+      console.error("Supabase insert error - details:", error.details);
+      console.error("Supabase insert error - hint:", error.hint);
+      console.error("Supabase insert error - code:", error.code);
+      throw new Error(`지출 저장 실패: ${error.message || error.code || "Unknown error"}`);
+    }
   }
+  console.log("Expense save successful");
 
   // 완료 상태 업데이트
   await markTaskCompleted(userId, "expense");

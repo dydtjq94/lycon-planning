@@ -34,7 +34,7 @@
   overflow-y: auto;
   padding: 8px 0 150px;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
 
   /* 스크롤바 숨기기 */
   scrollbar-width: none;
@@ -43,6 +43,11 @@
 
 .messageList::-webkit-scrollbar {
   display: none;
+}
+
+.messagesWrapper {
+  display: flex;
+  flex-direction: column;
 }
 
 .emptyState {

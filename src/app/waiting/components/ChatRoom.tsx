@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Image as ImageIcon, X } from "lucide-react";
 import {
@@ -32,14 +32,15 @@ export function ChatRoom({ userId }: ChatRoomProps) {
   const pendingSendRef = useRef(false);
   const justSentRef = useRef(false);
   const [pendingImages, setPendingImages] = useState<{ file: File; preview: string }[]>([]);
-  const [uploading, setUploading] = useState(false);
 
-  // 메시지 목록 맨 아래로 스크롤
+  // 메시지 목록 맨 아래로 스크롤 (column-reverse이므로 scrollTop = 0이 아래)
   const scrollToBottom = useCallback((smooth = true) => {
-    if (smooth) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    } else if (messageListRef.current) {
-      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+    if (messageListRef.current) {
+      if (smooth) {
+        messageListRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        messageListRef.current.scrollTop = 0;
+      }
     }
   }, []);
 
@@ -69,13 +70,7 @@ export function ChatRoom({ userId }: ChatRoomProps) {
     initChat();
   }, [userId]);
 
-  // 로딩 완료 후 스크롤 (useLayoutEffect로 렌더링 전에 처리)
-  useLayoutEffect(() => {
-    if (!loading && messageListRef.current) {
-      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
-    }
-  }, [loading]);
-
+  
   // Realtime 구독
   useEffect(() => {
     if (!conversation) return;
@@ -116,7 +111,7 @@ export function ChatRoom({ userId }: ChatRoomProps) {
 
   // 메시지 전송 (낙관적 UI)
   const handleSend = async () => {
-    if (!conversation || (!newMessage.trim() && pendingImages.length === 0) || sending || uploading) return;
+    if (!conversation || (!newMessage.trim() && pendingImages.length === 0) || sending) return;
 
     const content = newMessage.trim();
     const tempId = `temp-${Date.now()}`;
@@ -140,8 +135,6 @@ export function ChatRoom({ userId }: ChatRoomProps) {
 
     // 백그라운드에서 서버 전송
     try {
-      setUploading(true);
-
       // 이미지 업로드
       const uploadedUrls: string[] = [];
       for (const img of imagesToUpload) {
@@ -175,8 +168,6 @@ export function ChatRoom({ userId }: ChatRoomProps) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setNewMessage(content);
       setPendingImages(imagesToUpload);
-    } finally {
-      setUploading(false);
     }
 
     inputRef.current?.focus();
@@ -346,13 +337,14 @@ export function ChatRoom({ userId }: ChatRoomProps) {
     <div className={styles.container}>
       {/* 메시지 목록 */}
       <div className={styles.messageList} ref={messageListRef}>
-        {messages.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p>아직 메시지가 없습니다.</p>
-            <p>궁금한 점이 있으시면 메시지를 보내주세요.</p>
-          </div>
-        ) : (
-          messages.map((msg, index) => {
+        <div className={styles.messagesWrapper}>
+          {messages.length === 0 ? (
+            <div className={styles.emptyState}>
+              <p>아직 메시지가 없습니다.</p>
+              <p>궁금한 점이 있으시면 메시지를 보내주세요.</p>
+            </div>
+          ) : (
+            messages.map((msg, index) => {
             const firstInGroup = isFirstInGroup(index);
             const lastInGroup = isLastInGroup(index);
 
@@ -446,9 +438,10 @@ export function ChatRoom({ userId }: ChatRoomProps) {
                 </div>
               </div>
             );
-          })
-        )}
-        <div ref={messagesEndRef} />
+            })
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* 메시지 입력 */}
@@ -479,14 +472,13 @@ export function ChatRoom({ userId }: ChatRoomProps) {
             onKeyDown={handleKeyDown}
             onCompositionEnd={handleCompositionEnd}
             placeholder="메시지 입력"
-            disabled={sending || uploading}
+            disabled={sending}
           />
           <div className={styles.sendButtonRow}>
             <button
               type="button"
               className={styles.attachButton}
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
             >
               <ImageIcon size={20} />
             </button>
@@ -501,9 +493,9 @@ export function ChatRoom({ userId }: ChatRoomProps) {
             <button
               className={styles.sendButton}
               onClick={handleSend}
-              disabled={(!newMessage.trim() && pendingImages.length === 0) || sending || uploading}
+              disabled={(!newMessage.trim() && pendingImages.length === 0) || sending}
             >
-              {uploading ? "업로드 중..." : "전송"}
+              전송
             </button>
           </div>
         </div>

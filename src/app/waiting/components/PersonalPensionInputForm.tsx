@@ -8,8 +8,10 @@ import styles from "./PensionInputForm.module.css";
 
 // 개인연금 유형
 const PERSONAL_PENSION_TYPES = [
-  { value: "pension_savings", label: "연금저축" },
   { value: "irp", label: "IRP" },
+  { value: "pension_savings_tax", label: "연금저축계좌 [세액공제용]" },
+  { value: "pension_savings_invest", label: "연금저축계좌 [투자용]" },
+  { value: "isa", label: "ISA" },
 ] as const;
 
 interface PersonalPensionInputFormProps {
@@ -24,7 +26,6 @@ interface FormItem {
   type: string;
   owner: "self" | "spouse";
   balance: number | null;
-  monthlyDeposit: number | null;
 }
 
 export function PersonalPensionInputForm({
@@ -39,7 +40,6 @@ export function PersonalPensionInputForm({
       type: item.type,
       owner: item.owner,
       balance: item.balance || null,
-      monthlyDeposit: item.monthlyDeposit || null,
     }))
   );
 
@@ -53,7 +53,6 @@ export function PersonalPensionInputForm({
         type,
         owner: "self",
         balance: null,
-        monthlyDeposit: null,
       },
     ]);
   };
@@ -78,12 +77,12 @@ export function PersonalPensionInputForm({
     setSaving(true);
     try {
       const result: PersonalPensionItem[] = items
-        .filter((item) => (item.balance ?? 0) > 0 || (item.monthlyDeposit ?? 0) > 0)
+        .filter((item) => (item.balance ?? 0) > 0)
         .map((item) => ({
           type: item.type,
           owner: item.owner,
           balance: item.balance ?? 0,
-          monthlyDeposit: item.monthlyDeposit ?? 0,
+          monthlyDeposit: 0,
         }));
 
       await onSave(result);
@@ -107,11 +106,18 @@ export function PersonalPensionInputForm({
         </header>
 
         <main className={styles.main}>
-          <section className={styles.section}>
-            <p className={styles.sectionHint}>
-              연금저축, IRP 등 개인이 가입한 연금 상품
+          {/* 안내 */}
+          <div className={styles.pensionTypeGuide}>
+            <p className={styles.guideTitle}>
+              개인연금은 직접 가입해야 생기는 계좌예요.
             </p>
+            <p className={styles.guideSubtitle}>
+              회사에서 자동으로 만들어주지 않아요. 증권사나 은행에서 직접
+              개설한 적이 없다면, 아래 버튼을 누르지 않고 바로 저장하시면 됩니다.
+            </p>
+          </div>
 
+          <section className={styles.section}>
             {/* 추가된 항목들 */}
             {items.length > 0 && (
               <div className={styles.itemList}>
@@ -139,18 +145,10 @@ export function PersonalPensionInputForm({
                       </div>
                       <div className={styles.itemFields}>
                         <div className={styles.fieldRow}>
-                          <span className={styles.fieldLabel}>적립금</span>
+                          <span className={styles.fieldLabel}>현재 잔액</span>
                           <AmountInput
                             value={item.balance}
                             onChange={(v) => updateItem(index, "balance", v)}
-                          />
-                        </div>
-                        <div className={styles.fieldRow}>
-                          <span className={styles.fieldLabel}>월 납입액</span>
-                          <AmountInput
-                            value={item.monthlyDeposit}
-                            onChange={(v) => updateItem(index, "monthlyDeposit", v)}
-                            showFormatted={false}
                           />
                         </div>
                       </div>
