@@ -25,6 +25,7 @@ export function AmountInput({
       <div className={styles.inputRow}>
         <input
           type="number"
+          inputMode="numeric"
           className={`${styles.amountInput} ${className || ""}`}
           placeholder={placeholder}
           value={value === null ? "" : value}

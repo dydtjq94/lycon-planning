@@ -23,6 +23,7 @@ export function RateInput({
     <div className={styles.inputRow}>
       <input
         type="number"
+        inputMode="decimal"
         className={`${styles.rateInput} ${className || ""}`}
         placeholder={placeholder}
         value={value === null ? "" : value}

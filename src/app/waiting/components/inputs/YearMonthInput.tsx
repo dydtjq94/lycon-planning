@@ -23,6 +23,7 @@ export function YearMonthInput({
     <div className={styles.yearMonthWrapper}>
       <input
         type="number"
+        inputMode="numeric"
         className={styles.yearInput}
         value={year}
         onChange={(e) => {

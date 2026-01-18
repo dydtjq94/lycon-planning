@@ -128,6 +128,7 @@ export function RetirementPensionInputForm({
                   <div className={styles.inputWithUnit}>
                     <input
                       type="number"
+                      inputMode="numeric"
                       className={styles.smallInput}
                       value={selfYearsWorked ?? ""}
                       onChange={(e) =>
@@ -187,6 +188,7 @@ export function RetirementPensionInputForm({
                     <div className={styles.inputWithUnit}>
                       <input
                         type="number"
+                        inputMode="numeric"
                         className={styles.smallInput}
                         value={spouseYearsWorked ?? ""}
                         onChange={(e) =>

@@ -21,6 +21,7 @@ export function YearInput({
     <div className={styles.inputRow}>
       <input
         type="number"
+        inputMode="numeric"
         className={`${styles.yearInput} ${className || ""}`}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value) || defaultValue)}
