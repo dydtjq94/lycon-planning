@@ -131,53 +131,56 @@ export function HousingInputForm({
           {/* 자가 - 시세 */}
           {housingType === "자가" && (
             <section className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>현재 시세</span>
+              <div className={styles.fieldRow}>
+                <span className={styles.fieldLabel}>현재 시세</span>
+                <AmountInput
+                  value={currentValue}
+                  onChange={(v) => setCurrentValue(v || null)}
+                />
               </div>
-              <AmountInput
-                value={currentValue}
-                onChange={(v) => setCurrentValue(v || null)}
-              />
             </section>
           )}
 
           {/* 전세/월세 - 보증금 */}
           {(housingType === "전세" || housingType === "월세") && (
             <section className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>보증금</span>
+              <div className={styles.fieldRow}>
+                <span className={styles.fieldLabel}>보증금</span>
+                <AmountInput
+                  value={deposit}
+                  onChange={(v) => setDeposit(v || null)}
+                />
               </div>
-              <AmountInput
-                value={deposit}
-                onChange={(v) => setDeposit(v || null)}
-              />
             </section>
           )}
 
           {/* 월세 - 월세금액 */}
           {housingType === "월세" && (
             <section className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>월세</span>
+              <div className={styles.fieldRow}>
+                <span className={styles.fieldLabel}>월세</span>
+                <AmountInput
+                  value={monthlyRent}
+                  onChange={(v) => setMonthlyRent(v || null)}
+                />
               </div>
-              <AmountInput
-                value={monthlyRent}
-                onChange={(v) => setMonthlyRent(v || null)}
-              />
             </section>
           )}
 
           {/* 관리비 */}
           {housingType && (
             <section className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>관리비</span>
+              <div className={styles.fieldRow}>
+                <div className={styles.fieldInfo}>
+                  <span className={styles.fieldLabel}>관리비</span>
+                  <span className={styles.fieldHint}>없으면 비워두세요</span>
+                </div>
+                <AmountInput
+                  value={maintenanceFee}
+                  onChange={(v) => setMaintenanceFee(v || null)}
+                  placeholder="0"
+                />
               </div>
-              <p className={styles.sectionHint}>없으면 0원</p>
-              <AmountInput
-                value={maintenanceFee}
-                onChange={(v) => setMaintenanceFee(v || null)}
-              />
             </section>
           )}
 

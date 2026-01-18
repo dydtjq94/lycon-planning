@@ -34,7 +34,7 @@
   overflow-y: auto;
   padding: 8px 0 150px;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
 
   /* 스크롤바 숨기기 */
   scrollbar-width: none;

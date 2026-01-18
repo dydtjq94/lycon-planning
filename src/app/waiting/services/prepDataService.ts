@@ -55,7 +55,7 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
   const simulation = await simulationService.getDefault();
 
   // 병렬로 모든 데이터 로드
-  const [profileResult, familyResult, housingResult, savingsResult, debtsResult, pensionsResult, expensesResult] = await Promise.all([
+  const [profileResult, familyResult, housingResult, savingsResult, debtsResult, expensesResult] = await Promise.all([
     supabase
       .from("profiles")
       .select("survey_responses")
@@ -85,12 +85,6 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
           .select("*")
           .eq("simulation_id", simulation.id)
           .is("source_type", null) // 직접 입력한 부채만 (housing 연동 제외)
-      : Promise.resolve({ data: [] }),
-    simulation
-      ? supabase
-          .from("pensions")
-          .select("*")
-          .eq("simulation_id", simulation.id)
       : Promise.resolve({ data: [] }),
     simulation
       ? supabase
@@ -158,13 +152,17 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
   );
 
   // 금 현물 데이터 로드 (physical_assets 테이블)
-  const { data: goldData } = await supabase
-    .from("physical_assets")
-    .select("*")
-    .eq("simulation_id", simulation.id)
-    .eq("type", "precious_metal")
-    .eq("title", "금 현물")
-    .single();
+  let goldData = null;
+  if (simulation) {
+    const { data } = await supabase
+      .from("physical_assets")
+      .select("*")
+      .eq("simulation_id", simulation.id)
+      .eq("type", "precious_metal")
+      .eq("title", "금 현물")
+      .maybeSingle();
+    goldData = data;
+  }
 
   // 투자 데이터 구성
   let investment: InvestmentAccountData | null = null;
@@ -211,52 +209,67 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
     monthlyPayment: d.monthly_payment as number | undefined,
   }));
 
-  // 공적연금 유형 목록
-  const publicPensionTypes = ["national", "government", "military", "private_school"];
-
-  // 국민(공적)연금 데이터 변환
+  // 국민(공적)연금 데이터 로드
   let nationalPension: NationalPensionData | null = null;
-  const publicPensions = (pensionsResult.data || []).filter(
-    (p: Record<string, unknown>) => publicPensionTypes.includes(p.type as string)
-  );
-  if (publicPensions.length > 0) {
-    const selfPension = publicPensions.find((p: Record<string, unknown>) => p.owner === "self");
-    const spousePension = publicPensions.find((p: Record<string, unknown>) => p.owner === "spouse");
-    nationalPension = {
-      selfType: (selfPension?.type as PublicPensionType) || "national",
-      selfExpectedAmount: (selfPension?.expected_monthly_amount as number) || 0,
-      spouseType: (spousePension?.type as PublicPensionType) || "national",
-      spouseExpectedAmount: (spousePension?.expected_monthly_amount as number) || 0,
-    };
+  if (simulation) {
+    const { data: nationalPensionsData } = await supabase
+      .from("national_pensions")
+      .select("*")
+      .eq("simulation_id", simulation.id);
+
+    if (nationalPensionsData && nationalPensionsData.length > 0) {
+      const selfPension = nationalPensionsData.find((p: Record<string, unknown>) => p.owner === "self");
+      const spousePension = nationalPensionsData.find((p: Record<string, unknown>) => p.owner === "spouse");
+
+      // memo에 저장된 공적연금 유형 파싱 (national이 기본값)
+      const getSelfType = (): PublicPensionType => {
+        if (!selfPension?.memo) return "national";
+        return (selfPension.memo as PublicPensionType) || "national";
+      };
+      const getSpouseType = (): PublicPensionType => {
+        if (!spousePension?.memo) return "national";
+        return (spousePension.memo as PublicPensionType) || "national";
+      };
+
+      nationalPension = {
+        selfType: getSelfType(),
+        selfExpectedAmount: (selfPension?.expected_monthly_amount as number) || 0,
+        spouseType: getSpouseType(),
+        spouseExpectedAmount: (spousePension?.expected_monthly_amount as number) || 0,
+      };
+    }
   }
 
-  // 퇴직연금 데이터 변환
+  // 퇴직연금 데이터 로드
   let retirementPension: RetirementPensionData | null = null;
-  const retirementPensionTypes = ["retirement_db", "retirement_dc"];
-  const retirementPensions = (pensionsResult.data || []).filter(
-    (p: Record<string, unknown>) => retirementPensionTypes.includes(p.type as string)
-  );
-  if (retirementPensions.length > 0) {
-    const selfRetirement = retirementPensions.find((p: Record<string, unknown>) => p.owner === "self");
-    const spouseRetirement = retirementPensions.find((p: Record<string, unknown>) => p.owner === "spouse");
+  if (simulation) {
+    const { data: retirementPensionsData } = await supabase
+      .from("retirement_pensions")
+      .select("*")
+      .eq("simulation_id", simulation.id);
 
-    const getSelfType = (): RetirementPensionType => {
-      if (!selfRetirement) return "db";
-      return selfRetirement.type === "retirement_dc" ? "dc" : "db";
-    };
-    const getSpouseType = (): RetirementPensionType => {
-      if (!spouseRetirement) return "db";
-      return spouseRetirement.type === "retirement_dc" ? "dc" : "db";
-    };
+    if (retirementPensionsData && retirementPensionsData.length > 0) {
+      const selfRetirement = retirementPensionsData.find((p: Record<string, unknown>) => p.owner === "self");
+      const spouseRetirement = retirementPensionsData.find((p: Record<string, unknown>) => p.owner === "spouse");
 
-    retirementPension = {
-      selfType: getSelfType(),
-      selfYearsWorked: (selfRetirement?.years_worked as number) || null,
-      selfBalance: (selfRetirement?.current_balance as number) || null,
-      spouseType: getSpouseType(),
-      spouseYearsWorked: (spouseRetirement?.years_worked as number) || null,
-      spouseBalance: (spouseRetirement?.current_balance as number) || null,
-    };
+      const getSelfType = (): RetirementPensionType => {
+        if (!selfRetirement) return "none";
+        return (selfRetirement.pension_type as string) === "dc" ? "dc" : "db";
+      };
+      const getSpouseType = (): RetirementPensionType => {
+        if (!spouseRetirement) return "none";
+        return (spouseRetirement.pension_type as string) === "dc" ? "dc" : "db";
+      };
+
+      retirementPension = {
+        selfType: getSelfType(),
+        selfYearsWorked: (selfRetirement?.years_of_service as number) || null,
+        selfBalance: (selfRetirement?.current_balance as number) || null,
+        spouseType: getSpouseType(),
+        spouseYearsWorked: (spouseRetirement?.years_of_service as number) || null,
+        spouseBalance: (spouseRetirement?.current_balance as number) || null,
+      };
+    }
   }
 
   // 개인연금 데이터 로드 (personal_pensions 테이블)

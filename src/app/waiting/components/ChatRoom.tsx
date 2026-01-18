@@ -32,14 +32,16 @@ export function ChatRoom({ userId }: ChatRoomProps) {
   const pendingSendRef = useRef(false);
   const justSentRef = useRef(false);
   const [pendingImages, setPendingImages] = useState<{ file: File; preview: string }[]>([]);
+  const [scrollReady, setScrollReady] = useState(false);
 
-  // 메시지 목록 맨 아래로 스크롤 (column-reverse이므로 scrollTop = 0이 아래)
+  // 메시지 목록 맨 아래로 스크롤
   const scrollToBottom = useCallback((smooth = true) => {
     if (messageListRef.current) {
+      const scrollHeight = messageListRef.current.scrollHeight;
       if (smooth) {
-        messageListRef.current.scrollTo({ top: 0, behavior: "smooth" });
+        messageListRef.current.scrollTo({ top: scrollHeight, behavior: "smooth" });
       } else {
-        messageListRef.current.scrollTop = 0;
+        messageListRef.current.scrollTop = scrollHeight;
       }
     }
   }, []);
@@ -70,7 +72,32 @@ export function ChatRoom({ userId }: ChatRoomProps) {
     initChat();
   }, [userId]);
 
-  
+  // 초기 로딩 완료 후 스크롤
+  const initialScrollDone = useRef(false);
+  useEffect(() => {
+    if (!loading && messages.length > 0 && !initialScrollDone.current) {
+      initialScrollDone.current = true;
+      // 레이아웃 계산 완료 후 스크롤
+      requestAnimationFrame(() => {
+        if (messageListRef.current) {
+          const { scrollHeight, clientHeight } = messageListRef.current;
+          if (scrollHeight > clientHeight) {
+            messageListRef.current.scrollTop = scrollHeight;
+          }
+        }
+        // 스크롤 완료 후 표시
+        setScrollReady(true);
+      });
+    }
+  }, [loading, messages]);
+
+  // 메시지 없을 때도 바로 표시
+  useEffect(() => {
+    if (!loading && messages.length === 0) {
+      setScrollReady(true);
+    }
+  }, [loading, messages]);
+
   // Realtime 구독
   useEffect(() => {
     if (!conversation) return;
@@ -337,7 +364,7 @@ export function ChatRoom({ userId }: ChatRoomProps) {
     <div className={styles.container}>
       {/* 메시지 목록 */}
       <div className={styles.messageList} ref={messageListRef}>
-        <div className={styles.messagesWrapper}>
+        <div className={styles.messagesWrapper} style={{ opacity: scrollReady ? 1 : 0 }}>
           {messages.length === 0 ? (
             <div className={styles.emptyState}>
               <p>아직 메시지가 없습니다.</p>

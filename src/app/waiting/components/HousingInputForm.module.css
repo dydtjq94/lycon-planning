@@ -103,6 +103,31 @@
   margin: 0 0 16px 0;
 }
 
+/* 필드 행 (가로 배치) */
+.fieldRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fieldInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fieldLabel {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.fieldHint {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
 /* 금액 포맷 표시 */
 .formattedAmount {
   font-size: 13px;
@@ -221,14 +246,16 @@
 
 .loanRow {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .loanLabel {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: #6b7280;
+  flex-shrink: 0;
 }
 
 /* 금리 입력 */

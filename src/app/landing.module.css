@@ -908,11 +908,20 @@
   -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }
 
+.marqueeWrapper + .marqueeWrapper {
+  margin-top: 12px;
+}
+
+.marqueeTrack {
+  display: flex;
+  width: max-content;
+  animation: marquee 60s linear infinite;
+}
+
 .marqueeContent {
   display: flex;
-  gap: 32px;
-  animation: marquee 30s linear infinite;
-  width: max-content;
+  gap: 40px;
+  padding-right: 40px;
 }
 
 .marqueeContent span {
@@ -929,6 +938,19 @@
   100% {
     transform: translateX(-50%);
   }
+}
+
+@keyframes marqueeReverse {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.marqueeReverse {
+  animation: marqueeReverse 60s linear infinite;
 }
 
 /* =============================================

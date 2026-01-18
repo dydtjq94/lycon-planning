@@ -240,49 +240,101 @@ export default function LandingPage() {
             </Link>
 
             <div className={styles.companyMarquee}>
-              <span className={styles.companyLabel}>이런 기업의 직장인들이 검진받았습니다</span>
+              <span className={styles.companyLabel}>이미 다양한 기업에서 재무 검진을 받고 있습니다</span>
               <div className={styles.marqueeWrapper}>
-                <div className={styles.marqueeContent}>
-                  <span>삼성전자</span>
-                  <span>Google</span>
-                  <span>현대자동차</span>
-                  <span>네이버</span>
-                  <span>Apple</span>
-                  <span>SK하이닉스</span>
-                  <span>Amazon</span>
-                  <span>카카오</span>
-                  <span>LG전자</span>
-                  <span>Microsoft</span>
-                  <span>포스코</span>
-                  <span>Tesla</span>
-                  <span>KT</span>
-                  <span>Meta</span>
-                  <span>한화</span>
-                  <span>NVIDIA</span>
-                  <span>기아</span>
-                  <span>Intel</span>
-                  <span>롯데</span>
-                  <span>Adobe</span>
-                  <span>삼성전자</span>
-                  <span>Google</span>
-                  <span>현대자동차</span>
-                  <span>네이버</span>
-                  <span>Apple</span>
-                  <span>SK하이닉스</span>
-                  <span>Amazon</span>
-                  <span>카카오</span>
-                  <span>LG전자</span>
-                  <span>Microsoft</span>
-                  <span>포스코</span>
-                  <span>Tesla</span>
-                  <span>KT</span>
-                  <span>Meta</span>
-                  <span>한화</span>
-                  <span>NVIDIA</span>
-                  <span>기아</span>
-                  <span>Intel</span>
-                  <span>롯데</span>
-                  <span>Adobe</span>
+                <div className={styles.marqueeTrack}>
+                  <div className={styles.marqueeContent}>
+                    <span>삼성전자</span>
+                    <span>현대자동차</span>
+                    <span>Google</span>
+                    <span>네이버</span>
+                    <span>Apple</span>
+                    <span>SK하이닉스</span>
+                    <span>카카오</span>
+                    <span>Microsoft</span>
+                    <span>Amazon</span>
+                    <span>LG전자</span>
+                    <span>Tesla</span>
+                    <span>Meta</span>
+                  </div>
+                  <div className={styles.marqueeContent}>
+                    <span>삼성전자</span>
+                    <span>현대자동차</span>
+                    <span>Google</span>
+                    <span>네이버</span>
+                    <span>Apple</span>
+                    <span>SK하이닉스</span>
+                    <span>카카오</span>
+                    <span>Microsoft</span>
+                    <span>Amazon</span>
+                    <span>LG전자</span>
+                    <span>Tesla</span>
+                    <span>Meta</span>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.marqueeWrapper}>
+                <div className={`${styles.marqueeTrack} ${styles.marqueeReverse}`}>
+                  <div className={styles.marqueeContent}>
+                    <span>NVIDIA</span>
+                    <span>Intel</span>
+                    <span>포스코</span>
+                    <span>Netflix</span>
+                    <span>기아</span>
+                    <span>한화</span>
+                    <span>Adobe</span>
+                    <span>Oracle</span>
+                    <span>쿠팡</span>
+                    <span>토스</span>
+                    <span>Salesforce</span>
+                    <span>롯데</span>
+                  </div>
+                  <div className={styles.marqueeContent}>
+                    <span>NVIDIA</span>
+                    <span>Intel</span>
+                    <span>포스코</span>
+                    <span>Netflix</span>
+                    <span>기아</span>
+                    <span>한화</span>
+                    <span>Adobe</span>
+                    <span>Oracle</span>
+                    <span>쿠팡</span>
+                    <span>토스</span>
+                    <span>Salesforce</span>
+                    <span>롯데</span>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.marqueeWrapper}>
+                <div className={styles.marqueeTrack}>
+                  <div className={styles.marqueeContent}>
+                    <span>Uber</span>
+                    <span>Airbnb</span>
+                    <span>삼성SDI</span>
+                    <span>현대모비스</span>
+                    <span>KT</span>
+                    <span>IBM</span>
+                    <span>Spotify</span>
+                    <span>엔씨소프트</span>
+                    <span>SK텔레콤</span>
+                    <span>Zoom</span>
+                    <span>Stripe</span>
+                    <span>셀트리온</span>
+                  </div>
+                  <div className={styles.marqueeContent}>
+                    <span>Uber</span>
+                    <span>Airbnb</span>
+                    <span>삼성SDI</span>
+                    <span>현대모비스</span>
+                    <span>KT</span>
+                    <span>IBM</span>
+                    <span>Spotify</span>
+                    <span>엔씨소프트</span>
+                    <span>SK텔레콤</span>
+                    <span>Zoom</span>
+                    <span>Stripe</span>
+                    <span>셀트리온</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -305,7 +357,7 @@ export default function LandingPage() {
               재무 검진 예약하기
             </Link>
             <p className={styles.ctaNote}>
-              당신의 첫 번째 재무 담당자를 만나보세요.
+              이제 혼자 고민하지 않아도 됩니다.
             </p>
           </div>
         </section>
