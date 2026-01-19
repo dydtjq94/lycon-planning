@@ -18,9 +18,11 @@ import styles from "./ChatRoom.module.css";
 interface ChatRoomProps {
   userId: string;
   isVisible?: boolean;
+  onNewMessage?: (message: Message, expertName: string) => void;
+  onMessagesLoaded?: (messages: Message[], expertName: string) => void;
 }
 
-export function ChatRoom({ userId, isVisible = true }: ChatRoomProps) {
+export function ChatRoom({ userId, isVisible = true, onNewMessage, onMessagesLoaded }: ChatRoomProps) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -63,6 +65,11 @@ export function ChatRoom({ userId, isVisible = true }: ChatRoomProps) {
         setConversation(data.conversation);
         setMessages(data.messages);
         setLoading(false);
+
+        // 메시지 로드 완료 콜백 (웰컴 알림용)
+        if (data.messages.length > 0) {
+          onMessagesLoaded?.(data.messages, data.expert.name);
+        }
 
         // 읽음 처리 (백그라운드)
         markMessagesAsRead(data.conversation.id);
@@ -139,6 +146,11 @@ export function ChatRoom({ userId, isVisible = true }: ChatRoomProps) {
           });
           setTimeout(scrollToBottom, 100);
 
+          // 새 메시지 콜백 (푸시 알림용)
+          if (expert) {
+            onNewMessage?.(newMsg, expert.name);
+          }
+
           // 전문가 메시지면 읽음 처리
           markMessagesAsRead(conversation.id);
         }
@@ -148,7 +160,7 @@ export function ChatRoom({ userId, isVisible = true }: ChatRoomProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversation, scrollToBottom]);
+  }, [conversation, scrollToBottom, expert, onNewMessage]);
 
   // 메시지 전송 (낙관적 UI)
   const handleSend = async () => {

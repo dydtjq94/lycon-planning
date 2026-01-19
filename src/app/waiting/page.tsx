@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   MessageCircle,
@@ -19,8 +19,9 @@ import {
   Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { ChatRoom, ProgramDetailView, Toast, TipModal } from "./components";
+import { ChatRoom, ProgramDetailView, Toast, TipModal, MessageNotificationToast } from "./components";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
+import type { Message } from "@/lib/services/messageService";
 import styles from "./waiting.module.css";
 
 // Suspense로 감싸기 위한 wrapper
@@ -108,6 +109,14 @@ function WaitingPageContent() {
   const [selectedTip, setSelectedTip] = useState<string | null>(null);
   const [tipModalKey, setTipModalKey] = useState(0);
   const [prepDataCategories, setPrepDataCategories] = useState<Set<string>>(new Set());
+
+  // 메시지 알림 상태 (여러 개 쌓임)
+  const [messageNotifications, setMessageNotifications] = useState<{
+    id: number;
+    senderName: string;
+    message: string;
+  }[]>([]);
+  const notificationIdRef = useRef(0);
 
   // 탭 변경 시 URL 업데이트
   const handleTabChange = async (tab: Tab) => {
@@ -250,6 +259,45 @@ function WaitingPageContent() {
     await fetch("/api/auth/delete-account", { method: "POST" });
     router.push("/");
     router.refresh();
+  };
+
+  // 알림 추가 헬퍼
+  const addNotification = (senderName: string, message: string) => {
+    const id = ++notificationIdRef.current;
+    setMessageNotifications(prev => [...prev, { id, senderName, message }]);
+  };
+
+  // 알림 제거 헬퍼
+  const removeNotification = (id: number) => {
+    setMessageNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  // 새 메시지 도착 시 알림 표시 (홈 탭일 때만)
+  const handleNewMessage = (message: Message, expertName: string) => {
+    if (activeTab === "home") {
+      addNotification(expertName, message.content);
+    }
+  };
+
+  // 메시지 로드 완료 시 (웰컴 알림용)
+  const handleMessagesLoaded = (messages: Message[], expertName: string) => {
+    // 웰컴 알림 플래그 체크
+    const shouldShowWelcome = sessionStorage.getItem("showWelcomeNotifications") === "true";
+    if (!shouldShowWelcome) return;
+
+    // 플래그 즉시 제거 (중복 방지)
+    sessionStorage.removeItem("showWelcomeNotifications");
+
+    // 전문가 메시지만 필터
+    const expertMessages = messages.filter(m => m.sender_type === "expert");
+    if (expertMessages.length === 0) return;
+
+    // 2초 후부터 순차적으로 알림
+    expertMessages.forEach((msg, index) => {
+      setTimeout(() => {
+        addNotification(expertName, msg.content);
+      }, 2000 + (index * 2000)); // 2초, 4초, 6초...
+    });
   };
 
   const formatBookingDate = (dateStr: string, timeStr: string) => {
@@ -435,6 +483,19 @@ function WaitingPageContent() {
           isVisible={!!toast}
           onClose={() => setToast(null)}
         />
+
+        {/* 메시지 알림 토스트 (상단에서 내려오는, 여러 개 쌓임) */}
+        {messageNotifications.map((notification, index) => (
+          <MessageNotificationToast
+            key={notification.id}
+            senderName={notification.senderName}
+            message={notification.message}
+            isVisible={true}
+            index={index}
+            onClose={() => removeNotification(notification.id)}
+            onClick={() => handleTabChange("chat")}
+          />
+        ))}
       </div>
 
       {/* 채팅 탭 - 항상 마운트, display로 숨김 */}
@@ -457,7 +518,12 @@ function WaitingPageContent() {
 
         <div className={styles.chatMain}>
           {userId && (
-            <ChatRoom userId={userId} isVisible={activeTab === "chat"} />
+            <ChatRoom
+              userId={userId}
+              isVisible={activeTab === "chat"}
+              onNewMessage={handleNewMessage}
+              onMessagesLoaded={handleMessagesLoaded}
+            />
           )}
         </div>
       </div>

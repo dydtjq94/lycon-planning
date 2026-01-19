@@ -182,6 +182,9 @@ export function PhoneVerify() {
         // 예약 확정 실패해도 진행 (예약이 없을 수도 있음)
       }
 
+      // 웰컴 알림 플래그 설정
+      sessionStorage.setItem("showWelcomeNotifications", "true");
+
       // 웨이팅 화면으로 이동
       router.push("/waiting");
       router.refresh();
