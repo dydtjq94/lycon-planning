@@ -179,17 +179,33 @@ export default function LandingPage() {
             <div className={styles.expertNetwork}>
               <div className={styles.expertMain}>
                 <span className={styles.expertMainTitle}>은퇴설계 전문가</span>
-                <span className={styles.expertMainDesc}>당신의 담당 전문가로서 전체 과정을 함께합니다</span>
+                <span className={styles.expertMainDesc}>
+                  당신의 담당 전문가로서 전체 과정을 함께합니다
+                </span>
               </div>
               <div className={styles.expertPartners}>
-                <span className={styles.expertPartnersLabel}>협력 전문가 네트워크</span>
+                <span className={styles.expertPartnersLabel}>
+                  협력 전문가 네트워크
+                </span>
                 <div className={styles.expertList}>
-                  <span>세무사 <em>세금/절세</em></span>
-                  <span>회계사 <em>자산관리</em></span>
-                  <span>변호사 <em>법률자문</em></span>
-                  <span>부동산 전문가 <em>부동산</em></span>
-                  <span>노무사 <em>퇴직금</em></span>
-                  <span>자산운용사 <em>투자</em></span>
+                  <span>
+                    세무사 <em>세금/절세</em>
+                  </span>
+                  <span>
+                    회계사 <em>자산관리</em>
+                  </span>
+                  <span>
+                    변호사 <em>법률자문</em>
+                  </span>
+                  <span>
+                    부동산 전문가 <em>부동산</em>
+                  </span>
+                  <span>
+                    노무사 <em>퇴직금</em>
+                  </span>
+                  <span>
+                    자산운용사 <em>투자</em>
+                  </span>
                 </div>
               </div>
             </div>
@@ -199,9 +215,7 @@ export default function LandingPage() {
         {/* 재무검진 프로그램 */}
         <section className={styles.checkupSection}>
           <div className={styles.checkupContainer}>
-            <span className={styles.checkupBadge}>
-              건강검진처럼, 재무검진
-            </span>
+            <span className={styles.checkupBadge}>건강검진처럼, 재무검진</span>
             <h2 className={styles.checkupTitle}>기본형 종합 재무검진</h2>
             <p className={styles.checkupSubtitle}>
               은퇴설계 전문가와 1:1로 진행하는 은퇴 진단
@@ -222,8 +236,7 @@ export default function LandingPage() {
               <span>약 30분</span>
               <span className={styles.checkupDot}></span>
               <span>
-                <span className={styles.priceOriginal}>249,000원</span>
-                {" "}
+                <span className={styles.priceOriginal}>249,000원</span>{" "}
                 <span className={styles.priceFree}>무료</span>
               </span>
             </div>
@@ -238,106 +251,6 @@ export default function LandingPage() {
             >
               예약하기
             </Link>
-
-            <div className={styles.companyMarquee}>
-              <span className={styles.companyLabel}>이미 다양한 기업에서 재무 검진을 받고 있습니다</span>
-              <div className={styles.marqueeWrapper}>
-                <div className={styles.marqueeTrack}>
-                  <div className={styles.marqueeContent}>
-                    <span>삼성전자</span>
-                    <span>현대자동차</span>
-                    <span>Google</span>
-                    <span>네이버</span>
-                    <span>Apple</span>
-                    <span>SK하이닉스</span>
-                    <span>카카오</span>
-                    <span>Microsoft</span>
-                    <span>Amazon</span>
-                    <span>LG전자</span>
-                    <span>Tesla</span>
-                    <span>Meta</span>
-                  </div>
-                  <div className={styles.marqueeContent}>
-                    <span>삼성전자</span>
-                    <span>현대자동차</span>
-                    <span>Google</span>
-                    <span>네이버</span>
-                    <span>Apple</span>
-                    <span>SK하이닉스</span>
-                    <span>카카오</span>
-                    <span>Microsoft</span>
-                    <span>Amazon</span>
-                    <span>LG전자</span>
-                    <span>Tesla</span>
-                    <span>Meta</span>
-                  </div>
-                </div>
-              </div>
-              <div className={styles.marqueeWrapper}>
-                <div className={`${styles.marqueeTrack} ${styles.marqueeReverse}`}>
-                  <div className={styles.marqueeContent}>
-                    <span>NVIDIA</span>
-                    <span>Intel</span>
-                    <span>포스코</span>
-                    <span>Netflix</span>
-                    <span>기아</span>
-                    <span>한화</span>
-                    <span>Adobe</span>
-                    <span>Oracle</span>
-                    <span>쿠팡</span>
-                    <span>토스</span>
-                    <span>Salesforce</span>
-                    <span>롯데</span>
-                  </div>
-                  <div className={styles.marqueeContent}>
-                    <span>NVIDIA</span>
-                    <span>Intel</span>
-                    <span>포스코</span>
-                    <span>Netflix</span>
-                    <span>기아</span>
-                    <span>한화</span>
-                    <span>Adobe</span>
-                    <span>Oracle</span>
-                    <span>쿠팡</span>
-                    <span>토스</span>
-                    <span>Salesforce</span>
-                    <span>롯데</span>
-                  </div>
-                </div>
-              </div>
-              <div className={styles.marqueeWrapper}>
-                <div className={styles.marqueeTrack}>
-                  <div className={styles.marqueeContent}>
-                    <span>Uber</span>
-                    <span>Airbnb</span>
-                    <span>삼성SDI</span>
-                    <span>현대모비스</span>
-                    <span>KT</span>
-                    <span>IBM</span>
-                    <span>Spotify</span>
-                    <span>엔씨소프트</span>
-                    <span>SK텔레콤</span>
-                    <span>Zoom</span>
-                    <span>Stripe</span>
-                    <span>셀트리온</span>
-                  </div>
-                  <div className={styles.marqueeContent}>
-                    <span>Uber</span>
-                    <span>Airbnb</span>
-                    <span>삼성SDI</span>
-                    <span>현대모비스</span>
-                    <span>KT</span>
-                    <span>IBM</span>
-                    <span>Spotify</span>
-                    <span>엔씨소프트</span>
-                    <span>SK텔레콤</span>
-                    <span>Zoom</span>
-                    <span>Stripe</span>
-                    <span>셀트리온</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -356,9 +269,7 @@ export default function LandingPage() {
             >
               재무 검진 예약하기
             </Link>
-            <p className={styles.ctaNote}>
-              이제 혼자 고민하지 않아도 됩니다.
-            </p>
+            <p className={styles.ctaNote}>이제 혼자 고민하지 않아도 됩니다.</p>
           </div>
         </section>
       </main>
