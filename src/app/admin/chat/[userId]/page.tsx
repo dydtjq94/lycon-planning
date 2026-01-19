@@ -201,10 +201,20 @@ export default function AdminChatPage() {
         prev.map((m) => (m.id === tempId ? newMsg : m))
       );
 
-      // last_message_at 업데이트
+      // 현재 unread_count 조회
+      const { data: conv } = await supabase
+        .from("conversations")
+        .select("unread_count")
+        .eq("id", conversationId)
+        .single();
+
+      // last_message_at + unread_count 업데이트
       await supabase
         .from("conversations")
-        .update({ last_message_at: new Date().toISOString() })
+        .update({
+          last_message_at: new Date().toISOString(),
+          unread_count: (conv?.unread_count || 0) + 1
+        })
         .eq("id", conversationId);
     }
 

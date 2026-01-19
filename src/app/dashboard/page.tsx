@@ -1,5 +1,11 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+
+export const metadata: Metadata = {
+  title: '대시보드',
+  description: '나의 재무 현황과 시뮬레이션 결과 확인',
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()

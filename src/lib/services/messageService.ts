@@ -297,25 +297,37 @@ export async function loadChatData(): Promise<{
 
 // 담당 전문가와의 대화 초기화 (온보딩 완료 시 호출)
 export async function initializePrimaryConversation(): Promise<Conversation | null> {
+  const supabase = createClient()
+
   const expert = await getDefaultExpert()
   if (!expert) return null
+
+  // 유저 정보 가져오기
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('name')
+    .eq('id', user.id)
+    .single()
+
+  const userName = profile?.name || '고객'
 
   const conversation = await getOrCreateConversation(expert.id, true)
 
   // 환영 메시지가 없으면 추가
   const messages = await getMessages(conversation.id)
   if (messages.length === 0) {
-    const supabase = createClient()
-
     // 첫 번째 메시지: 인사
     await supabase
       .from('messages')
       .insert({
         conversation_id: conversation.id,
         sender_type: 'expert',
-        content: `안녕하세요, 담당 은퇴설계전문가 ${expert.name}입니다.
-
-검진 전 궁금한 점 있으시면 편하게 물어보세요.`,
+        content: `안녕하세요, ${userName}님,
+검진을 예약해주셔서 감사합니다.
+은퇴설계전문가 ${expert.name}입니다.`,
         is_read: false,
       })
 
@@ -325,16 +337,25 @@ export async function initializePrimaryConversation(): Promise<Conversation | nu
       .insert({
         conversation_id: conversation.id,
         sender_type: 'expert',
-        content: `검진 전까지 소득, 지출, 자산, 부채, 연금 정보를 입력해주세요.
+        content: `첫 검진 시간에는 소득·지출·자산·부채·연금 정보를 함께 검토해드립니다.
+미리 입력해주시면 더 정확한 분석이 가능하며, 입력 없이도 상담은 정상 진행됩니다.`,
+        is_read: false,
+      })
 
-입력하신 정보를 바탕으로 정확한 은퇴 진단을 도와드리겠습니다.`,
+    // 세 번째 메시지: 문의 안내
+    await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversation.id,
+        sender_type: 'expert',
+        content: `검진 전 궁금하신 점 있으시면 편하게 물어보세요.`,
         is_read: false,
       })
 
     // unread_count 업데이트
     await supabase
       .from('conversations')
-      .update({ unread_count: 2 })
+      .update({ unread_count: 3 })
       .eq('id', conversation.id)
   }
 
