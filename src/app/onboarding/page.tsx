@@ -7,6 +7,7 @@ import { SimpleOnboarding } from "./components/SimpleOnboarding";
 import { simulationService } from "@/lib/services/simulationService";
 import { initializePrimaryConversation } from "@/lib/services/messageService";
 import { createBooking } from "@/lib/services/bookingService";
+import { identifyUser, setUserProperties } from "@/lib/analytics/mixpanel";
 
 interface InitialData {
   name: string;
@@ -122,6 +123,18 @@ export default function OnboardingPage() {
           booked_at: new Date().toISOString(),
         } : null,
         updated_at: new Date().toISOString(),
+      });
+
+      // Mixpanel 유저 식별 및 속성 설정
+      const currentYear = new Date().getFullYear();
+      const age = currentYear - data.birthYear;
+      identifyUser(user.id);
+      setUserProperties({
+        name: data.name,
+        gender: data.gender,
+        birth_year: data.birthYear,
+        age,
+        onboarding_completed_at: new Date().toISOString(),
       });
 
       // 2. 예약 생성 (프로필 저장 후)
