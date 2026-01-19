@@ -61,18 +61,30 @@ export default function AdminDashboardPage() {
         .order("last_message_at", { ascending: false });
 
       if (conversations) {
+        type ProfileData = {
+          id: string;
+          name: string | null;
+          birth_date: string | null;
+          created_at: string;
+          onboarding_step: string | null;
+        };
+
         const userList: User[] = conversations
-          .filter((c) => c.profiles)
-          .map((c) => ({
-            id: (c.profiles as { id: string }).id,
-            name: (c.profiles as { name: string }).name || "이름 없음",
-            birth_date: (c.profiles as { birth_date: string | null }).birth_date,
-            created_at: (c.profiles as { created_at: string }).created_at,
-            onboarding_step: (c.profiles as { onboarding_step: string | null }).onboarding_step,
-            unread_count: c.unread_count || 0,
-            conversation_id: c.id,
-            last_message_at: c.last_message_at,
-          }));
+          .filter((c) => c.profiles && (Array.isArray(c.profiles) ? c.profiles.length > 0 : true))
+          .map((c) => {
+            const profileData = c.profiles as ProfileData | ProfileData[];
+            const profile = Array.isArray(profileData) ? profileData[0] : profileData;
+            return {
+              id: profile.id,
+              name: profile.name || "이름 없음",
+              birth_date: profile.birth_date,
+              created_at: profile.created_at,
+              onboarding_step: profile.onboarding_step,
+              unread_count: c.unread_count || 0,
+              conversation_id: c.id,
+              last_message_at: c.last_message_at,
+            };
+          });
 
         setUsers(userList);
         setStats({
