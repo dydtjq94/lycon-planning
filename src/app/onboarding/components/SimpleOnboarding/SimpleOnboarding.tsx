@@ -1066,9 +1066,7 @@ export function SimpleOnboarding({
       <p className={styles.missionDesc}>
         라이콘은 자산 규모와 관계없이
         <br />
-        누구나 전문가의 종합 재무검진을 받을 수 있도록
-        <br />
-        문턱을 낮추고 있습니다.
+        누구나 전문가의 종합 재무검진을 받을 수 있도록, 문턱을 낮추고 있습니다.
       </p>
       <div className={styles.bottomButtonArea}>
         <button className={styles.primaryButton} onClick={handleNext}>
@@ -1110,7 +1108,7 @@ export function SimpleOnboarding({
         </div>
       </div>
       <p className={styles.problemText}>
-        건강검진처럼, 은퇴 준비도 정기적인 점검이 필요합니다.
+        건강검진처럼 은퇴도 정기적인 검진이 필요합니다.
       </p>
       <div className={styles.bottomButtonArea}>
         <button className={styles.primaryButton} onClick={handleNext}>
