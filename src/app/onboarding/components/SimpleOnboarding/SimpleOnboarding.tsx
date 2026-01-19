@@ -239,13 +239,12 @@ const SURVEY_SECTIONS: SurveySection[] = [
         question: "지금 하고 계신\n투자가 있나요?",
         type: "multiple",
         options: [
-          { value: "stock_domestic", label: "국내 주식" },
-          { value: "stock_foreign", label: "해외 주식" },
-          { value: "etf", label: "ETF" },
+          { value: "stock_domestic", label: "국내 주식/ETF" },
+          { value: "stock_foreign", label: "해외 주식/ETF" },
           { value: "fund", label: "펀드" },
           { value: "bond", label: "채권" },
           { value: "realestate", label: "부동산" },
-          { value: "crypto", label: "코인" },
+          { value: "crypto", label: "가상자산" },
           { value: "gold", label: "금/원자재" },
           { value: "none", label: "없어요" },
         ],
@@ -381,16 +380,16 @@ const PROGRAM_CONTENT: Record<string, { desc: string; checkpoints: string[] }> =
 const CHECKUP_ITEMS = [
   {
     category: "소득",
-    items: "소득증빙 분석",
+    items: "소득 분석",
     diagnosis: "소득 안정성, 성장 추세, 은퇴 후 소득 공백",
   },
   {
     category: "지출",
     items: "지출내역 분석",
-    diagnosis: "지출 효율성, 저축 여력, 은퇴 후 생활비",
+    diagnosis: "지출 적정성, 저축 여력, 은퇴 후 생활비",
   },
   {
-    category: "금융자산",
+    category: "현금자산",
     items: "예적금 현황 분석",
     diagnosis: "유동성, 안전자산 비중, 비상자금 적정성",
   },
@@ -850,6 +849,31 @@ export function SimpleOnboarding({
     return { gender, birthYear, birthMonth: mm, birthDay: dd };
   };
 
+  // 주민번호 입력 에러 메시지
+  const getRrnError = () => {
+    if (rrnFront.length === 0 && !rrnBack) return null;
+
+    if (rrnFront.length > 0 && rrnFront.length < 6) return null; // 아직 입력 중
+
+    if (rrnFront.length === 6) {
+      const mm = parseInt(rrnFront.slice(2, 4));
+      const dd = parseInt(rrnFront.slice(4, 6));
+
+      if (mm < 1 || mm > 12) {
+        return "월은 01~12 사이로 입력해주세요";
+      }
+      if (dd < 1 || dd > 31) {
+        return "일은 01~31 사이로 입력해주세요";
+      }
+    }
+
+    if (rrnBack && ![1, 2, 3, 4].includes(parseInt(rrnBack))) {
+      return "성별은 1~4만 입력 가능해요 (1,2: 1900년대생 / 3,4: 2000년대생)";
+    }
+
+    return null;
+  };
+
   // 나이대 계산
   const getAgeGroup = () => {
     const parsed = parseRrn();
@@ -1184,7 +1208,11 @@ export function SimpleOnboarding({
           />
           <span className={styles.rrnMask}>******</span>
         </div>
-        <p className={styles.rrnHint}>뒷자리는 첫 번째 숫자만 입력해주세요</p>
+        {getRrnError() ? (
+          <p className={styles.rrnError}>{getRrnError()}</p>
+        ) : (
+          <p className={styles.rrnHint}>뒷자리는 첫 번째 숫자만 입력해주세요</p>
+        )}
       </div>
 
       <div className={styles.bottomButtonArea}>

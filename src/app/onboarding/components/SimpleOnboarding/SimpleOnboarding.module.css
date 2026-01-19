@@ -574,6 +574,12 @@
   margin: 10px 0 0 0;
 }
 
+.rrnError {
+  font-size: 13px;
+  color: #ef4444;
+  margin: 10px 0 0 0;
+}
+
 /* 하단 버튼 영역 */
 .bottomButtonArea {
   position: fixed;

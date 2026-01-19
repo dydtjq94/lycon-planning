@@ -63,16 +63,16 @@ const PROGRAM_CONTENT: Record<string, { desc: string; checkpoints: string[] }> =
 const CHECKUP_ITEMS = [
   {
     category: "소득",
-    items: "소득증빙 분석",
+    items: "소득 분석",
     diagnosis: "소득 안정성, 성장 추세, 은퇴 후 소득 공백",
   },
   {
     category: "지출",
     items: "지출내역 분석",
-    diagnosis: "지출 효율성, 저축 여력, 은퇴 후 생활비",
+    diagnosis: "지출 적정성, 저축 여력, 은퇴 후 생활비",
   },
   {
-    category: "금융자산",
+    category: "현금자산",
     items: "예적금 현황 분석",
     diagnosis: "유동성, 안전자산 비중, 비상자금 적정성",
   },
