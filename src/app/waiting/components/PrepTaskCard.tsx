@@ -18,22 +18,29 @@ interface PrepTaskCardProps {
   onStart: (taskId: string) => void;
 }
 
-export function PrepTaskCard({ task, currentStep, totalSteps, onStart }: PrepTaskCardProps) {
+export function PrepTaskCard({
+  task,
+  currentStep,
+  totalSteps,
+  onStart,
+}: PrepTaskCardProps) {
   const progressPercent = ((currentStep - 1) / totalSteps) * 100;
 
   return (
     <div className={styles.container}>
       {/* 메인 타이틀 */}
       <h2 className={styles.mainTitle}>
-        재무 검진 전,<br />
-        내 자산 상황을 파악해주세요
+        재무 검진 전,
+        <br />내 자산 상황을 파악해주세요.
       </h2>
 
       {/* 섹션 헤더 */}
       <div className={styles.sectionHeader}>
         <div className={styles.sectionTop}>
           <span className={styles.sectionTitle}>검진 전 준비사항</span>
-          <span className={styles.progress}>{currentStep}/{totalSteps}</span>
+          <span className={styles.progress}>
+            {currentStep}/{totalSteps}
+          </span>
         </div>
         <div className={styles.progressBar}>
           <div
@@ -45,12 +52,11 @@ export function PrepTaskCard({ task, currentStep, totalSteps, onStart }: PrepTas
 
       {/* 카드 */}
       <div className={styles.card}>
-        <h3 className={styles.title}>{currentStep}. {task.title}</h3>
+        <h3 className={styles.title}>
+          {currentStep}. {task.title}
+        </h3>
         <p className={styles.description}>{task.description}</p>
-        <button
-          className={styles.startButton}
-          onClick={() => onStart(task.id)}
-        >
+        <button className={styles.startButton} onClick={() => onStart(task.id)}>
           시작하기
         </button>
       </div>
