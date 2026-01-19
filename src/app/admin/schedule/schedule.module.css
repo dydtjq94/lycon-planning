@@ -1,0 +1,143 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.backButton {
+  padding: 8px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  color: #525252;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  border-color: #007aff;
+  color: #007aff;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.description {
+  font-size: 14px;
+  color: #737373;
+  margin-top: -12px;
+}
+
+.loading {
+  padding: 48px;
+  text-align: center;
+  color: #737373;
+}
+
+.scheduleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.dayCard {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.dayHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.dayName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.toggleButton {
+  padding: 6px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  background: white;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a3a3a3;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggleButton.active {
+  background: #007aff;
+  border-color: #007aff;
+  color: white;
+}
+
+.timeSlots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.timeSlot {
+  padding: 6px 10px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  background: white;
+  font-size: 12px;
+  color: #737373;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timeSlot:hover {
+  border-color: #007aff;
+}
+
+.timeSlot.selected {
+  background: #e6f2ff;
+  border-color: #007aff;
+  color: #007aff;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+.saveButton {
+  padding: 12px 32px;
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.saveButton:hover {
+  background: #0066d6;
+}
+
+.saveButton:disabled {
+  background: #a3a3a3;
+  cursor: not-allowed;
+}

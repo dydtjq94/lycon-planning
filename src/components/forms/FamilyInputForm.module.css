@@ -1,0 +1,352 @@
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f5f5f7;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.inner {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 헤더 */
+.header {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+  z-index: 10;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1d1d1f;
+}
+
+.headerTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.headerSpacer {
+  width: 40px;
+}
+
+/* 메인 */
+.main {
+  flex: 1;
+  padding: 80px 20px 120px;
+  overflow-y: auto;
+}
+
+/* 온보딩 힌트 */
+.hintBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.hintLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.hintValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+/* 섹션 */
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.sectionHint {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: -8px 0 12px 0;
+}
+
+/* 토글 그룹 (없음/있음) */
+.toggleGroup {
+  display: flex;
+  gap: 6px;
+}
+
+.toggleBtn {
+  padding: 6px 14px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toggleBtn.active {
+  border-color: #1d1d1f;
+  color: #1d1d1f;
+}
+
+/* 입력 행 */
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inputColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.childItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 생년월일 입력 */
+.birthInput {
+  width: 120px;
+  padding: 10px 12px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1d1d1f;
+}
+
+.birthInput:focus {
+  outline: none;
+  border-color: #1d1d1f;
+}
+
+.birthInput::placeholder {
+  color: #d1d5db;
+}
+
+.birthInput.inputError {
+  border-color: #ef4444;
+}
+
+.birthInput.inputError:focus {
+  border-color: #ef4444;
+}
+
+/* 에러 텍스트 */
+.errorText {
+  font-size: 12px;
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+/* 나이 텍스트 */
+.ageText {
+  font-size: 13px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+/* 성별 토글 */
+.genderToggle {
+  display: flex;
+  gap: 4px;
+}
+
+.genderBtn {
+  padding: 8px 12px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.genderBtn.active {
+  border-color: #1d1d1f;
+  color: #1d1d1f;
+}
+
+/* 부모님 다중 선택 */
+.parentOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.parentBtn {
+  padding: 10px 16px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.parentBtn.active {
+  border-color: #1d1d1f;
+  color: #1d1d1f;
+}
+
+/* 삭제 버튼 */
+.removeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: #d1d5db;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.removeBtn:hover {
+  color: #9ca3af;
+}
+
+/* 추가 버튼 */
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.addBtn:hover {
+  color: #6b7280;
+}
+
+/* 하단 영역 */
+.bottomArea {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  padding: 16px 20px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: #ffffff;
+  border-top: 1px solid #f3f4f6;
+}
+
+.saveButton {
+  width: 100%;
+  padding: 16px;
+  background: #007AFF;
+  border: none;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #0066DD;
+}
+
+.saveButton:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+/* 로딩 */
+.loadingText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #9ca3af;
+  font-size: 15px;
+}

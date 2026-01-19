@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { confirmUserBooking } from "@/lib/services/bookingService";
 import styles from "./phone-verify.module.css";
 
 type Step = "phone" | "code";
@@ -163,6 +164,14 @@ export function PhoneVerify() {
         setError(result.error || "인증에 실패했습니다");
         setLoading(false);
         return;
+      }
+
+      // 예약 상태를 confirmed로 변경
+      try {
+        await confirmUserBooking();
+      } catch (bookingError) {
+        console.error("예약 확정 오류:", bookingError);
+        // 예약 확정 실패해도 진행 (예약이 없을 수도 있음)
       }
 
       // 웨이팅 화면으로 이동

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import { ChevronDown, Plus, X } from "lucide-react";
 import type { FamilyMember, PrepTaskId } from "../types";
 import { ToggleGroup } from "./inputs";
 import styles from "./FamilyInputForm.module.css";
@@ -295,11 +295,10 @@ export function FamilyInputForm({
     <div className={styles.container}>
       <div className={styles.inner}>
         <header className={styles.header}>
-          <button className={styles.backButton} onClick={onClose}>
-            <ArrowLeft size={24} />
-          </button>
           <h1 className={styles.headerTitle}>가계 구성</h1>
-          <div className={styles.headerSpacer} />
+          <button className={styles.closeButton} onClick={onClose}>
+            <ChevronDown size={24} />
+          </button>
         </header>
 
         <main className={styles.main}>

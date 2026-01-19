@@ -12,13 +12,15 @@ import {
   type Conversation,
   type Expert,
 } from "@/lib/services/messageService";
+import { ImageViewer } from "./ImageViewer";
 import styles from "./ChatRoom.module.css";
 
 interface ChatRoomProps {
   userId: string;
+  isVisible?: boolean;
 }
 
-export function ChatRoom({ userId }: ChatRoomProps) {
+export function ChatRoom({ userId, isVisible = true }: ChatRoomProps) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -32,6 +34,7 @@ export function ChatRoom({ userId }: ChatRoomProps) {
   const pendingSendRef = useRef(false);
   const justSentRef = useRef(false);
   const [pendingImages, setPendingImages] = useState<{ file: File; preview: string }[]>([]);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [scrollReady, setScrollReady] = useState(false);
 
   // 메시지 목록 맨 아래로 스크롤
@@ -72,31 +75,38 @@ export function ChatRoom({ userId }: ChatRoomProps) {
     initChat();
   }, [userId]);
 
-  // 초기 로딩 완료 후 스크롤
-  const initialScrollDone = useRef(false);
+  // 로딩 완료 후 스크롤 및 표시
   useEffect(() => {
-    if (!loading && messages.length > 0 && !initialScrollDone.current) {
-      initialScrollDone.current = true;
-      // 레이아웃 계산 완료 후 스크롤
+    if (loading) return;
+
+    // 메시지가 없으면 바로 표시
+    if (messages.length === 0) {
+      setScrollReady(true);
+      return;
+    }
+
+    // 레이아웃 계산 완료 후 스크롤
+    // double rAF로 페인트 완료 보장
+    requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (messageListRef.current) {
-          const { scrollHeight, clientHeight } = messageListRef.current;
-          if (scrollHeight > clientHeight) {
-            messageListRef.current.scrollTop = scrollHeight;
-          }
+          messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
         }
-        // 스크롤 완료 후 표시
         setScrollReady(true);
       });
-    }
-  }, [loading, messages]);
+    });
+  }, [loading]);
 
-  // 메시지 없을 때도 바로 표시
+  // 탭이 활성화될 때 스크롤 최하단으로
   useEffect(() => {
-    if (!loading && messages.length === 0) {
-      setScrollReady(true);
+    if (isVisible && !loading && messages.length > 0) {
+      requestAnimationFrame(() => {
+        if (messageListRef.current) {
+          messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+        }
+      });
     }
-  }, [loading, messages]);
+  }, [isVisible, loading, messages.length]);
 
   // Realtime 구독
   useEffect(() => {
@@ -182,10 +192,15 @@ export function ChatRoom({ userId }: ChatRoomProps) {
       }
 
       const msg = await sendMessage(conversation.id, content, uploadedUrls.length > 0 ? uploadedUrls : undefined);
-      // 임시 메시지를 실제 메시지로 교체
-      setMessages((prev) =>
-        prev.map((m) => m.id === tempId ? msg : m)
-      );
+      // 임시 메시지를 실제 메시지로 교체 (실시간 구독으로 이미 추가된 경우 중복 제거)
+      setMessages((prev) => {
+        // 실시간 구독으로 이미 추가된 경우 임시 메시지만 제거
+        if (prev.some((m) => m.id === msg.id)) {
+          return prev.filter((m) => m.id !== tempId);
+        }
+        // 아직 추가되지 않은 경우 임시 메시지를 실제 메시지로 교체
+        return prev.map((m) => m.id === tempId ? msg : m);
+      });
 
       // preview URL 해제
       imagesToUpload.forEach((img) => URL.revokeObjectURL(img.preview));
@@ -419,6 +434,7 @@ export function ChatRoom({ userId }: ChatRoomProps) {
                               src={url}
                               alt="첨부 이미지"
                               className={styles.messageImage}
+                              onClick={() => setViewingImage(url)}
                             />
                           ))}
                         </div>
@@ -527,6 +543,14 @@ export function ChatRoom({ userId }: ChatRoomProps) {
           </div>
         </div>
       </div>
+
+      {/* 이미지 뷰어 */}
+      {viewingImage && (
+        <ImageViewer
+          src={viewingImage}
+          onClose={() => setViewingImage(null)}
+        />
+      )}
     </div>
   );
 }

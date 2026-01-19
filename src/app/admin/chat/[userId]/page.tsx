@@ -263,7 +263,26 @@ export default function AdminChatPage() {
                 : styles.chatMessageUser
             }`}
           >
-            <p>{msg.content}</p>
+            {msg.content && <p>{msg.content}</p>}
+            {msg.attachments && msg.attachments.length > 0 && (
+              <div className={styles.chatAttachments}>
+                {msg.attachments.map((url, idx) => (
+                  <a
+                    key={idx}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.chatImageLink}
+                  >
+                    <img
+                      src={url}
+                      alt={`첨부 이미지 ${idx + 1}`}
+                      className={styles.chatImage}
+                    />
+                  </a>
+                ))}
+              </div>
+            )}
             <span style={{ fontSize: 10, opacity: 0.7, marginTop: 4, display: "block" }}>
               {formatTime(msg.created_at)}
             </span>

@@ -505,6 +505,68 @@
   border-radius: 12px;
 }
 
+/* 메인 타이틀 */
+.mainTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1d1d1f;
+  line-height: 1.4;
+  margin: 0 0 24px 0;
+}
+
+.sectionDesc {
+  font-size: 15px;
+  font-weight: 500;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+}
+
+/* 팁 카테고리 그리드 */
+.tipGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.tipCard {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding: 16px 16px 32px;
+  background: #ffffff;
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.tipCard:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tipCard:active {
+  transform: scale(0.98);
+}
+
+.tipIconWrapper {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d1d5db;
+}
+
+.tipTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  text-align: left;
+}
+
 /* 완료 카드 */
 .completionCard {
   display: flex;

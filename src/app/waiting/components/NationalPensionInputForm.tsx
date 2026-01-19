@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ChevronDown, ExternalLink } from "lucide-react";
 import { AmountInput } from "./inputs";
 import type { NationalPensionData, PublicPensionType } from "../types";
 import styles from "./PensionInputForm.module.css";
@@ -92,11 +92,10 @@ export function NationalPensionInputForm({
     <div className={styles.container}>
       <div className={styles.inner}>
         <header className={styles.header}>
-          <button className={styles.backButton} onClick={onClose}>
-            <ArrowLeft size={24} />
-          </button>
           <h1 className={styles.headerTitle}>국민(공적)연금</h1>
-          <div className={styles.headerSpacer} />
+          <button className={styles.closeButton} onClick={onClose}>
+            <ChevronDown size={24} />
+          </button>
         </header>
 
         <main className={styles.main}>

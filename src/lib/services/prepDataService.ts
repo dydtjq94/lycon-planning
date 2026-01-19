@@ -14,9 +14,9 @@ import type {
   RetirementPensionType,
   PersonalPensionItem,
   PublicPensionType,
-} from "../types";
-import type { IncomeFormData } from "../components/IncomeInputForm";
-import type { ExpenseFormData } from "../components/ExpenseInputForm";
+  IncomeFormData,
+  ExpenseFormData,
+} from "@/components/forms";
 
 const DEFAULT_COMPLETED: PrepCompleted = {
   family: false,
@@ -52,7 +52,7 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
   const supabase = createClient();
 
   // 시뮬레이션 ID 가져오기
-  const simulation = await simulationService.getDefault();
+  const simulation = await simulationService.getDefaultByUserId(userId);
 
   // 병렬로 모든 데이터 로드
   const [profileResult, familyResult, housingResult, savingsResult, debtsResult, expensesResult] = await Promise.all([
@@ -378,7 +378,7 @@ export async function saveHousingData(
   const currentMonth = new Date().getMonth() + 1;
 
   // 시뮬레이션 ID 가져오기
-  const simulation = await simulationService.getDefault();
+  const simulation = await simulationService.getDefaultByUserId(userId);
   if (!simulation) {
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
@@ -442,7 +442,7 @@ export async function saveSavingsData(
   const currentMonth = new Date().getMonth() + 1;
 
   // 시뮬레이션 ID 가져오기
-  const simulation = await simulationService.getDefault();
+  const simulation = await simulationService.getDefaultByUserId(userId);
   if (!simulation) {
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
@@ -510,7 +510,7 @@ export async function saveInvestmentData(
   const supabase = createClient();
 
   // 시뮬레이션 ID 가져오기
-  const simulation = await simulationService.getDefault();
+  const simulation = await simulationService.getDefaultByUserId(userId);
   if (!simulation) {
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
@@ -613,7 +613,7 @@ export async function saveDebtData(
   const currentMonth = new Date().getMonth() + 1;
 
   // 시뮬레이션 ID 가져오기
-  const simulation = await simulationService.getDefault();
+  const simulation = await simulationService.getDefaultByUserId(userId);
   if (!simulation) {
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
@@ -678,7 +678,7 @@ export async function saveIncomeData(
   const currentMonth = new Date().getMonth() + 1;
 
   // 시뮬레이션 ID 가져오기
-  const simulation = await simulationService.getDefault();
+  const simulation = await simulationService.getDefaultByUserId(userId);
   if (!simulation) {
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
@@ -782,7 +782,7 @@ export async function saveNationalPensionData(
   const supabase = createClient();
 
   // 시뮬레이션 ID 가져오기
-  const simulation = await simulationService.getDefault();
+  const simulation = await simulationService.getDefaultByUserId(userId);
   if (!simulation) {
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
@@ -843,7 +843,7 @@ export async function saveRetirementPensionData(
   const supabase = createClient();
 
   // 시뮬레이션 ID 가져오기
-  const simulation = await simulationService.getDefault();
+  const simulation = await simulationService.getDefaultByUserId(userId);
   if (!simulation) {
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
@@ -908,7 +908,7 @@ export async function savePersonalPensionData(
   const supabase = createClient();
 
   // 시뮬레이션 ID 가져오기
-  const simulation = await simulationService.getDefault();
+  const simulation = await simulationService.getDefaultByUserId(userId);
   if (!simulation) {
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
@@ -972,7 +972,7 @@ export async function saveExpenseData(
   const currentMonth = new Date().getMonth() + 1;
 
   // 시뮬레이션 ID 가져오기
-  const simulation = await simulationService.getDefault();
+  const simulation = await simulationService.getDefaultByUserId(userId);
   console.log("simulation:", simulation?.id);
   if (!simulation) {
     throw new Error("시뮬레이션을 찾을 수 없습니다.");

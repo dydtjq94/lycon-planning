@@ -1,45 +1,24 @@
 .container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  background: #f5f5f7;
-  animation: slideInRight 0.3s ease-out;
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  overflow: hidden;
 }
 
 .inner {
   width: 100%;
-  max-width: 480px;
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: #ffffff;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
 
 /* 헤더 */
 .header {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
   width: 100%;
-  max-width: 480px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -47,18 +26,7 @@
   background: #ffffff;
   border-bottom: 1px solid #f3f4f6;
   z-index: 10;
-}
-
-.backButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #1d1d1f;
+  flex-shrink: 0;
 }
 
 .headerTitle {
@@ -68,14 +36,23 @@
   margin: 0;
 }
 
-.headerSpacer {
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
 }
 
 /* 메인 */
 .main {
   flex: 1;
-  padding: 80px 20px 120px;
+  padding: 20px;
+  padding-bottom: 100px;
   overflow-y: auto;
 }
 
@@ -210,16 +187,13 @@
 
 /* 하단 영역 */
 .bottomArea {
-  position: fixed;
+  position: sticky;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
   width: 100%;
-  max-width: 480px;
   padding: 16px 20px;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   background: #ffffff;
   border-top: 1px solid #f3f4f6;
+  flex-shrink: 0;
 }
 
 .saveButton {

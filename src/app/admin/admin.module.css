@@ -538,3 +538,299 @@
   background: #a3a3a3;
   cursor: not-allowed;
 }
+
+/* Schedule Button */
+.scheduleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #007aff;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+}
+
+.scheduleButton:hover {
+  border-color: #007aff;
+  background: #f0f7ff;
+}
+
+/* Booking List */
+.bookingList {
+  display: flex;
+  flex-direction: column;
+}
+
+.bookingItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.bookingItem:last-child {
+  border-bottom: none;
+}
+
+.bookingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bookingDate {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.bookingUser {
+  font-size: 13px;
+  color: #737373;
+}
+
+.bookingStatus {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.bookingStatus.confirmed {
+  background: #e6f4ea;
+  color: #1e7e34;
+}
+
+.bookingStatus.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.bookingStatus.cancelled {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.bookingStatus.completed {
+  background: #f0f0f0;
+  color: #737373;
+}
+
+/* Chat Attachments */
+.chatAttachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.chatImageLink {
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.chatImage {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  object-fit: cover;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.chatImage:hover {
+  opacity: 0.9;
+}
+
+/* Section Header with Toggle */
+.sectionHeaderWithToggle {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.viewToggle {
+  display: flex;
+  background: #f5f5f5;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.toggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: #737373;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggleButton:hover {
+  color: #1a1a1a;
+}
+
+.toggleActive {
+  background: white;
+  color: #007aff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Calendar View */
+.calendarView {
+  padding: 16px 20px;
+}
+
+.calendarHeader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.calendarNavButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e5e5e5;
+  background: white;
+  border-radius: 6px;
+  color: #525252;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.calendarNavButton:hover {
+  border-color: #007aff;
+  color: #007aff;
+}
+
+.calendarMonthTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  min-width: 120px;
+  text-align: center;
+}
+
+.calendarWeekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+}
+
+.calendarWeekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #737373;
+  padding: 8px 0;
+}
+
+.calendarWeekday.sunday {
+  color: #dc2626;
+}
+
+.calendarWeekday.saturday {
+  color: #2563eb;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendarDayEmpty {
+  height: 80px;
+  background: #fafafa;
+}
+
+.calendarDay {
+  height: 80px;
+  padding: 6px;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.calendarDay.sunday .calendarDayNumber {
+  color: #dc2626;
+}
+
+.calendarDay.saturday .calendarDayNumber {
+  color: #2563eb;
+}
+
+.calendarDayToday {
+  background: #e8f4fd;
+}
+
+.calendarDayToday .calendarDayNumber {
+  color: #007aff;
+  font-weight: 700;
+}
+
+.calendarDayNumber {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.calendarDayBookings {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.calendarBookingDot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendarBookingDot.confirmed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.calendarBookingDot.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.calendarBookingTime {
+  font-weight: 600;
+}
+
+.calendarBookingName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

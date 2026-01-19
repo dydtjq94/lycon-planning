@@ -1,0 +1,255 @@
+/* 오버레이 */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  background: #f5f5f7;
+  z-index: 200;
+}
+
+/* 컨테이너 */
+.container {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  animation: slideIn 0.25s ease-out;
+}
+
+.overlay.closing .container {
+  animation: slideOut 0.25s ease-out forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+/* 헤더 */
+.header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+  z-index: 10;
+}
+
+.backButton {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #1d1d1f;
+  cursor: pointer;
+}
+
+.headerTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.headerSpacer {
+  width: 40px;
+}
+
+/* 메인 */
+.main {
+  flex: 1;
+  padding: 0 20px 40px;
+  overflow-y: auto;
+}
+
+/* 요약 섹션 */
+.summarySection {
+  padding: 20px;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.summaryTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8e8e93;
+  margin: 0 0 10px 0;
+}
+
+.summaryList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summaryItem {
+  position: relative;
+  padding: 4px 0 4px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  line-height: 1.6;
+}
+
+.summaryItem::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 6px;
+  height: 6px;
+  background: #007AFF;
+  border-radius: 50%;
+}
+
+/* 메모 버튼 */
+.memoButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid #007AFF;
+  border-radius: 10px;
+  color: #007AFF;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.memoButton:hover {
+  background: #f0f9ff;
+}
+
+/* 섹션 공통 */
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8e8e93;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 스텝 섹션 */
+.stepsSection {
+  padding: 20px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.stepList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.stepNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #f3f4f6;
+  color: #1d1d1f;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stepText {
+  font-size: 15px;
+  color: #1d1d1f;
+  line-height: 1.5;
+  padding-top: 2px;
+}
+
+/* 바로가기 링크 */
+.linkSection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 20px 0;
+}
+
+.linkButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: #f0f9ff;
+  color: #007AFF;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.linkButton:hover {
+  background: #e0f2fe;
+}
+
+/* 세부 항목 섹션 */
+.detailsSection {
+  padding: 20px 0;
+}
+
+.detailList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detailItem {
+  padding: 10px 0;
+  font-size: 15px;
+  color: #1d1d1f;
+  line-height: 1.5;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.detailItem:last-child {
+  border-bottom: none;
+}

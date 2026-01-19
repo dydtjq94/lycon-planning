@@ -24,11 +24,21 @@ export default function PinSetupPage() {
         .from('profiles')
         .select('pin_hash')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       if (profile?.pin_hash) {
         router.replace('/onboarding')
         return
+      }
+
+      // 프로필이 없으면 생성
+      if (!profile) {
+        await supabase.from('profiles').insert({
+          id: user.id,
+          name: user.email?.split('@')[0] || '사용자',
+          target_retirement_age: 60,
+          target_retirement_fund: 1000000000,
+        })
       }
 
       setLoading(false)

@@ -240,12 +240,20 @@ export default function UserDetailPage() {
           {profile.name}
           {getAge(profile.birth_date) && ` (${getAge(profile.birth_date)}세)`}
         </h1>
-        <button
-          className={styles.actionButton}
-          onClick={() => router.push(`/admin/chat/${userId}`)}
-        >
-          채팅하기
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            className={styles.actionButton}
+            onClick={() => router.push(`/admin/users/${userId}/edit`)}
+          >
+            편집
+          </button>
+          <button
+            className={styles.actionButton}
+            onClick={() => router.push(`/admin/chat/${userId}`)}
+          >
+            채팅하기
+          </button>
+        </div>
       </div>
 
       {/* 탭 */}

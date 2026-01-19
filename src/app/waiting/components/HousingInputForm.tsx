@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import type { HousingData } from "../types";
 import { AmountInput, RateInput, ToggleGroup } from "./inputs";
 import styles from "./HousingInputForm.module.css";
@@ -93,11 +93,10 @@ export function HousingInputForm({
     <div className={styles.container}>
       <div className={styles.inner}>
         <header className={styles.header}>
-          <button className={styles.backButton} onClick={onClose}>
-            <ArrowLeft size={24} />
-          </button>
           <h1 className={styles.headerTitle}>거주 부동산</h1>
-          <div className={styles.headerSpacer} />
+          <button className={styles.closeButton} onClick={onClose}>
+            <ChevronDown size={24} />
+          </button>
         </header>
 
         <main className={styles.main}>

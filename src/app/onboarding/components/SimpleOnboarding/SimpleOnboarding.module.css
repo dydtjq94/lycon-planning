@@ -1500,9 +1500,6 @@
   transition: all 0.15s ease;
 }
 
-.dateItem:hover:not(:disabled) {
-  background: #ebebed;
-}
 
 .dateItem.selected {
   background: #007AFF;
@@ -1514,7 +1511,7 @@
   color: #fff;
 }
 
-.dateItem.weekend {
+.dateItem.disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -1549,14 +1546,18 @@
   transition: all 0.15s ease;
 }
 
-.timeItem:hover {
-  background: #ebebed;
-}
 
 .timeItem.selected {
   background: #007AFF;
   border-color: #007AFF;
   color: #fff;
+}
+
+.noSlots {
+  font-size: 14px;
+  color: #9ca3af;
+  text-align: center;
+  padding: 24px 0;
 }
 
 .bookingSummary {
@@ -1603,6 +1604,72 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* 예약 화면 스켈레톤 */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.skeletonSubtitle {
+  height: 20px;
+  width: 80%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeletonSubtitleShort {
+  height: 20px;
+  width: 60%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 24px;
+}
+
+.skeletonLabel {
+  height: 16px;
+  width: 60px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.skeletonDateItem {
+  min-width: 52px;
+  height: 64px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
+}
+
+.skeletonTimeItem {
+  height: 48px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 10px;
+}
+
+.skeletonButton {
+  height: 52px;
+  width: 100%;
+  background: linear-gradient(90deg, #e8e8e8 25%, #d8d8d8 50%, #e8e8e8 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
 }
 
 /* 예약 완료 화면 */

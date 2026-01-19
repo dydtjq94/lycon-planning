@@ -1,60 +1,26 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MessageCircle, ArrowLeft, ChevronRight, Home } from "lucide-react";
+import {
+  MessageCircle,
+  ArrowLeft,
+  ChevronRight,
+  Home,
+  Users,
+  Building2,
+  Wallet,
+  Receipt,
+  PiggyBank,
+  TrendingUp,
+  CreditCard,
+  Shield,
+  Briefcase,
+  Heart,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import {
-  ChatRoom,
-  PrepTaskCard,
-  CompletedItems,
-  FamilyInputForm,
-  HousingInputForm,
-  SavingsInputForm,
-  InvestmentInputForm,
-  DebtInputForm,
-  IncomeInputForm,
-  NationalPensionInputForm,
-  RetirementPensionInputForm,
-  PersonalPensionInputForm,
-  ExpenseInputForm,
-  ProgramDetailView,
-  Toast,
-  type PrepTask,
-  type CompletedTask,
-} from "./components";
+import { ChatRoom, ProgramDetailView, Toast, TipModal } from "./components";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
-import {
-  loadPrepData,
-  saveFamilyData,
-  saveHousingData,
-  saveSavingsData,
-  saveInvestmentData,
-  saveDebtData,
-  saveIncomeData,
-  saveNationalPensionData,
-  saveRetirementPensionData,
-  savePersonalPensionData,
-  saveExpenseData,
-  getNextTaskIndex,
-} from "./services/prepDataService";
-import type {
-  PrepData,
-  PrepTaskId,
-  FamilyMember,
-  HousingData,
-  FinancialAssetItem,
-  DebtItem,
-} from "./types";
-import type {
-  IncomeFormData,
-  ExpenseFormData,
-} from "./components";
-import type {
-  NationalPensionData,
-  RetirementPensionData,
-  PersonalPensionItem,
-} from "./types";
 import styles from "./waiting.module.css";
 
 // Suspense로 감싸기 위한 wrapper
@@ -102,89 +68,25 @@ interface BookingInfo {
   booked_at: string;
 }
 
-interface SurveyResponses {
-  marital_status?: string;
-  children?: string;
-  income_range?: string;
-  monthly_expense?: string;
-  monthly_investment?: string;
-  saving_style?: string;
-  investment_exp?: string[];
-  pension_awareness?: string;
-}
-
 interface Profile {
   name: string;
   booking_info: BookingInfo | null;
-  survey_responses: {
-    onboarding?: SurveyResponses;
-  } | null;
 }
 
-type Tab = "checkup" | "chat";
+type Tab = "home" | "chat";
 
-// 검진 전 준비 항목 (순서대로 진행)
-const PREP_TASKS: PrepTask[] = [
-  {
-    id: "family",
-    title: "가계 구성",
-    description: "배우자, 자녀, 부양 부모님 정보를 확인해주세요.",
-    status: "pending",
-  },
-  {
-    id: "housing",
-    title: "거주 부동산",
-    description: "현재 거주 형태와 관련 대출 정보를 입력해주세요.",
-    status: "pending",
-  },
-  {
-    id: "savings",
-    title: "금융 자산 - 저축 계좌",
-    description: "입출금 통장, 적금, 예금 정보를 입력해주세요.",
-    status: "pending",
-  },
-  {
-    id: "investment",
-    title: "금융 자산 - 투자 계좌",
-    description: "주식, 펀드, 채권, 암호화폐 등 정보를 입력해주세요.",
-    status: "pending",
-  },
-  {
-    id: "debt",
-    title: "부채",
-    description: "보유 중인 대출 정보를 입력해주세요.",
-    status: "pending",
-  },
-  {
-    id: "income",
-    title: "소득",
-    description: "본인과 배우자의 소득 정보를 입력해주세요.",
-    status: "pending",
-  },
-  {
-    id: "nationalPension",
-    title: "국민(공적)연금",
-    description: "국민연금공단에서 예상 수령액을 조회해주세요.",
-    status: "pending",
-  },
-  {
-    id: "retirementPension",
-    title: "퇴직연금/퇴직금",
-    description: "DC형, DB형, 퇴직금 등 적립금을 입력해주세요.",
-    status: "pending",
-  },
-  {
-    id: "personalPension",
-    title: "개인연금",
-    description: "연금저축, IRP 등 개인연금 정보를 입력해주세요.",
-    status: "pending",
-  },
-  {
-    id: "expense",
-    title: "지출",
-    description: "월 생활비를 입력해주세요.",
-    status: "pending",
-  },
+// 팁 카테고리 정의 (입력 폼 순서와 동일)
+const TIP_CATEGORIES = [
+  { id: "family", title: "가계 정보", icon: Users },
+  { id: "housing", title: "거주용 부동산", icon: Building2 },
+  { id: "savings", title: "저축", icon: PiggyBank },
+  { id: "investment", title: "투자", icon: TrendingUp },
+  { id: "debt", title: "부채", icon: CreditCard },
+  { id: "income", title: "소득", icon: Wallet },
+  { id: "nationalPension", title: "국민(공적)연금", icon: Shield },
+  { id: "retirementPension", title: "퇴직연금/퇴직금", icon: Briefcase },
+  { id: "personalPension", title: "개인연금", icon: Heart },
+  { id: "expense", title: "지출", icon: Receipt },
 ];
 
 function WaitingPageContent() {
@@ -195,53 +97,15 @@ function WaitingPageContent() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     const tab = searchParams.get("tab");
-    return tab === "chat" ? "chat" : "checkup";
+    return tab === "chat" ? "chat" : "home";
   });
   const [unreadCount, setUnreadCount] = useState(0);
-  const [activeInputForm, setActiveInputForm] = useState<PrepTaskId | null>(
-    null
-  );
   const [showProgramDetail, setShowProgramDetail] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     subMessage?: string;
   } | null>(null);
-
-  // 준비사항 데이터 (통합)
-  const [prepData, setPrepData] = useState<PrepData | null>(null);
-
-  // 완료 상태에서 파생되는 값들
-  const currentTaskIndex = useMemo(() => {
-    if (!prepData) return 0;
-    return getNextTaskIndex(prepData.completed);
-  }, [prepData]);
-
-  const completedTasks = useMemo((): CompletedTask[] => {
-    if (!prepData) return [];
-    const tasks: CompletedTask[] = [];
-    const order: PrepTaskId[] = [
-      "family",
-      "housing",
-      "savings",
-      "investment",
-      "debt",
-      "income",
-      "nationalPension",
-      "retirementPension",
-      "personalPension",
-      "expense",
-    ];
-
-    order.forEach((taskId, index) => {
-      if (prepData.completed[taskId]) {
-        const task = PREP_TASKS.find((t) => t.id === taskId);
-        if (task) {
-          tasks.push({ id: taskId, title: task.title, stepNumber: index + 1 });
-        }
-      }
-    });
-    return tasks;
-  }, [prepData]);
+  const [selectedTip, setSelectedTip] = useState<string | null>(null);
 
   // 탭 변경 시 URL 업데이트
   const handleTabChange = async (tab: Tab) => {
@@ -270,7 +134,7 @@ function WaitingPageContent() {
       const { data: profileData } = await supabase
         .from("profiles")
         .select(
-          "name, booking_info, pin_hash, onboarding_step, phone_number, pin_verified_at, survey_responses"
+          "name, booking_info, pin_hash, onboarding_step, phone_number, pin_verified_at",
         )
         .eq("id", user.id)
         .single();
@@ -308,10 +172,6 @@ function WaitingPageContent() {
       }
       setUserId(user.id);
 
-      // 준비사항 데이터 로드 (통합)
-      const data = await loadPrepData(user.id);
-      setPrepData(data);
-
       const unread = await getTotalUnreadCount();
       setUnreadCount(unread);
 
@@ -319,12 +179,56 @@ function WaitingPageContent() {
     };
 
     loadProfile();
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // 토스트 표시
-  const showToast = (message: string, subMessage?: string) => {
-    setToast({ message, subMessage });
-  };
+  // 실시간 unreadCount 업데이트 (채팅 탭이 아닐 때만)
+  useEffect(() => {
+    if (!userId || activeTab === "chat") return;
+
+    const supabase = createClient();
+
+    const refreshUnread = async () => {
+      const unread = await getTotalUnreadCount();
+      setUnreadCount(unread);
+    };
+
+    // conversations 테이블의 unread_count 변경 구독
+    const channel = supabase
+      .channel(`unread:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "conversations",
+          filter: `user_id=eq.${userId}`,
+        },
+        refreshUnread,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        async (payload) => {
+          // 전문가가 보낸 메시지일 때만 업데이트
+          if (
+            payload.new &&
+            (payload.new as { sender_type: string }).sender_type === "expert"
+          ) {
+            refreshUnread();
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, activeTab]);
 
   // 회원 탈퇴 (테스트용)
   const handleDeleteAccount = async () => {
@@ -332,48 +236,6 @@ function WaitingPageContent() {
     await fetch("/api/auth/delete-account", { method: "POST" });
     router.push("/");
     router.refresh();
-  };
-
-  // 입력 폼 시작
-  const handleStartTask = (taskId: string) => {
-    setActiveInputForm(taskId as PrepTaskId);
-  };
-
-  // 데이터 저장 완료 처리
-  const handleSaveComplete = async (
-    taskId: PrepTaskId,
-    isFirstSave: boolean
-  ) => {
-    if (!prepData || !userId) return;
-
-    // prepData 다시 로드 (DB에서 최신 데이터 가져오기)
-    const updatedData = await loadPrepData(userId);
-    setPrepData(updatedData);
-
-    // 토스트 표시
-    if (isFirstSave) {
-      const nextIndex = getNextTaskIndex(updatedData.completed);
-      const nextTask = PREP_TASKS[nextIndex];
-      if (nextTask) {
-        showToast("저장되었습니다", `다음: ${nextTask.title}`);
-      } else {
-        showToast("모든 준비가 완료되었습니다!");
-      }
-    } else {
-      showToast("저장되었습니다");
-    }
-
-    setActiveInputForm(null);
-  };
-
-  // 입력 폼 닫기 (저장 없이)
-  const handleCloseInputForm = () => {
-    setActiveInputForm(null);
-  };
-
-  // 수정하기
-  const handleEditTask = (taskId: string) => {
-    setActiveInputForm(taskId as PrepTaskId);
   };
 
   const formatBookingDate = (dateStr: string, timeStr: string) => {
@@ -384,17 +246,6 @@ function WaitingPageContent() {
     const weekday = weekdays[date.getDay()];
 
     return `${month}월 ${day}일 (${weekday}) ${timeStr}`;
-  };
-
-  const getDaysUntil = (dateStr: string) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = new Date(dateStr);
-    target.setHours(0, 0, 0, 0);
-    const diff = Math.ceil(
-      (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return diff;
   };
 
   if (loading) {
@@ -435,32 +286,6 @@ function WaitingPageContent() {
   }
 
   const bookingInfo = profile?.booking_info;
-  const daysUntil = bookingInfo ? getDaysUntil(bookingInfo.date) : 0;
-  const surveyResponses = profile?.survey_responses?.onboarding;
-
-  // 채팅 탭 - 전체 화면
-  if (activeTab === "chat") {
-    return (
-      <div className={styles.chatContainer}>
-        <header className={styles.chatHeader}>
-          <button
-            className={styles.backButton}
-            onClick={() => handleTabChange("checkup")}
-          >
-            <ArrowLeft size={24} />
-          </button>
-          <h1 className={styles.chatHeaderTitle}>
-            담당: {bookingInfo?.expert || "전문가"}
-          </h1>
-          <div className={styles.headerSpacer} />
-        </header>
-
-        <div className={styles.chatMain}>
-          {userId && <ChatRoom userId={userId} />}
-        </div>
-      </div>
-    );
-  }
 
   // 검진 프로그램 상세
   if (showProgramDetail && bookingInfo) {
@@ -472,327 +297,148 @@ function WaitingPageContent() {
     );
   }
 
-  // 가계 구성 입력 폼
-  if (activeInputForm === "family" && prepData) {
-    const isCompleted = prepData.completed.family;
-    return (
-      <FamilyInputForm
-        taskId="family"
-        initialData={prepData.family}
-        isCompleted={isCompleted}
-        onClose={handleCloseInputForm}
-        onSave={async (data: FamilyMember[]) => {
-          if (!userId) return;
-          await saveFamilyData(userId, data);
-          await handleSaveComplete("family", !isCompleted);
-        }}
-        surveyMaritalStatus={surveyResponses?.marital_status}
-        surveyChildren={surveyResponses?.children}
-      />
-    );
-  }
+  return (
+    <>
+      {/* 홈 탭 */}
+      <div
+        className={styles.container}
+        style={{ display: activeTab === "home" ? "flex" : "none" }}
+      >
+        {/* 회원탈퇴 버튼 (테스트용) */}
+        <button className={styles.deleteButton} onClick={handleDeleteAccount}>
+          탈퇴
+        </button>
 
-  // 거주 부동산 입력 폼
-  if (activeInputForm === "housing" && prepData) {
-    const isCompleted = prepData.completed.housing;
-    return (
-      <HousingInputForm
-        initialData={prepData.housing}
-        isCompleted={isCompleted}
-        onClose={handleCloseInputForm}
-        onSave={async (data: HousingData) => {
-          if (!userId) return;
-          await saveHousingData(userId, data);
-          await handleSaveComplete("housing", !isCompleted);
-        }}
-      />
-    );
-  }
+        {/* 고정 헤더 영역 */}
+        <div className={styles.fixedHeader}>
+          <header className={styles.header}>
+            <h1 className={styles.headerTitle}>
+              <span className={styles.headerLogo}>Lycon | Retirement</span>
+            </h1>
+          </header>
 
-  // 저축 계좌 입력 폼
-  if (activeInputForm === "savings" && prepData) {
-    const isCompleted = prepData.completed.savings || false;
-    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
-    return (
-      <SavingsInputForm
-        hasSpouse={hasSpouse}
-        initialData={prepData.savings || []}
-        isCompleted={isCompleted}
-        onClose={handleCloseInputForm}
-        onSave={async (data: FinancialAssetItem[]) => {
-          if (!userId) return;
-          await saveSavingsData(userId, data);
-          await handleSaveComplete("savings", !isCompleted);
-        }}
-      />
-    );
-  }
+          {/* 예약 정보 */}
+          {bookingInfo && (
+            <button
+              className={styles.bookingRow}
+              onClick={() => setShowProgramDetail(true)}
+            >
+              <span className={styles.bookingLabel}>내 검진 일정</span>
+              <div className={styles.bookingRight}>
+                <span className={styles.bookingValue}>
+                  {formatBookingDate(bookingInfo.date, bookingInfo.time)}
+                </span>
+                <ChevronRight size={20} className={styles.bookingArrow} />
+              </div>
+            </button>
+          )}
+        </div>
 
-  // 투자 계좌 입력 폼
-  if (activeInputForm === "investment" && prepData) {
-    const isCompleted = prepData.completed.investment || false;
-    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
-    return (
-      <InvestmentInputForm
-        hasSpouse={hasSpouse}
-        initialData={prepData.investment}
-        isCompleted={isCompleted}
-        onClose={handleCloseInputForm}
-        onSave={async (data) => {
-          if (!userId) return;
-          await saveInvestmentData(userId, data);
-          await handleSaveComplete("investment", !isCompleted);
-        }}
-        surveyInvestmentExp={surveyResponses?.investment_exp}
-        surveySavingStyle={surveyResponses?.saving_style}
-      />
-    );
-  }
+        <main className={styles.main}>
+          <div className={styles.tabContent}>
+            {/* 메인 타이틀 */}
+            <h2 className={styles.mainTitle}>
+              예약이 확정되었습니다.
+              <br />
+              검진 전, 내 자산 상황을
+              <br />
+              미리 파악해주세요.
+            </h2>
 
-  // 부채 입력 폼
-  if (activeInputForm === "debt" && prepData) {
-    const isCompleted = prepData.completed.debt;
-    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
-    return (
-      <DebtInputForm
-        hasSpouse={hasSpouse}
-        housingData={prepData.housing}
-        initialData={prepData.debt}
-        isCompleted={isCompleted}
-        onClose={handleCloseInputForm}
-        onSave={async (data: DebtItem[]) => {
-          if (!userId) return;
-          await saveDebtData(userId, data);
-          await handleSaveComplete("debt", !isCompleted);
-        }}
-      />
-    );
-  }
+            {/* 섹션 헤더 */}
+            <p className={styles.sectionDesc}>
+              자산 파악은 아래 가이드를 참고하세요!
+            </p>
 
-  // 소득 입력 폼
-  if (activeInputForm === "income" && prepData) {
-    const isCompleted = prepData.completed.income;
-    // 배우자 유무 확인
-    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
-    return (
-      <IncomeInputForm
-        hasSpouse={hasSpouse}
-        initialData={null} // TODO: 기존 데이터 로드 구현
-        isCompleted={isCompleted}
-        onClose={handleCloseInputForm}
-        onSave={async (data: IncomeFormData) => {
-          if (!userId) return;
-          await saveIncomeData(userId, data);
-          await handleSaveComplete("income", !isCompleted);
-        }}
-        surveyIncomeRange={surveyResponses?.income_range}
-      />
-    );
-  }
+            {/* 팁 카테고리 그리드 */}
+            <div className={styles.tipGrid}>
+              {TIP_CATEGORIES.map((category) => {
+                const IconComponent = category.icon;
+                return (
+                  <button
+                    key={category.id}
+                    className={styles.tipCard}
+                    onClick={() => setSelectedTip(category.id)}
+                  >
+                    <span className={styles.tipTitle}>{category.title}</span>
+                    <div className={styles.tipIconWrapper}>
+                      <IconComponent size={18} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </main>
 
-  // 국민(공적)연금 입력 폼
-  if (activeInputForm === "nationalPension" && prepData) {
-    const isCompleted = prepData.completed.nationalPension;
-    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
-    return (
-      <NationalPensionInputForm
-        hasSpouse={hasSpouse}
-        initialData={prepData.nationalPension}
-        isCompleted={isCompleted}
-        onClose={handleCloseInputForm}
-        onSave={async (data: NationalPensionData) => {
-          if (!userId) return;
-          await saveNationalPensionData(userId, data);
-          await handleSaveComplete("nationalPension", !isCompleted);
-        }}
-      />
-    );
-  }
+        {/* 하단 네비게이션 */}
+        <nav className={styles.bottomNav}>
+          <button className={`${styles.navItem} ${styles.active}`}>
+            <Home size={22} />
+            <span>홈</span>
+          </button>
+          <button
+            className={styles.navItem}
+            onClick={() => handleTabChange("chat")}
+          >
+            <div className={styles.navIconWrapper}>
+              <MessageCircle size={22} />
+              {unreadCount > 0 && (
+                <span className={styles.unreadBadge}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </div>
+            <span>담당: {bookingInfo?.expert || "전문가"}</span>
+          </button>
+        </nav>
 
-  // 퇴직연금/퇴직금 입력 폼
-  if (activeInputForm === "retirementPension" && prepData) {
-    const isCompleted = prepData.completed.retirementPension;
-    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
-    return (
-      <RetirementPensionInputForm
-        hasSpouse={hasSpouse}
-        initialData={prepData.retirementPension}
-        isCompleted={isCompleted}
-        onClose={handleCloseInputForm}
-        onSave={async (data: RetirementPensionData) => {
-          if (!userId) return;
-          await saveRetirementPensionData(userId, data);
-          await handleSaveComplete("retirementPension", !isCompleted);
-        }}
-      />
-    );
-  }
+        {/* 팁 모달 */}
+        {selectedTip && (
+          <TipModal
+            categoryId={selectedTip}
+            onClose={() => setSelectedTip(null)}
+          />
+        )}
 
-  // 개인연금 입력 폼
-  if (activeInputForm === "personalPension" && prepData) {
-    const isCompleted = prepData.completed.personalPension;
-    const hasSpouse = prepData.family.some((m) => m.relationship === "spouse");
-    return (
-      <PersonalPensionInputForm
-        hasSpouse={hasSpouse}
-        initialData={prepData.personalPension}
-        isCompleted={isCompleted}
-        onClose={handleCloseInputForm}
-        onSave={async (data: PersonalPensionItem[]) => {
-          if (!userId) return;
-          await savePersonalPensionData(userId, data);
-          await handleSaveComplete("personalPension", !isCompleted);
-        }}
-      />
-    );
-  }
-
-  // 지출 입력 폼
-  if (activeInputForm === "expense" && prepData) {
-    const isCompleted = prepData.completed.expense;
-    return (
-      <ExpenseInputForm
-        housingData={prepData.housing}
-        debtData={prepData.debt}
-        initialData={prepData.expense}
-        isCompleted={isCompleted}
-        onClose={handleCloseInputForm}
-        onSave={async (data: ExpenseFormData) => {
-          if (!userId) return;
-          try {
-            await saveExpenseData(userId, data);
-            await handleSaveComplete("expense", !isCompleted);
-          } catch (error) {
-            console.error("page onSave error:", error);
-            throw error;
+        {/* 토스트 */}
+        <Toast
+          message={
+            toast
+              ? toast.subMessage
+                ? `${toast.message} - ${toast.subMessage}`
+                : toast.message
+              : ""
           }
-        }}
-        surveyMonthlyExpense={surveyResponses?.monthly_expense}
-      />
-    );
-  }
+          isVisible={!!toast}
+          onClose={() => setToast(null)}
+        />
+      </div>
 
-  // 다른 입력 폼들 (나중에 구현)
-  if (activeInputForm) {
-    return (
-      <div className={styles.inputFormContainer}>
-        <header className={styles.inputFormHeader}>
-          <button className={styles.backButton} onClick={handleCloseInputForm}>
+      {/* 채팅 탭 - 항상 마운트, display로 숨김 */}
+      <div
+        className={styles.chatContainer}
+        style={{ display: activeTab === "chat" ? "flex" : "none" }}
+      >
+        <header className={styles.chatHeader}>
+          <button
+            className={styles.backButton}
+            onClick={() => handleTabChange("home")}
+          >
             <ArrowLeft size={24} />
           </button>
-          <h1 className={styles.inputFormTitle}>
-            {PREP_TASKS.find((t) => t.id === activeInputForm)?.title ||
-              "정보 입력"}
+          <h1 className={styles.chatHeaderTitle}>
+            담당: {bookingInfo?.expert || "전문가"}
           </h1>
           <div className={styles.headerSpacer} />
         </header>
-        <div className={styles.inputFormMain}>
-          <div className={styles.inputFormPlaceholder}>
-            <p>{activeInputForm} 정보 입력 폼 (준비 중)</p>
-          </div>
+
+        <div className={styles.chatMain}>
+          {userId && (
+            <ChatRoom userId={userId} isVisible={activeTab === "chat"} />
+          )}
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className={styles.container}>
-      {/* 회원탈퇴 버튼 (테스트용) */}
-      <button className={styles.deleteButton} onClick={handleDeleteAccount}>
-        탈퇴
-      </button>
-
-      {/* 고정 헤더 영역 */}
-      <div className={styles.fixedHeader}>
-        <header className={styles.header}>
-          <h1 className={styles.headerTitle}>
-            <span className={styles.headerLogo}>Lycon | Retirement</span>
-          </h1>
-        </header>
-
-        {/* 예약 정보 */}
-        {bookingInfo && (
-          <button
-            className={styles.bookingRow}
-            onClick={() => setShowProgramDetail(true)}
-          >
-            <span className={styles.bookingLabel}>예약된 검진</span>
-            <div className={styles.bookingRight}>
-              <span className={styles.bookingValue}>
-                {formatBookingDate(bookingInfo.date, bookingInfo.time)}
-              </span>
-              <ChevronRight size={20} className={styles.bookingArrow} />
-            </div>
-          </button>
-        )}
-      </div>
-
-      <main className={styles.main}>
-        <div className={styles.tabContent}>
-          {/* 1. 검진 전 해야할 일 (1개씩) */}
-          {currentTaskIndex < PREP_TASKS.length && (
-            <PrepTaskCard
-              task={PREP_TASKS[currentTaskIndex]}
-              currentStep={currentTaskIndex + 1}
-              totalSteps={PREP_TASKS.length}
-              onStart={handleStartTask}
-            />
-          )}
-
-          {/* 2. 모든 준비 완료 시 */}
-          {currentTaskIndex >= PREP_TASKS.length && (
-            <div className={styles.completionCard}>
-              <h2 className={styles.completionTitle}>준비가 완료되었습니다</h2>
-              <p className={styles.completionDesc}>
-                {bookingInfo
-                  ? `${formatBookingDate(bookingInfo.date, bookingInfo.time)} 검진에서 만나요!`
-                  : "검진 일정을 확인해주세요"}
-              </p>
-              <p className={styles.completionHint}>
-                아래에서 입력한 정보를 수정할 수 있어요
-              </p>
-            </div>
-          )}
-
-          {/* 3. 입력 완료한 항목들 */}
-          <CompletedItems tasks={completedTasks} onEdit={handleEditTask} />
-        </div>
-      </main>
-
-      {/* 하단 네비게이션 */}
-      <nav className={styles.bottomNav}>
-        <button className={`${styles.navItem} ${styles.active}`}>
-          <Home size={22} />
-          <span>홈</span>
-        </button>
-        <button
-          className={styles.navItem}
-          onClick={() => handleTabChange("chat")}
-        >
-          <div className={styles.navIconWrapper}>
-            <MessageCircle size={22} />
-            {unreadCount > 0 && (
-              <span className={styles.unreadBadge}>
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </div>
-          <span>담당: {bookingInfo?.expert || "전문가"}</span>
-        </button>
-      </nav>
-
-      {/* 토스트 */}
-      <Toast
-        message={
-          toast
-            ? toast.subMessage
-              ? `${toast.message} - ${toast.subMessage}`
-              : toast.message
-            : ""
-        }
-        isVisible={!!toast}
-        onClose={() => setToast(null)}
-      />
-    </div>
+    </>
   );
 }

@@ -241,8 +241,7 @@ export function PinSetup() {
       }
 
       // 온보딩으로 이동
-      router.push("/onboarding");
-      router.refresh();
+      router.replace("/onboarding");
     } catch (err) {
       console.error("PIN 설정 오류:", err);
       setError("오류가 발생했습니다. 다시 시도해주세요.");

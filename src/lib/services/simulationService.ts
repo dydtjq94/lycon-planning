@@ -28,11 +28,18 @@ export const simulationService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
 
+    return this.getDefaultByUserId(user.id)
+  },
+
+  // 특정 유저의 기본 시뮬레이션 조회 (없으면 생성)
+  async getDefaultByUserId(userId: string): Promise<Simulation> {
+    const supabase = createClient()
+
     // 기본 시뮬레이션 조회 (maybeSingle은 없으면 null 반환)
     const { data, error } = await supabase
       .from('simulations')
       .select('*')
-      .eq('profile_id', user.id)
+      .eq('profile_id', userId)
       .eq('is_default', true)
       .maybeSingle()
 
@@ -41,7 +48,7 @@ export const simulationService = {
 
     // 없으면 생성
     return this.create({
-      profile_id: user.id,
+      profile_id: userId,
       title: '기본 시나리오',
       is_default: true,
       sort_order: 0,

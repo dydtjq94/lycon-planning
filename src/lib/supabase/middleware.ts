@@ -43,6 +43,33 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // 전문가(admin)인지 확인
+  if (user) {
+    const { data: expert } = await supabase
+      .from('experts')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    // 전문가가 /auth 페이지 접근 시 (로그인/회원가입은 제외) → /admin으로
+    const authAllowedForExpert = ['/auth/login', '/auth/signup', '/auth/callback']
+    const isAllowedAuthPage = authAllowedForExpert.some(path => request.nextUrl.pathname.startsWith(path))
+    if (expert && request.nextUrl.pathname.startsWith('/auth') && !isAllowedAuthPage) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      return NextResponse.redirect(url)
+    }
+
+    // 전문가가 일반 사용자 페이지 접근 시 → /admin으로
+    const userOnlyPaths = ['/onboarding', '/waiting', '/dashboard']
+    const isUserOnlyPath = userOnlyPaths.some(path => request.nextUrl.pathname.startsWith(path))
+    if (expert && isUserOnlyPath) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      return NextResponse.redirect(url)
+    }
+  }
+
   // 이미 로그인한 사용자가 로그인/회원가입 페이지 접근 시 → 온보딩으로
   // (PIN 설정, PIN 입력, 전화번호 인증, 콜백은 제외)
   const authExcludedPages = ['/auth/pin-setup', '/auth/pin-verify', '/auth/phone-verify', '/auth/callback']

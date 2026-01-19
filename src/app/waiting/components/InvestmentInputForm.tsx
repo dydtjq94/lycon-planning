@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import { ChevronDown, Plus, X } from "lucide-react";
 import type { InvestmentAccountData } from "../types";
 import { AmountInput, RateInput, OwnerSelect } from "./inputs";
 import styles from "./InvestmentInputForm.module.css";
@@ -172,11 +172,10 @@ export function InvestmentInputForm({
     <div className={styles.container}>
       <div className={styles.inner}>
         <header className={styles.header}>
-          <button className={styles.backButton} onClick={onClose}>
-            <ArrowLeft size={24} />
-          </button>
           <h1 className={styles.headerTitle}>투자 계좌</h1>
-          <div className={styles.headerSpacer} />
+          <button className={styles.closeButton} onClick={onClose}>
+            <ChevronDown size={24} />
+          </button>
         </header>
 
         <main className={styles.main}>

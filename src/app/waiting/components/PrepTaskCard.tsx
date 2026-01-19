@@ -31,7 +31,7 @@ export function PrepTaskCard({
       {/* 메인 타이틀 */}
       <h2 className={styles.mainTitle}>
         재무 검진 전,
-        <br />내 자산 상황을 파악해주세요.
+        <br />내 자산 상황을 미리 파악해주세요.
       </h2>
 
       {/* 섹션 헤더 */}

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { SimpleOnboarding } from "./components/SimpleOnboarding";
 import { simulationService } from "@/lib/services/simulationService";
 import { initializePrimaryConversation } from "@/lib/services/messageService";
+import { createBooking } from "@/lib/services/bookingService";
 
 interface InitialData {
   name: string;
@@ -96,6 +97,7 @@ export default function OnboardingPage() {
     surveyResponses: Record<string, string | string[]>;
     bookingDate: string | null;
     bookingTime: string | null;
+    expertId: string | null;
   }) => {
     const supabase = createClient();
 
@@ -122,7 +124,18 @@ export default function OnboardingPage() {
         updated_at: new Date().toISOString(),
       });
 
-      // 2. 페이지 이동
+      // 2. 예약 생성 (프로필 저장 후)
+      if (data.bookingDate && data.bookingTime && data.expertId) {
+        try {
+          const bookingDateObj = new Date(data.bookingDate);
+          const dateStr = `${bookingDateObj.getFullYear()}-${String(bookingDateObj.getMonth() + 1).padStart(2, "0")}-${String(bookingDateObj.getDate()).padStart(2, "0")}`;
+          await createBooking(data.expertId, dateStr, data.bookingTime);
+        } catch (bookingErr) {
+          console.error("예약 생성 실패:", bookingErr);
+        }
+      }
+
+      // 3. 페이지 이동
       router.push("/auth/phone-verify");
 
       // 3. 나머지는 백그라운드에서 저장

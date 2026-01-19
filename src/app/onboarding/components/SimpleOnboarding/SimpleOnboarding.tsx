@@ -4,6 +4,10 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Square, CheckSquare } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  getAvailableTimesForDates,
+  getDefaultExpertId,
+} from "@/lib/services/bookingService";
 import styles from "./SimpleOnboarding.module.css";
 
 // localStorage 키
@@ -259,15 +263,15 @@ const SURVEY_SECTIONS: SurveySection[] = [
         question: "은퇴 후 생활,\n얼마나 걱정되세요?",
         type: "single",
         options: [
-          { value: "none", label: "전혀 안 걱정된다" },
-          { value: "little", label: "별로 안 걱정된다" },
+          { value: "none", label: "전혀 걱정되지 않는다" },
+          { value: "little", label: "별로 걱정되지 않는다" },
           { value: "somewhat", label: "좀 걱정된다" },
           { value: "very", label: "많이 걱정된다" },
         ],
       },
       {
         id: "pension_awareness",
-        question: "국민연금 얼마 받을지\n알고 계세요?",
+        question: "국민연금 예상 수령액을\n알고 계세요?",
         type: "single",
         options: [
           { value: "exact", label: "정확히 알아요" },
@@ -315,8 +319,17 @@ interface SimpleOnboardingProps {
     surveyResponses: SurveyResponses;
     bookingDate: string | null;
     bookingTime: string | null;
+    expertId: string | null;
   }) => void;
   initialData?: InitialData | null;
+}
+
+// 로컬 날짜를 YYYY-MM-DD 형식으로 변환 (타임존 문제 방지)
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 // 나이대별 프로그램 설명
@@ -555,6 +568,11 @@ export function SimpleOnboarding({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [expertId, setExpertId] = useState<string | null>(null);
+  const [availableTimes, setAvailableTimes] = useState<
+    Record<string, string[]>
+  >({});
+  const [loadingTimes, setLoadingTimes] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [isModalClosing, setIsModalClosing] = useState(false);
   const [surveyResponses, setSurveyResponses] = useState<SurveyResponses>({});
@@ -606,7 +624,7 @@ export function SimpleOnboarding({
             // localStorage에도 저장
             localStorage.setItem(
               SURVEY_STORAGE_KEY,
-              JSON.stringify(profile.survey_responses.onboarding)
+              JSON.stringify(profile.survey_responses.onboarding),
             );
           }
         }
@@ -663,7 +681,7 @@ export function SimpleOnboarding({
 
     localStorage.setItem(
       BASIC_INFO_STORAGE_KEY,
-      JSON.stringify({ name, rrnFront, rrnBack })
+      JSON.stringify({ name, rrnFront, rrnBack }),
     );
   }, [name, rrnFront, rrnBack, isDataLoaded]);
 
@@ -720,19 +738,55 @@ export function SimpleOnboarding({
     }
   }, [step]);
 
-  // 예약 단계 진입 시 기본 날짜 설정 (5일 후)
+  // 예약 단계 진입 시 가용 시간 로드
   useEffect(() => {
-    if (step === "booking" && !selectedDate) {
-      const defaultDate = new Date();
-      defaultDate.setDate(defaultDate.getDate() + 5);
-      // 주말이면 다음 평일로
-      if (defaultDate.getDay() === 0)
-        defaultDate.setDate(defaultDate.getDate() + 1);
-      if (defaultDate.getDay() === 6)
-        defaultDate.setDate(defaultDate.getDate() + 2);
-      setSelectedDate(defaultDate);
-    }
-  }, [step, selectedDate]);
+    if (step !== "booking") return;
+
+    const loadAvailability = async () => {
+      setLoadingTimes(true);
+
+      // 전문가 ID 가져오기
+      let expId = expertId;
+      if (!expId) {
+        expId = await getDefaultExpertId();
+        if (expId) setExpertId(expId);
+      }
+
+      if (!expId) {
+        setLoadingTimes(false);
+        return;
+      }
+
+      // 5일 후부터 14일간 날짜 생성
+      const dates: Date[] = [];
+      const today = new Date();
+      for (let i = 5; i <= 18; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        dates.push(date);
+      }
+
+      // 가용 시간 로드
+      const times = await getAvailableTimesForDates(expId, dates);
+      setAvailableTimes(times);
+
+      // 기본 날짜 설정 (가용 시간이 있는 첫 번째 날)
+      if (!selectedDate) {
+        for (const date of dates) {
+          const dateStr = formatLocalDate(date);
+          if (times[dateStr] && times[dateStr].length > 0) {
+            setSelectedDate(date);
+            break;
+          }
+        }
+      }
+
+      setLoadingTimes(false);
+    };
+
+    loadAvailability();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, expertId]);
 
   // step을 인코딩해서 URL에 저장 (내부 추적용)
   const encodeStep = (s: Step): string => {
@@ -768,7 +822,7 @@ export function SimpleOnboarding({
       const seq = Math.floor(Math.random() * 9000) + 1000;
       router.replace(
         `/onboarding?s=${encoded}&t=${ts}&v=2&ref=ob_flow&seq=${seq}&src=internal`,
-        { scroll: false }
+        { scroll: false },
       );
       // 스크롤 맨 위로
       mainRef.current?.scrollTo(0, 0);
@@ -818,7 +872,7 @@ export function SimpleOnboarding({
   const handleSurveyAnswer = (
     questionId: string,
     value: string,
-    isMultiple: boolean
+    isMultiple: boolean,
   ) => {
     if (isMultiple) {
       const currentValues = (surveyResponses[questionId] as string[]) || [];
@@ -856,7 +910,7 @@ export function SimpleOnboarding({
     return !!response;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === "welcome") {
       goToStep("mission");
     } else if (step === "mission") {
@@ -929,7 +983,7 @@ export function SimpleOnboarding({
     } else if (step === "booking") {
       // 전화번호 인증으로 이동
       const parsed = parseRrn();
-      if (parsed) {
+      if (parsed && selectedDate && selectedTime && expertId) {
         // 온보딩 완료 시 localStorage 정리
         localStorage.removeItem(SURVEY_STORAGE_KEY);
         localStorage.removeItem(BASIC_INFO_STORAGE_KEY);
@@ -942,6 +996,7 @@ export function SimpleOnboarding({
           surveyResponses,
           bookingDate: selectedDate ? selectedDate.toISOString() : null,
           bookingTime: selectedTime,
+          expertId,
         });
       }
     }
@@ -1307,7 +1362,7 @@ export function SimpleOnboarding({
   // 설문 질문 렌더링
   const renderSurveyQuestion = (
     sectionIndex: number,
-    questionIndex: number
+    questionIndex: number,
   ) => {
     const section = SURVEY_SECTIONS[sectionIndex];
     const question = section.questions[questionIndex];
@@ -1570,42 +1625,15 @@ export function SimpleOnboarding({
 
   // 5. 예약 일정 잡기
   const renderBooking = () => {
-    // 5일 후부터 7일간 날짜 생성
+    // 5일 후부터 14일간 날짜 생성
     const dates: Date[] = [];
     const today = new Date();
-    for (let i = 5; i <= 11; i++) {
+    for (let i = 5; i <= 18; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       dates.push(date);
     }
 
-    // 날짜별로 다른 시간 슬롯 (앞쪽 날짜는 적게, 뒤쪽은 많게)
-    const getTimeSlots = (dateIndex: number) => {
-      const slots = [
-        ["14:00", "17:00", "19:00"],
-        ["11:00", "15:00", "16:00", "19:00"],
-        ["10:00", "14:00", "15:00", "18:00"],
-        ["10:00", "11:00", "14:00", "16:00", "19:00"],
-        ["10:00", "11:00", "13:00", "15:00", "17:00", "19:00"],
-        ["10:00", "11:00", "14:00", "15:00", "16:00", "18:00", "19:00"],
-        [
-          "10:00",
-          "11:00",
-          "13:00",
-          "14:00",
-          "15:00",
-          "16:00",
-          "17:00",
-          "19:00",
-        ],
-      ];
-      return slots[dateIndex] || slots[slots.length - 1];
-    };
-    const selectedDateIndex = selectedDate
-      ? dates.findIndex((d) => d.toDateString() === selectedDate.toDateString())
-      : -1;
-    const timeSlots =
-      selectedDateIndex >= 0 ? getTimeSlots(selectedDateIndex) : [];
     const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 
     const formatDate = (date: Date) => {
@@ -1615,7 +1643,47 @@ export function SimpleOnboarding({
       return { month, day, weekday };
     };
 
+    // 선택된 날짜의 가용 시간
+    const selectedDateStr = selectedDate
+      ? formatLocalDate(selectedDate)
+      : "";
+    const timeSlots = selectedDateStr
+      ? availableTimes[selectedDateStr] || []
+      : [];
+
     const isBookingComplete = selectedDate && selectedTime;
+
+    if (loadingTimes) {
+      return (
+        <div className={styles.stepContent}>
+          <h1 className={styles.title}>검진 일정 예약</h1>
+          <div className={styles.skeletonSubtitle} />
+          <div className={styles.skeletonSubtitleShort} />
+
+          <div className={styles.bookingSection}>
+            <div className={styles.skeletonLabel} />
+            <div className={styles.dateGrid}>
+              {[...Array(7)].map((_, i) => (
+                <div key={i} className={styles.skeletonDateItem} />
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.bookingSection}>
+            <div className={styles.skeletonLabel} />
+            <div className={styles.timeGrid}>
+              {[...Array(7)].map((_, i) => (
+                <div key={i} className={styles.skeletonTimeItem} />
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.bottomButtonArea}>
+            <div className={styles.skeletonButton} />
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className={styles.stepContent}>
@@ -1633,19 +1701,23 @@ export function SimpleOnboarding({
               const { month, day, weekday } = formatDate(date);
               const isSelected =
                 selectedDate?.toDateString() === date.toDateString();
-              const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+              const dateStr = formatLocalDate(date);
+              const hasSlots =
+                availableTimes[dateStr] && availableTimes[dateStr].length > 0;
 
               return (
                 <button
                   key={index}
                   className={`${styles.dateItem} ${
                     isSelected ? styles.selected : ""
-                  } ${isWeekend ? styles.weekend : ""}`}
+                  } ${!hasSlots ? styles.disabled : ""}`}
                   onClick={() => {
-                    setSelectedDate(date);
-                    setSelectedTime(null);
+                    if (hasSlots) {
+                      setSelectedDate(date);
+                      setSelectedTime(null);
+                    }
                   }}
-                  disabled={isWeekend}
+                  disabled={!hasSlots}
                 >
                   <span className={styles.dateWeekday}>{weekday}</span>
                   <span className={styles.dateDay}>{day}</span>
@@ -1658,22 +1730,28 @@ export function SimpleOnboarding({
         {selectedDate && (
           <div className={styles.bookingSection}>
             <label className={styles.bookingLabel}>시간 선택</label>
-            <div className={styles.timeGrid}>
-              {timeSlots.map((time, index) => {
-                const isSelected = selectedTime === time;
-                return (
-                  <button
-                    key={index}
-                    className={`${styles.timeItem} ${
-                      isSelected ? styles.selected : ""
-                    }`}
-                    onClick={() => setSelectedTime(time)}
-                  >
-                    {time}
-                  </button>
-                );
-              })}
-            </div>
+            {timeSlots.length > 0 ? (
+              <div className={styles.timeGrid}>
+                {timeSlots.map((time, index) => {
+                  const isSelected = selectedTime === time;
+                  return (
+                    <button
+                      key={index}
+                      className={`${styles.timeItem} ${
+                        isSelected ? styles.selected : ""
+                      }`}
+                      onClick={() => setSelectedTime(time)}
+                    >
+                      {time}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className={styles.noSlots}>
+                이 날짜에는 예약 가능한 시간이 없습니다.
+              </p>
+            )}
           </div>
         )}
 

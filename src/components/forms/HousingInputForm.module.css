@@ -1,0 +1,392 @@
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f5f5f7;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.inner {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 헤더 */
+.header {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+  z-index: 10;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1d1d1f;
+}
+
+.headerTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.headerSpacer {
+  width: 40px;
+}
+
+/* 메인 */
+.main {
+  flex: 1;
+  padding: 80px 20px 120px;
+  overflow-y: auto;
+}
+
+/* 섹션 */
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.sectionHint {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0 0 16px 0;
+}
+
+/* 필드 행 (가로 배치) */
+.fieldRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fieldInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fieldLabel {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.fieldHint {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 금액 포맷 표시 */
+.formattedAmount {
+  font-size: 13px;
+  color: #007AFF;
+  margin: 6px 0 0 0;
+}
+
+/* 거주 형태 선택 */
+.typeOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.typeBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.typeBtn.active {
+  border-color: #1d1d1f;
+  color: #1d1d1f;
+}
+
+.typeHint {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+/* 입력 행 */
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 금액 입력 */
+.amountInput {
+  flex: 1;
+  max-width: 150px;
+  padding: 12px 14px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #1d1d1f;
+  text-align: right;
+}
+
+.amountInput:focus {
+  outline: none;
+  border-color: #1d1d1f;
+}
+
+.amountInput::placeholder {
+  color: #d1d5db;
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.amountInput::-webkit-outer-spin-button,
+.amountInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.unit {
+  font-size: 14px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+/* 토글 그룹 (없음/있음) */
+.toggleGroup {
+  display: flex;
+  gap: 6px;
+}
+
+.toggleBtn {
+  padding: 6px 14px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toggleBtn.active {
+  border-color: #1d1d1f;
+  color: #1d1d1f;
+}
+
+/* 대출 상세 */
+.loanDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.loanRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.loanLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+/* 금리 입력 */
+.rateInput {
+  width: 80px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #1d1d1f;
+  text-align: right;
+}
+
+.rateInput:focus {
+  outline: none;
+  border-color: #1d1d1f;
+}
+
+.rateInput::placeholder {
+  color: #d1d5db;
+}
+
+.rateInput::-webkit-outer-spin-button,
+.rateInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 금리 타입 토글 (고정/변동) */
+.rateToggle {
+  display: flex;
+  gap: 4px;
+  margin-left: 12px;
+}
+
+.rateBtn {
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rateBtn.active {
+  border-color: #1d1d1f;
+  color: #1d1d1f;
+}
+
+/* 상환 방식 선택 */
+.repaymentOptions {
+  display: flex;
+  gap: 6px;
+}
+
+.repaymentBtn {
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.repaymentBtn.active {
+  border-color: #1d1d1f;
+  color: #1d1d1f;
+}
+
+/* 년도 입력 */
+.yearInput {
+  width: 90px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #1d1d1f;
+  text-align: right;
+}
+
+.yearInput:focus {
+  outline: none;
+  border-color: #1d1d1f;
+}
+
+.yearInput::-webkit-outer-spin-button,
+.yearInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 하단 영역 */
+.bottomArea {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  padding: 16px 20px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: #ffffff;
+  border-top: 1px solid #f3f4f6;
+}
+
+.saveButton {
+  width: 100%;
+  padding: 16px;
+  background: #007AFF;
+  border: none;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #0066DD;
+}
+
+.saveButton:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
