@@ -1,7 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, ExternalLink, Users, Building2, Wallet, Receipt, PiggyBank, TrendingUp, CreditCard, Shield, Briefcase, Heart, LucideIcon, Edit3 } from "lucide-react";
+import {
+  ArrowLeft,
+  ExternalLink,
+  Users,
+  Building2,
+  Wallet,
+  Receipt,
+  PiggyBank,
+  TrendingUp,
+  CreditCard,
+  Shield,
+  Briefcase,
+  Heart,
+  LucideIcon,
+  Edit3,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { InputFormModal } from "./InputFormModal";
 import { FamilyInputForm } from "./FamilyInputForm";
@@ -14,7 +29,16 @@ import { DebtInputForm } from "./DebtInputForm";
 import { NationalPensionInputForm } from "./NationalPensionInputForm";
 import { RetirementPensionInputForm } from "./RetirementPensionInputForm";
 import { PersonalPensionInputForm } from "./PersonalPensionInputForm";
-import type { FamilyMember, FinancialAssetItem, InvestmentAccountData, HousingData, DebtItem, NationalPensionData, RetirementPensionData, PersonalPensionItem } from "../types";
+import type {
+  FamilyMember,
+  FinancialAssetItem,
+  InvestmentAccountData,
+  HousingData,
+  DebtItem,
+  NationalPensionData,
+  RetirementPensionData,
+  PersonalPensionItem,
+} from "../types";
 import styles from "./TipModal.module.css";
 
 // prep_data 전체 타입
@@ -58,12 +82,18 @@ const TIP_DATA: Record<string, TipCategory> = {
     id: "family",
     title: "가계 정보",
     icon: Users,
-    summary: ["본인/배우자 생년월일", "자녀 생년월일", "예상 은퇴 나이", "부양 가족"],
-    placeholder: "예: 본인 1985년생, 배우자 1987년생\n자녀: 아들 2018년생, 딸 2020년생\n예상 은퇴: 60세\n부양가족: 어머니 함께 거주",
+    summary: [
+      "본인/배우자 생년월일",
+      "자녀 생년월일",
+      "희망 은퇴 나이",
+      "부양 가족",
+    ],
+    placeholder:
+      "예: 본인 1985년생, 배우자 1987년생\n자녀: 아들 2018년생, 딸 2020년생\n희망 은퇴: 60세\n부양가족: 어머니 함께 거주",
     details: [
-      "본인: 생년월일, 현재 직장, 예상 은퇴 나이",
+      "본인: 생년월일, 희망 은퇴 나이",
       "배우자: 생년월일, 직장 유무, 예상 은퇴 나이",
-      "자녀: 각 자녀의 생년월일, 현재 학년",
+      "자녀: 각 자녀의 생년월일",
       "부양가족: 함께 사는 부모님 유무",
     ],
     documents: [],
@@ -73,7 +103,8 @@ const TIP_DATA: Record<string, TipCategory> = {
     title: "거주용 부동산",
     icon: Building2,
     summary: ["거주 형태 (자가/전세/월세)", "시세 또는 보증금", "대출 현황"],
-    placeholder: "예: 자가, 아파트 시세 8억\n주담대 잔액 3억, 금리 4.5%\n월 상환액 150만원, 만기 2040년\n관리비 월 25만원",
+    placeholder:
+      "예: 자가, 아파트 시세 8억\n주담대 잔액 3억, 금리 4.5%\n월 상환액 150만원, 만기 2040년\n관리비 월 25만원",
     details: [
       "자가: 현재 시세 (네이버부동산, 호갱노노)",
       "자가: 주담대 잔액, 금리, 만기일, 월 상환액",
@@ -88,15 +119,20 @@ const TIP_DATA: Record<string, TipCategory> = {
     id: "savings",
     title: "저축",
     icon: PiggyBank,
-    summary: ["입출금 통장 잔액", "정기예금 잔액/금리/만기", "적금 잔액/금리/만기"],
-    placeholder: "예: 입출금 통장 총 2,000만원\n정기예금 5,000만원 (3.8%, 2025.06 만기)\n적금 월 50만원씩, 현재 600만원\n청약통장 1,200만원",
+    summary: [
+      "보유 현금(입출금 통장 잔액)",
+      "정기예금 잔액/금리/만기",
+      "적금 잔액/금리/만기",
+    ],
+    placeholder:
+      "예: 입출금 통장 총 2,000만원\n정기예금 5,000만원 (3.8%, 2025.06 만기)\n적금 월 50만원씩, 현재 600만원\n청약통장 1,200만원",
     steps: [
       { step: 1, text: "토스, 카카오페이, 뱅크샐러드 앱 열기" },
       { step: 2, text: "자산 연동에서 모든 은행 계좌 연결" },
       { step: 3, text: "아래 항목들을 확인하세요" },
     ],
     details: [
-      "입출금 통장: 전체 잔액 합계",
+      "보유 현금: 입출금 통장 전체 잔액 합계",
       "정기예금: 잔액, 금리(%), 만기일",
       "적금: 잔액, 월 납입액, 금리(%), 만기일",
       "청약통장: 납입 총액",
@@ -107,17 +143,23 @@ const TIP_DATA: Record<string, TipCategory> = {
     id: "investment",
     title: "투자",
     icon: TrendingUp,
-    summary: ["주식 평가금액", "펀드/ETF 평가금액", "코인/금 평가금액"],
-    placeholder: "예: 국내주식 3,000만원\n해외주식(미국) 2,000만원\nETF 1,500만원\n비트코인 500만원",
+    summary: [
+      "주식/ETF 평가금액",
+      "펀드 평가금액",
+      "가상자산 평가금액",
+      "금 평가금액",
+    ],
+    placeholder:
+      "예: 국내주식/ETF 3,000만원\n해외주식/ETF 2,000만원\n펀드 1,500만원\n가상자산 500만원",
     steps: [
       { step: 1, text: "증권사 앱에서 자산현황 확인" },
       { step: 2, text: "코인 거래소 앱에서 잔고 확인" },
       { step: 3, text: "금 등 실물자산 시세 확인" },
     ],
     details: [
-      "국내주식: 평가금액 합계",
-      "해외주식: 평가금액 (원화 환산)",
-      "펀드/ETF: 평가금액 합계",
+      "국내주식/ETF: 평가금액 합계",
+      "해외주식/ETF: 평가금액 (원화 환산)",
+      "펀드: 평가금액 합계",
       "가상자산: 거래소별 평가금액",
       "금: 현재 시세 기준 평가금액",
     ],
@@ -128,7 +170,8 @@ const TIP_DATA: Record<string, TipCategory> = {
     title: "부채",
     icon: CreditCard,
     summary: ["대출 잔액/금리", "할부 잔액", "카드론 잔액"],
-    placeholder: "예: 신용대출 2,000만원 (5.5%)\n마이너스통장 500만원 사용중\n카드할부 잔액 200만원\n학자금대출 없음",
+    placeholder:
+      "예: 신용대출 2,000만원 (5.5%)\n마이너스통장 500만원 사용중\n카드할부 잔액 200만원\n학자금대출 없음",
     steps: [
       { step: 1, text: "토스/카카오페이 '내 대출' 확인" },
       { step: 2, text: "아래 항목별로 정리하세요" },
@@ -148,14 +191,15 @@ const TIP_DATA: Record<string, TipCategory> = {
     title: "소득",
     icon: Wallet,
     summary: ["월급 실수령액", "상여금/성과급 월평균", "기타소득 월평균"],
-    placeholder: "예: 본인 월급 400만원 (세후)\n배우자 월급 300만원\n상여금 연 600만원 (월 50만원)\n기타소득 없음",
+    placeholder:
+      "예: 본인 월급 400만원 (세후)\n배우자 월급 300만원\n상여금 연 600만원 (월 50만원)\n기타소득 없음",
     details: [
       "근로소득: 월급 실수령액 (세후)",
       "상여금: 연간 총액 ÷ 12",
       "사업소득: 월 평균 순수입",
       "임대소득: 월세 수입",
       "기타소득: 이자, 배당 등 (연간 ÷ 12)",
-      "배우자 소득도 동일하게 파악",
+      "배우자 소득도 동일하게 파악(생략 가능)",
     ],
     documents: [],
   },
@@ -164,20 +208,20 @@ const TIP_DATA: Record<string, TipCategory> = {
     title: "국민(공적)연금",
     icon: Shield,
     summary: ["예상 월 수령액 (본인)", "예상 월 수령액 (배우자)"],
-    placeholder: "예: 본인 65세 수령 시 월 120만원\n배우자 65세 수령 시 월 80만원\n(국민연금공단 조회 결과)",
+    placeholder:
+      "예: 본인 65세 수령 시 월 120만원\n배우자 65세 수령 시 월 80만원\n(국민연금공단 조회 결과)",
     steps: [
       { step: 1, text: "아래 링크에서 해당 연금 사이트 접속" },
       { step: 2, text: "공동인증서/간편인증 로그인" },
       { step: 3, text: "'예상연금액 조회' 클릭" },
-      { step: 4, text: "65세 수령 시 예상 월 수령액 확인" },
     ],
-    details: [
-      "본인과 배우자 모두 각자 조회",
-      "조회 화면을 캡처해두면 편해요",
-    ],
+    details: ["본인과 배우자 모두 각자 조회", "조회 화면을 캡처해두면 편해요"],
     documents: [],
     links: [
-      { label: "국민연금 조회", url: "https://csa.nps.or.kr/ohkd/ntpsidnty/anpninq/UHKD7101M0.do" },
+      {
+        label: "국민연금 조회",
+        url: "https://csa.nps.or.kr/ohkd/ntpsidnty/anpninq/UHKD7101M0.do",
+      },
       { label: "공무원연금 조회", url: "https://www.geps.or.kr" },
       { label: "사학연금 조회", url: "https://www.tp.or.kr" },
       { label: "군인연금 조회", url: "https://www.mps.mil.kr" },
@@ -188,20 +232,26 @@ const TIP_DATA: Record<string, TipCategory> = {
     title: "퇴직연금/퇴직금",
     icon: Briefcase,
     summary: ["DB형: 근속연수", "DC형: 적립금 잔액", "IRP: 잔액"],
-    placeholder: "예: 본인 DC형, 적립금 4,500만원\nIRP 추가납입 800만원\n배우자 DB형, 근속 8년차",
+    placeholder:
+      "예: 본인 DC형, 적립금 4,500만원\nIRP 추가납입 800만원\n배우자 DB형, 근속 8년차",
     steps: [
-      { step: 1, text: "아래 통합연금포털 또는 회사 인사시스템 확인" },
-      { step: 2, text: "본인의 퇴직연금 유형 확인" },
+      { step: 1, text: "아래 통합연금포털에서 로그인" },
+      { step: 2, text: "연금계약정보 조회 (개인연금도 함께 조회됨)" },
+      { step: 3, text: "조회 결과를 PDF로 저장해두세요" },
     ],
     details: [
       "DB형 (확정급여): 현재 근속연수만 알면 됨",
       "DC형 (확정기여): 현재 적립금 잔액 확인",
       "IRP: 개인 추가 납입 잔액 확인",
       "배우자도 직장인이면 동일하게 확인",
+      "PDF 저장 시 개인연금 정보도 함께 확인 가능",
     ],
     documents: [],
     links: [
-      { label: "통합연금포털에서 조회", url: "https://www.fss.or.kr/fss/lifeplan/anntyLogin/list.do?menuNo=200945" },
+      {
+        label: "연금포털에서 조회",
+        url: "https://www.fss.or.kr/fss/lifeplan/anntyLogin/list.do?menuNo=200945",
+      },
     ],
   },
   personalPension: {
@@ -209,7 +259,8 @@ const TIP_DATA: Record<string, TipCategory> = {
     title: "개인연금",
     icon: Heart,
     summary: ["연금저축 잔액", "IRP 개인납입 잔액", "저축성보험 해약환급금"],
-    placeholder: "예: 연금저축펀드 2,000만원\n연금저축보험 1,500만원\n저축성보험 해약환급금 3,000만원",
+    placeholder:
+      "예: 연금저축펀드 2,000만원\n연금저축보험 1,500만원\n저축성보험 해약환급금 3,000만원",
     steps: [
       { step: 1, text: "가입한 금융사 앱 열기 (은행/증권/보험)" },
       { step: 2, text: "연금 메뉴에서 잔액 확인" },
@@ -227,17 +278,25 @@ const TIP_DATA: Record<string, TipCategory> = {
     id: "expense",
     title: "지출",
     icon: Receipt,
-    summary: ["식비 월평균", "교통비 월평균", "쇼핑/미용 월평균", "유흥/여가 월평균"],
-    placeholder: "예: 식비 월 80만원\n교통비 월 30만원\n쇼핑/미용 월 40만원\n유흥/여가 월 50만원\n(최근 3개월 평균)",
+    summary: [
+      "식비 월평균",
+      "교통비 월평균",
+      "쇼핑/미용 월평균",
+      "유흥/여가 월평균",
+      "기타 월평균",
+    ],
+    placeholder:
+      "예: 식비 월 80만원\n교통비 월 30만원\n쇼핑/미용 월 40만원\n유흥/여가 월 50만원\n기타 월 20만원\n(최근 3개월 평균)",
     steps: [
       { step: 1, text: "카드사 앱/토스에서 최근 3개월 소비 확인" },
-      { step: 2, text: "4가지 항목별 월평균 계산" },
+      { step: 2, text: "5가지 항목별 월평균 계산" },
     ],
     details: [
       "식비: 마트 + 외식 + 배달 + 카페",
       "교통비: 대중교통 + 택시 + 주유 + 주차",
       "쇼핑/미용: 의류 + 화장품 + 미용실",
       "유흥/여가: 술자리 + 취미 + 구독료 + 여행",
+      "기타: 반려동물 + 경조사 + 분류 어려운 지출",
       "3개월 합계 ÷ 3 = 월평균",
     ],
     documents: [],
@@ -251,7 +310,12 @@ interface TipModalProps {
   onClose: () => void;
 }
 
-export function TipModal({ categoryId, initialHasData = false, onDataSaved, onClose }: TipModalProps) {
+export function TipModal({
+  categoryId,
+  initialHasData = false,
+  onDataSaved,
+  onClose,
+}: TipModalProps) {
   const [isClosing, setIsClosing] = useState(false);
   const [showInputForm, setShowInputForm] = useState(false);
   const [hasData, setHasData] = useState(initialHasData);
@@ -265,7 +329,9 @@ export function TipModal({ categoryId, initialHasData = false, onDataSaved, onCl
     const loadPrepData = async () => {
       setIsLoading(true);
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (user) {
         setUserId(user.id);
@@ -278,8 +344,15 @@ export function TipModal({ categoryId, initialHasData = false, onDataSaved, onCl
         if (profile?.prep_data) {
           setPrepData(profile.prep_data as PrepDataStore);
           // 현재 카테고리에 데이터가 있는지 확인
-          const categoryData = (profile.prep_data as PrepDataStore)[categoryId as keyof PrepDataStore];
-          setHasData(!!categoryData && (Array.isArray(categoryData) ? categoryData.length > 0 : Object.keys(categoryData).length > 0));
+          const categoryData = (profile.prep_data as PrepDataStore)[
+            categoryId as keyof PrepDataStore
+          ];
+          setHasData(
+            !!categoryData &&
+              (Array.isArray(categoryData)
+                ? categoryData.length > 0
+                : Object.keys(categoryData).length > 0),
+          );
         }
       }
       setIsLoading(false);
@@ -379,7 +452,7 @@ export function TipModal({ categoryId, initialHasData = false, onDataSaved, onCl
   // 배우자 여부 (family 데이터에서 확인)
   const hasSpouse = (): boolean => {
     const familyData = getStoredData<FamilyMember[]>("family", []);
-    return familyData.some(m => m.relationship === "spouse");
+    return familyData.some((m) => m.relationship === "spouse");
   };
 
   if (!category) {
@@ -403,7 +476,9 @@ export function TipModal({ categoryId, initialHasData = false, onDataSaved, onCl
             <h2 className={styles.summaryTitle}>확인할 항목</h2>
             <ul className={styles.summaryList}>
               {category.summary.map((item, index) => (
-                <li key={index} className={styles.summaryItem}>{item}</li>
+                <li key={index} className={styles.summaryItem}>
+                  {item}
+                </li>
               ))}
             </ul>
             <button
@@ -455,7 +530,9 @@ export function TipModal({ categoryId, initialHasData = false, onDataSaved, onCl
               <h3 className={styles.sectionTitle}>세부 항목</h3>
               <ul className={styles.detailList}>
                 {category.details.map((detail, index) => (
-                  <li key={index} className={styles.detailItem}>{detail}</li>
+                  <li key={index} className={styles.detailItem}>
+                    {detail}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -508,7 +585,10 @@ export function TipModal({ categoryId, initialHasData = false, onDataSaved, onCl
         {categoryId === "investment" && (
           <InvestmentInputForm
             hasSpouse={hasSpouse()}
-            initialData={getStoredData<InvestmentAccountData | null>("investment", null)}
+            initialData={getStoredData<InvestmentAccountData | null>(
+              "investment",
+              null,
+            )}
             isCompleted={hasData}
             onClose={() => setShowInputForm(false)}
             onSave={handleSaveInvestment}
@@ -535,7 +615,10 @@ export function TipModal({ categoryId, initialHasData = false, onDataSaved, onCl
         {categoryId === "nationalPension" && (
           <NationalPensionInputForm
             hasSpouse={hasSpouse()}
-            initialData={getStoredData<NationalPensionData | null>("nationalPension", null)}
+            initialData={getStoredData<NationalPensionData | null>(
+              "nationalPension",
+              null,
+            )}
             isCompleted={hasData}
             onClose={() => setShowInputForm(false)}
             onSave={handleSaveNationalPension}
@@ -544,7 +627,10 @@ export function TipModal({ categoryId, initialHasData = false, onDataSaved, onCl
         {categoryId === "retirementPension" && (
           <RetirementPensionInputForm
             hasSpouse={hasSpouse()}
-            initialData={getStoredData<RetirementPensionData | null>("retirementPension", null)}
+            initialData={getStoredData<RetirementPensionData | null>(
+              "retirementPension",
+              null,
+            )}
             isCompleted={hasData}
             onClose={() => setShowInputForm(false)}
             onSave={handleSaveRetirementPension}
@@ -553,7 +639,10 @@ export function TipModal({ categoryId, initialHasData = false, onDataSaved, onCl
         {categoryId === "personalPension" && (
           <PersonalPensionInputForm
             hasSpouse={hasSpouse()}
-            initialData={getStoredData<PersonalPensionItem[]>("personalPension", [])}
+            initialData={getStoredData<PersonalPensionItem[]>(
+              "personalPension",
+              [],
+            )}
             isCompleted={hasData}
             onClose={() => setShowInputForm(false)}
             onSave={handleSavePersonalPension}

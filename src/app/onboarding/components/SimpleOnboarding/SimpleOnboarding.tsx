@@ -346,7 +346,7 @@ const PROGRAM_CONTENT: Record<string, { desc: string; checkpoints: string[] }> =
       ],
     },
     "30대": {
-      desc: "30대 직장인에게 가장 취약한 주택자금 부담, 자녀 교육비 준비 미흡, 보험/연금 설계 부족 등의 조기 진단과 자산 형성기에 맞는 재무 전략 수립을 위한 기본형 종합 재무검진 프로그램입니다.",
+      desc: "30대 직장인에게 가장 취약한 주택자금 부담, 자녀 교육비 준비 미흡, 연금 설계 부족 등의 조기 진단과 자산 형성기에 맞는 재무 전략 수립을 위한 기본형 종합 재무검진 프로그램입니다.",
       checkpoints: [
         "결혼, 출산, 주택 구입 등 큰 지출이 예정되어 있다.",
         "맞벌이/외벌이 상황에 맞는 재무 전략이 필요하다.",
@@ -1644,9 +1644,7 @@ export function SimpleOnboarding({
     };
 
     // 선택된 날짜의 가용 시간
-    const selectedDateStr = selectedDate
-      ? formatLocalDate(selectedDate)
-      : "";
+    const selectedDateStr = selectedDate ? formatLocalDate(selectedDate) : "";
     const timeSlots = selectedDateStr
       ? availableTimes[selectedDateStr] || []
       : [];
