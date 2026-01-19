@@ -41,7 +41,6 @@ export async function POST() {
     }
 
     const simulationIds = simulations?.map(s => s.id) || []
-    console.log('Deleting simulations:', simulationIds)
 
     // 2. Delete all financial data linked to simulations
     if (simulationIds.length > 0) {
@@ -75,7 +74,6 @@ export async function POST() {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    console.log('Successfully deleted user:', user.id)
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('Unexpected error:', err)

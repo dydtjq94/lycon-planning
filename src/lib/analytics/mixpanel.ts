@@ -13,7 +13,6 @@ export function initMixpanel() {
 
   mixpanel.init(MIXPANEL_TOKEN, {
     autocapture: false,
-    debug: process.env.NODE_ENV === "development",
   });
 
   initialized = true;

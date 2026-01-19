@@ -965,15 +965,12 @@ export async function saveExpenseData(
   userId: string,
   data: ExpenseFormData
 ): Promise<void> {
-  console.log("saveExpenseData called with:", JSON.stringify(data, null, 2));
-
   const supabase = createClient();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
   // 시뮬레이션 ID 가져오기
   const simulation = await simulationService.getDefaultByUserId(userId);
-  console.log("simulation:", simulation?.id);
   if (!simulation) {
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
@@ -1078,17 +1075,12 @@ export async function saveExpenseData(
 
   // 지출 삽입
   if (expenses.length > 0) {
-    console.log("Inserting expenses:", expenses);
     const { error } = await supabase.from("expenses").insert(expenses);
     if (error) {
-      console.error("Supabase insert error - message:", error.message);
-      console.error("Supabase insert error - details:", error.details);
-      console.error("Supabase insert error - hint:", error.hint);
-      console.error("Supabase insert error - code:", error.code);
+      console.error("지출 저장 실패:", error.message);
       throw new Error(`지출 저장 실패: ${error.message || error.code || "Unknown error"}`);
     }
   }
-  console.log("Expense save successful");
 
   // 완료 상태 업데이트
   await markTaskCompleted(userId, "expense");
