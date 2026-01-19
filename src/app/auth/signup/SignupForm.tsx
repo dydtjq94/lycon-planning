@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { OnboardingEvents, trackPageView } from "@/lib/analytics/mixpanel";
 import styles from "../auth.module.css";
 
 export function SignupForm() {
@@ -15,6 +16,12 @@ export function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // 페이지 진입 시 트래킹
+  useEffect(() => {
+    trackPageView("signup");
+    OnboardingEvents.signUpStarted();
+  }, []);
 
   const handleKakaoSignup = async () => {
     setError(null);
@@ -53,7 +60,7 @@ export function SignupForm() {
 
     const supabase = createClient();
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
@@ -62,6 +69,11 @@ export function SignupForm() {
       setError(error.message);
       setLoading(false);
       return;
+    }
+
+    // 회원가입 완료 트래킹
+    if (data.user) {
+      OnboardingEvents.signUpCompleted(data.user.id);
     }
 
     // PIN 설정으로 이동
@@ -79,12 +91,11 @@ export function SignupForm() {
             은퇴 후에도
             <br />
             당신다운 삶을
-            <br />살 수 있도록
+            <br />
+            살 수 있도록
           </h1>
           <p className={styles.heroDesc}>
-            재무 전문가와 함께
-            <br />
-            나만의 은퇴 시나리오를 설계하세요
+            지금, 전문가와 시작하세요
           </p>
         </div>
 

@@ -8,6 +8,7 @@ import {
   getAvailableTimesForDates,
   getDefaultExpertId,
 } from "@/lib/services/bookingService";
+import { OnboardingEvents } from "@/lib/analytics/mixpanel";
 import styles from "./SimpleOnboarding.module.css";
 
 // localStorage 키
@@ -498,6 +499,42 @@ export function SimpleOnboarding({
     return null;
   };
 
+  // 스텝 이름 매핑 (트래킹용) - 컴포넌트 밖에 정의
+  const getStepInfo = (s: Step): { step: number; name: string } => {
+    const stepMap: Record<Step, { step: number; name: string }> = {
+      welcome: { step: 1, name: "welcome" },
+      mission: { step: 2, name: "mission" },
+      problem: { step: 3, name: "problem" },
+      ready: { step: 4, name: "ready" },
+      basicInfo: { step: 5, name: "basic_info" },
+      part1_q1: { step: 6, name: "survey_part1" },
+      transition1: { step: 7, name: "transition1" },
+      part2_q1: { step: 8, name: "survey_part2_q1" },
+      part2_q2: { step: 9, name: "survey_part2_q2" },
+      part2_q3: { step: 10, name: "survey_part2_q3" },
+      part2_q4: { step: 11, name: "survey_part2_q4" },
+      transition2: { step: 12, name: "transition2" },
+      part3_q1: { step: 13, name: "survey_part3_q1" },
+      part3_q2: { step: 14, name: "survey_part3_q2" },
+      part3_q3: { step: 15, name: "survey_part3_q3" },
+      part3_q4: { step: 16, name: "survey_part3_q4" },
+      part3_q5: { step: 17, name: "survey_part3_q5" },
+      transition3: { step: 18, name: "transition3" },
+      part4_q1: { step: 19, name: "survey_part4_q1" },
+      part4_q2: { step: 20, name: "survey_part4_q2" },
+      part4_q3: { step: 21, name: "survey_part4_q3" },
+      transition4: { step: 22, name: "transition4" },
+      part5_q1: { step: 23, name: "survey_part5_q1" },
+      part5_q2: { step: 24, name: "survey_part5_q2" },
+      part5_q3: { step: 25, name: "survey_part5_q3" },
+      surveyComplete: { step: 26, name: "survey_complete" },
+      matching: { step: 27, name: "matching" },
+      program: { step: 28, name: "program" },
+      booking: { step: 29, name: "booking" },
+    };
+    return stepMap[s];
+  };
+
   const validSteps: Step[] = [
     "welcome",
     "mission",
@@ -578,6 +615,18 @@ export function SimpleOnboarding({
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const trackingInitRef = useRef(false);
+
+  // 온보딩 시작 트래킹 (최초 1회)
+  useEffect(() => {
+    if (!trackingInitRef.current) {
+      trackingInitRef.current = true;
+      OnboardingEvents.onboardingStarted();
+      // 현재 스텝 view 트래킹
+      const info = getStepInfo(step);
+      OnboardingEvents.onboardingStepViewed(info.step, info.name);
+    }
+  }, []);
 
   // localStorage에서 저장된 데이터 불러오기
   useEffect(() => {
@@ -759,7 +808,7 @@ export function SimpleOnboarding({
       // 5일 후부터 14일간 날짜 생성
       const dates: Date[] = [];
       const today = new Date();
-      for (let i = 5; i <= 18; i++) {
+      for (let i = 5; i <= 11; i++) {
         const date = new Date(today);
         date.setDate(today.getDate() + i);
         dates.push(date);
@@ -810,11 +859,21 @@ export function SimpleOnboarding({
     }
   };
 
+
   const goToStep = (nextStep: Step) => {
+    // 현재 스텝 완료 트래킹
+    const currentInfo = getStepInfo(step);
+    OnboardingEvents.onboardingStepCompleted(currentInfo.step, currentInfo.name);
+
     setIsAnimating(true);
     setTimeout(() => {
       setStep(nextStep);
       setIsAnimating(false);
+
+      // 다음 스텝 시작 트래킹
+      const nextInfo = getStepInfo(nextStep);
+      OnboardingEvents.onboardingStepViewed(nextInfo.step, nextInfo.name);
+
       // URL 쿼리 파라미터 업데이트 (복잡한 형태로)
       const ts = Date.now();
       const encoded = encodeStep(nextStep);
@@ -1008,6 +1067,13 @@ export function SimpleOnboarding({
       // 전화번호 인증으로 이동
       const parsed = parseRrn();
       if (parsed && selectedDate && selectedTime && expertId) {
+        // 예약 완료 트래킹
+        OnboardingEvents.bookingCompleted({
+          date: selectedDate.toISOString().split("T")[0],
+          time: selectedTime,
+          expertName: "손균우", // TODO: 동적으로 가져오기
+        });
+
         // 온보딩 완료 시 localStorage 정리
         localStorage.removeItem(SURVEY_STORAGE_KEY);
         localStorage.removeItem(BASIC_INFO_STORAGE_KEY);
@@ -1654,7 +1720,7 @@ export function SimpleOnboarding({
     // 5일 후부터 14일간 날짜 생성
     const dates: Date[] = [];
     const today = new Date();
-    for (let i = 5; i <= 18; i++) {
+    for (let i = 5; i <= 11; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       dates.push(date);
@@ -1728,6 +1794,7 @@ export function SimpleOnboarding({
               const dateStr = formatLocalDate(date);
               const hasSlots =
                 availableTimes[dateStr] && availableTimes[dateStr].length > 0;
+              const dayOfWeek = date.getDay(); // 0: 일요일, 6: 토요일
 
               return (
                 <button
@@ -1743,8 +1810,8 @@ export function SimpleOnboarding({
                   }}
                   disabled={!hasSlots}
                 >
-                  <span className={styles.dateWeekday}>{weekday}</span>
-                  <span className={styles.dateDay}>{day}</span>
+                  <span className={`${styles.dateWeekday} ${dayOfWeek === 0 ? styles.sunday : ""} ${dayOfWeek === 6 ? styles.saturday : ""}`}>{weekday}</span>
+                  <span className={`${styles.dateDay} ${dayOfWeek === 0 ? styles.sunday : ""} ${dayOfWeek === 6 ? styles.saturday : ""}`}>{day}</span>
                 </button>
               );
             })}

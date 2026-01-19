@@ -1,13 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { OnboardingEvents, identifyUser } from '@/lib/analytics/mixpanel'
 import { PinSetup } from './PinSetup'
 
 export default function PinSetupPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const trackedRef = useRef(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -31,7 +33,7 @@ export default function PinSetupPage() {
         return
       }
 
-      // 프로필이 없으면 생성
+      // 프로필이 없으면 생성 (신규 회원가입)
       if (!profile) {
         await supabase.from('profiles').insert({
           id: user.id,
@@ -39,6 +41,13 @@ export default function PinSetupPage() {
           target_retirement_age: 60,
           target_retirement_fund: 1000000000,
         })
+
+        // 신규 회원가입 완료 트래킹 (카카오 등 OAuth)
+        if (!trackedRef.current) {
+          trackedRef.current = true
+          identifyUser(user.id, { email: user.email })
+          OnboardingEvents.signUpCompleted(user.id)
+        }
       }
 
       setLoading(false)

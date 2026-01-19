@@ -21,6 +21,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { ChatRoom, ProgramDetailView, Toast, TipModal, MessageNotificationToast } from "./components";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
+import { trackPageView } from "@/lib/analytics/mixpanel";
 import type { Message } from "@/lib/services/messageService";
 import styles from "./waiting.module.css";
 
@@ -117,6 +118,15 @@ function WaitingPageContent() {
     message: string;
   }[]>([]);
   const notificationIdRef = useRef(0);
+  const pageViewTrackedRef = useRef(false);
+
+  // 페이지뷰 트래킹
+  useEffect(() => {
+    if (!pageViewTrackedRef.current) {
+      pageViewTrackedRef.current = true;
+      trackPageView("waiting");
+    }
+  }, []);
 
   // 탭 변경 시 URL 업데이트
   const handleTabChange = async (tab: Tab) => {

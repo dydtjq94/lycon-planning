@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { OnboardingEvents, identifyUser, trackPageView } from "@/lib/analytics/mixpanel";
 import styles from "../auth.module.css";
 
 export function LoginForm() {
@@ -14,6 +15,11 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+
+  // 페이지뷰 트래킹
+  useEffect(() => {
+    trackPageView("login");
+  }, []);
 
   const handleKakaoLogin = async () => {
     setError(null);
@@ -54,6 +60,9 @@ export function LoginForm() {
 
     // 인증 상태 확인 후 적절한 페이지로 이동
     if (data.user) {
+      // 로그인 완료 트래킹
+      identifyUser(data.user.id, { email: data.user.email });
+      OnboardingEvents.loginCompleted(data.user.id);
       const { data: profile } = await supabase
         .from("profiles")
         .select("phone_number, pin_hash, onboarding_step")
@@ -102,12 +111,11 @@ export function LoginForm() {
             은퇴 후에도
             <br />
             당신다운 삶을
-            <br />살 수 있도록
+            <br />
+            살 수 있도록
           </h1>
           <p className={styles.heroDesc}>
-            재무 전문가와 함께
-            <br />
-            나만의 은퇴 시나리오를 설계하세요
+            지금, 전문가와 시작하세요
           </p>
         </div>
 

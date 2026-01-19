@@ -88,7 +88,7 @@ export function PinSetup() {
     // 랜덤 버튼들 리플
     randomNums.forEach((num) => {
       const btn = document.querySelector(
-        `[data-keypad="${num}"]`
+        `[data-keypad="${num}"]`,
       ) as HTMLButtonElement;
       if (btn) {
         const btnRect = btn.getBoundingClientRect();
@@ -112,7 +112,7 @@ export function PinSetup() {
     // 효과 제거
     setTimeout(() => {
       setRipples((prev) =>
-        prev.filter((r) => !allRipples.find((ar) => ar.id === r.id))
+        prev.filter((r) => !allRipples.find((ar) => ar.id === r.id)),
       );
       setGlowButtons([]);
     }, 2000);
@@ -120,7 +120,7 @@ export function PinSetup() {
 
   const createDotRipple = (dotIndex: number) => {
     const dot = document.querySelector(
-      `[data-pin-dot="${dotIndex}"]`
+      `[data-pin-dot="${dotIndex}"]`,
     ) as HTMLElement;
     if (dot) {
       const rect = dot.getBoundingClientRect();
@@ -145,7 +145,7 @@ export function PinSetup() {
 
   const handleNumberClick = (
     num: string,
-    event: React.MouseEvent<HTMLButtonElement>
+    event: React.MouseEvent<HTMLButtonElement>,
   ) => {
     if (currentPin.length >= 6) return;
 
@@ -267,7 +267,9 @@ export function PinSetup() {
 
       <main className={styles.main}>
         {/* 헤더 */}
-        <div className={`${styles.header} ${isTransitioning ? styles.fadeOut : styles.fadeIn}`}>
+        <div
+          className={`${styles.header} ${isTransitioning ? styles.fadeOut : styles.fadeIn}`}
+        >
           <h1 className={styles.title}>
             {step === "create" ? "보안 비밀번호 설정" : "비밀번호 확인"}
           </h1>
@@ -279,7 +281,9 @@ export function PinSetup() {
         </div>
 
         {/* PIN 표시 */}
-        <div className={`${styles.pinDisplay} ${isTransitioning ? styles.fadeOut : styles.fadeIn}`}>
+        <div
+          className={`${styles.pinDisplay} ${isTransitioning ? styles.fadeOut : styles.fadeIn}`}
+        >
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
@@ -354,7 +358,7 @@ export function PinSetup() {
         <p className={styles.notice}>
           이 비밀번호는 암호화되어 저장되며,
           <br />
-          본인 외에는 확인할 수 없습니다.
+          본인 또한 확인할 수 없습니다.
         </p>
       </main>
     </div>

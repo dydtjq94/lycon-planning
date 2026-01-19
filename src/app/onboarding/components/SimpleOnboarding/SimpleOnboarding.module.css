@@ -1527,6 +1527,14 @@
   margin-bottom: 2px;
 }
 
+.dateWeekday.saturday {
+  color: #3b82f6;
+}
+
+.dateWeekday.sunday {
+  color: #ef4444;
+}
+
 .dateDay {
   font-size: 18px;
   font-weight: 600;

@@ -1,11 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { trackPageView } from "@/lib/analytics/mixpanel";
 import styles from "./landing.module.css";
 
 export default function LandingPage() {
   const [typedText, setTypedText] = useState("");
+  const trackedRef = useRef(false);
+
+  // 페이지뷰 트래킹
+  useEffect(() => {
+    if (!trackedRef.current) {
+      trackedRef.current = true;
+      trackPageView("landing");
+    }
+  }, []);
 
   // Typed text animation
   useEffect(() => {

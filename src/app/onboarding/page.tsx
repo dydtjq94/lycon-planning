@@ -132,41 +132,63 @@ export default function OnboardingPage() {
           await createBooking(data.expertId, dateStr, data.bookingTime);
         } catch (bookingErr) {
           console.error("예약 생성 실패:", bookingErr);
+          // 예약 테이블 저장 실패 시 프로필의 booking_info도 제거
+          await supabase.from("profiles").update({
+            booking_info: null,
+          }).eq("id", user.id);
+          alert("예약 생성에 실패했습니다. 다시 시도해주세요.");
+          return;
         }
       }
 
       // 3. 페이지 이동
       router.push("/auth/phone-verify");
 
-      // 3. 나머지는 백그라운드에서 저장
+      // 4. 나머지는 백그라운드에서 저장
       const saveRest = async () => {
-        const { data: existingProfile } = await supabase
-          .from("profiles")
-          .select("diagnosis_started_at")
-          .eq("id", user.id)
-          .single();
+        try {
+          const { data: existingProfile } = await supabase
+            .from("profiles")
+            .select("diagnosis_started_at")
+            .eq("id", user.id)
+            .single();
 
-        await supabase.from("profiles").update({
-          settings: {
-            inflationRate: 2.5,
-            investmentReturn: 5.0,
-            lifeExpectancy: 100,
-          },
-          survey_responses: {
-            onboarding: data.surveyResponses,
-            completed_at: new Date().toISOString(),
-          },
-          diagnosis_started_at: existingProfile?.diagnosis_started_at || new Date().toISOString(),
-        }).eq("id", user.id);
+          const { error: profileError } = await supabase.from("profiles").update({
+            settings: {
+              inflationRate: 2.5,
+              investmentReturn: 5.0,
+              lifeExpectancy: 100,
+            },
+            survey_responses: {
+              onboarding: data.surveyResponses,
+              completed_at: new Date().toISOString(),
+            },
+            diagnosis_started_at: existingProfile?.diagnosis_started_at || new Date().toISOString(),
+          }).eq("id", user.id);
 
-        // 시뮬레이션 생성
-        await simulationService.getDefault();
+          if (profileError) {
+            console.error("[온보딩] 프로필 설정 저장 실패:", profileError);
+          }
 
-        // 담당 전문가 환영 메시지 생성
-        await initializePrimaryConversation();
+          // 시뮬레이션 생성
+          try {
+            await simulationService.getDefault();
+          } catch (simError) {
+            console.error("[온보딩] 시뮬레이션 생성 실패:", simError);
+          }
+
+          // 담당 전문가 환영 메시지 생성
+          try {
+            await initializePrimaryConversation();
+          } catch (msgError) {
+            console.error("[온보딩] 환영 메시지 생성 실패:", msgError);
+          }
+        } catch (err) {
+          console.error("[온보딩] 백그라운드 저장 실패:", err);
+        }
       };
 
-      saveRest().catch(console.error);
+      saveRest();
     } catch (err) {
       console.error("저장 실패:", err);
     }

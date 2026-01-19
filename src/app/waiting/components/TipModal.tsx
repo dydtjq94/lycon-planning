@@ -387,7 +387,9 @@ export function TipModal({
   };
 
   const saveData = async <T,>(key: string, data: T) => {
-    if (!userId) return;
+    if (!userId) {
+      throw new Error("사용자 정보를 찾을 수 없습니다.");
+    }
 
     const supabase = createClient();
     const newPrepData = { ...prepData, [key]: data };
@@ -397,11 +399,14 @@ export function TipModal({
       .update({ prep_data: newPrepData })
       .eq("id", userId);
 
-    if (!error) {
-      setPrepData(newPrepData);
-      setHasData(true);
-      onDataSaved?.(categoryId);
+    if (error) {
+      console.error("[사전입력] 저장 실패:", error);
+      throw new Error("저장에 실패했습니다. 다시 시도해주세요.");
     }
+
+    setPrepData(newPrepData);
+    setHasData(true);
+    onDataSaved?.(categoryId);
   };
 
   // 각 카테고리별 저장 핸들러

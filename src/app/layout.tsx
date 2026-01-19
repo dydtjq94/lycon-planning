@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Gaegu } from "next/font/google";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { MixpanelProvider } from "@/components/providers/MixpanelProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -43,7 +44,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${gaegu.variable} antialiased`}
       >
         <QueryProvider>
-          {children}
+          <MixpanelProvider>
+            {children}
+          </MixpanelProvider>
         </QueryProvider>
       </body>
     </html>
