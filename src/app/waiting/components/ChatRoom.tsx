@@ -151,8 +151,10 @@ export function ChatRoom({ userId, isVisible = true, onNewMessage, onMessagesLoa
             onNewMessage?.(newMsg, expert.name);
           }
 
-          // 전문가 메시지면 읽음 처리
-          markMessagesAsRead(conversation.id);
+          // 채팅 탭 보고 있을 때만 읽음 처리
+          if (isVisible) {
+            markMessagesAsRead(conversation.id);
+          }
         }
       )
       .subscribe();
@@ -160,7 +162,7 @@ export function ChatRoom({ userId, isVisible = true, onNewMessage, onMessagesLoa
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversation, scrollToBottom, expert, onNewMessage]);
+  }, [conversation, scrollToBottom, expert, onNewMessage, isVisible]);
 
   // 메시지 전송 (낙관적 UI)
   const handleSend = async () => {
