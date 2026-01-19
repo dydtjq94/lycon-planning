@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ArrowLeft, ExternalLink, Users, Building2, Wallet, Receipt, PiggyBank, TrendingUp, CreditCard, Shield, Briefcase, Heart, LucideIcon, Edit3 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { InputFormModal } from "./InputFormModal";
 import { FamilyInputForm } from "./FamilyInputForm";
 import { IncomeInputForm, type IncomeFormData } from "./IncomeInputForm";
@@ -15,6 +16,20 @@ import { RetirementPensionInputForm } from "./RetirementPensionInputForm";
 import { PersonalPensionInputForm } from "./PersonalPensionInputForm";
 import type { FamilyMember, FinancialAssetItem, InvestmentAccountData, HousingData, DebtItem, NationalPensionData, RetirementPensionData, PersonalPensionItem } from "../types";
 import styles from "./TipModal.module.css";
+
+// prep_data 전체 타입
+interface PrepDataStore {
+  family?: FamilyMember[];
+  income?: IncomeFormData;
+  expense?: ExpenseFormData;
+  savings?: FinancialAssetItem[];
+  investment?: InvestmentAccountData;
+  housing?: HousingData;
+  debt?: DebtItem[];
+  nationalPension?: NationalPensionData;
+  retirementPension?: RetirementPensionData;
+  personalPension?: PersonalPensionItem[];
+}
 
 interface TipLink {
   label: string;
@@ -231,19 +246,46 @@ const TIP_DATA: Record<string, TipCategory> = {
 
 interface TipModalProps {
   categoryId: string;
+  initialHasData?: boolean;
+  onDataSaved?: (category: string) => void;
   onClose: () => void;
 }
 
-export function TipModal({ categoryId, onClose }: TipModalProps) {
+export function TipModal({ categoryId, initialHasData = false, onDataSaved, onClose }: TipModalProps) {
   const [isClosing, setIsClosing] = useState(false);
   const [showInputForm, setShowInputForm] = useState(false);
-  const [hasData, setHasData] = useState(false);
+  const [hasData, setHasData] = useState(initialHasData);
+  const [prepData, setPrepData] = useState<PrepDataStore>({});
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const category = TIP_DATA[categoryId];
 
-  // 저장된 데이터 있는지 확인
+  // Supabase에서 prep_data 로드
   useEffect(() => {
-    const saved = localStorage.getItem(`prep_${categoryId}`);
-    setHasData(!!saved);
+    const loadPrepData = async () => {
+      setIsLoading(true);
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        setUserId(user.id);
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("prep_data")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.prep_data) {
+          setPrepData(profile.prep_data as PrepDataStore);
+          // 현재 카테고리에 데이터가 있는지 확인
+          const categoryData = (profile.prep_data as PrepDataStore)[categoryId as keyof PrepDataStore];
+          setHasData(!!categoryData && (Array.isArray(categoryData) ? categoryData.length > 0 : Object.keys(categoryData).length > 0));
+        }
+      }
+      setIsLoading(false);
+    };
+
+    loadPrepData();
   }, [categoryId]);
 
   const handleClose = () => {
@@ -259,65 +301,78 @@ export function TipModal({ categoryId, onClose }: TipModalProps) {
     }
   }, [isClosing, onClose]);
 
-  // localStorage 기반 저장 함수들
+  // Supabase 기반 저장 함수
   const getStoredData = <T,>(key: string, defaultValue: T): T => {
-    const saved = localStorage.getItem(`prep_${key}`);
-    return saved ? JSON.parse(saved) : defaultValue;
+    const data = prepData[key as keyof PrepDataStore];
+    return (data as T) ?? defaultValue;
   };
 
-  const saveData = <T,>(key: string, data: T) => {
-    localStorage.setItem(`prep_${key}`, JSON.stringify(data));
-    setHasData(true);
+  const saveData = async <T,>(key: string, data: T) => {
+    if (!userId) return;
+
+    const supabase = createClient();
+    const newPrepData = { ...prepData, [key]: data };
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ prep_data: newPrepData })
+      .eq("id", userId);
+
+    if (!error) {
+      setPrepData(newPrepData);
+      setHasData(true);
+      onDataSaved?.(categoryId);
+    }
   };
 
   // 각 카테고리별 저장 핸들러
   const handleSaveFamily = async (data: FamilyMember[]) => {
-    saveData("family", data);
+    await saveData("family", data);
     setShowInputForm(false);
   };
 
   const handleSaveIncome = async (data: IncomeFormData) => {
-    saveData("income", data);
+    await saveData("income", data);
     setShowInputForm(false);
   };
 
   const handleSaveExpense = async (data: ExpenseFormData) => {
-    saveData("expense", data);
+    await saveData("expense", data);
     setShowInputForm(false);
   };
 
   const handleSaveSavings = async (data: FinancialAssetItem[]) => {
-    saveData("savings", data);
+    await saveData("savings", data);
     setShowInputForm(false);
   };
 
   const handleSaveInvestment = async (data: InvestmentAccountData) => {
-    saveData("investment", data);
+    await saveData("investment", data);
     setShowInputForm(false);
   };
 
   const handleSaveHousing = async (data: HousingData) => {
-    saveData("housing", data);
+    await saveData("housing", data);
     setShowInputForm(false);
   };
 
   const handleSaveDebt = async (data: DebtItem[]) => {
-    saveData("debt", data);
+    await saveData("debt", data);
     setShowInputForm(false);
   };
 
   const handleSaveNationalPension = async (data: NationalPensionData) => {
-    saveData("nationalPension", data);
+    await saveData("nationalPension", data);
     setShowInputForm(false);
   };
 
   const handleSaveRetirementPension = async (data: RetirementPensionData) => {
-    saveData("retirementPension", data);
+    await saveData("retirementPension", data);
     setShowInputForm(false);
   };
 
   const handleSavePersonalPension = async (data: PersonalPensionItem[]) => {
-    saveData("personalPension", data);
+    await saveData("personalPension", data);
     setShowInputForm(false);
   };
 
@@ -354,6 +409,7 @@ export function TipModal({ categoryId, onClose }: TipModalProps) {
             <button
               className={styles.memoButton}
               onClick={() => setShowInputForm(true)}
+              disabled={isLoading}
             >
               <Edit3 size={16} />
               <span>{hasData ? "입력 수정하기" : "입력해두기"}</span>

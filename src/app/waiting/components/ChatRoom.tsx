@@ -126,6 +126,12 @@ export function ChatRoom({ userId, isVisible = true }: ChatRoomProps) {
         },
         (payload) => {
           const newMsg = payload.new as Message;
+
+          // 내가 보낸 메시지는 handleSend에서 처리하므로 무시
+          if (newMsg.sender_type === "user") {
+            return;
+          }
+
           setMessages((prev) => {
             // 중복 방지
             if (prev.some((m) => m.id === newMsg.id)) return prev;
@@ -134,9 +140,7 @@ export function ChatRoom({ userId, isVisible = true }: ChatRoomProps) {
           setTimeout(scrollToBottom, 100);
 
           // 전문가 메시지면 읽음 처리
-          if (newMsg.sender_type === "expert") {
-            markMessagesAsRead(conversation.id);
-          }
+          markMessagesAsRead(conversation.id);
         }
       )
       .subscribe();
@@ -192,15 +196,9 @@ export function ChatRoom({ userId, isVisible = true }: ChatRoomProps) {
       }
 
       const msg = await sendMessage(conversation.id, content, uploadedUrls.length > 0 ? uploadedUrls : undefined);
-      // 임시 메시지를 실제 메시지로 교체 (실시간 구독으로 이미 추가된 경우 중복 제거)
-      setMessages((prev) => {
-        // 실시간 구독으로 이미 추가된 경우 임시 메시지만 제거
-        if (prev.some((m) => m.id === msg.id)) {
-          return prev.filter((m) => m.id !== tempId);
-        }
-        // 아직 추가되지 않은 경우 임시 메시지를 실제 메시지로 교체
-        return prev.map((m) => m.id === tempId ? msg : m);
-      });
+
+      // 임시 메시지를 실제 메시지로 교체
+      setMessages((prev) => prev.map((m) => m.id === tempId ? msg : m));
 
       // preview URL 해제
       imagesToUpload.forEach((img) => URL.revokeObjectURL(img.preview));

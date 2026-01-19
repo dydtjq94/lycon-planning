@@ -169,6 +169,14 @@ export function PhoneVerify() {
       // 예약 상태를 confirmed로 변경
       try {
         await confirmUserBooking();
+
+        // 예약 확정 SMS 발송
+        try {
+          await fetch("/api/sms/booking-confirmation", { method: "POST" });
+        } catch (smsError) {
+          console.error("예약 확정 SMS 발송 오류:", smsError);
+          // SMS 발송 실패해도 진행
+        }
       } catch (bookingError) {
         console.error("예약 확정 오류:", bookingError);
         // 예약 확정 실패해도 진행 (예약이 없을 수도 있음)

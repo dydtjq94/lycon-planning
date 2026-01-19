@@ -15,6 +15,133 @@ interface Profile {
   target_retirement_age: number;
   created_at: string;
   onboarding_step: string | null;
+  prep_data: PrepData | null;
+}
+
+// --- prep_data 실제 타입 (InputForm에서 저장하는 구조) ---
+interface PrepData {
+  family?: PrepFamilyMember[];
+  income?: PrepIncomeData;
+  expense?: PrepExpenseData;
+  savings?: PrepSavingsItem[];
+  investment?: PrepInvestmentData;
+  housing?: PrepHousingData;
+  debt?: PrepDebtItem[];
+  nationalPension?: PrepNationalPensionData;
+  retirementPension?: PrepRetirementPensionData;
+  personalPension?: PrepPersonalPensionItem[];
+}
+
+interface PrepFamilyMember {
+  relationship: string;
+  name: string;
+  birth_date: string | null;
+  gender: string | null;
+}
+
+// 소득 (IncomeFormData)
+interface PrepIncomeData {
+  selfLaborIncome: number;
+  selfLaborFrequency: "monthly" | "yearly";
+  spouseLaborIncome: number;
+  spouseLaborFrequency: "monthly" | "yearly";
+  additionalIncomes: Array<{
+    type: string;
+    owner: "self" | "spouse";
+    amount: number;
+    frequency: "monthly" | "yearly";
+  }>;
+}
+
+// 지출 (ExpenseFormData)
+interface PrepExpenseData {
+  livingExpense: number;
+  livingExpenseDetails?: {
+    food?: number;
+    transport?: number;
+    shopping?: number;
+    leisure?: number;
+  };
+  fixedExpenses: Array<{ type: string; title: string; amount: number; frequency: "monthly" | "yearly" }>;
+  variableExpenses: Array<{ type: string; title: string; amount: number; frequency: "monthly" | "yearly" }>;
+}
+
+// 저축 (FinancialAssetItem)
+interface PrepSavingsItem {
+  category: string;
+  type: string;
+  title: string;
+  owner: "self" | "spouse";
+  currentBalance: number;
+  monthlyDeposit?: number;
+  expectedReturn?: number;
+}
+
+// 투자 (InvestmentAccountData)
+interface PrepInvestmentData {
+  securities?: {
+    balance: number;
+    investmentTypes: string[];
+  };
+  crypto?: {
+    balance: number;
+  };
+  gold?: {
+    balance: number;
+  };
+}
+
+// 주거 (HousingData)
+interface PrepHousingData {
+  housingType: "자가" | "전세" | "월세" | "무상";
+  currentValue?: number;
+  deposit?: number;
+  monthlyRent?: number;
+  maintenanceFee?: number;
+  hasLoan: boolean;
+  loanType?: "mortgage" | "jeonse";
+  loanAmount?: number;
+  loanRate?: number;
+  loanRateType?: "fixed" | "floating";
+  loanMaturityYear?: number;
+  loanMaturityMonth?: number;
+  loanRepaymentType?: string;
+}
+
+// 부채 (DebtItem)
+interface PrepDebtItem {
+  type: string;
+  title: string;
+  principal: number;
+  currentBalance?: number;
+  interestRate: number;
+  monthlyPayment?: number;
+}
+
+// 국민(공적)연금 (NationalPensionData)
+interface PrepNationalPensionData {
+  selfType: string;
+  selfExpectedAmount: number;
+  spouseType: string;
+  spouseExpectedAmount: number;
+}
+
+// 퇴직연금 (RetirementPensionData)
+interface PrepRetirementPensionData {
+  selfType: string;
+  selfYearsWorked: number | null;
+  selfBalance: number | null;
+  spouseType: string;
+  spouseYearsWorked: number | null;
+  spouseBalance: number | null;
+}
+
+// 개인연금 (PersonalPensionItem)
+interface PrepPersonalPensionItem {
+  type: string;
+  owner: "self" | "spouse";
+  balance: number;
+  monthlyDeposit: number;
 }
 
 interface FamilyMember {
@@ -66,7 +193,7 @@ interface Debt {
   interest_rate: number;
 }
 
-type TabType = "overview" | "income" | "expense" | "asset" | "debt" | "pension";
+type TabType = "overview" | "income" | "expense" | "asset" | "debt" | "pension" | "prep";
 
 export default function UserDetailPage() {
   const router = useRouter();
@@ -258,7 +385,7 @@ export default function UserDetailPage() {
 
       {/* 탭 */}
       <div className={styles.tabsContainer}>
-        {(["overview", "income", "expense", "asset", "debt"] as TabType[]).map(
+        {(["overview", "income", "expense", "asset", "debt", "prep"] as TabType[]).map(
           (tab) => (
             <button
               key={tab}
@@ -272,6 +399,7 @@ export default function UserDetailPage() {
                 asset: "자산",
                 debt: "부채",
                 pension: "연금",
+                prep: "입력해두기",
               }[tab]}
             </button>
           )
@@ -509,6 +637,350 @@ export default function UserDetailPage() {
               ))
             )}
           </div>
+        </div>
+      )}
+
+      {/* 입력해두기 탭 */}
+      {activeTab === "prep" && (
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>대기실에서 입력해둔 정보</h2>
+          </div>
+
+          {!profile.prep_data || Object.keys(profile.prep_data).length === 0 ? (
+            <div className={styles.emptyState}>입력해둔 정보가 없습니다.</div>
+          ) : (
+            <div className={styles.dataGrid}>
+              {/* 가족 구성 */}
+              {profile.prep_data.family && profile.prep_data.family.length > 0 && (
+                <div className={styles.dataCard}>
+                  <div className={styles.dataCardTitle}>가족 구성</div>
+                  {profile.prep_data.family.map((member, idx) => {
+                    // birth_date: "2025-01-01" → "25.01.01" 형식
+                    const formatBirthDate = (dateStr: string | null) => {
+                      if (!dateStr) return "-";
+                      const [year, month, day] = dateStr.split("-");
+                      return `${year.slice(2)}.${month}.${day}`;
+                    };
+                    // 나이 계산
+                    const calcAge = (dateStr: string | null) => {
+                      if (!dateStr) return null;
+                      const birthYear = parseInt(dateStr.split("-")[0]);
+                      return new Date().getFullYear() - birthYear;
+                    };
+                    const age = calcAge(member.birth_date);
+                    return (
+                      <div key={idx} className={styles.dataItem}>
+                        <span className={styles.dataLabel}>
+                          {member.relationship === "self" ? "본인" :
+                           member.relationship === "spouse" ? "배우자" :
+                           member.relationship === "child" ? "자녀" :
+                           member.relationship === "parent" ? "부양부모" : member.relationship}
+                          {member.name && ` (${member.name})`}
+                        </span>
+                        <span className={styles.dataValue}>
+                          {formatBirthDate(member.birth_date)}
+                          {age !== null && ` (${age}세)`}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* 소득 (IncomeFormData 구조) */}
+              {profile.prep_data.income && (
+                <div className={styles.dataCard}>
+                  <div className={styles.dataCardTitle}>소득</div>
+                  {/* 본인 근로소득 */}
+                  {profile.prep_data.income.selfLaborIncome > 0 && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>본인 근로소득</span>
+                      <span className={styles.dataValue}>
+                        {formatMoney(profile.prep_data.income.selfLaborIncome)} / {profile.prep_data.income.selfLaborFrequency === "monthly" ? "월" : "년"}
+                      </span>
+                    </div>
+                  )}
+                  {/* 배우자 근로소득 */}
+                  {profile.prep_data.income.spouseLaborIncome > 0 && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>배우자 근로소득</span>
+                      <span className={styles.dataValue}>
+                        {formatMoney(profile.prep_data.income.spouseLaborIncome)} / {profile.prep_data.income.spouseLaborFrequency === "monthly" ? "월" : "년"}
+                      </span>
+                    </div>
+                  )}
+                  {/* 추가 소득 */}
+                  {profile.prep_data.income.additionalIncomes?.map((item, idx) => (
+                    <div key={idx} className={styles.dataItem}>
+                      <span className={styles.dataLabel}>
+                        {item.owner === "self" ? "본인" : "배우자"} {item.type === "business" ? "사업소득" : item.type === "other" ? "기타소득" : item.type}
+                      </span>
+                      <span className={styles.dataValue}>
+                        {formatMoney(item.amount)} / {item.frequency === "monthly" ? "월" : "년"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 지출 (ExpenseFormData 구조) */}
+              {profile.prep_data.expense && (
+                <div className={styles.dataCard}>
+                  <div className={styles.dataCardTitle}>지출</div>
+                  {/* 월 생활비 총액 */}
+                  {profile.prep_data.expense.livingExpense > 0 && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>월 변동 생활비</span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.expense.livingExpense)} / 월</span>
+                    </div>
+                  )}
+                  {/* 세부 항목 */}
+                  {profile.prep_data.expense.livingExpenseDetails?.food && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>- 식비</span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.expense.livingExpenseDetails.food)}</span>
+                    </div>
+                  )}
+                  {profile.prep_data.expense.livingExpenseDetails?.transport && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>- 교통비</span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.expense.livingExpenseDetails.transport)}</span>
+                    </div>
+                  )}
+                  {profile.prep_data.expense.livingExpenseDetails?.shopping && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>- 쇼핑/미용비</span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.expense.livingExpenseDetails.shopping)}</span>
+                    </div>
+                  )}
+                  {profile.prep_data.expense.livingExpenseDetails?.leisure && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>- 유흥/여가비</span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.expense.livingExpenseDetails.leisure)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 저축 (FinancialAssetItem[] 구조) */}
+              {profile.prep_data.savings && profile.prep_data.savings.length > 0 && (
+                <div className={styles.dataCard}>
+                  <div className={styles.dataCardTitle}>저축 계좌</div>
+                  {profile.prep_data.savings.map((item, idx) => (
+                    <div key={idx} className={styles.dataItem}>
+                      <span className={styles.dataLabel}>
+                        {item.title || `${item.owner === "self" ? "본인" : "배우자"} ${item.type === "checking" ? "입출금" : item.type === "savings" ? "적금" : item.type === "deposit" ? "정기예금" : item.type}`}
+                      </span>
+                      <span className={styles.dataValue}>
+                        {formatMoney(item.currentBalance)}
+                        {item.expectedReturn && ` (${item.expectedReturn}%)`}
+                        {item.monthlyDeposit && ` / 월 ${formatMoney(item.monthlyDeposit)}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 투자 (InvestmentAccountData 구조) */}
+              {profile.prep_data.investment && (profile.prep_data.investment.securities || profile.prep_data.investment.crypto || profile.prep_data.investment.gold) && (
+                <div className={styles.dataCard}>
+                  <div className={styles.dataCardTitle}>투자</div>
+                  {profile.prep_data.investment.securities && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>
+                        증권 계좌
+                        {profile.prep_data.investment.securities.investmentTypes?.length > 0 &&
+                          ` (${profile.prep_data.investment.securities.investmentTypes.map(t =>
+                            t === "domestic_stock" ? "국내주식" :
+                            t === "foreign_stock" ? "해외주식" :
+                            t === "domestic_etf" ? "국내ETF" :
+                            t === "foreign_etf" ? "해외ETF" :
+                            t === "fund" ? "펀드" :
+                            t === "bond" ? "채권" : t
+                          ).join(", ")})`}
+                      </span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.investment.securities.balance)}</span>
+                    </div>
+                  )}
+                  {profile.prep_data.investment.crypto && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>코인 거래소</span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.investment.crypto.balance)}</span>
+                    </div>
+                  )}
+                  {profile.prep_data.investment.gold && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>금 현물</span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.investment.gold.balance)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 주거 (HousingData 구조) */}
+              {profile.prep_data.housing && (
+                <div className={styles.dataCard}>
+                  <div className={styles.dataCardTitle}>거주용 부동산</div>
+                  <div className={styles.dataItem}>
+                    <span className={styles.dataLabel}>거주 형태</span>
+                    <span className={styles.dataValue}>{profile.prep_data.housing.housingType}</span>
+                  </div>
+                  {profile.prep_data.housing.currentValue && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>현재 시세</span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.housing.currentValue)}</span>
+                    </div>
+                  )}
+                  {profile.prep_data.housing.deposit && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>보증금</span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.housing.deposit)}</span>
+                    </div>
+                  )}
+                  {profile.prep_data.housing.monthlyRent && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>월세</span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.housing.monthlyRent)} / 월</span>
+                    </div>
+                  )}
+                  {profile.prep_data.housing.maintenanceFee && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>관리비</span>
+                      <span className={styles.dataValue}>{formatMoney(profile.prep_data.housing.maintenanceFee)} / 월</span>
+                    </div>
+                  )}
+                  {profile.prep_data.housing.hasLoan && profile.prep_data.housing.loanAmount && (
+                    <>
+                      <div className={styles.dataItem}>
+                        <span className={styles.dataLabel}>
+                          {profile.prep_data.housing.loanType === "mortgage" ? "주담대 잔액" : "전세대출 잔액"}
+                        </span>
+                        <span className={styles.dataValue}>{formatMoney(profile.prep_data.housing.loanAmount)}</span>
+                      </div>
+                      {profile.prep_data.housing.loanRate && (
+                        <div className={styles.dataItem}>
+                          <span className={styles.dataLabel}>대출 금리</span>
+                          <span className={styles.dataValue}>
+                            {profile.prep_data.housing.loanRate}%
+                            {profile.prep_data.housing.loanRateType && ` (${profile.prep_data.housing.loanRateType === "fixed" ? "고정" : "변동"})`}
+                          </span>
+                        </div>
+                      )}
+                      {profile.prep_data.housing.loanMaturityYear && (
+                        <div className={styles.dataItem}>
+                          <span className={styles.dataLabel}>대출 만기</span>
+                          <span className={styles.dataValue}>
+                            {profile.prep_data.housing.loanMaturityYear}년 {profile.prep_data.housing.loanMaturityMonth || 12}월
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* 부채 (DebtItem[] 구조) */}
+              {profile.prep_data.debt && profile.prep_data.debt.length > 0 && (
+                <div className={styles.dataCard}>
+                  <div className={styles.dataCardTitle}>부채</div>
+                  {profile.prep_data.debt.map((item, idx) => (
+                    <div key={idx} className={styles.dataItem}>
+                      <span className={styles.dataLabel}>{item.title || item.type}</span>
+                      <span className={styles.dataValue}>
+                        {formatMoney(item.currentBalance ?? item.principal)}
+                        {item.interestRate > 0 && ` (${item.interestRate}%)`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 국민(공적)연금 (NationalPensionData 구조) */}
+              {profile.prep_data.nationalPension && (
+                <div className={styles.dataCard}>
+                  <div className={styles.dataCardTitle}>국민(공적)연금</div>
+                  {profile.prep_data.nationalPension.selfExpectedAmount > 0 && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>
+                        본인 ({profile.prep_data.nationalPension.selfType === "national" ? "국민연금" :
+                              profile.prep_data.nationalPension.selfType === "government" ? "공무원연금" :
+                              profile.prep_data.nationalPension.selfType === "military" ? "군인연금" :
+                              profile.prep_data.nationalPension.selfType === "private_school" ? "사학연금" : profile.prep_data.nationalPension.selfType})
+                      </span>
+                      <span className={styles.dataValue}>월 {formatMoney(profile.prep_data.nationalPension.selfExpectedAmount)}</span>
+                    </div>
+                  )}
+                  {profile.prep_data.nationalPension.spouseExpectedAmount > 0 && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>
+                        배우자 ({profile.prep_data.nationalPension.spouseType === "national" ? "국민연금" :
+                                profile.prep_data.nationalPension.spouseType === "government" ? "공무원연금" :
+                                profile.prep_data.nationalPension.spouseType === "military" ? "군인연금" :
+                                profile.prep_data.nationalPension.spouseType === "private_school" ? "사학연금" : profile.prep_data.nationalPension.spouseType})
+                      </span>
+                      <span className={styles.dataValue}>월 {formatMoney(profile.prep_data.nationalPension.spouseExpectedAmount)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 퇴직연금 (RetirementPensionData 구조) */}
+              {profile.prep_data.retirementPension && (
+                <div className={styles.dataCard}>
+                  <div className={styles.dataCardTitle}>퇴직연금/퇴직금</div>
+                  {/* 본인 */}
+                  {profile.prep_data.retirementPension.selfType !== "none" && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>
+                        본인 ({profile.prep_data.retirementPension.selfType === "db" ? "퇴직금/DB형" : "DC형"})
+                      </span>
+                      <span className={styles.dataValue}>
+                        {profile.prep_data.retirementPension.selfType === "db" && profile.prep_data.retirementPension.selfYearsWorked
+                          ? `근속 ${profile.prep_data.retirementPension.selfYearsWorked}년`
+                          : profile.prep_data.retirementPension.selfBalance
+                            ? formatMoney(profile.prep_data.retirementPension.selfBalance)
+                            : "-"}
+                      </span>
+                    </div>
+                  )}
+                  {/* 배우자 */}
+                  {profile.prep_data.retirementPension.spouseType !== "none" && (
+                    <div className={styles.dataItem}>
+                      <span className={styles.dataLabel}>
+                        배우자 ({profile.prep_data.retirementPension.spouseType === "db" ? "퇴직금/DB형" : "DC형"})
+                      </span>
+                      <span className={styles.dataValue}>
+                        {profile.prep_data.retirementPension.spouseType === "db" && profile.prep_data.retirementPension.spouseYearsWorked
+                          ? `근속 ${profile.prep_data.retirementPension.spouseYearsWorked}년`
+                          : profile.prep_data.retirementPension.spouseBalance
+                            ? formatMoney(profile.prep_data.retirementPension.spouseBalance)
+                            : "-"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 개인연금 (PersonalPensionItem[] 구조) */}
+              {profile.prep_data.personalPension && profile.prep_data.personalPension.length > 0 && (
+                <div className={styles.dataCard}>
+                  <div className={styles.dataCardTitle}>개인연금</div>
+                  {profile.prep_data.personalPension.map((item, idx) => (
+                    <div key={idx} className={styles.dataItem}>
+                      <span className={styles.dataLabel}>
+                        {item.owner === "self" ? "본인" : "배우자"} {item.type === "pension_savings" ? "연금저축" : item.type === "irp" ? "IRP" : item.type}
+                      </span>
+                      <span className={styles.dataValue}>
+                        {formatMoney(item.balance)}
+                        {item.monthlyDeposit > 0 && ` / 월 ${formatMoney(item.monthlyDeposit)}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -106,6 +106,8 @@ function WaitingPageContent() {
     subMessage?: string;
   } | null>(null);
   const [selectedTip, setSelectedTip] = useState<string | null>(null);
+  const [tipModalKey, setTipModalKey] = useState(0);
+  const [prepDataCategories, setPrepDataCategories] = useState<Set<string>>(new Set());
 
   // 탭 변경 시 URL 업데이트
   const handleTabChange = async (tab: Tab) => {
@@ -134,7 +136,7 @@ function WaitingPageContent() {
       const { data: profileData } = await supabase
         .from("profiles")
         .select(
-          "name, booking_info, pin_hash, onboarding_step, phone_number, pin_verified_at",
+          "name, booking_info, pin_hash, onboarding_step, phone_number, pin_verified_at, prep_data",
         )
         .eq("id", user.id)
         .single();
@@ -169,6 +171,18 @@ function WaitingPageContent() {
 
       if (profileData) {
         setProfile(profileData as Profile);
+
+        // prep_data에서 데이터가 있는 카테고리 추출
+        if (profileData.prep_data && typeof profileData.prep_data === 'object') {
+          const categories = new Set<string>();
+          const prepData = profileData.prep_data as Record<string, unknown>;
+          for (const [key, value] of Object.entries(prepData)) {
+            if (value && (Array.isArray(value) ? value.length > 0 : Object.keys(value as object).length > 0)) {
+              categories.add(key);
+            }
+          }
+          setPrepDataCategories(categories);
+        }
       }
       setUserId(user.id);
 
@@ -358,7 +372,10 @@ function WaitingPageContent() {
                   <button
                     key={category.id}
                     className={styles.tipCard}
-                    onClick={() => setSelectedTip(category.id)}
+                    onClick={() => {
+                      setSelectedTip(category.id);
+                      setTipModalKey(prev => prev + 1);
+                    }}
                   >
                     <span className={styles.tipTitle}>{category.title}</span>
                     <div className={styles.tipIconWrapper}>
@@ -396,7 +413,12 @@ function WaitingPageContent() {
         {/* 팁 모달 */}
         {selectedTip && (
           <TipModal
+            key={tipModalKey}
             categoryId={selectedTip}
+            initialHasData={prepDataCategories.has(selectedTip)}
+            onDataSaved={(category) => {
+              setPrepDataCategories(prev => new Set([...prev, category]));
+            }}
             onClose={() => setSelectedTip(null)}
           />
         )}
