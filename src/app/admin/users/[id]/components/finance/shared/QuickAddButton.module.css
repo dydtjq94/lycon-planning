@@ -1,0 +1,27 @@
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed #e5e5e5;
+  margin-top: 12px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.08);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.button:hover {
+  background: rgba(0, 122, 255, 0.15);
+}

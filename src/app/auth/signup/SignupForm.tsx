@@ -13,14 +13,22 @@ export function SignupForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [showEmailSent, setShowEmailSent] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [ready, setReady] = useState(false);
 
-  // 페이지 진입 시 트래킹
+  // 페이지 진입 시 기존 세션 로그아웃 후 트래킹
   useEffect(() => {
-    trackPageView("signup");
-    OnboardingEvents.signUpStarted();
+    const init = async () => {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      trackPageView("signup");
+      OnboardingEvents.signUpStarted();
+      setReady(true);
+    };
+    init();
   }, []);
 
   const handleKakaoSignup = async () => {
@@ -63,6 +71,9 @@ export function SignupForm() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
 
     if (error) {
@@ -76,10 +87,61 @@ export function SignupForm() {
       OnboardingEvents.signUpCompleted(data.user.id);
     }
 
-    // PIN 설정으로 이동
-    router.push("/auth/pin-setup");
-    router.refresh();
+    // 이메일 확인 안내 표시
+    setShowEmailSent(true);
+    setLoading(false);
   };
+
+  // 초기화 중
+  if (!ready) {
+    return (
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.heroArea}>
+            <Loader2 size={32} className={styles.spinner} />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // 이메일 발송 완료 화면
+  if (showEmailSent) {
+    return (
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.heroArea}>
+            <p className={styles.brandLabel}>Lycon | Retirement</p>
+            <h1 className={styles.heroTitle}>
+              이메일을
+              <br />
+              확인해주세요
+            </h1>
+            <p className={styles.heroDesc}>
+              {email}로 인증 링크를 보냈습니다.
+              <br />
+              이메일의 링크를 클릭하면 가입이 완료됩니다.
+            </p>
+          </div>
+          <div className={styles.actionArea}>
+            <p className={styles.linkText}>
+              이메일이 오지 않았나요?{" "}
+              <button
+                type="button"
+                className={styles.link}
+                onClick={() => {
+                  setShowEmailSent(false);
+                  setShowEmailForm(true);
+                }}
+              >
+                다시 시도
+              </button>
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>

@@ -1,0 +1,366 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f5f5f7;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f5f5f7;
+  border-radius: 50%;
+  color: #6e6e73;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.closeButton:hover {
+  background: #e5e5e5;
+  color: #1d1d1f;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.statusSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #f5f5f7;
+  border-radius: 12px;
+}
+
+.statusHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.statusBadge {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.timeBadge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: white;
+  color: #6e6e73;
+}
+
+.timeBadge.timeToday {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.statusDescription {
+  font-size: 13px;
+  color: #6e6e73;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.statusFlow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 4px;
+}
+
+.flowStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.flowStep span {
+  font-size: 11px;
+  color: #a1a1a6;
+  font-weight: 500;
+}
+
+.flowDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d2d2d7;
+}
+
+.flowStep.flowActive .flowDot {
+  background: #007aff;
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.2);
+}
+
+.flowStep.flowActive span {
+  color: #007aff;
+  font-weight: 600;
+}
+
+.flowStep.flowDone .flowDot {
+  background: #34c759;
+}
+
+.flowStep.flowDone span {
+  color: #34c759;
+}
+
+.flowLine {
+  flex: 0.5;
+  height: 2px;
+  background: #d2d2d7;
+  margin-bottom: 20px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: #f5f5f7;
+  border-radius: 10px;
+}
+
+.infoLabel {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.infoValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.notesInput {
+  padding: 14px;
+  border: 1px solid #d2d2d7;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  transition: all 0.2s;
+}
+
+.notesInput:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+.notesInput::placeholder {
+  color: #a1a1a6;
+}
+
+.saveNotesButton {
+  align-self: flex-end;
+  padding: 8px 16px;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #007aff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.saveNotesButton:hover {
+  background: #e6f2ff;
+}
+
+.saveNotesButton:disabled {
+  color: #a1a1a6;
+  cursor: not-allowed;
+}
+
+.quickActions {
+  display: flex;
+  gap: 10px;
+}
+
+.quickActionButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  background: #f5f5f7;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.quickActionButton:hover {
+  background: #007aff;
+  color: white;
+}
+
+.footer {
+  display: flex;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #f5f5f7;
+}
+
+.cancelButton {
+  flex: 1;
+  padding: 14px 20px;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ff3b30;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  background: #fee2e2;
+}
+
+.cancelButton:disabled {
+  color: #a1a1a6;
+  cursor: not-allowed;
+}
+
+.confirmButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 20px;
+  background: #34c759;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirmButton:hover {
+  background: #2db84d;
+}
+
+.confirmButton:disabled {
+  background: #a1a1a6;
+  cursor: not-allowed;
+}
+
+.completeButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 20px;
+  background: #007aff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.completeButton:hover {
+  background: #0066d6;
+}
+
+.completeButton:disabled {
+  background: #a1a1a6;
+  cursor: not-allowed;
+}
+
+.footerInfo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid #f5f5f7;
+  font-size: 14px;
+  color: #86868b;
+}

@@ -15,10 +15,17 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  // 페이지뷰 트래킹
+  // 페이지 진입 시 기존 세션 로그아웃
   useEffect(() => {
-    trackPageView("login");
+    const init = async () => {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      trackPageView("login");
+      setReady(true);
+    };
+    init();
   }, []);
 
   const handleKakaoLogin = async () => {
@@ -100,6 +107,19 @@ export function LoginForm() {
 
     router.replace("/auth/pin-setup");
   };
+
+  // 초기화 중
+  if (!ready) {
+    return (
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <div className={styles.heroArea}>
+            <Loader2 size={32} className={styles.spinner} />
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>

@@ -1,0 +1,18 @@
+.container {
+  min-height: 300px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #86868b;
+  font-size: 14px;
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

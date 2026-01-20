@@ -1,0 +1,58 @@
+.section {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.header:hover {
+  background: #f9f9f9;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chevron {
+  color: #86868b;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.count {
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: #007aff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.summary {
+  font-size: 13px;
+  color: #86868b;
+  font-weight: 500;
+}
+
+.content {
+  padding: 0 20px 20px;
+}

@@ -1200,7 +1200,7 @@ export function SimpleOnboarding({
         </div>
       </div>
       <p className={styles.problemText}>
-        건강검진처럼 은퇴도 정기적인 검진이 필요합니다.
+        건강한 은퇴에는 정기적인 검진이 필수입니다.
       </p>
       <div className={styles.bottomButtonArea}>
         <button className={styles.primaryButton} onClick={handleNext}>

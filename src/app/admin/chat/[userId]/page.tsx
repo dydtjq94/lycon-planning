@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ChevronLeft } from "lucide-react";
+import { TemplateSelector } from "../../components";
 import styles from "../../admin.module.css";
 
 interface Message {
@@ -28,6 +29,7 @@ export default function AdminChatPage() {
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [expertId, setExpertId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -66,6 +68,7 @@ export default function AdminChatPage() {
         .single();
 
       if (!expert) return;
+      setExpertId(expert.id);
 
       // 대화방 찾기
       const { data: conversation } = await supabase
@@ -304,6 +307,12 @@ export default function AdminChatPage() {
       </div>
 
       <div className={styles.chatInputArea}>
+        {expertId && (
+          <TemplateSelector
+            expertId={expertId}
+            onSelect={(content) => setNewMessage(content)}
+          />
+        )}
         <textarea
           ref={inputRef}
           className={styles.chatInput}

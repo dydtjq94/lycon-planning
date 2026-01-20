@@ -70,16 +70,5 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // 이미 로그인한 사용자가 로그인/회원가입 페이지 접근 시 → 온보딩으로
-  // (PIN 설정, PIN 입력, 전화번호 인증, 콜백은 제외)
-  const authExcludedPages = ['/auth/pin-setup', '/auth/pin-verify', '/auth/phone-verify', '/auth/callback']
-  const isExcludedAuthPage = authExcludedPages.some(path => request.nextUrl.pathname.startsWith(path))
-
-  if (user && request.nextUrl.pathname.startsWith('/auth') && !isExcludedAuthPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/onboarding'
-    return NextResponse.redirect(url)
-  }
-
   return supabaseResponse
 }

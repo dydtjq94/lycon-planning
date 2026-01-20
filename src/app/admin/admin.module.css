@@ -1,11 +1,11 @@
-/* Admin Layout */
+/* Admin Layout - Apple Style */
 .layout {
   min-height: 100vh;
-  background: #f8f9fa;
+  background: #f5f5f7;
 }
 
 .header {
-  background: #212529;
+  background: #1d1d1f;
   color: white;
   padding: 0 24px;
   height: 52px;
@@ -36,23 +36,23 @@
 
 .expertName {
   font-size: 13px;
-  color: #adb5bd;
+  color: #a1a1a6;
 }
 
 .logoutButton {
-  padding: 6px 12px;
+  padding: 6px 14px;
   background: transparent;
-  border: 1px solid #495057;
-  border-radius: 5px;
-  color: #adb5bd;
+  border: 1px solid #424245;
+  border-radius: 6px;
+  color: #a1a1a6;
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
 }
 
 .logoutButton:hover {
-  border-color: #868e96;
-  color: #f8f9fa;
+  border-color: #6e6e73;
+  color: #f5f5f7;
 }
 
 .main {
@@ -66,14 +66,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8f9fa;
+  background: #f5f5f7;
 }
 
 .spinner {
   width: 28px;
   height: 28px;
-  border: 2px solid #e9ecef;
-  border-top-color: #228be6;
+  border: 2px solid #e5e5e5;
+  border-top-color: #007aff;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -90,7 +90,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8f9fa;
+  background: #f5f5f7;
   padding: 24px;
 }
 
@@ -98,85 +98,85 @@
   width: 100%;
   max-width: 380px;
   background: white;
-  border-radius: 12px;
-  padding: 36px;
-  border: 1px solid #e9ecef;
+  border-radius: 14px;
+  padding: 40px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .loginTitle {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
   text-align: center;
   margin-bottom: 6px;
-  color: #212529;
+  color: #1d1d1f;
 }
 
 .loginSubtitle {
-  font-size: 13px;
-  color: #868e96;
+  font-size: 14px;
+  color: #86868b;
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 
 .loginForm {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .inputLabel {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: #495057;
+  color: #1d1d1f;
 }
 
 .input {
-  padding: 11px 13px;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.15s;
+  padding: 12px 14px;
+  border: 1px solid #d2d2d7;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.2s;
 }
 
 .input:focus {
   outline: none;
-  border-color: #228be6;
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
 }
 
 .loginButton {
-  margin-top: 6px;
-  padding: 12px;
-  background: #228be6;
+  margin-top: 8px;
+  padding: 14px;
+  background: #007aff;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 10px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.2s;
 }
 
 .loginButton:hover {
-  background: #1c7ed6;
+  background: #0066d6;
 }
 
 .loginButton:disabled {
-  background: #adb5bd;
+  background: #a1a1a6;
   cursor: not-allowed;
 }
 
 .loginError {
-  padding: 10px;
-  background: #fff5f5;
-  border: 1px solid #ffc9c9;
-  border-radius: 6px;
-  color: #e03131;
+  padding: 12px;
+  background: #fff2f2;
+  border-radius: 8px;
+  color: #ff3b30;
   font-size: 13px;
   text-align: center;
 }
@@ -185,57 +185,59 @@
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .pageTitle {
-  font-size: 22px;
-  font-weight: 600;
-  color: #212529;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d1d1f;
   margin: 0;
+  letter-spacing: -0.5px;
 }
 
 .statsRow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .statCard {
   background: white;
-  padding: 18px;
-  border-radius: 10px;
-  border: 1px solid #e9ecef;
+  padding: 20px 24px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .statLabel {
-  font-size: 12px;
-  color: #868e96;
-  margin-bottom: 4px;
+  font-size: 13px;
+  color: #86868b;
+  margin-bottom: 6px;
 }
 
 .statValue {
-  font-size: 26px;
+  font-size: 32px;
   font-weight: 700;
-  color: #212529;
+  color: #1d1d1f;
+  letter-spacing: -0.5px;
 }
 
 .section {
   background: white;
-  border-radius: 10px;
-  border: 1px solid #e9ecef;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
 
 .sectionHeader {
-  padding: 14px 18px;
-  border-bottom: 1px solid #f1f3f5;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f5f5f7;
 }
 
 .sectionTitle {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  color: #212529;
+  color: #1d1d1f;
   margin: 0;
 }
 
@@ -249,10 +251,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid #f8f9fa;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f5f5f7;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.2s;
 }
 
 .userItem:last-child {
@@ -260,83 +262,84 @@
 }
 
 .userItem:hover {
-  background: #f8f9fa;
+  background: #f5f5f7;
 }
 
 .userInfo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .userAvatar {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #228be6 0%, #7950f2 100%);
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .userDetails {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .userName {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
-  color: #212529;
+  color: #1d1d1f;
 }
 
 .userMeta {
-  font-size: 12px;
-  color: #868e96;
+  font-size: 13px;
+  color: #86868b;
 }
 
 .userActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .unreadBadge {
-  padding: 3px 8px;
-  background: #228be6;
+  padding: 4px 10px;
+  background: #007aff;
   color: white;
-  border-radius: 10px;
-  font-size: 11px;
+  border-radius: 12px;
+  font-size: 12px;
   font-weight: 600;
-  min-width: 20px;
+  min-width: 22px;
   text-align: center;
 }
 
 .actionButton {
-  padding: 7px 12px;
-  border: 1px solid #dee2e6;
-  border-radius: 5px;
-  background: white;
-  font-size: 12px;
-  color: #495057;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #f5f5f7;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
 }
 
 .actionButton:hover {
-  border-color: #228be6;
-  color: #228be6;
+  background: #007aff;
+  color: white;
 }
 
 .emptyState {
-  padding: 40px 20px;
+  padding: 48px 24px;
   text-align: center;
-  color: #868e96;
-  font-size: 13px;
+  color: #86868b;
+  font-size: 14px;
 }
 
 /* User Detail Page */
@@ -344,86 +347,89 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .backButton {
-  padding: 7px 12px;
-  border: 1px solid #dee2e6;
-  border-radius: 5px;
-  background: white;
-  font-size: 13px;
-  color: #495057;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #f5f5f7;
+  font-size: 14px;
+  color: #1d1d1f;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.15s;
+  transition: all 0.2s;
 }
 
 .backButton:hover {
-  border-color: #228be6;
-  color: #228be6;
+  background: #007aff;
+  color: white;
 }
 
 .userDetailTitle {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
-  color: #212529;
+  color: #1d1d1f;
 }
 
 .tabsContainer {
   display: flex;
-  gap: 6px;
-  margin-bottom: 20px;
+  gap: 4px;
+  margin-bottom: 24px;
+  padding: 4px;
+  background: #f5f5f7;
+  border-radius: 10px;
+  width: fit-content;
 }
 
 .tab {
-  padding: 9px 18px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 6px;
-  background: white;
-  font-size: 13px;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 14px;
   font-weight: 500;
-  color: #868e96;
+  color: #86868b;
   cursor: pointer;
-  transition: all 0.15s;
-  border: 1px solid #e9ecef;
+  transition: all 0.2s;
 }
 
 .tab:hover {
-  color: #495057;
+  color: #1d1d1f;
 }
 
 .tabActive {
-  background: #228be6;
-  border-color: #228be6;
-  color: white;
+  background: white;
+  color: #1d1d1f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .tabActive:hover {
-  color: white;
+  color: #1d1d1f;
 }
 
 /* Data Section */
 .dataGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 14px;
-  padding: 18px;
+  gap: 16px;
+  padding: 20px;
 }
 
 .dataCard {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 14px;
+  background: #f5f5f7;
+  border-radius: 12px;
+  padding: 16px;
 }
 
 .dataCardTitle {
   font-size: 11px;
   font-weight: 600;
-  color: #868e96;
-  margin-bottom: 10px;
+  color: #86868b;
+  margin-bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -431,8 +437,8 @@
 .dataItem {
   display: flex;
   justify-content: space-between;
-  padding: 7px 0;
-  border-bottom: 1px solid #e9ecef;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e5e5;
 }
 
 .dataItem:last-child {
@@ -440,14 +446,14 @@
 }
 
 .dataLabel {
-  font-size: 13px;
-  color: #495057;
+  font-size: 14px;
+  color: #6e6e73;
 }
 
 .dataValue {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: #212529;
+  color: #1d1d1f;
 }
 
 /* Chat */
@@ -456,93 +462,95 @@
   display: flex;
   flex-direction: column;
   background: white;
-  border-radius: 10px;
-  border: 1px solid #e9ecef;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
 
 .chatHeader {
-  padding: 14px 18px;
-  border-bottom: 1px solid #f1f3f5;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f5f5f7;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .chatUserName {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  color: #212529;
+  color: #1d1d1f;
 }
 
 .chatMessages {
   flex: 1;
   overflow-y: auto;
-  padding: 18px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .chatMessage {
   max-width: 70%;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 13px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
 .chatMessageUser {
   align-self: flex-start;
-  background: #f1f3f5;
-  color: #212529;
+  background: #f5f5f7;
+  color: #1d1d1f;
 }
 
 .chatMessageExpert {
   align-self: flex-end;
-  background: #228be6;
+  background: #007aff;
   color: white;
 }
 
 .chatInputArea {
-  padding: 14px 18px;
-  border-top: 1px solid #f1f3f5;
+  padding: 16px 20px;
+  border-top: 1px solid #f5f5f7;
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .chatInput {
   flex: 1;
-  padding: 11px 13px;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 13px;
+  padding: 12px 14px;
+  border: 1px solid #d2d2d7;
+  border-radius: 10px;
+  font-size: 14px;
   resize: none;
+  transition: all 0.2s;
 }
 
 .chatInput:focus {
   outline: none;
-  border-color: #228be6;
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
 }
 
 .chatSendButton {
-  padding: 11px 18px;
-  background: #228be6;
+  padding: 12px 20px;
+  background: #007aff;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.2s;
 }
 
 .chatSendButton:hover {
-  background: #1c7ed6;
+  background: #0066d6;
 }
 
 .chatSendButton:disabled {
-  background: #adb5bd;
+  background: #a1a1a6;
   cursor: not-allowed;
 }
 
@@ -551,20 +559,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 18px;
+  padding: 20px;
   background: white;
-  border: 1px solid #dee2e6;
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  font-size: 15px;
   font-weight: 600;
-  color: #228be6;
+  color: #007aff;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
+  border: none;
 }
 
 .scheduleButton:hover {
-  border-color: #228be6;
-  background: #e7f5ff;
+  background: #007aff;
+  color: white;
 }
 
 /* Booking List */
@@ -577,79 +586,97 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid #f8f9fa;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f5f5f7;
+  transition: all 0.2s;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
 .bookingItem:last-child {
   border-bottom: none;
 }
 
+.bookingItem:hover {
+  background: #f5f5f7;
+}
+
+.bookingItem.bookingToday {
+  background: linear-gradient(90deg, rgba(0, 122, 255, 0.04) 0%, transparent 100%);
+  border-left: 3px solid #007aff;
+  padding-left: 17px;
+}
+
+.bookingItem.bookingToday:hover {
+  background: linear-gradient(90deg, rgba(0, 122, 255, 0.08) 0%, #f5f5f7 100%);
+}
+
 .bookingInfo {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .bookingDate {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
-  color: #212529;
+  color: #1d1d1f;
 }
 
 .bookingUser {
-  font-size: 12px;
-  color: #868e96;
+  font-size: 13px;
+  color: #86868b;
 }
 
 .bookingStatus {
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .bookingStatus.confirmed {
-  background: #d3f9d8;
-  color: #2b8a3e;
+  background: rgba(52, 199, 89, 0.12);
+  color: #34c759;
 }
 
 .bookingStatus.pending {
-  background: #fff3bf;
-  color: #e67700;
+  background: rgba(255, 149, 0, 0.12);
+  color: #ff9500;
 }
 
 .bookingStatus.cancelled {
-  background: #ffe3e3;
-  color: #e03131;
+  background: rgba(255, 59, 48, 0.12);
+  color: #ff3b30;
 }
 
 .bookingStatus.completed {
-  background: #e9ecef;
-  color: #868e96;
+  background: #f5f5f7;
+  color: #86868b;
 }
 
 /* Chat Attachments */
 .chatAttachments {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .chatImageLink {
   display: block;
-  border-radius: 6px;
+  border-radius: 10px;
   overflow: hidden;
 }
 
 .chatImage {
-  max-width: 180px;
-  max-height: 180px;
-  border-radius: 6px;
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 10px;
   object-fit: cover;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity 0.2s;
 }
 
 .chatImage:hover {
@@ -658,8 +685,8 @@
 
 /* Section Header with Toggle */
 .sectionHeaderWithToggle {
-  padding: 14px 18px;
-  border-bottom: 1px solid #f1f3f5;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f5f5f7;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -667,145 +694,147 @@
 
 .viewToggle {
   display: flex;
-  background: #f1f3f5;
-  border-radius: 5px;
-  padding: 2px;
+  background: #f5f5f7;
+  border-radius: 8px;
+  padding: 3px;
 }
 
 .toggleButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 26px;
+  width: 32px;
+  height: 28px;
   border: none;
   background: transparent;
-  border-radius: 3px;
-  color: #868e96;
+  border-radius: 6px;
+  color: #86868b;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
 }
 
 .toggleButton:hover {
-  color: #495057;
+  color: #1d1d1f;
 }
 
 .toggleActive {
   background: white;
-  color: #228be6;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  color: #007aff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* Calendar View */
 .calendarView {
-  padding: 16px 18px;
+  padding: 20px;
 }
 
 .calendarHeader {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .calendarNavButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid #dee2e6;
-  background: white;
-  border-radius: 5px;
-  color: #495057;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f5f5f7;
+  border-radius: 8px;
+  color: #1d1d1f;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
 }
 
 .calendarNavButton:hover {
-  border-color: #228be6;
-  color: #228be6;
+  background: #007aff;
+  color: white;
 }
 
 .calendarMonthTitle {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  color: #212529;
-  min-width: 110px;
+  color: #1d1d1f;
+  min-width: 120px;
   text-align: center;
 }
 
 .calendarWeekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .calendarWeekday {
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  color: #868e96;
-  padding: 6px 0;
+  color: #86868b;
+  padding: 8px 0;
 }
 
 .calendarWeekday.sunday {
-  color: #e03131;
+  color: #ff3b30;
 }
 
 .calendarWeekday.saturday {
-  color: #1c7ed6;
+  color: #007aff;
 }
 
 .calendarGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 4px;
 }
 
 .calendarDayEmpty {
-  height: 72px;
-  background: #f8f9fa;
+  height: 76px;
+  background: #f5f5f7;
+  border-radius: 8px;
 }
 
 .calendarDay {
-  height: 72px;
-  padding: 5px;
-  background: #f8f9fa;
+  height: 76px;
+  padding: 6px;
+  background: #f5f5f7;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   overflow: hidden;
 }
 
 .calendarDay.sunday .calendarDayNumber {
-  color: #e03131;
+  color: #ff3b30;
 }
 
 .calendarDay.saturday .calendarDayNumber {
-  color: #1c7ed6;
+  color: #007aff;
 }
 
 .calendarDayToday {
-  background: #e7f5ff;
+  background: #e6f2ff;
 }
 
 .calendarDayToday .calendarDayNumber {
-  color: #228be6;
+  color: #007aff;
   font-weight: 700;
 }
 
 .calendarDayNumber {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: #212529;
+  color: #1d1d1f;
 }
 
 .calendarDayBookings {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   flex: 1;
   overflow: hidden;
 }
@@ -813,9 +842,9 @@
 .calendarBookingDot {
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 2px 5px;
-  border-radius: 3px;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 4px;
   font-size: 10px;
   white-space: nowrap;
   overflow: hidden;
@@ -823,13 +852,13 @@
 }
 
 .calendarBookingDot.confirmed {
-  background: #d3f9d8;
-  color: #2b8a3e;
+  background: #d1fae5;
+  color: #059669;
 }
 
 .calendarBookingDot.pending {
-  background: #fff3bf;
-  color: #e67700;
+  background: #fef3c7;
+  color: #d97706;
 }
 
 .calendarBookingTime {
@@ -839,4 +868,162 @@
 .calendarBookingName {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Search and Filter */
+.searchFilterBar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.searchContainer {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #86868b;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border: none;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  font-size: 15px;
+  transition: all 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.searchInput::placeholder {
+  color: #a1a1a6;
+}
+
+.filterButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filterButton {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  font-size: 14px;
+  font-weight: 500;
+  color: #6e6e73;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filterButton:hover {
+  color: #1d1d1f;
+}
+
+.filterButton.active {
+  background: #007aff;
+  color: white;
+}
+
+/* Customer Status Tags */
+.customerStatusTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.customerStatusTag.new {
+  background: #e6f2ff;
+  color: #007aff;
+}
+
+.customerStatusTag.booking_pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.customerStatusTag.has_booking {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.customerStatusTag.consulted {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.customerStatusTag.dormant {
+  background: #f5f5f7;
+  color: #86868b;
+}
+
+/* Quick Action Buttons */
+.quickActions {
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.userItem:hover .quickActions {
+  opacity: 1;
+}
+
+.quickActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: #007aff;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.quickActionBtn:hover {
+  background: #0066d6;
+  transform: scale(1.05);
+}
+
+/* Settings Button */
+.settingsButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none;
+  color: #86868b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settingsButton:hover {
+  color: #007aff;
 }

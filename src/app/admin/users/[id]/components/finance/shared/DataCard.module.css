@@ -1,0 +1,104 @@
+.card {
+  padding: 14px 16px;
+  background: #f5f5f7;
+  border-radius: 10px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.type {
+  font-size: 11px;
+  font-weight: 600;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.owner {
+  font-size: 11px;
+  color: #6e6e73;
+  padding: 2px 6px;
+  background: #e5e5e5;
+  border-radius: 4px;
+}
+
+.linkedBadge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: #007aff;
+  padding: 2px 6px;
+  background: rgba(0, 122, 255, 0.1);
+  border-radius: 4px;
+}
+
+.body {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.info {
+  flex: 1;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 4px;
+}
+
+.amount {
+  font-size: 13px;
+  color: #1d1d1f;
+  font-weight: 500;
+}
+
+.subInfo {
+  font-size: 12px;
+  color: #86868b;
+  margin-top: 4px;
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 12px;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6e6e73;
+  transition: all 0.15s;
+}
+
+.actionBtn:hover {
+  background: #e5e5e5;
+  color: #1d1d1f;
+}
+
+.deleteBtn:hover {
+  background: #ff3b30;
+  color: #fff;
+}

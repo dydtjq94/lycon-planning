@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { List, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, MessageSquare, ChevronRight, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getExpertBookings, BookingWithUser } from "@/lib/services/bookingService";
-import styles from "./admin.module.css";
+import { formatMoney } from "@/lib/utils";
+import { BookingModal } from "./components";
+import styles from "./dashboard.module.css";
 
 interface User {
   id: string;
@@ -15,9 +17,15 @@ interface User {
   phone_number: string | null;
   created_at: string;
   onboarding_step: string | null;
-  unread_count: number;  // 전문가가 안 읽은 유저 메시지 수
+  unread_count: number;
   conversation_id: string;
   last_message_at: string | null;
+}
+
+interface AssetSummary {
+  totalAssets: number;
+  totalDebts: number;
+  netWorth: number;
 }
 
 export default function AdminDashboardPage() {
@@ -25,15 +33,15 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [bookings, setBookings] = useState<BookingWithUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    unreadMessages: 0,
-  });
   const [expertId, setExpertId] = useState<string | null>(null);
-  const [bookingViewMode, setBookingViewMode] = useState<"list" | "calendar">("list");
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedBooking, setSelectedBooking] = useState<BookingWithUser | null>(null);
+  const [assetSummary, setAssetSummary] = useState<AssetSummary>({
+    totalAssets: 0,
+    totalDebts: 0,
+    netWorth: 0,
+  });
 
-  // 안 읽은 메시지 수 새로고침 함수
+  // 안 읽은 메시지 수 새로고침
   const refreshUnreadCounts = async (conversationIds: string[]) => {
     if (conversationIds.length === 0) return;
 
@@ -54,18 +62,12 @@ export default function AdminDashboardPage() {
       ...u,
       unread_count: unreadMap[u.conversation_id] || 0,
     })));
-
-    setStats(prev => ({
-      ...prev,
-      unreadMessages: Object.values(unreadMap).reduce((sum, count) => sum + count, 0),
-    }));
   };
 
   useEffect(() => {
     const loadData = async () => {
       const supabase = createClient();
 
-      // 현재 로그인한 전문가 정보 가져오기
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -82,7 +84,7 @@ export default function AdminDashboardPage() {
       const bookingList = await getExpertBookings(expert.id);
       setBookings(bookingList);
 
-      // 전문가에게 연결된 대화방과 유저 정보 가져오기
+      // 대화방과 유저 정보
       const { data: conversations } = await supabase
         .from("conversations")
         .select(`
@@ -113,7 +115,6 @@ export default function AdminDashboardPage() {
           onboarding_step: string | null;
         };
 
-        // 각 대화방별 안 읽은 메시지 수 조회 (유저가 보낸 메시지 중 안 읽은 것)
         const conversationIds = conversations.map(c => c.id);
         const { data: unreadCounts } = await supabase
           .from("messages")
@@ -122,7 +123,6 @@ export default function AdminDashboardPage() {
           .eq("sender_type", "user")
           .eq("is_read", false);
 
-        // conversation_id별 안 읽은 수 계산
         const unreadMap: Record<string, number> = {};
         unreadCounts?.forEach(m => {
           unreadMap[m.conversation_id] = (unreadMap[m.conversation_id] || 0) + 1;
@@ -148,10 +148,37 @@ export default function AdminDashboardPage() {
           });
 
         setUsers(userList);
-        setStats({
-          totalUsers: userList.length,
-          unreadMessages: userList.reduce((sum, u) => sum + u.unread_count, 0),
-        });
+
+        // 자산 총합 계산 (모든 고객의 시뮬레이션 데이터)
+        const userIds = userList.map(u => u.id);
+        if (userIds.length > 0) {
+          // 시뮬레이션 조회
+          const { data: simulations } = await supabase
+            .from("simulations")
+            .select("id")
+            .in("profile_id", userIds);
+
+          if (simulations && simulations.length > 0) {
+            const simIds = simulations.map(s => s.id);
+
+            // 자산 합계
+            const [savingsRes, realEstateRes, debtsRes] = await Promise.all([
+              supabase.from("savings").select("current_balance").in("simulation_id", simIds),
+              supabase.from("real_estates").select("current_value").in("simulation_id", simIds),
+              supabase.from("debts").select("current_balance").in("simulation_id", simIds),
+            ]);
+
+            const totalSavings = savingsRes.data?.reduce((sum, s) => sum + (s.current_balance || 0), 0) || 0;
+            const totalRealEstate = realEstateRes.data?.reduce((sum, r) => sum + (r.current_value || 0), 0) || 0;
+            const totalDebts = debtsRes.data?.reduce((sum, d) => sum + (d.current_balance || 0), 0) || 0;
+
+            setAssetSummary({
+              totalAssets: totalSavings + totalRealEstate,
+              totalDebts,
+              netWorth: totalSavings + totalRealEstate - totalDebts,
+            });
+          }
+        }
       }
 
       setLoading(false);
@@ -160,7 +187,7 @@ export default function AdminDashboardPage() {
     loadData();
   }, []);
 
-  // 실시간 메시지 업데이트 구독
+  // 실시간 메시지 구독
   useEffect(() => {
     if (!expertId || users.length === 0) return;
 
@@ -177,7 +204,6 @@ export default function AdminDashboardPage() {
           table: "messages",
         },
         (payload) => {
-          // 유저가 보낸 메시지일 때만 업데이트
           if (payload.new && (payload.new as { sender_type: string }).sender_type === "user") {
             refreshUnreadCounts(conversationIds);
           }
@@ -191,7 +217,6 @@ export default function AdminDashboardPage() {
           table: "messages",
         },
         () => {
-          // 읽음 처리 시 업데이트
           refreshUnreadCounts(conversationIds);
         }
       )
@@ -202,14 +227,25 @@ export default function AdminDashboardPage() {
     };
   }, [expertId, users.length]);
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "-";
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("ko-KR", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+  const handleBookingUpdate = async () => {
+    if (!expertId) return;
+    const bookingList = await getExpertBookings(expertId);
+    setBookings(bookingList);
+  };
+
+  // 예정된 예약 (오늘 이후)
+  const getUpcomingBookings = () => {
+    const today = new Date().toISOString().split("T")[0];
+
+    return bookings
+      .filter(b => b.booking_date >= today)
+      .filter(b => b.status === "confirmed" || b.status === "pending")
+      .sort((a, b) => {
+        if (a.booking_date !== b.booking_date) {
+          return a.booking_date.localeCompare(b.booking_date);
+        }
+        return a.booking_time.localeCompare(b.booking_time);
+      });
   };
 
   const getAge = (birthDate: string | null) => {
@@ -218,246 +254,187 @@ export default function AdminDashboardPage() {
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
     return age;
-  };
-
-  const getStatusText = (step: string | null) => {
-    if (!step) return "시작 전";
-    if (step === "completed") return "온보딩 완료";
-    return "진행 중";
   };
 
   if (loading) {
     return (
-      <div className={styles.dashboard}>
-        <div className={styles.loadingContainer}>
+      <div className={styles.container}>
+        <div className={styles.loading}>
           <div className={styles.spinner} />
         </div>
       </div>
     );
   }
 
-  return (
-    <div className={styles.dashboard}>
-      <h1 className={styles.pageTitle}>대시보드</h1>
+  const upcomingBookings = getUpcomingBookings();
+  const today = new Date().toISOString().split("T")[0];
 
-      {/* 통계 */}
-      <div className={styles.statsRow}>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>담당 고객</div>
-          <div className={styles.statValue}>{stats.totalUsers}</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>안 읽은 메시지</div>
-          <div className={styles.statValue}>{stats.unreadMessages}</div>
-        </div>
+  return (
+    <div className={styles.container}>
+      {/* 헤더 */}
+      <div className={styles.header}>
+        <h1 className={styles.title}>대시보드</h1>
         <button
-          className={styles.scheduleButton}
+          className={styles.settingsButton}
           onClick={() => router.push("/admin/schedule")}
+          title="스케줄 설정"
         >
-          스케줄 관리
+          <Settings size={20} />
         </button>
       </div>
 
-      {/* 예약 목록 */}
-      <div className={styles.section}>
-        <div className={styles.sectionHeaderWithToggle}>
-          <h2 className={styles.sectionTitle}>예약 목록</h2>
-          <div className={styles.viewToggle}>
+      {/* 통계 */}
+      <div className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>담당 고객</div>
+          <div className={styles.statValue}>{users.length}<span className={styles.statUnit}>명</span></div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>총 관리 자산</div>
+          <div className={styles.statValue}>{formatMoney(assetSummary.totalAssets)}</div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>예정 상담</div>
+          <div className={styles.statValue}>{upcomingBookings.length}<span className={styles.statUnit}>건</span></div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel}>안 읽은 메시지</div>
+          <div className={styles.statValue}>{users.reduce((sum, u) => sum + u.unread_count, 0)}<span className={styles.statUnit}>건</span></div>
+        </div>
+      </div>
+
+      {/* 메인 콘텐츠 */}
+      <div className={styles.mainGrid}>
+        {/* 왼쪽: 고객 목록 */}
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>내 고객</h2>
+            <span className={styles.sectionCount}>{users.length}</span>
+          </div>
+          <div className={styles.customerList}>
+            {users.length === 0 ? (
+              <div className={styles.empty}>담당 고객이 없습니다.</div>
+            ) : (
+              users.slice(0, 10).map((user) => (
+                <div
+                  key={user.id}
+                  className={styles.customerItem}
+                  onClick={() => router.push(`/admin/users/${user.id}`)}
+                >
+                  <div className={styles.customerAvatar}>
+                    {user.name.charAt(0)}
+                  </div>
+                  <div className={styles.customerInfo}>
+                    <div className={styles.customerName}>
+                      {user.name}
+                      {getAge(user.birth_date) && (
+                        <span className={styles.customerAge}>
+                          {getAge(user.birth_date)}세
+                        </span>
+                      )}
+                    </div>
+                    <div className={styles.customerMeta}>
+                      {user.phone_number || "연락처 없음"}
+                    </div>
+                  </div>
+                  <div className={styles.customerActions}>
+                    <button
+                      className={styles.chatButton}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/admin/chat/${user.id}`);
+                      }}
+                    >
+                      <MessageSquare size={16} />
+                      {user.unread_count > 0 && (
+                        <span className={styles.chatBadge}>{user.unread_count}</span>
+                      )}
+                    </button>
+                    <ChevronRight size={16} className={styles.chevron} />
+                  </div>
+                </div>
+              ))
+            )}
+            {users.length > 10 && (
+              <button className={styles.viewAllButton}>
+                전체 {users.length}명 보기
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 오른쪽: 스케줄 */}
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>예정 상담</h2>
             <button
-              className={`${styles.toggleButton} ${bookingViewMode === "list" ? styles.toggleActive : ""}`}
-              onClick={() => setBookingViewMode("list")}
-            >
-              <List size={16} />
-            </button>
-            <button
-              className={`${styles.toggleButton} ${bookingViewMode === "calendar" ? styles.toggleActive : ""}`}
-              onClick={() => setBookingViewMode("calendar")}
+              className={styles.calendarButton}
+              onClick={() => router.push("/admin/schedule")}
             >
               <Calendar size={16} />
             </button>
           </div>
-        </div>
-
-        {bookingViewMode === "list" ? (
-          <div className={styles.bookingList}>
-            {bookings.length === 0 ? (
-              <div className={styles.emptyState}>
-                예약이 없습니다.
-              </div>
+          <div className={styles.scheduleList}>
+            {upcomingBookings.length === 0 ? (
+              <div className={styles.empty}>예정된 상담이 없습니다.</div>
             ) : (
-              bookings.map((booking) => {
+              upcomingBookings.map((booking) => {
+                const isToday = booking.booking_date === today;
+                const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+                const isTomorrow = booking.booking_date === tomorrow;
                 const date = new Date(booking.booking_date);
                 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-                const birthYear = booking.user_birth_date ? booking.user_birth_date.split("-")[0] : null;
-                const genderText = booking.user_gender === "male" ? "남" : booking.user_gender === "female" ? "여" : null;
+
+                const getDateLabel = () => {
+                  if (isToday) return "오늘";
+                  if (isTomorrow) return "내일";
+                  return `${date.getMonth() + 1}/${date.getDate()}(${weekdays[date.getDay()]})`;
+                };
+
                 return (
-                  <div key={booking.id} className={styles.bookingItem}>
-                    <div className={styles.bookingInfo}>
-                      <span className={styles.bookingDate}>
-                        {date.getMonth() + 1}/{date.getDate()} ({weekdays[date.getDay()]}) {booking.booking_time}
-                      </span>
-                      <span className={styles.bookingUser}>
-                        {booking.user_name || "이름 없음"}
-                        {birthYear && ` ${birthYear}년생`}
-                        {genderText && ` ${genderText}`}
-                        {booking.user_phone && ` ${booking.user_phone}`}
-                      </span>
+                  <div
+                    key={booking.id}
+                    className={`${styles.scheduleItem} ${isToday ? styles.scheduleToday : ""}`}
+                    onClick={() => setSelectedBooking(booking)}
+                  >
+                    <div className={styles.scheduleTime}>
+                      <div className={styles.scheduleDate}>
+                        {getDateLabel()}
+                      </div>
+                      <div className={styles.scheduleHour}>
+                        {booking.booking_time}
+                      </div>
                     </div>
-                    <span className={`${styles.bookingStatus} ${styles[booking.status]}`}>
-                      {booking.status === "confirmed" ? "확정" :
-                       booking.status === "pending" ? "대기" :
-                       booking.status === "cancelled" ? "취소" : "완료"}
-                    </span>
+                    <div className={styles.scheduleDivider} />
+                    <div className={styles.scheduleInfo}>
+                      <div className={styles.scheduleName}>
+                        {booking.user_name || "이름 없음"}
+                      </div>
+                      <div className={styles.scheduleMeta}>
+                        {booking.user_phone || "연락처 없음"}
+                      </div>
+                    </div>
+                    <div className={`${styles.scheduleStatus} ${styles[booking.status]}`}>
+                      {booking.status === "confirmed" ? "확정" : "대기"}
+                    </div>
                   </div>
                 );
               })
             )}
           </div>
-        ) : (
-          <div className={styles.calendarView}>
-            {/* 캘린더 헤더 */}
-            <div className={styles.calendarHeader}>
-              <button
-                className={styles.calendarNavButton}
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <span className={styles.calendarMonthTitle}>
-                {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
-              </span>
-              <button
-                className={styles.calendarNavButton}
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-              >
-                <ChevronRight size={20} />
-              </button>
-            </div>
-
-            {/* 요일 헤더 */}
-            <div className={styles.calendarWeekdays}>
-              {["일", "월", "화", "수", "목", "금", "토"].map((day, i) => (
-                <div key={day} className={`${styles.calendarWeekday} ${i === 0 ? styles.sunday : i === 6 ? styles.saturday : ""}`}>
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* 날짜 그리드 */}
-            <div className={styles.calendarGrid}>
-              {(() => {
-                const year = currentMonth.getFullYear();
-                const month = currentMonth.getMonth();
-                const firstDay = new Date(year, month, 1).getDay();
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
-                const days: (number | null)[] = [];
-
-                // 빈 칸 (이전 달)
-                for (let i = 0; i < firstDay; i++) {
-                  days.push(null);
-                }
-                // 현재 달 날짜
-                for (let d = 1; d <= daysInMonth; d++) {
-                  days.push(d);
-                }
-
-                return days.map((day, idx) => {
-                  if (day === null) {
-                    return <div key={`empty-${idx}`} className={styles.calendarDayEmpty} />;
-                  }
-
-                  const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                  const dayBookings = bookings.filter(b => b.booking_date === dateStr);
-                  const isToday = new Date().toISOString().split("T")[0] === dateStr;
-                  const dayOfWeek = (firstDay + day - 1) % 7;
-
-                  return (
-                    <div
-                      key={dateStr}
-                      className={`${styles.calendarDay} ${isToday ? styles.calendarDayToday : ""} ${dayOfWeek === 0 ? styles.sunday : dayOfWeek === 6 ? styles.saturday : ""}`}
-                    >
-                      <span className={styles.calendarDayNumber}>{day}</span>
-                      {dayBookings.length > 0 && (
-                        <div className={styles.calendarDayBookings}>
-                          {dayBookings.map((b) => (
-                            <div
-                              key={b.id}
-                              className={`${styles.calendarBookingDot} ${styles[b.status]}`}
-                            >
-                              <span className={styles.calendarBookingTime}>{b.booking_time}</span>
-                              <span className={styles.calendarBookingName}>{b.user_name || "?"}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 유저 목록 */}
-      <div className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>담당 고객 목록</h2>
-        </div>
-        <div className={styles.userList}>
-          {users.length === 0 ? (
-            <div className={styles.emptyState}>
-              담당 고객이 없습니다.
-            </div>
-          ) : (
-            users.map((user) => (
-              <div
-                key={user.id}
-                className={styles.userItem}
-                onClick={() => router.push(`/admin/users/${user.id}`)}
-              >
-                <div className={styles.userInfo}>
-                  <div className={styles.userAvatar}>
-                    {user.name.charAt(0)}
-                  </div>
-                  <div className={styles.userDetails}>
-                    <span className={styles.userName}>
-                      {user.name}
-                      {user.birth_date && ` ${user.birth_date.replace(/-/g, ".")}`}
-                      {user.gender && ` ${user.gender === "male" ? "남" : "여"}`}
-                      {getAge(user.birth_date) && ` (${getAge(user.birth_date)}세)`}
-                    </span>
-                    <span className={styles.userMeta}>
-                      {user.phone_number && `${user.phone_number} · `}
-                      {getStatusText(user.onboarding_step)} · 가입 {formatDate(user.created_at)}
-                    </span>
-                  </div>
-                </div>
-                <div className={styles.userActions}>
-                  {user.unread_count > 0 && (
-                    <span className={styles.unreadBadge}>
-                      {user.unread_count}
-                    </span>
-                  )}
-                  <button
-                    className={styles.actionButton}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push(`/admin/chat/${user.id}`);
-                    }}
-                  >
-                    채팅
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
         </div>
       </div>
+
+      {/* Booking Modal */}
+      {selectedBooking && (
+        <BookingModal
+          booking={selectedBooking}
+          onClose={() => setSelectedBooking(null)}
+          onUpdate={handleBookingUpdate}
+        />
+      )}
     </div>
   );
 }

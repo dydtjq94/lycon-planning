@@ -1,16 +1,37 @@
 .container {
-  min-height: 100vh;
-  background: #f8f9fa;
-  padding: 24px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
 }
 
-.loading,
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e5e5;
+  border-top-color: #1d1d1f;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .empty {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 200px;
-  color: #868e96;
+  color: #86868b;
   font-size: 14px;
 }
 
@@ -18,31 +39,27 @@
 .header {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
   margin-bottom: 24px;
-  padding: 20px 24px;
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #e9ecef;
 }
 
 .backButton {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 14px;
-  font-size: 13px;
-  color: #495057;
-  background: transparent;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: white;
+  border: none;
+  border-radius: 10px;
+  color: #86868b;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .backButton:hover {
-  border-color: #adb5bd;
-  color: #212529;
+  background: #f0f0f0;
+  color: #1d1d1f;
 }
 
 .headerInfo {
@@ -50,185 +67,222 @@
 }
 
 .userName {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 600;
-  color: #212529;
+  color: #1d1d1f;
   margin: 0;
   letter-spacing: -0.3px;
 }
 
 .userMeta {
-  font-size: 14px;
-  font-weight: 400;
-  color: #868e96;
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #86868b;
+}
+
+.userMeta span:not(:last-child)::after {
+  content: "·";
   margin-left: 8px;
 }
 
-.userSubInfo {
+.chatButton {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 4px;
-  font-size: 13px;
-  color: #868e96;
-}
-
-.bookingBadge {
-  padding: 3px 8px;
-  background: #d3f9d8;
-  color: #2b8a3e;
-  border-radius: 4px;
-  font-size: 12px;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
   font-weight: 500;
-}
-
-.headerButtons {
-  display: flex;
-  gap: 8px;
-}
-
-.editButton {
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #495057;
-  background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.editButton:hover {
-  border-color: #adb5bd;
-  color: #212529;
-}
-
-.chatButton {
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #fff;
-  background: #228be6;
+  color: white;
+  background: #007aff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .chatButton:hover {
-  background: #1c7ed6;
+  background: #0066d6;
 }
 
-/* 메인 탭 */
-.mainTabs {
+/* 탭 */
+.tabs {
   display: flex;
-  gap: 2px;
-  margin-bottom: 20px;
-  padding: 3px;
-  background: #e9ecef;
-  border-radius: 8px;
+  gap: 4px;
+  margin-bottom: 24px;
+  padding: 4px;
+  background: white;
+  border-radius: 12px;
   width: fit-content;
 }
 
-.mainTab {
-  padding: 8px 20px;
-  font-size: 13px;
+.tab {
+  padding: 10px 20px;
+  font-size: 14px;
   font-weight: 500;
-  color: #868e96;
+  color: #86868b;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
 }
 
-.mainTab:hover {
-  color: #495057;
+.tab:hover {
+  color: #1d1d1f;
 }
 
-.mainTab.active {
-  color: #212529;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+.tab.active {
+  color: #1d1d1f;
+  background: #f0f0f0;
 }
 
-/* 메인 컨텐츠 2단 */
-.mainContent {
+/* 개요 탭 */
+.overviewContent {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.overviewGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 20px;
 }
 
-@media (max-width: 900px) {
-  .mainContent {
+@media (max-width: 768px) {
+  .overviewGrid {
     grid-template-columns: 1fr;
   }
 }
 
-.column {
-  background: #fff;
+.card {
+  padding: 20px;
+  background: #f9f9f9;
   border-radius: 12px;
-  padding: 24px;
-  border: 1px solid #e9ecef;
 }
 
-.columnTitle {
-  font-size: 11px;
-  font-weight: 600;
-  color: #868e96;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin: 0 0 16px 0;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f1f3f5;
-}
-
-.emptySection {
-  padding: 48px 20px;
-  text-align: center;
-  color: #adb5bd;
+.cardTitle {
   font-size: 13px;
+  font-weight: 600;
+  color: #86868b;
+  margin: 0 0 16px 0;
+}
+
+.infoList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.infoItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.infoLabel {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.infoValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.emptyCard {
+  padding: 24px;
+  text-align: center;
+  color: #a1a1a6;
+  font-size: 13px;
+}
+
+/* 상담전 확인 탭 */
+.prepContent {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.prepGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 900px) {
+  .prepGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.prepColumn {
+  min-width: 0;
+}
+
+.prepColumnTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 /* 온보딩 설문 */
 .surveyList {
   display: flex;
   flex-direction: column;
+  gap: 20px;
 }
 
-.surveyItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 12px 0;
-  border-bottom: 1px solid #f8f9fa;
+.surveyQuestion {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f5f5f7;
 }
 
-.surveyItem:first-child {
-  padding-top: 0;
-}
-
-.surveyItem:last-child {
+.surveyQuestion:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
 
-.surveyQuestion {
-  font-size: 12px;
-  color: #868e96;
-  flex-shrink: 0;
-  min-width: 72px;
+.surveyQuestionLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 10px;
 }
 
-.surveyAnswer {
+.surveyOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.surveyOption {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
   font-size: 13px;
-  color: #212529;
-  text-align: right;
-  flex: 1;
-  line-height: 1.5;
+  color: #a1a1a6;
+  background: #f5f5f7;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.surveyOption.selected {
+  color: #1d1d1f;
+  background: #e8f4ff;
   font-weight: 500;
+}
+
+.checkIcon {
+  color: #007aff;
+  flex-shrink: 0;
 }
 
 /* 입력해두기 */
@@ -240,7 +294,7 @@
 
 .prepSection {
   padding-bottom: 16px;
-  border-bottom: 1px solid #f1f3f5;
+  border-bottom: 1px solid #f5f5f7;
 }
 
 .prepSection:last-child {
@@ -249,21 +303,10 @@
 }
 
 .prepSectionTitle {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: #228be6;
+  color: #007aff;
   margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.prepSectionTitle::before {
-  content: "";
-  width: 3px;
-  height: 12px;
-  background: #228be6;
-  border-radius: 2px;
 }
 
 .prepItem {
@@ -274,122 +317,33 @@
 }
 
 .prepLabel {
-  font-size: 12px;
-  color: #868e96;
+  font-size: 13px;
+  color: #86868b;
 }
 
 .prepValue {
-  font-size: 13px;
-  color: #212529;
-  font-weight: 500;
-}
-
-/* 재무 관리 */
-.financeContent {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid #e9ecef;
-}
-
-.financeTabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f1f3f5;
-}
-
-.financeTab {
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #868e96;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.financeTab:hover {
-  color: #495057;
-  background: #f8f9fa;
-}
-
-.financeTab.active {
-  color: #fff;
-  background: #212529;
-}
-
-.financeSection {
-  min-height: 200px;
-}
-
-.financeSubTitle {
-  font-size: 12px;
-  font-weight: 600;
-  color: #495057;
-  margin: 0 0 12px 0;
-  padding-top: 16px;
-}
-
-.financeSubTitle:first-child {
-  padding-top: 0;
-}
-
-.financeGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.financeCard {
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #f1f3f5;
-}
-
-.financeCardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.financeCardType {
-  font-size: 10px;
-  font-weight: 600;
-  color: #868e96;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.financeCardOwner {
-  font-size: 10px;
-  color: #868e96;
-  padding: 2px 6px;
-  background: #e9ecef;
-  border-radius: 3px;
-}
-
-.financeCardRate {
-  font-size: 11px;
-  color: #fa5252;
-  font-weight: 600;
-}
-
-.financeCardTitle {
   font-size: 14px;
-  font-weight: 600;
-  color: #212529;
-  margin-bottom: 4px;
+  color: #1d1d1f;
+  font-weight: 500;
 }
 
-.financeCardAmount {
-  font-size: 13px;
-  color: #495057;
-  font-weight: 500;
+.emptySection {
+  padding: 48px 20px;
+  text-align: center;
+  color: #a1a1a6;
+  font-size: 14px;
+}
+
+/* 재무 입력 탭 */
+.financeContent {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+/* 상담 노트 탭 */
+.notesContent {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
 }

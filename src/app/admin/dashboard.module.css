@@ -1,0 +1,407 @@
+/* Dashboard Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e5e5;
+  border-top-color: #1d1d1f;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -0.3px;
+}
+
+.settingsButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #86868b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.settingsButton:hover {
+  background: #f0f0f0;
+  color: #1d1d1f;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.statCard {
+  background: white;
+  padding: 20px 24px;
+  border-radius: 16px;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: #86868b;
+  margin-bottom: 8px;
+}
+
+.statValue {
+  font-size: 32px;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -1px;
+}
+
+.statUnit {
+  font-size: 16px;
+  font-weight: 400;
+  color: #86868b;
+  margin-left: 2px;
+}
+
+/* Main Grid */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* Section */
+.section {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 52px;
+  padding: 0 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.sectionCount {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.calendarButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #86868b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.calendarButton:hover {
+  background: #f0f0f0;
+  color: #1d1d1f;
+}
+
+/* Customer List */
+.customerList {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.customerItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.customerItem:last-child {
+  border-bottom: none;
+}
+
+.customerItem:hover {
+  background: #fafafa;
+}
+
+.customerAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: #1d1d1f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.customerInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.customerName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.customerAge {
+  font-size: 13px;
+  font-weight: 400;
+  color: #86868b;
+}
+
+.customerMeta {
+  font-size: 12px;
+  color: #86868b;
+  margin-top: 1px;
+}
+
+.customerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #86868b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.chatButton:hover {
+  background: #f0f0f0;
+  color: #1d1d1f;
+}
+
+.chatBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ff3b30;
+  color: white;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chevron {
+  color: #d1d1d6;
+  flex-shrink: 0;
+}
+
+.viewAllButton {
+  width: 100%;
+  padding: 14px;
+  background: none;
+  border: none;
+  border-top: 1px solid #f0f0f0;
+  color: #007aff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.viewAllButton:hover {
+  background: #fafafa;
+}
+
+/* Schedule List */
+.scheduleList {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.scheduleItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.scheduleItem:last-child {
+  border-bottom: none;
+}
+
+.scheduleItem:hover {
+  background: #fafafa;
+}
+
+.scheduleToday {
+  background: #fafafa;
+}
+
+.scheduleTime {
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.scheduleDate {
+  font-size: 11px;
+  font-weight: 500;
+  color: #86868b;
+  margin-bottom: 2px;
+}
+
+.scheduleToday .scheduleDate {
+  color: #007aff;
+}
+
+.scheduleHour {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.scheduleDivider {
+  width: 1px;
+  height: 32px;
+  background: #e5e5e5;
+}
+
+.scheduleInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.scheduleName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.scheduleMeta {
+  font-size: 12px;
+  color: #86868b;
+  margin-top: 1px;
+}
+
+.scheduleStatus {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.scheduleStatus.confirmed {
+  background: #f0f0f0;
+  color: #1d1d1f;
+}
+
+.scheduleStatus.pending {
+  background: #fff8e6;
+  color: #b45309;
+}
+
+/* Empty State */
+.empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: #86868b;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .container {
+    padding: 20px;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .mainGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 640px) {
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .statValue {
+    font-size: 24px;
+  }
+}
