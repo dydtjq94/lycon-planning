@@ -92,7 +92,7 @@ const CHECKUP_ITEMS = [
     diagnosis: "부채비율, 이자부담률, 상환 능력",
   },
   {
-    category: "미래 이벤트",
+    category: "이벤트",
     items: "생애주기 이벤트 설계",
     diagnosis: "결혼/출산/교육/의료 필요자금, 현금흐름 영향",
   },
@@ -112,7 +112,7 @@ const CHECKUP_ITEMS = [
     diagnosis: "세제혜택 활용도, 노후소득 보완 수준",
   },
   {
-    category: "은퇴 시뮬레이션",
+    category: "은퇴",
     items: "100세 현금흐름 시뮬레이션",
     diagnosis: "은퇴 적정 시기, 자산수명, 고갈 시점",
   },

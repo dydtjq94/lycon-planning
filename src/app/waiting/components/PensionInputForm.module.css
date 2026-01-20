@@ -235,15 +235,14 @@
 
 .fieldRow {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 
 .fieldLabel {
   font-size: 13px;
   font-weight: 500;
   color: #6b7280;
-  padding-top: 10px;
   white-space: nowrap;
 }
 

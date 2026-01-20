@@ -410,7 +410,7 @@ const CHECKUP_ITEMS = [
     diagnosis: "부채비율, 이자부담률, 상환 능력",
   },
   {
-    category: "미래 이벤트",
+    category: "이벤트",
     items: "생애주기 이벤트 설계",
     diagnosis: "결혼/출산/교육/의료 필요자금, 현금흐름 영향",
   },
@@ -430,7 +430,7 @@ const CHECKUP_ITEMS = [
     diagnosis: "세제혜택 활용도, 노후소득 보완 수준",
   },
   {
-    category: "은퇴 시뮬레이션",
+    category: "은퇴",
     items: "100세 현금흐름 시뮬레이션",
     diagnosis: "은퇴 적정 시기, 자산수명, 고갈 시점",
   },
@@ -859,11 +859,13 @@ export function SimpleOnboarding({
     }
   };
 
-
   const goToStep = (nextStep: Step) => {
     // 현재 스텝 완료 트래킹
     const currentInfo = getStepInfo(step);
-    OnboardingEvents.onboardingStepCompleted(currentInfo.step, currentInfo.name);
+    OnboardingEvents.onboardingStepCompleted(
+      currentInfo.step,
+      currentInfo.name,
+    );
 
     setIsAnimating(true);
     setTimeout(() => {
@@ -1365,8 +1367,8 @@ export function SimpleOnboarding({
     {
       // transition2: Part 2 완료 → Part 3 시작
       badge: "다음",
-      title: "생각보다 많은 분들이\n비슷한 고민을 해요",
-      desc: "현실적인 은퇴 진단을 위해\n지금 상황을 간단히 여쭤볼게요.",
+      title: "솔직하게 답해주셔서\n감사해요",
+      desc: "이제 현재 상황을\n간단히 볼게요.",
     },
     {
       // transition3: Part 3 완료 → Part 4 시작
@@ -1810,8 +1812,16 @@ export function SimpleOnboarding({
                   }}
                   disabled={!hasSlots}
                 >
-                  <span className={`${styles.dateWeekday} ${dayOfWeek === 0 ? styles.sunday : ""} ${dayOfWeek === 6 ? styles.saturday : ""}`}>{weekday}</span>
-                  <span className={`${styles.dateDay} ${dayOfWeek === 0 ? styles.sunday : ""} ${dayOfWeek === 6 ? styles.saturday : ""}`}>{day}</span>
+                  <span
+                    className={`${styles.dateWeekday} ${dayOfWeek === 0 ? styles.sunday : ""} ${dayOfWeek === 6 ? styles.saturday : ""}`}
+                  >
+                    {weekday}
+                  </span>
+                  <span
+                    className={`${styles.dateDay} ${dayOfWeek === 0 ? styles.sunday : ""} ${dayOfWeek === 6 ? styles.saturday : ""}`}
+                  >
+                    {day}
+                  </span>
                 </button>
               );
             })}
@@ -1852,7 +1862,7 @@ export function SimpleOnboarding({
             onClick={handleNext}
             disabled={!isBookingComplete}
           >
-            예약 완료
+            예약 신청
           </button>
         </div>
       </div>

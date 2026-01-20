@@ -29,6 +29,11 @@ const LIVING_EXPENSE_CATEGORIES = [
     label: "유흥/여가비",
     description: "술자리, 카페, 영화, 취미활동 등"
   },
+  {
+    key: "other",
+    label: "기타 비용",
+    description: "통신비, 의료비, 보험료, 교육비 등"
+  },
 ] as const;
 
 export interface ExpenseFormData {
@@ -38,6 +43,7 @@ export interface ExpenseFormData {
     transport?: number;
     shopping?: number;
     leisure?: number;
+    other?: number;
   };
   fixedExpenses: Array<{ type: string; title: string; amount: number; frequency: "monthly" | "yearly" }>;
   variableExpenses: Array<{ type: string; title: string; amount: number; frequency: "monthly" | "yearly" }>;
@@ -91,6 +97,7 @@ export function ExpenseInputForm({
     transport: initialData?.livingExpenseDetails?.transport ?? null,
     shopping: initialData?.livingExpenseDetails?.shopping ?? null,
     leisure: initialData?.livingExpenseDetails?.leisure ?? null,
+    other: initialData?.livingExpenseDetails?.other ?? null,
   }));
   const [saving, setSaving] = useState(false);
 
@@ -161,6 +168,7 @@ export function ExpenseInputForm({
           transport: expenses.transport ?? undefined,
           shopping: expenses.shopping ?? undefined,
           leisure: expenses.leisure ?? undefined,
+          other: expenses.other ?? undefined,
         },
         fixedExpenses: [],
         variableExpenses: [],

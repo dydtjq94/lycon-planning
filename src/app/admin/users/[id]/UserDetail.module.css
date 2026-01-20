@@ -1,0 +1,206 @@
+.container {
+  min-height: 100vh;
+  background: #f8f9fa;
+  padding: 24px;
+}
+
+.loading,
+.empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #666;
+  font-size: 14px;
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #666;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.backButton:hover {
+  background: #eee;
+}
+
+.headerInfo {
+  flex: 1;
+}
+
+.userName {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111;
+  margin: 0;
+}
+
+.userMeta {
+  font-size: 14px;
+  font-weight: 400;
+  color: #666;
+  margin-left: 8px;
+}
+
+.userSubInfo {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #888;
+}
+
+.bookingBadge {
+  padding: 2px 8px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.chatButton {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: #111;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.chatButton:hover {
+  background: #333;
+}
+
+/* 메인 컨텐츠 2단 */
+.mainContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .mainContent {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.columnTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.emptySection {
+  padding: 40px 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+/* 온보딩 설문 */
+.surveyList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.surveyItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.surveyItem:last-child {
+  border-bottom: none;
+}
+
+.surveyQuestion {
+  font-size: 13px;
+  color: #888;
+  flex-shrink: 0;
+  min-width: 90px;
+}
+
+.surveyAnswer {
+  font-size: 14px;
+  color: #333;
+  text-align: right;
+  flex: 1;
+  line-height: 1.4;
+}
+
+/* 입력해두기 */
+.prepList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.prepSection {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.prepSection:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.prepSectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.prepItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.prepLabel {
+  font-size: 13px;
+  color: #888;
+}
+
+.prepValue {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
