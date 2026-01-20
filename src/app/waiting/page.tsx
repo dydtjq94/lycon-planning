@@ -21,6 +21,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { ChatRoom, ProgramDetailView, Toast, TipModal, MessageNotificationToast } from "./components";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
+import { confirmUserBooking } from "@/lib/services/bookingService";
 import { trackPageView } from "@/lib/analytics/mixpanel";
 import type { Message } from "@/lib/services/messageService";
 import styles from "./waiting.module.css";
@@ -173,6 +174,13 @@ function WaitingPageContent() {
       if (!profileData?.phone_number) {
         router.replace("/auth/phone-verify");
         return;
+      }
+
+      // 전화번호가 있으면 pending 예약을 confirmed로 변경 (안전장치)
+      try {
+        await confirmUserBooking();
+      } catch {
+        // 예약이 없거나 이미 confirmed인 경우 무시
       }
 
       const PIN_TIMEOUT_MINUTES = 60;

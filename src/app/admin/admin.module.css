@@ -1,14 +1,14 @@
 /* Admin Layout */
 .layout {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: #f8f9fa;
 }
 
 .header {
-  background: #1a1a1a;
+  background: #212529;
   color: white;
   padding: 0 24px;
-  height: 56px;
+  height: 52px;
   display: flex;
   align-items: center;
 }
@@ -23,8 +23,8 @@
 }
 
 .logo {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
@@ -35,24 +35,24 @@
 }
 
 .expertName {
-  font-size: 14px;
-  color: #a3a3a3;
+  font-size: 13px;
+  color: #adb5bd;
 }
 
 .logoutButton {
   padding: 6px 12px;
   background: transparent;
-  border: 1px solid #525252;
-  border-radius: 6px;
-  color: #a3a3a3;
-  font-size: 13px;
+  border: 1px solid #495057;
+  border-radius: 5px;
+  color: #adb5bd;
+  font-size: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .logoutButton:hover {
-  border-color: #737373;
-  color: #e5e5e5;
+  border-color: #868e96;
+  color: #f8f9fa;
 }
 
 .main {
@@ -66,16 +66,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
+  background: #f8f9fa;
 }
 
 .spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e5e5e5;
-  border-top-color: #007aff;
+  width: 28px;
+  height: 28px;
+  border: 2px solid #e9ecef;
+  border-top-color: #228be6;
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.7s linear infinite;
 }
 
 @keyframes spin {
@@ -90,94 +90,94 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
+  background: #f8f9fa;
   padding: 24px;
 }
 
 .loginCard {
   width: 100%;
-  max-width: 400px;
+  max-width: 380px;
   background: white;
   border-radius: 12px;
-  padding: 40px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  padding: 36px;
+  border: 1px solid #e9ecef;
 }
 
 .loginTitle {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 600;
   text-align: center;
-  margin-bottom: 8px;
-  color: #1a1a1a;
+  margin-bottom: 6px;
+  color: #212529;
 }
 
 .loginSubtitle {
-  font-size: 14px;
-  color: #737373;
+  font-size: 13px;
+  color: #868e96;
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .loginForm {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .inputLabel {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #525252;
+  color: #495057;
 }
 
 .input {
-  padding: 12px 14px;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  font-size: 15px;
-  transition: border-color 0.2s;
+  padding: 11px 13px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.15s;
 }
 
 .input:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: #228be6;
 }
 
 .loginButton {
-  margin-top: 8px;
-  padding: 14px;
-  background: #007aff;
+  margin-top: 6px;
+  padding: 12px;
+  background: #228be6;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 15px;
+  border-radius: 6px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.15s;
 }
 
 .loginButton:hover {
-  background: #0066d6;
+  background: #1c7ed6;
 }
 
 .loginButton:disabled {
-  background: #a3a3a3;
+  background: #adb5bd;
   cursor: not-allowed;
 }
 
 .loginError {
-  padding: 12px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #dc2626;
-  font-size: 14px;
+  padding: 10px;
+  background: #fff5f5;
+  border: 1px solid #ffc9c9;
+  border-radius: 6px;
+  color: #e03131;
+  font-size: 13px;
   text-align: center;
 }
 
@@ -185,56 +185,58 @@
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .pageTitle {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a1a;
+  font-size: 22px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0;
 }
 
 .statsRow {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
 .statCard {
   background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: 18px;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
 }
 
 .statLabel {
-  font-size: 13px;
-  color: #737373;
+  font-size: 12px;
+  color: #868e96;
   margin-bottom: 4px;
 }
 
 .statValue {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #212529;
 }
 
 .section {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
   overflow: hidden;
 }
 
 .sectionHeader {
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f3f5;
 }
 
 .sectionTitle {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #212529;
+  margin: 0;
 }
 
 /* User List */
@@ -247,10 +249,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f5f5f5;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f8f9fa;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.15s;
 }
 
 .userItem:last-child {
@@ -258,7 +260,7 @@
 }
 
 .userItem:hover {
-  background: #fafafa;
+  background: #f8f9fa;
 }
 
 .userInfo {
@@ -268,15 +270,15 @@
 }
 
 .userAvatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  background: linear-gradient(135deg, #228be6 0%, #7950f2 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -287,14 +289,14 @@
 }
 
 .userName {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: #212529;
 }
 
 .userMeta {
-  font-size: 13px;
-  color: #737373;
+  font-size: 12px;
+  color: #868e96;
 }
 
 .userActions {
@@ -304,35 +306,37 @@
 }
 
 .unreadBadge {
-  padding: 4px 8px;
-  background: #007aff;
+  padding: 3px 8px;
+  background: #228be6;
   color: white;
-  border-radius: 12px;
-  font-size: 12px;
+  border-radius: 10px;
+  font-size: 11px;
   font-weight: 600;
+  min-width: 20px;
+  text-align: center;
 }
 
 .actionButton {
-  padding: 8px 12px;
-  border: 1px solid #e5e5e5;
-  border-radius: 6px;
+  padding: 7px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
   background: white;
-  font-size: 13px;
-  color: #525252;
+  font-size: 12px;
+  color: #495057;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .actionButton:hover {
-  border-color: #007aff;
-  color: #007aff;
+  border-color: #228be6;
+  color: #228be6;
 }
 
 .emptyState {
-  padding: 48px 20px;
+  padding: 40px 20px;
   text-align: center;
-  color: #737373;
-  font-size: 14px;
+  color: #868e96;
+  font-size: 13px;
 }
 
 /* User Detail Page */
@@ -340,58 +344,60 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .backButton {
-  padding: 8px 12px;
-  border: 1px solid #e5e5e5;
-  border-radius: 6px;
+  padding: 7px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
   background: white;
-  font-size: 14px;
-  color: #525252;
+  font-size: 13px;
+  color: #495057;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .backButton:hover {
-  border-color: #007aff;
-  color: #007aff;
+  border-color: #228be6;
+  color: #228be6;
 }
 
 .userDetailTitle {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a1a;
+  font-size: 22px;
+  font-weight: 600;
+  color: #212529;
 }
 
 .tabsContainer {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 6px;
+  margin-bottom: 20px;
 }
 
 .tab {
-  padding: 10px 20px;
+  padding: 9px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   background: white;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: #737373;
+  color: #868e96;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
+  border: 1px solid #e9ecef;
 }
 
 .tab:hover {
-  color: #1a1a1a;
+  color: #495057;
 }
 
 .tabActive {
-  background: #007aff;
+  background: #228be6;
+  border-color: #228be6;
   color: white;
 }
 
@@ -402,31 +408,31 @@
 /* Data Section */
 .dataGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  padding: 18px;
 }
 
 .dataCard {
-  background: #fafafa;
+  background: #f8f9fa;
   border-radius: 8px;
-  padding: 16px;
+  padding: 14px;
 }
 
 .dataCardTitle {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
-  color: #737373;
-  margin-bottom: 12px;
+  color: #868e96;
+  margin-bottom: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.5px;
 }
 
 .dataItem {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #e5e5e5;
+  padding: 7px 0;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .dataItem:last-child {
@@ -434,108 +440,109 @@
 }
 
 .dataLabel {
-  font-size: 14px;
-  color: #525252;
+  font-size: 13px;
+  color: #495057;
 }
 
 .dataValue {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: #212529;
 }
 
 /* Chat */
 .chatContainer {
-  height: calc(100vh - 56px - 48px);
+  height: calc(100vh - 52px - 48px);
   display: flex;
   flex-direction: column;
   background: white;
-  border-radius: 12px;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
   overflow: hidden;
 }
 
 .chatHeader {
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f3f5;
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
 .chatUserName {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #212529;
 }
 
 .chatMessages {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .chatMessage {
   max-width: 70%;
   padding: 10px 14px;
   border-radius: 12px;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
 .chatMessageUser {
   align-self: flex-start;
-  background: #f0f0f0;
-  color: #1a1a1a;
+  background: #f1f3f5;
+  color: #212529;
 }
 
 .chatMessageExpert {
   align-self: flex-end;
-  background: #007aff;
+  background: #228be6;
   color: white;
 }
 
 .chatInputArea {
-  padding: 16px 20px;
-  border-top: 1px solid #f0f0f0;
+  padding: 14px 18px;
+  border-top: 1px solid #f1f3f5;
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .chatInput {
   flex: 1;
-  padding: 12px 14px;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 11px 13px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 13px;
   resize: none;
 }
 
 .chatInput:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: #228be6;
 }
 
 .chatSendButton {
-  padding: 12px 20px;
-  background: #007aff;
+  padding: 11px 18px;
+  background: #228be6;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.15s;
 }
 
 .chatSendButton:hover {
-  background: #0066d6;
+  background: #1c7ed6;
 }
 
 .chatSendButton:disabled {
-  background: #a3a3a3;
+  background: #adb5bd;
   cursor: not-allowed;
 }
 
@@ -544,21 +551,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 18px;
   background: white;
-  border: 1px solid #e5e5e5;
-  border-radius: 12px;
-  font-size: 15px;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 600;
-  color: #007aff;
+  color: #228be6;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .scheduleButton:hover {
-  border-color: #007aff;
-  background: #f0f7ff;
+  border-color: #228be6;
+  background: #e7f5ff;
 }
 
 /* Booking List */
@@ -571,8 +577,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f5f5f5;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f8f9fa;
 }
 
 .bookingItem:last-child {
@@ -582,68 +588,68 @@
 .bookingInfo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .bookingDate {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: #212529;
 }
 
 .bookingUser {
-  font-size: 13px;
-  color: #737373;
+  font-size: 12px;
+  color: #868e96;
 }
 
 .bookingStatus {
   padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
+  border-radius: 4px;
+  font-size: 11px;
   font-weight: 500;
 }
 
 .bookingStatus.confirmed {
-  background: #e6f4ea;
-  color: #1e7e34;
+  background: #d3f9d8;
+  color: #2b8a3e;
 }
 
 .bookingStatus.pending {
-  background: #fff3cd;
-  color: #856404;
+  background: #fff3bf;
+  color: #e67700;
 }
 
 .bookingStatus.cancelled {
-  background: #fef2f2;
-  color: #dc2626;
+  background: #ffe3e3;
+  color: #e03131;
 }
 
 .bookingStatus.completed {
-  background: #f0f0f0;
-  color: #737373;
+  background: #e9ecef;
+  color: #868e96;
 }
 
 /* Chat Attachments */
 .chatAttachments {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .chatImageLink {
   display: block;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
 .chatImage {
-  max-width: 200px;
-  max-height: 200px;
-  border-radius: 8px;
+  max-width: 180px;
+  max-height: 180px;
+  border-radius: 6px;
   object-fit: cover;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.15s;
 }
 
 .chatImage:hover {
@@ -652,8 +658,8 @@
 
 /* Section Header with Toggle */
 .sectionHeaderWithToggle {
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f3f5;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -661,8 +667,8 @@
 
 .viewToggle {
   display: flex;
-  background: #f5f5f5;
-  border-radius: 6px;
+  background: #f1f3f5;
+  border-radius: 5px;
   padding: 2px;
 }
 
@@ -670,86 +676,86 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 28px;
+  width: 30px;
+  height: 26px;
   border: none;
   background: transparent;
-  border-radius: 4px;
-  color: #737373;
+  border-radius: 3px;
+  color: #868e96;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .toggleButton:hover {
-  color: #1a1a1a;
+  color: #495057;
 }
 
 .toggleActive {
   background: white;
-  color: #007aff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  color: #228be6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 /* Calendar View */
 .calendarView {
-  padding: 16px 20px;
+  padding: 16px 18px;
 }
 
 .calendarHeader {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
 .calendarNavButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid #e5e5e5;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #dee2e6;
   background: white;
-  border-radius: 6px;
-  color: #525252;
+  border-radius: 5px;
+  color: #495057;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .calendarNavButton:hover {
-  border-color: #007aff;
-  color: #007aff;
+  border-color: #228be6;
+  color: #228be6;
 }
 
 .calendarMonthTitle {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
-  min-width: 120px;
+  color: #212529;
+  min-width: 110px;
   text-align: center;
 }
 
 .calendarWeekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .calendarWeekday {
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  color: #737373;
-  padding: 8px 0;
+  color: #868e96;
+  padding: 6px 0;
 }
 
 .calendarWeekday.sunday {
-  color: #dc2626;
+  color: #e03131;
 }
 
 .calendarWeekday.saturday {
-  color: #2563eb;
+  color: #1c7ed6;
 }
 
 .calendarGrid {
@@ -759,41 +765,41 @@
 }
 
 .calendarDayEmpty {
-  height: 80px;
-  background: #fafafa;
+  height: 72px;
+  background: #f8f9fa;
 }
 
 .calendarDay {
-  height: 80px;
-  padding: 6px;
-  background: #fafafa;
+  height: 72px;
+  padding: 5px;
+  background: #f8f9fa;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   overflow: hidden;
 }
 
 .calendarDay.sunday .calendarDayNumber {
-  color: #dc2626;
+  color: #e03131;
 }
 
 .calendarDay.saturday .calendarDayNumber {
-  color: #2563eb;
+  color: #1c7ed6;
 }
 
 .calendarDayToday {
-  background: #e8f4fd;
+  background: #e7f5ff;
 }
 
 .calendarDayToday .calendarDayNumber {
-  color: #007aff;
+  color: #228be6;
   font-weight: 700;
 }
 
 .calendarDayNumber {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: #212529;
 }
 
 .calendarDayBookings {
@@ -807,23 +813,23 @@
 .calendarBookingDot {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 6px;
-  border-radius: 4px;
-  font-size: 11px;
+  gap: 3px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 10px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .calendarBookingDot.confirmed {
-  background: #d4edda;
-  color: #155724;
+  background: #d3f9d8;
+  color: #2b8a3e;
 }
 
 .calendarBookingDot.pending {
-  background: #fff3cd;
-  color: #856404;
+  background: #fff3bf;
+  color: #e67700;
 }
 
 .calendarBookingTime {

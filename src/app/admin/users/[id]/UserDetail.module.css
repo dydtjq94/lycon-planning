@@ -1,7 +1,7 @@
 .container {
   min-height: 100vh;
-  background: #f5f5f7;
-  padding: 32px;
+  background: #f8f9fa;
+  padding: 24px 32px;
 }
 
 .loading,
@@ -10,7 +10,7 @@
   justify-content: center;
   align-items: center;
   height: 200px;
-  color: #86868b;
+  color: #868e96;
   font-size: 14px;
 }
 
@@ -18,12 +18,12 @@
 .header {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
   margin-bottom: 24px;
   padding: 20px 24px;
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
 }
 
 .backButton {
@@ -32,16 +32,17 @@
   gap: 4px;
   padding: 8px 14px;
   font-size: 13px;
-  color: #666;
+  color: #495057;
   background: transparent;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: all 0.15s;
 }
 
 .backButton:hover {
-  border-color: #ccc;
+  border-color: #adb5bd;
+  color: #212529;
 }
 
 .headerInfo {
@@ -49,113 +50,114 @@
 }
 
 .userName {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: #212529;
   margin: 0;
   letter-spacing: -0.3px;
 }
 
 .userMeta {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 400;
-  color: #86868b;
-  margin-left: 10px;
+  color: #868e96;
+  margin-left: 8px;
 }
 
 .userSubInfo {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 6px;
+  gap: 12px;
+  margin-top: 4px;
   font-size: 13px;
-  color: #86868b;
+  color: #868e96;
 }
 
 .bookingBadge {
-  padding: 4px 10px;
-  background: #f0fdf4;
-  color: #16a34a;
-  border-radius: 6px;
+  padding: 3px 8px;
+  background: #d3f9d8;
+  color: #2b8a3e;
+  border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
 }
 
 .headerButtons {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .editButton {
-  padding: 10px 24px;
-  font-size: 14px;
+  padding: 10px 20px;
+  font-size: 13px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: #495057;
   background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-
-.editButton:hover {
-  border-color: #ccc;
-}
-
-.chatButton {
-  padding: 10px 24px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #fff;
-  background: #1d1d1f;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.chatButton:hover {
-  background: #424245;
-}
-
-/* 메인 탭 */
-.mainTabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 20px;
-  padding: 4px;
-  background: #e8e8ed;
-  border-radius: 10px;
-  width: fit-content;
-}
-
-.mainTab {
-  padding: 10px 24px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #666;
-  background: transparent;
-  border: none;
+  border: 1px solid #dee2e6;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
 }
 
+.editButton:hover {
+  border-color: #adb5bd;
+  color: #212529;
+}
+
+.chatButton {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  background: #228be6;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.chatButton:hover {
+  background: #1c7ed6;
+}
+
+/* 메인 탭 */
+.mainTabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 20px;
+  padding: 3px;
+  background: #e9ecef;
+  border-radius: 8px;
+  width: fit-content;
+}
+
+.mainTab {
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #868e96;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
 .mainTab:hover {
-  color: #333;
+  color: #495057;
 }
 
 .mainTab.active {
-  color: #1d1d1f;
+  color: #212529;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 /* 메인 컨텐츠 2단 */
 .mainContent {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 20px;
 }
 
 @media (max-width: 900px) {
@@ -166,25 +168,27 @@
 
 .column {
   background: #fff;
-  border-radius: 16px;
-  padding: 28px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e9ecef;
 }
 
 .columnTitle {
   font-size: 11px;
   font-weight: 600;
-  color: #86868b;
+  color: #868e96;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0 0 20px 0;
+  letter-spacing: 0.8px;
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f3f5;
 }
 
 .emptySection {
-  padding: 60px 20px;
+  padding: 48px 20px;
   text-align: center;
-  color: #b4b4b4;
-  font-size: 14px;
+  color: #adb5bd;
+  font-size: 13px;
 }
 
 /* 온보딩 설문 */
@@ -197,9 +201,9 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 20px;
-  padding: 14px 0;
-  border-bottom: 1px solid #f5f5f7;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f8f9fa;
 }
 
 .surveyItem:first-child {
@@ -212,31 +216,31 @@
 }
 
 .surveyQuestion {
-  font-size: 13px;
-  color: #86868b;
+  font-size: 12px;
+  color: #868e96;
   flex-shrink: 0;
-  min-width: 80px;
+  min-width: 72px;
 }
 
 .surveyAnswer {
-  font-size: 14px;
-  color: #1d1d1f;
+  font-size: 13px;
+  color: #212529;
   text-align: right;
   flex: 1;
   line-height: 1.5;
-  font-weight: 450;
+  font-weight: 500;
 }
 
 /* 입력해두기 */
 .prepList {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .prepSection {
-  padding-bottom: 20px;
-  border-bottom: 1px solid #f5f5f7;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f3f5;
 }
 
 .prepSection:last-child {
@@ -247,11 +251,19 @@
 .prepSectionTitle {
   font-size: 12px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: #228be6;
   margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #1d1d1f;
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prepSectionTitle::before {
+  content: "";
+  width: 3px;
+  height: 12px;
+  background: #228be6;
+  border-radius: 2px;
 }
 
 .prepItem {
@@ -262,37 +274,37 @@
 }
 
 .prepLabel {
-  font-size: 13px;
-  color: #86868b;
+  font-size: 12px;
+  color: #868e96;
 }
 
 .prepValue {
-  font-size: 14px;
-  color: #1d1d1f;
+  font-size: 13px;
+  color: #212529;
   font-weight: 500;
 }
 
 /* 재무 관리 */
 .financeContent {
   background: #fff;
-  border-radius: 16px;
-  padding: 28px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e9ecef;
 }
 
 .financeTabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid #e8e8ed;
+  gap: 4px;
+  margin-bottom: 20px;
   padding-bottom: 16px;
+  border-bottom: 1px solid #f1f3f5;
 }
 
 .financeTab {
-  padding: 8px 20px;
-  font-size: 14px;
+  padding: 8px 16px;
+  font-size: 13px;
   font-weight: 500;
-  color: #86868b;
+  color: #868e96;
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -301,13 +313,13 @@
 }
 
 .financeTab:hover {
-  color: #1d1d1f;
-  background: #f5f5f7;
+  color: #495057;
+  background: #f8f9fa;
 }
 
 .financeTab.active {
   color: #fff;
-  background: #1d1d1f;
+  background: #212529;
 }
 
 .financeSection {
@@ -315,11 +327,11 @@
 }
 
 .financeSubTitle {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: #1d1d1f;
-  margin: 0 0 16px 0;
-  padding-top: 20px;
+  color: #495057;
+  margin: 0 0 12px 0;
+  padding-top: 16px;
 }
 
 .financeSubTitle:first-child {
@@ -328,56 +340,56 @@
 
 .financeGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .financeCard {
-  padding: 20px;
-  background: #fafafa;
-  border-radius: 12px;
-  border: 1px solid #f0f0f0;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #f1f3f5;
 }
 
 .financeCardHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .financeCardType {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: #86868b;
+  color: #868e96;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
 .financeCardOwner {
-  font-size: 11px;
-  color: #86868b;
-  padding: 2px 8px;
-  background: #e8e8ed;
-  border-radius: 4px;
+  font-size: 10px;
+  color: #868e96;
+  padding: 2px 6px;
+  background: #e9ecef;
+  border-radius: 3px;
 }
 
 .financeCardRate {
-  font-size: 12px;
-  color: #ef4444;
+  font-size: 11px;
+  color: #fa5252;
   font-weight: 600;
 }
 
 .financeCardTitle {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: #212529;
   margin-bottom: 4px;
 }
 
 .financeCardAmount {
-  font-size: 14px;
-  color: #424245;
+  font-size: 13px;
+  color: #495057;
   font-weight: 500;
 }

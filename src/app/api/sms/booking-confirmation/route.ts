@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { sendBookingConfirmedNotification } from '@/lib/services/slackService'
 
 export async function POST() {
   try {
@@ -29,10 +30,10 @@ export async function POST() {
       return NextResponse.json({ error: '확정된 예약이 없습니다' }, { status: 400 })
     }
 
-    // 유저의 전화번호 조회
+    // 유저 정보 조회
     const { data: profile } = await supabase
       .from('profiles')
-      .select('phone_number')
+      .select('phone_number, name, birth_date, gender')
       .eq('id', user.id)
       .single()
 
@@ -74,6 +75,22 @@ export async function POST() {
         error: result.message || '예약 확정 SMS 발송에 실패했습니다',
         detail: result
       }, { status: 500 })
+    }
+
+    // Slack 알림 발송
+    try {
+      const birthYear = profile.birth_date?.split('-')[0]
+      await sendBookingConfirmedNotification({
+        userName: profile.name || '이름 없음',
+        userPhone: profile.phone_number,
+        bookingDate: booking.booking_date,
+        bookingTime: booking.booking_time,
+        userBirthYear: birthYear,
+        userGender: profile.gender || undefined,
+      })
+    } catch (slackError) {
+      console.error('Slack 알림 발송 오류:', slackError)
+      // Slack 실패해도 계속 진행
     }
 
     return NextResponse.json({ success: true, message: '예약 확정 메시지가 발송되었습니다' })
