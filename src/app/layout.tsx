@@ -22,12 +22,12 @@ const gaegu = Gaegu({
 
 export const metadata: Metadata = {
   title: "Lycon | Retirement",
-  description: "전문가와 함께하는 맞춤형 재무 설계 서비스",
+  description: "전문가와 함께하는 맞춤형 은퇴 설계 서비스",
   keywords: ["재무설계", "재무상담", "자산관리", "은퇴설계", "연금"],
   authors: [{ name: "Lycon" }],
   openGraph: {
     title: "Lycon | Retirement",
-    description: "전문가와 함께하는 맞춤형 재무 설계 서비스",
+    description: "전문가와 함께하는 맞춤형 은퇴 설계 서비스",
     type: "website",
     locale: "ko_KR",
   },
@@ -44,9 +44,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${gaegu.variable} antialiased`}
       >
         <QueryProvider>
-          <MixpanelProvider>
-            {children}
-          </MixpanelProvider>
+          <MixpanelProvider>{children}</MixpanelProvider>
         </QueryProvider>
       </body>
     </html>

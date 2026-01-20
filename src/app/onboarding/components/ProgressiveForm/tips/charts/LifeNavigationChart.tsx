@@ -79,7 +79,7 @@ export function LifeNavigationChart({ data }: LifeNavigationChartProps) {
     events.push({ age: 85, label: "요양 대비" });
   }
 
-  // 전 구간 재무 설계 영역
+  // 전 구간 은퇴 설계 영역
   const planningAreas = [
     "부동산",
     "세금",
@@ -128,7 +128,7 @@ export function LifeNavigationChart({ data }: LifeNavigationChartProps) {
         </div>
       </div>
 
-      {/* 전 구간 재무 설계 영역 */}
+      {/* 전 구간 은퇴 설계 영역 */}
       <div className={styles.planningCloud}>
         {planningAreas.map((area, i) => (
           <span key={i} className={styles.planningTag}>
