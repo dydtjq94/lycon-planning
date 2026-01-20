@@ -1781,7 +1781,7 @@ export function SimpleOnboarding({
       <div className={styles.stepContent}>
         <h1 className={styles.title}>검진 일정 예약</h1>
         <p className={styles.subtitle}>
-          손균우 전문가와의 상담 일정을 선택해주세요.
+          손균우 설계사와의 상담 일정을 선택해주세요.
           <br />
           안내되는 재무 정보 입력을 따라해주시면 됩니다.
         </p>

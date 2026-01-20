@@ -179,7 +179,7 @@
   margin: 0;
   text-align: justify;
   white-space: pre-wrap;
-  word-break: break-word;
+  word-break: break-all;
 }
 
 /* 버블과 시간을 나란히 */
