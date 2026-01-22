@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -42,7 +40,6 @@ interface FunnelData {
 }
 
 export default function ReportsPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([]);
   const [funnelData, setFunnelData] = useState<FunnelData>({
@@ -244,7 +241,12 @@ export default function ReportsPage() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>로딩 중...</div>
+        <div className={styles.header}>
+          <h1 className={styles.title}>고객 현황</h1>
+        </div>
+        <div className={styles.loading}>
+          <div className={styles.spinner} />
+        </div>
       </div>
     );
   }
@@ -252,15 +254,12 @@ export default function ReportsPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <button className={styles.backButton} onClick={() => router.back()}>
-          <ChevronLeft size={18} />
-          뒤로
-        </button>
-        <h1 className={styles.title}>리포트</h1>
+        <h1 className={styles.title}>고객 현황</h1>
       </div>
 
-      {/* Summary Stats */}
-      <div className={styles.statsGrid}>
+      <div className={styles.content}>
+        {/* Summary Stats */}
+        <div className={styles.statsGrid}>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>전체 고객</span>
           <span className={styles.statValue}>{totalStats.totalCustomers}</span>
@@ -372,6 +371,7 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

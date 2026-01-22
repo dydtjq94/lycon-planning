@@ -1,0 +1,317 @@
+/* 다크 사이드바 - Dashboard 스타일 */
+.sidebar {
+  width: 220px;
+  height: 100vh;
+  background-color: #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 고객 헤더 */
+.customerHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #2a2a2a;
+  margin-bottom: 8px;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #2a2a2a;
+  border: none;
+  border-radius: 8px;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.backButton:hover {
+  background: #333;
+  color: #fff;
+}
+
+.customerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.customerName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stageBadge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.stageBadge.new {
+  background: rgba(0, 122, 255, 0.2);
+  color: #5ac8fa;
+}
+
+.stageBadge.first_consultation {
+  background: rgba(255, 149, 0, 0.2);
+  color: #ff9f0a;
+}
+
+.stageBadge.report_delivered {
+  background: rgba(52, 199, 89, 0.2);
+  color: #30d158;
+}
+
+.stageBadge.second_consultation {
+  background: rgba(175, 82, 222, 0.2);
+  color: #bf5af2;
+}
+
+.stageBadge.subscription {
+  background: rgba(100, 210, 255, 0.2);
+  color: #64d2ff;
+}
+
+.stageBadge.churned {
+  background: rgba(142, 142, 147, 0.2);
+  color: #8e8e93;
+}
+
+/* 네비게이션 */
+.nav {
+  flex: 1;
+  padding: 0 8px 8px 8px;
+}
+
+.navSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 섹션 라벨 */
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 12px 4px 12px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #888;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.navItem svg {
+  flex-shrink: 0;
+}
+
+.navItem:hover {
+  background-color: #2a2a2a;
+  color: white;
+}
+
+.navItem.active {
+  background-color: #2a2a2a;
+  color: white;
+}
+
+.iconWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.unreadBadge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  margin-left: auto;
+  color: #666;
+  flex-shrink: 0;
+}
+
+/* 구분선 */
+.divider {
+  height: 1px;
+  background-color: #2a2a2a;
+  margin: 8px 12px;
+}
+
+/* 서브메뉴 그룹 */
+.navGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 12px;
+  margin-top: 2px;
+}
+
+.submenuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #777;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.submenuItem svg {
+  flex-shrink: 0;
+}
+
+.submenuItem:hover {
+  background-color: #2a2a2a;
+  color: white;
+}
+
+.submenuItem.active {
+  background-color: #333;
+  color: white;
+}
+
+/* 중첩 서브메뉴 */
+.nestedSubmenu {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 16px;
+  margin-top: 2px;
+}
+
+.nestedItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: none;
+  background: none;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.nestedItem svg {
+  flex-shrink: 0;
+}
+
+.nestedItem:hover {
+  background-color: #2a2a2a;
+  color: #aaa;
+}
+
+.nestedItem.active {
+  background-color: #333;
+  color: white;
+}
+
+/* 푸터 */
+.footer {
+  padding: 8px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.removeButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.removeButton svg {
+  flex-shrink: 0;
+}
+
+.removeButton:hover {
+  background-color: rgba(255, 59, 48, 0.1);
+  color: #ff453a;
+}

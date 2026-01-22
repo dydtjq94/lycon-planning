@@ -1,18 +1,23 @@
 .input {
   width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 12px 14px;
+  font-size: 15px;
   color: #1d1d1f;
   background: #f5f5f7;
   border: 1px solid transparent;
-  border-radius: 8px;
-  transition: all 0.15s;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.input::placeholder {
+  color: #c7c7cc;
 }
 
 .input:focus {
   outline: none;
   background: #fff;
   border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
 .input[type="number"]::-webkit-outer-spin-button,
@@ -23,46 +28,59 @@
 
 .select {
   width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 12px 14px;
+  font-size: 15px;
   color: #1d1d1f;
   background: #f5f5f7;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236e6e73' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
 }
 
 .select:focus {
   outline: none;
-  background: #fff;
+  background-color: #fff;
   border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
 .textarea {
   width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 12px 14px;
+  font-size: 15px;
   color: #1d1d1f;
   background: #f5f5f7;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 10px;
   resize: vertical;
-  min-height: 60px;
+  min-height: 72px;
   font-family: inherit;
-  transition: all 0.15s;
+  transition: all 0.2s;
+  line-height: 1.5;
+}
+
+.textarea::placeholder {
+  color: #c7c7cc;
 }
 
 .textarea:focus {
   outline: none;
   background: #fff;
   border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
 .inputWithUnit {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .inputWithUnit .input {
@@ -70,90 +88,92 @@
 }
 
 .unit {
-  font-size: 13px;
-  color: #6e6e73;
+  font-size: 14px;
+  color: #86868b;
   flex-shrink: 0;
 }
 
 .yearMonth {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .yearMonth .input {
-  width: 80px;
+  width: 90px;
 }
 
 .yearMonth .select {
-  width: 70px;
+  width: 80px;
 }
 
 .checkRow {
   display: flex;
   align-items: center;
-  height: 40px;
+  min-height: 44px;
 }
 
 .checkbox {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 10px;
+  font-size: 15px;
   color: #1d1d1f;
   cursor: pointer;
 }
 
 .checkbox input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   accent-color: #007aff;
+  border-radius: 4px;
 }
 
 .radioGroup {
   display: flex;
-  gap: 16px;
+  gap: 20px;
 }
 
 .radio {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 10px;
+  font-size: 15px;
   color: #1d1d1f;
   cursor: pointer;
 }
 
 .radio input[type="radio"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   accent-color: #007aff;
 }
 
 .buttonGroup {
   display: flex;
-  gap: 4px;
+  gap: 8px;
 }
 
 .toggleBtn {
   flex: 1;
-  padding: 10px 12px;
-  font-size: 13px;
+  padding: 12px 16px;
+  font-size: 14px;
   font-weight: 500;
-  color: #6e6e73;
+  color: #86868b;
   background: #f5f5f7;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
 }
 
 .toggleBtn:hover {
-  background: #e5e5e5;
+  background: #e5e5ea;
 }
 
 .toggleBtn.active {
   color: #007aff;
-  background: rgba(0, 122, 255, 0.1);
-  border-color: #007aff;
+  background: rgba(0, 122, 255, 0.08);
+  border-color: rgba(0, 122, 255, 0.3);
+  font-weight: 600;
 }

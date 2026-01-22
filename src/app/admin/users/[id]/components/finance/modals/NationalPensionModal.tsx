@@ -4,8 +4,16 @@ import {
   createNationalPension,
   updateNationalPension,
 } from "@/lib/services/nationalPensionService";
-import type { NationalPension, Owner } from "@/types/tables";
+import type { NationalPension, Owner, PublicPensionType } from "@/types/tables";
 import styles from "./Modal.module.css";
+
+// 공적연금 유형
+const PENSION_TYPES: { value: PublicPensionType; label: string }[] = [
+  { value: "national", label: "국민연금" },
+  { value: "government", label: "공무원연금" },
+  { value: "military", label: "군인연금" },
+  { value: "private_school", label: "사학연금" },
+];
 
 interface NationalPensionModalProps {
   isOpen: boolean;
@@ -27,6 +35,7 @@ export function NationalPensionModal({
   birthYear,
 }: NationalPensionModalProps) {
   const [owner, setOwner] = useState<Owner>(defaultOwner);
+  const [pensionType, setPensionType] = useState<PublicPensionType>("national");
   const [expectedMonthlyAmount, setExpectedMonthlyAmount] = useState<number>(0);
   const [startAge, setStartAge] = useState(65);
   const [endAge, setEndAge] = useState<number | null>(null);
@@ -37,12 +46,14 @@ export function NationalPensionModal({
     if (isOpen) {
       if (pension) {
         setOwner(pension.owner);
+        setPensionType(pension.pension_type || "national");
         setExpectedMonthlyAmount(pension.expected_monthly_amount);
         setStartAge(pension.start_age);
         setEndAge(pension.end_age);
         setMemo(pension.memo || "");
       } else {
         setOwner(defaultOwner);
+        setPensionType("national");
         setExpectedMonthlyAmount(0);
         setStartAge(65);
         setEndAge(null);
@@ -60,6 +71,7 @@ export function NationalPensionModal({
     setSaving(true);
     try {
       const data = {
+        pension_type: pensionType,
         expected_monthly_amount: expectedMonthlyAmount,
         start_age: startAge,
         end_age: endAge,
@@ -80,7 +92,7 @@ export function NationalPensionModal({
       }
       onSaved();
     } catch (error) {
-      console.error("Failed to save national pension:", error);
+      console.error("Failed to save public pension:", error);
       alert("저장에 실패했습니다");
     } finally {
       setSaving(false);
@@ -89,26 +101,41 @@ export function NationalPensionModal({
 
   return (
     <BaseModal
-      title={pension ? "국민연금 수정" : "국민연금 추가"}
+      title={pension ? "공적연금 수정" : "공적연금 추가"}
       isOpen={isOpen}
       onClose={onClose}
       onSave={handleSave}
       saveLabel={saving ? "저장 중..." : "저장"}
       saveDisabled={saving}
     >
-      <FormField label="대상자" required>
-        <select
-          value={owner}
-          onChange={(e) => setOwner(e.target.value as Owner)}
-          className={styles.select}
-          disabled={!!pension}
-        >
-          <option value="self">본인</option>
-          <option value="spouse">배우자</option>
-        </select>
-      </FormField>
+      <FormRow>
+        <FormField label="대상자" required>
+          <select
+            value={owner}
+            onChange={(e) => setOwner(e.target.value as Owner)}
+            className={styles.select}
+            disabled={!!pension}
+          >
+            <option value="self">본인</option>
+            <option value="spouse">배우자</option>
+          </select>
+        </FormField>
+        <FormField label="연금 유형" required>
+          <select
+            value={pensionType}
+            onChange={(e) => setPensionType(e.target.value as PublicPensionType)}
+            className={styles.select}
+          >
+            {PENSION_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </FormField>
+      </FormRow>
 
-      <FormField label="예상 월 수령액" required hint="국민연금공단 예상연금조회 참고">
+      <FormField label="예상 월 수령액" required hint="해당 연금공단에서 예상연금 조회">
         <div className={styles.inputWithUnit}>
           <input
             type="number"

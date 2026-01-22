@@ -1,0 +1,246 @@
+.container {
+  width: 100%;
+  background: #ffffff;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e5ea;
+  border-top-color: #007aff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Document Header */
+.documentHeader {
+  padding: 24px 32px 20px;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.documentTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1c1c1e;
+}
+
+.documentSubtitle {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #86868b;
+}
+
+/* Document Body - 2 Column Layout */
+.documentBody {
+  display: flex;
+  gap: 32px;
+  padding: 0 32px 40px;
+}
+
+/* Left: Main Content Column */
+.mainColumn {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Right: Sidebar Column */
+.sidebarColumn {
+  width: 280px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  position: sticky;
+  top: 20px;
+  margin-top: 28px;
+}
+
+/* Sticky Panel */
+.stickyPanel {
+  padding: 16px;
+  background: #f9f9fb;
+  border-radius: 12px;
+}
+
+/* Sidebar Tabs */
+.sidebarTabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.sidebarTab {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #86868b;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebarTab:hover {
+  color: #1c1c1e;
+}
+
+.sidebarTab.active {
+  background: #ffffff;
+  color: #1c1c1e;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.tabContent {
+  /* tab content wrapper */
+}
+
+/* Panel Section */
+.panelSection {
+  /* section container */
+}
+
+.panelTitle {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.panelDivider {
+  height: 1px;
+  background: #e5e5ea;
+  margin: 14px 0;
+}
+
+.miniDivider {
+  height: 1px;
+  background: #e5e5ea;
+  margin: 10px 0;
+}
+
+/* Document Section */
+.documentSection {
+  padding: 28px 0;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.documentSection:last-child {
+  border-bottom: none;
+}
+
+.sectionTitle {
+  margin: 0 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+/* Response Content */
+.responseContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.responseItem {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.responseLabel {
+  font-size: 11px;
+  color: #86868b;
+}
+
+.responseLabelBold {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+.responseValue {
+  font-size: 13px;
+  color: #1c1c1e;
+  line-height: 1.4;
+}
+
+.responseValueHighlight {
+  font-size: 14px;
+  font-weight: 600;
+  color: #007aff;
+}
+
+/* Legacy - 이전 레이아웃 호환 */
+.sectionRow {
+  display: flex;
+  gap: 32px;
+}
+
+.inputColumn {
+  flex: 1;
+  min-width: 0;
+}
+
+.responseColumn {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.responseCard {
+  position: sticky;
+  top: 20px;
+  padding: 16px;
+  background: #f9f9fb;
+  border-radius: 10px;
+}
+
+.responseTitle {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.responseDivider {
+  height: 1px;
+  background: #e5e5ea;
+  margin: 12px 0;
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .documentBody {
+    flex-direction: column;
+  }
+
+  .sidebarColumn {
+    width: 100%;
+    position: static;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e5ea;
+  }
+}

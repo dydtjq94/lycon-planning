@@ -2,10 +2,36 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import {
+  MessageCircle,
+  User,
+  PieChart,
+  FileText,
+  Target,
+  UserMinus,
+  ChevronDown,
+  ClipboardCheck,
+  Receipt,
+  Wallet,
+  TrendingUp,
+  Home,
+  Banknote,
+  CreditCard,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  BarChart3,
+  Landmark,
+  Building,
+  Calculator,
+  HelpCircle,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { ChevronLeft, MessageSquare, Check } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
-import { NotesSection, FinanceManager } from "./components";
+import { NotesSection, ProgressSection, RetirementDiagnosisForm } from "./components";
+import { OnboardingSurveyModal } from "./components/finance/OnboardingSurveyModal";
 import styles from "./UserDetail.module.css";
 
 interface Profile {
@@ -16,287 +42,152 @@ interface Profile {
   target_retirement_age: number;
   created_at: string;
   onboarding_step: string | null;
-  prep_data: PrepData | null;
-  survey_responses: SurveyResponsesData | null;
   phone_number: string | null;
-  booking_info: {
-    date: string;
-    time: string;
-    expert: string;
-    booked_at: string;
-  } | null;
+  customer_stage: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  survey_responses?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  guide_clicks?: any;
 }
 
-interface SurveyResponsesData {
-  onboarding?: Record<string, string | string[]>;
-  updated_at?: string;
-  completed_at?: string;
-}
-
-interface PrepData {
-  family?: PrepFamilyMember[];
-  income?: PrepIncomeData;
-  expense?: PrepExpenseData;
-  savings?: PrepSavingsItem[];
-  investment?: PrepInvestmentData;
-  housing?: PrepHousingData;
-  debt?: PrepDebtItem[];
-  nationalPension?: PrepNationalPensionData;
-  retirementPension?: PrepRetirementPensionData;
-  personalPension?: PrepPersonalPensionItem[];
-}
-
-interface PrepFamilyMember {
-  relationship: string;
+interface FamilyMember {
+  id: string;
+  relation: string;
   name: string;
   birth_date: string | null;
-  gender: string | null;
 }
 
-interface PrepIncomeData {
-  selfLaborIncome: number;
-  selfLaborFrequency: "monthly" | "yearly";
-  spouseLaborIncome: number;
-  spouseLaborFrequency: "monthly" | "yearly";
-  additionalIncomes: Array<{
-    type: string;
-    owner: "self" | "spouse";
-    amount: number;
-    frequency: "monthly" | "yearly";
-  }>;
+interface Booking {
+  id: string;
+  booking_date: string;
+  booking_time: string;
+  consultation_type: string;
+  status: string;
 }
 
-interface PrepExpenseData {
-  livingExpense: number;
-  livingExpenseDetails?: {
-    food?: number;
-    transport?: number;
-    shopping?: number;
-    leisure?: number;
-  };
-  fixedExpenses: Array<{
-    type: string;
-    title: string;
-    amount: number;
-    frequency: "monthly" | "yearly";
-  }>;
-  variableExpenses: Array<{
-    type: string;
-    title: string;
-    amount: number;
-    frequency: "monthly" | "yearly";
-  }>;
+interface ConsultationRecord {
+  id: string;
+  consultation_type: string;
+  scheduled_date: string;
+  scheduled_time: string | null;
+  completed_date: string | null;
+  status: string;
+  summary: string | null;
 }
 
-interface PrepSavingsItem {
-  category: string;
-  type: string;
-  title: string;
-  owner: "self" | "spouse";
-  currentBalance: number;
-  monthlyDeposit?: number;
-  expectedReturn?: number;
-}
+type Section = "info" | "consultation" | "status" | "scenario";
+type StatusSubTab = "asset" | "budget";
 
-interface PrepInvestmentData {
-  securities?: { balance: number; investmentTypes: string[] };
-  crypto?: { balance: number };
-  gold?: { balance: number };
-}
-
-interface PrepHousingData {
-  housingType: "자가" | "전세" | "월세" | "무상";
-  currentValue?: number;
-  deposit?: number;
-  monthlyRent?: number;
-  maintenanceFee?: number;
-  hasLoan: boolean;
-  loanType?: "mortgage" | "jeonse";
-  loanAmount?: number;
-  loanRate?: number;
-  loanRateType?: "fixed" | "floating";
-  loanMaturityYear?: number;
-  loanMaturityMonth?: number;
-}
-
-interface PrepDebtItem {
-  type: string;
-  title: string;
-  principal: number;
-  currentBalance?: number;
-  interestRate: number;
-}
-
-interface PrepNationalPensionData {
-  selfType: string;
-  selfExpectedAmount: number;
-  spouseType: string;
-  spouseExpectedAmount: number;
-}
-
-interface PrepRetirementPensionData {
-  selfType: string;
-  selfYearsWorked: number | null;
-  selfBalance: number | null;
-  spouseType: string;
-  spouseYearsWorked: number | null;
-  spouseBalance: number | null;
-}
-
-interface PrepPersonalPensionItem {
-  type: string;
-  owner: "self" | "spouse";
-  balance: number;
-  monthlyDeposit: number;
-}
-
-// 온보딩 설문 데이터
-const SURVEY_OPTIONS: Record<string, { label: string; options: Record<string, string> }> = {
-  visit_purpose: {
-    label: "방문 목적",
-    options: {
-      retirement_worry: "은퇴 후 생활이 걱정돼요",
-      financial_checkup: "내 재정 상태를 점검받고 싶어요",
-      asset_management: "자산 관리 방법을 알고 싶어요",
-      strategy: "연금/투자 전략이 궁금해요",
-      expert_advice: "전문가 조언이 필요해요",
-      curious: "그냥 한번 써보려고요",
-    },
-  },
-  money_feeling: {
-    label: "돈 생각하면?",
-    options: {
-      confident: "든든하고 여유롭다",
-      varies: "그때그때 다르다",
-      anxious: "왠지 불안하다",
-      avoid: "생각하기 싫다",
-    },
-  },
-  money_importance: {
-    label: "돈의 중요성",
-    options: {
-      very: "아주 중요하다",
-      important: "중요한 편이다",
-      moderate: "보통이다",
-      not_much: "별로 안 중요하다",
-    },
-  },
-  financial_goal: {
-    label: "재무 목표",
-    options: {
-      retirement: "편안한 노후",
-      house: "내 집 마련",
-      children: "자녀 교육/결혼",
-      freedom: "경제적 자유",
-      debt: "빚 갚기",
-    },
-  },
-  today_vs_tomorrow: {
-    label: "오늘 vs 미래",
-    options: {
-      today: "오늘을 즐기는 편",
-      tomorrow: "미래를 위해 아끼는 편",
-      balance: "반반",
-    },
-  },
-  marital_status: {
-    label: "결혼 여부",
-    options: { single: "미혼", married: "기혼", divorced: "이혼/사별" },
-  },
-  children: {
-    label: "자녀",
-    options: { none: "없음", one: "1명", two: "2명", three_plus: "3명 이상" },
-  },
-  income_range: {
-    label: "연 소득",
-    options: {
-      under_3000: "3,000만원 이하",
-      "3000_5000": "3,000~5,000만원",
-      "5000_8000": "5,000~8,000만원",
-      "8000_12000": "8,000만원~1.2억",
-      over_12000: "1.2억 초과",
-    },
-  },
-  monthly_expense: {
-    label: "월 생활비",
-    options: {
-      under_200: "200만원 미만",
-      "200_300": "200~300만원",
-      "300_500": "300~500만원",
-      over_500: "500만원 이상",
-    },
-  },
-  monthly_investment: {
-    label: "월 저축/투자",
-    options: {
-      none: "거의 못 하고 있어요",
-      under_50: "50만원 미만",
-      "50_100": "50~100만원",
-      "100_300": "100~300만원",
-      over_300: "300만원 이상",
-    },
-  },
-  saving_style: {
-    label: "투자 스타일",
-    options: {
-      aggressive: "적극적으로 투자하는 편",
-      balanced: "저축과 투자 반반",
-      conservative: "안전하게 저축하는 편",
-      passive: "딱히 안 하는 편",
-    },
-  },
-  budget_tracking: {
-    label: "가계부",
-    options: {
-      always: "꾸준히 쓴다",
-      sometimes: "가끔 쓴다",
-      tried: "쓰다가 포기",
-      never: "안 쓴다",
-    },
-  },
-  investment_exp: {
-    label: "투자 경험",
-    options: {
-      stock_domestic: "국내 주식/ETF",
-      stock_foreign: "해외 주식/ETF",
-      fund: "펀드",
-      bond: "채권",
-      realestate: "부동산",
-      crypto: "가상자산",
-      gold: "금/원자재",
-      none: "없어요",
-    },
-  },
-  retirement_worry: {
-    label: "은퇴 걱정",
-    options: {
-      none: "전혀 걱정되지 않는다",
-      little: "별로 걱정되지 않는다",
-      somewhat: "좀 걱정된다",
-      very: "많이 걱정된다",
-    },
-  },
-  pension_awareness: {
-    label: "연금 인지",
-    options: {
-      exact: "정확히 알아요",
-      roughly: "대충은 알아요",
-      unknown: "잘 몰라요",
-    },
-  },
-  retirement_concern: {
-    label: "가장 걱정",
-    options: {
-      pension_shortage: "연금만으론 부족할 것 같다",
-      medical: "의료비/간병비가 걱정된다",
-      children_balance: "자녀 지원과 노후 준비 사이 균형",
-      dont_know: "뭐부터 해야 할지 모르겠다",
-      no_worry: "딱히 걱정 없다",
-    },
-  },
+const STAGE_LABELS: Record<string, string> = {
+  new: "신규",
+  first_consultation: "1차 상담",
+  report_delivered: "보고서 전달",
+  second_consultation: "2차 상담",
+  subscription: "구독 중",
+  churned: "이탈",
 };
 
-type MainTab = "overview" | "prep" | "finance" | "notes";
+// 상담 종류 정의
+interface ConsultationType {
+  id: string;
+  name: string;
+  description: string;
+  icon: typeof ClipboardCheck;
+  period: string; // 주기 텍스트
+  periodMonths: number | null; // null = 상시
+  isRequired: boolean; // 구독 고객 필수 여부
+  color: string;
+}
+
+const CONSULTATION_TYPES: ConsultationType[] = [
+  {
+    id: "retirement-diagnosis",
+    name: "기본형 종합 재무 검진",
+    description: "은퇴 진단",
+    icon: ClipboardCheck,
+    period: "2년마다",
+    periodMonths: 24,
+    isRequired: true,
+    color: "#007aff",
+  },
+  {
+    id: "budget-consultation",
+    name: "가계부 상담",
+    description: "월별 수입/지출 점검",
+    icon: Receipt,
+    period: "매월",
+    periodMonths: 1,
+    isRequired: true,
+    color: "#34c759",
+  },
+  {
+    id: "investment-portfolio",
+    name: "투자 포트폴리오 상담",
+    description: "투자 전략, 리밸런싱",
+    icon: BarChart3,
+    period: "분기마다",
+    periodMonths: 3,
+    isRequired: true,
+    color: "#5856d6",
+  },
+  {
+    id: "asset-review",
+    name: "자산 현황 파악",
+    description: "전체 자산 점검",
+    icon: Wallet,
+    period: "반기마다",
+    periodMonths: 6,
+    isRequired: true,
+    color: "#ff9500",
+  },
+  {
+    id: "pension-analysis",
+    name: "연금 분석",
+    description: "연금 수령 전략",
+    icon: Landmark,
+    period: "매년",
+    periodMonths: 12,
+    isRequired: true,
+    color: "#af52de",
+  },
+  {
+    id: "real-estate",
+    name: "부동산 상담",
+    description: "매매, 임대, 대출",
+    icon: Building,
+    period: "상시",
+    periodMonths: null,
+    isRequired: false,
+    color: "#ff3b30",
+  },
+  {
+    id: "tax-consultation",
+    name: "세금 상담",
+    description: "절세 전략, 신고",
+    icon: Calculator,
+    period: "상시",
+    periodMonths: null,
+    isRequired: false,
+    color: "#00c7be",
+  },
+  {
+    id: "financial-decision",
+    name: "재무 의사결정 상담",
+    description: "주요 재무 결정 지원",
+    icon: HelpCircle,
+    period: "상시",
+    periodMonths: null,
+    isRequired: false,
+    color: "#8e8e93",
+  },
+];
+
+const tabs = [
+  { id: "info" as Section, label: "기본 정보", icon: User },
+  { id: "consultation" as Section, label: "상담", icon: FileText },
+  { id: "status" as Section, label: "현황", icon: PieChart },
+  { id: "scenario" as Section, label: "시나리오", icon: Target },
+];
 
 export default function UserDetailPage() {
   const router = useRouter();
@@ -304,15 +195,155 @@ export default function UserDetailPage() {
   const userId = params.id as string;
 
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mainTab, setMainTab] = useState<MainTab>("overview");
+  const [currentSection, setCurrentSection] = useState<Section>("info");
+  const [statusSubTab, setStatusSubTab] = useState<StatusSubTab>("asset");
+  const [budgetDate, setBudgetDate] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  });
   const [expertId, setExpertId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // 담당 제외 모달
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  // 더보기 드롭다운
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  // 상담 종류 선택
+  const [selectedConsultation, setSelectedConsultation] = useState<string | null>(null);
+
+  // 예약된 상담 (bookings)
+  const [scheduledBookings, setScheduledBookings] = useState<Booking[]>([]);
+
+  // 상담 이력 (consultation_records)
+  const [consultationRecords, setConsultationRecords] = useState<ConsultationRecord[]>([]);
+
+  // 상담 이력 (마지막 상담일) - consultation_records에서 계산
+  const [consultationHistory, setConsultationHistory] = useState<Record<string, string | null>>({
+    "retirement-diagnosis": null,
+    "budget-consultation": null,
+    "investment-portfolio": null,
+    "asset-review": null,
+    "pension-analysis": null,
+    "real-estate": null,
+    "tax-consultation": null,
+    "financial-decision": null,
+  });
+
+  // 온보딩 설문 모달
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [surveyResponses, setSurveyResponses] = useState<any>(null);
+
+  // 가이드 클릭 모달
+  const [showGuideClicksModal, setShowGuideClicksModal] = useState(false);
+
+  // 다음 상담 추천일 계산
+  const getNextConsultationDate = (typeId: string, lastDate: string | null): { date: string | null; status: "overdue" | "upcoming" | "ok" | "none" } => {
+    const consultationType = CONSULTATION_TYPES.find((t) => t.id === typeId);
+    if (!consultationType || consultationType.periodMonths === null) {
+      return { date: null, status: "none" };
+    }
+
+    if (!lastDate) {
+      return { date: "즉시", status: "overdue" };
+    }
+
+    const last = new Date(lastDate);
+    const next = new Date(last);
+    next.setMonth(next.getMonth() + consultationType.periodMonths);
+
+    const today = new Date();
+    const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    const nextStr = `${next.getFullYear()}.${String(next.getMonth() + 1).padStart(2, "0")}.${String(next.getDate()).padStart(2, "0")}`;
+
+    if (diffDays < 0) {
+      return { date: nextStr, status: "overdue" };
+    } else if (diffDays <= 14) {
+      return { date: nextStr, status: "upcoming" };
+    }
+    return { date: nextStr, status: "ok" };
+  };
+
+  // 스케줄 셀 클릭 핸들러 (체크 토글)
+  const handleScheduleCellClick = async (consultationType: string, month: number, year: number) => {
+    if (!expertId) return;
+
+    const supabase = createClient();
+    const targetDateStr = `${year}-${String(month).padStart(2, "0")}-15`;
+
+    // 해당 월에 완료된 레코드가 있는지 확인
+    const existingRecord = consultationRecords.find(
+      (r) =>
+        r.consultation_type === consultationType &&
+        r.status === "completed" &&
+        new Date(r.scheduled_date).getMonth() + 1 === month &&
+        new Date(r.scheduled_date).getFullYear() === year
+    );
+
+    if (!existingRecord) {
+      // 체크 추가 (완료 처리)
+      const { data: newRecord, error } = await supabase
+        .from("consultation_records")
+        .insert({
+          profile_id: userId,
+          expert_id: expertId,
+          consultation_type: consultationType,
+          scheduled_date: targetDateStr,
+          completed_date: targetDateStr,
+          status: "completed",
+        })
+        .select()
+        .single();
+
+      if (!error && newRecord) {
+        setConsultationRecords((prev) => [newRecord, ...prev]);
+      }
+    } else {
+      // 체크 해제 (삭제)
+      const { error } = await supabase
+        .from("consultation_records")
+        .delete()
+        .eq("id", existingRecord.id);
+
+      if (!error) {
+        setConsultationRecords((prev) =>
+          prev.filter((r) => r.id !== existingRecord.id)
+        );
+      }
+    }
+  };
+
+  // 상담 현황 요약 계산
+  const getConsultationSummary = () => {
+    let overdue = 0;
+    let upcoming = 0;
+    let completed = 0;
+
+    CONSULTATION_TYPES.filter((t) => t.isRequired).forEach((type) => {
+      const { status } = getNextConsultationDate(type.id, consultationHistory[type.id]);
+      if (status === "overdue") overdue++;
+      else if (status === "upcoming") upcoming++;
+      else if (status === "ok") completed++;
+    });
+
+    return { overdue, upcoming, completed };
+  };
 
   useEffect(() => {
     const loadUserData = async () => {
       const supabase = createClient();
 
-      const { data: { user } } = await supabase.auth.getUser();
+      // 현재 로그인한 전문가 ID
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         const { data: expert } = await supabase
           .from("experts")
@@ -324,14 +355,118 @@ export default function UserDetailPage() {
         }
       }
 
+      // 고객 프로필
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, name, birth_date, gender, target_retirement_age, created_at, onboarding_step, phone_number, customer_stage, survey_responses, guide_clicks")
         .eq("id", userId)
         .single();
 
       if (profileData) {
         setProfile(profileData);
+        if (profileData.survey_responses) {
+          setSurveyResponses(profileData.survey_responses);
+        }
+      }
+
+      // 가족 구성원
+      const { data: familyData } = await supabase
+        .from("family_members")
+        .select("id, relation, name, birth_date")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
+
+      if (familyData) {
+        setFamilyMembers(familyData);
+      }
+
+      // 대화방 로드 또는 생성
+      let { data: conversation } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+
+      if (!conversation && user) {
+        const { data: expert } = await supabase
+          .from("experts")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (expert) {
+          const { data: newConversation } = await supabase
+            .from("conversations")
+            .insert({
+              user_id: userId,
+              expert_id: expert.id,
+              is_primary: true,
+            })
+            .select("id")
+            .single();
+
+          conversation = newConversation;
+        }
+      }
+
+      if (conversation) {
+        setConversationId(conversation.id);
+
+        const { data: unreadMessages } = await supabase
+          .from("messages")
+          .select("id")
+          .eq("conversation_id", conversation.id)
+          .eq("sender_type", "user")
+          .eq("is_read", false);
+
+        setUnreadCount(unreadMessages?.length || 0);
+      }
+
+      // 예약된 상담 로드 (오늘 이후, confirmed 또는 pending 상태만)
+      const today = new Date().toISOString().split("T")[0];
+      const { data: bookingsData } = await supabase
+        .from("bookings")
+        .select("id, booking_date, booking_time, consultation_type, status")
+        .eq("user_id", userId)
+        .in("status", ["confirmed", "pending"])
+        .gte("booking_date", today)
+        .order("booking_date", { ascending: true });
+
+      if (bookingsData) {
+        setScheduledBookings(bookingsData);
+      }
+
+      // 상담 이력 로드
+      const { data: recordsData } = await supabase
+        .from("consultation_records")
+        .select("id, consultation_type, scheduled_date, scheduled_time, completed_date, status, summary")
+        .eq("profile_id", userId)
+        .order("scheduled_date", { ascending: false });
+
+      if (recordsData) {
+        setConsultationRecords(recordsData);
+
+        // 각 상담 종류별 마지막 완료일 계산
+        const history: Record<string, string | null> = {
+          "retirement-diagnosis": null,
+          "budget-consultation": null,
+          "investment-portfolio": null,
+          "asset-review": null,
+          "pension-analysis": null,
+          "real-estate": null,
+          "tax-consultation": null,
+          "financial-decision": null,
+        };
+
+        recordsData
+          .filter((r) => r.status === "completed" && r.completed_date)
+          .forEach((r) => {
+            if (!history[r.consultation_type] || r.completed_date! > history[r.consultation_type]!) {
+              history[r.consultation_type] = r.completed_date;
+            }
+          });
+
+        setConsultationHistory(history);
       }
 
       setLoading(false);
@@ -340,27 +475,88 @@ export default function UserDetailPage() {
     loadUserData();
   }, [userId]);
 
-  const getAge = (birthDate: string | null) => {
+  // 실시간 메시지 구독
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const supabase = createClient();
+
+    const refreshUnreadCount = async () => {
+      const { data: unreadMessages } = await supabase
+        .from("messages")
+        .select("id")
+        .eq("conversation_id", conversationId)
+        .eq("sender_type", "user")
+        .eq("is_read", false);
+
+      setUnreadCount(unreadMessages?.length || 0);
+    };
+
+    const channel = supabase
+      .channel(`admin-messages:${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        () => refreshUnreadCount()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
+
+  const handleRemoveFromMyCustomers = async () => {
+    if (!expertId || !conversationId) return;
+
+    setRemoving(true);
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from("conversations")
+      .delete()
+      .eq("id", conversationId);
+
+    if (error) {
+      console.error("Error removing customer:", error);
+      setRemoving(false);
+      return;
+    }
+
+    router.push("/admin");
+  };
+
+  const calculateAge = (birthDate: string | null) => {
     if (!birthDate) return null;
     const today = new Date();
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
     return age;
   };
 
-  const isSelected = (questionId: string, optionKey: string) => {
-    const survey = profile?.survey_responses?.onboarding || {};
-    const value = survey[questionId];
-    if (!value) return false;
-    if (Array.isArray(value)) return value.includes(optionKey);
-    return value === optionKey;
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "-";
+    const date = new Date(dateStr);
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
   };
 
   if (loading) {
     return (
       <div className={styles.container}>
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <div className={styles.skeletonTitle} />
+          </div>
+        </div>
         <div className={styles.loading}>
           <div className={styles.spinner} />
         </div>
@@ -371,74 +567,23 @@ export default function UserDetailPage() {
   if (!profile) {
     return (
       <div className={styles.container}>
-        <div className={styles.empty}>유저를 찾을 수 없습니다.</div>
+        <div className={styles.header}>
+          <h1 className={styles.title}>고객을 찾을 수 없습니다</h1>
+        </div>
+        <div className={styles.emptyContainer}>유저를 찾을 수 없습니다.</div>
       </div>
     );
   }
 
-  const survey = profile.survey_responses?.onboarding || {};
-  const prep = profile.prep_data || {};
-
-  return (
-    <div className={styles.container}>
-      {/* 헤더 */}
-      <div className={styles.header}>
-        <button className={styles.backButton} onClick={() => router.push("/admin")}>
-          <ChevronLeft size={18} />
-        </button>
-        <div className={styles.headerInfo}>
-          <h1 className={styles.userName}>{profile.name}</h1>
-          <div className={styles.userMeta}>
-            {getAge(profile.birth_date) && <span>{getAge(profile.birth_date)}세</span>}
-            {profile.gender && <span>{profile.gender === "male" ? "남" : "여"}</span>}
-            {profile.phone_number && <span>{profile.phone_number}</span>}
-          </div>
-        </div>
-        <button
-          className={styles.chatButton}
-          onClick={() => router.push(`/admin/chat/${userId}`)}
-        >
-          <MessageSquare size={18} />
-          <span>채팅</span>
-        </button>
-      </div>
-
-      {/* 탭 */}
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${mainTab === "overview" ? styles.active : ""}`}
-          onClick={() => setMainTab("overview")}
-        >
-          개요
-        </button>
-        <button
-          className={`${styles.tab} ${mainTab === "prep" ? styles.active : ""}`}
-          onClick={() => setMainTab("prep")}
-        >
-          상담전 확인
-        </button>
-        <button
-          className={`${styles.tab} ${mainTab === "finance" ? styles.active : ""}`}
-          onClick={() => setMainTab("finance")}
-        >
-          재무 입력
-        </button>
-        <button
-          className={`${styles.tab} ${mainTab === "notes" ? styles.active : ""}`}
-          onClick={() => setMainTab("notes")}
-        >
-          상담 노트
-        </button>
-      </div>
-
-      {/* 개요 탭 */}
-      {mainTab === "overview" && (
-        <div className={styles.overviewContent}>
-          <div className={styles.overviewGrid}>
-            {/* 기본 정보 */}
-            <div className={styles.card}>
+  const renderContent = () => {
+    switch (currentSection) {
+      case "info":
+        return (
+          <div className={styles.infoSection}>
+            {/* 기본 정보 카드 */}
+            <div className={styles.infoCard}>
               <h3 className={styles.cardTitle}>기본 정보</h3>
-              <div className={styles.infoList}>
+              <div className={styles.infoGrid}>
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>이름</span>
                   <span className={styles.infoValue}>{profile.name}</span>
@@ -446,8 +591,8 @@ export default function UserDetailPage() {
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>생년월일</span>
                   <span className={styles.infoValue}>
-                    {profile.birth_date || "-"}
-                    {getAge(profile.birth_date) && ` (${getAge(profile.birth_date)}세)`}
+                    {profile.birth_date ? formatDate(profile.birth_date) : "-"}
+                    {profile.birth_date && ` (${calculateAge(profile.birth_date)}세)`}
                   </span>
                 </div>
                 <div className={styles.infoItem}>
@@ -462,277 +607,660 @@ export default function UserDetailPage() {
                 </div>
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>목표 은퇴 나이</span>
-                  <span className={styles.infoValue}>{profile.target_retirement_age || 60}세</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 예약 정보 */}
-            <div className={styles.card}>
-              <h3 className={styles.cardTitle}>예약 정보</h3>
-              {profile.booking_info ? (
-                <div className={styles.infoList}>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>예약일</span>
-                    <span className={styles.infoValue}>
-                      {new Date(profile.booking_info.date).toLocaleDateString("ko-KR", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>시간</span>
-                    <span className={styles.infoValue}>{profile.booking_info.time}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.emptyCard}>예약 정보가 없습니다.</div>
-              )}
-            </div>
-
-            {/* 온보딩 현황 */}
-            <div className={styles.card}>
-              <h3 className={styles.cardTitle}>온보딩 현황</h3>
-              <div className={styles.infoList}>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>진행 상태</span>
-                  <span className={styles.infoValue}>
-                    {profile.onboarding_step === "completed" ? "완료" : "진행 중"}
-                  </span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>설문 응답</span>
-                  <span className={styles.infoValue}>
-                    {Object.keys(survey).length}개 항목
-                  </span>
+                  <span className={styles.infoValue}>{profile.target_retirement_age}세</span>
                 </div>
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>가입일</span>
+                  <span className={styles.infoValue}>{formatDate(profile.created_at)}</span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>고객 단계</span>
+                  <span className={`${styles.stageBadgeInline} ${styles[profile.customer_stage || "new"]}`}>
+                    {STAGE_LABELS[profile.customer_stage] || "신규"}
+                  </span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>온보딩</span>
                   <span className={styles.infoValue}>
-                    {new Date(profile.created_at).toLocaleDateString("ko-KR")}
+                    {profile.onboarding_step === "completed" ? "완료" : "진행중"}
+                    {surveyResponses && (
+                      <button
+                        className={styles.onboardingBtn}
+                        onClick={() => setShowOnboardingModal(true)}
+                        style={{ marginLeft: 8 }}
+                      >
+                        응답 보기
+                      </button>
+                    )}
+                  </span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>가이드 열람</span>
+                  <span className={styles.infoValue}>
+                    <button
+                      className={styles.onboardingBtn}
+                      onClick={() => setShowGuideClicksModal(true)}
+                    >
+                      {Object.values(profile.guide_clicks || {}).reduce(
+                        (sum: number, c: any) => sum + (c?.count || 0),
+                        0
+                      )}회
+                    </button>
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* 재무 요약 */}
-            <div className={styles.card}>
-              <h3 className={styles.cardTitle}>재무 요약 (입력해두기)</h3>
-              {Object.keys(prep).length === 0 ? (
-                <div className={styles.emptyCard}>입력된 정보가 없습니다.</div>
-              ) : (
-                <div className={styles.infoList}>
-                  {prep.income && (prep.income.selfLaborIncome > 0 || prep.income.spouseLaborIncome > 0) && (
-                    <div className={styles.infoItem}>
-                      <span className={styles.infoLabel}>월 소득</span>
-                      <span className={styles.infoValue}>
-                        {formatMoney(
-                          (prep.income.selfLaborFrequency === "monthly" ? prep.income.selfLaborIncome : prep.income.selfLaborIncome / 12) +
-                          (prep.income.spouseLaborFrequency === "monthly" ? prep.income.spouseLaborIncome : prep.income.spouseLaborIncome / 12)
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  {prep.expense && prep.expense.livingExpense > 0 && (
-                    <div className={styles.infoItem}>
-                      <span className={styles.infoLabel}>월 생활비</span>
-                      <span className={styles.infoValue}>{formatMoney(prep.expense.livingExpense)}</span>
-                    </div>
-                  )}
-                  {prep.housing && (
-                    <div className={styles.infoItem}>
-                      <span className={styles.infoLabel}>주거</span>
-                      <span className={styles.infoValue}>{prep.housing.housingType}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 상담전 확인 탭 */}
-      {mainTab === "prep" && (
-        <div className={styles.prepContent}>
-          <div className={styles.prepGrid}>
-            {/* 온보딩 설문 */}
-            <div className={styles.prepColumn}>
-              <h2 className={styles.prepColumnTitle}>온보딩 설문</h2>
-              {Object.keys(survey).length === 0 ? (
-                <div className={styles.emptySection}>설문 응답이 없습니다.</div>
-              ) : (
-                <div className={styles.surveyList}>
-                  {Object.entries(SURVEY_OPTIONS).map(([questionId, { label, options }]) => {
-                    const hasAnswer = survey[questionId] !== undefined;
-                    if (!hasAnswer) return null;
+            {/* 예약된 상담 카드 */}
+            {scheduledBookings.length > 0 && (
+              <div className={styles.infoCard}>
+                <h3 className={styles.cardTitle}>예약된 상담</h3>
+                <div className={styles.upcomingBookings}>
+                  {scheduledBookings.map((booking) => {
+                    const consultationType = CONSULTATION_TYPES.find((t) => t.id === booking.consultation_type);
+                    const bookingDate = new Date(booking.booking_date);
+                    const isToday = new Date().toDateString() === bookingDate.toDateString();
+                    const daysUntil = Math.ceil((bookingDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
                     return (
-                      <div key={questionId} className={styles.surveyQuestion}>
-                        <div className={styles.surveyQuestionLabel}>{label}</div>
-                        <div className={styles.surveyOptions}>
-                          {Object.entries(options).map(([optionKey, optionLabel]) => {
-                            const selected = isSelected(questionId, optionKey);
-                            return (
-                              <div
-                                key={optionKey}
-                                className={`${styles.surveyOption} ${selected ? styles.selected : ""}`}
-                              >
-                                {selected && <Check size={14} className={styles.checkIcon} />}
-                                <span>{optionLabel}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
+                      <div key={booking.id} className={styles.upcomingBookingItem}>
+                        <span className={styles.upcomingBookingName}>
+                          {consultationType?.name || booking.consultation_type}
+                        </span>
+                        <span className={styles.upcomingBookingDate}>
+                          {`${bookingDate.getMonth() + 1}/${bookingDate.getDate()} ${booking.booking_time}`}
+                        </span>
+                        <span className={`${styles.upcomingBookingDays} ${isToday ? styles.today : daysUntil <= 3 ? styles.soon : ""}`}>
+                          {isToday ? "오늘" : daysUntil < 0 ? `${Math.abs(daysUntil)}일 전` : `D-${daysUntil}`}
+                        </span>
                       </div>
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* 가족 구성원 카드 */}
+            <div className={styles.infoCard}>
+              <h3 className={styles.cardTitle}>가족 구성원</h3>
+              {familyMembers.length === 0 ? (
+                <p className={styles.emptyText}>등록된 가족 구성원이 없습니다.</p>
+              ) : (
+                <div className={styles.familyList}>
+                  {familyMembers.map((member) => (
+                    <div key={member.id} className={styles.familyItem}>
+                      <span className={styles.familyRelation}>
+                        {member.relation === "spouse" ? "배우자" :
+                         member.relation === "child" ? "자녀" :
+                         member.relation === "parent" ? "부모" : member.relation}
+                      </span>
+                      <span className={styles.familyName}>{member.name || "-"}</span>
+                      <span className={styles.familyAge}>
+                        {member.birth_date ? `${calculateAge(member.birth_date)}세` : "-"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
-            {/* 입력해두기 */}
-            <div className={styles.prepColumn}>
-              <h2 className={styles.prepColumnTitle}>입력해두기</h2>
-              {Object.keys(prep).length === 0 ? (
-                <div className={styles.emptySection}>입력된 정보가 없습니다.</div>
-              ) : (
-                <div className={styles.prepList}>
-                  {prep.family && prep.family.length > 0 && (
-                    <div className={styles.prepSection}>
-                      <div className={styles.prepSectionTitle}>가족 구성</div>
-                      {prep.family.map((member, idx) => {
-                        const age = member.birth_date ? getAge(member.birth_date) : null;
-                        const relLabel = {
-                          self: "본인",
-                          spouse: "배우자",
-                          child: "자녀",
-                          parent: "부양부모",
-                        }[member.relationship] || member.relationship;
-                        return (
-                          <div key={idx} className={styles.prepItem}>
-                            <span className={styles.prepLabel}>{relLabel}</span>
-                            <span className={styles.prepValue}>
-                              {member.name || "-"}
-                              {age !== null && ` (${age}세)`}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+            {/* 연간 상담 스케줄 카드 */}
+            {(() => {
+              const currentYear = new Date().getFullYear();
+              const currentMonth = new Date().getMonth() + 1;
+              const months = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 
-                  {prep.income && (
-                    <div className={styles.prepSection}>
-                      <div className={styles.prepSectionTitle}>소득</div>
-                      {prep.income.selfLaborIncome > 0 && (
-                        <div className={styles.prepItem}>
-                          <span className={styles.prepLabel}>본인 근로소득</span>
-                          <span className={styles.prepValue}>
-                            {formatMoney(prep.income.selfLaborIncome)} / {prep.income.selfLaborFrequency === "monthly" ? "월" : "년"}
-                          </span>
-                        </div>
-                      )}
-                      {prep.income.spouseLaborIncome > 0 && (
-                        <div className={styles.prepItem}>
-                          <span className={styles.prepLabel}>배우자 근로소득</span>
-                          <span className={styles.prepValue}>
-                            {formatMoney(prep.income.spouseLaborIncome)} / {prep.income.spouseLaborFrequency === "monthly" ? "월" : "년"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+              // 각 상담별 해당 월 계산
+              const getConsultationMonths = (periodMonths: number | null): number[] => {
+                if (periodMonths === null) return []; // 상시
+                if (periodMonths === 1) return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // 매월
+                if (periodMonths === 3) return [3, 6, 9, 12]; // 분기
+                if (periodMonths === 6) return [6, 12]; // 반기
+                if (periodMonths === 12) return [12]; // 매년
+                if (periodMonths === 24) return [1]; // 2년 (올해는 1월에 한 번)
+                return [];
+              };
 
-                  {prep.expense && prep.expense.livingExpense > 0 && (
-                    <div className={styles.prepSection}>
-                      <div className={styles.prepSectionTitle}>지출</div>
-                      <div className={styles.prepItem}>
-                        <span className={styles.prepLabel}>월 변동 생활비</span>
-                        <span className={styles.prepValue}>{formatMoney(prep.expense.livingExpense)} / 월</span>
-                      </div>
-                    </div>
-                  )}
+              // 완료된 상담 월별 확인
+              const getCompletedMonths = (typeId: string): number[] => {
+                return consultationRecords
+                  .filter((r) =>
+                    r.consultation_type === typeId &&
+                    r.status === "completed" &&
+                    new Date(r.scheduled_date).getFullYear() === currentYear
+                  )
+                  .map((r) => new Date(r.scheduled_date).getMonth() + 1);
+              };
 
-                  {prep.savings && prep.savings.length > 0 && (
-                    <div className={styles.prepSection}>
-                      <div className={styles.prepSectionTitle}>저축</div>
-                      {prep.savings.map((item, idx) => (
-                        <div key={idx} className={styles.prepItem}>
-                          <span className={styles.prepLabel}>{item.title || item.type}</span>
-                          <span className={styles.prepValue}>{formatMoney(item.currentBalance)}</span>
-                        </div>
+              // 정기 상담만 표시
+              const requiredConsultations = CONSULTATION_TYPES.filter((t) => t.isRequired);
+
+              return (
+                <div className={styles.infoCard}>
+                  <div className={styles.scheduleHeader}>
+                    <h3 className={styles.cardTitle}>{currentYear}년 상담 스케줄</h3>
+                    <span className={styles.scheduleNote}>정기 상담 기준</span>
+                  </div>
+
+                  {/* 월 헤더 */}
+                  <div className={styles.scheduleGrid}>
+                    <div className={styles.scheduleRowHeader}>
+                      <span className={styles.scheduleLabelHeader}>상담 종류</span>
+                      {months.map((m, idx) => (
+                        <span
+                          key={m}
+                          className={`${styles.scheduleMonthHeader} ${idx + 1 === currentMonth ? styles.currentMonth : ""}`}
+                        >
+                          {idx + 1}
+                        </span>
                       ))}
                     </div>
-                  )}
 
-                  {prep.housing && (
-                    <div className={styles.prepSection}>
-                      <div className={styles.prepSectionTitle}>주거</div>
-                      <div className={styles.prepItem}>
-                        <span className={styles.prepLabel}>거주 형태</span>
-                        <span className={styles.prepValue}>{prep.housing.housingType}</span>
-                      </div>
-                      {prep.housing.currentValue && (
-                        <div className={styles.prepItem}>
-                          <span className={styles.prepLabel}>현재 시세</span>
-                          <span className={styles.prepValue}>{formatMoney(prep.housing.currentValue)}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    {/* 각 상담별 행 */}
+                    {requiredConsultations.map((consultation) => {
+                      const dueMonths = getConsultationMonths(consultation.periodMonths);
+                      const completedMonths = getCompletedMonths(consultation.id);
 
-                  {prep.debt && prep.debt.length > 0 && (
-                    <div className={styles.prepSection}>
-                      <div className={styles.prepSectionTitle}>부채</div>
-                      {prep.debt.map((item, idx) => (
-                        <div key={idx} className={styles.prepItem}>
-                          <span className={styles.prepLabel}>{item.title || item.type}</span>
-                          <span className={styles.prepValue}>{formatMoney(item.currentBalance ?? item.principal)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                      return (
+                        <div key={consultation.id} className={styles.scheduleRow}>
+                          <span className={styles.scheduleLabel}>
+                            {consultation.name.length > 12
+                              ? consultation.name.substring(0, 12) + "..."
+                              : consultation.name}
+                          </span>
+                          {months.map((_, idx) => {
+                            const month = idx + 1;
+                            const isDue = dueMonths.includes(month);
+                            const isCompleted = completedMonths.includes(month);
 
-                  {prep.nationalPension && (prep.nationalPension.selfExpectedAmount > 0 || prep.nationalPension.spouseExpectedAmount > 0) && (
-                    <div className={styles.prepSection}>
-                      <div className={styles.prepSectionTitle}>국민연금</div>
-                      {prep.nationalPension.selfExpectedAmount > 0 && (
-                        <div className={styles.prepItem}>
-                          <span className={styles.prepLabel}>본인</span>
-                          <span className={styles.prepValue}>월 {formatMoney(prep.nationalPension.selfExpectedAmount)}</span>
+                            return (
+                              <button
+                                key={month}
+                                type="button"
+                                onClick={() => isDue && handleScheduleCellClick(consultation.id, month, currentYear)}
+                                className={`${styles.scheduleCell} ${isDue ? styles.clickable : ""}`}
+                              >
+                                {isDue && (
+                                  isCompleted ? (
+                                    <span className={styles.checkMark} />
+                                  ) : (
+                                    <span className={styles.dotMark} style={{ background: consultation.color }} />
+                                  )
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
-                      )}
-                    </div>
-                  )}
+                      );
+                    })}
+                  </div>
+
+                  <div className={styles.scheduleLegend}>
+                    <span className={styles.legendItem}>
+                      <span className={styles.legendDotSimple} />
+                      예정
+                    </span>
+                    <span className={styles.legendItem}>
+                      <span className={styles.legendCheck} />
+                      완료
+                    </span>
+                  </div>
                 </div>
+              );
+            })()}
+          </div>
+        );
+
+      case "status":
+        const prevMonth = () => {
+          setBudgetDate((prev) => {
+            if (prev.month === 1) {
+              return { year: prev.year - 1, month: 12 };
+            }
+            return { ...prev, month: prev.month - 1 };
+          });
+        };
+        const nextMonth = () => {
+          setBudgetDate((prev) => {
+            if (prev.month === 12) {
+              return { year: prev.year + 1, month: 1 };
+            }
+            return { ...prev, month: prev.month + 1 };
+          });
+        };
+
+        return (
+          <div className={styles.statusSection}>
+            {/* 서브 탭 */}
+            <div className={styles.subTabs}>
+              <button
+                className={`${styles.subTab} ${statusSubTab === "asset" ? styles.active : ""}`}
+                onClick={() => setStatusSubTab("asset")}
+              >
+                <Wallet size={16} />
+                자산
+              </button>
+              <button
+                className={`${styles.subTab} ${statusSubTab === "budget" ? styles.active : ""}`}
+                onClick={() => setStatusSubTab("budget")}
+              >
+                <Receipt size={16} />
+                가계부
+              </button>
+            </div>
+
+            {/* 서브 탭 콘텐츠 */}
+            {statusSubTab === "asset" ? (
+              <div className={styles.assetSection}>
+                {/* 자산 요약 카드들 */}
+                <div className={styles.assetSummaryGrid}>
+                  <div className={styles.assetSummaryCard}>
+                    <div className={styles.assetSummaryIcon} style={{ background: "#e6f2ff" }}>
+                      <TrendingUp size={20} color="#007aff" />
+                    </div>
+                    <div className={styles.assetSummaryInfo}>
+                      <span className={styles.assetSummaryLabel}>총 자산</span>
+                      <span className={styles.assetSummaryValue}>-</span>
+                    </div>
+                  </div>
+                  <div className={styles.assetSummaryCard}>
+                    <div className={styles.assetSummaryIcon} style={{ background: "#fef3c7" }}>
+                      <Home size={20} color="#d97706" />
+                    </div>
+                    <div className={styles.assetSummaryInfo}>
+                      <span className={styles.assetSummaryLabel}>부동산</span>
+                      <span className={styles.assetSummaryValue}>-</span>
+                    </div>
+                  </div>
+                  <div className={styles.assetSummaryCard}>
+                    <div className={styles.assetSummaryIcon} style={{ background: "#d1fae5" }}>
+                      <Banknote size={20} color="#059669" />
+                    </div>
+                    <div className={styles.assetSummaryInfo}>
+                      <span className={styles.assetSummaryLabel}>금융 자산</span>
+                      <span className={styles.assetSummaryValue}>-</span>
+                    </div>
+                  </div>
+                  <div className={styles.assetSummaryCard}>
+                    <div className={styles.assetSummaryIcon} style={{ background: "#fee2e2" }}>
+                      <CreditCard size={20} color="#dc2626" />
+                    </div>
+                    <div className={styles.assetSummaryInfo}>
+                      <span className={styles.assetSummaryLabel}>부채</span>
+                      <span className={styles.assetSummaryValue}>-</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 자산 차트 영역 */}
+                <div className={styles.chartCard}>
+                  <h3 className={styles.cardTitle}>자산 구성</h3>
+                  <div className={styles.chartPlaceholder}>
+                    <PieChart size={48} color="#ccc" />
+                    <p>고객의 재무 데이터를 입력하면 자산 구성 차트가 표시됩니다</p>
+                  </div>
+                </div>
+
+                {/* 순자산 추이 차트 */}
+                <div className={styles.chartCard}>
+                  <h3 className={styles.cardTitle}>순자산 추이</h3>
+                  <div className={styles.chartPlaceholder}>
+                    <TrendingUp size={48} color="#ccc" />
+                    <p>시뮬레이션을 실행하면 순자산 추이 그래프가 표시됩니다</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.budgetSection}>
+                {/* 월 선택 */}
+                <div className={styles.budgetHeader}>
+                  <button className={styles.monthNavButton} onClick={prevMonth}>
+                    <ChevronLeft size={20} />
+                  </button>
+                  <span className={styles.budgetMonth}>
+                    {budgetDate.year}년 {budgetDate.month}월
+                  </span>
+                  <button className={styles.monthNavButton} onClick={nextMonth}>
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+
+                {/* 소득/지출 요약 */}
+                <div className={styles.budgetSummary}>
+                  <div className={styles.budgetSummaryItem}>
+                    <span className={styles.budgetSummaryLabel}>소득</span>
+                    <span className={styles.budgetSummaryValue} style={{ color: "#007aff" }}>0원</span>
+                  </div>
+                  <div className={styles.budgetSummaryDivider}>-</div>
+                  <div className={styles.budgetSummaryItem}>
+                    <span className={styles.budgetSummaryLabel}>지출</span>
+                    <span className={styles.budgetSummaryValue} style={{ color: "#ff3b30" }}>0원</span>
+                  </div>
+                  <div className={styles.budgetSummaryDivider}>=</div>
+                  <div className={styles.budgetSummaryItem}>
+                    <span className={styles.budgetSummaryLabel}>잔액</span>
+                    <span className={styles.budgetSummaryValue}>0원</span>
+                  </div>
+                </div>
+
+                {/* 소득 입력 */}
+                <div className={styles.budgetCard}>
+                  <div className={styles.budgetCardHeader}>
+                    <h3 className={styles.cardTitle}>소득</h3>
+                    <button className={styles.addButton}>+ 추가</button>
+                  </div>
+                  <div className={styles.budgetEmptyState}>
+                    <Banknote size={24} color="#ccc" />
+                    <p>등록된 소득이 없습니다</p>
+                  </div>
+                </div>
+
+                {/* 지출 입력 */}
+                <div className={styles.budgetCard}>
+                  <div className={styles.budgetCardHeader}>
+                    <h3 className={styles.cardTitle}>지출</h3>
+                    <button className={styles.addButton}>+ 추가</button>
+                  </div>
+                  <div className={styles.budgetEmptyState}>
+                    <Receipt size={24} color="#ccc" />
+                    <p>등록된 지출이 없습니다</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case "consultation":
+        // 상담 종류 선택 전
+        if (!selectedConsultation) {
+          const requiredTypes = CONSULTATION_TYPES.filter((t) => t.isRequired);
+          const optionalTypes = CONSULTATION_TYPES.filter((t) => !t.isRequired);
+
+          return (
+            <div className={styles.consultationGrid}>
+              {/* 정기 상담 (왼쪽) */}
+              <div className={styles.consultationGroupCard}>
+                <div className={styles.consultationGroupHeader}>
+                  <h3 className={styles.cardTitle}>정기 상담</h3>
+                  <span className={styles.consultationGroupBadge}>구독 필수</span>
+                </div>
+                <div className={styles.consultationList}>
+                  {requiredTypes.map((type) => (
+                    <button
+                      key={type.id}
+                      className={styles.consultationItem}
+                      onClick={() => setSelectedConsultation(type.id)}
+                    >
+                      <span className={styles.consultationItemName}>{type.name}</span>
+                      <span className={styles.consultationItemPeriod}>{type.period}</span>
+                      <ChevronRight size={16} className={styles.consultationItemArrow} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 상시 상담 (오른쪽) */}
+              <div className={styles.consultationGroupCard}>
+                <div className={styles.consultationGroupHeader}>
+                  <h3 className={styles.cardTitle}>상시 상담</h3>
+                  <span className={styles.consultationGroupBadgeOptional}>필요시</span>
+                </div>
+                <div className={styles.consultationList}>
+                  {optionalTypes.map((type) => (
+                    <button
+                      key={type.id}
+                      className={styles.consultationItem}
+                      onClick={() => setSelectedConsultation(type.id)}
+                    >
+                      <span className={styles.consultationItemName}>{type.name}</span>
+                      <ChevronRight size={16} className={styles.consultationItemArrow} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // 상담 종류 선택 후 - 노트 섹션 표시
+        const selectedType = CONSULTATION_TYPES.find((t) => t.id === selectedConsultation);
+        const SelectedIcon = selectedType?.icon || ClipboardCheck;
+
+        // Get birth year from profile
+        const birthYear = profile.birth_date
+          ? new Date(profile.birth_date).getFullYear()
+          : new Date().getFullYear() - 40;
+
+        return (
+          <div className={styles.consultationSection}>
+            {/* 뒤로가기 + 상담 유형 헤더 */}
+            <div className={styles.consultationHeader}>
+              <button
+                className={styles.backToList}
+                onClick={() => setSelectedConsultation(null)}
+              >
+                ← 상담 목록
+              </button>
+              <div
+                className={styles.consultationTypeLabel}
+                style={{ background: `${selectedType?.color}15`, color: selectedType?.color }}
+              >
+                <SelectedIcon size={18} />
+                <span>{selectedType?.name}</span>
+              </div>
+            </div>
+            <div className={styles.sectionContent}>
+              {selectedConsultation === "retirement-diagnosis" ? (
+                <RetirementDiagnosisForm
+                  userId={userId}
+                  birthYear={birthYear}
+                  retirementAge={profile.target_retirement_age}
+                />
+              ) : (
+                expertId && <NotesSection profileId={userId} expertId={expertId} />
               )}
+            </div>
+          </div>
+        );
+
+      case "scenario":
+        return (
+          <div className={styles.scenarioSection}>
+            <div className={styles.scenarioCard}>
+              <h3 className={styles.cardTitle}>시나리오 (플랜)</h3>
+              <p className={styles.scenarioDesc}>
+                고객의 재무 데이터를 기반으로 은퇴 시뮬레이션 결과를 확인합니다.
+              </p>
+              <div className={styles.scenarioItems}>
+                <button className={styles.scenarioItem}>
+                  <div className={styles.scenarioIcon}>
+                    <PieChart size={24} />
+                  </div>
+                  <div className={styles.scenarioInfo}>
+                    <span className={styles.scenarioName}>순자산 시뮬레이션</span>
+                    <span className={styles.scenarioSub}>연도별 순자산 변화 추이</span>
+                  </div>
+                </button>
+                <button className={styles.scenarioItem}>
+                  <div className={styles.scenarioIcon}>
+                    <Target size={24} />
+                  </div>
+                  <div className={styles.scenarioInfo}>
+                    <span className={styles.scenarioName}>현금흐름 시뮬레이션</span>
+                    <span className={styles.scenarioSub}>연도별 수입/지출 흐름</span>
+                  </div>
+                </button>
+              </div>
+              <p className={styles.comingSoon}>상세 시뮬레이션 뷰 준비중</p>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className={styles.container}>
+      {/* 헤더 */}
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>{profile.name}</h1>
+          <span className={`${styles.stageBadge} ${styles[profile.customer_stage || "new"]}`}>
+            {STAGE_LABELS[profile.customer_stage] || "신규"}
+          </span>
+        </div>
+        <div className={styles.headerRight}>
+          {/* 채팅 버튼 */}
+          <button
+            className={styles.chatButton}
+            onClick={() => router.push(`/admin/chat/${userId}`)}
+          >
+            <MessageCircle size={18} />
+            <span>채팅</span>
+            {unreadCount > 0 && (
+              <span className={styles.unreadBadge}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* 더보기 드롭다운 */}
+          <div className={styles.dropdownContainer}>
+            <button
+              className={styles.moreButton}
+              onClick={() => setShowDropdown(!showDropdown)}
+            >
+              더보기
+              <ChevronDown size={16} />
+            </button>
+            {showDropdown && (
+              <>
+                <div
+                  className={styles.dropdownBackdrop}
+                  onClick={() => setShowDropdown(false)}
+                />
+                <div className={styles.dropdown}>
+                  <button
+                    className={styles.dropdownItem}
+                    onClick={() => {
+                      setShowDropdown(false);
+                      setShowRemoveModal(true);
+                    }}
+                  >
+                    <UserMinus size={16} />
+                    담당 제외
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 탭 네비게이션 */}
+      <div className={styles.tabs}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`${styles.tab} ${currentSection === tab.id ? styles.active : ""}`}
+            onClick={() => setCurrentSection(tab.id)}
+          >
+            <tab.icon size={16} />
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* 콘텐츠 */}
+      <div className={styles.content}>
+        {renderContent()}
+      </div>
+
+      {/* 담당 제외 확인 모달 */}
+      {showRemoveModal && (
+        <div className={styles.modalBackdrop} onClick={() => setShowRemoveModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>담당 제외</h3>
+            <p className={styles.modalText}>
+              <strong>{profile.name}</strong> 님을 담당 고객에서 제외하시겠습니까?
+            </p>
+            <p className={styles.modalSubtext}>
+              제외해도 고객 정보는 삭제되지 않으며, 나중에 다시 담당 설정할 수 있습니다.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.modalCancel}
+                onClick={() => setShowRemoveModal(false)}
+                disabled={removing}
+              >
+                취소
+              </button>
+              <button
+                className={styles.modalConfirm}
+                onClick={handleRemoveFromMyCustomers}
+                disabled={removing}
+              >
+                {removing ? "처리 중..." : "제외하기"}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 재무 입력 탭 */}
-      {mainTab === "finance" && (
-        <div className={styles.financeContent}>
-          <FinanceManager
-            userId={userId}
-            birthYear={profile.birth_date ? new Date(profile.birth_date).getFullYear() : new Date().getFullYear() - 40}
-            retirementAge={profile.target_retirement_age || 60}
-          />
-        </div>
+      {/* 온보딩 설문 모달 */}
+      {showOnboardingModal && (
+        <OnboardingSurveyModal
+          surveyResponses={surveyResponses}
+          onClose={() => setShowOnboardingModal(false)}
+        />
       )}
 
-      {/* 상담 노트 탭 */}
-      {mainTab === "notes" && (
-        <div className={styles.notesContent}>
-          {expertId ? (
-            <NotesSection profileId={userId} expertId={expertId} />
-          ) : (
-            <div className={styles.emptySection}>전문가 정보를 불러올 수 없습니다.</div>
-          )}
+      {/* 가이드 클릭 상세 모달 */}
+      {showGuideClicksModal && (
+        <div className={styles.modalBackdrop} onClick={() => setShowGuideClicksModal(false)}>
+          <div className={styles.guideClicksModal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>가이드 열람 내역</h3>
+            <div className={styles.guideClicksList}>
+              {(() => {
+                const GUIDE_LABELS: Record<string, string> = {
+                  family: "가계 정보",
+                  housing: "거주용 부동산",
+                  savings: "저축",
+                  investment: "투자",
+                  debt: "부채",
+                  income: "소득",
+                  nationalPension: "국민(공적)연금",
+                  retirementPension: "퇴직연금/퇴직금",
+                  personalPension: "개인연금",
+                  expense: "지출",
+                };
+                const clicks = profile.guide_clicks || {};
+                const allCategories = Object.keys(GUIDE_LABELS);
+
+                return allCategories.map((categoryId) => {
+                  const data = clicks[categoryId];
+                  const count = data?.count || 0;
+                  return (
+                    <div key={categoryId} className={styles.guideClickItem}>
+                      <span className={styles.guideClickName}>{GUIDE_LABELS[categoryId]}</span>
+                      <span className={count > 0 ? styles.guideClickCount : styles.guideClickCountZero}>
+                        {count}회
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+            <button
+              className={styles.guideClicksCloseBtn}
+              onClick={() => setShowGuideClicksModal(false)}
+            >
+              닫기
+            </button>
+          </div>
         </div>
       )}
     </div>

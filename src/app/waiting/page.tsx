@@ -23,6 +23,7 @@ import { ChatRoom, ProgramDetailView, Toast, TipModal, MessageNotificationToast 
 import { getTotalUnreadCount } from "@/lib/services/messageService";
 import { confirmUserBooking } from "@/lib/services/bookingService";
 import { trackPageView } from "@/lib/analytics/mixpanel";
+import { trackGuideClick } from "./services/guideClickService";
 import type { Message } from "@/lib/services/messageService";
 import styles from "./waiting.module.css";
 
@@ -441,6 +442,10 @@ function WaitingPageContent() {
                     onClick={() => {
                       setSelectedTip(category.id);
                       setTipModalKey(prev => prev + 1);
+                      // 가이드 클릭 트래킹
+                      if (userId) {
+                        trackGuideClick(userId, category.id);
+                      }
                     }}
                   >
                     <span className={styles.tipTitle}>{category.title}</span>

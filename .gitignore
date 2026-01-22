@@ -38,9 +38,8 @@ yarn-error.log*
 
 # landing page (separate repo)
 /lycon-landing
-/reference_project
 /docs
-/reference_fastAPI
+/reference
 
 # typescript
 *.tsbuildinfo

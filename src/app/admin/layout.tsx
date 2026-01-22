@@ -3,12 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { AdminSidebar } from "./components";
 import styles from "./admin.module.css";
 
 interface Expert {
   id: string;
   name: string;
   title: string;
+}
+
+interface Customer {
+  id: string;
+  name: string;
 }
 
 export default function AdminLayout({
@@ -19,6 +25,7 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [expert, setExpert] = useState<Expert | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,7 +35,6 @@ export default function AdminLayout({
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        // 로그인 안 됨 → 로그인 페이지로 (로그인, 셋업 페이지는 제외)
         if (pathname !== "/admin/login" && pathname !== "/admin/setup") {
           router.replace("/admin/login");
         }
@@ -36,7 +42,6 @@ export default function AdminLayout({
         return;
       }
 
-      // 전문가인지 확인
       const { data: expertData } = await supabase
         .from("experts")
         .select("id, name, title")
@@ -44,7 +49,6 @@ export default function AdminLayout({
         .single();
 
       if (!expertData) {
-        // 전문가 아님 → 로그인 페이지로 (셋업 페이지는 제외)
         if (pathname !== "/admin/login" && pathname !== "/admin/setup") {
           router.replace("/admin/login");
         }
@@ -53,9 +57,36 @@ export default function AdminLayout({
       }
 
       setExpert(expertData);
+
+      // 고객 목록 로드
+      const { data: conversations } = await supabase
+        .from("conversations")
+        .select(`
+          user_id,
+          profiles:user_id (
+            id,
+            name
+          )
+        `)
+        .eq("expert_id", expertData.id)
+        .order("last_message_at", { ascending: false });
+
+      if (conversations) {
+        const customerList: Customer[] = conversations
+          .filter((c) => c.profiles)
+          .map((c) => {
+            const profile = Array.isArray(c.profiles) ? c.profiles[0] : c.profiles;
+            return {
+              id: profile?.id || "",
+              name: profile?.name || "이름 없음",
+            };
+          })
+          .filter((c) => c.id);
+        setCustomers(customerList);
+      }
+
       setLoading(false);
 
-      // 로그인 페이지에서 이미 로그인됨 → 대시보드로
       if (pathname === "/admin/login") {
         router.replace("/admin");
       }
@@ -89,17 +120,11 @@ export default function AdminLayout({
 
   return (
     <div className={styles.layout}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <span className={styles.logo}>Lycon Admin</span>
-          <div className={styles.headerRight}>
-            <span className={styles.expertName}>{expert.name}</span>
-            <button onClick={handleLogout} className={styles.logoutButton}>
-              로그아웃
-            </button>
-          </div>
-        </div>
-      </header>
+      <AdminSidebar
+        expertName={expert.name}
+        customers={customers}
+        onLogout={handleLogout}
+      />
       <main className={styles.main}>{children}</main>
     </div>
   );

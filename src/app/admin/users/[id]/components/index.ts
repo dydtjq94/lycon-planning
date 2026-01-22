@@ -1,2 +1,2 @@
 export { NotesSection } from "./NotesSection";
-export { FinanceManager } from "./finance";
+export { FinanceManager, FinanceWizard, ConsultationNote, RetirementDiagnosisForm, ProgressSection } from "./finance";

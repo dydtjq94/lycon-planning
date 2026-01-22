@@ -1,0 +1,192 @@
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #f5f5f7;
+  border-radius: 10px;
+  margin-top: 8px;
+}
+
+.typeSelect {
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1d1d1f;
+  background: #fff;
+  border: 1px solid #e5e5ea;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 80px;
+}
+
+.subTypeSelect {
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1d1d1f;
+  background: #fff;
+  border: 1px solid #e5e5ea;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 90px;
+}
+
+.titleInput {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1d1d1f;
+  background: #fff;
+  border: 1px solid #e5e5ea;
+  border-radius: 6px;
+}
+
+.titleInput::placeholder {
+  color: #c7c7cc;
+}
+
+.titleInput:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.valueGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.valueInput {
+  width: 100px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1d1d1f;
+  background: #fff;
+  border: 1px solid #e5e5ea;
+  border-radius: 6px;
+  text-align: right;
+}
+
+.valueInput::placeholder {
+  color: #c7c7cc;
+  text-align: left;
+}
+
+.valueInput:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.ageInput {
+  width: 60px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1d1d1f;
+  background: #fff;
+  border: 1px solid #e5e5ea;
+  border-radius: 6px;
+  text-align: right;
+}
+
+.ageInput:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.rateInput {
+  width: 70px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1d1d1f;
+  background: #fff;
+  border: 1px solid #e5e5ea;
+  border-radius: 6px;
+  text-align: right;
+}
+
+.rateInput::placeholder {
+  color: #c7c7cc;
+  text-align: left;
+}
+
+.rateInput:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.ownerSelect {
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1d1d1f;
+  background: #fff;
+  border: 1px solid #e5e5ea;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 70px;
+}
+
+.unit {
+  font-size: 12px;
+  color: #86868b;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.saveBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #007aff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.15s;
+}
+
+.saveBtn:hover {
+  background: #0066d6;
+}
+
+.cancelBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #e5e5ea;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #86868b;
+  transition: background 0.15s;
+}
+
+.cancelBtn:hover {
+  background: #d1d1d6;
+  color: #1d1d1f;
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.valueInput::-webkit-outer-spin-button,
+.valueInput::-webkit-inner-spin-button,
+.ageInput::-webkit-outer-spin-button,
+.ageInput::-webkit-inner-spin-button,
+.rateInput::-webkit-outer-spin-button,
+.rateInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.valueInput,
+.ageInput,
+.rateInput {
+  -moz-appearance: textfield;
+}

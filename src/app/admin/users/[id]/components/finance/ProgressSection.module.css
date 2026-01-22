@@ -1,0 +1,236 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e5e5;
+  border-top-color: #007aff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Header with Timeline */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0 20px 0;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.timeline {
+  flex: 1;
+  overflow: visible;
+}
+
+.emptyTimeline {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.timelineTrack {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timelineItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.timelineItem:hover {
+  background: #f5f5f7;
+}
+
+.timelineItem.active {
+  background: #e8f4ff;
+}
+
+.timelineDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #c7c7cc;
+  transition: all 0.15s;
+}
+
+.timelineItem.active .timelineDot {
+  background: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+.timelineDate {
+  font-size: 12px;
+  color: #86868b;
+  white-space: nowrap;
+}
+
+.timelineItem.active .timelineDate {
+  color: #007aff;
+  font-weight: 500;
+}
+
+.latestBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  background: #34c759;
+  padding: 2px 6px;
+  border-radius: 4px;
+  z-index: 1;
+}
+
+.moreIndicator {
+  font-size: 12px;
+  color: #86868b;
+  padding: 8px;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.addButton:hover {
+  background: #0066d6;
+}
+
+.addButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Summary Cards */
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .summaryCards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.summaryCard {
+  padding: 16px;
+  background: #f5f5f7;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cardLabel {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.cardValue {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.cardChange {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.cardChange.positive {
+  color: #34c759;
+}
+
+.cardChange.negative {
+  color: #ff3b30;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: #86868b;
+}
+
+.emptyState h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 16px 0 8px 0;
+}
+
+.emptyState p {
+  font-size: 14px;
+  margin: 0 0 20px 0;
+  max-width: 300px;
+}
+
+.startButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.startButton:hover {
+  background: #0066d6;
+}

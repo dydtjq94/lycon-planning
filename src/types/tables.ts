@@ -124,13 +124,16 @@ export interface ExpenseInput {
 }
 
 // ============================================
-// 국민연금 (national_pensions)
+// 공적연금 (national_pensions)
 // ============================================
+
+export type PublicPensionType = 'national' | 'government' | 'military' | 'private_school'
 
 export interface NationalPension {
   id: string
   simulation_id: string
   owner: Owner
+  pension_type: PublicPensionType  // 공적연금 유형
   expected_monthly_amount: number  // 만원
   start_age: number
   end_age: number | null
@@ -143,6 +146,7 @@ export interface NationalPension {
 export interface NationalPensionInput {
   simulation_id: string
   owner?: Owner
+  pension_type?: PublicPensionType
   expected_monthly_amount: number
   start_age: number
   end_age?: number | null
@@ -568,5 +572,74 @@ export interface InsuranceInput {
   pension_start_age?: number | null
   pension_receiving_years?: number | null
   memo?: string | null
+  sort_order?: number
+}
+
+// ============================================
+// 자산 기록 (Financial Snapshots / Progress)
+// ============================================
+
+export type SnapshotType = 'initial' | 'followup' | 'quarterly' | 'annual'
+export type SnapshotCategory = 'asset' | 'debt' | 'income' | 'expense' | 'pension'
+export type SnapshotOwner = 'self' | 'spouse' | 'joint'
+
+export interface FinancialSnapshot {
+  id: string
+  profile_id: string
+  recorded_at: string  // DATE
+  recorded_by: string | null  // expert_id
+  snapshot_type: SnapshotType
+
+  // 요약 데이터
+  total_assets: number      // 만원
+  total_debts: number       // 만원
+  net_worth: number         // 만원
+  monthly_income: number    // 만원
+  monthly_expense: number   // 만원
+  monthly_savings: number   // 만원
+  savings_rate: number      // %
+
+  memo: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface FinancialSnapshotInput {
+  profile_id: string
+  recorded_at?: string
+  recorded_by?: string | null
+  snapshot_type?: SnapshotType
+  total_assets?: number
+  total_debts?: number
+  net_worth?: number
+  monthly_income?: number
+  monthly_expense?: number
+  monthly_savings?: number
+  savings_rate?: number
+  memo?: string | null
+}
+
+export interface FinancialSnapshotItem {
+  id: string
+  snapshot_id: string
+  category: SnapshotCategory
+  item_type: string
+  title: string
+  amount: number  // 만원
+  owner: SnapshotOwner
+  metadata: Record<string, unknown>
+  sort_order: number
+  created_at: string
+}
+
+export interface FinancialSnapshotItemInput {
+  snapshot_id: string
+  category: SnapshotCategory
+  item_type: string
+  title: string
+  amount: number
+  owner?: SnapshotOwner
+  metadata?: Record<string, unknown>
   sort_order?: number
 }

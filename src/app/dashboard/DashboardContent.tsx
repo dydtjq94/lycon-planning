@@ -41,13 +41,16 @@ import styles from "./dashboard.module.css";
 type ModalType = "family" | "scenario" | "settings" | null;
 
 const sectionTitles: Record<string, string> = {
-  // Dashboard
-  diagnosis: "홈",
-  messages: "메시지",
+  // 담당자 관련
+  messages: "채팅",
+  consultation: "상담",
+  // 프로그레스
+  "asset-snapshot": "자산 현황",
+  "household-budget": "가계부",
+  // 시나리오 > 은퇴
   networth: "순자산",
   "cashflow-overview": "현금흐름",
-  "asset-record": "자산 기록",
-  // Finance
+  // 나의 재무
   income: "소득 관리",
   expense: "지출 관리",
   insurance: "보험 관리",
@@ -351,11 +354,17 @@ export function DashboardContent() {
 
   const renderContent = () => {
     switch (currentSection) {
-      // Dashboard tabs
-      case "diagnosis":
-        return <OverviewTab profile={profile} />;
+      // 담당자 관련
       case "messages":
         return <MessagesTab onUnreadCountChange={setUnreadMessageCount} />;
+      case "consultation":
+        return <div style={{ padding: 40, color: "#888" }}>상담 기록 (준비중)</div>;
+      // 프로그레스
+      case "asset-snapshot":
+        return <AssetRecordTab />;
+      case "household-budget":
+        return <div style={{ padding: 40, color: "#888" }}>가계부 (준비중)</div>;
+      // 시나리오 > 은퇴
       case "networth":
         return (
           <NetWorthTab
@@ -376,9 +385,7 @@ export function DashboardContent() {
             globalSettings={globalSettings}
           />
         );
-      case "asset-record":
-        return <AssetRecordTab />;
-      // Finance tabs
+      // Finance tabs (나의 재무)
       case "income":
         return (
           <IncomeTab
@@ -455,72 +462,9 @@ export function DashboardContent() {
 
       <main className={styles.main}>
         <header className={styles.header}>
-          {currentSection === "diagnosis" ? (
-            <div className={styles.scheduleHeader}>
-              <div className={styles.scheduleBadge}>
-                D7 무료 은퇴 진단 플랜 진행중
-              </div>
-              <div className={styles.scheduleTimeline}>
-                <div className={styles.scheduleItem}>
-                  <span className={styles.scheduleValue}>
-                    {(() => {
-                      const startDate = profile.diagnosis_started_at
-                        ? new Date(profile.diagnosis_started_at)
-                        : new Date();
-                      const d = new Date(startDate);
-                      d.setDate(d.getDate() + 3);
-                      const dayNames = [
-                        "일",
-                        "월",
-                        "화",
-                        "수",
-                        "목",
-                        "금",
-                        "토",
-                      ];
-                      return `${d.getMonth() + 1}/${d.getDate()} (${
-                        dayNames[d.getDay()]
-                      })`;
-                    })()}
-                  </span>
-                  <span className={styles.scheduleLabel}>
-                    까지 재무 정보 입력
-                  </span>
-                </div>
-                <div className={styles.scheduleDivider} />
-                <div className={styles.scheduleItem}>
-                  <span className={styles.scheduleValue}>
-                    {(() => {
-                      const startDate = profile.diagnosis_started_at
-                        ? new Date(profile.diagnosis_started_at)
-                        : new Date();
-                      const d = new Date(startDate);
-                      d.setDate(d.getDate() + 7);
-                      const dayNames = [
-                        "일",
-                        "월",
-                        "화",
-                        "수",
-                        "목",
-                        "금",
-                        "토",
-                      ];
-                      return `${d.getMonth() + 1}/${d.getDate()} (${
-                        dayNames[d.getDay()]
-                      })`;
-                    })()}
-                  </span>
-                  <span className={styles.scheduleLabel}>
-                    전문가 진단 결과 도착
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <h1 key={currentSection} className={styles.pageTitle}>
-              {sectionTitles[currentSection]}
-            </h1>
-          )}
+          <h1 key={currentSection} className={styles.pageTitle}>
+            {sectionTitles[currentSection] || currentSection}
+          </h1>
 
           <div className={styles.headerActions}>
             <button

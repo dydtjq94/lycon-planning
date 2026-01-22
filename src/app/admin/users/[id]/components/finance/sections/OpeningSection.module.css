@@ -1,0 +1,566 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 8px 0;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e5ea;
+  border-top-color: #007aff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Section - 카드 없이 깔끔하게 */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+.sectionContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 1. 기본 정보 */
+.infoGrid {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.infoRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.infoLabel {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.infoValue {
+  font-size: 14px;
+  color: #1c1c1e;
+  font-weight: 500;
+}
+
+.familySummary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.familyRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.familyLabel {
+  font-size: 14px;
+  color: #86868b;
+  min-width: 60px;
+}
+
+.familyValue {
+  font-size: 14px;
+  color: #1c1c1e;
+}
+
+.editLink {
+  margin-top: 8px;
+}
+
+.editButton {
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  color: #007aff;
+  cursor: pointer;
+}
+
+.editButton:hover {
+  text-decoration: underline;
+}
+
+/* 2. 오늘의 고민 */
+.concernsTextarea {
+  width: 100%;
+  padding: 12px 0;
+  border: none;
+  border-bottom: 1px solid #e5e5ea;
+  font-size: 15px;
+  color: #1c1c1e;
+  font-family: inherit;
+  resize: none;
+  background: transparent;
+  transition: border-color 0.2s;
+}
+
+.concernsTextarea:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.concernsTextarea::placeholder {
+  color: #86868b;
+}
+
+.helperText {
+  margin: 0;
+  font-size: 13px;
+  color: #86868b;
+}
+
+/* 3. 은퇴 목표 */
+.goalRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.goalLabel {
+  font-size: 14px;
+  color: #1c1c1e;
+  min-width: 110px;
+}
+
+.goalInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.goalInput {
+  width: 80px;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid #e5e5ea;
+  font-size: 15px;
+  color: #1c1c1e;
+  text-align: left;
+  background: transparent;
+  transition: border-color 0.2s;
+}
+
+.goalInput:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.goalInput[type="number"]::-webkit-outer-spin-button,
+.goalInput[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.unit {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.goalSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lifestyleButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.lifestyleButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 20px;
+  background: #f5f5f7;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lifestyleButton:hover {
+  background: #e5e5ea;
+}
+
+.lifestyleButton.selected {
+  background: #007aff;
+}
+
+.lifestyleLabel {
+  font-size: 13px;
+  color: #86868b;
+  font-weight: 500;
+}
+
+.lifestyleButton.selected .lifestyleLabel {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.lifestyleValue {
+  font-size: 13px;
+  color: #1c1c1e;
+  font-weight: 600;
+}
+
+.lifestyleButton.selected .lifestyleValue {
+  color: white;
+}
+
+.customInput {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.customLabel {
+  font-size: 14px;
+  color: #1c1c1e;
+  min-width: 110px;
+}
+
+/* Family Modal */
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal {
+  width: 90%;
+  max-width: 480px;
+  max-height: 80vh;
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+.modalCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: #f5f5f7;
+  color: #86868b;
+  cursor: pointer;
+}
+
+.modalCloseBtn:hover {
+  background: #e5e5ea;
+  color: #1c1c1e;
+}
+
+.modalBody {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memberListTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px 0;
+}
+
+.memberItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #f5f5f7;
+  border-radius: 10px;
+}
+
+.memberInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.memberBadge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.memberBadge.spouse {
+  background: #ff9500;
+  color: white;
+}
+
+.memberBadge.child {
+  background: #34c759;
+  color: white;
+}
+
+.memberBadge.parent {
+  background: #af52de;
+  color: white;
+}
+
+.memberName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1c1c1e;
+}
+
+.memberAge {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.memberActions {
+  display: flex;
+  gap: 4px;
+}
+
+.memberActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #86868b;
+  cursor: pointer;
+}
+
+.memberActionBtn:hover {
+  background: #e5e5ea;
+  color: #1c1c1e;
+}
+
+.memberActionBtn.delete:hover {
+  background: #ffebe9;
+  color: #ff3b30;
+}
+
+/* Add Member Section */
+.addMemberSection {
+  padding-top: 16px;
+  border-top: 1px solid #e5e5ea;
+}
+
+.addMemberTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
+}
+
+.addMemberButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.addMemberBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #f5f5f7;
+  color: #007aff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.addMemberBtn:hover {
+  background: #e5e5ea;
+}
+
+/* Member Form */
+.memberForm {
+  padding-top: 16px;
+  border-top: 1px solid #e5e5ea;
+}
+
+.formTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 16px 0;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  margin-bottom: 6px;
+}
+
+.formInput,
+.formSelect {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e5ea;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1c1c1e;
+  background: white;
+}
+
+.formInput:focus,
+.formSelect:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.genderButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.genderBtn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #e5e5ea;
+  border-radius: 8px;
+  background: white;
+  color: #86868b;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.genderBtn.selected {
+  border-color: #007aff;
+  background: #f0f5ff;
+  color: #007aff;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.cancelBtn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #f5f5f7;
+  color: #1c1c1e;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: #e5e5ea;
+}
+
+.saveBtn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #007aff;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.saveBtn:hover {
+  background: #0066d6;
+}
+
+.saveBtn:disabled {
+  background: #a0c8ff;
+  cursor: not-allowed;
+}

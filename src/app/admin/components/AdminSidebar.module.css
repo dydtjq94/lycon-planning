@@ -1,0 +1,250 @@
+/* 다크 사이드바 - 항상 열림 */
+.sidebar {
+  width: 220px;
+  height: 100vh;
+  background-color: #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 로고 행 */
+.logoRow {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border-bottom: 1px solid #2a2a2a;
+  margin-bottom: 8px;
+}
+
+/* 로고 아이템 */
+.logoItem {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  height: 48px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.logoLetter {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  border-radius: 8px;
+}
+
+.logoItem .navLabel {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  margin-left: 10px;
+}
+
+/* 네비게이션 */
+.nav {
+  flex: 1;
+  padding: 0 8px 8px 8px;
+}
+
+.navSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #888;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.navItem svg {
+  flex-shrink: 0;
+}
+
+.navItem:hover {
+  background-color: #2a2a2a;
+  color: white;
+}
+
+.navItem.active {
+  background-color: #2a2a2a;
+  color: white;
+}
+
+.navLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  margin-left: auto;
+  color: #666;
+  flex-shrink: 0;
+}
+
+/* 구분선 */
+.divider {
+  height: 1px;
+  background-color: #2a2a2a;
+  margin: 8px 12px;
+}
+
+/* 섹션 라벨 */
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 12px 4px 12px;
+}
+
+/* 네비게이션 그룹 */
+.navGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 서브메뉴 */
+.submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 12px;
+  margin-top: 2px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.submenuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #777;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.submenuItem svg {
+  flex-shrink: 0;
+}
+
+.submenuItem:hover {
+  background-color: #2a2a2a;
+  color: white;
+}
+
+.submenuItem.active {
+  background-color: #333;
+  color: white;
+}
+
+.emptyCustomers {
+  padding: 12px;
+  font-size: 12px;
+  color: #555;
+}
+
+/* 푸터 */
+.footer {
+  padding: 8px;
+  border-top: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.expertInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+}
+
+.expertAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #34c759 0%, #30d158 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.expertName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.footerItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.footerItem svg {
+  flex-shrink: 0;
+}
+
+.footerItem:hover {
+  background-color: #2a2a2a;
+  color: white;
+}

@@ -1,7 +1,11 @@
-export { IncomeSection } from "./IncomeSection";
-export { ExpenseSection } from "./ExpenseSection";
-export { SavingsSection } from "./SavingsSection";
-export { RealEstateSection } from "./RealEstateSection";
-export { DebtSection } from "./DebtSection";
-export { InsuranceSection } from "./InsuranceSection";
-export { PensionSection } from "./PensionSection";
+export { OpeningSection } from "./OpeningSection";
+export type { OpeningData } from "./OpeningSection";
+
+export { CashFlowSection } from "./CashFlowSection";
+export type { CashFlowData } from "./CashFlowSection";
+
+export { AssetsSection } from "./AssetsSection";
+export type { AssetsData } from "./AssetsSection";
+
+export { ClosingSection } from "./ClosingSection";
+export type { ClosingSectionProps } from "./ClosingSection";

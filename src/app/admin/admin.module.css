@@ -1,64 +1,15 @@
-/* Admin Layout - Apple Style */
+/* Admin Layout - Sidebar Style */
 .layout {
+  display: flex;
   min-height: 100vh;
   background: #f5f5f7;
 }
 
-.header {
-  background: #1d1d1f;
-  color: white;
-  padding: 0 24px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-}
-
-.headerContent {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.headerRight {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.expertName {
-  font-size: 13px;
-  color: #a1a1a6;
-}
-
-.logoutButton {
-  padding: 6px 14px;
-  background: transparent;
-  border: 1px solid #424245;
-  border-radius: 6px;
-  color: #a1a1a6;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.logoutButton:hover {
-  border-color: #6e6e73;
-  color: #f5f5f7;
-}
-
 .main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px;
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .loadingContainer {
@@ -98,7 +49,6 @@
   width: 100%;
   max-width: 380px;
   background: white;
-  border-radius: 14px;
   padding: 40px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
@@ -139,7 +89,6 @@
 .input {
   padding: 12px 14px;
   border: 1px solid #d2d2d7;
-  border-radius: 8px;
   font-size: 15px;
   transition: all 0.2s;
 }
@@ -156,7 +105,6 @@
   background: #007aff;
   color: white;
   border: none;
-  border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -175,7 +123,6 @@
 .loginError {
   padding: 12px;
   background: #fff2f2;
-  border-radius: 8px;
   color: #ff3b30;
   font-size: 13px;
   text-align: center;
@@ -205,7 +152,6 @@
 .statCard {
   background: white;
   padding: 20px 24px;
-  border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -224,7 +170,6 @@
 
 .section {
   background: white;
-  border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
@@ -311,7 +256,6 @@
   padding: 4px 10px;
   background: #007aff;
   color: white;
-  border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
   min-width: 22px;
@@ -321,7 +265,6 @@
 .actionButton {
   padding: 8px 14px;
   border: none;
-  border-radius: 8px;
   background: #f5f5f7;
   font-size: 13px;
   font-weight: 500;
@@ -353,7 +296,6 @@
 .backButton {
   padding: 8px 14px;
   border: none;
-  border-radius: 8px;
   background: #f5f5f7;
   font-size: 14px;
   color: #1d1d1f;
@@ -381,14 +323,12 @@
   margin-bottom: 24px;
   padding: 4px;
   background: #f5f5f7;
-  border-radius: 10px;
   width: fit-content;
 }
 
 .tab {
   padding: 10px 20px;
   border: none;
-  border-radius: 8px;
   background: transparent;
   font-size: 14px;
   font-weight: 500;
@@ -421,7 +361,6 @@
 
 .dataCard {
   background: #f5f5f7;
-  border-radius: 12px;
   padding: 16px;
 }
 
@@ -462,7 +401,6 @@
   display: flex;
   flex-direction: column;
   background: white;
-  border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
@@ -493,7 +431,6 @@
 .chatMessage {
   max-width: 70%;
   padding: 12px 16px;
-  border-radius: 16px;
   font-size: 14px;
   line-height: 1.5;
 }
@@ -521,7 +458,6 @@
   flex: 1;
   padding: 12px 14px;
   border: 1px solid #d2d2d7;
-  border-radius: 10px;
   font-size: 14px;
   resize: none;
   transition: all 0.2s;
@@ -538,7 +474,6 @@
   background: #007aff;
   color: white;
   border: none;
-  border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -561,7 +496,6 @@
   justify-content: center;
   padding: 20px;
   background: white;
-  border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   font-size: 15px;
   font-weight: 600;
@@ -630,7 +564,6 @@
 
 .bookingStatus {
   padding: 5px 12px;
-  border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -666,14 +599,12 @@
 
 .chatImageLink {
   display: block;
-  border-radius: 10px;
   overflow: hidden;
 }
 
 .chatImage {
   max-width: 200px;
   max-height: 200px;
-  border-radius: 10px;
   object-fit: cover;
   cursor: pointer;
   transition: opacity 0.2s;
@@ -695,7 +626,6 @@
 .viewToggle {
   display: flex;
   background: #f5f5f7;
-  border-radius: 8px;
   padding: 3px;
 }
 
@@ -707,7 +637,6 @@
   height: 28px;
   border: none;
   background: transparent;
-  border-radius: 6px;
   color: #86868b;
   cursor: pointer;
   transition: all 0.2s;
@@ -744,7 +673,6 @@
   height: 32px;
   border: none;
   background: #f5f5f7;
-  border-radius: 8px;
   color: #1d1d1f;
   cursor: pointer;
   transition: all 0.2s;
@@ -794,14 +722,12 @@
 .calendarDayEmpty {
   height: 76px;
   background: #f5f5f7;
-  border-radius: 8px;
 }
 
 .calendarDay {
   height: 76px;
   padding: 6px;
   background: #f5f5f7;
-  border-radius: 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -844,7 +770,6 @@
   align-items: center;
   gap: 4px;
   padding: 3px 6px;
-  border-radius: 4px;
   font-size: 10px;
   white-space: nowrap;
   overflow: hidden;
@@ -896,7 +821,6 @@
   width: 100%;
   padding: 12px 14px 12px 42px;
   border: none;
-  border-radius: 12px;
   background: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   font-size: 15px;
@@ -921,7 +845,6 @@
 .filterButton {
   padding: 10px 18px;
   border: none;
-  border-radius: 10px;
   background: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   font-size: 14px;
@@ -945,7 +868,6 @@
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
   margin-left: 8px;
@@ -995,7 +917,6 @@
   width: 36px;
   height: 36px;
   border: none;
-  border-radius: 10px;
   background: #007aff;
   color: white;
   cursor: pointer;
@@ -1016,7 +937,6 @@
   width: 56px;
   height: 56px;
   background: white;
-  border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border: none;
   color: #86868b;

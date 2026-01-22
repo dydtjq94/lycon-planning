@@ -9,6 +9,17 @@ import { formatMoney } from "@/lib/utils";
 import { BookingModal } from "./components";
 import styles from "./dashboard.module.css";
 
+type CustomerStage = "new" | "first_consultation" | "report_delivered" | "second_consultation" | "subscription" | "churned";
+
+const CUSTOMER_STAGE_LABELS: Record<CustomerStage, string> = {
+  new: "신규",
+  first_consultation: "1차 상담",
+  report_delivered: "보고서",
+  second_consultation: "2차 상담",
+  subscription: "구독",
+  churned: "이탈",
+};
+
 interface User {
   id: string;
   name: string;
@@ -20,6 +31,7 @@ interface User {
   unread_count: number;
   conversation_id: string;
   last_message_at: string | null;
+  customer_stage: CustomerStage;
 }
 
 interface AssetSummary {
@@ -98,7 +110,8 @@ export default function AdminDashboardPage() {
             gender,
             phone_number,
             created_at,
-            onboarding_step
+            onboarding_step,
+            customer_stage
           )
         `)
         .eq("expert_id", expert.id)
@@ -113,6 +126,7 @@ export default function AdminDashboardPage() {
           phone_number: string | null;
           created_at: string;
           onboarding_step: string | null;
+          customer_stage: CustomerStage | null;
         };
 
         const conversationIds = conversations.map(c => c.id);
@@ -144,6 +158,7 @@ export default function AdminDashboardPage() {
               unread_count: unreadMap[c.id] || 0,
               conversation_id: c.id,
               last_message_at: c.last_message_at,
+              customer_stage: profile.customer_stage || "new",
             };
           });
 
@@ -285,8 +300,10 @@ export default function AdminDashboardPage() {
         </button>
       </div>
 
-      {/* 통계 */}
-      <div className={styles.statsGrid}>
+      {/* 콘텐츠 */}
+      <div className={styles.content}>
+        {/* 통계 */}
+        <div className={styles.statsGrid}>
         <div className={styles.statCard}>
           <div className={styles.statLabel}>담당 고객</div>
           <div className={styles.statValue}>{users.length}<span className={styles.statUnit}>명</span></div>
@@ -334,6 +351,9 @@ export default function AdminDashboardPage() {
                           {getAge(user.birth_date)}세
                         </span>
                       )}
+                      <span className={`${styles.stageBadge} ${styles[user.customer_stage]}`}>
+                        {CUSTOMER_STAGE_LABELS[user.customer_stage]}
+                      </span>
                     </div>
                     <div className={styles.customerMeta}>
                       {user.phone_number || "연락처 없음"}
@@ -424,6 +444,7 @@ export default function AdminDashboardPage() {
               })
             )}
           </div>
+        </div>
         </div>
       </div>
 

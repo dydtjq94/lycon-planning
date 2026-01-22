@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight, Settings, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
+  getExpertBookings,
+  BookingWithUser,
   getExpertAvailability,
   updateAvailability,
   ExpertAvailability,
@@ -25,8 +28,13 @@ interface DaySchedule {
 export default function SchedulePage() {
   const router = useRouter();
   const [expertId, setExpertId] = useState<string | null>(null);
-  const [schedules, setSchedules] = useState<DaySchedule[]>([]);
+  const [bookings, setBookings] = useState<BookingWithUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  // 설정 모달
+  const [showSettings, setShowSettings] = useState(false);
+  const [schedules, setSchedules] = useState<DaySchedule[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -44,14 +52,17 @@ export default function SchedulePage() {
       if (!expert) return;
       setExpertId(expert.id);
 
-      // 스케줄 로드
+      // 예약 목록 로드
+      const bookingList = await getExpertBookings(expert.id);
+      setBookings(bookingList);
+
+      // 스케줄 설정 로드
       const availability = await getExpertAvailability(expert.id);
       const scheduleMap: Record<number, ExpertAvailability> = {};
       availability.forEach((a) => {
         scheduleMap[a.day_of_week] = a;
       });
 
-      // 모든 요일에 대해 스케줄 생성
       const allSchedules: DaySchedule[] = [];
       for (let i = 0; i < 7; i++) {
         if (scheduleMap[i]) {
@@ -75,6 +86,50 @@ export default function SchedulePage() {
     loadData();
   }, []);
 
+  // 캘린더 데이터 생성
+  const getCalendarDays = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDayOfWeek = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+
+    const days: (number | null)[] = [];
+    for (let i = 0; i < startDayOfWeek; i++) {
+      days.push(null);
+    }
+    for (let i = 1; i <= totalDays; i++) {
+      days.push(i);
+    }
+    return days;
+  };
+
+  const getBookingsForDay = (day: number) => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return bookings.filter((b) => b.booking_date === dateStr);
+  };
+
+  const prevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+
+  const isToday = (day: number) => {
+    const today = new Date();
+    return (
+      day === today.getDate() &&
+      currentDate.getMonth() === today.getMonth() &&
+      currentDate.getFullYear() === today.getFullYear()
+    );
+  };
+
+  // 스케줄 설정 관련
   const toggleDay = (dayOfWeek: number) => {
     setSchedules((prev) =>
       prev.map((s) =>
@@ -98,7 +153,7 @@ export default function SchedulePage() {
     );
   };
 
-  const handleSave = async () => {
+  const handleSaveSettings = async () => {
     if (!expertId) return;
     setSaving(true);
 
@@ -111,7 +166,7 @@ export default function SchedulePage() {
           schedule.isActive
         );
       }
-      alert("저장되었습니다.");
+      setShowSettings(false);
     } catch (error) {
       console.error("Save error:", error);
       alert("저장 중 오류가 발생했습니다.");
@@ -123,66 +178,161 @@ export default function SchedulePage() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>불러오는 중...</div>
+        <div className={styles.loading}>
+          <div className={styles.spinner} />
+        </div>
       </div>
     );
   }
 
+  const calendarDays = getCalendarDays();
+
   return (
     <div className={styles.container}>
+      {/* 헤더 */}
       <div className={styles.header}>
-        <button className={styles.backButton} onClick={() => router.push("/admin")}>
-          목록으로
+        <h1 className={styles.title}>스케줄</h1>
+        <button
+          className={styles.settingsButton}
+          onClick={() => setShowSettings(true)}
+        >
+          <Settings size={18} />
+          <span>예약 시간 설정</span>
         </button>
-        <h1 className={styles.title}>스케줄 관리</h1>
       </div>
 
-      <p className={styles.description}>
-        예약 가능한 요일과 시간대를 설정하세요.
-      </p>
+      {/* 콘텐츠 */}
+      <div className={styles.content}>
+        {/* 캘린더 */}
+        <div className={styles.calendar}>
+          {/* 캘린더 헤더 */}
+          <div className={styles.calendarHeader}>
+            <button className={styles.navButton} onClick={prevMonth}>
+              <ChevronLeft size={20} />
+            </button>
+            <h2 className={styles.monthTitle}>
+              {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
+            </h2>
+            <button className={styles.navButton} onClick={nextMonth}>
+              <ChevronRight size={20} />
+            </button>
+          </div>
 
-      <div className={styles.scheduleGrid}>
-        {schedules.map((schedule) => (
-          <div key={schedule.dayOfWeek} className={styles.dayCard}>
-            <div className={styles.dayHeader}>
-              <span className={styles.dayName}>{DAYS[schedule.dayOfWeek]}요일</span>
-              <button
-                className={`${styles.toggleButton} ${schedule.isActive ? styles.active : ""}`}
-                onClick={() => toggleDay(schedule.dayOfWeek)}
+          {/* 요일 헤더 */}
+          <div className={styles.weekdays}>
+            {DAYS.map((day, idx) => (
+              <div
+                key={day}
+                className={`${styles.weekday} ${idx === 0 ? styles.sunday : ""} ${idx === 6 ? styles.saturday : ""}`}
               >
-                {schedule.isActive ? "ON" : "OFF"}
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* 날짜 그리드 */}
+          <div className={styles.daysGrid}>
+            {calendarDays.map((day, idx) => {
+              if (day === null) {
+                return <div key={`empty-${idx}`} className={styles.dayEmpty} />;
+              }
+
+              const dayOfWeek = (new Date(currentDate.getFullYear(), currentDate.getMonth(), day).getDay());
+              const dayBookings = getBookingsForDay(day);
+
+              return (
+                <div
+                  key={day}
+                  className={`${styles.day} ${isToday(day) ? styles.today : ""} ${dayOfWeek === 0 ? styles.sunday : ""} ${dayOfWeek === 6 ? styles.saturday : ""}`}
+                >
+                  <div className={styles.dayNumber}>{day}</div>
+                  <div className={styles.dayBookings}>
+                    {dayBookings.slice(0, 3).map((booking) => (
+                      <button
+                        key={booking.id}
+                        className={`${styles.booking} ${styles[booking.status]}`}
+                        onClick={() => router.push(`/admin/users/${booking.user_id}`)}
+                      >
+                        <span className={styles.bookingTime}>{booking.booking_time}</span>
+                        <span className={styles.bookingName}>{booking.user_name || "이름 없음"}</span>
+                      </button>
+                    ))}
+                    {dayBookings.length > 3 && (
+                      <div className={styles.moreBookings}>+{dayBookings.length - 3}건</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* 설정 모달 */}
+      {showSettings && (
+        <div className={styles.modalOverlay} onClick={() => setShowSettings(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>예약 시간 설정</h2>
+              <button className={styles.closeButton} onClick={() => setShowSettings(false)}>
+                <X size={20} />
               </button>
             </div>
+            <div className={styles.modalContent}>
+              <p className={styles.modalDescription}>
+                예약 가능한 요일과 시간대를 설정하세요.
+              </p>
+              <div className={styles.scheduleGrid}>
+                {schedules.map((schedule) => (
+                  <div key={schedule.dayOfWeek} className={styles.dayCard}>
+                    <div className={styles.dayHeader}>
+                      <span className={styles.dayName}>{DAYS[schedule.dayOfWeek]}요일</span>
+                      <button
+                        className={`${styles.toggleButton} ${schedule.isActive ? styles.active : ""}`}
+                        onClick={() => toggleDay(schedule.dayOfWeek)}
+                      >
+                        {schedule.isActive ? "ON" : "OFF"}
+                      </button>
+                    </div>
 
-            {schedule.isActive && (
-              <div className={styles.timeSlots}>
-                {ALL_TIME_SLOTS.map((time) => {
-                  const isSelected = schedule.timeSlots.includes(time);
-                  return (
-                    <button
-                      key={time}
-                      className={`${styles.timeSlot} ${isSelected ? styles.selected : ""}`}
-                      onClick={() => toggleTimeSlot(schedule.dayOfWeek, time)}
-                    >
-                      {time}
-                    </button>
-                  );
-                })}
+                    {schedule.isActive && (
+                      <div className={styles.timeSlots}>
+                        {ALL_TIME_SLOTS.map((time) => {
+                          const isSelected = schedule.timeSlots.includes(time);
+                          return (
+                            <button
+                              key={time}
+                              className={`${styles.timeSlot} ${isSelected ? styles.selected : ""}`}
+                              onClick={() => toggleTimeSlot(schedule.dayOfWeek, time)}
+                            >
+                              {time}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+            <div className={styles.modalFooter}>
+              <button
+                className={styles.cancelButton}
+                onClick={() => setShowSettings(false)}
+              >
+                취소
+              </button>
+              <button
+                className={styles.saveButton}
+                onClick={handleSaveSettings}
+                disabled={saving}
+              >
+                {saving ? "저장 중..." : "저장"}
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
-
-      <div className={styles.footer}>
-        <button
-          className={styles.saveButton}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? "저장 중..." : "저장"}
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

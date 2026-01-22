@@ -1,0 +1,131 @@
+"use client";
+
+import { usePathname, useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  FileText,
+  Settings,
+  LogOut,
+  User,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+import { useState } from "react";
+import styles from "./AdminSidebar.module.css";
+
+interface Customer {
+  id: string;
+  name: string;
+}
+
+interface AdminSidebarProps {
+  expertName: string;
+  customers: Customer[];
+  onLogout: () => void;
+}
+
+const mainMenu = [
+  { id: "/admin", label: "대시보드", icon: LayoutDashboard },
+  { id: "/admin/schedule", label: "스케줄", icon: Calendar },
+  { id: "/admin/reports", label: "고객 현황", icon: FileText },
+];
+
+export function AdminSidebar({ expertName, customers, onLogout }: AdminSidebarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [isCustomerOpen, setIsCustomerOpen] = useState(true);
+
+  const isActive = (path: string) => {
+    if (path === "/admin") {
+      return pathname === "/admin";
+    }
+    return pathname.startsWith(path);
+  };
+
+  const isUserDetailPage = pathname.startsWith("/admin/users/");
+  const currentUserId = isUserDetailPage ? pathname.split("/")[3] : null;
+
+  return (
+    <aside className={styles.sidebar}>
+      {/* 로고 */}
+      <div className={styles.logoRow}>
+        <div className={styles.logoItem}>
+          <span className={styles.logoLetter}>L</span>
+          <span className={styles.navLabel}>ycon Admin</span>
+        </div>
+      </div>
+
+      {/* 네비게이션 */}
+      <nav className={styles.nav}>
+        <div className={styles.navSection}>
+          {mainMenu.map((item) => (
+            <button
+              key={item.id}
+              className={`${styles.navItem} ${isActive(item.id) && !isUserDetailPage ? styles.active : ""}`}
+              onClick={() => router.push(item.id)}
+            >
+              <item.icon size={20} />
+              <span className={styles.navLabel}>{item.label}</span>
+            </button>
+          ))}
+
+          <div className={styles.divider} />
+
+          {/* 고객 관리 */}
+          <div className={styles.sectionLabel}>고객</div>
+          <div className={styles.navGroup}>
+            <button
+              className={`${styles.navItem} ${isUserDetailPage ? styles.active : ""}`}
+              onClick={() => setIsCustomerOpen(!isCustomerOpen)}
+            >
+              <Users size={20} />
+              <span className={styles.navLabel}>고객 목록</span>
+              <span className={styles.chevron}>
+                {isCustomerOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </span>
+            </button>
+
+            {isCustomerOpen && (
+              <div className={styles.submenu}>
+                {customers.length === 0 ? (
+                  <div className={styles.emptyCustomers}>담당 고객이 없습니다</div>
+                ) : (
+                  customers.map((customer) => (
+                    <button
+                      key={customer.id}
+                      className={`${styles.submenuItem} ${currentUserId === customer.id ? styles.active : ""}`}
+                      onClick={() => router.push(`/admin/users/${customer.id}`)}
+                    >
+                      <User size={16} />
+                      <span className={styles.navLabel}>{customer.name}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* 푸터 */}
+      <div className={styles.footer}>
+        <div className={styles.expertInfo}>
+          <div className={styles.expertAvatar}>
+            {expertName.charAt(0)}
+          </div>
+          <span className={styles.expertName}>{expertName}</span>
+        </div>
+        <button className={styles.footerItem} onClick={() => router.push("/admin/settings")}>
+          <Settings size={18} />
+          <span className={styles.navLabel}>설정</span>
+        </button>
+        <button className={styles.footerItem} onClick={onLogout}>
+          <LogOut size={18} />
+          <span className={styles.navLabel}>로그아웃</span>
+        </button>
+      </div>
+    </aside>
+  );
+}

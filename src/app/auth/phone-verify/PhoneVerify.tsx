@@ -97,7 +97,6 @@ export function PhoneVerify() {
   // 인증번호 입력 단계로 넘어가면 첫 번째 입력칸에 포커스
   useEffect(() => {
     if (step === "code") {
-      // 렌더링 완료 후 포커스 (requestAnimationFrame 사용)
       requestAnimationFrame(() => {
         setTimeout(() => {
           inputRefs.current[0]?.focus();
@@ -294,6 +293,7 @@ export function PhoneVerify() {
                     ref={(el) => { inputRefs.current[i] = el; }}
                     type="text"
                     inputMode="numeric"
+                    autoComplete={i === 0 ? "one-time-code" : "off"}
                     className={`${styles.codeBox} ${verificationCode[i] ? styles.filled : ""}`}
                     value={verificationCode[i] || ""}
                     onChange={(e) => handleDigitChange(i, e.target.value)}

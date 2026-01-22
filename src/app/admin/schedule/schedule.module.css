@@ -1,90 +1,378 @@
+/* Container */
 .container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  height: 100vh;
 }
 
+/* Header */
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 16px;
-}
-
-.backButton {
-  padding: 8px 12px;
-  border: 1px solid #e5e5e5;
-  border-radius: 6px;
+  height: 56px;
+  padding: 0 32px;
   background: white;
-  font-size: 14px;
-  color: #525252;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.backButton:hover {
-  border-color: #007aff;
-  color: #007aff;
+  border-bottom: 1px solid #e7e5e4;
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a1a;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
 }
 
-.description {
-  font-size: 14px;
-  color: #737373;
-  margin-top: -12px;
+.settingsButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #f5f5f7;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
+.settingsButton:hover {
+  background: #e5e5e7;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+/* Loading */
 .loading {
-  padding: 48px;
-  text-align: center;
-  color: #737373;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
 }
 
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e5e5;
+  border-top-color: #007aff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Calendar */
+.calendar {
+  background: white;
+  overflow: hidden;
+}
+
+.calendarHeader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.monthTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  min-width: 140px;
+  text-align: center;
+}
+
+.navButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.navButton:hover {
+  background: #e5e5e7;
+}
+
+/* Weekdays */
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.weekday {
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #86868b;
+}
+
+.weekday.sunday {
+  color: #ff3b30;
+}
+
+.weekday.saturday {
+  color: #007aff;
+}
+
+/* Days Grid */
+.daysGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.dayEmpty {
+  min-height: 100px;
+  background: #fafafa;
+  border-right: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dayEmpty:nth-child(7n) {
+  border-right: none;
+}
+
+.day {
+  min-height: 100px;
+  padding: 6px;
+  border-right: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.day:nth-child(7n) {
+  border-right: none;
+}
+
+.day.today {
+  background: #f0f7ff;
+}
+
+.day.today .dayNumber {
+  background: #007aff;
+  color: white;
+}
+
+.dayNumber {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  border-radius: 50%;
+}
+
+.day.sunday .dayNumber {
+  color: #ff3b30;
+}
+
+.day.saturday .dayNumber {
+  color: #007aff;
+}
+
+.dayBookings {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.booking {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 6px;
+  border: none;
+  font-size: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: opacity 0.15s;
+  width: 100%;
+  overflow: hidden;
+}
+
+.booking:hover {
+  opacity: 0.8;
+}
+
+.booking.confirmed {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.booking.pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.booking.cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.booking.completed {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.bookingTime {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.bookingName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moreBookings {
+  font-size: 11px;
+  color: #86868b;
+  padding: 2px 8px;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #86868b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.closeButton:hover {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+.modalContent {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.modalDescription {
+  font-size: 13px;
+  color: #86868b;
+  margin-bottom: 16px;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Schedule Grid (in modal) */
 .scheduleGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
 }
 
 .dayCard {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  background: #f5f5f7;
+  padding: 12px;
 }
 
 .dayHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .dayName {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #1d1d1f;
 }
 
 .toggleButton {
-  padding: 6px 12px;
-  border: 1px solid #e5e5e5;
-  border-radius: 6px;
-  background: white;
-  font-size: 12px;
+  padding: 5px 10px;
+  border: none;
+  background: #e5e5e7;
+  font-size: 11px;
   font-weight: 600;
-  color: #a3a3a3;
+  color: #86868b;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .toggleButton.active {
   background: #007aff;
-  border-color: #007aff;
   color: white;
 }
 
@@ -95,14 +383,13 @@
 }
 
 .timeSlot {
-  padding: 6px 10px;
+  padding: 5px 8px;
   border: 1px solid #e5e5e5;
-  border-radius: 6px;
   background: white;
-  font-size: 12px;
-  color: #737373;
+  font-size: 11px;
+  color: #86868b;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
 .timeSlot:hover {
@@ -115,22 +402,31 @@
   color: #007aff;
 }
 
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 8px;
+/* Footer Buttons */
+.cancelButton {
+  padding: 8px 16px;
+  border: 1px solid #e5e5e5;
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cancelButton:hover {
+  background: #f5f5f7;
 }
 
 .saveButton {
-  padding: 12px 32px;
+  padding: 8px 20px;
   background: #007aff;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.15s;
 }
 
 .saveButton:hover {
@@ -138,6 +434,6 @@
 }
 
 .saveButton:disabled {
-  background: #a3a3a3;
+  background: #a1a1a6;
   cursor: not-allowed;
 }

@@ -63,7 +63,7 @@ export function BaseModal({
             type="button"
             title="닫기"
           >
-            <X size={18} />
+            <X size={14} strokeWidth={2.5} />
           </button>
         </div>
         <div className={styles.body}>{children}</div>

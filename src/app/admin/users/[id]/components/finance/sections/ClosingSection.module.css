@@ -1,0 +1,240 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 8px 0;
+}
+
+/* Section */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1c1c1e;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+/* 1. 재무 현황 요약 */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 0;
+}
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.label {
+  color: #86868b;
+}
+
+.value {
+  color: #1c1c1e;
+}
+
+.labelBold {
+  color: #1c1c1e;
+  font-weight: 600;
+}
+
+.valueBold {
+  color: #1c1c1e;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.divider {
+  height: 1px;
+  background: #e5e5ea;
+  margin: 6px 0;
+}
+
+.savingsRate {
+  font-size: 13px;
+  color: #86868b;
+  text-align: right;
+}
+
+/* 2. 은퇴 준비 현황 */
+.retirementPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.goalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #1c1c1e;
+}
+
+.highlight {
+  font-weight: 600;
+  color: #007aff;
+}
+
+.subsection {
+  padding-top: 20px;
+  border-top: 1px solid #e5e5ea;
+}
+
+.subsectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1c1c1e;
+  margin: 0 0 16px 0;
+}
+
+.calcRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.calcRow span:first-child {
+  color: #86868b;
+}
+
+.calcRow span:last-child {
+  color: #1c1c1e;
+}
+
+.detail {
+  font-size: 13px;
+  color: #86868b;
+  margin-left: 6px;
+  font-weight: 400;
+}
+
+.placeholder {
+  color: #86868b;
+}
+
+/* 3. 다음 단계 */
+.nextStepsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #1c1c1e;
+  cursor: pointer;
+}
+
+.checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #007aff;
+}
+
+.memoSection {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e5ea;
+}
+
+.memoTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1c1c1e;
+  margin: 0 0 12px 0;
+}
+
+.memoTextarea {
+  width: 100%;
+  padding: 12px 0;
+  font-size: 14px;
+  color: #1c1c1e;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #e5e5ea;
+  resize: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.memoTextarea::placeholder {
+  color: #86868b;
+}
+
+.memoTextarea:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+/* 4. 상담 완료 */
+.finalSection {
+  text-align: center;
+  padding: 32px 0;
+}
+
+.dateTime {
+  font-size: 14px;
+  color: #86868b;
+  margin-bottom: 20px;
+}
+
+.completeButton {
+  padding: 14px 48px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.completeButton:hover {
+  background: #0066d6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+}

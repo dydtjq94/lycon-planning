@@ -1,0 +1,243 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 8px 0;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e5ea;
+  border-top-color: #007aff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Section - 카드 없이 깔끔하게 */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+.sectionTotal {
+  font-size: 14px;
+  font-weight: 600;
+  color: #007aff;
+}
+
+.sectionContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Input Row - 인라인 스타일 */
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inputLabel {
+  min-width: 140px;
+  font-size: 14px;
+  color: #1c1c1e;
+}
+
+.inputGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.input {
+  width: 100px;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid #e5e5ea;
+  font-size: 15px;
+  color: #1c1c1e;
+  text-align: left;
+  background: transparent;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.input::placeholder {
+  color: #86868b;
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.input[type="number"]::-webkit-outer-spin-button,
+.input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.unit {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.helper {
+  font-size: 13px;
+  color: #86868b;
+}
+
+/* Divider - 하위 그룹 구분 */
+.divider {
+  margin: 4px 0;
+  padding-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+}
+
+/* Button Row */
+.buttonRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.addButton {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 16px;
+  background: #f5f5f7;
+  font-size: 13px;
+  color: #007aff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.addButton:hover {
+  background: #e5e5ea;
+}
+
+.addButton:disabled {
+  color: #c7c7cc;
+  cursor: not-allowed;
+}
+
+.removeButton {
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #86868b;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.removeButton:hover {
+  color: #ff3b30;
+}
+
+/* Summary - 간결한 요약 */
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.summaryLabel {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.summaryValue {
+  font-size: 14px;
+  color: #1c1c1e;
+}
+
+.summaryDivider {
+  height: 1px;
+  background: #e5e5ea;
+  margin: 8px 0;
+}
+
+.summaryLabelBold {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+.summaryValueBold {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.summaryValueBold.positive {
+  color: #34c759;
+}
+
+.summaryValueBold.negative {
+  color: #ff3b30;
+}
+
+/* Savings Rate */
+.savingsRate {
+  margin-top: 12px;
+  padding: 14px;
+  background: #f5f5f7;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.savingsRateLabel {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.savingsRateValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #007aff;
+}
