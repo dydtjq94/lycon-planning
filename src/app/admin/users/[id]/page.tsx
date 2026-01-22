@@ -48,6 +48,8 @@ interface Profile {
   survey_responses?: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   guide_clicks?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  prep_data?: any;
 }
 
 interface FamilyMember {
@@ -243,6 +245,9 @@ export default function UserDetailPage() {
   // 가이드 클릭 모달
   const [showGuideClicksModal, setShowGuideClicksModal] = useState(false);
 
+  // 입력해두기 모달
+  const [showPrepDataModal, setShowPrepDataModal] = useState(false);
+
   // 다음 상담 추천일 계산
   const getNextConsultationDate = (typeId: string, lastDate: string | null): { date: string | null; status: "overdue" | "upcoming" | "ok" | "none" } => {
     const consultationType = CONSULTATION_TYPES.find((t) => t.id === typeId);
@@ -358,7 +363,7 @@ export default function UserDetailPage() {
       // 고객 프로필
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("id, name, birth_date, gender, target_retirement_age, created_at, onboarding_step, phone_number, customer_stage, survey_responses, guide_clicks")
+        .select("id, name, birth_date, gender, target_retirement_age, created_at, onboarding_step, phone_number, customer_stage, survey_responses, guide_clicks, prep_data")
         .eq("id", userId)
         .single();
 
@@ -645,6 +650,17 @@ export default function UserDetailPage() {
                         (sum: number, c: any) => sum + (c?.count || 0),
                         0
                       )}회
+                    </button>
+                  </span>
+                </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>입력해두기</span>
+                  <span className={styles.infoValue}>
+                    <button
+                      className={styles.onboardingBtn}
+                      onClick={() => setShowPrepDataModal(true)}
+                    >
+                      {Object.keys(profile.prep_data || {}).length}/10
                     </button>
                   </span>
                 </div>
@@ -1257,6 +1273,315 @@ export default function UserDetailPage() {
             <button
               className={styles.guideClicksCloseBtn}
               onClick={() => setShowGuideClicksModal(false)}
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 입력해두기 상세 모달 */}
+      {showPrepDataModal && (
+        <div className={styles.modalBackdrop} onClick={() => setShowPrepDataModal(false)}>
+          <div className={styles.prepDataModal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>입력해두기 내역</h3>
+            <div className={styles.prepDataContent}>
+              {(() => {
+                const prepData = profile.prep_data || {};
+                const formatMoney = (amount: number) => {
+                  if (!amount) return "-";
+                  if (amount >= 10000) return `${Math.floor(amount / 10000)}억 ${amount % 10000 > 0 ? (amount % 10000).toLocaleString() + "만" : ""}`;
+                  return `${amount.toLocaleString()}만원`;
+                };
+
+                const housingTypeLabel = (type: string) => {
+                  const labels: Record<string, string> = { "자가": "자가", "전세": "전세", "월세": "월세", "무상": "무상" };
+                  return labels[type] || type;
+                };
+
+                const relationLabel = (rel: string) => {
+                  const labels: Record<string, string> = { spouse: "배우자", child: "자녀", parent: "부모" };
+                  return labels[rel] || rel;
+                };
+
+                const savingsTypeLabel = (type: string) => {
+                  const labels: Record<string, string> = { checking: "입출금", savings: "적금", deposit: "예금" };
+                  return labels[type] || type;
+                };
+
+                const debtTypeLabel = (type: string) => {
+                  const labels: Record<string, string> = { mortgage: "주담대", jeonse: "전세대출", credit: "신용대출", other: "기타" };
+                  return labels[type] || type;
+                };
+
+                const pensionTypeLabel = (type: string) => {
+                  const labels: Record<string, string> = { national: "국민연금", government: "공무원연금", military: "군인연금", private_school: "사학연금" };
+                  return labels[type] || type;
+                };
+
+                const retirementTypeLabel = (type: string) => {
+                  const labels: Record<string, string> = { db: "DB형(퇴직금)", dc: "DC형", none: "없음" };
+                  return labels[type] || type;
+                };
+
+                const personalPensionTypeLabel = (type: string) => {
+                  const labels: Record<string, string> = { pension_savings: "연금저축", irp: "IRP" };
+                  return labels[type] || type;
+                };
+
+                // 각 카테고리별 데이터 유무 확인
+                const hasFamily = prepData.family?.length > 0;
+                const hasIncome = prepData.income?.length > 0;
+                const hasExpense = prepData.expense;
+                const hasHousing = prepData.housing;
+                const hasSavings = prepData.savings?.length > 0;
+                const hasInvestment = prepData.investment && (
+                  prepData.investment.securities?.balance > 0 ||
+                  prepData.investment.crypto?.balance > 0 ||
+                  prepData.investment.gold?.balance > 0
+                );
+                const hasDebt = prepData.debt?.length > 0;
+                const hasNationalPension = prepData.nationalPension;
+                const hasRetirementPension = prepData.retirementPension && (
+                  (prepData.retirementPension.selfType && prepData.retirementPension.selfType !== "none") ||
+                  (prepData.retirementPension.spouseType && prepData.retirementPension.spouseType !== "none")
+                );
+                const hasPersonalPension = prepData.personalPension?.length > 0;
+
+                return (
+                  <>
+                    {/* 가계 정보 */}
+                    <div className={styles.prepSection}>
+                      <h4 className={styles.prepSectionTitle}>가계 정보</h4>
+                      {hasFamily ? (
+                        prepData.family.map((member: any, idx: number) => (
+                          <div key={idx} className={styles.prepItem}>
+                            <span>{relationLabel(member.relationship)}</span>
+                            <span>{member.name}{member.birth_date ? ` (${member.birth_date.substring(0, 4)}년생)` : ""}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className={styles.prepItemEmpty}>입력 안함</div>
+                      )}
+                    </div>
+
+                    {/* 소득 */}
+                    <div className={styles.prepSection}>
+                      <h4 className={styles.prepSectionTitle}>소득</h4>
+                      {hasIncome ? (
+                        prepData.income.map((item: any, idx: number) => (
+                          <div key={idx} className={styles.prepItem}>
+                            <span>{item.owner === "self" ? "본인" : "배우자"} - {item.title || item.type}</span>
+                            <span>{formatMoney(item.amount)}{item.frequency === "monthly" ? "/월" : "/년"}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className={styles.prepItemEmpty}>입력 안함</div>
+                      )}
+                    </div>
+
+                    {/* 지출 */}
+                    <div className={styles.prepSection}>
+                      <h4 className={styles.prepSectionTitle}>지출</h4>
+                      {hasExpense ? (
+                        <>
+                          {prepData.expense.livingExpense > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>생활비</span>
+                              <span>{formatMoney(prepData.expense.livingExpense)}/월</span>
+                            </div>
+                          )}
+                          {prepData.expense.fixedExpenses?.map((item: any, idx: number) => (
+                            <div key={`fixed-${idx}`} className={styles.prepItem}>
+                              <span>{item.title || item.type}</span>
+                              <span>{formatMoney(item.amount)}{item.frequency === "monthly" ? "/월" : "/년"}</span>
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        <div className={styles.prepItemEmpty}>입력 안함</div>
+                      )}
+                    </div>
+
+                    {/* 거주용 부동산 */}
+                    <div className={styles.prepSection}>
+                      <h4 className={styles.prepSectionTitle}>거주용 부동산</h4>
+                      {hasHousing ? (
+                        <>
+                          <div className={styles.prepItem}>
+                            <span>거주 형태</span>
+                            <span>{housingTypeLabel(prepData.housing.housingType)}</span>
+                          </div>
+                          {prepData.housing.housingType === "자가" && prepData.housing.currentValue > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>시세</span>
+                              <span>{formatMoney(prepData.housing.currentValue)}</span>
+                            </div>
+                          )}
+                          {(prepData.housing.housingType === "전세" || prepData.housing.housingType === "월세") && prepData.housing.deposit > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>보증금</span>
+                              <span>{formatMoney(prepData.housing.deposit)}</span>
+                            </div>
+                          )}
+                          {prepData.housing.housingType === "월세" && prepData.housing.monthlyRent > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>월세</span>
+                              <span>{formatMoney(prepData.housing.monthlyRent)}/월</span>
+                            </div>
+                          )}
+                          {prepData.housing.maintenanceFee > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>관리비</span>
+                              <span>{formatMoney(prepData.housing.maintenanceFee)}/월</span>
+                            </div>
+                          )}
+                          {prepData.housing.hasLoan && prepData.housing.loanAmount > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>{prepData.housing.loanType === "mortgage" ? "주담대" : "전세대출"}</span>
+                              <span>{formatMoney(prepData.housing.loanAmount)} ({prepData.housing.loanRate}%)</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className={styles.prepItemEmpty}>입력 안함</div>
+                      )}
+                    </div>
+
+                    {/* 저축 */}
+                    <div className={styles.prepSection}>
+                      <h4 className={styles.prepSectionTitle}>저축</h4>
+                      {hasSavings ? (
+                        prepData.savings.map((item: any, idx: number) => (
+                          <div key={idx} className={styles.prepItem}>
+                            <span>{item.title || savingsTypeLabel(item.type)}</span>
+                            <span>{formatMoney(item.currentBalance)}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className={styles.prepItemEmpty}>입력 안함</div>
+                      )}
+                    </div>
+
+                    {/* 투자 */}
+                    <div className={styles.prepSection}>
+                      <h4 className={styles.prepSectionTitle}>투자</h4>
+                      {hasInvestment ? (
+                        <>
+                          {prepData.investment.securities?.balance > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>증권</span>
+                              <span>{formatMoney(prepData.investment.securities.balance)}</span>
+                            </div>
+                          )}
+                          {prepData.investment.crypto?.balance > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>코인</span>
+                              <span>{formatMoney(prepData.investment.crypto.balance)}</span>
+                            </div>
+                          )}
+                          {prepData.investment.gold?.balance > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>금</span>
+                              <span>{formatMoney(prepData.investment.gold.balance)}</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className={styles.prepItemEmpty}>입력 안함</div>
+                      )}
+                    </div>
+
+                    {/* 부채 */}
+                    <div className={styles.prepSection}>
+                      <h4 className={styles.prepSectionTitle}>부채</h4>
+                      {hasDebt ? (
+                        prepData.debt.map((item: any, idx: number) => (
+                          <div key={idx} className={styles.prepItem}>
+                            <span>{item.title || debtTypeLabel(item.type)}</span>
+                            <span>{formatMoney(item.currentBalance || item.principal)} ({item.interestRate}%)</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className={styles.prepItemEmpty}>입력 안함</div>
+                      )}
+                    </div>
+
+                    {/* 공적연금 */}
+                    <div className={styles.prepSection}>
+                      <h4 className={styles.prepSectionTitle}>공적연금</h4>
+                      {hasNationalPension ? (
+                        <>
+                          {prepData.nationalPension.selfExpectedAmount > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>본인 ({pensionTypeLabel(prepData.nationalPension.selfType)})</span>
+                              <span>{formatMoney(prepData.nationalPension.selfExpectedAmount)}/월</span>
+                            </div>
+                          )}
+                          {prepData.nationalPension.spouseExpectedAmount > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>배우자 ({pensionTypeLabel(prepData.nationalPension.spouseType)})</span>
+                              <span>{formatMoney(prepData.nationalPension.spouseExpectedAmount)}/월</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className={styles.prepItemEmpty}>입력 안함</div>
+                      )}
+                    </div>
+
+                    {/* 퇴직연금 */}
+                    <div className={styles.prepSection}>
+                      <h4 className={styles.prepSectionTitle}>퇴직연금</h4>
+                      {hasRetirementPension ? (
+                        <>
+                          {prepData.retirementPension.selfType && prepData.retirementPension.selfType !== "none" && (
+                            <div className={styles.prepItem}>
+                              <span>본인 ({retirementTypeLabel(prepData.retirementPension.selfType)})</span>
+                              <span>
+                                {prepData.retirementPension.selfType === "db"
+                                  ? `근속 ${prepData.retirementPension.selfYearsWorked}년`
+                                  : formatMoney(prepData.retirementPension.selfBalance)}
+                              </span>
+                            </div>
+                          )}
+                          {prepData.retirementPension.spouseType && prepData.retirementPension.spouseType !== "none" && (
+                            <div className={styles.prepItem}>
+                              <span>배우자 ({retirementTypeLabel(prepData.retirementPension.spouseType)})</span>
+                              <span>
+                                {prepData.retirementPension.spouseType === "db"
+                                  ? `근속 ${prepData.retirementPension.spouseYearsWorked}년`
+                                  : formatMoney(prepData.retirementPension.spouseBalance)}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className={styles.prepItemEmpty}>입력 안함</div>
+                      )}
+                    </div>
+
+                    {/* 개인연금 */}
+                    <div className={styles.prepSection}>
+                      <h4 className={styles.prepSectionTitle}>개인연금</h4>
+                      {hasPersonalPension ? (
+                        prepData.personalPension.map((item: any, idx: number) => (
+                          <div key={idx} className={styles.prepItem}>
+                            <span>{item.owner === "self" ? "본인" : "배우자"} - {personalPensionTypeLabel(item.type)}</span>
+                            <span>{formatMoney(item.balance)}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className={styles.prepItemEmpty}>입력 안함</div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+            <button
+              className={styles.guideClicksCloseBtn}
+              onClick={() => setShowPrepDataModal(false)}
             >
               닫기
             </button>
