@@ -138,7 +138,7 @@ export async function sendNewMessageNotification(
   }
 
   const message = {
-    text: `*${userName}* 님이 채팅을 보냈습니다.${bookingInfo}\n\n<https://www.lyconplanning.com/admin/users/${userId}#chat|채팅 확인하기>`,
+    text: `*${userName}* 님이 채팅을 보냈습니다.\n\n<https://www.lyconplanning.com/admin/users/${userId}#chat|채팅 확인하기>`,
   };
 
   try {

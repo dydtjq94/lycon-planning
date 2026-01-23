@@ -210,17 +210,9 @@ export default function UserDetailPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentSection, setCurrentSection] = useState<Section>(() => {
-    // URL 해시에서 초기 탭 결정
-    if (typeof window !== "undefined") {
-      const hash = window.location.hash.replace("#", "");
-      if (["info", "chat", "consultation", "status", "scenario"].includes(hash)) {
-        return hash as Section;
-      }
-    }
-    return "info";
-  });
-  const currentSectionRef = useRef<Section>(currentSection);
+  const [currentSection, setCurrentSection] = useState<Section>("info");
+  const currentSectionRef = useRef<Section>("info");
+  const initialHashProcessed = useRef(false);
   const [statusSubTab, setStatusSubTab] = useState<StatusSubTab>("asset");
   const [budgetDate, setBudgetDate] = useState(() => {
     const now = new Date();
@@ -233,6 +225,7 @@ export default function UserDetailPage() {
   const [messageInput, setMessageInput] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatMessagesRef = useRef<HTMLDivElement>(null);
 
   // 담당 제외 모달
   const [showRemoveModal, setShowRemoveModal] = useState(false);
@@ -366,6 +359,18 @@ export default function UserDetailPage() {
     return { overdue, upcoming, completed };
   };
 
+  // URL 해시에서 초기 탭 결정 (클라이언트에서만)
+  useEffect(() => {
+    if (initialHashProcessed.current) return;
+    initialHashProcessed.current = true;
+
+    const hash = window.location.hash.replace("#", "");
+    if (["info", "chat", "consultation", "status", "scenario"].includes(hash)) {
+      setCurrentSection(hash as Section);
+      currentSectionRef.current = hash as Section;
+    }
+  }, []);
+
   useEffect(() => {
     const loadUserData = async () => {
       const supabase = createClient();
@@ -410,14 +415,10 @@ export default function UserDetailPage() {
         setFamilyMembers(familyData);
       }
 
-      // 대화방 로드 또는 생성
-      let { data: conversation } = await supabase
-        .from("conversations")
-        .select("id")
-        .eq("user_id", userId)
-        .single();
+      // 현재 전문가의 대화방 로드 또는 생성
+      let conversation: { id: string } | null = null;
 
-      if (!conversation && user) {
+      if (user) {
         const { data: expert } = await supabase
           .from("experts")
           .select("id")
@@ -425,17 +426,30 @@ export default function UserDetailPage() {
           .single();
 
         if (expert) {
-          const { data: newConversation } = await supabase
+          // 현재 전문가의 대화방 조회
+          const { data: existingConv } = await supabase
             .from("conversations")
-            .insert({
-              user_id: userId,
-              expert_id: expert.id,
-              is_primary: true,
-            })
             .select("id")
-            .single();
+            .eq("user_id", userId)
+            .eq("expert_id", expert.id)
+            .maybeSingle();
 
-          conversation = newConversation;
+          if (existingConv) {
+            conversation = existingConv;
+          } else {
+            // 없으면 새로 생성
+            const { data: newConversation } = await supabase
+              .from("conversations")
+              .insert({
+                user_id: userId,
+                expert_id: expert.id,
+                is_primary: true,
+              })
+              .select("id")
+              .single();
+
+            conversation = newConversation;
+          }
         }
       }
 
@@ -500,10 +514,24 @@ export default function UserDetailPage() {
       }
 
       setLoading(false);
+
+      // URL 해시가 chat이면 메시지 로드 후 스크롤
+      const hash = window.location.hash.replace("#", "");
+      if (hash === "chat") {
+        setCurrentSection("chat");
+        currentSectionRef.current = "chat";
+      }
     };
 
     loadUserData();
   }, [userId]);
+
+  // 채팅 스크롤을 맨 아래로
+  const scrollChatToBottom = () => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  };
 
   // 메시지 로드 함수
   const loadMessages = async () => {
@@ -574,10 +602,32 @@ export default function UserDetailPage() {
     }
   }, [currentSection, conversationId]);
 
-  // 메시지 스크롤
+  // 메시지 스크롤 (채팅 탭일 때만) - 통합된 스크롤 로직
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (currentSection === "chat" && messages.length > 0) {
+      // DOM이 완전히 렌더링될 때까지 여러 번 시도
+      const scrollWithRetry = (attempts: number) => {
+        if (attempts <= 0) return;
+
+        requestAnimationFrame(() => {
+          if (chatMessagesRef.current) {
+            const { scrollHeight, clientHeight } = chatMessagesRef.current;
+            // 컨테이너가 실제로 렌더링되었는지 확인
+            if (scrollHeight > clientHeight) {
+              chatMessagesRef.current.scrollTop = scrollHeight;
+            } else {
+              // 아직 렌더링 안됐으면 재시도
+              setTimeout(() => scrollWithRetry(attempts - 1), 50);
+            }
+          } else {
+            setTimeout(() => scrollWithRetry(attempts - 1), 50);
+          }
+        });
+      };
+
+      scrollWithRetry(10); // 최대 10번 시도 (500ms)
+    }
+  }, [messages, currentSection]);
 
   // 실시간 메시지 구독
   useEffect(() => {
@@ -646,7 +696,10 @@ export default function UserDetailPage() {
   }, [conversationId]);
 
   const handleRemoveFromMyCustomers = async () => {
-    if (!expertId || !conversationId) return;
+    if (!expertId || !conversationId) {
+      alert("담당 정보를 찾을 수 없습니다.");
+      return;
+    }
 
     setRemoving(true);
     const supabase = createClient();
@@ -654,14 +707,17 @@ export default function UserDetailPage() {
     const { error } = await supabase
       .from("conversations")
       .delete()
-      .eq("id", conversationId);
+      .eq("id", conversationId)
+      .eq("expert_id", expertId);
 
     if (error) {
       console.error("Error removing customer:", error);
+      alert("제외 처리 중 오류가 발생했습니다.");
       setRemoving(false);
       return;
     }
 
+    setShowRemoveModal(false);
     router.push("/admin");
   };
 
@@ -967,7 +1023,7 @@ export default function UserDetailPage() {
 
         return (
           <div className={styles.chatSection}>
-            <div className={styles.chatMessages}>
+            <div className={styles.chatMessages} ref={chatMessagesRef}>
               {messages.length === 0 ? (
                 <div className={styles.chatEmpty}>
                   <MessageCircle size={48} color="#ccc" />
