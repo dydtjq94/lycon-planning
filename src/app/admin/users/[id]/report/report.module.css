@@ -1,0 +1,238 @@
+.pageContainer {
+  position: relative;
+  min-height: 100vh;
+  background: #edf2f7;
+  padding-top: 60px;
+}
+
+.backButton {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.backButton:hover {
+  background: #f5f5f7;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 16px;
+  background: #edf2f7;
+}
+
+.loadingContainer p {
+  font-size: 14px;
+  color: #718096;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3182ce;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 16px;
+  background: #edf2f7;
+}
+
+.errorContainer p {
+  font-size: 14px;
+  color: #e53e3e;
+}
+
+.errorContainer button {
+  padding: 10px 20px;
+  background: #3182ce;
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.errorContainer button:hover {
+  background: #2c5282;
+}
+
+.contentLayout {
+  display: flex;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.reportWrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidePanel {
+  width: 320px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 80px;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.opinionPanel {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.panelTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 12px 0;
+}
+
+.opinionTextarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 160px;
+  font-family: inherit;
+}
+
+.opinionTextarea:focus {
+  outline: none;
+  border-color: #3182ce;
+}
+
+.opinionTextarea:disabled {
+  background: #f7fafc;
+  color: #718096;
+  cursor: not-allowed;
+}
+
+.formatGuide {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #f7fafc;
+  border-radius: 4px;
+}
+
+.formatItem {
+  font-size: 12px;
+  color: #4a5568;
+}
+
+.opinionHint {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  color: #718096;
+}
+
+.actionPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.printButton {
+  width: 100%;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4a5568;
+  cursor: pointer;
+}
+
+.printButton:hover {
+  background: #f7fafc;
+}
+
+.publishButton {
+  width: 100%;
+  padding: 12px 16px;
+  background: #3182ce;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+}
+
+.publishButton:hover {
+  background: #2c5282;
+}
+
+.publishButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.publishButton.published {
+  background: #38a169;
+}
+
+@media print {
+  .pageContainer {
+    min-height: 0;
+    background: white !important;
+    padding: 0;
+    margin: 0;
+  }
+
+  .backButton {
+    display: none !important;
+  }
+
+  .sidePanel {
+    display: none !important;
+  }
+
+  .contentLayout {
+    display: block;
+    padding: 0;
+  }
+}

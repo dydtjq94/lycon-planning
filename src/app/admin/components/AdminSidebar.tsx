@@ -18,6 +18,7 @@ import styles from "./AdminSidebar.module.css";
 interface Customer {
   id: string;
   name: string;
+  unreadCount: number;
 }
 
 interface AdminSidebarProps {
@@ -100,6 +101,9 @@ export function AdminSidebar({ expertName, customers, onLogout }: AdminSidebarPr
                     >
                       <User size={16} />
                       <span className={styles.navLabel}>{customer.name}</span>
+                      {customer.unreadCount > 0 && (
+                        <span className={styles.unreadBadge}>{customer.unreadCount}</span>
+                      )}
                     </button>
                   ))
                 )}

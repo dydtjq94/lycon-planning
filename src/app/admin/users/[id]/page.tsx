@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   MessageCircle,
@@ -28,6 +28,7 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  Send,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { NotesSection, ProgressSection, RetirementDiagnosisForm } from "./components";
@@ -77,7 +78,16 @@ interface ConsultationRecord {
   summary: string | null;
 }
 
-type Section = "info" | "consultation" | "status" | "scenario";
+interface Message {
+  id: string;
+  conversation_id: string;
+  sender_type: "user" | "expert";
+  content: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+type Section = "info" | "chat" | "consultation" | "status" | "scenario";
 type StatusSubTab = "asset" | "budget";
 
 const STAGE_LABELS: Record<string, string> = {
@@ -186,6 +196,7 @@ const CONSULTATION_TYPES: ConsultationType[] = [
 
 const tabs = [
   { id: "info" as Section, label: "기본 정보", icon: User },
+  { id: "chat" as Section, label: "채팅", icon: MessageCircle },
   { id: "consultation" as Section, label: "상담", icon: FileText },
   { id: "status" as Section, label: "현황", icon: PieChart },
   { id: "scenario" as Section, label: "시나리오", icon: Target },
@@ -199,7 +210,17 @@ export default function UserDetailPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentSection, setCurrentSection] = useState<Section>("info");
+  const [currentSection, setCurrentSection] = useState<Section>(() => {
+    // URL 해시에서 초기 탭 결정
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace("#", "");
+      if (["info", "chat", "consultation", "status", "scenario"].includes(hash)) {
+        return hash as Section;
+      }
+    }
+    return "info";
+  });
+  const currentSectionRef = useRef<Section>(currentSection);
   const [statusSubTab, setStatusSubTab] = useState<StatusSubTab>("asset");
   const [budgetDate, setBudgetDate] = useState(() => {
     const now = new Date();
@@ -208,6 +229,10 @@ export default function UserDetailPage() {
   const [expertId, setExpertId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [messageInput, setMessageInput] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 담당 제외 모달
   const [showRemoveModal, setShowRemoveModal] = useState(false);
@@ -480,21 +505,125 @@ export default function UserDetailPage() {
     loadUserData();
   }, [userId]);
 
+  // 메시지 로드 함수
+  const loadMessages = async () => {
+    if (!conversationId) return;
+
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true });
+
+    if (data) {
+      setMessages(data);
+    }
+  };
+
+  // 메시지 전송 함수
+  const sendMessage = async () => {
+    if (!conversationId || !messageInput.trim() || sendingMessage) return;
+
+    setSendingMessage(true);
+    const supabase = createClient();
+
+    const { error } = await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_type: "expert",
+      content: messageInput.trim(),
+      is_read: false,
+    });
+
+    if (!error) {
+      setMessageInput("");
+      await loadMessages();
+    }
+
+    setSendingMessage(false);
+  };
+
+  // 메시지 읽음 처리
+  const markMessagesAsRead = async () => {
+    if (!conversationId) return;
+
+    const supabase = createClient();
+    await supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("conversation_id", conversationId)
+      .eq("sender_type", "user")
+      .eq("is_read", false);
+
+    setUnreadCount(0);
+
+    // 사이드바 업데이트를 위한 커스텀 이벤트 발생
+    window.dispatchEvent(new CustomEvent("admin-messages-read"));
+  };
+
+  // currentSection ref 업데이트
+  useEffect(() => {
+    currentSectionRef.current = currentSection;
+  }, [currentSection]);
+
+  // 채팅 탭 선택 시 메시지 로드 및 읽음 처리
+  useEffect(() => {
+    if (currentSection === "chat" && conversationId) {
+      loadMessages();
+      markMessagesAsRead();
+    }
+  }, [currentSection, conversationId]);
+
+  // 메시지 스크롤
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   // 실시간 메시지 구독
   useEffect(() => {
     if (!conversationId) return;
 
     const supabase = createClient();
 
-    const refreshUnreadCount = async () => {
-      const { data: unreadMessages } = await supabase
-        .from("messages")
-        .select("id")
-        .eq("conversation_id", conversationId)
-        .eq("sender_type", "user")
-        .eq("is_read", false);
+    const handleNewMessage = async () => {
+      // 채팅 탭이 열려있으면 메시지 로드 및 읽음 처리
+      if (currentSectionRef.current === "chat") {
+        const { data } = await supabase
+          .from("messages")
+          .select("*")
+          .eq("conversation_id", conversationId)
+          .order("created_at", { ascending: true });
 
-      setUnreadCount(unreadMessages?.length || 0);
+        if (data) {
+          setMessages(data);
+        }
+
+        // 즉시 읽음 처리
+        await supabase
+          .from("messages")
+          .update({ is_read: true })
+          .eq("conversation_id", conversationId)
+          .eq("sender_type", "user")
+          .eq("is_read", false);
+
+        setUnreadCount(0);
+
+        // 사이드바 업데이트를 위한 커스텀 이벤트 발생
+        window.dispatchEvent(new CustomEvent("admin-messages-read"));
+      } else {
+        // 채팅 탭이 아니면 읽지 않은 수만 업데이트
+        const { data: unreadMessages } = await supabase
+          .from("messages")
+          .select("id")
+          .eq("conversation_id", conversationId)
+          .eq("sender_type", "user")
+          .eq("is_read", false);
+
+        setUnreadCount(unreadMessages?.length || 0);
+
+        // 사이드바도 새 메시지 반영
+        window.dispatchEvent(new CustomEvent("admin-messages-read"));
+      }
     };
 
     const channel = supabase
@@ -507,7 +636,7 @@ export default function UserDetailPage() {
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        () => refreshUnreadCount()
+        () => handleNewMessage()
       )
       .subscribe();
 
@@ -827,6 +956,69 @@ export default function UserDetailPage() {
           </div>
         );
 
+      case "chat":
+        const formatMessageTime = (dateStr: string) => {
+          const date = new Date(dateStr);
+          return date.toLocaleTimeString("ko-KR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        };
+
+        return (
+          <div className={styles.chatSection}>
+            <div className={styles.chatMessages}>
+              {messages.length === 0 ? (
+                <div className={styles.chatEmpty}>
+                  <MessageCircle size={48} color="#ccc" />
+                  <p>메시지가 없습니다</p>
+                  <span>고객에게 먼저 메시지를 보내보세요</span>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`${styles.chatMessage} ${
+                      message.sender_type === "expert" ? styles.sent : styles.received
+                    }`}
+                  >
+                    <div className={styles.chatBubble}>
+                      <p>{message.content}</p>
+                    </div>
+                    <span className={styles.chatTime}>
+                      {formatMessageTime(message.created_at)}
+                    </span>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            <div className={styles.chatInputArea}>
+              <input
+                type="text"
+                className={styles.chatInput}
+                placeholder="메시지를 입력하세요..."
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                disabled={sendingMessage}
+              />
+              <button
+                className={styles.chatSendButton}
+                onClick={sendMessage}
+                disabled={!messageInput.trim() || sendingMessage}
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          </div>
+        );
+
       case "status":
         const prevMonth = () => {
           setBudgetDate((prev) => {
@@ -1129,20 +1321,6 @@ export default function UserDetailPage() {
           </span>
         </div>
         <div className={styles.headerRight}>
-          {/* 채팅 버튼 */}
-          <button
-            className={styles.chatButton}
-            onClick={() => router.push(`/admin/chat/${userId}`)}
-          >
-            <MessageCircle size={18} />
-            <span>채팅</span>
-            {unreadCount > 0 && (
-              <span className={styles.unreadBadge}>
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </button>
-
           {/* 더보기 드롭다운 */}
           <div className={styles.dropdownContainer}>
             <button
@@ -1182,10 +1360,18 @@ export default function UserDetailPage() {
           <button
             key={tab.id}
             className={`${styles.tab} ${currentSection === tab.id ? styles.active : ""}`}
-            onClick={() => setCurrentSection(tab.id)}
+            onClick={() => {
+              setCurrentSection(tab.id);
+              window.history.replaceState(null, "", `#${tab.id}`);
+            }}
           >
             <tab.icon size={16} />
             <span>{tab.label}</span>
+            {tab.id === "chat" && unreadCount > 0 && (
+              <span className={styles.tabBadge}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </button>
         ))}
       </div>

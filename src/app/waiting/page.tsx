@@ -19,7 +19,7 @@ import {
   Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { ChatRoom, ProgramDetailView, Toast, TipModal, MessageNotificationToast } from "./components";
+import { ChatRoom, ProgramDetailView, Toast, TipModal, MessageNotificationToast, DiagnosisSummaryCards, MembershipModal } from "./components";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
 import { confirmUserBooking } from "@/lib/services/bookingService";
 import { trackPageView } from "@/lib/analytics/mixpanel";
@@ -112,6 +112,9 @@ function WaitingPageContent() {
   const [selectedTip, setSelectedTip] = useState<string | null>(null);
   const [tipModalKey, setTipModalKey] = useState(0);
   const [prepDataCategories, setPrepDataCategories] = useState<Set<string>>(new Set());
+  const [reportPublished, setReportPublished] = useState(false);
+  const [reportPublishedAt, setReportPublishedAt] = useState<string | null>(null);
+  const [showMembershipModal, setShowMembershipModal] = useState(false);
 
   // 메시지 알림 상태 (여러 개 쌓임)
   const [messageNotifications, setMessageNotifications] = useState<{
@@ -150,6 +153,7 @@ function WaitingPageContent() {
       } = await supabase.auth.getUser();
 
       if (!user) {
+        localStorage.setItem("returnUrl", "/waiting");
         router.replace("/auth/login");
         return;
       }
@@ -157,7 +161,7 @@ function WaitingPageContent() {
       const { data: profileData } = await supabase
         .from("profiles")
         .select(
-          "name, booking_info, pin_hash, onboarding_step, phone_number, pin_verified_at, prep_data",
+          "name, booking_info, pin_hash, onboarding_step, phone_number, pin_verified_at, prep_data, report_published_at",
         )
         .eq("id", user.id)
         .single();
@@ -210,6 +214,12 @@ function WaitingPageContent() {
             }
           }
           setPrepDataCategories(categories);
+        }
+
+        // 보고서 발행 여부 확인
+        if (profileData.report_published_at) {
+          setReportPublished(true);
+          setReportPublishedAt(profileData.report_published_at);
         }
       }
       setUserId(user.id);
@@ -398,8 +408,8 @@ function WaitingPageContent() {
             </h1>
           </header>
 
-          {/* 예약 정보 */}
-          {bookingInfo && (
+          {/* 예약 정보 - 보고서 발행 전에만 표시 */}
+          {bookingInfo && !reportPublished && (
             <button
               className={styles.bookingRow}
               onClick={() => setShowProgramDetail(true)}
@@ -413,49 +423,83 @@ function WaitingPageContent() {
               </div>
             </button>
           )}
+
+          {/* 멤버십 안내 - 보고서 발행 후에만 표시 */}
+          {reportPublished && (
+            <button
+              className={styles.subscribeRow}
+              onClick={() => setShowMembershipModal(true)}
+            >
+              <span className={styles.subscribeLabel}>Lycon Membership</span>
+              <div className={styles.subscribeRight}>
+                <span className={styles.subscribeValue}>지금 가입하기</span>
+                <ChevronRight size={20} className={styles.subscribeArrow} />
+              </div>
+            </button>
+          )}
         </div>
 
         <main className={styles.main}>
           <div className={styles.tabContent}>
-            {/* 메인 타이틀 */}
-            <h2 className={styles.mainTitle}>
-              예약이 확정되었습니다.
-              <br />
-              검진 전, 내 자산 상황을
-              <br />
-              미리 파악해주세요.
-            </h2>
+            {reportPublished ? (
+              /* 보고서 발행됨 - 진단 요약 카드 표시 */
+              <>
+                <h2 className={styles.mainTitle}>
+                  {profile?.name || "고객"}님,
+                  <br />
+                  {bookingInfo && (() => {
+                    const date = new Date(bookingInfo.date);
+                    return `${date.getMonth() + 1}월 ${date.getDate()}일에 진행된`;
+                  })()}
+                  <br />
+                  검진 결과가 도착했습니다.
+                </h2>
+                <DiagnosisSummaryCards userId={userId!} />
+              </>
+            ) : (
+              /* 보고서 미발행 - 예약 안내 및 가이드 표시 */
+              <>
+                {/* 메인 타이틀 */}
+                <h2 className={styles.mainTitle}>
+                  예약이 확정되었습니다.
+                  <br />
+                  검진 전, 내 자산 상황을
+                  <br />
+                  미리 파악해주세요.
+                </h2>
 
-            {/* 섹션 헤더 */}
-            <p className={styles.sectionDesc}>
-              자산 파악은 아래 가이드를 참고하세요!
-            </p>
+                {/* 섹션 헤더 */}
+                <p className={styles.sectionDesc}>
+                  자산 파악은 아래 가이드를 참고하세요!
+                </p>
 
-            {/* 팁 카테고리 그리드 */}
-            <div className={styles.tipGrid}>
-              {TIP_CATEGORIES.map((category) => {
-                const IconComponent = category.icon;
-                return (
-                  <button
-                    key={category.id}
-                    className={styles.tipCard}
-                    onClick={() => {
-                      setSelectedTip(category.id);
-                      setTipModalKey(prev => prev + 1);
-                      // 가이드 클릭 트래킹
-                      if (userId) {
-                        trackGuideClick(userId, category.id);
-                      }
-                    }}
-                  >
-                    <span className={styles.tipTitle}>{category.title}</span>
-                    <div className={styles.tipIconWrapper}>
-                      <IconComponent size={18} />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                {/* 팁 카테고리 그리드 */}
+                <div className={styles.tipGrid}>
+                  {TIP_CATEGORIES.map((category) => {
+                    const IconComponent = category.icon;
+                    return (
+                      <button
+                        key={category.id}
+                        className={styles.tipCard}
+                        onClick={() => {
+                          setSelectedTip(category.id);
+                          setTipModalKey(prev => prev + 1);
+                          // 가이드 클릭 트래킹
+                          if (userId) {
+                            trackGuideClick(userId, category.id);
+                          }
+                        }}
+                      >
+                        <span className={styles.tipTitle}>{category.title}</span>
+                        <div className={styles.tipIconWrapper}>
+                          <IconComponent size={18} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
         </main>
 
@@ -519,6 +563,12 @@ function WaitingPageContent() {
             onClick={() => handleTabChange("chat")}
           />
         ))}
+
+        {/* 멤버십 모달 */}
+        <MembershipModal
+          isOpen={showMembershipModal}
+          onClose={() => setShowMembershipModal(false)}
+        />
       </div>
 
       {/* 채팅 탭 - 항상 마운트, display로 숨김 */}

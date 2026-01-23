@@ -272,26 +272,27 @@ export async function loadChatData(): Promise<{
     }
   }
 
-  // 2. 없으면 생성 (기존 로직)
-  const { data: expert } = await supabase
-    .from('experts')
-    .select('*')
-    .eq('is_active', true)
-    .limit(1)
-    .single()
+  // 2. 없으면 initializePrimaryConversation 호출해서 환영 메시지와 함께 생성
+  const newConversation = await initializePrimaryConversation()
+  if (!newConversation) return null
 
-  if (!expert) return null
-
-  const { data: newConv } = await supabase
+  // 생성된 대화방과 메시지 다시 로드
+  const { data: freshConv } = await supabase
     .from('conversations')
-    .insert({ user_id: user.id, expert_id: expert.id, is_primary: true })
-    .select(`*, expert:experts(*)`)
+    .select(`*, expert:experts(*), messages(*)`)
+    .eq('id', newConversation.id)
     .single()
+
+  if (!freshConv) return null
+
+  const sortedMessages = (freshConv.messages || []).sort(
+    (a: Message, b: Message) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  )
 
   return {
-    expert: expert as Expert,
-    conversation: newConv as Conversation,
-    messages: [],
+    expert: freshConv.expert as Expert,
+    conversation: { ...freshConv, messages: undefined } as Conversation,
+    messages: sortedMessages,
   }
 }
 

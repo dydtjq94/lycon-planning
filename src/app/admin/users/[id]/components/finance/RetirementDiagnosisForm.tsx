@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Pencil, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Trash2, Pencil, X, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatMoney } from "@/lib/utils";
 import {
@@ -46,6 +47,7 @@ export function RetirementDiagnosisForm({
   birthYear,
   retirementAge,
 }: RetirementDiagnosisFormProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [simulationId, setSimulationId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("고객님");
@@ -633,6 +635,17 @@ export function RetirementDiagnosisForm({
 
   return (
     <div className={styles.container}>
+      {/* 상단 액션 바 */}
+      <div className={styles.actionBar}>
+        <button
+          className={styles.reportButton}
+          onClick={() => router.push(`/admin/users/${userId}/report`)}
+        >
+          <FileText size={14} />
+          보고서 만들기
+        </button>
+      </div>
+
       {/* Section 1: 가계 정보 */}
       <section className={styles.section}>
         <div className={styles.sectionHeader}>

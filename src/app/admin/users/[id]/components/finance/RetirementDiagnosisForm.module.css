@@ -5,6 +5,31 @@
   gap: 16px;
 }
 
+/* Action Bar */
+.actionBar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0 8px 0;
+}
+
+.reportButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #007aff;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.reportButton:hover {
+  background: #0066d6;
+}
+
 /* Loading */
 .loading {
   display: flex;

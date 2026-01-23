@@ -140,6 +140,105 @@
   background: #f3f4f6;
 }
 
+/* 구독 안내 */
+.subscribeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 20px;
+  background: #f0f7ff;
+  border: none;
+  border-top: 1px solid #e0edff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.subscribeRow:hover {
+  background: #e5f1ff;
+}
+
+.subscribeLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #007aff;
+}
+
+.subscribeRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.subscribeValue {
+  font-size: 13px;
+  color: #666;
+}
+
+.subscribeArrow {
+  color: #007aff;
+}
+
+/* 보고서 카드 */
+.reportCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.reportCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 122, 255, 0.4);
+}
+
+.reportCard:active {
+  transform: translateY(0);
+}
+
+.reportCardIcon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.reportCardContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reportCardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+}
+
+.reportCardDesc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.reportCardArrow {
+  color: rgba(255, 255, 255, 0.7);
+  flex-shrink: 0;
+}
+
 .bookingLabel {
   font-size: 15px;
   font-weight: 600;

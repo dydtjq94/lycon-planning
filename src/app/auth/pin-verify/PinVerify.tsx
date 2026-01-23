@@ -184,8 +184,10 @@ export function PinVerify() {
           .update({ pin_verified_at: new Date().toISOString() })
           .eq('id', user.id)
 
-        // 성공 - 웨이팅 화면으로 (서비스 시작 후 dashboard로 변경)
-        router.push('/waiting')
+        // 성공 - 저장된 URL 또는 웨이팅 화면으로
+        const returnUrl = localStorage.getItem("returnUrl") || "/waiting";
+        localStorage.removeItem("returnUrl");
+        router.push(returnUrl)
         router.refresh()
       } else {
         // 실패

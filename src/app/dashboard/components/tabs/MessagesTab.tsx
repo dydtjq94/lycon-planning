@@ -59,19 +59,18 @@ export function MessagesTab({ onUnreadCountChange }: MessagesTabProps) {
       const msgs = await getMessages(conversationId);
       setMessages(msgs);
 
-      // 읽음 처리
-      await markMessagesAsRead(conversationId);
-
-      // 대화 목록 업데이트 (unread_count 반영)
+      // 먼저 로컬 상태 즉시 업데이트 (사용자가 빠르게 이탈해도 반영됨)
       setConversations((prev) => {
         const updated = prev.map((c) =>
           c.id === conversationId ? { ...c, unread_count: 0 } : c
         );
-        // 전체 안 읽은 수 계산 후 비동기로 업데이트
         const totalUnread = updated.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-        setTimeout(() => onUnreadCountChange?.(totalUnread), 0);
+        onUnreadCountChange?.(totalUnread);
         return updated;
       });
+
+      // DB 동기화는 백그라운드에서 진행
+      markMessagesAsRead(conversationId).catch(console.error);
     } catch (error) {
       console.error("Failed to load messages:", error);
     }

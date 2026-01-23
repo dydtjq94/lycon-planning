@@ -71,8 +71,10 @@ export function ChatRoom({ userId, isVisible = true, onNewMessage, onMessagesLoa
           onMessagesLoaded?.(data.messages, data.expert.name);
         }
 
-        // 읽음 처리 (백그라운드)
-        markMessagesAsRead(data.conversation.id);
+        // 채팅이 보이는 상태라면 읽음 처리
+        if (isVisible) {
+          markMessagesAsRead(data.conversation.id);
+        }
       } catch (error) {
         console.error("채팅 초기화 오류:", error);
         setLoading(false);
@@ -81,6 +83,13 @@ export function ChatRoom({ userId, isVisible = true, onNewMessage, onMessagesLoa
 
     initChat();
   }, [userId]);
+
+  // 채팅 탭이 보이게 되면 읽음 처리
+  useEffect(() => {
+    if (isVisible && conversation) {
+      markMessagesAsRead(conversation.id);
+    }
+  }, [isVisible, conversation]);
 
   // 로딩 완료 후 스크롤 및 표시
   useEffect(() => {
@@ -213,6 +222,13 @@ export function ChatRoom({ userId, isVisible = true, onNewMessage, onMessagesLoa
 
       // 임시 메시지를 실제 메시지로 교체
       setMessages((prev) => prev.map((m) => m.id === tempId ? msg : m));
+
+      // Slack 알림 (비동기, 실패해도 무시)
+      fetch("/api/slack/new-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      }).catch(() => {});
 
       // preview URL 해제
       imagesToUpload.forEach((img) => URL.revokeObjectURL(img.preview));

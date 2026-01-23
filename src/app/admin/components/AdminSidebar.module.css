@@ -181,6 +181,23 @@
   color: #555;
 }
 
+/* 읽지 않은 메시지 배지 */
+.unreadBadge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background-color: #ff3b30;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 /* 푸터 */
 .footer {
   padding: 8px;
@@ -247,4 +264,11 @@
 .footerItem:hover {
   background-color: #2a2a2a;
   color: white;
+}
+
+/* 인쇄용 스타일 */
+@media print {
+  .sidebar {
+    display: none !important;
+  }
 }

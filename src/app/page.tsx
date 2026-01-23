@@ -72,7 +72,7 @@ export default function LandingPage() {
             <Link href="/auth/login" className={styles.btnLogin}>
               로그인
             </Link>
-            <Link href="/auth/signup" className={styles.btnPrimary}>
+            <Link href="/auth/signup" className={styles.btnSignup}>
               회원가입
             </Link>
           </div>

@@ -1488,6 +1488,12 @@
   gap: 8px;
   overflow-x: auto;
   padding-bottom: 4px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.dateGrid::-webkit-scrollbar {
+  display: none;
 }
 
 .dateItem {

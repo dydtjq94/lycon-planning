@@ -1,0 +1,824 @@
+/* 기본 스타일 */
+.reportContainer {
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #edf2f7;
+  min-height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.reportPage {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  background: white;
+  padding: 10mm 12mm;
+  box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 액션 버튼 컨테이너 */
+.actionButtons {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 100;
+}
+
+/* 인쇄 버튼 */
+.printButton {
+  padding: 12px 24px;
+  background: #1a365d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(26, 54, 93, 0.3);
+}
+
+.printButton:hover {
+  background: #2c5282;
+}
+
+/* 발행 버튼 */
+.publishButton {
+  padding: 12px 24px;
+  background: #38a169;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(56, 161, 105, 0.3);
+}
+
+.publishButton:hover:not(:disabled) {
+  background: #2f855a;
+}
+
+.publishButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.publishButton.published {
+  background: #718096;
+}
+
+/* 헤더 */
+.reportHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #1a365d;
+  margin-bottom: 12px;
+}
+
+.reportHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.reportLogo {
+  font-size: 11px;
+  font-weight: 700;
+  color: #3182ce;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.reportTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a365d;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.reportHeaderRight {
+  display: grid;
+  grid-template-columns: auto auto auto auto;
+  gap: 3px 14px;
+  font-size: 11px;
+  align-items: center;
+}
+
+.reportInfoLabel {
+  color: #718096;
+}
+
+.reportInfoValue {
+  font-weight: 600;
+  color: #1a202c;
+}
+
+/* 섹션 공통 */
+.reportSection {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.reportSection.half {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a365d;
+  margin: 0 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #1a365d;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.sectionTitleEn {
+  font-weight: 400;
+  color: #718096;
+  font-size: 10px;
+}
+
+.sectionNote {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 400;
+  color: #718096;
+}
+
+/* 현금흐름 분석 */
+.cashflowGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cashflowItem {
+  display: grid;
+  grid-template-columns: 80px 1fr 70px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+}
+
+.cashflowItem.highlight {
+  margin-top: 2px;
+  background: white;
+  border: 1px solid #e2e8f0;
+}
+
+.cashflowLabel {
+  font-size: 11px;
+  color: #1a202c;
+  font-weight: 500;
+}
+
+.cashflowBarContainer {
+  height: 16px;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.cashflowBar {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.cashflowBarLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+}
+
+.cashflowBar.income {
+  background: #3182ce;
+}
+
+.cashflowBar.expense {
+  background: #e57373;
+}
+
+.cashflowBar.gap.positive {
+  background: #38a169;
+}
+
+.cashflowBar.gap.negative {
+  background: #e53e3e;
+}
+
+.cashflowNote {
+  font-size: 9px;
+  font-weight: 500;
+  color: #718096;
+  text-align: right;
+}
+
+.cashflowGrade {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.gradeExcellent {
+  color: #276749;
+}
+
+.gradeGood {
+  color: #38a169;
+}
+
+.gradeCaution {
+  color: #d69e2e;
+}
+
+.gradeWarning {
+  color: #dd6b20;
+}
+
+.gradeDanger {
+  color: #c53030;
+}
+
+/* 2컬럼 레이아웃 */
+.reportTwoColumn {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* 총수요/총공급 차트 */
+.demandSupplyChart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dsLabel {
+  width: 50px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a202c;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.dsTrack {
+  flex: 1;
+  height: 24px;
+  background: #e2e8f0;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.dsBar {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dsBar.demand {
+  background: #d69e2e;
+}
+
+.dsBar.supply {
+  background: #3182ce;
+}
+
+.dsBar.deficit {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 3px,
+    rgba(229, 62, 62, 0.15) 3px,
+    rgba(229, 62, 62, 0.15) 6px
+  );
+  border: 1px dashed #e53e3e;
+  border-left: none;
+}
+
+.dsValue {
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+
+.dsBar.deficit .dsValue {
+  color: #e53e3e;
+  text-shadow: none;
+}
+
+.dsLegend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.dsLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #718096;
+}
+
+.dsLegendBox {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.dsLegendBox.demand {
+  background: #d69e2e;
+}
+
+.dsLegendBox.supply {
+  background: #3182ce;
+}
+
+.dsLegendBox.deficit {
+  border: 1px dashed #e53e3e;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 2px,
+    rgba(229, 62, 62, 0.15) 2px,
+    rgba(229, 62, 62, 0.15) 4px
+  );
+}
+
+/* 자산 구성 */
+.assetStackBar {
+  display: flex;
+  height: 22px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.assetSegment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: white;
+  font-weight: 600;
+}
+
+.assetSegment.realestate {
+  background: #1a365d;
+}
+
+.assetSegment.financial {
+  background: #3182ce;
+}
+
+.assetSegment.pension {
+  background: #63b3ed;
+}
+
+.assetLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.assetLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #1a202c;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+}
+
+.legendDot.realestate {
+  background: #1a365d;
+}
+
+.legendDot.financial {
+  background: #3182ce;
+}
+
+.legendDot.pension {
+  background: #63b3ed;
+}
+
+.assetSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.assetSummaryRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #1a202c;
+}
+
+.assetSummaryRow.debt {
+  color: #e53e3e;
+}
+
+.debtDetail {
+  font-size: 9px;
+  font-weight: 400;
+  color: #718096;
+}
+
+.assetSummaryRow.total {
+  font-weight: 700;
+  color: #1a202c;
+  padding-top: 4px;
+  margin-top: 2px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* 자산 지속성 */
+.sustainabilityTimeline {
+  margin-bottom: 10px;
+}
+
+.timelineBar {
+  position: relative;
+  height: 20px;
+  background: #fed7d7;
+  overflow: visible;
+  border: 1px solid #feb2b2;
+}
+
+.timelineFilled {
+  height: 100%;
+  background: linear-gradient(90deg, #38a169, #d69e2e);
+}
+
+.timelineMarker {
+  position: absolute;
+  top: -2px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.markerLabel {
+  background: #1a365d;
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.timelineMarker::after {
+  content: "";
+  width: 2px;
+  height: 10px;
+  background: #1a365d;
+}
+
+.timelineLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 10px;
+  color: #718096;
+}
+
+.sustainabilityStats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.statLabel {
+  color: #718096;
+}
+
+.statValue {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.statRow.negative .statValue {
+  color: #e53e3e;
+}
+
+.statRow.positiveRow .statValue {
+  color: #38a169;
+}
+
+.sustainabilityNote {
+  font-size: 9px;
+  color: #718096;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* 리스크 진단 */
+.riskGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.riskItem {
+  display: grid;
+  grid-template-columns: 85px 1fr 65px;
+  align-items: center;
+  gap: 10px;
+}
+
+.riskLabel {
+  font-size: 11px;
+  color: #1a202c;
+  font-weight: 500;
+}
+
+.riskBarContainer {
+  position: relative;
+  height: 26px;
+  display: flex;
+  flex-direction: column;
+}
+
+.riskZoneLabels {
+  display: flex;
+  height: 10px;
+  margin-bottom: 2px;
+}
+
+.zoneLabel {
+  font-size: 8px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.zoneLabel.high {
+  width: 30%;
+  color: #c53030;
+}
+
+.zoneLabel.medium {
+  width: 30%;
+  color: #b7791f;
+}
+
+.zoneLabel.low {
+  width: 40%;
+  color: #276749;
+}
+
+.riskBarBg {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.riskZone {
+  height: 100%;
+}
+
+.riskZone.low {
+  background: #c6f6d5;
+}
+
+.riskZone.medium {
+  background: #fefcbf;
+}
+
+.riskZone.high {
+  background: #fed7d7;
+}
+
+.riskIndicator {
+  position: absolute;
+  bottom: 2px;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
+
+.riskIndicator.low {
+  background: #38a169;
+}
+
+.riskIndicator.medium {
+  background: #d69e2e;
+}
+
+.riskIndicator.high {
+  background: #e53e3e;
+}
+
+.riskValue {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  color: #1a202c;
+}
+
+/* 개선 가능성 차트 */
+.improvementChart {
+  height: 160px;
+  padding: 8px 0;
+}
+
+/* 간단 소견 */
+.opinionInput {
+  margin-bottom: 10px;
+}
+
+.opinionTextarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 1.6;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.opinionTextarea:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.1);
+}
+
+.opinionHint {
+  font-size: 11px;
+  color: #718096;
+  margin: 8px 0 0 0;
+  line-height: 1.5;
+}
+
+.opinionContent {
+  margin-bottom: 10px;
+}
+
+.opinionFinding {
+  font-size: 12px;
+  color: #1a202c;
+  line-height: 1.6;
+  margin: 0 0 8px 0;
+}
+
+.opinionRecommendation {
+  font-size: 12px;
+  color: #2c5282;
+  line-height: 1.5;
+  margin: 0;
+  font-style: italic;
+}
+
+.nextStep {
+  font-size: 12px;
+  color: #2c5282;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.nextStep strong {
+  color: #1a365d;
+}
+
+/* 푸터 */
+.reportFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 2px solid #1a365d;
+  margin-top: auto;
+}
+
+.footerBrand {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a365d;
+  letter-spacing: 0.5px;
+}
+
+.footerTagline {
+  font-size: 10px;
+  color: #718096;
+}
+
+/* 인쇄용 스타일 */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  .reportContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 210mm;
+    margin: 0;
+    padding: 0;
+    background: white !important;
+    min-height: 0;
+  }
+
+  .reportPage {
+    width: 210mm;
+    height: 297mm;
+    min-height: 297mm;
+    max-height: 297mm;
+    margin: 0;
+    padding: 8mm 10mm;
+    box-shadow: none;
+    box-sizing: border-box;
+    background: white !important;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  .actionButtons {
+    display: none !important;
+  }
+
+  .reportSection {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .reportTwoColumn {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .reportFooter {
+    margin-top: auto;
+  }
+
+  .improvementChart {
+    height: 120px !important;
+  }
+
+  .reportPage,
+  .reportPage div,
+  .reportPage span,
+  .reportPage canvas {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

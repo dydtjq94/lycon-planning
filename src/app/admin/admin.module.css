@@ -947,3 +947,16 @@
 .settingsButton:hover {
   color: #007aff;
 }
+
+/* 인쇄용 스타일 */
+@media print {
+  .layout {
+    display: block;
+    background: white !important;
+  }
+
+  .main {
+    height: auto;
+    overflow: visible;
+  }
+}
