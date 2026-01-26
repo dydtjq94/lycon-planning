@@ -128,6 +128,44 @@ export async function hardDeleteSnapshot(id: string): Promise<void> {
   if (error) throw error
 }
 
+// 오늘 날짜 스냅샷 조회 (없으면 null)
+export async function getTodaySnapshot(profileId: string): Promise<FinancialSnapshot | null> {
+  const supabase = createClient()
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data, error } = await supabase
+    .from('financial_snapshots')
+    .select('*')
+    .eq('profile_id', profileId)
+    .eq('recorded_at', today)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+// 오늘 날짜 스냅샷 가져오기 (없으면 생성)
+export async function getOrCreateTodaySnapshot(profileId: string): Promise<FinancialSnapshot> {
+  const existing = await getTodaySnapshot(profileId)
+  if (existing) return existing
+
+  // 없으면 새로 생성
+  return createSnapshot({
+    profile_id: profileId,
+    snapshot_type: 'followup',
+  })
+}
+
+// 오늘 날짜 스냅샷 업데이트 (없으면 생성 후 업데이트)
+export async function upsertTodaySnapshot(
+  profileId: string,
+  updates: Partial<FinancialSnapshotInput>
+): Promise<FinancialSnapshot> {
+  const snapshot = await getOrCreateTodaySnapshot(profileId)
+  return updateSnapshot(snapshot.id, updates)
+}
+
 // ============================================
 // Snapshot Items CRUD
 // ============================================

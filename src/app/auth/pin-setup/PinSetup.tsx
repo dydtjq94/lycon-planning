@@ -356,6 +356,8 @@ export function PinSetup() {
 
         {/* 안내 문구 */}
         <p className={styles.notice}>
+          자산 노출을 보호합니다.
+          <br />
           이 비밀번호는 암호화되어 저장되며,
           <br />
           본인 또한 확인할 수 없습니다.

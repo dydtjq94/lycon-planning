@@ -11,6 +11,7 @@ import {
   User,
   ChevronDown,
   ChevronRight,
+  UserPlus,
 } from "lucide-react";
 import { useState } from "react";
 import styles from "./AdminSidebar.module.css";
@@ -25,6 +26,7 @@ interface AdminSidebarProps {
   expertName: string;
   customers: Customer[];
   onLogout: () => void;
+  onAddCustomer: () => void;
 }
 
 const mainMenu = [
@@ -33,7 +35,7 @@ const mainMenu = [
   { id: "/admin/reports", label: "고객 현황", icon: FileText },
 ];
 
-export function AdminSidebar({ expertName, customers, onLogout }: AdminSidebarProps) {
+export function AdminSidebar({ expertName, customers, onLogout, onAddCustomer }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isCustomerOpen, setIsCustomerOpen] = useState(true);
@@ -107,6 +109,13 @@ export function AdminSidebar({ expertName, customers, onLogout }: AdminSidebarPr
                     </button>
                   ))
                 )}
+                <button
+                  className={styles.addCustomerButton}
+                  onClick={onAddCustomer}
+                >
+                  <UserPlus size={16} />
+                  <span className={styles.navLabel}>고객 추가</span>
+                </button>
               </div>
             )}
           </div>

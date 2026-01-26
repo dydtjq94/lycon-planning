@@ -151,6 +151,7 @@ export async function createBooking(
 
   if (!user) throw new Error('User not authenticated')
 
+  // 예약 생성
   const { data, error } = await supabase
     .from('bookings')
     .insert({
@@ -165,6 +166,25 @@ export async function createBooking(
     .single()
 
   if (error) throw error
+
+  // 담당 고객 관계 생성 (conversation이 없으면 생성)
+  const { data: existingConv } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('expert_id', expertId)
+    .maybeSingle()
+
+  if (!existingConv) {
+    await supabase
+      .from('conversations')
+      .insert({
+        user_id: user.id,
+        expert_id: expertId,
+        is_primary: true,
+      })
+  }
+
   return data
 }
 

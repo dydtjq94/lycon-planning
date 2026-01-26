@@ -6,6 +6,7 @@ import { useFinancialContext } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
   usePrefetchAllFinancialData,
+  useSimulations,
 } from "@/hooks/useFinancialData";
 import type {
   GlobalSettings,
@@ -24,6 +25,7 @@ import {
   MessagesTab,
   NetWorthTab,
   CashFlowOverviewTab,
+  CurrentAssetTab,
   AssetRecordTab,
   IncomeTab,
   ExpenseTab,
@@ -33,6 +35,8 @@ import {
   InsuranceTab,
   RealEstateTab,
   PensionTab,
+  DashboardTab,
+  ScenarioTab,
 } from "./components/tabs";
 import { ScenarioModal } from "./components/modals/ScenarioModal";
 import { FamilyModal } from "./components/modals/FamilyModal";
@@ -41,24 +45,17 @@ import styles from "./dashboard.module.css";
 type ModalType = "family" | "scenario" | "settings" | null;
 
 const sectionTitles: Record<string, string> = {
+  // 대시보드
+  dashboard: "대시보드",
   // 담당자 관련
   messages: "채팅",
   consultation: "상담",
-  // 프로그레스
-  "asset-snapshot": "자산 현황",
+  // 재무 현황
+  "current-asset": "현재 자산",
+  progress: "프로그레스",
   "household-budget": "가계부",
-  // 시나리오 > 은퇴
-  networth: "순자산",
-  "cashflow-overview": "현금흐름",
-  // 나의 재무
-  income: "소득 관리",
-  expense: "지출 관리",
-  insurance: "보험 관리",
-  savings: "저축/투자 관리",
-  asset: "실물 자산 관리",
-  debt: "부채 관리",
-  realEstate: "부동산 관리",
-  pension: "연금 관리",
+  // 시뮬레이션
+  scenario: "시뮬레이션",
 };
 
 const validSections = Object.keys(sectionTitles);
@@ -74,10 +71,14 @@ export function DashboardContent() {
     updateGlobalSettings,
   } = useFinancialContext();
 
-  const [currentSection, setCurrentSection] = useState<string>("diagnosis");
+  const [currentSection, setCurrentSection] = useState<string>("dashboard");
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false); // 기본값: 닫혀있음
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [selectedSimulationId, setSelectedSimulationId] = useState<string>(simulation.id);
+
+  // 시뮬레이션(시나리오) 목록 조회
+  const { data: simulations = [] } = useSimulations();
 
   // 초기 unread 메시지 체크 (Supabase에서)
   useEffect(() => {
@@ -148,9 +149,9 @@ export function DashboardContent() {
 
   // URL 해시에서 섹션 읽기
   const getHashSection = useCallback(() => {
-    if (typeof window === "undefined") return "diagnosis";
+    if (typeof window === "undefined") return "dashboard";
     const hash = window.location.hash.slice(1);
-    return validSections.includes(hash) ? hash : "diagnosis";
+    return validSections.includes(hash) ? hash : "dashboard";
   }, []);
 
   // 초기 로드 시 해시에서 섹션 설정
@@ -354,17 +355,49 @@ export function DashboardContent() {
 
   const renderContent = () => {
     switch (currentSection) {
+      // 대시보드
+      case "dashboard":
+        return (
+          <DashboardTab
+            simulationId={simulation.id}
+            birthYear={simulationProfile.birthYear}
+            spouseBirthYear={simulationProfile.spouseBirthYear ?? null}
+            retirementAge={profile.target_retirement_age}
+            globalSettings={globalSettings}
+            unreadMessageCount={unreadMessageCount}
+            onNavigate={handleSectionChange}
+          />
+        );
       // 담당자 관련
       case "messages":
         return <MessagesTab onUnreadCountChange={setUnreadMessageCount} />;
       case "consultation":
         return <div style={{ padding: 40, color: "#888" }}>상담 기록 (준비중)</div>;
       // 프로그레스
-      case "asset-snapshot":
-        return <AssetRecordTab />;
+      case "current-asset":
+        return <CurrentAssetTab profileId={profile.id} />;
+      case "progress":
+        return <AssetRecordTab profileId={profile.id} />;
       case "household-budget":
         return <div style={{ padding: 40, color: "#888" }}>가계부 (준비중)</div>;
-      // 시나리오 > 은퇴
+      // 시나리오
+      case "scenario": {
+        const selectedSim = simulations.find(s => s.id === selectedSimulationId) || simulations[0];
+        return (
+          <ScenarioTab
+            simulation={selectedSim || simulation}
+            simulationId={selectedSimulationId}
+            profile={profile}
+            simulationProfile={simulationProfile}
+            familyMembers={familyMembers}
+            globalSettings={globalSettings}
+            simulationResult={simulationResult}
+            isMarried={isMarried}
+            spouseMember={spouseMember}
+          />
+        );
+      }
+      // Legacy - 이전 직접 접근용 (나중에 제거)
       case "networth":
         return (
           <NetWorthTab
@@ -458,6 +491,9 @@ export function DashboardContent() {
         isExpanded={isSidebarExpanded}
         onExpandChange={setIsSidebarExpanded}
         unreadMessageCount={unreadMessageCount}
+        simulations={simulations}
+        currentSimulationId={selectedSimulationId}
+        onSimulationChange={setSelectedSimulationId}
       />
 
       <main className={styles.main}>

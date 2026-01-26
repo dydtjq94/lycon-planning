@@ -2,17 +2,21 @@
 .layout {
   display: flex;
   height: 100vh;
+  width: 100vw;
+  overflow: hidden;
   background-color: #ffffff;
 }
 
 /* 메인 영역 */
 .main {
   flex: 1;
+  min-width: 0; /* flexbox 자식이 shrink 되도록 */
   height: 100vh;
   background-color: #ffffff;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 헤더 - Main 안에 포함 */
@@ -130,6 +134,7 @@
 /* 콘텐츠 */
 .content {
   flex: 1;
+  min-width: 0; /* flexbox 자식이 shrink 되도록 */
   padding: 24px;
   overflow-y: auto;
   overflow-x: hidden;

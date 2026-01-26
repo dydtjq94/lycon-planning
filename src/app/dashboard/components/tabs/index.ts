@@ -1,9 +1,12 @@
 // Dashboard tabs
+export { DashboardTab } from './DashboardTab'
 export { OverviewTab } from './OverviewTab'
 export { MessagesTab } from './MessagesTab'
 export { NetWorthTab } from './NetWorthTab'
 export { CashFlowOverviewTab } from './CashFlowOverviewTab'
+export { CurrentAssetTab } from './CurrentAssetTab'
 export { AssetRecordTab } from './AssetRecordTab'
+export { ScenarioTab } from './ScenarioTab'
 
 // Finance tabs
 export { IncomeTab } from './IncomeTab'

@@ -1128,11 +1128,11 @@ export function SimpleOnboarding({
         지금 하고 계신가요?
       </h1>
       <p className={styles.subtitleLarge}>
-        라이콘은 은퇴 설계 전문가가 1:1로 배정되어
+        전문가가 1:1로 배정되어
         <br />
-        현재 재무 상태를 진단하고
+        현재 자산을 파악하고
         <br />
-        은퇴 전략을 함께 설계해드립니다.
+        재무 전략을 함께 설계해드립니다.
       </p>
       <div className={styles.bottomButtonArea}>
         <button className={styles.primaryButton} onClick={handleNext}>
@@ -1156,7 +1156,7 @@ export function SimpleOnboarding({
         최소 5억부터 수십억 자산가에게만 제공됩니다.
       </p>
       <p className={styles.missionDesc}>
-        라이콘은 자산 규모와 관계없이
+        저희는 자산 규모와 관계없이
         <br />
         누구나 전문가의 종합 재무검진을 받을 수 있도록, 문턱을 낮추고 있습니다.
       </p>
@@ -1168,39 +1168,31 @@ export function SimpleOnboarding({
     </div>
   );
 
-  // 3. 왜 은퇴 진단이 필요한가
+  // 3. 지금 어디쯤인지 알아야 합니다
   const renderProblem = () => (
     <div className={styles.stepContent}>
       <div className={styles.welcomeBadge}>Lycon | Retirement</div>
       <h1 className={styles.titleLarge}>
-        왜 은퇴 진단이
+        지금 어디쯤인지
         <br />
-        필요할까요?
+        알아야 합니다
       </h1>
       <div className={styles.statsList}>
         <div className={styles.statItem}>
           <div className={styles.statHeader}>
-            <span className={styles.statNumber}>39.7%</span>
-            <span className={styles.statBadge}>OECD 1위, 평균의 3배</span>
+            <span className={styles.statNumber}>객관적 진단</span>
           </div>
-          <div className={styles.statTitle}>노인 빈곤율</div>
-          <div className={styles.statSource}>
-            국가데이터처 「2024 고령자통계」
-          </div>
+          <div className={styles.statTitle}>감이 아닌 데이터로 확인</div>
         </div>
         <div className={styles.statItem}>
           <div className={styles.statHeader}>
-            <span className={styles.statNumber}>67만원</span>
-            <span className={styles.statVs}>vs 300만원</span>
+            <span className={styles.statNumber}>맞춤 가이드</span>
           </div>
-          <div className={styles.statTitle}>국민연금 평균 vs 희망 생활비</div>
-          <div className={styles.statSource}>
-            국민연금공단, 한국보건사회연구원
-          </div>
+          <div className={styles.statTitle}>전문가가 다음 단계를 제안</div>
         </div>
       </div>
       <p className={styles.problemText}>
-        건강한 은퇴에는 정기적인 검진이 필수입니다.
+        현재를 알아야 미래를 설계할 수 있습니다.
       </p>
       <div className={styles.bottomButtonArea}>
         <button className={styles.primaryButton} onClick={handleNext}>

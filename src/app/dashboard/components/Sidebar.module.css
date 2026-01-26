@@ -1,4 +1,4 @@
-/* 다크 사이드바 - ProjectionLab 스타일 */
+/* 다크 사이드바 - 아이콘 위치 고정 */
 .sidebar {
   width: 56px;
   height: 100vh;
@@ -22,6 +22,7 @@
   display: flex;
   align-items: center;
   width: 100%;
+  height: 48px;
   border-bottom: 1px solid #2a2a2a;
   margin-bottom: 8px;
 }
@@ -30,24 +31,33 @@
 .logoItem {
   display: flex;
   align-items: center;
-  gap: 0;
-  flex: 1;
   height: 48px;
-  padding: 0 12px;
   white-space: nowrap;
 }
 
 .logoLetter {
+  width: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 18px;
   font-weight: 700;
   color: white;
   flex-shrink: 0;
 }
 
-.logoItem .navLabel {
+.logoText {
   font-size: 18px;
   font-weight: 700;
   color: white;
+  margin-left: -22px;
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar:hover .logoText,
+.sidebar.expanded .logoText {
+  opacity: 1;
 }
 
 /* 핀 버튼 */
@@ -89,25 +99,24 @@
 /* 네비게이션 */
 .nav {
   flex: 1;
-  padding: 0 8px 8px 8px;
+  padding: 0 0 8px 0;
 }
 
 .navSection {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
+/* 네비게이션 아이템 - 아이콘 고정 */
 .navItem {
   display: flex;
   align-items: center;
-  gap: 12px;
   width: 100%;
   height: 40px;
-  padding: 0 12px;
   border: none;
   background: none;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
   font-weight: 500;
   color: #888;
@@ -117,22 +126,36 @@
   white-space: nowrap;
 }
 
-.navItem svg {
-  flex-shrink: 0;
+.navItem:hover {
+  background-color: #2a2a2a;
+  color: white;
 }
 
+.navItem.active {
+  background-color: #2a2a2a;
+  color: white;
+}
+
+/* 아이콘 래퍼 - 항상 56px 중앙 고정 */
 .iconWrapper {
   position: relative;
+  width: 56px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
+.iconWrapper svg {
+  flex-shrink: 0;
+}
+
+/* 읽지 않은 메시지 배지 */
 .unreadBadge {
   position: absolute;
-  top: -6px;
-  right: -8px;
+  top: 6px;
+  right: 6px;
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
@@ -146,31 +169,22 @@
   justify-content: center;
 }
 
-.navItem:hover {
-  background-color: #2a2a2a;
-  color: white;
-}
-
-.navItem.active {
-  background-color: #2a2a2a;
-  color: white;
-}
-
+/* 네비게이션 라벨 */
 .navLabel {
   opacity: 0;
   overflow: hidden;
-  transform: translateX(-10px);
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar:hover .navLabel,
 .sidebar.expanded .navLabel {
   opacity: 1;
-  transform: translateX(0);
 }
 
+/* Chevron */
 .chevron {
   margin-left: auto;
+  margin-right: 12px;
   opacity: 0;
   transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: #666;
@@ -185,8 +199,8 @@
 /* 단축키 힌트 */
 .shortcutHint {
   position: absolute;
-  bottom: -4px;
-  left: -4px;
+  bottom: 4px;
+  left: 8px;
   font-size: 9px;
   font-weight: 700;
   color: #fff;
@@ -206,17 +220,40 @@
   margin: 8px 12px;
 }
 
-/* 서브메뉴 그룹 */
+/* 간격 (구분선 대신 사용) */
+.spacer {
+  height: 16px;
+}
+
+/* 섹션 라벨 - 항상 같은 높이 유지 */
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 12px 4px 12px;
+  height: 27px;
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar:hover .sectionLabel,
+.sidebar.expanded .sectionLabel {
+  opacity: 1;
+}
+
+/* 네비게이션 그룹 */
 .navGroup {
   display: flex;
   flex-direction: column;
 }
 
+/* 서브메뉴 */
 .submenu {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-left: 12px;
   margin-top: 2px;
   opacity: 0;
   max-height: 0;
@@ -230,54 +267,27 @@
   max-height: 600px;
 }
 
+/* 서브메뉴 아이템 */
 .submenuItem {
   display: flex;
   align-items: center;
-  gap: 10px;
   width: 100%;
   height: 36px;
-  padding: 0 12px;
   border: none;
   background: none;
-  border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
   color: #777;
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
-  opacity: 0;
-  transform: translateX(-10px);
-  transition: background-color 0.15s, color 0.15s, opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.15s, color 0.15s;
 }
 
-.sidebar:hover .submenuItem,
-.sidebar.expanded .submenuItem {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.sidebar:hover .submenuItem:nth-child(1),
-.sidebar.expanded .submenuItem:nth-child(1) { transition-delay: 0.02s; }
-.sidebar:hover .submenuItem:nth-child(2),
-.sidebar.expanded .submenuItem:nth-child(2) { transition-delay: 0.04s; }
-.sidebar:hover .submenuItem:nth-child(3),
-.sidebar.expanded .submenuItem:nth-child(3) { transition-delay: 0.06s; }
-.sidebar:hover .submenuItem:nth-child(4),
-.sidebar.expanded .submenuItem:nth-child(4) { transition-delay: 0.08s; }
-.sidebar:hover .submenuItem:nth-child(5),
-.sidebar.expanded .submenuItem:nth-child(5) { transition-delay: 0.1s; }
-.sidebar:hover .submenuItem:nth-child(6),
-.sidebar.expanded .submenuItem:nth-child(6) { transition-delay: 0.12s; }
-.sidebar:hover .submenuItem:nth-child(8),
-.sidebar.expanded .submenuItem:nth-child(8) { transition-delay: 0.14s; }
-.sidebar:hover .submenuItem:nth-child(9),
-.sidebar.expanded .submenuItem:nth-child(9) { transition-delay: 0.16s; }
-.sidebar:hover .submenuItem:nth-child(10),
-.sidebar.expanded .submenuItem:nth-child(10) { transition-delay: 0.18s; }
-
-.submenuItem svg {
-  flex-shrink: 0;
+.submenuItem .iconWrapper {
+  width: 56px;
+  height: 36px;
+  padding-left: 8px;
 }
 
 .submenuItem:hover {
@@ -290,86 +300,21 @@
   color: white;
 }
 
-/* 서브메뉴 구분선 */
-.submenuDivider {
-  height: 1px;
-  background-color: #2a2a2a;
-  margin: 6px 12px;
-}
-
-/* 푸터 */
-.footer {
-  padding: 8px;
-  border-top: 1px solid #2a2a2a;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.footerItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  border: none;
-  background: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #666;
-  cursor: pointer;
-  text-align: left;
-  transition: background-color 0.15s, color 0.15s;
-  white-space: nowrap;
-}
-
-.footerItem svg {
-  flex-shrink: 0;
-}
-
-.footerItem:hover {
-  background-color: #2a2a2a;
-  color: white;
-}
-
-/* 섹션 라벨 */
-.sectionLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 8px 12px 4px 12px;
-  opacity: 0;
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar:hover .sectionLabel,
-.sidebar.expanded .sectionLabel {
-  opacity: 1;
-}
-
 /* 중첩 서브메뉴 (나의 재무) */
 .nestedSubmenu {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding-left: 16px;
   margin-top: 2px;
 }
 
 .nestedItem {
   display: flex;
   align-items: center;
-  gap: 8px;
   width: 100%;
   height: 32px;
-  padding: 0 10px;
   border: none;
   background: none;
-  border-radius: 5px;
   font-size: 12px;
   font-weight: 500;
   color: #666;
@@ -379,8 +324,10 @@
   transition: background-color 0.15s, color 0.15s;
 }
 
-.nestedItem svg {
-  flex-shrink: 0;
+.nestedItem .iconWrapper {
+  width: 56px;
+  height: 32px;
+  padding-left: 16px;
 }
 
 .nestedItem:hover {
@@ -398,6 +345,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   width: calc(100% - 24px);
   margin: 8px 12px 4px 12px;
   height: 32px;
@@ -420,4 +368,53 @@
 .addScenarioBtn:hover {
   border-color: #666;
   color: #888;
+}
+
+.addScenarioBtn span {
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar:hover .addScenarioBtn span,
+.sidebar.expanded .addScenarioBtn span {
+  opacity: 1;
+}
+
+/* 푸터 */
+.footer {
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.footerItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.footerItem .iconWrapper {
+  width: 56px;
+  height: 40px;
+}
+
+.footerItem:hover {
+  background-color: #2a2a2a;
+  color: white;
+}
+
+.footerItem.active {
+  background-color: #2a2a2a;
+  color: white;
 }

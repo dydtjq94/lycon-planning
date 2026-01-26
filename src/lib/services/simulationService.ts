@@ -49,7 +49,7 @@ export const simulationService = {
     // 없으면 생성
     return this.create({
       profile_id: userId,
-      title: '기본 시나리오',
+      title: '은퇴',
       is_default: true,
       sort_order: 0,
     })

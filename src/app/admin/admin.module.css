@@ -948,6 +948,169 @@
   color: #007aff;
 }
 
+/* 고객 추가 모달 */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 80vh;
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.modalTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.modalClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: #86868b;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.modalClose:hover {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+.modalSearch {
+  position: relative;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.modalSearch .searchIcon {
+  position: absolute;
+  left: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #86868b;
+}
+
+.modalSearch .searchInput {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 1px solid #d2d2d7;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #f5f5f7;
+}
+
+.modalSearch .searchInput:focus {
+  outline: none;
+  border-color: #007aff;
+  background: white;
+}
+
+.modalList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.modalEmpty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #86868b;
+  font-size: 14px;
+}
+
+.modalCustomerItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  transition: background-color 0.15s;
+}
+
+.modalCustomerItem:hover {
+  background: #f5f5f7;
+}
+
+.modalCustomerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modalCustomerName {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modalCustomerStage {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  background: #f5f5f7;
+  color: #86868b;
+  border-radius: 4px;
+}
+
+.modalCustomerPhone {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.modalAssignButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  background: #007aff;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.modalAssignButton:hover {
+  background: #0066d6;
+}
+
+.modalAssignButton:disabled {
+  background: #a1a1a6;
+  cursor: not-allowed;
+}
+
 /* 인쇄용 스타일 */
 @media print {
   .layout {
@@ -958,5 +1121,9 @@
   .main {
     height: auto;
     overflow: visible;
+  }
+
+  .modalOverlay {
+    display: none !important;
   }
 }

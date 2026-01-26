@@ -11,8 +11,9 @@ import {
   Tooltip,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import { Plus, MoreVertical, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, X, Calendar } from "lucide-react";
+import { Plus, MoreVertical, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, X, Calendar, Trash2 } from "lucide-react";
 import { formatMoney } from "@/lib/utils";
+import { useSnapshots, useCreateSnapshot, useDeleteSnapshot } from "@/hooks/useFinancialData";
 import styles from "./AssetRecordTab.module.css";
 
 ChartJS.register(
@@ -34,87 +35,51 @@ const TIME_FILTERS = [
   { id: "ALL", label: "전체", months: 9999 },
 ];
 
-// 샘플 데이터
-const SAMPLE_RECORDS = [
-  {
-    id: "4",
-    date: "2025-01-15",
-    assets: 68000,
-    liabilities: 25000,
-    savings: 15000,
-    investments: 28000,
-    realAssetEquity: 45000,
-    unsecuredDebt: 5000,
-  },
-  {
-    id: "3",
-    date: "2024-10-01",
-    assets: 62000,
-    liabilities: 27000,
-    savings: 12000,
-    investments: 25000,
-    realAssetEquity: 42000,
-    unsecuredDebt: 7000,
-  },
-  {
-    id: "2",
-    date: "2024-07-01",
-    assets: 55000,
-    liabilities: 30000,
-    savings: 10000,
-    investments: 20000,
-    realAssetEquity: 38000,
-    unsecuredDebt: 10000,
-  },
-  {
-    id: "1",
-    date: "2024-04-01",
-    assets: 48000,
-    liabilities: 32000,
-    savings: 8000,
-    investments: 15000,
-    realAssetEquity: 35000,
-    unsecuredDebt: 12000,
-  },
-];
-
-interface ProgressRecord {
-  id: string;
-  date: string;
-  assets: number;
-  liabilities: number;
-  savings: number;
-  investments: number;
-  realAssetEquity: number;
-  unsecuredDebt: number;
+interface AssetRecordTabProps {
+  profileId: string;
 }
 
-export function AssetRecordTab() {
-  const [records, setRecords] = useState<ProgressRecord[]>(SAMPLE_RECORDS);
+export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
+  const { data: snapshots = [], isLoading } = useSnapshots(profileId);
+  const createMutation = useCreateSnapshot(profileId);
+  const deleteMutation = useDeleteSnapshot(profileId);
+
   const [timeFilter, setTimeFilter] = useState("ALL");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [newRecord, setNewRecord] = useState({
     date: new Date().toISOString().split("T")[0],
-    assets: 0,
-    liabilities: 0,
-    savings: 0,
-    investments: 0,
-    realAssetEquity: 0,
-    unsecuredDebt: 0,
+    totalAssets: 0,
+    totalDebts: 0,
+    monthlyIncome: 0,
+    monthlyExpense: 0,
   });
 
+  // 기간 필터 적용
+  const filteredSnapshots = useMemo(() => {
+    if (timeFilter === "ALL") return snapshots;
+
+    const filter = TIME_FILTERS.find(f => f.id === timeFilter);
+    if (!filter) return snapshots;
+
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - filter.months);
+
+    return snapshots.filter(s => new Date(s.recorded_at) >= cutoffDate);
+  }, [snapshots, timeFilter]);
+
   // 최신 기록
-  const latestRecord = records[0];
-  const currentNetWorth = latestRecord ? latestRecord.assets - latestRecord.liabilities : 0;
-  const currentAssets = latestRecord?.assets || 0;
-  const currentLiabilities = latestRecord?.liabilities || 0;
+  const latestRecord = filteredSnapshots[0];
+  const currentNetWorth = latestRecord?.net_worth || 0;
+  const currentAssets = latestRecord?.total_assets || 0;
+  const currentLiabilities = latestRecord?.total_debts || 0;
 
   // 전체 변화량 계산
-  const oldestRecord = records[records.length - 1];
+  const oldestRecord = filteredSnapshots[filteredSnapshots.length - 1];
   const allTimeChange = useMemo(() => {
     if (!latestRecord || !oldestRecord) return { amount: 0, percent: 0 };
-    const oldNetWorth = oldestRecord.assets - oldestRecord.liabilities;
-    const newNetWorth = latestRecord.assets - latestRecord.liabilities;
+    const oldNetWorth = oldestRecord.net_worth;
+    const newNetWorth = latestRecord.net_worth;
     const amount = newNetWorth - oldNetWorth;
     const percent = oldNetWorth !== 0 ? ((newNetWorth - oldNetWorth) / Math.abs(oldNetWorth)) * 100 : 0;
     return { amount, percent };
@@ -122,14 +87,14 @@ export function AssetRecordTab() {
 
   // 차트 데이터 (시간순 정렬)
   const chartData = useMemo(() => {
-    const sortedRecords = [...records].reverse();
+    const sortedRecords = [...filteredSnapshots].reverse();
 
     const labels = sortedRecords.map((r) => {
-      const date = new Date(r.date);
+      const date = new Date(r.recorded_at);
       return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}`;
     });
 
-    const netWorthData = sortedRecords.map((r) => r.assets - r.liabilities);
+    const netWorthData = sortedRecords.map((r) => r.net_worth);
 
     return {
       labels,
@@ -140,7 +105,7 @@ export function AssetRecordTab() {
           backgroundColor: "rgba(20, 184, 166, 0.1)",
           fill: true,
           tension: 0.4,
-          pointRadius: 5,
+          pointRadius: sortedRecords.length > 10 ? 0 : 5,
           pointBackgroundColor: "#14b8a6",
           pointBorderColor: "#fff",
           pointBorderWidth: 2,
@@ -148,7 +113,7 @@ export function AssetRecordTab() {
         },
       ],
     };
-  }, [records]);
+  }, [filteredSnapshots]);
 
   const chartOptions = {
     responsive: true,
@@ -179,27 +144,47 @@ export function AssetRecordTab() {
   };
 
   // 새 기록 추가
-  const handleAddRecord = () => {
-    const record: ProgressRecord = {
-      id: Date.now().toString(),
-      ...newRecord,
-    };
-    setRecords([record, ...records]);
-    setIsAddModalOpen(false);
-    setNewRecord({
-      date: new Date().toISOString().split("T")[0],
-      assets: 0,
-      liabilities: 0,
-      savings: 0,
-      investments: 0,
-      realAssetEquity: 0,
-      unsecuredDebt: 0,
-    });
+  const handleAddRecord = async () => {
+    const netWorth = newRecord.totalAssets - newRecord.totalDebts;
+    const monthlySavings = newRecord.monthlyIncome - newRecord.monthlyExpense;
+    const savingsRate = newRecord.monthlyIncome > 0
+      ? Math.round((monthlySavings / newRecord.monthlyIncome) * 10000) / 100
+      : 0;
+
+    try {
+      await createMutation.mutateAsync({
+        recorded_at: newRecord.date,
+        snapshot_type: "followup",
+        total_assets: newRecord.totalAssets,
+        total_debts: newRecord.totalDebts,
+        net_worth: netWorth,
+        monthly_income: newRecord.monthlyIncome,
+        monthly_expense: newRecord.monthlyExpense,
+        monthly_savings: monthlySavings,
+        savings_rate: savingsRate,
+      });
+
+      setIsAddModalOpen(false);
+      setNewRecord({
+        date: new Date().toISOString().split("T")[0],
+        totalAssets: 0,
+        totalDebts: 0,
+        monthlyIncome: 0,
+        monthlyExpense: 0,
+      });
+    } catch (error) {
+      console.error("Failed to create snapshot:", error);
+    }
   };
 
   // 기록 삭제
-  const handleDeleteRecord = (id: string) => {
-    setRecords(records.filter((r) => r.id !== id));
+  const handleDeleteRecord = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id);
+      setOpenMenuId(null);
+    } catch (error) {
+      console.error("Failed to delete snapshot:", error);
+    }
   };
 
   // 날짜 포맷
@@ -207,6 +192,14 @@ export function AssetRecordTab() {
     const date = new Date(dateStr);
     return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
   };
+
+  if (isLoading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loading}>불러오는 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -242,7 +235,11 @@ export function AssetRecordTab() {
       {/* 차트 */}
       <div className={styles.chartSection}>
         <div className={styles.chartContainer}>
-          <Line data={chartData} options={chartOptions} />
+          {filteredSnapshots.length > 0 ? (
+            <Line data={chartData} options={chartOptions} />
+          ) : (
+            <div className={styles.emptyChart}>기록이 없습니다</div>
+          )}
         </div>
         <div className={styles.timeFilters}>
           {TIME_FILTERS.map((filter) => (
@@ -262,9 +259,6 @@ export function AssetRecordTab() {
         <div className={styles.tableHeader}>
           <div className={styles.tableTitle}>
             <h2>자산 기록</h2>
-            <button className={styles.menuButton}>
-              <MoreVertical size={18} />
-            </button>
           </div>
           <p className={styles.tableDesc}>
             정기적으로 자산 현황을 기록하면 목표 달성 여부를 정확히 파악할 수 있어요.
@@ -279,36 +273,55 @@ export function AssetRecordTab() {
                 <th>순자산</th>
                 <th>총 자산</th>
                 <th>총 부채</th>
-                <th>저축</th>
-                <th>투자</th>
-                <th>부동산 순자산</th>
-                <th>무담보 부채</th>
+                <th>월 수입</th>
+                <th>월 지출</th>
+                <th>저축률</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {records.map((record) => (
-                <tr key={record.id}>
-                  <td className={styles.dateCell}>{formatDate(record.date)}</td>
-                  <td className={styles.netWorthCell}>
-                    {formatMoney(record.assets - record.liabilities)}
-                  </td>
-                  <td>{formatMoney(record.assets)}</td>
-                  <td>{formatMoney(record.liabilities)}</td>
-                  <td>{formatMoney(record.savings)}</td>
-                  <td>{formatMoney(record.investments)}</td>
-                  <td>{formatMoney(record.realAssetEquity)}</td>
-                  <td>{formatMoney(record.unsecuredDebt)}</td>
-                  <td>
-                    <button
-                      className={styles.rowMenuBtn}
-                      onClick={() => handleDeleteRecord(record.id)}
-                    >
-                      <MoreVertical size={16} />
-                    </button>
+              {filteredSnapshots.length > 0 ? (
+                filteredSnapshots.map((record) => (
+                  <tr key={record.id}>
+                    <td className={styles.dateCell}>{formatDate(record.recorded_at)}</td>
+                    <td className={styles.netWorthCell}>
+                      {formatMoney(record.net_worth)}
+                    </td>
+                    <td>{formatMoney(record.total_assets)}</td>
+                    <td>{formatMoney(record.total_debts)}</td>
+                    <td>{formatMoney(record.monthly_income)}</td>
+                    <td>{formatMoney(record.monthly_expense)}</td>
+                    <td>{record.savings_rate.toFixed(1)}%</td>
+                    <td>
+                      <div className={styles.menuContainer}>
+                        <button
+                          className={styles.rowMenuBtn}
+                          onClick={() => setOpenMenuId(openMenuId === record.id ? null : record.id)}
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                        {openMenuId === record.id && (
+                          <div className={styles.dropdownMenu}>
+                            <button
+                              className={styles.dropdownItem}
+                              onClick={() => handleDeleteRecord(record.id)}
+                            >
+                              <Trash2 size={14} />
+                              삭제
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className={styles.emptyRow}>
+                    기록이 없습니다. 첫 번째 자산 현황을 기록해보세요.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -319,7 +332,9 @@ export function AssetRecordTab() {
             추가
           </button>
           <div className={styles.pagination}>
-            <span className={styles.pageInfo}>1-{records.length} / {records.length}개</span>
+            <span className={styles.pageInfo}>
+              {filteredSnapshots.length > 0 ? `1-${filteredSnapshots.length} / ${filteredSnapshots.length}개` : "0개"}
+            </span>
             <button className={styles.pageBtn} disabled>
               <ChevronLeft size={16} />
             </button>
@@ -360,8 +375,8 @@ export function AssetRecordTab() {
                   <div className={styles.inputWrapper}>
                     <input
                       type="number"
-                      value={newRecord.assets || ""}
-                      onChange={(e) => setNewRecord({ ...newRecord, assets: parseInt(e.target.value) || 0 })}
+                      value={newRecord.totalAssets || ""}
+                      onChange={(e) => setNewRecord({ ...newRecord, totalAssets: parseInt(e.target.value) || 0 })}
                       onWheel={(e) => (e.target as HTMLElement).blur()}
                     />
                     <span>만원</span>
@@ -372,8 +387,8 @@ export function AssetRecordTab() {
                   <div className={styles.inputWrapper}>
                     <input
                       type="number"
-                      value={newRecord.liabilities || ""}
-                      onChange={(e) => setNewRecord({ ...newRecord, liabilities: parseInt(e.target.value) || 0 })}
+                      value={newRecord.totalDebts || ""}
+                      onChange={(e) => setNewRecord({ ...newRecord, totalDebts: parseInt(e.target.value) || 0 })}
                       onWheel={(e) => (e.target as HTMLElement).blur()}
                     />
                     <span>만원</span>
@@ -383,51 +398,24 @@ export function AssetRecordTab() {
 
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label>저축</label>
+                  <label>월 수입</label>
                   <div className={styles.inputWrapper}>
                     <input
                       type="number"
-                      value={newRecord.savings || ""}
-                      onChange={(e) => setNewRecord({ ...newRecord, savings: parseInt(e.target.value) || 0 })}
+                      value={newRecord.monthlyIncome || ""}
+                      onChange={(e) => setNewRecord({ ...newRecord, monthlyIncome: parseInt(e.target.value) || 0 })}
                       onWheel={(e) => (e.target as HTMLElement).blur()}
                     />
                     <span>만원</span>
                   </div>
                 </div>
                 <div className={styles.formGroup}>
-                  <label>투자</label>
+                  <label>월 지출</label>
                   <div className={styles.inputWrapper}>
                     <input
                       type="number"
-                      value={newRecord.investments || ""}
-                      onChange={(e) => setNewRecord({ ...newRecord, investments: parseInt(e.target.value) || 0 })}
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                    />
-                    <span>만원</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>부동산 순자산</label>
-                  <div className={styles.inputWrapper}>
-                    <input
-                      type="number"
-                      value={newRecord.realAssetEquity || ""}
-                      onChange={(e) => setNewRecord({ ...newRecord, realAssetEquity: parseInt(e.target.value) || 0 })}
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                    />
-                    <span>만원</span>
-                  </div>
-                </div>
-                <div className={styles.formGroup}>
-                  <label>무담보 부채</label>
-                  <div className={styles.inputWrapper}>
-                    <input
-                      type="number"
-                      value={newRecord.unsecuredDebt || ""}
-                      onChange={(e) => setNewRecord({ ...newRecord, unsecuredDebt: parseInt(e.target.value) || 0 })}
+                      value={newRecord.monthlyExpense || ""}
+                      onChange={(e) => setNewRecord({ ...newRecord, monthlyExpense: parseInt(e.target.value) || 0 })}
                       onWheel={(e) => (e.target as HTMLElement).blur()}
                     />
                     <span>만원</span>
@@ -436,10 +424,18 @@ export function AssetRecordTab() {
               </div>
 
               <div className={styles.formSummary}>
-                <span>순자산</span>
-                <span className={styles.summaryValue}>
-                  {formatMoney(newRecord.assets - newRecord.liabilities)}
-                </span>
+                <div className={styles.summaryRow}>
+                  <span>순자산</span>
+                  <span className={styles.summaryValue}>
+                    {formatMoney(newRecord.totalAssets - newRecord.totalDebts)}
+                  </span>
+                </div>
+                <div className={styles.summaryRow}>
+                  <span>월 저축</span>
+                  <span className={styles.summaryValue}>
+                    {formatMoney(newRecord.monthlyIncome - newRecord.monthlyExpense)}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -447,8 +443,12 @@ export function AssetRecordTab() {
               <button className={styles.cancelBtn} onClick={() => setIsAddModalOpen(false)}>
                 취소
               </button>
-              <button className={styles.saveBtn} onClick={handleAddRecord}>
-                저장
+              <button
+                className={styles.saveBtn}
+                onClick={handleAddRecord}
+                disabled={createMutation.isPending}
+              >
+                {createMutation.isPending ? "저장 중..." : "저장"}
               </button>
             </div>
           </div>

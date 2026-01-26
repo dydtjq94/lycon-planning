@@ -9,6 +9,7 @@ import {
   FileText,
   Target,
   UserMinus,
+  UserPlus,
   ChevronDown,
   ClipboardCheck,
   Receipt,
@@ -426,7 +427,7 @@ export default function UserDetailPage() {
           .single();
 
         if (expert) {
-          // 현재 전문가의 대화방 조회
+          // 현재 전문가의 대화방 조회 (자동 생성하지 않음)
           const { data: existingConv } = await supabase
             .from("conversations")
             .select("id")
@@ -436,20 +437,8 @@ export default function UserDetailPage() {
 
           if (existingConv) {
             conversation = existingConv;
-          } else {
-            // 없으면 새로 생성
-            const { data: newConversation } = await supabase
-              .from("conversations")
-              .insert({
-                user_id: userId,
-                expert_id: expert.id,
-                is_primary: true,
-              })
-              .select("id")
-              .single();
-
-            conversation = newConversation;
           }
+          // 대화방이 없으면 담당 고객이 아님 - 자동 생성하지 않음
         }
       }
 
@@ -464,6 +453,8 @@ export default function UserDetailPage() {
           .eq("is_read", false);
 
         setUnreadCount(unreadMessages?.length || 0);
+      } else {
+        setConversationId(null);
       }
 
       // 예약된 상담 로드 (오늘 이후, confirmed 또는 pending 상태만)
@@ -718,7 +709,37 @@ export default function UserDetailPage() {
     }
 
     setShowRemoveModal(false);
-    router.push("/admin");
+    window.location.href = "/admin";
+  };
+
+  const handleAddToMyCustomers = async () => {
+    if (!expertId) {
+      alert("전문가 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    const supabase = createClient();
+
+    const { data: newConversation, error } = await supabase
+      .from("conversations")
+      .insert({
+        user_id: userId,
+        expert_id: expertId,
+        is_primary: true,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("Error adding customer:", error);
+      alert("담당 추가 중 오류가 발생했습니다.");
+      return;
+    }
+
+    if (newConversation) {
+      setConversationId(newConversation.id);
+      setShowDropdown(false);
+    }
   };
 
   const calculateAge = (birthDate: string | null) => {
@@ -1393,16 +1414,26 @@ export default function UserDetailPage() {
                   onClick={() => setShowDropdown(false)}
                 />
                 <div className={styles.dropdown}>
-                  <button
-                    className={styles.dropdownItem}
-                    onClick={() => {
-                      setShowDropdown(false);
-                      setShowRemoveModal(true);
-                    }}
-                  >
-                    <UserMinus size={16} />
-                    담당 제외
-                  </button>
+                  {conversationId ? (
+                    <button
+                      className={styles.dropdownItem}
+                      onClick={() => {
+                        setShowDropdown(false);
+                        setShowRemoveModal(true);
+                      }}
+                    >
+                      <UserMinus size={16} />
+                      담당 제외
+                    </button>
+                  ) : (
+                    <button
+                      className={styles.dropdownItem}
+                      onClick={handleAddToMyCustomers}
+                    >
+                      <UserPlus size={16} />
+                      담당 추가
+                    </button>
+                  )}
                 </div>
               </>
             )}

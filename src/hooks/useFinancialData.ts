@@ -1,7 +1,8 @@
 'use client'
 
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { FinancialItem } from '@/types'
+import type { FinancialSnapshotInput } from '@/types/tables'
 import { loadFinancialItemsFromDB, type SimulationProfile } from '@/lib/services/dbToFinancialItems'
 import { getIncomes } from '@/lib/services/incomeService'
 import { getExpenses } from '@/lib/services/expenseService'
@@ -13,6 +14,13 @@ import { getRealEstates } from '@/lib/services/realEstateService'
 import { getNationalPensions } from '@/lib/services/nationalPensionService'
 import { getRetirementPensions } from '@/lib/services/retirementPensionService'
 import { getPersonalPensions } from '@/lib/services/personalPensionService'
+import {
+  getSnapshots,
+  createSnapshot,
+  updateSnapshot,
+  deleteSnapshot,
+} from '@/lib/services/snapshotService'
+import { simulationService } from '@/lib/services/simulationService'
 
 // Query Keys
 export const financialKeys = {
@@ -247,5 +255,89 @@ export function useRetirementPensions(simulationId: string, enabled: boolean = t
     queryKey: financialKeys.retirementPensions(simulationId),
     queryFn: () => getRetirementPensions(simulationId),
     enabled: enabled && !!simulationId,
+  })
+}
+
+// ============================================
+// 스냅샷 (Financial Snapshots) 훅
+// ============================================
+
+export const snapshotKeys = {
+  all: ['snapshots'] as const,
+  list: (profileId: string) => [...snapshotKeys.all, 'list', profileId] as const,
+}
+
+/**
+ * 스냅샷 목록 로드 훅
+ */
+export function useSnapshots(profileId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: snapshotKeys.list(profileId),
+    queryFn: () => getSnapshots(profileId),
+    enabled: enabled && !!profileId,
+  })
+}
+
+/**
+ * 스냅샷 생성 훅
+ */
+export function useCreateSnapshot(profileId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: Omit<FinancialSnapshotInput, 'profile_id'>) =>
+      createSnapshot({ ...input, profile_id: profileId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.list(profileId) })
+    },
+  })
+}
+
+/**
+ * 스냅샷 수정 훅
+ */
+export function useUpdateSnapshot(profileId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<FinancialSnapshotInput> }) =>
+      updateSnapshot(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.list(profileId) })
+    },
+  })
+}
+
+/**
+ * 스냅샷 삭제 훅
+ */
+export function useDeleteSnapshot(profileId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => deleteSnapshot(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.list(profileId) })
+    },
+  })
+}
+
+// ============================================
+// 시뮬레이션 (Simulations/Scenarios) 훅
+// ============================================
+
+export const simulationKeys = {
+  all: ['simulations'] as const,
+  list: () => [...simulationKeys.all, 'list'] as const,
+}
+
+/**
+ * 사용자의 모든 시뮬레이션(시나리오) 목록 로드 훅
+ */
+export function useSimulations(enabled: boolean = true) {
+  return useQuery({
+    queryKey: simulationKeys.list(),
+    queryFn: () => simulationService.getAll(),
+    enabled,
   })
 }

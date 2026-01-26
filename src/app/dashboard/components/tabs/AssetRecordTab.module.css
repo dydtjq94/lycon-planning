@@ -3,7 +3,16 @@
   flex-direction: column;
   gap: 32px;
   padding: 32px;
-  max-width: 1200px;
+  width: 100%;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #9ca3af;
+  font-size: 14px;
 }
 
 /* 상단 요약 헤더 */
@@ -103,6 +112,15 @@
 .chartContainer {
   height: 280px;
   background: white;
+}
+
+.emptyChart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  font-size: 14px;
 }
 
 .timeFilters {
@@ -238,6 +256,48 @@
 .rowMenuBtn:hover {
   background: #f3f4f6;
   color: #6b7280;
+}
+
+.menuContainer {
+  position: relative;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 100px;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dropdownItem:hover {
+  background: #f9fafb;
+}
+
+.emptyRow {
+  text-align: center;
+  color: #9ca3af;
+  padding: 40px 16px;
 }
 
 /* 테이블 푸터 */
@@ -454,22 +514,28 @@
 
 .formSummary {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
   padding: 16px;
   background: #f9fafb;
   border-radius: 10px;
   margin-top: 4px;
 }
 
-.formSummary span:first-child {
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summaryRow span:first-child {
   font-size: 14px;
   font-weight: 500;
   color: #6b7280;
 }
 
 .formSummary .summaryValue {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: #1a1a1a;
 }
