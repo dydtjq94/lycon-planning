@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronRight } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./DiagnosisSummaryCards.module.css";
 
@@ -21,7 +19,6 @@ interface DiagnosisSummaryCardsProps {
 }
 
 export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
-  const router = useRouter();
   const [cards, setCards] = useState<DiagnosisCard[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -301,9 +298,11 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
           </div>
         ))}
       </div>
-      <button className={styles.reportButton} onClick={() => router.push("/waiting/report")}>
-        <span>상세 보고서 보기</span>
-        <ChevronRight size={18} />
+      <button
+        className={styles.reportButton}
+        onClick={() => window.open("/waiting/report?print=true", "_blank")}
+      >
+        검진 결과 자세히 보기
       </button>
     </div>
   );

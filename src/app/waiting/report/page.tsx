@@ -1,14 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { DiagnosisReport, DiagnosisData } from "@/app/admin/users/[id]/report/DiagnosisReport";
 import styles from "./report.module.css";
 
 export default function WaitingReportPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <WaitingReportPageContent />
+    </Suspense>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className={styles.loadingContainer}>
+      <div className={styles.spinner} />
+      <p>보고서를 불러오고 있습니다...</p>
+    </div>
+  );
+}
+
+function WaitingReportPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isPrintMode = searchParams.get("print") === "true";
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DiagnosisData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -247,6 +266,17 @@ export default function WaitingReportPage() {
     loadData();
   }, [router]);
 
+  // 인쇄 모드일 때 자동으로 인쇄 다이얼로그 띄우기
+  useEffect(() => {
+    if (isPrintMode && !loading && data) {
+      // 렌더링 완료 후 인쇄 다이얼로그
+      const timer = setTimeout(() => {
+        window.print();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isPrintMode, loading, data]);
+
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -267,10 +297,12 @@ export default function WaitingReportPage() {
 
   return (
     <div className={styles.pageContainer}>
-      <button className={styles.backButton} onClick={() => router.back()}>
-        <ArrowLeft size={16} />
-        뒤로 가기
-      </button>
+      {!isPrintMode && (
+        <button className={styles.backButton} onClick={() => router.back()}>
+          <ArrowLeft size={16} />
+          뒤로 가기
+        </button>
+      )}
       <DiagnosisReport data={data} userId="" isPublished={true} hideActions opinion={opinion} />
     </div>
   );
