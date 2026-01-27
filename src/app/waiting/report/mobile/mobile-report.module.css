@@ -1,0 +1,1290 @@
+.pageWrapper {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #e5e5e5;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  background: #f8f9fa;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: #1d1d1f;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.backButton:hover {
+  background: #f5f5f7;
+}
+
+.headerTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+/* Loading */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  gap: 16px;
+  background: #f8f9fa;
+}
+
+.loadingContainer p {
+  font-size: 14px;
+  color: #718096;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3182ce;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  gap: 16px;
+  background: #f8f9fa;
+  padding: 20px;
+}
+
+.errorContainer p {
+  font-size: 14px;
+  color: #e53e3e;
+  text-align: center;
+}
+
+.errorContainer button {
+  padding: 12px 24px;
+  background: #3182ce;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Tabs */
+.tabsContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.tabNav {
+  display: flex;
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 0 16px;
+  position: sticky;
+  top: 69px;
+  z-index: 99;
+}
+
+.tabButton {
+  flex: 1;
+  padding: 14px 8px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #86868b;
+  cursor: pointer;
+  position: relative;
+}
+
+.tabButton.active {
+  color: #1a365d;
+}
+
+.tabButton.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #1a365d;
+}
+
+.tabContent {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* Cards */
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 12px 0;
+}
+
+.cardSubtitle {
+  font-size: 12px;
+  color: #86868b;
+  margin-left: 8px;
+  font-weight: 400;
+}
+
+/* Summary Grid */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summaryLabel {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.summaryValue {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.summaryValue.positive {
+  color: #38a169;
+}
+
+.summaryValue.negative {
+  color: #e53e3e;
+}
+
+.summaryValue.highlight {
+  color: #1a365d;
+}
+
+/* Cashflow Bar */
+.cashflowItem {
+  margin-bottom: 12px;
+}
+
+.cashflowLabel {
+  font-size: 13px;
+  color: #4a5568;
+  margin-bottom: 6px;
+}
+
+.cashflowBarContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cashflowBar {
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  min-width: 60px;
+}
+
+.cashflowBar.income {
+  background: #3182ce;
+}
+
+.cashflowBar.expense {
+  background: #e53e3e;
+}
+
+.cashflowBar.gap {
+  background: #38a169;
+}
+
+.cashflowBar.gap.negative {
+  background: #e53e3e;
+}
+
+.cashflowBarValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+
+.cashflowOutsideValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+/* Toggle */
+.toggleContainer {
+  display: flex;
+  background: #f5f5f7;
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+
+.toggleButton {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.toggleButton.active {
+  background: white;
+  color: #1d1d1f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Expense Stack Bar */
+.stackBarContainer {
+  display: flex;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.stackBarSegment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+}
+
+.stackBarLabel {
+  font-size: 10px;
+  color: white;
+  font-weight: 500;
+}
+
+/* Expense List */
+.expenseList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.expenseRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.expenseRow:last-child {
+  border-bottom: none;
+}
+
+.expenseInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expenseDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.expenseName {
+  font-size: 13px;
+  color: #1d1d1f;
+}
+
+.expenseValues {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expenseAmount {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.expenseRatio {
+  font-size: 12px;
+  color: #86868b;
+}
+
+/* Category Row */
+.categoryRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.categoryItem {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.categoryItem.fixed {
+  background: #ebf8ff;
+}
+
+.categoryItem.variable {
+  background: #f0fff4;
+}
+
+.categoryLabel {
+  font-size: 12px;
+  color: #86868b;
+  margin-bottom: 4px;
+}
+
+.categoryValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.categoryRatio {
+  font-size: 11px;
+  color: #86868b;
+}
+
+/* Pie Chart */
+.pieContainer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pieChart {
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.pieLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4a5568;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legendDot.realestate { background: #1a365d; }
+.legendDot.cash { background: #3182ce; }
+.legendDot.investment { background: #2c5282; }
+.legendDot.pension { background: #63b3ed; }
+.legendDot.mortgage { background: #1a365d; }
+.legendDot.credit { background: #c53030; }
+.legendDot.other { background: #d69e2e; }
+
+/* Debt Info */
+.debtInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.debtRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.debtLabel {
+  font-size: 13px;
+  color: #4a5568;
+}
+
+.debtValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.rateBadge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f0f0f0;
+  color: #4a5568;
+  margin-left: 6px;
+}
+
+.rateBadge.good {
+  background: #c6f6d5;
+  color: #276749;
+}
+
+.rateBadge.warning {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+/* Percentile Bar */
+.percentileRow {
+  margin-bottom: 16px;
+}
+
+.percentileLabel {
+  font-size: 13px;
+  color: #4a5568;
+  margin-bottom: 8px;
+}
+
+.percentileTrack {
+  display: flex;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.percentileSegment {
+  flex: 1;
+  position: relative;
+}
+
+.percentileSegment:not(:last-child) {
+  border-right: 1px solid white;
+}
+
+.percentileIndicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #1a365d;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.percentileInfo {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #86868b;
+}
+
+.percentileValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a365d;
+}
+
+/* Verdict */
+.verdictHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.verdictBadge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+}
+
+.verdictBadge.possible {
+  background: #38a169;
+}
+
+.verdictBadge.conditional {
+  background: #d69e2e;
+}
+
+.verdictBadge.difficult {
+  background: #c53030;
+}
+
+.verdictTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.verdictDesc {
+  font-size: 13px;
+  color: #4a5568;
+  line-height: 1.5;
+  padding: 10px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+/* Breakdown Grid */
+.breakdownGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.breakdownItem {
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.breakdownLabel {
+  font-size: 12px;
+  color: #86868b;
+  margin-bottom: 4px;
+}
+
+.breakdownValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.breakdownValue.positive {
+  color: #38a169;
+}
+
+.breakdownValue.negative {
+  color: #e53e3e;
+}
+
+.breakdownDesc {
+  font-size: 11px;
+  color: #86868b;
+  margin-top: 2px;
+}
+
+/* Pension Columns */
+.pensionColumns {
+  display: flex;
+  gap: 8px;
+}
+
+.pensionColumn {
+  flex: 1;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.pensionLayer {
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+.pensionLayer.layer1 { background: #1a365d; }
+.pensionLayer.layer2 { background: #2c5282; }
+.pensionLayer.layer3 { background: #3182ce; }
+
+.pensionType {
+  font-size: 12px;
+  color: #4a5568;
+  margin-bottom: 4px;
+}
+
+.pensionAmount {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+/* Supply Demand Bar */
+.supplyDemandRow {
+  margin-bottom: 12px;
+}
+
+.sdLabel {
+  font-size: 13px;
+  color: #4a5568;
+  margin-bottom: 6px;
+}
+
+.sdTrack {
+  display: flex;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.sdBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+
+.sdBar.demand {
+  background: #4a5568;
+}
+
+.sdBar.supply {
+  background: #3182ce;
+}
+
+.sdBar.deficit {
+  background: #e53e3e;
+}
+
+/* Scenario Cards */
+.scenarioCards {
+  display: flex;
+  gap: 8px;
+}
+
+.scenarioCard {
+  flex: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+.scenarioCard.current {
+  background: #ebf8ff;
+  border: 1px solid #3182ce;
+}
+
+.scenarioHeader {
+  padding: 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+
+.scenarioHeader.early { background: #718096; }
+.scenarioHeader.currentHeader { background: #3182ce; }
+.scenarioHeader.late { background: #38a169; }
+
+.scenarioBody {
+  padding: 12px;
+  text-align: center;
+}
+
+.scenarioAge {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 8px;
+}
+
+.scenarioStat {
+  font-size: 12px;
+  color: #4a5568;
+  margin-bottom: 4px;
+}
+
+.scenarioStatValue {
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.scenarioStatValue.danger {
+  color: #e53e3e;
+}
+
+/* Risk Bar */
+.riskRow {
+  margin-bottom: 16px;
+}
+
+.riskLabel {
+  font-size: 13px;
+  color: #4a5568;
+  margin-bottom: 6px;
+}
+
+.riskTrack {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.riskZone {
+  height: 100%;
+}
+
+.riskZone.high { background: #fed7d7; }
+.riskZone.medium { background: #fefcbf; }
+.riskZone.low { background: #c6f6d5; }
+
+.riskIndicator {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.riskIndicator.high { background: #c53030; }
+.riskIndicator.medium { background: #d69e2e; }
+.riskIndicator.low { background: #38a169; }
+
+.riskValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* Opinion */
+.opinionContent {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #2d3748;
+  white-space: pre-wrap;
+}
+
+.opinionAuthor {
+  font-size: 13px;
+  color: #86868b;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e5e5;
+}
+
+/* Next Steps */
+.nextSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nextStepItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.stepNumber {
+  width: 24px;
+  height: 24px;
+  background: #1a365d;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.stepContent {
+  flex: 1;
+}
+
+.stepTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 2px;
+}
+
+.stepDesc {
+  font-size: 12px;
+  color: #86868b;
+}
+
+/* Tip Box */
+.tipBox {
+  background: #ebf8ff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.tipLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #3182ce;
+  margin-bottom: 4px;
+}
+
+.tipText {
+  font-size: 13px;
+  color: #2c5282;
+  line-height: 1.5;
+}
+
+/* Comment */
+.commentBox {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #4a5568;
+  line-height: 1.5;
+}
+
+/* Asset Comparison */
+.assetComparison {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.assetCompareItem {
+  flex: 1;
+  text-align: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.assetCompareItem.highlight {
+  background: #ebf8ff;
+  border: 1px solid #3182ce;
+}
+
+.assetCompareLabel {
+  font-size: 12px;
+  color: #86868b;
+  margin-bottom: 4px;
+}
+
+.assetCompareValue {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.assetCompareArrow {
+  font-size: 20px;
+  color: #86868b;
+}
+
+/* No Debt */
+.noDebt {
+  text-align: center;
+  padding: 20px;
+  color: #38a169;
+}
+
+.noDebtText {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.noDebtDesc {
+  font-size: 13px;
+  color: #86868b;
+}
+
+/* Summary Cards (Tab 1) */
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.summaryCard {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.summaryCardTitle {
+  font-size: 13px;
+  color: #86868b;
+  margin-bottom: 8px;
+}
+
+.summaryCardValue {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 8px;
+}
+
+.summaryCardStatus {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.summaryCardStatus.good {
+  background: #c6f6d5;
+  color: #276749;
+}
+
+.summaryCardStatus.caution {
+  background: #fefcbf;
+  color: #975a16;
+}
+
+.summaryCardStatus.warning {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+/* Insight Box */
+.insightBox {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.insightLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #d97706;
+  margin-bottom: 4px;
+}
+
+.insightText {
+  font-size: 13px;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+/* High Potential Expense Row */
+.highPotential {
+  background: #fffbeb;
+}
+
+/* Reference Box (KB금융 노후생활비 참고) */
+.referenceBox {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #4a5568;
+  line-height: 1.5;
+}
+
+/* Pension Note */
+.pensionNote {
+  font-size: 11px;
+  color: #86868b;
+  margin-top: 4px;
+}
+
+/* Supply Demand Legend */
+.sdLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #4a5568;
+}
+
+.sdLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sdLegendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.sdLegendDot.demand {
+  background: #4a5568;
+}
+
+.sdLegendDot.supply {
+  background: #3182ce;
+}
+
+.sdLegendDot.deficit {
+  background: #e53e3e;
+}
+
+/* Asset Detail List */
+.assetDetailList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.assetDetailRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.assetDetailLabel {
+  font-size: 13px;
+  color: #4a5568;
+  flex: 1;
+}
+
+.assetDetailValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.assetDetailRatio {
+  font-size: 12px;
+  color: #86868b;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Asset Summary Row */
+.assetSummaryRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.assetSummaryItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.assetSummaryItem.highlight {
+  background: #ebf8ff;
+}
+
+.assetSummaryLabel {
+  font-size: 11px;
+  color: #86868b;
+}
+
+.assetSummaryValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.assetSummaryValue.negative {
+  color: #e53e3e;
+}
+
+/* Calculation Note */
+.calculationNote {
+  font-size: 11px;
+  color: #86868b;
+  margin-top: 12px;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  line-height: 1.5;
+}
+
+/* Card Description */
+.cardDesc {
+  font-size: 13px;
+  color: #4a5568;
+  margin: 4px 0 12px 0;
+  line-height: 1.5;
+}
+
+/* Professional Diagnosis Options */
+.optionsGroup {
+  margin-top: 12px;
+}
+
+.optionsGroupHeader {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a365d;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.optionItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.optionItem:last-child {
+  border-bottom: none;
+}
+
+.optionItem.included {
+  background: #f7fafc;
+  margin: 0 -16px;
+  padding: 10px 16px;
+}
+
+.optionCheck {
+  width: 18px;
+  height: 18px;
+  background: #3182ce;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.optionCheckEmpty {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e2e8f0;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.optionContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.optionName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.optionDesc {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.optionTag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.optionTag.free {
+  background: #c6f6d5;
+  color: #276749;
+}

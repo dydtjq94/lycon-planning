@@ -300,7 +300,7 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
       </div>
       <button
         className={styles.reportButton}
-        onClick={() => window.open("/waiting/report?print=true", "_blank")}
+        onClick={() => window.location.href = "/waiting/report/mobile"}
       >
         검진 결과 자세히 보기
       </button>
