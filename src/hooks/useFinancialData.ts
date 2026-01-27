@@ -16,10 +16,17 @@ import { getRetirementPensions } from '@/lib/services/retirementPensionService'
 import { getPersonalPensions } from '@/lib/services/personalPensionService'
 import {
   getSnapshots,
+  getOrCreateTodaySnapshot,
+  getSnapshotItems,
   createSnapshot,
+  createSnapshotItem,
   updateSnapshot,
+  updateSnapshotItem,
   deleteSnapshot,
+  deleteSnapshotItem,
+  recalculateSnapshotSummary,
 } from '@/lib/services/snapshotService'
+import type { FinancialSnapshotItemInput } from '@/types/tables'
 import { simulationService } from '@/lib/services/simulationService'
 
 // Query Keys
@@ -265,6 +272,8 @@ export function useRetirementPensions(simulationId: string, enabled: boolean = t
 export const snapshotKeys = {
   all: ['snapshots'] as const,
   list: (profileId: string) => [...snapshotKeys.all, 'list', profileId] as const,
+  today: (profileId: string) => [...snapshotKeys.all, 'today', profileId] as const,
+  items: (snapshotId: string) => [...snapshotKeys.all, 'items', snapshotId] as const,
 }
 
 /**
@@ -275,6 +284,90 @@ export function useSnapshots(profileId: string, enabled: boolean = true) {
     queryKey: snapshotKeys.list(profileId),
     queryFn: () => getSnapshots(profileId),
     enabled: enabled && !!profileId,
+  })
+}
+
+/**
+ * 오늘 날짜 스냅샷 로드 훅 (없으면 생성)
+ */
+export function useTodaySnapshot(profileId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: snapshotKeys.today(profileId),
+    queryFn: () => getOrCreateTodaySnapshot(profileId),
+    enabled: enabled && !!profileId,
+  })
+}
+
+/**
+ * 스냅샷 항목 로드 훅
+ */
+export function useSnapshotItems(snapshotId: string | undefined, enabled: boolean = true) {
+  return useQuery({
+    queryKey: snapshotKeys.items(snapshotId || ''),
+    queryFn: () => getSnapshotItems(snapshotId!),
+    enabled: enabled && !!snapshotId,
+  })
+}
+
+/**
+ * 스냅샷 아이템 생성 훅
+ */
+export function useCreateSnapshotItem(profileId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: FinancialSnapshotItemInput) => {
+      const item = await createSnapshotItem(input)
+      // 요약 재계산
+      await recalculateSnapshotSummary(input.snapshot_id)
+      return item
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.items(variables.snapshot_id) })
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.today(profileId) })
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.list(profileId) })
+    },
+  })
+}
+
+/**
+ * 스냅샷 아이템 수정 훅
+ */
+export function useUpdateSnapshotItem(profileId: string, snapshotId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<FinancialSnapshotItemInput> }) => {
+      const item = await updateSnapshotItem(id, updates)
+      // 요약 재계산
+      await recalculateSnapshotSummary(snapshotId)
+      return item
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.items(snapshotId) })
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.today(profileId) })
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.list(profileId) })
+    },
+  })
+}
+
+/**
+ * 스냅샷 아이템 삭제 훅
+ */
+export function useDeleteSnapshotItem(profileId: string, snapshotId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await deleteSnapshotItem(id)
+      // 요약 재계산
+      await recalculateSnapshotSummary(snapshotId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.items(snapshotId) })
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.today(profileId) })
+      queryClient.invalidateQueries({ queryKey: snapshotKeys.list(profileId) })
+    },
   })
 }
 

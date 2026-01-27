@@ -14,6 +14,22 @@ import type {
 } from '@/types/tables'
 
 // ============================================
+// 아이템 타입 분류
+// ============================================
+
+// 저축 타입
+const SAVINGS_TYPES = ['checking', 'savings', 'deposit', 'emergency']
+
+// 투자 타입
+const INVESTMENT_TYPES = ['domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'etf']
+
+// 실물자산 타입
+const REAL_ASSET_TYPES = ['real_estate', 'car', 'precious_metal', 'art', 'other']
+
+// 무담보 부채 타입 (담보대출 제외)
+const UNSECURED_DEBT_TYPES = ['credit', 'student', 'card', 'installment', 'other']
+
+// ============================================
 // Snapshot CRUD
 // ============================================
 
@@ -82,7 +98,10 @@ export async function createSnapshot(input: FinancialSnapshotInput): Promise<Fin
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('[createSnapshot] Error:', error.message, error.code, error.details)
+    throw new Error(`Failed to create snapshot: ${error.message}`)
+  }
   return data
 }
 
@@ -139,10 +158,14 @@ export async function getTodaySnapshot(profileId: string): Promise<FinancialSnap
     .eq('profile_id', profileId)
     .eq('recorded_at', today)
     .eq('is_active', true)
-    .maybeSingle()
+    .order('created_at', { ascending: false })
+    .limit(1)
 
-  if (error) throw error
-  return data
+  if (error) {
+    console.error('[getTodaySnapshot] Error:', error.message, error.code, error.details)
+    throw new Error(`Failed to get today snapshot: ${error.message}`)
+  }
+  return data?.[0] || null
 }
 
 // 오늘 날짜 스냅샷 가져오기 (없으면 생성)
@@ -181,7 +204,10 @@ export async function getSnapshotItems(snapshotId: string): Promise<FinancialSna
     .order('category')
     .order('sort_order')
 
-  if (error) throw error
+  if (error) {
+    console.error('[getSnapshotItems] Error:', error.message, error.code, error.details)
+    throw new Error(`Failed to get snapshot items: ${error.message}`)
+  }
   return data || []
 }
 
@@ -280,41 +306,45 @@ export async function deleteSnapshotItems(snapshotId: string): Promise<void> {
 export async function recalculateSnapshotSummary(snapshotId: string): Promise<FinancialSnapshot> {
   const items = await getSnapshotItems(snapshotId)
 
-  let totalAssets = 0
-  let totalDebts = 0
-  let monthlyIncome = 0
-  let monthlyExpense = 0
+  // 저축 (예금, 적금, 비상금 등)
+  const savings = items
+    .filter((item) => item.category === 'asset' && SAVINGS_TYPES.includes(item.item_type))
+    .reduce((sum, item) => sum + item.amount, 0)
 
-  for (const item of items) {
-    switch (item.category) {
-      case 'asset':
-      case 'pension':
-        totalAssets += item.amount
-        break
-      case 'debt':
-        totalDebts += item.amount
-        break
-      case 'income':
-        monthlyIncome += item.amount
-        break
-      case 'expense':
-        monthlyExpense += item.amount
-        break
-    }
-  }
+  // 투자 (주식, 펀드, 채권 등)
+  const investments = items
+    .filter((item) => item.category === 'asset' && INVESTMENT_TYPES.includes(item.item_type))
+    .reduce((sum, item) => sum + item.amount, 0)
 
+  // 실물자산 (부동산, 자동차 등)
+  const realAssets = items
+    .filter((item) => item.category === 'asset' && REAL_ASSET_TYPES.includes(item.item_type))
+    .reduce((sum, item) => sum + item.amount, 0)
+
+  // 총 부채
+  const totalDebts = items
+    .filter((item) => item.category === 'debt')
+    .reduce((sum, item) => sum + item.amount, 0)
+
+  // 무담보 부채 (신용대출, 카드대출 등)
+  const unsecuredDebt = items
+    .filter((item) => item.category === 'debt' && UNSECURED_DEBT_TYPES.includes(item.item_type))
+    .reduce((sum, item) => sum + item.amount, 0)
+
+  // 총 자산 = 저축 + 투자 + 실물자산
+  const totalAssets = savings + investments + realAssets
+
+  // 순자산 = 총 자산 - 총 부채
   const netWorth = totalAssets - totalDebts
-  const monthlySavings = monthlyIncome - monthlyExpense
-  const savingsRate = monthlyIncome > 0 ? (monthlySavings / monthlyIncome) * 100 : 0
 
   return updateSnapshot(snapshotId, {
     total_assets: totalAssets,
     total_debts: totalDebts,
     net_worth: netWorth,
-    monthly_income: monthlyIncome,
-    monthly_expense: monthlyExpense,
-    monthly_savings: monthlySavings,
-    savings_rate: Math.round(savingsRate * 100) / 100,
+    savings,
+    investments,
+    real_assets: realAssets,
+    unsecured_debt: unsecuredDebt,
   })
 }
 
@@ -346,17 +376,19 @@ export function calculateChange(
 ): {
   netWorthChange: number
   netWorthChangePercent: number
-  incomeChange: number
-  expenseChange: number
-  savingsRateChange: number
+  savingsChange: number
+  investmentsChange: number
+  realAssetsChange: number
+  debtsChange: number
 } {
   if (!previous) {
     return {
       netWorthChange: 0,
       netWorthChangePercent: 0,
-      incomeChange: 0,
-      expenseChange: 0,
-      savingsRateChange: 0,
+      savingsChange: 0,
+      investmentsChange: 0,
+      realAssetsChange: 0,
+      debtsChange: 0,
     }
   }
 
@@ -368,8 +400,9 @@ export function calculateChange(
   return {
     netWorthChange,
     netWorthChangePercent: Math.round(netWorthChangePercent * 100) / 100,
-    incomeChange: current.monthly_income - previous.monthly_income,
-    expenseChange: current.monthly_expense - previous.monthly_expense,
-    savingsRateChange: current.savings_rate - previous.savings_rate,
+    savingsChange: (current.savings || 0) - (previous.savings || 0),
+    investmentsChange: (current.investments || 0) - (previous.investments || 0),
+    realAssetsChange: (current.real_assets || 0) - (previous.real_assets || 0),
+    debtsChange: (current.total_debts || 0) - (previous.total_debts || 0),
   }
 }

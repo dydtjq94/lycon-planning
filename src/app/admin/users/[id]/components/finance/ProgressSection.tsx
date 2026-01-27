@@ -176,32 +176,52 @@ export function ProgressSection({ userId, expertId }: ProgressSectionProps) {
           </div>
 
           <div className={styles.summaryCard}>
-            <div className={styles.cardLabel}>월 수입</div>
+            <div className={styles.cardLabel}>저축</div>
             <div className={styles.cardValue}>
-              {formatMoney(selectedSnapshot.monthly_income)}
+              {formatMoney(selectedSnapshot.savings)}
             </div>
-          </div>
-
-          <div className={styles.summaryCard}>
-            <div className={styles.cardLabel}>월 지출</div>
-            <div className={styles.cardValue}>
-              {formatMoney(selectedSnapshot.monthly_expense)}
-            </div>
-          </div>
-
-          <div className={styles.summaryCard}>
-            <div className={styles.cardLabel}>저축률</div>
-            <div className={styles.cardValue}>
-              {selectedSnapshot.savings_rate.toFixed(1)}%
-            </div>
-            {change && change.savingsRateChange !== 0 && (
+            {change && change.savingsChange !== 0 && (
               <div
                 className={`${styles.cardChange} ${
-                  change.savingsRateChange > 0 ? styles.positive : styles.negative
+                  change.savingsChange > 0 ? styles.positive : styles.negative
                 }`}
               >
-                {change.savingsRateChange > 0 ? "+" : ""}
-                {change.savingsRateChange.toFixed(1)}%p
+                {change.savingsChange > 0 ? "+" : ""}
+                {formatMoney(change.savingsChange)}
+              </div>
+            )}
+          </div>
+
+          <div className={styles.summaryCard}>
+            <div className={styles.cardLabel}>투자</div>
+            <div className={styles.cardValue}>
+              {formatMoney(selectedSnapshot.investments)}
+            </div>
+            {change && change.investmentsChange !== 0 && (
+              <div
+                className={`${styles.cardChange} ${
+                  change.investmentsChange > 0 ? styles.positive : styles.negative
+                }`}
+              >
+                {change.investmentsChange > 0 ? "+" : ""}
+                {formatMoney(change.investmentsChange)}
+              </div>
+            )}
+          </div>
+
+          <div className={styles.summaryCard}>
+            <div className={styles.cardLabel}>실물자산</div>
+            <div className={styles.cardValue}>
+              {formatMoney(selectedSnapshot.real_assets)}
+            </div>
+            {change && change.realAssetsChange !== 0 && (
+              <div
+                className={`${styles.cardChange} ${
+                  change.realAssetsChange > 0 ? styles.positive : styles.negative
+                }`}
+              >
+                {change.realAssetsChange > 0 ? "+" : ""}
+                {formatMoney(change.realAssetsChange)}
               </div>
             )}
           </div>

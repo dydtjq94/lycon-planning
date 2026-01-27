@@ -175,11 +175,11 @@ const SURVEY_SECTIONS: SurveySection[] = [
         question: "연 소득이\n어느 정도 되시나요?",
         type: "single",
         options: [
-          { value: "under_3000", label: "3,000만원 이하" },
-          { value: "3000_5000", label: "3,000~5,000만원" },
-          { value: "5000_8000", label: "5,000~8,000만원" },
-          { value: "8000_12000", label: "8,000만원~1.2억" },
-          { value: "over_12000", label: "1.2억 초과" },
+          { value: "under_1200", label: "1,200만원 이하" },
+          { value: "1200_4600", label: "1,200~4,600만원" },
+          { value: "4600_8800", label: "4,600~8,800만원" },
+          { value: "8800_15000", label: "8,800만원~1.5억" },
+          { value: "over_15000", label: "1.5억 초과" },
         ],
       },
       {

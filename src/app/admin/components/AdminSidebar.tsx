@@ -35,7 +35,12 @@ const mainMenu = [
   { id: "/admin/reports", label: "고객 현황", icon: FileText },
 ];
 
-export function AdminSidebar({ expertName, customers, onLogout, onAddCustomer }: AdminSidebarProps) {
+export function AdminSidebar({
+  expertName,
+  customers,
+  onLogout,
+  onAddCustomer,
+}: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isCustomerOpen, setIsCustomerOpen] = useState(true);
@@ -56,7 +61,7 @@ export function AdminSidebar({ expertName, customers, onLogout, onAddCustomer }:
       <div className={styles.logoRow}>
         <div className={styles.logoItem}>
           <span className={styles.logoLetter}>L</span>
-          <span className={styles.navLabel}>ycon Admin</span>
+          <span className={styles.navLabel}>Admin</span>
         </div>
       </div>
 
@@ -86,14 +91,20 @@ export function AdminSidebar({ expertName, customers, onLogout, onAddCustomer }:
               <Users size={20} />
               <span className={styles.navLabel}>고객 목록</span>
               <span className={styles.chevron}>
-                {isCustomerOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                {isCustomerOpen ? (
+                  <ChevronDown size={16} />
+                ) : (
+                  <ChevronRight size={16} />
+                )}
               </span>
             </button>
 
             {isCustomerOpen && (
               <div className={styles.submenu}>
                 {customers.length === 0 ? (
-                  <div className={styles.emptyCustomers}>담당 고객이 없습니다</div>
+                  <div className={styles.emptyCustomers}>
+                    담당 고객이 없습니다
+                  </div>
                 ) : (
                   customers.map((customer) => (
                     <button
@@ -104,7 +115,9 @@ export function AdminSidebar({ expertName, customers, onLogout, onAddCustomer }:
                       <User size={16} />
                       <span className={styles.navLabel}>{customer.name}</span>
                       {customer.unreadCount > 0 && (
-                        <span className={styles.unreadBadge}>{customer.unreadCount}</span>
+                        <span className={styles.unreadBadge}>
+                          {customer.unreadCount}
+                        </span>
                       )}
                     </button>
                   ))
@@ -125,12 +138,13 @@ export function AdminSidebar({ expertName, customers, onLogout, onAddCustomer }:
       {/* 푸터 */}
       <div className={styles.footer}>
         <div className={styles.expertInfo}>
-          <div className={styles.expertAvatar}>
-            {expertName.charAt(0)}
-          </div>
+          <div className={styles.expertAvatar}>{expertName.charAt(0)}</div>
           <span className={styles.expertName}>{expertName}</span>
         </div>
-        <button className={styles.footerItem} onClick={() => router.push("/admin/settings")}>
+        <button
+          className={styles.footerItem}
+          onClick={() => router.push("/admin/settings")}
+        >
           <Settings size={18} />
           <span className={styles.navLabel}>설정</span>
         </button>

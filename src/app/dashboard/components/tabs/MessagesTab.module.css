@@ -212,34 +212,50 @@
 .messagesList {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  width: 100%;
 }
 
+/* 날짜 구분선 */
+.dateDivider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.dateDivider span {
+  font-size: 12px;
+  color: #9ca3af;
+  background: #e5e7eb;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+/* 메시지 행 */
 .messageRow {
   display: flex;
   gap: 10px;
-  max-width: 70%;
-  animation: messageAppear 0.3s ease-out;
+  margin-top: 16px;
+  width: 100%;
 }
 
-@keyframes messageAppear {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.continuedRow {
+  margin-top: 4px;
 }
 
 .expertRow {
-  align-self: flex-start;
+  flex-direction: row;
+  justify-content: flex-start;
 }
 
 .userRow {
-  align-self: flex-end;
   flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+/* 전문가 정보 */
+.expertInfo {
+  flex-shrink: 0;
 }
 
 .messageAvatar {
@@ -256,53 +272,114 @@
   flex-shrink: 0;
 }
 
-.bubbleWrapper {
+.avatarPlaceholder {
+  width: 32px;
+  height: 32px;
+}
+
+/* 메시지 내용 래퍼 */
+.messageContentWrapper {
   display: flex;
   flex-direction: column;
+  max-width: 70%;
+}
+
+.userRow .messageContentWrapper {
+  align-items: flex-end;
+}
+
+.expertRow .messageContentWrapper {
+  align-items: flex-start;
+}
+
+.senderName {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+  margin-left: 4px;
+}
+
+/* 버블과 시간을 나란히 */
+.bubbleWithTime {
+  display: flex;
+  align-items: flex-end;
   gap: 6px;
 }
 
+.bubbleWithTimeUser {
+  flex-direction: row;
+}
+
+/* 메시지 버블 */
 .messageBubble {
-  padding: 14px 18px;
+  padding: 12px 16px;
   border-radius: 18px;
   max-width: 100%;
 }
 
 .expertBubble {
   background-color: white;
-  border-radius: 4px 18px 18px 18px;
+  border-radius: 18px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .userBubble {
   background-color: #1a1a1a;
   color: white;
-  border-radius: 18px 4px 18px 18px;
+  border-radius: 18px;
 }
 
-.messageContent {
+/* 그룹의 첫번째 메시지만 꼬리 추가 */
+.userBubbleTail {
+  border-top-right-radius: 4px;
+}
+
+.expertBubbleTail {
+  border-top-left-radius: 4px;
+}
+
+.messageText {
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.6;
   margin: 0;
   word-break: break-word;
   white-space: pre-wrap;
-  color: #1a1a1a;
-}
-
-.userBubble .messageContent {
-  color: white;
 }
 
 .messageTime {
   font-size: 11px;
   color: #a8a29e;
-  padding-left: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.userRow .messageTime {
-  text-align: right;
-  padding-right: 4px;
-  padding-left: 0;
+/* ========== 이미지 관련 ========== */
+.imageWithTime {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.imageWithTimeUser {
+  flex-direction: row;
+}
+
+.imageWithContent {
+  margin-bottom: 8px;
+}
+
+.messageImages {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.messageImage {
+  width: 100%;
+  max-width: 240px;
+  border-radius: 12px;
+  object-fit: cover;
+  cursor: pointer;
 }
 
 /* ========== 입력 영역 ========== */
@@ -314,11 +391,39 @@
 
 .inputWrapper {
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inputRow {
+  display: flex;
   align-items: center;
   gap: 12px;
   background-color: #f5f5f4;
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 10px 14px;
+}
+
+.attachButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.attachButton:hover {
+  color: #6b7280;
+}
+
+.hiddenInput {
+  display: none;
 }
 
 .input {
@@ -330,6 +435,7 @@
   resize: none;
   max-height: 120px;
   color: #1a1a1a;
+  min-height: 24px;
 }
 
 .input::placeholder {
@@ -341,29 +447,18 @@
   background: none;
 }
 
-.input:disabled::placeholder {
-  color: #c4c4c4;
-}
-
-.lockIconInline {
-  color: #c4c4c4;
-  flex-shrink: 0;
-}
-
 .input:focus {
   outline: none;
 }
 
 .sendButton {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  padding: 8px 16px;
+  border-radius: 8px;
   border: none;
   background-color: #e5e5e5;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 600;
   cursor: not-allowed;
   transition: all 0.15s;
   flex-shrink: 0;
@@ -371,6 +466,7 @@
 
 .sendButtonActive {
   background-color: #1a1a1a;
+  color: white;
   cursor: pointer;
 }
 
@@ -378,8 +474,42 @@
   background-color: #292524;
 }
 
+/* 이미지 프리뷰 */
+.imagePreviewRow {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
 
-/* ========== 로딩 & 빈 상태 ========== */
+.imagePreviewItem {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.previewImage {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.removeImageButton {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #1d1d1f;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* ========== 빈 상태 ========== */
 .emptyState {
   display: flex;
   align-items: center;
@@ -389,7 +519,23 @@
   color: #a8a29e;
 }
 
-/* 스켈레톤 애니메이션 */
+.emptyMessages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #9ca3af;
+  gap: 4px;
+  padding: 40px 20px;
+}
+
+.emptyMessages p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ========== 스켈레톤 애니메이션 ========== */
 @keyframes shimmer {
   0% {
     background-position: -200px 0;
@@ -506,6 +652,18 @@
   background-color: #d6d3d1;
 }
 
+/* ========== 메시지 애니메이션 ========== */
+@keyframes messageAppear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ========== 반응형 (모바일) ========== */
 @media (max-width: 768px) {
   .container {
@@ -537,7 +695,7 @@
     width: 100%;
   }
 
-  .messageRow {
+  .messageContentWrapper {
     max-width: 85%;
   }
 

@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronRight,
-  LogOut,
   Settings,
   PieChart,
   Receipt,
@@ -17,6 +15,7 @@ import {
   Layers,
   TrendingUp,
   Target,
+  LineChart,
 } from "lucide-react";
 import type { Simulation } from "@/types";
 import styles from "./Sidebar.module.css";
@@ -65,7 +64,6 @@ export function Sidebar({
   currentSimulationId,
   onSimulationChange,
 }: SidebarProps) {
-  const router = useRouter();
   const [isScenarioOpen, setIsScenarioOpen] = useState(true);
   const [isPinned, setIsPinned] = useState(false);
   const [isCtrlPressed, setIsCtrlPressed] = useState(false);
@@ -106,12 +104,6 @@ export function Sidebar({
       window.removeEventListener("blur", handleBlur);
     };
   }, [onSectionChange]);
-
-  const handleLogout = async () => {
-    await fetch("/api/auth/delete-account", { method: "POST" });
-    router.push("/");
-    router.refresh();
-  };
 
   const handleMouseLeave = () => {
     if (!isPinned) {
@@ -261,7 +253,7 @@ export function Sidebar({
 
       <div className={styles.footer}>
         {/* 담당 전문가 */}
-        <div className={styles.sectionLabel}>담당 전문가</div>
+        <div className={styles.sectionLabel}>담당: 손균우 전문가</div>
         {expertMenu.map((item) => {
           const shortcutDisplay = getShortcutDisplay(item.id);
           return (
@@ -292,24 +284,16 @@ export function Sidebar({
         <div className={styles.spacer} />
 
         <button
-          className={styles.footerItem}
-          onClick={() => router.push("/onboarding")}
+          className={`${styles.footerItem} ${
+            currentSection === "settings" ? styles.active : ""
+          }`}
+          onClick={() => onSectionChange("settings")}
           title="설정"
         >
           <div className={styles.iconWrapper}>
             <Settings size={18} />
           </div>
           <span className={styles.navLabel}>설정</span>
-        </button>
-        <button
-          className={styles.footerItem}
-          onClick={handleLogout}
-          title="로그아웃"
-        >
-          <div className={styles.iconWrapper}>
-            <LogOut size={18} />
-          </div>
-          <span className={styles.navLabel}>로그아웃</span>
         </button>
       </div>
     </aside>

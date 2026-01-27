@@ -5,8 +5,9 @@ import { Users, TrendingUp, Settings } from "lucide-react";
 import { useFinancialContext } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
-  usePrefetchAllFinancialData,
   useSimulations,
+  useTodaySnapshot,
+  useSnapshots,
 } from "@/hooks/useFinancialData";
 import type {
   GlobalSettings,
@@ -27,6 +28,7 @@ import {
   CashFlowOverviewTab,
   CurrentAssetTab,
   AssetRecordTab,
+  PortfolioTab,
   IncomeTab,
   ExpenseTab,
   SavingsTab,
@@ -37,6 +39,7 @@ import {
   PensionTab,
   DashboardTab,
   ScenarioTab,
+  SettingsTab,
 } from "./components/tabs";
 import { ScenarioModal } from "./components/modals/ScenarioModal";
 import { FamilyModal } from "./components/modals/FamilyModal";
@@ -53,9 +56,12 @@ const sectionTitles: Record<string, string> = {
   // 재무 현황
   "current-asset": "현재 자산",
   progress: "프로그레스",
+  portfolio: "포트폴리오",
   "household-budget": "가계부",
   // 시뮬레이션
   scenario: "시뮬레이션",
+  // 설정
+  settings: "설정",
 };
 
 const validSections = Object.keys(sectionTitles);
@@ -80,6 +86,11 @@ export function DashboardContent() {
   // 시뮬레이션(시나리오) 목록 조회
   const { data: simulations = [] } = useSimulations();
 
+  // 스냅샷 데이터 Prefetch (CurrentAssetTab, AssetRecordTab에서 사용)
+  // 탭 전환 시 즉시 로드되도록 미리 캐싱
+  useTodaySnapshot(profile.id);
+  useSnapshots(profile.id);
+
   // 초기 unread 메시지 체크 (Supabase에서)
   useEffect(() => {
     getTotalUnreadCount().then(setUnreadMessageCount).catch(console.error);
@@ -92,8 +103,7 @@ export function DashboardContent() {
     isFetching,
   } = useFinancialItems(simulation.id, simulationProfile);
 
-  // 모든 개별 데이터 Prefetch (어떤 탭 가든 한 번에 로드)
-  usePrefetchAllFinancialData(simulation.id);
+  // Prefetch 제거 - useFinancialItems가 이미 모든 데이터를 로드함
 
   // 배우자 정보 (IncomeTab, ExpenseTab에서 사용)
   const spouseMember = useMemo(() => {
@@ -370,7 +380,12 @@ export function DashboardContent() {
         );
       // 담당자 관련
       case "messages":
-        return <MessagesTab onUnreadCountChange={setUnreadMessageCount} />;
+        return (
+          <MessagesTab
+            onUnreadCountChange={setUnreadMessageCount}
+            isVisible={currentSection === "messages"}
+          />
+        );
       case "consultation":
         return <div style={{ padding: 40, color: "#888" }}>상담 기록 (준비중)</div>;
       // 프로그레스
@@ -378,8 +393,13 @@ export function DashboardContent() {
         return <CurrentAssetTab profileId={profile.id} />;
       case "progress":
         return <AssetRecordTab profileId={profile.id} />;
+      case "portfolio":
+        return <PortfolioTab />;
       case "household-budget":
         return <div style={{ padding: 40, color: "#888" }}>가계부 (준비중)</div>;
+      // 설정
+      case "settings":
+        return <SettingsTab profileName={profile.name || ""} />;
       // 시나리오
       case "scenario": {
         const selectedSim = simulations.find(s => s.id === selectedSimulationId) || simulations[0];

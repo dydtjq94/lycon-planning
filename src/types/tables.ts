@@ -591,13 +591,15 @@ export interface FinancialSnapshot {
   snapshot_type: SnapshotType
 
   // 요약 데이터
-  total_assets: number      // 만원
-  total_debts: number       // 만원
-  net_worth: number         // 만원
-  monthly_income: number    // 만원
-  monthly_expense: number   // 만원
-  monthly_savings: number   // 만원
-  savings_rate: number      // %
+  total_assets: number      // 만원 (저축 + 투자 + 실물자산)
+  total_debts: number       // 만원 (담보대출 + 무담보부채)
+  net_worth: number         // 만원 (총자산 - 총부채)
+
+  // 자산 분류별
+  savings: number           // 만원 (예금, 적금, 비상금)
+  investments: number       // 만원 (주식, 펀드, 채권, 암호화폐)
+  real_assets: number       // 만원 (부동산, 자동차, 귀금속)
+  unsecured_debt: number    // 만원 (신용대출, 카드대출 등 무담보)
 
   memo: string | null
   is_active: boolean
@@ -613,10 +615,10 @@ export interface FinancialSnapshotInput {
   total_assets?: number
   total_debts?: number
   net_worth?: number
-  monthly_income?: number
-  monthly_expense?: number
-  monthly_savings?: number
-  savings_rate?: number
+  savings?: number
+  investments?: number
+  real_assets?: number
+  unsecured_debt?: number
   memo?: string | null
 }
 

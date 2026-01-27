@@ -58,11 +58,11 @@ const SURVEY_LABELS: Record<string, Record<string, string>> = {
     debt: "빚 갚기",
   },
   income_range: {
-    under_3000: "3,000만원 이하",
-    "3000_5000": "3,000~5,000만원",
-    "5000_8000": "5,000~8,000만원",
-    "8000_12000": "8,000만원~1.2억",
-    over_12000: "1.2억 초과",
+    under_1200: "1,200만원 이하",
+    "1200_4600": "1,200~4,600만원",
+    "4600_8800": "4,600~8,800만원",
+    "8800_15000": "8,800만원~1.5억",
+    over_15000: "1.5억 초과",
   },
   monthly_expense: {
     under_200: "200만원 미만",
@@ -161,7 +161,11 @@ interface SurveyResponses {
 
 type SidebarTab = "onboarding" | "data";
 
-export function ConsultationNote({ userId, birthYear, retirementAge }: ConsultationNoteProps) {
+export function ConsultationNote({
+  userId,
+  birthYear,
+  retirementAge,
+}: ConsultationNoteProps) {
   const [simulationId, setSimulationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [customerName, setCustomerName] = useState("고객님");
@@ -188,9 +192,15 @@ export function ConsultationNote({ userId, birthYear, retirementAge }: Consultat
   // Assets data state
   const [realEstates, setRealEstates] = useState<RealEstate[]>([]);
   const [savings, setSavings] = useState<Savings[]>([]);
-  const [nationalPensions, setNationalPensions] = useState<NationalPension[]>([]);
-  const [retirementPensions, setRetirementPensions] = useState<RetirementPension[]>([]);
-  const [personalPensions, setPersonalPensions] = useState<PersonalPension[]>([]);
+  const [nationalPensions, setNationalPensions] = useState<NationalPension[]>(
+    [],
+  );
+  const [retirementPensions, setRetirementPensions] = useState<
+    RetirementPension[]
+  >([]);
+  const [personalPensions, setPersonalPensions] = useState<PersonalPension[]>(
+    [],
+  );
   const [debts, setDebts] = useState<Debt[]>([]);
   const [insurances, setInsurances] = useState<Insurance[]>([]);
 
@@ -326,22 +336,33 @@ export function ConsultationNote({ userId, birthYear, retirementAge }: Consultat
   const getLabel = (key: string, value: string | string[] | undefined) => {
     if (!value) return "-";
     if (Array.isArray(value)) {
-      return value.map(v => SURVEY_LABELS[key]?.[v] || v).join(", ");
+      return value.map((v) => SURVEY_LABELS[key]?.[v] || v).join(", ");
     }
     return SURVEY_LABELS[key]?.[value] || value;
   };
 
   // 자산 요약 계산
-  const totalRealEstateValue = realEstates.reduce((sum, re) => sum + re.current_value, 0);
-  const totalFinancialAssets = savings.reduce((sum, s) => sum + s.current_balance, 0);
-  const totalDebtBalance = debts.reduce((sum, d) => sum + (d.current_balance || d.principal), 0);
+  const totalRealEstateValue = realEstates.reduce(
+    (sum, re) => sum + re.current_value,
+    0,
+  );
+  const totalFinancialAssets = savings.reduce(
+    (sum, s) => sum + s.current_balance,
+    0,
+  );
+  const totalDebtBalance = debts.reduce(
+    (sum, d) => sum + (d.current_balance || d.principal),
+    0,
+  );
 
   return (
     <div className={styles.container}>
       {/* Document Header */}
       <div className={styles.documentHeader}>
         <h1 className={styles.documentTitle}>기본형 재무 검진</h1>
-        <p className={styles.documentSubtitle}>{customerName} ({currentAge}세) | {currentYear}년</p>
+        <p className={styles.documentSubtitle}>
+          {customerName} ({currentAge}세) | {currentYear}년
+        </p>
       </div>
 
       {/* 2 Column Layout - Main Content + Sticky Sidebar */}
@@ -439,7 +460,10 @@ export function ConsultationNote({ userId, birthYear, retirementAge }: Consultat
                       <div className={styles.responseItem}>
                         <span className={styles.responseLabel}>은퇴 걱정</span>
                         <span className={styles.responseValue}>
-                          {getLabel("retirement_worry", onboarding.retirement_worry)}
+                          {getLabel(
+                            "retirement_worry",
+                            onboarding.retirement_worry,
+                          )}
                         </span>
                       </div>
                     )}
@@ -447,7 +471,10 @@ export function ConsultationNote({ userId, birthYear, retirementAge }: Consultat
                       <div className={styles.responseItem}>
                         <span className={styles.responseLabel}>은퇴 우려</span>
                         <span className={styles.responseValue}>
-                          {getLabel("retirement_concern", onboarding.retirement_concern)}
+                          {getLabel(
+                            "retirement_concern",
+                            onboarding.retirement_concern,
+                          )}
                         </span>
                       </div>
                     )}
@@ -488,26 +515,37 @@ export function ConsultationNote({ userId, birthYear, retirementAge }: Consultat
                     <div className={styles.responseItem}>
                       <span className={styles.responseLabel}>월 생활비</span>
                       <span className={styles.responseValue}>
-                        {getLabel("monthly_expense", onboarding.monthly_expense)}
+                        {getLabel(
+                          "monthly_expense",
+                          onboarding.monthly_expense,
+                        )}
                       </span>
                     </div>
                     <div className={styles.responseItem}>
                       <span className={styles.responseLabel}>월 저축</span>
                       <span className={styles.responseValue}>
-                        {getLabel("monthly_investment", onboarding.monthly_investment)}
+                        {getLabel(
+                          "monthly_investment",
+                          onboarding.monthly_investment,
+                        )}
                       </span>
                     </div>
                     {onboarding.budget_tracking && (
                       <div className={styles.responseItem}>
                         <span className={styles.responseLabel}>예산 관리</span>
                         <span className={styles.responseValue}>
-                          {getLabel("budget_tracking", onboarding.budget_tracking)}
+                          {getLabel(
+                            "budget_tracking",
+                            onboarding.budget_tracking,
+                          )}
                         </span>
                       </div>
                     )}
                     {onboarding.saving_style && (
                       <div className={styles.responseItem}>
-                        <span className={styles.responseLabel}>저축 스타일</span>
+                        <span className={styles.responseLabel}>
+                          저축 스타일
+                        </span>
                         <span className={styles.responseValue}>
                           {getLabel("saving_style", onboarding.saving_style)}
                         </span>
@@ -517,15 +555,23 @@ export function ConsultationNote({ userId, birthYear, retirementAge }: Consultat
                       <div className={styles.responseItem}>
                         <span className={styles.responseLabel}>투자 경험</span>
                         <span className={styles.responseValue}>
-                          {getLabel("investment_exp", onboarding.investment_exp)}
+                          {getLabel(
+                            "investment_exp",
+                            onboarding.investment_exp,
+                          )}
                         </span>
                       </div>
                     )}
                     {onboarding.pension_awareness && (
                       <div className={styles.responseItem}>
-                        <span className={styles.responseLabel}>연금 인지도</span>
+                        <span className={styles.responseLabel}>
+                          연금 인지도
+                        </span>
                         <span className={styles.responseValue}>
-                          {getLabel("pension_awareness", onboarding.pension_awareness)}
+                          {getLabel(
+                            "pension_awareness",
+                            onboarding.pension_awareness,
+                          )}
                         </span>
                       </div>
                     )}
@@ -575,19 +621,26 @@ export function ConsultationNote({ userId, birthYear, retirementAge }: Consultat
                     <div className={styles.responseItem}>
                       <span className={styles.responseLabel}>부동산</span>
                       <span className={styles.responseValue}>
-                        {realEstates.length > 0 ? formatMoney(totalRealEstateValue) : "-"}
+                        {realEstates.length > 0
+                          ? formatMoney(totalRealEstateValue)
+                          : "-"}
                       </span>
                     </div>
                     <div className={styles.responseItem}>
                       <span className={styles.responseLabel}>금융자산</span>
                       <span className={styles.responseValue}>
-                        {savings.length > 0 ? formatMoney(totalFinancialAssets) : "-"}
+                        {savings.length > 0
+                          ? formatMoney(totalFinancialAssets)
+                          : "-"}
                       </span>
                     </div>
                     <div className={styles.responseItem}>
                       <span className={styles.responseLabel}>연금</span>
                       <span className={styles.responseValue}>
-                        {nationalPensions.length + retirementPensions.length + personalPensions.length > 0
+                        {nationalPensions.length +
+                          retirementPensions.length +
+                          personalPensions.length >
+                        0
                           ? `${nationalPensions.length + retirementPensions.length + personalPensions.length}건`
                           : "-"}
                       </span>
@@ -622,7 +675,11 @@ export function ConsultationNote({ userId, birthYear, retirementAge }: Consultat
                     <div className={styles.responseItem}>
                       <span className={styles.responseLabelBold}>순자산</span>
                       <span className={styles.responseValueHighlight}>
-                        {formatMoney(totalRealEstateValue + totalFinancialAssets - totalDebtBalance)}
+                        {formatMoney(
+                          totalRealEstateValue +
+                            totalFinancialAssets -
+                            totalDebtBalance,
+                        )}
                       </span>
                     </div>
                   </div>

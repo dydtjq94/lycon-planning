@@ -6,7 +6,9 @@ export { NetWorthTab } from './NetWorthTab'
 export { CashFlowOverviewTab } from './CashFlowOverviewTab'
 export { CurrentAssetTab } from './CurrentAssetTab'
 export { AssetRecordTab } from './AssetRecordTab'
+export { PortfolioTab } from './PortfolioTab'
 export { ScenarioTab } from './ScenarioTab'
+export { SettingsTab } from './SettingsTab'
 
 // Finance tabs
 export { IncomeTab } from './IncomeTab'

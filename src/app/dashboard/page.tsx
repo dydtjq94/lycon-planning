@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { FinancialProvider, type ProfileBasics, type FamilyMember } from "@/contexts/FinancialContext";
 import type { Simulation } from "@/types";
@@ -10,16 +9,6 @@ import { DashboardContent } from "./DashboardContent";
 
 // PIN 인증 유효 시간 (1시간)
 const PIN_VALID_DURATION = 60 * 60 * 1000;
-
-// QueryClient 인스턴스
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5분
-      gcTime: 30 * 60 * 1000, // 30분
-    },
-  },
-});
 
 interface DashboardData {
   simulation: Simulation;
@@ -73,15 +62,24 @@ export default function DashboardPage() {
         return;
       }
 
-      // 시뮬레이션 로드
-      const { data: simulation } = await supabase
-        .from("simulations")
-        .select("*")
-        .eq("profile_id", user.id)
-        .single();
+      // 시뮬레이션 + 가족구성원 병렬 로드
+      const [simulationResult, familyResult] = await Promise.all([
+        supabase
+          .from("simulations")
+          .select("*")
+          .eq("profile_id", user.id)
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("family_members")
+          .select("*")
+          .eq("user_id", user.id),
+      ]);
 
+      let simulation = simulationResult.data;
+
+      // 시뮬레이션이 없으면 생성
       if (!simulation) {
-        // 시뮬레이션이 없으면 생성
         const { data: newSimulation } = await supabase
           .from("simulations")
           .insert({
@@ -96,26 +94,13 @@ export default function DashboardPage() {
           router.replace("/onboarding");
           return;
         }
-
-        setData({
-          simulation: newSimulation,
-          profile: profile as ProfileBasics,
-          familyMembers: [],
-        });
-        setLoading(false);
-        return;
+        simulation = newSimulation;
       }
-
-      // 가족 구성원 로드
-      const { data: familyMembers } = await supabase
-        .from("family_members")
-        .select("*")
-        .eq("user_id", user.id);
 
       setData({
         simulation,
         profile: profile as ProfileBasics,
-        familyMembers: (familyMembers || []) as FamilyMember[],
+        familyMembers: (familyResult.data || []) as FamilyMember[],
       });
       setLoading(false);
     };
@@ -141,14 +126,12 @@ export default function DashboardPage() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <FinancialProvider
-        simulation={data.simulation}
-        profile={data.profile}
-        familyMembers={data.familyMembers}
-      >
-        <DashboardContent />
-      </FinancialProvider>
-    </QueryClientProvider>
+    <FinancialProvider
+      simulation={data.simulation}
+      profile={data.profile}
+      familyMembers={data.familyMembers}
+    >
+      <DashboardContent />
+    </FinancialProvider>
   );
 }
