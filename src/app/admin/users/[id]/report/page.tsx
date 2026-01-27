@@ -106,9 +106,29 @@ export default function ReportPage() {
         const realEstateAsset =
           (realEstates || []).reduce((sum, r) => sum + (r.current_value || 0), 0) / 10000;
 
-        // 금융자산 (억원)
-        const financialAsset =
-          (savings || []).reduce((sum, s) => sum + (s.current_balance || 0), 0) / 10000;
+        // 금융자산 분리: 현금성 vs 투자
+        const cashSavings = (savings || []).filter(
+          (s) => s.type === "deposit" || s.type === "savings" || s.type === "emergency"
+        );
+        const investmentSavings = (savings || []).filter(
+          (s) => s.type !== "deposit" && s.type !== "savings" && s.type !== "emergency"
+        );
+        const cashAsset =
+          cashSavings.reduce((sum, s) => sum + (s.current_balance || 0), 0) / 10000;
+        const investmentAsset =
+          investmentSavings.reduce((sum, s) => sum + (s.current_balance || 0), 0) / 10000;
+
+        // 지출 세부 항목 (카테고리별 분류)
+        const expenseByCategory = (category: string) =>
+          (expenses || [])
+            .filter((e) => e.expense_type === category || e.name?.includes(category))
+            .reduce((sum, e) => sum + toMonthly(e.amount || 0, e.frequency || "monthly"), 0);
+
+        const expenseFood = expenseByCategory("food") || Math.round(monthlyLivingExpense * 0.3);
+        const expenseTransport = expenseByCategory("transport") || Math.round(monthlyLivingExpense * 0.15);
+        const expenseShopping = expenseByCategory("shopping") || Math.round(monthlyLivingExpense * 0.2);
+        const expenseLeisure = expenseByCategory("leisure") || Math.round(monthlyLivingExpense * 0.15);
+        const expenseOther = monthlyLivingExpense - expenseFood - expenseTransport - expenseShopping - expenseLeisure;
 
         // 연금자산 (억원)
         const pensionAsset =
@@ -194,7 +214,8 @@ export default function ReportPage() {
           otherIncomeSpouse: 0,
           // 자산 (억원)
           realEstateAsset,
-          financialAsset,
+          cashAsset,
+          investmentAsset,
           pensionAsset,
           // 부채 (만원)
           mortgageAmount,
@@ -207,6 +228,12 @@ export default function ReportPage() {
           monthlyIncome,
           monthlyFixedExpense,
           monthlyLivingExpense,
+          // 지출 세부 항목 (만원/월)
+          expenseFood,
+          expenseTransport,
+          expenseShopping,
+          expenseLeisure,
+          expenseOther,
         };
 
         setData(diagnosisData);

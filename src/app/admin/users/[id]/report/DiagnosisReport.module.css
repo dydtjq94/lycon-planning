@@ -1,3 +1,25 @@
+/* 색상 변수 */
+:root {
+  --report-primary: #1a365d;
+  --report-secondary: #2c5282;
+  --report-accent: #3182ce;
+  --report-text: #1a202c;
+  --report-text-light: #718096;
+  --report-border: #e2e8f0;
+  --report-bg: #f7fafc;
+  --report-positive: #2f855a;
+  --report-neutral: #718096;
+  --report-negative: #c53030;
+  --report-danger: #c53030;
+  --report-warning: #d69e2e;
+  --report-success: #38a169;
+  --chart-1: #1a365d;
+  --chart-2: #2c5282;
+  --chart-3: #3182ce;
+  --chart-4: #63b3ed;
+  --chart-5: #bee3f8;
+}
+
 /* 기본 스타일 */
 .reportContainer {
   font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -10,13 +32,125 @@
 .reportPage {
   width: 210mm;
   min-height: 297mm;
-  margin: 0 auto;
+  margin: 0 auto 20px;
   background: white;
   padding: 10mm 12mm;
   box-sizing: border-box;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+}
+
+.page2,
+.page3 {
+  margin-top: 20px;
+}
+
+/* 표지 */
+.pageCover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  min-height: calc(100vh - 40px);
+  padding: 60px 12mm;
+}
+
+.coverContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0;
+  text-align: center;
+  gap: 24px;
+}
+
+.coverBrand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.coverLogo {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--report-accent);
+}
+
+.coverTagline {
+  font-size: 11px;
+  color: var(--report-text-light);
+  margin-top: 0;
+}
+
+.coverTitleSection {
+  margin: 20px 0;
+}
+
+.coverTitle {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1a202c;
+  margin: 0;
+  letter-spacing: -1px;
+}
+
+.coverSubtitle {
+  font-size: 12px;
+  color: var(--report-text-light);
+  margin: 8px 0 0 0;
+  letter-spacing: 1px;
+}
+
+.coverClientInfo {
+  background: white;
+  border: 1px solid var(--report-border);
+  border-radius: 8px;
+  padding: 20px 40px;
+  margin: 20px 0;
+}
+
+.coverClientRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--report-border);
+}
+
+.coverClientRow:last-child {
+  border-bottom: none;
+}
+
+.coverLabel {
+  font-size: 12px;
+  color: var(--report-text-light);
+}
+
+.coverValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--report-text);
+}
+
+.coverFooter {
+  margin-top: auto;
+}
+
+.coverFooterText {
+  font-size: 10px;
+  color: var(--report-text-light);
+  margin-bottom: 8px;
+}
+
+.coverFooterContact {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--report-primary);
 }
 
 /* 액션 버튼 컨테이너 */
@@ -123,24 +257,27 @@
 
 /* 섹션 공통 */
 .reportSection {
-  margin-bottom: 12px;
-  padding: 12px 16px;
-  background: #f7fafc;
-  border: 1px solid #e2e8f0;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  border-radius: 4px;
 }
 
 .reportSection.half {
   flex: 1;
   margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .sectionTitle {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: #1a365d;
-  margin: 0 0 10px 0;
-  padding-bottom: 6px;
-  border-bottom: 2px solid #1a365d;
+  color: var(--report-primary);
+  margin: 0 0 8px 0;
+  padding-bottom: 5px;
+  border-bottom: 2px solid var(--report-primary);
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -148,7 +285,7 @@
 
 .sectionTitleEn {
   font-weight: 400;
-  color: #718096;
+  color: var(--report-text-light);
   font-size: 10px;
 }
 
@@ -156,41 +293,99 @@
   margin-left: auto;
   font-size: 9px;
   font-weight: 400;
-  color: #718096;
+  color: var(--report-text-light);
+}
+
+.sectionDesc {
+  font-size: 11px;
+  color: var(--report-text-light);
+  margin: 0 0 10px 0;
+}
+
+/* 2컬럼 레이아웃 */
+.reportTwoColumn {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+/* 재무정보 요약 */
+.financialSummary {
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 6px;
+  background: white;
+  border: 1px solid var(--report-border);
+  border-radius: 4px;
+}
+
+.summaryItem.highlight {
+  background: #ebf8ff;
+  border-color: #90cdf4;
+}
+
+.summaryLabel {
+  font-size: 9px;
+  color: var(--report-text-light);
+  margin-bottom: 2px;
+}
+
+.summaryValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--report-text);
+}
+
+.summaryValue.negative {
+  color: var(--report-negative);
 }
 
 /* 현금흐름 분석 */
 .cashflowGrid {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .cashflowItem {
   display: grid;
-  grid-template-columns: 80px 1fr 70px;
+  grid-template-columns: 70px 1fr 50px;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 8px;
+  padding: 6px 10px;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--report-border);
+  border-radius: 3px;
 }
 
-.cashflowItem.highlight {
+.cashflowItem.highlightItem {
   margin-top: 2px;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--report-border);
 }
 
 .cashflowLabel {
-  font-size: 11px;
-  color: #1a202c;
+  font-size: 10px;
+  color: var(--report-text);
   font-weight: 500;
 }
 
 .cashflowBarContainer {
-  height: 16px;
+  height: 14px;
   background: #e2e8f0;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   position: relative;
@@ -198,6 +393,7 @@
 
 .cashflowBar {
   height: 100%;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -205,14 +401,22 @@
 }
 
 .cashflowBarLabel {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   color: white;
   white-space: nowrap;
 }
 
+.cashflowBarLabelOutside {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--report-text);
+  white-space: nowrap;
+  margin-left: 6px;
+}
+
 .cashflowBar.income {
-  background: #3182ce;
+  background: #38a169;
 }
 
 .cashflowBar.expense {
@@ -220,22 +424,15 @@
 }
 
 .cashflowBar.gap.positive {
-  background: #38a169;
+  background: var(--report-primary);
 }
 
 .cashflowBar.gap.negative {
-  background: #e53e3e;
-}
-
-.cashflowNote {
-  font-size: 9px;
-  font-weight: 500;
-  color: #718096;
-  text-align: right;
+  background: var(--report-negative);
 }
 
 .cashflowGrade {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-align: right;
 }
@@ -260,11 +457,628 @@
   color: #c53030;
 }
 
-/* 2컬럼 레이아웃 */
-.reportTwoColumn {
+/* 제안 섹션 */
+.suggestionSection {
+  background: #f0fff4;
+  border-color: #9ae6b4;
+}
+
+.maintainMessage {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #ebf8ff;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--report-accent);
+  text-align: center;
+}
+
+/* TIP 박스 */
+.tipBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #ebf8ff;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.tipLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  background: var(--report-accent);
+  padding: 2px 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.tipText {
+  font-size: 10px;
+  color: var(--report-text);
+  line-height: 1.5;
+}
+
+.tipText strong {
+  color: var(--report-accent);
+  font-weight: 700;
+}
+
+/* 지출 분석 */
+.expenseAnalysisSection {
+  padding: 10px 14px;
+}
+
+.expenseAnalysisLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expenseCategoryRow {
   display: flex;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+}
+
+.expenseCategory {
+  flex: 1;
+  padding: 8px 10px;
+  background: white;
+  border: 1px solid var(--report-border);
+  border-radius: 4px;
+}
+
+.expenseCategory.fixed {
+  border-color: #90cdf4;
+  background: #ebf8ff;
+}
+
+.expenseCategory.variable {
+  border-color: #fbd38d;
+  background: #fffaf0;
+}
+
+.expenseCategoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.expenseCategoryTitle {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--report-text);
+}
+
+.expenseCategory.fixed .expenseCategoryTitle {
+  color: var(--report-accent);
+}
+
+.expenseCategory.variable .expenseCategoryTitle {
+  color: var(--report-warning);
+}
+
+.expenseCategoryAmount {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--report-text);
+}
+
+.expenseCategoryDesc {
+  font-size: 9px;
+  color: var(--report-text-light);
+}
+
+.expenseCategoryHint {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--report-text-light);
+}
+
+.expenseStackedBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stackedBarLabel {
+  font-size: 10px;
+  color: var(--report-text-light);
+  white-space: nowrap;
+}
+
+.stackedBarContainer {
+  flex: 1;
+  height: 24px;
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--report-border);
+}
+
+.stackedBarSegment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2px;
+  transition: opacity 0.2s;
+}
+
+.segmentLabel {
+  font-size: 9px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.expenseItemsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.expenseItemRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  background: white;
+  border: 1px solid var(--report-border);
+  border-radius: 4px;
+}
+
+.expenseItemRow.highPotential {
+  background: #fff5f5;
+  border-color: #feb2b2;
+}
+
+.expenseItemInfo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.expenseDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.expenseItemLabel {
+  font-size: 9px;
+  color: var(--report-text);
+  font-weight: 500;
+}
+
+.expenseItemValues {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.expenseItemAmount {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--report-text);
+}
+
+.expenseItemRatio {
+  font-size: 9px;
+  color: var(--report-text-light);
+}
+
+.expenseInsight {
+  padding: 8px 12px;
+  background: #fffaf0;
+  border: 1px solid #fbd38d;
+  border-radius: 4px;
+}
+
+.insightHeader {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--report-warning);
+  margin-bottom: 4px;
+}
+
+.insightContent {
+  font-size: 10px;
+  color: var(--report-text);
+  line-height: 1.4;
+}
+
+.insightContent strong {
+  color: var(--report-danger);
+}
+
+/* 자산 분석 */
+.assetAnalysisLayout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.assetPieContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-height: 90px;
+}
+
+.assetPie {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+
+.assetPieLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pieLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--report-text);
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legendDot.realestate {
+  background: var(--chart-1);
+}
+
+.legendDot.cash {
+  background: var(--chart-3);
+}
+
+.legendDot.investment {
+  background: var(--chart-2);
+}
+
+.legendDot.pension {
+  background: var(--chart-4);
+}
+
+.legendDot.mortgage {
+  background: var(--report-primary);
+}
+
+.legendDot.credit {
+  background: var(--report-danger);
+}
+
+.legendDot.other {
+  background: var(--report-warning);
+}
+
+.assetSummaryComment {
+  font-size: 10px;
+  color: var(--report-text-light);
+  padding-top: 6px;
+  border-top: 1px solid var(--report-border);
+  line-height: 1.4;
+  margin-top: auto;
+}
+
+/* 부채 분석 */
+.debtAnalysis {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.noDebtMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  text-align: center;
+  gap: 8px;
+}
+
+.noDebtText {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--report-accent);
+}
+
+.noDebtDesc {
+  font-size: 11px;
+  color: var(--report-text-light);
+}
+
+.debtSummaryComment {
+  font-size: 10px;
+  color: var(--report-text-light);
+  padding-top: 6px;
+  border-top: 1px solid var(--report-border);
+  line-height: 1.4;
+  margin-top: auto;
+}
+
+.rateBadge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: #e2e8f0;
+  color: var(--report-text);
+  margin-left: 4px;
+}
+
+.rateBadge.good {
+  background: #c6f6d5;
+  color: #276749;
+}
+
+.rateBadge.warning {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+/* 동연령대 비교 - 백분위 */
+.percentileRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.percentileRow + .percentileRow {
+  border-top: 1px solid #f0f0f0;
+}
+
+.percentileRowLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--report-text);
+  width: 50px;
+  flex-shrink: 0;
+}
+
+.percentileTrackWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.percentileTrack {
+  height: 24px;
+  display: flex;
+  gap: 0;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.percentileSegment {
+  flex: 1;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.percentileSegment:nth-child(1) { background: #e8f4fc; }
+.percentileSegment:nth-child(2) { background: #cee4f7; }
+.percentileSegment:nth-child(3) { background: #adcfef; }
+.percentileSegment:nth-child(4) { background: #8cb5e0; }
+.percentileSegment:nth-child(5) { background: #6b9bd1; }
+.percentileSegment:nth-child(6) { background: #4a80c1; }
+.percentileSegment:nth-child(7) { background: #3b6da8; }
+.percentileSegment:nth-child(8) { background: #2c5a8f; }
+.percentileSegment:nth-child(9) { background: #234876; }
+.percentileSegment:nth-child(10) { background: #1a365d; }
+
+.percentileIndicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.percentileIndicator::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.percentileLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #a0aec0;
+  position: relative;
+}
+
+.percentileDetail {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--report-text);
+  font-weight: 500;
+}
+
+/* 은퇴 가능 여부 판단 */
+.retirementVerdictSection {
+  padding: 12px 16px;
+}
+
+.retirementVerdict {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.verdictHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.verdictBadge {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+}
+
+.verdictBadge.possible {
+  background: var(--report-success);
+}
+
+.verdictBadge.conditional {
+  background: var(--report-warning);
+}
+
+.verdictBadge.difficult {
+  background: var(--report-danger);
+}
+
+.verdictTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--report-text);
+}
+
+.verdictDetail {
+  font-size: 11px;
+  color: var(--report-text-light);
+  line-height: 1.5;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid var(--report-border);
+}
+
+.verdictBreakdown {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.breakdownItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 6px;
+  background: white;
+  border: 1px solid var(--report-border);
+  border-radius: 4px;
+}
+
+.breakdownLabel {
+  font-size: 9px;
+  color: var(--report-text-light);
+  margin-bottom: 2px;
+}
+
+.breakdownValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--report-text);
+}
+
+.breakdownValue.positive {
+  color: var(--report-success);
+}
+
+.breakdownValue.negative {
+  color: var(--report-danger);
+}
+
+.breakdownDesc {
+  font-size: 8px;
+  color: var(--report-text-light);
+  margin-top: 2px;
+  text-align: center;
+}
+
+.verdictReference {
+  font-size: 9px;
+  color: var(--report-text-light);
+  text-align: center;
+  padding-top: 8px;
+  border-top: 1px dashed var(--report-border);
+  margin-top: 8px;
+}
+
+/* 3층 연금 */
+.pensionThreeColumn {
+  display: flex;
+  gap: 10px;
+}
+
+.pensionColumn {
+  flex: 1;
+  background: white;
+  border: 1px solid var(--report-border);
+  border-radius: 4px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.pensionColumnHeader {
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+}
+
+.pensionColumnHeader.layer1 {
+  background: var(--report-primary);
+}
+
+.pensionColumnHeader.layer2 {
+  background: var(--report-accent);
+}
+
+.pensionColumnHeader.layer3 {
+  background: #63b3ed;
+}
+
+.pensionColumnTitle {
+  font-size: 10px;
+  color: var(--report-text-light);
+  padding: 6px 8px 2px;
+}
+
+.pensionColumnValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--report-text);
+  padding: 2px 8px 4px;
+}
+
+.pensionColumnNote {
+  font-size: 9px;
+  color: var(--report-text-light);
+  padding: 0 8px 6px;
 }
 
 /* 총수요/총공급 차트 */
@@ -285,7 +1099,7 @@
   width: 50px;
   font-size: 11px;
   font-weight: 600;
-  color: #1a202c;
+  color: var(--report-text);
   text-align: right;
   flex-shrink: 0;
 }
@@ -294,9 +1108,10 @@
   flex: 1;
   height: 24px;
   background: #e2e8f0;
+  border-radius: 3px;
   display: flex;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--report-border);
 }
 
 .dsBar {
@@ -307,11 +1122,13 @@
 }
 
 .dsBar.demand {
-  background: #d69e2e;
+  background: var(--report-warning);
+  border-radius: 2px;
 }
 
 .dsBar.supply {
-  background: #3182ce;
+  background: var(--report-accent);
+  border-radius: 2px 0 0 2px;
 }
 
 .dsBar.deficit {
@@ -322,8 +1139,9 @@
     rgba(229, 62, 62, 0.15) 3px,
     rgba(229, 62, 62, 0.15) 6px
   );
-  border: 1px dashed #e53e3e;
+  border: 1px dashed var(--report-danger);
   border-left: none;
+  border-radius: 0 2px 2px 0;
 }
 
 .dsValue {
@@ -335,7 +1153,7 @@
 }
 
 .dsBar.deficit .dsValue {
-  color: #e53e3e;
+  color: var(--report-danger);
   text-shadow: none;
 }
 
@@ -344,7 +1162,7 @@
   justify-content: center;
   gap: 16px;
   padding-top: 8px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--report-border);
 }
 
 .dsLegendItem {
@@ -352,25 +1170,26 @@
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  color: #718096;
+  color: var(--report-text-light);
 }
 
 .dsLegendBox {
   width: 10px;
   height: 10px;
+  border-radius: 2px;
   flex-shrink: 0;
 }
 
 .dsLegendBox.demand {
-  background: #d69e2e;
+  background: var(--report-warning);
 }
 
 .dsLegendBox.supply {
-  background: #3182ce;
+  background: var(--report-accent);
 }
 
 .dsLegendBox.deficit {
-  border: 1px dashed #e53e3e;
+  border: 1px dashed var(--report-danger);
   background: repeating-linear-gradient(
     -45deg,
     transparent,
@@ -380,249 +1199,267 @@
   );
 }
 
-/* 자산 구성 */
-.assetStackBar {
+/* 은퇴 시점 예상 자산 */
+.retirementAssetPreview {
   display: flex;
-  height: 22px;
-  overflow: hidden;
-  margin-bottom: 8px;
-  border: 1px solid #e2e8f0;
+  gap: 16px;
+  align-items: stretch;
 }
 
-.assetSegment {
+.assetComparisonCol {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.assetComparisonItem {
+  text-align: center;
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid var(--report-border);
+  border-radius: 4px;
+  min-width: 90px;
+}
+
+.assetComparisonItem.highlight {
+  background: #ebf8ff;
+  border-color: #90cdf4;
+}
+
+.comparisonLabel {
   font-size: 9px;
-  color: white;
-  font-weight: 600;
+  color: var(--report-text-light);
+  margin-bottom: 2px;
 }
 
-.assetSegment.realestate {
-  background: #1a365d;
+.comparisonValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--report-text);
 }
 
-.assetSegment.financial {
-  background: #3182ce;
+.assetComparisonArrow {
+  font-size: 16px;
+  color: var(--report-accent);
+  font-weight: 700;
 }
 
-.assetSegment.pension {
-  background: #63b3ed;
-}
-
-.assetLegend {
+.assetDetailCol {
+  flex: 1;
   display: flex;
-  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.assetBreakdownList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.assetBreakdownItem {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  padding: 10px 10px;
+  background: white;
+  border: 1px solid var(--report-border);
+  border-radius: 3px;
+  flex: 1;
 }
 
-.assetLegendItem {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  color: #1a202c;
-}
-
-.legendDot {
-  width: 8px;
-  height: 8px;
-}
-
-.legendDot.realestate {
-  background: #1a365d;
-}
-
-.legendDot.financial {
-  background: #3182ce;
-}
-
-.legendDot.pension {
-  background: #63b3ed;
-}
-
-.assetSummary {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-top: 8px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.assetSummaryRow {
-  display: flex;
-  justify-content: space-between;
+.breakdownName {
   font-size: 11px;
-  color: #1a202c;
+  color: var(--report-text);
+  flex: 1;
 }
 
-.assetSummaryRow.debt {
-  color: #e53e3e;
-}
-
-.debtDetail {
-  font-size: 9px;
-  font-weight: 400;
-  color: #718096;
-}
-
-.assetSummaryRow.total {
+.breakdownAmount {
+  font-size: 12px;
   font-weight: 700;
-  color: #1a202c;
-  padding-top: 4px;
-  margin-top: 2px;
-  border-top: 1px solid #e2e8f0;
+  color: var(--report-text);
 }
 
-/* 자산 지속성 */
-.sustainabilityTimeline {
-  margin-bottom: 10px;
-}
-
-.timelineBar {
-  position: relative;
-  height: 20px;
-  background: #fed7d7;
-  overflow: visible;
-  border: 1px solid #feb2b2;
-}
-
-.timelineFilled {
-  height: 100%;
-  background: linear-gradient(90deg, #38a169, #d69e2e);
-}
-
-.timelineMarker {
-  position: absolute;
-  top: -2px;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.markerLabel {
-  background: #1a365d;
-  color: white;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 2px 6px;
-  white-space: nowrap;
-}
-
-.timelineMarker::after {
-  content: "";
-  width: 2px;
-  height: 10px;
-  background: #1a365d;
-}
-
-.timelineLabels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
+.breakdownRatio {
   font-size: 10px;
-  color: #718096;
+  color: var(--report-text-light);
+  min-width: 40px;
+  text-align: right;
 }
 
-.sustainabilityStats {
+.assetSummaryStats {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  flex: 1;
+  justify-content: space-between;
 }
 
-.statRow {
+.summaryStatItem {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px;
+  background: white;
+  border: 1px solid var(--report-border);
+  border-radius: 3px;
+  flex: 1;
+}
+
+.summaryStatItem.highlight {
+  background: #ebf8ff;
+  border-color: #90cdf4;
 }
 
 .statLabel {
-  color: #718096;
+  font-size: 10px;
+  color: var(--report-text-light);
 }
 
 .statValue {
-  font-size: 11px;
-  font-weight: 600;
-  color: #1a202c;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--report-text);
 }
 
-.statRow.negative .statValue {
-  color: #e53e3e;
+.statValue.negative {
+  color: var(--report-danger);
 }
 
-.statRow.positiveRow .statValue {
-  color: #38a169;
-}
-
-.sustainabilityNote {
-  font-size: 9px;
-  color: #718096;
+.calculationNote {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  background: #f7fafc;
+  border-radius: 3px;
   margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px solid #e2e8f0;
+}
+
+.noteLabel {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--report-text-light);
+  white-space: nowrap;
+  padding: 2px 6px;
+  background: #e2e8f0;
+  border-radius: 2px;
+}
+
+.noteContent {
+  font-size: 9px;
+  color: var(--report-text-light);
+  line-height: 1.4;
+}
+
+/* 은퇴 시기 시뮬레이션 */
+.retirementScenarios {
+  display: flex;
+  gap: 10px;
+}
+
+.scenarioCard {
+  flex: 1;
+  background: white;
+  border: 1px solid var(--report-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.scenarioCard.current {
+  border: 2px solid var(--report-primary);
+}
+
+.scenarioHeader {
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  color: white;
+}
+
+.scenarioHeader.early {
+  background: var(--chart-4);
+}
+
+.scenarioHeader.currentHeader {
+  background: var(--chart-1);
+}
+
+.scenarioHeader.late {
+  background: var(--chart-2);
+}
+
+.scenarioBody {
+  padding: 10px;
+}
+
+.scenarioAge {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--report-text);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.scenarioStat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  margin-bottom: 4px;
+}
+
+.scenarioLabel {
+  color: var(--report-text-light);
+}
+
+.scenarioValue {
+  font-weight: 600;
+  color: var(--report-text);
+}
+
+.scenarioValue.danger {
+  color: var(--report-danger);
 }
 
 /* 리스크 진단 */
 .riskGrid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .riskItem {
   display: grid;
-  grid-template-columns: 85px 1fr 65px;
+  grid-template-columns: 80px 1fr 60px;
   align-items: center;
   gap: 10px;
 }
 
 .riskLabel {
-  font-size: 11px;
-  color: #1a202c;
+  font-size: 10px;
+  color: var(--report-text);
   font-weight: 500;
 }
 
 .riskBarContainer {
   position: relative;
-  height: 26px;
-  display: flex;
-  flex-direction: column;
-}
-
-.riskZoneLabels {
-  display: flex;
-  height: 10px;
-  margin-bottom: 2px;
-}
-
-.zoneLabel {
-  font-size: 8px;
-  font-weight: 500;
-  text-align: center;
-}
-
-.zoneLabel.high {
-  width: 30%;
-  color: #c53030;
-}
-
-.zoneLabel.medium {
-  width: 30%;
-  color: #b7791f;
-}
-
-.zoneLabel.low {
-  width: 40%;
-  color: #276749;
+  height: 14px;
 }
 
 .riskBarBg {
   display: flex;
-  flex: 1;
+  height: 100%;
+  border-radius: 2px;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--report-border);
 }
 
 .riskZone {
@@ -643,8 +1480,8 @@
 
 .riskIndicator {
   position: absolute;
-  bottom: 2px;
-  transform: translateX(-50%);
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -654,31 +1491,29 @@
 }
 
 .riskIndicator.low {
-  background: #38a169;
+  background: var(--report-success);
 }
 
 .riskIndicator.medium {
-  background: #d69e2e;
+  background: var(--report-warning);
 }
 
 .riskIndicator.high {
-  background: #e53e3e;
+  background: var(--report-danger);
 }
 
 .riskValue {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-align: right;
-  color: #1a202c;
+  color: var(--report-text);
 }
 
-/* 개선 가능성 차트 */
-.improvementChart {
-  height: 160px;
-  padding: 8px 0;
+/* 종합 소견 */
+.opinionSection {
+  flex: 0;
 }
 
-/* 간단 소견 */
 .opinionInput {
   margin-bottom: 10px;
 }
@@ -689,7 +1524,7 @@
   font-size: 12px;
   font-family: inherit;
   line-height: 1.6;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--report-border);
   border-radius: 6px;
   resize: vertical;
   box-sizing: border-box;
@@ -697,13 +1532,13 @@
 
 .opinionTextarea:focus {
   outline: none;
-  border-color: #3182ce;
+  border-color: var(--report-accent);
   box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.1);
 }
 
 .opinionHint {
   font-size: 11px;
-  color: #718096;
+  color: var(--report-text-light);
   margin: 8px 0 0 0;
   line-height: 1.5;
 }
@@ -714,28 +1549,172 @@
 
 .opinionFinding {
   font-size: 12px;
-  color: #1a202c;
+  color: var(--report-text);
   line-height: 1.6;
   margin: 0 0 8px 0;
 }
 
 .opinionRecommendation {
   font-size: 12px;
-  color: #2c5282;
+  color: var(--report-secondary);
   line-height: 1.5;
   margin: 0;
   font-style: italic;
 }
 
-.nextStep {
-  font-size: 12px;
-  color: #2c5282;
-  padding-top: 10px;
-  border-top: 1px solid #e2e8f0;
+/* CTA 섹션 */
+.ctaSection {
+  background: var(--report-bg);
+  text-align: center;
 }
 
-.nextStep strong {
-  color: #1a365d;
+.ctaCards {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ctaCard {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--report-border);
+  border-radius: 6px;
+}
+
+.ctaCardNumber {
+  width: 22px;
+  height: 22px;
+  background: var(--report-primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ctaCardContent {
+  text-align: left;
+}
+
+.ctaCardTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--report-text);
+  margin-bottom: 2px;
+}
+
+.ctaCardDesc {
+  font-size: 10px;
+  color: var(--report-text-light);
+  line-height: 1.4;
+}
+
+/* 전문진단 안내 */
+.specialistSection {
+  flex: 1;
+}
+
+.specialistOptionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.optionsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.optionsGroupHeader {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--report-text);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--report-border);
+}
+
+.optionItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--report-bg);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.optionItem:hover {
+  background: #edf2f7;
+}
+
+.optionItem.included {
+  background: #ebf8ff;
+  cursor: default;
+}
+
+.optionItem input[type="checkbox"] {
+  display: none;
+}
+
+.optionCheck {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--report-border);
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+}
+
+.optionItem input[type="checkbox"]:checked + .optionCheck {
+  background: var(--report-secondary);
+  border-color: var(--report-secondary);
+}
+
+.optionItem input[type="checkbox"]:checked + .optionCheck::after {
+  content: '';
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.optionName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--report-text);
+  flex: 1;
+}
+
+.optionDesc {
+  font-size: 11px;
+  color: var(--report-text-light);
+  flex: 1;
+}
+
+.optionTag {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.optionTag.free {
+  background: #c6f6d5;
+  color: #276749;
 }
 
 /* 푸터 */
@@ -743,53 +1722,69 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 12px;
-  border-top: 2px solid #1a365d;
+  padding-top: 10px;
+  border-top: 2px solid var(--report-primary);
   margin-top: auto;
 }
 
 .footerBrand {
   font-size: 11px;
   font-weight: 700;
-  color: #1a365d;
+  color: var(--report-primary);
   letter-spacing: 0.5px;
 }
 
 .footerTagline {
   font-size: 10px;
-  color: #718096;
+  color: var(--report-text-light);
 }
 
 /* 인쇄용 스타일 */
 @media print {
   @page {
-    size: A4 portrait;
+    size: A4;
     margin: 0;
   }
 
-  .reportContainer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 210mm;
-    margin: 0;
-    padding: 0;
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
     background: white !important;
-    min-height: 0;
+    width: 210mm;
+    overflow: visible !important;
+  }
+
+  .reportContainer {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
 
   .reportPage {
     width: 210mm;
-    height: 297mm;
     min-height: 297mm;
-    max-height: 297mm;
+    height: auto;
+    max-height: none;
     margin: 0;
-    padding: 8mm 10mm;
+    padding: 10mm 12mm;
     box-shadow: none;
     box-sizing: border-box;
     background: white !important;
-    overflow: hidden;
     page-break-after: always;
+    overflow: visible;
+    position: relative;
+  }
+
+  .reportPage:last-child {
+    page-break-after: auto;
+  }
+
+  .page2,
+  .page3 {
+    margin-top: 0;
+    page-break-before: always;
   }
 
   .actionButtons {
@@ -801,23 +1796,12 @@
     page-break-inside: avoid;
   }
 
-  .reportTwoColumn {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
   .reportFooter {
     margin-top: auto;
   }
 
-  .improvementChart {
-    height: 120px !important;
-  }
-
-  .reportPage,
-  .reportPage div,
-  .reportPage span,
-  .reportPage canvas {
+  .reportContainer,
+  .reportContainer * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }

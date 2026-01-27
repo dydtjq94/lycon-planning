@@ -32,7 +32,11 @@ import {
   Send,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { NotesSection, ProgressSection, RetirementDiagnosisForm } from "./components";
+import {
+  NotesSection,
+  ProgressSection,
+  RetirementDiagnosisForm,
+} from "./components";
 import { OnboardingSurveyModal } from "./components/finance/OnboardingSurveyModal";
 import styles from "./UserDetail.module.css";
 
@@ -236,16 +240,22 @@ export default function UserDetailPage() {
   const [showDropdown, setShowDropdown] = useState(false);
 
   // 상담 종류 선택
-  const [selectedConsultation, setSelectedConsultation] = useState<string | null>(null);
+  const [selectedConsultation, setSelectedConsultation] = useState<
+    string | null
+  >(null);
 
   // 예약된 상담 (bookings)
   const [scheduledBookings, setScheduledBookings] = useState<Booking[]>([]);
 
   // 상담 이력 (consultation_records)
-  const [consultationRecords, setConsultationRecords] = useState<ConsultationRecord[]>([]);
+  const [consultationRecords, setConsultationRecords] = useState<
+    ConsultationRecord[]
+  >([]);
 
   // 상담 이력 (마지막 상담일) - consultation_records에서 계산
-  const [consultationHistory, setConsultationHistory] = useState<Record<string, string | null>>({
+  const [consultationHistory, setConsultationHistory] = useState<
+    Record<string, string | null>
+  >({
     "retirement-diagnosis": null,
     "budget-consultation": null,
     "investment-portfolio": null,
@@ -267,8 +277,23 @@ export default function UserDetailPage() {
   // 입력해두기 모달
   const [showPrepDataModal, setShowPrepDataModal] = useState(false);
 
+  // SMS 발송
+  const [showSmsModal, setShowSmsModal] = useState(false);
+  const [sendingSms, setSendingSms] = useState(false);
+  const [smsForm, setSmsForm] = useState({
+    date: "",
+    time: "14:00",
+    message: "다음 상담이 예약되었습니다.",
+  });
+
   // 다음 상담 추천일 계산
-  const getNextConsultationDate = (typeId: string, lastDate: string | null): { date: string | null; status: "overdue" | "upcoming" | "ok" | "none" } => {
+  const getNextConsultationDate = (
+    typeId: string,
+    lastDate: string | null,
+  ): {
+    date: string | null;
+    status: "overdue" | "upcoming" | "ok" | "none";
+  } => {
     const consultationType = CONSULTATION_TYPES.find((t) => t.id === typeId);
     if (!consultationType || consultationType.periodMonths === null) {
       return { date: null, status: "none" };
@@ -283,7 +308,9 @@ export default function UserDetailPage() {
     next.setMonth(next.getMonth() + consultationType.periodMonths);
 
     const today = new Date();
-    const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil(
+      (next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
     const nextStr = `${next.getFullYear()}.${String(next.getMonth() + 1).padStart(2, "0")}.${String(next.getDate()).padStart(2, "0")}`;
 
@@ -296,7 +323,11 @@ export default function UserDetailPage() {
   };
 
   // 스케줄 셀 클릭 핸들러 (체크 토글)
-  const handleScheduleCellClick = async (consultationType: string, month: number, year: number) => {
+  const handleScheduleCellClick = async (
+    consultationType: string,
+    month: number,
+    year: number,
+  ) => {
     if (!expertId) return;
 
     const supabase = createClient();
@@ -308,7 +339,7 @@ export default function UserDetailPage() {
         r.consultation_type === consultationType &&
         r.status === "completed" &&
         new Date(r.scheduled_date).getMonth() + 1 === month &&
-        new Date(r.scheduled_date).getFullYear() === year
+        new Date(r.scheduled_date).getFullYear() === year,
     );
 
     if (!existingRecord) {
@@ -338,7 +369,7 @@ export default function UserDetailPage() {
 
       if (!error) {
         setConsultationRecords((prev) =>
-          prev.filter((r) => r.id !== existingRecord.id)
+          prev.filter((r) => r.id !== existingRecord.id),
         );
       }
     }
@@ -351,7 +382,10 @@ export default function UserDetailPage() {
     let completed = 0;
 
     CONSULTATION_TYPES.filter((t) => t.isRequired).forEach((type) => {
-      const { status } = getNextConsultationDate(type.id, consultationHistory[type.id]);
+      const { status } = getNextConsultationDate(
+        type.id,
+        consultationHistory[type.id],
+      );
       if (status === "overdue") overdue++;
       else if (status === "upcoming") upcoming++;
       else if (status === "ok") completed++;
@@ -394,7 +428,9 @@ export default function UserDetailPage() {
       // 고객 프로필
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("id, name, birth_date, gender, target_retirement_age, created_at, onboarding_step, phone_number, customer_stage, survey_responses, guide_clicks, prep_data")
+        .select(
+          "id, name, birth_date, gender, target_retirement_age, created_at, onboarding_step, phone_number, customer_stage, survey_responses, guide_clicks, prep_data",
+        )
         .eq("id", userId)
         .single();
 
@@ -474,7 +510,9 @@ export default function UserDetailPage() {
       // 상담 이력 로드
       const { data: recordsData } = await supabase
         .from("consultation_records")
-        .select("id, consultation_type, scheduled_date, scheduled_time, completed_date, status, summary")
+        .select(
+          "id, consultation_type, scheduled_date, scheduled_time, completed_date, status, summary",
+        )
         .eq("profile_id", userId)
         .order("scheduled_date", { ascending: false });
 
@@ -496,7 +534,10 @@ export default function UserDetailPage() {
         recordsData
           .filter((r) => r.status === "completed" && r.completed_date)
           .forEach((r) => {
-            if (!history[r.consultation_type] || r.completed_date! > history[r.consultation_type]!) {
+            if (
+              !history[r.consultation_type] ||
+              r.completed_date! > history[r.consultation_type]!
+            ) {
               history[r.consultation_type] = r.completed_date;
             }
           });
@@ -677,7 +718,7 @@ export default function UserDetailPage() {
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        () => handleNewMessage()
+        () => handleNewMessage(),
       )
       .subscribe();
 
@@ -748,7 +789,10 @@ export default function UserDetailPage() {
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
       age--;
     }
     return age;
@@ -758,6 +802,62 @@ export default function UserDetailPage() {
     if (!dateStr) return "-";
     const date = new Date(dateStr);
     return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+  };
+
+  // SMS 발송 함수
+  const handleSendBookingNotice = async () => {
+    if (!profile?.phone_number) {
+      alert("고객 전화번호가 없습니다.");
+      return;
+    }
+
+    if (!smsForm.date) {
+      alert("예약 날짜를 선택해주세요.");
+      return;
+    }
+
+    if (!smsForm.message.trim()) {
+      alert("안내 내용을 입력해주세요.");
+      return;
+    }
+
+    setSendingSms(true);
+
+    try {
+      const bookingDate = new Date(smsForm.date);
+      const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+      const formattedDate = `${bookingDate.getFullYear()}년 ${bookingDate.getMonth() + 1}월 ${bookingDate.getDate()}일(${weekdays[bookingDate.getDay()]})`;
+
+      const response = await fetch(`/api/sms/booking-notice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: profile.phone_number,
+          customer_name: profile.name,
+          booking_date: formattedDate,
+          booking_time: smsForm.time,
+          message: smsForm.message,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        alert("예약 안내 메시지가 발송되었습니다.");
+        setShowSmsModal(false);
+        setSmsForm({
+          date: "",
+          time: "14:00",
+          message: "다음 상담이 예약되었습니다.",
+        });
+      } else {
+        alert(`SMS 발송 실패: ${result.message}`);
+      }
+    } catch (error) {
+      console.error("SMS 발송 오류:", error);
+      alert("SMS 발송 중 오류가 발생했습니다.");
+    } finally {
+      setSendingSms(false);
+    }
   };
 
   if (loading) {
@@ -803,37 +903,52 @@ export default function UserDetailPage() {
                   <span className={styles.infoLabel}>생년월일</span>
                   <span className={styles.infoValue}>
                     {profile.birth_date ? formatDate(profile.birth_date) : "-"}
-                    {profile.birth_date && ` (${calculateAge(profile.birth_date)}세)`}
+                    {profile.birth_date &&
+                      ` (${calculateAge(profile.birth_date)}세)`}
                   </span>
                 </div>
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>성별</span>
                   <span className={styles.infoValue}>
-                    {profile.gender === "male" ? "남성" : profile.gender === "female" ? "여성" : "-"}
+                    {profile.gender === "male"
+                      ? "남성"
+                      : profile.gender === "female"
+                        ? "여성"
+                        : "-"}
                   </span>
                 </div>
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>연락처</span>
-                  <span className={styles.infoValue}>{profile.phone_number || "-"}</span>
+                  <span className={styles.infoValue}>
+                    {profile.phone_number || "-"}
+                  </span>
                 </div>
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>목표 은퇴 나이</span>
-                  <span className={styles.infoValue}>{profile.target_retirement_age}세</span>
+                  <span className={styles.infoValue}>
+                    {profile.target_retirement_age}세
+                  </span>
                 </div>
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>가입일</span>
-                  <span className={styles.infoValue}>{formatDate(profile.created_at)}</span>
+                  <span className={styles.infoValue}>
+                    {formatDate(profile.created_at)}
+                  </span>
                 </div>
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>고객 단계</span>
-                  <span className={`${styles.stageBadgeInline} ${styles[profile.customer_stage || "new"]}`}>
+                  <span
+                    className={`${styles.stageBadgeInline} ${styles[profile.customer_stage || "new"]}`}
+                  >
                     {STAGE_LABELS[profile.customer_stage] || "신규"}
                   </span>
                 </div>
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>온보딩</span>
                   <span className={styles.infoValue}>
-                    {profile.onboarding_step === "completed" ? "완료" : "진행중"}
+                    {profile.onboarding_step === "completed"
+                      ? "완료"
+                      : "진행중"}
                     {surveyResponses && (
                       <button
                         className={styles.onboardingBtn}
@@ -854,8 +969,9 @@ export default function UserDetailPage() {
                     >
                       {Object.values(profile.guide_clicks || {}).reduce(
                         (sum: number, c: any) => sum + (c?.count || 0),
-                        0
-                      )}회
+                        0,
+                      )}
+                      회
                     </button>
                   </span>
                 </div>
@@ -879,21 +995,36 @@ export default function UserDetailPage() {
                 <h3 className={styles.cardTitle}>예약된 상담</h3>
                 <div className={styles.upcomingBookings}>
                   {scheduledBookings.map((booking) => {
-                    const consultationType = CONSULTATION_TYPES.find((t) => t.id === booking.consultation_type);
+                    const consultationType = CONSULTATION_TYPES.find(
+                      (t) => t.id === booking.consultation_type,
+                    );
                     const bookingDate = new Date(booking.booking_date);
-                    const isToday = new Date().toDateString() === bookingDate.toDateString();
-                    const daysUntil = Math.ceil((bookingDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                    const isToday =
+                      new Date().toDateString() === bookingDate.toDateString();
+                    const daysUntil = Math.ceil(
+                      (bookingDate.getTime() - new Date().getTime()) /
+                        (1000 * 60 * 60 * 24),
+                    );
 
                     return (
-                      <div key={booking.id} className={styles.upcomingBookingItem}>
+                      <div
+                        key={booking.id}
+                        className={styles.upcomingBookingItem}
+                      >
                         <span className={styles.upcomingBookingName}>
                           {consultationType?.name || booking.consultation_type}
                         </span>
                         <span className={styles.upcomingBookingDate}>
                           {`${bookingDate.getMonth() + 1}/${bookingDate.getDate()} ${booking.booking_time}`}
                         </span>
-                        <span className={`${styles.upcomingBookingDays} ${isToday ? styles.today : daysUntil <= 3 ? styles.soon : ""}`}>
-                          {isToday ? "오늘" : daysUntil < 0 ? `${Math.abs(daysUntil)}일 전` : `D-${daysUntil}`}
+                        <span
+                          className={`${styles.upcomingBookingDays} ${isToday ? styles.today : daysUntil <= 3 ? styles.soon : ""}`}
+                        >
+                          {isToday
+                            ? "오늘"
+                            : daysUntil < 0
+                              ? `${Math.abs(daysUntil)}일 전`
+                              : `D-${daysUntil}`}
                         </span>
                       </div>
                     );
@@ -906,19 +1037,29 @@ export default function UserDetailPage() {
             <div className={styles.infoCard}>
               <h3 className={styles.cardTitle}>가족 구성원</h3>
               {familyMembers.length === 0 ? (
-                <p className={styles.emptyText}>등록된 가족 구성원이 없습니다.</p>
+                <p className={styles.emptyText}>
+                  등록된 가족 구성원이 없습니다.
+                </p>
               ) : (
                 <div className={styles.familyList}>
                   {familyMembers.map((member) => (
                     <div key={member.id} className={styles.familyItem}>
                       <span className={styles.familyRelation}>
-                        {member.relation === "spouse" ? "배우자" :
-                         member.relation === "child" ? "자녀" :
-                         member.relation === "parent" ? "부모" : member.relation}
+                        {member.relation === "spouse"
+                          ? "배우자"
+                          : member.relation === "child"
+                            ? "자녀"
+                            : member.relation === "parent"
+                              ? "부모"
+                              : member.relation}
                       </span>
-                      <span className={styles.familyName}>{member.name || "-"}</span>
+                      <span className={styles.familyName}>
+                        {member.name || "-"}
+                      </span>
                       <span className={styles.familyAge}>
-                        {member.birth_date ? `${calculateAge(member.birth_date)}세` : "-"}
+                        {member.birth_date
+                          ? `${calculateAge(member.birth_date)}세`
+                          : "-"}
                       </span>
                     </div>
                   ))}
@@ -930,12 +1071,28 @@ export default function UserDetailPage() {
             {(() => {
               const currentYear = new Date().getFullYear();
               const currentMonth = new Date().getMonth() + 1;
-              const months = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
+              const months = [
+                "1월",
+                "2월",
+                "3월",
+                "4월",
+                "5월",
+                "6월",
+                "7월",
+                "8월",
+                "9월",
+                "10월",
+                "11월",
+                "12월",
+              ];
 
               // 각 상담별 해당 월 계산
-              const getConsultationMonths = (periodMonths: number | null): number[] => {
+              const getConsultationMonths = (
+                periodMonths: number | null,
+              ): number[] => {
                 if (periodMonths === null) return []; // 상시
-                if (periodMonths === 1) return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // 매월
+                if (periodMonths === 1)
+                  return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // 매월
                 if (periodMonths === 3) return [3, 6, 9, 12]; // 분기
                 if (periodMonths === 6) return [6, 12]; // 반기
                 if (periodMonths === 12) return [12]; // 매년
@@ -946,28 +1103,35 @@ export default function UserDetailPage() {
               // 완료된 상담 월별 확인
               const getCompletedMonths = (typeId: string): number[] => {
                 return consultationRecords
-                  .filter((r) =>
-                    r.consultation_type === typeId &&
-                    r.status === "completed" &&
-                    new Date(r.scheduled_date).getFullYear() === currentYear
+                  .filter(
+                    (r) =>
+                      r.consultation_type === typeId &&
+                      r.status === "completed" &&
+                      new Date(r.scheduled_date).getFullYear() === currentYear,
                   )
                   .map((r) => new Date(r.scheduled_date).getMonth() + 1);
               };
 
               // 정기 상담만 표시
-              const requiredConsultations = CONSULTATION_TYPES.filter((t) => t.isRequired);
+              const requiredConsultations = CONSULTATION_TYPES.filter(
+                (t) => t.isRequired,
+              );
 
               return (
                 <div className={styles.infoCard}>
                   <div className={styles.scheduleHeader}>
-                    <h3 className={styles.cardTitle}>{currentYear}년 상담 스케줄</h3>
+                    <h3 className={styles.cardTitle}>
+                      {currentYear}년 상담 스케줄
+                    </h3>
                     <span className={styles.scheduleNote}>정기 상담 기준</span>
                   </div>
 
                   {/* 월 헤더 */}
                   <div className={styles.scheduleGrid}>
                     <div className={styles.scheduleRowHeader}>
-                      <span className={styles.scheduleLabelHeader}>상담 종류</span>
+                      <span className={styles.scheduleLabelHeader}>
+                        상담 종류
+                      </span>
                       {months.map((m, idx) => (
                         <span
                           key={m}
@@ -980,11 +1144,18 @@ export default function UserDetailPage() {
 
                     {/* 각 상담별 행 */}
                     {requiredConsultations.map((consultation) => {
-                      const dueMonths = getConsultationMonths(consultation.periodMonths);
-                      const completedMonths = getCompletedMonths(consultation.id);
+                      const dueMonths = getConsultationMonths(
+                        consultation.periodMonths,
+                      );
+                      const completedMonths = getCompletedMonths(
+                        consultation.id,
+                      );
 
                       return (
-                        <div key={consultation.id} className={styles.scheduleRow}>
+                        <div
+                          key={consultation.id}
+                          className={styles.scheduleRow}
+                        >
                           <span className={styles.scheduleLabel}>
                             {consultation.name.length > 12
                               ? consultation.name.substring(0, 12) + "..."
@@ -999,16 +1170,25 @@ export default function UserDetailPage() {
                               <button
                                 key={month}
                                 type="button"
-                                onClick={() => isDue && handleScheduleCellClick(consultation.id, month, currentYear)}
+                                onClick={() =>
+                                  isDue &&
+                                  handleScheduleCellClick(
+                                    consultation.id,
+                                    month,
+                                    currentYear,
+                                  )
+                                }
                                 className={`${styles.scheduleCell} ${isDue ? styles.clickable : ""}`}
                               >
-                                {isDue && (
-                                  isCompleted ? (
+                                {isDue &&
+                                  (isCompleted ? (
                                     <span className={styles.checkMark} />
                                   ) : (
-                                    <span className={styles.dotMark} style={{ background: consultation.color }} />
-                                  )
-                                )}
+                                    <span
+                                      className={styles.dotMark}
+                                      style={{ background: consultation.color }}
+                                    />
+                                  ))}
                               </button>
                             );
                           })}
@@ -1056,7 +1236,9 @@ export default function UserDetailPage() {
                   <div
                     key={message.id}
                     className={`${styles.chatMessage} ${
-                      message.sender_type === "expert" ? styles.sent : styles.received
+                      message.sender_type === "expert"
+                        ? styles.sent
+                        : styles.received
                     }`}
                   >
                     <div className={styles.chatBubble}>
@@ -1140,7 +1322,10 @@ export default function UserDetailPage() {
                 {/* 자산 요약 카드들 */}
                 <div className={styles.assetSummaryGrid}>
                   <div className={styles.assetSummaryCard}>
-                    <div className={styles.assetSummaryIcon} style={{ background: "#e6f2ff" }}>
+                    <div
+                      className={styles.assetSummaryIcon}
+                      style={{ background: "#e6f2ff" }}
+                    >
                       <TrendingUp size={20} color="#007aff" />
                     </div>
                     <div className={styles.assetSummaryInfo}>
@@ -1149,7 +1334,10 @@ export default function UserDetailPage() {
                     </div>
                   </div>
                   <div className={styles.assetSummaryCard}>
-                    <div className={styles.assetSummaryIcon} style={{ background: "#fef3c7" }}>
+                    <div
+                      className={styles.assetSummaryIcon}
+                      style={{ background: "#fef3c7" }}
+                    >
                       <Home size={20} color="#d97706" />
                     </div>
                     <div className={styles.assetSummaryInfo}>
@@ -1158,16 +1346,24 @@ export default function UserDetailPage() {
                     </div>
                   </div>
                   <div className={styles.assetSummaryCard}>
-                    <div className={styles.assetSummaryIcon} style={{ background: "#d1fae5" }}>
+                    <div
+                      className={styles.assetSummaryIcon}
+                      style={{ background: "#d1fae5" }}
+                    >
                       <Banknote size={20} color="#059669" />
                     </div>
                     <div className={styles.assetSummaryInfo}>
-                      <span className={styles.assetSummaryLabel}>금융 자산</span>
+                      <span className={styles.assetSummaryLabel}>
+                        금융 자산
+                      </span>
                       <span className={styles.assetSummaryValue}>-</span>
                     </div>
                   </div>
                   <div className={styles.assetSummaryCard}>
-                    <div className={styles.assetSummaryIcon} style={{ background: "#fee2e2" }}>
+                    <div
+                      className={styles.assetSummaryIcon}
+                      style={{ background: "#fee2e2" }}
+                    >
                       <CreditCard size={20} color="#dc2626" />
                     </div>
                     <div className={styles.assetSummaryInfo}>
@@ -1182,7 +1378,9 @@ export default function UserDetailPage() {
                   <h3 className={styles.cardTitle}>자산 구성</h3>
                   <div className={styles.chartPlaceholder}>
                     <PieChart size={48} color="#ccc" />
-                    <p>고객의 재무 데이터를 입력하면 자산 구성 차트가 표시됩니다</p>
+                    <p>
+                      고객의 재무 데이터를 입력하면 자산 구성 차트가 표시됩니다
+                    </p>
                   </div>
                 </div>
 
@@ -1214,12 +1412,22 @@ export default function UserDetailPage() {
                 <div className={styles.budgetSummary}>
                   <div className={styles.budgetSummaryItem}>
                     <span className={styles.budgetSummaryLabel}>소득</span>
-                    <span className={styles.budgetSummaryValue} style={{ color: "#007aff" }}>0원</span>
+                    <span
+                      className={styles.budgetSummaryValue}
+                      style={{ color: "#007aff" }}
+                    >
+                      0원
+                    </span>
                   </div>
                   <div className={styles.budgetSummaryDivider}>-</div>
                   <div className={styles.budgetSummaryItem}>
                     <span className={styles.budgetSummaryLabel}>지출</span>
-                    <span className={styles.budgetSummaryValue} style={{ color: "#ff3b30" }}>0원</span>
+                    <span
+                      className={styles.budgetSummaryValue}
+                      style={{ color: "#ff3b30" }}
+                    >
+                      0원
+                    </span>
                   </div>
                   <div className={styles.budgetSummaryDivider}>=</div>
                   <div className={styles.budgetSummaryItem}>
@@ -1268,7 +1476,9 @@ export default function UserDetailPage() {
               <div className={styles.consultationGroupCard}>
                 <div className={styles.consultationGroupHeader}>
                   <h3 className={styles.cardTitle}>정기 상담</h3>
-                  <span className={styles.consultationGroupBadge}>구독 필수</span>
+                  <span className={styles.consultationGroupBadge}>
+                    구독 필수
+                  </span>
                 </div>
                 <div className={styles.consultationList}>
                   {requiredTypes.map((type) => (
@@ -1277,9 +1487,16 @@ export default function UserDetailPage() {
                       className={styles.consultationItem}
                       onClick={() => setSelectedConsultation(type.id)}
                     >
-                      <span className={styles.consultationItemName}>{type.name}</span>
-                      <span className={styles.consultationItemPeriod}>{type.period}</span>
-                      <ChevronRight size={16} className={styles.consultationItemArrow} />
+                      <span className={styles.consultationItemName}>
+                        {type.name}
+                      </span>
+                      <span className={styles.consultationItemPeriod}>
+                        {type.period}
+                      </span>
+                      <ChevronRight
+                        size={16}
+                        className={styles.consultationItemArrow}
+                      />
                     </button>
                   ))}
                 </div>
@@ -1289,7 +1506,9 @@ export default function UserDetailPage() {
               <div className={styles.consultationGroupCard}>
                 <div className={styles.consultationGroupHeader}>
                   <h3 className={styles.cardTitle}>상시 상담</h3>
-                  <span className={styles.consultationGroupBadgeOptional}>필요시</span>
+                  <span className={styles.consultationGroupBadgeOptional}>
+                    필요시
+                  </span>
                 </div>
                 <div className={styles.consultationList}>
                   {optionalTypes.map((type) => (
@@ -1298,8 +1517,13 @@ export default function UserDetailPage() {
                       className={styles.consultationItem}
                       onClick={() => setSelectedConsultation(type.id)}
                     >
-                      <span className={styles.consultationItemName}>{type.name}</span>
-                      <ChevronRight size={16} className={styles.consultationItemArrow} />
+                      <span className={styles.consultationItemName}>
+                        {type.name}
+                      </span>
+                      <ChevronRight
+                        size={16}
+                        className={styles.consultationItemArrow}
+                      />
                     </button>
                   ))}
                 </div>
@@ -1309,7 +1533,9 @@ export default function UserDetailPage() {
         }
 
         // 상담 종류 선택 후 - 노트 섹션 표시
-        const selectedType = CONSULTATION_TYPES.find((t) => t.id === selectedConsultation);
+        const selectedType = CONSULTATION_TYPES.find(
+          (t) => t.id === selectedConsultation,
+        );
         const SelectedIcon = selectedType?.icon || ClipboardCheck;
 
         // Get birth year from profile
@@ -1329,7 +1555,10 @@ export default function UserDetailPage() {
               </button>
               <div
                 className={styles.consultationTypeLabel}
-                style={{ background: `${selectedType?.color}15`, color: selectedType?.color }}
+                style={{
+                  background: `${selectedType?.color}15`,
+                  color: selectedType?.color,
+                }}
               >
                 <SelectedIcon size={18} />
                 <span>{selectedType?.name}</span>
@@ -1343,7 +1572,9 @@ export default function UserDetailPage() {
                   retirementAge={profile.target_retirement_age}
                 />
               ) : (
-                expertId && <NotesSection profileId={userId} expertId={expertId} />
+                expertId && (
+                  <NotesSection profileId={userId} expertId={expertId} />
+                )
               )}
             </div>
           </div>
@@ -1363,8 +1594,12 @@ export default function UserDetailPage() {
                     <PieChart size={24} />
                   </div>
                   <div className={styles.scenarioInfo}>
-                    <span className={styles.scenarioName}>순자산 시뮬레이션</span>
-                    <span className={styles.scenarioSub}>연도별 순자산 변화 추이</span>
+                    <span className={styles.scenarioName}>
+                      순자산 시뮬레이션
+                    </span>
+                    <span className={styles.scenarioSub}>
+                      연도별 순자산 변화 추이
+                    </span>
                   </div>
                 </button>
                 <button className={styles.scenarioItem}>
@@ -1372,8 +1607,12 @@ export default function UserDetailPage() {
                     <Target size={24} />
                   </div>
                   <div className={styles.scenarioInfo}>
-                    <span className={styles.scenarioName}>현금흐름 시뮬레이션</span>
-                    <span className={styles.scenarioSub}>연도별 수입/지출 흐름</span>
+                    <span className={styles.scenarioName}>
+                      현금흐름 시뮬레이션
+                    </span>
+                    <span className={styles.scenarioSub}>
+                      연도별 수입/지출 흐름
+                    </span>
                   </div>
                 </button>
               </div>
@@ -1393,11 +1632,23 @@ export default function UserDetailPage() {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>{profile.name}</h1>
-          <span className={`${styles.stageBadge} ${styles[profile.customer_stage || "new"]}`}>
+          <span
+            className={`${styles.stageBadge} ${styles[profile.customer_stage || "new"]}`}
+          >
             {STAGE_LABELS[profile.customer_stage] || "신규"}
           </span>
         </div>
         <div className={styles.headerRight}>
+          {/* SMS 발송 버튼 */}
+          <button
+            className={styles.smsButton}
+            onClick={() => setShowSmsModal(true)}
+            disabled={!profile.phone_number}
+          >
+            <Send size={16} />
+            예약 안내 문자
+          </button>
+
           {/* 더보기 드롭다운 */}
           <div className={styles.dropdownContainer}>
             <button
@@ -1464,20 +1715,23 @@ export default function UserDetailPage() {
       </div>
 
       {/* 콘텐츠 */}
-      <div className={styles.content}>
-        {renderContent()}
-      </div>
+      <div className={styles.content}>{renderContent()}</div>
 
       {/* 담당 제외 확인 모달 */}
       {showRemoveModal && (
-        <div className={styles.modalBackdrop} onClick={() => setShowRemoveModal(false)}>
+        <div
+          className={styles.modalBackdrop}
+          onClick={() => setShowRemoveModal(false)}
+        >
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3 className={styles.modalTitle}>담당 제외</h3>
             <p className={styles.modalText}>
-              <strong>{profile.name}</strong> 님을 담당 고객에서 제외하시겠습니까?
+              <strong>{profile.name}</strong> 님을 담당 고객에서
+              제외하시겠습니까?
             </p>
             <p className={styles.modalSubtext}>
-              제외해도 고객 정보는 삭제되지 않으며, 나중에 다시 담당 설정할 수 있습니다.
+              제외해도 고객 정보는 삭제되지 않으며, 나중에 다시 담당 설정할 수
+              있습니다.
             </p>
             <div className={styles.modalActions}>
               <button
@@ -1509,8 +1763,14 @@ export default function UserDetailPage() {
 
       {/* 가이드 클릭 상세 모달 */}
       {showGuideClicksModal && (
-        <div className={styles.modalBackdrop} onClick={() => setShowGuideClicksModal(false)}>
-          <div className={styles.guideClicksModal} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={styles.modalBackdrop}
+          onClick={() => setShowGuideClicksModal(false)}
+        >
+          <div
+            className={styles.guideClicksModal}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className={styles.modalTitle}>가이드 열람 내역</h3>
             <div className={styles.guideClicksList}>
               {(() => {
@@ -1534,8 +1794,16 @@ export default function UserDetailPage() {
                   const count = data?.count || 0;
                   return (
                     <div key={categoryId} className={styles.guideClickItem}>
-                      <span className={styles.guideClickName}>{GUIDE_LABELS[categoryId]}</span>
-                      <span className={count > 0 ? styles.guideClickCount : styles.guideClickCountZero}>
+                      <span className={styles.guideClickName}>
+                        {GUIDE_LABELS[categoryId]}
+                      </span>
+                      <span
+                        className={
+                          count > 0
+                            ? styles.guideClickCount
+                            : styles.guideClickCountZero
+                        }
+                      >
                         {count}회
                       </span>
                     </div>
@@ -1555,70 +1823,113 @@ export default function UserDetailPage() {
 
       {/* 입력해두기 상세 모달 */}
       {showPrepDataModal && (
-        <div className={styles.modalBackdrop} onClick={() => setShowPrepDataModal(false)}>
-          <div className={styles.prepDataModal} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={styles.modalBackdrop}
+          onClick={() => setShowPrepDataModal(false)}
+        >
+          <div
+            className={styles.prepDataModal}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className={styles.modalTitle}>입력해두기 내역</h3>
             <div className={styles.prepDataContent}>
               {(() => {
                 const prepData = profile.prep_data || {};
                 const formatMoney = (amount: number) => {
                   if (!amount) return "-";
-                  if (amount >= 10000) return `${Math.floor(amount / 10000)}억 ${amount % 10000 > 0 ? (amount % 10000).toLocaleString() + "만" : ""}`;
+                  if (amount >= 10000)
+                    return `${Math.floor(amount / 10000)}억 ${amount % 10000 > 0 ? (amount % 10000).toLocaleString() + "만" : ""}`;
                   return `${amount.toLocaleString()}만원`;
                 };
 
                 const housingTypeLabel = (type: string) => {
-                  const labels: Record<string, string> = { "자가": "자가", "전세": "전세", "월세": "월세", "무상": "무상" };
+                  const labels: Record<string, string> = {
+                    자가: "자가",
+                    전세: "전세",
+                    월세: "월세",
+                    무상: "무상",
+                  };
                   return labels[type] || type;
                 };
 
                 const relationLabel = (rel: string) => {
-                  const labels: Record<string, string> = { spouse: "배우자", child: "자녀", parent: "부모" };
+                  const labels: Record<string, string> = {
+                    spouse: "배우자",
+                    child: "자녀",
+                    parent: "부모",
+                  };
                   return labels[rel] || rel;
                 };
 
                 const savingsTypeLabel = (type: string) => {
-                  const labels: Record<string, string> = { checking: "입출금", savings: "적금", deposit: "예금" };
+                  const labels: Record<string, string> = {
+                    checking: "입출금",
+                    savings: "적금",
+                    deposit: "예금",
+                  };
                   return labels[type] || type;
                 };
 
                 const debtTypeLabel = (type: string) => {
-                  const labels: Record<string, string> = { mortgage: "주담대", jeonse: "전세대출", credit: "신용대출", other: "기타" };
+                  const labels: Record<string, string> = {
+                    mortgage: "주담대",
+                    jeonse: "전세대출",
+                    credit: "신용대출",
+                    other: "기타",
+                  };
                   return labels[type] || type;
                 };
 
                 const pensionTypeLabel = (type: string) => {
-                  const labels: Record<string, string> = { national: "국민연금", government: "공무원연금", military: "군인연금", private_school: "사학연금" };
+                  const labels: Record<string, string> = {
+                    national: "국민연금",
+                    government: "공무원연금",
+                    military: "군인연금",
+                    private_school: "사학연금",
+                  };
                   return labels[type] || type;
                 };
 
                 const retirementTypeLabel = (type: string) => {
-                  const labels: Record<string, string> = { db: "DB형(퇴직금)", dc: "DC형", none: "없음" };
+                  const labels: Record<string, string> = {
+                    db: "DB형(퇴직금)",
+                    dc: "DC형",
+                    none: "없음",
+                  };
                   return labels[type] || type;
                 };
 
                 const personalPensionTypeLabel = (type: string) => {
-                  const labels: Record<string, string> = { pension_savings: "연금저축", irp: "IRP" };
+                  const labels: Record<string, string> = {
+                    pension_savings: "연금저축",
+                    irp: "IRP",
+                  };
                   return labels[type] || type;
                 };
 
                 // 각 카테고리별 데이터 유무 확인
                 const hasFamily = prepData.family?.length > 0;
-                const hasIncome = prepData.income?.length > 0;
+                const hasIncome =
+                  prepData.income &&
+                  (prepData.income.selfLaborIncome > 0 ||
+                    prepData.income.spouseLaborIncome > 0 ||
+                    prepData.income.additionalIncomes?.length > 0);
                 const hasExpense = prepData.expense;
                 const hasHousing = prepData.housing;
                 const hasSavings = prepData.savings?.length > 0;
-                const hasInvestment = prepData.investment && (
-                  prepData.investment.securities?.balance > 0 ||
-                  prepData.investment.crypto?.balance > 0 ||
-                  prepData.investment.gold?.balance > 0
-                );
+                const hasInvestment =
+                  prepData.investment &&
+                  (prepData.investment.securities?.balance > 0 ||
+                    prepData.investment.crypto?.balance > 0 ||
+                    prepData.investment.gold?.balance > 0);
                 const hasDebt = prepData.debt?.length > 0;
                 const hasNationalPension = prepData.nationalPension;
-                const hasRetirementPension = prepData.retirementPension && (
-                  (prepData.retirementPension.selfType && prepData.retirementPension.selfType !== "none") ||
-                  (prepData.retirementPension.spouseType && prepData.retirementPension.spouseType !== "none")
-                );
+                const hasRetirementPension =
+                  prepData.retirementPension &&
+                  ((prepData.retirementPension.selfType &&
+                    prepData.retirementPension.selfType !== "none") ||
+                    (prepData.retirementPension.spouseType &&
+                      prepData.retirementPension.spouseType !== "none"));
                 const hasPersonalPension = prepData.personalPension?.length > 0;
 
                 return (
@@ -1630,7 +1941,17 @@ export default function UserDetailPage() {
                         prepData.family.map((member: any, idx: number) => (
                           <div key={idx} className={styles.prepItem}>
                             <span>{relationLabel(member.relationship)}</span>
-                            <span>{member.name}{member.birth_date ? ` (${member.birth_date.substring(0, 4)}년생)` : ""}</span>
+                            <span>
+                              {member.name}
+                              {member.birth_date
+                                ? ` (${member.birth_date})`
+                                : ""}
+                              {member.gender === "male"
+                                ? " 남"
+                                : member.gender === "female"
+                                  ? " 여"
+                                  : ""}
+                            </span>
                           </div>
                         ))
                       ) : (
@@ -1642,12 +1963,46 @@ export default function UserDetailPage() {
                     <div className={styles.prepSection}>
                       <h4 className={styles.prepSectionTitle}>소득</h4>
                       {hasIncome ? (
-                        prepData.income.map((item: any, idx: number) => (
-                          <div key={idx} className={styles.prepItem}>
-                            <span>{item.owner === "self" ? "본인" : "배우자"} - {item.title || item.type}</span>
-                            <span>{formatMoney(item.amount)}{item.frequency === "monthly" ? "/월" : "/년"}</span>
-                          </div>
-                        ))
+                        <>
+                          {prepData.income.selfLaborIncome > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>본인 근로소득</span>
+                              <span>
+                                {formatMoney(prepData.income.selfLaborIncome)}
+                                {prepData.income.selfLaborFrequency ===
+                                "monthly"
+                                  ? "/월"
+                                  : "/년"}
+                              </span>
+                            </div>
+                          )}
+                          {prepData.income.spouseLaborIncome > 0 && (
+                            <div className={styles.prepItem}>
+                              <span>배우자 근로소득</span>
+                              <span>
+                                {formatMoney(prepData.income.spouseLaborIncome)}
+                                {prepData.income.spouseLaborFrequency ===
+                                "monthly"
+                                  ? "/월"
+                                  : "/년"}
+                              </span>
+                            </div>
+                          )}
+                          {prepData.income.additionalIncomes?.map(
+                            (item: any, idx: number) => (
+                              <div key={idx} className={styles.prepItem}>
+                                <span>
+                                  {item.owner === "self" ? "본인" : "배우자"} -{" "}
+                                  {item.title || item.type}
+                                </span>
+                                <span>
+                                  {formatMoney(item.amount)}
+                                  {item.frequency === "monthly" ? "/월" : "/년"}
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </>
                       ) : (
                         <div className={styles.prepItemEmpty}>입력 안함</div>
                       )}
@@ -1661,15 +2016,89 @@ export default function UserDetailPage() {
                           {prepData.expense.livingExpense > 0 && (
                             <div className={styles.prepItem}>
                               <span>생활비</span>
-                              <span>{formatMoney(prepData.expense.livingExpense)}/월</span>
+                              <span>
+                                {formatMoney(prepData.expense.livingExpense)}/월
+                              </span>
                             </div>
                           )}
-                          {prepData.expense.fixedExpenses?.map((item: any, idx: number) => (
-                            <div key={`fixed-${idx}`} className={styles.prepItem}>
-                              <span>{item.title || item.type}</span>
-                              <span>{formatMoney(item.amount)}{item.frequency === "monthly" ? "/월" : "/년"}</span>
-                            </div>
-                          ))}
+                          {prepData.expense.livingExpenseDetails && (
+                            <>
+                              {prepData.expense.livingExpenseDetails.food >
+                                0 && (
+                                <div className={styles.prepItem}>
+                                  <span>- 식비</span>
+                                  <span>
+                                    {formatMoney(
+                                      prepData.expense.livingExpenseDetails
+                                        .food,
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                              {prepData.expense.livingExpenseDetails.transport >
+                                0 && (
+                                <div className={styles.prepItem}>
+                                  <span>- 교통비</span>
+                                  <span>
+                                    {formatMoney(
+                                      prepData.expense.livingExpenseDetails
+                                        .transport,
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                              {prepData.expense.livingExpenseDetails.shopping >
+                                0 && (
+                                <div className={styles.prepItem}>
+                                  <span>- 쇼핑</span>
+                                  <span>
+                                    {formatMoney(
+                                      prepData.expense.livingExpenseDetails
+                                        .shopping,
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                              {prepData.expense.livingExpenseDetails.leisure >
+                                0 && (
+                                <div className={styles.prepItem}>
+                                  <span>- 여가</span>
+                                  <span>
+                                    {formatMoney(
+                                      prepData.expense.livingExpenseDetails
+                                        .leisure,
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                              {prepData.expense.livingExpenseDetails.other >
+                                0 && (
+                                <div className={styles.prepItem}>
+                                  <span>- 기타</span>
+                                  <span>
+                                    {formatMoney(
+                                      prepData.expense.livingExpenseDetails
+                                        .other,
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {prepData.expense.fixedExpenses?.map(
+                            (item: any, idx: number) => (
+                              <div
+                                key={`fixed-${idx}`}
+                                className={styles.prepItem}
+                              >
+                                <span>{item.title || item.type}</span>
+                                <span>
+                                  {formatMoney(item.amount)}
+                                  {item.frequency === "monthly" ? "/월" : "/년"}
+                                </span>
+                              </div>
+                            ),
+                          )}
                         </>
                       ) : (
                         <div className={styles.prepItemEmpty}>입력 안함</div>
@@ -1683,38 +2112,61 @@ export default function UserDetailPage() {
                         <>
                           <div className={styles.prepItem}>
                             <span>거주 형태</span>
-                            <span>{housingTypeLabel(prepData.housing.housingType)}</span>
+                            <span>
+                              {housingTypeLabel(prepData.housing.housingType)}
+                            </span>
                           </div>
-                          {prepData.housing.housingType === "자가" && prepData.housing.currentValue > 0 && (
-                            <div className={styles.prepItem}>
-                              <span>시세</span>
-                              <span>{formatMoney(prepData.housing.currentValue)}</span>
-                            </div>
-                          )}
-                          {(prepData.housing.housingType === "전세" || prepData.housing.housingType === "월세") && prepData.housing.deposit > 0 && (
-                            <div className={styles.prepItem}>
-                              <span>보증금</span>
-                              <span>{formatMoney(prepData.housing.deposit)}</span>
-                            </div>
-                          )}
-                          {prepData.housing.housingType === "월세" && prepData.housing.monthlyRent > 0 && (
-                            <div className={styles.prepItem}>
-                              <span>월세</span>
-                              <span>{formatMoney(prepData.housing.monthlyRent)}/월</span>
-                            </div>
-                          )}
+                          {prepData.housing.housingType === "자가" &&
+                            prepData.housing.currentValue > 0 && (
+                              <div className={styles.prepItem}>
+                                <span>시세</span>
+                                <span>
+                                  {formatMoney(prepData.housing.currentValue)}
+                                </span>
+                              </div>
+                            )}
+                          {(prepData.housing.housingType === "전세" ||
+                            prepData.housing.housingType === "월세") &&
+                            prepData.housing.deposit > 0 && (
+                              <div className={styles.prepItem}>
+                                <span>보증금</span>
+                                <span>
+                                  {formatMoney(prepData.housing.deposit)}
+                                </span>
+                              </div>
+                            )}
+                          {prepData.housing.housingType === "월세" &&
+                            prepData.housing.monthlyRent > 0 && (
+                              <div className={styles.prepItem}>
+                                <span>월세</span>
+                                <span>
+                                  {formatMoney(prepData.housing.monthlyRent)}/월
+                                </span>
+                              </div>
+                            )}
                           {prepData.housing.maintenanceFee > 0 && (
                             <div className={styles.prepItem}>
                               <span>관리비</span>
-                              <span>{formatMoney(prepData.housing.maintenanceFee)}/월</span>
+                              <span>
+                                {formatMoney(prepData.housing.maintenanceFee)}
+                                /월
+                              </span>
                             </div>
                           )}
-                          {prepData.housing.hasLoan && prepData.housing.loanAmount > 0 && (
-                            <div className={styles.prepItem}>
-                              <span>{prepData.housing.loanType === "mortgage" ? "주담대" : "전세대출"}</span>
-                              <span>{formatMoney(prepData.housing.loanAmount)} ({prepData.housing.loanRate}%)</span>
-                            </div>
-                          )}
+                          {prepData.housing.hasLoan &&
+                            prepData.housing.loanAmount > 0 && (
+                              <div className={styles.prepItem}>
+                                <span>
+                                  {prepData.housing.loanType === "mortgage"
+                                    ? "주담대"
+                                    : "전세대출"}
+                                </span>
+                                <span>
+                                  {formatMoney(prepData.housing.loanAmount)} (
+                                  {prepData.housing.loanRate}%)
+                                </span>
+                              </div>
+                            )}
                         </>
                       ) : (
                         <div className={styles.prepItemEmpty}>입력 안함</div>
@@ -1727,7 +2179,9 @@ export default function UserDetailPage() {
                       {hasSavings ? (
                         prepData.savings.map((item: any, idx: number) => (
                           <div key={idx} className={styles.prepItem}>
-                            <span>{item.title || savingsTypeLabel(item.type)}</span>
+                            <span>
+                              {item.title || savingsTypeLabel(item.type)}
+                            </span>
                             <span>{formatMoney(item.currentBalance)}</span>
                           </div>
                         ))
@@ -1743,20 +2197,46 @@ export default function UserDetailPage() {
                         <>
                           {prepData.investment.securities?.balance > 0 && (
                             <div className={styles.prepItem}>
-                              <span>증권</span>
-                              <span>{formatMoney(prepData.investment.securities.balance)}</span>
+                              <span>
+                                증권
+                                {prepData.investment.securities.investmentTypes
+                                  ?.length > 0 &&
+                                  ` (${prepData.investment.securities.investmentTypes
+                                    .map((t: string) => {
+                                      const labels: Record<string, string> = {
+                                        domestic_stock: "국내주식",
+                                        foreign_stock: "해외주식",
+                                        fund: "펀드",
+                                        etf: "ETF",
+                                        bond: "채권",
+                                      };
+                                      return labels[t] || t;
+                                    })
+                                    .join(", ")})`}
+                              </span>
+                              <span>
+                                {formatMoney(
+                                  prepData.investment.securities.balance,
+                                )}
+                              </span>
                             </div>
                           )}
                           {prepData.investment.crypto?.balance > 0 && (
                             <div className={styles.prepItem}>
                               <span>코인</span>
-                              <span>{formatMoney(prepData.investment.crypto.balance)}</span>
+                              <span>
+                                {formatMoney(
+                                  prepData.investment.crypto.balance,
+                                )}
+                              </span>
                             </div>
                           )}
                           {prepData.investment.gold?.balance > 0 && (
                             <div className={styles.prepItem}>
                               <span>금</span>
-                              <span>{formatMoney(prepData.investment.gold.balance)}</span>
+                              <span>
+                                {formatMoney(prepData.investment.gold.balance)}
+                              </span>
                             </div>
                           )}
                         </>
@@ -1771,8 +2251,15 @@ export default function UserDetailPage() {
                       {hasDebt ? (
                         prepData.debt.map((item: any, idx: number) => (
                           <div key={idx} className={styles.prepItem}>
-                            <span>{item.title || debtTypeLabel(item.type)}</span>
-                            <span>{formatMoney(item.currentBalance || item.principal)} ({item.interestRate}%)</span>
+                            <span>
+                              {item.title || debtTypeLabel(item.type)}
+                            </span>
+                            <span>
+                              {formatMoney(
+                                item.currentBalance || item.principal,
+                              )}{" "}
+                              ({item.interestRate}%)
+                            </span>
                           </div>
                         ))
                       ) : (
@@ -1787,14 +2274,37 @@ export default function UserDetailPage() {
                         <>
                           {prepData.nationalPension.selfExpectedAmount > 0 && (
                             <div className={styles.prepItem}>
-                              <span>본인 ({pensionTypeLabel(prepData.nationalPension.selfType)})</span>
-                              <span>{formatMoney(prepData.nationalPension.selfExpectedAmount)}/월</span>
+                              <span>
+                                본인 (
+                                {pensionTypeLabel(
+                                  prepData.nationalPension.selfType,
+                                )}
+                                )
+                              </span>
+                              <span>
+                                {formatMoney(
+                                  prepData.nationalPension.selfExpectedAmount,
+                                )}
+                                /월
+                              </span>
                             </div>
                           )}
-                          {prepData.nationalPension.spouseExpectedAmount > 0 && (
+                          {prepData.nationalPension.spouseExpectedAmount >
+                            0 && (
                             <div className={styles.prepItem}>
-                              <span>배우자 ({pensionTypeLabel(prepData.nationalPension.spouseType)})</span>
-                              <span>{formatMoney(prepData.nationalPension.spouseExpectedAmount)}/월</span>
+                              <span>
+                                배우자 (
+                                {pensionTypeLabel(
+                                  prepData.nationalPension.spouseType,
+                                )}
+                                )
+                              </span>
+                              <span>
+                                {formatMoney(
+                                  prepData.nationalPension.spouseExpectedAmount,
+                                )}
+                                /월
+                              </span>
                             </div>
                           )}
                         </>
@@ -1808,26 +2318,47 @@ export default function UserDetailPage() {
                       <h4 className={styles.prepSectionTitle}>퇴직연금</h4>
                       {hasRetirementPension ? (
                         <>
-                          {prepData.retirementPension.selfType && prepData.retirementPension.selfType !== "none" && (
-                            <div className={styles.prepItem}>
-                              <span>본인 ({retirementTypeLabel(prepData.retirementPension.selfType)})</span>
-                              <span>
-                                {prepData.retirementPension.selfType === "db"
-                                  ? `근속 ${prepData.retirementPension.selfYearsWorked}년`
-                                  : formatMoney(prepData.retirementPension.selfBalance)}
-                              </span>
-                            </div>
-                          )}
-                          {prepData.retirementPension.spouseType && prepData.retirementPension.spouseType !== "none" && (
-                            <div className={styles.prepItem}>
-                              <span>배우자 ({retirementTypeLabel(prepData.retirementPension.spouseType)})</span>
-                              <span>
-                                {prepData.retirementPension.spouseType === "db"
-                                  ? `근속 ${prepData.retirementPension.spouseYearsWorked}년`
-                                  : formatMoney(prepData.retirementPension.spouseBalance)}
-                              </span>
-                            </div>
-                          )}
+                          {prepData.retirementPension.selfType &&
+                            prepData.retirementPension.selfType !== "none" && (
+                              <div className={styles.prepItem}>
+                                <span>
+                                  본인 (
+                                  {retirementTypeLabel(
+                                    prepData.retirementPension.selfType,
+                                  )}
+                                  )
+                                </span>
+                                <span>
+                                  {prepData.retirementPension.selfType === "db"
+                                    ? `근속 ${prepData.retirementPension.selfYearsWorked}년`
+                                    : formatMoney(
+                                        prepData.retirementPension.selfBalance,
+                                      )}
+                                </span>
+                              </div>
+                            )}
+                          {prepData.retirementPension.spouseType &&
+                            prepData.retirementPension.spouseType !==
+                              "none" && (
+                              <div className={styles.prepItem}>
+                                <span>
+                                  배우자 (
+                                  {retirementTypeLabel(
+                                    prepData.retirementPension.spouseType,
+                                  )}
+                                  )
+                                </span>
+                                <span>
+                                  {prepData.retirementPension.spouseType ===
+                                  "db"
+                                    ? `근속 ${prepData.retirementPension.spouseYearsWorked}년`
+                                    : formatMoney(
+                                        prepData.retirementPension
+                                          .spouseBalance,
+                                      )}
+                                </span>
+                              </div>
+                            )}
                         </>
                       ) : (
                         <div className={styles.prepItemEmpty}>입력 안함</div>
@@ -1838,12 +2369,17 @@ export default function UserDetailPage() {
                     <div className={styles.prepSection}>
                       <h4 className={styles.prepSectionTitle}>개인연금</h4>
                       {hasPersonalPension ? (
-                        prepData.personalPension.map((item: any, idx: number) => (
-                          <div key={idx} className={styles.prepItem}>
-                            <span>{item.owner === "self" ? "본인" : "배우자"} - {personalPensionTypeLabel(item.type)}</span>
-                            <span>{formatMoney(item.balance)}</span>
-                          </div>
-                        ))
+                        prepData.personalPension.map(
+                          (item: any, idx: number) => (
+                            <div key={idx} className={styles.prepItem}>
+                              <span>
+                                {item.owner === "self" ? "본인" : "배우자"} -{" "}
+                                {personalPensionTypeLabel(item.type)}
+                              </span>
+                              <span>{formatMoney(item.balance)}</span>
+                            </div>
+                          ),
+                        )
                       ) : (
                         <div className={styles.prepItemEmpty}>입력 안함</div>
                       )}
@@ -1858,6 +2394,103 @@ export default function UserDetailPage() {
             >
               닫기
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* SMS 발송 모달 */}
+      {showSmsModal && (
+        <div
+          className={styles.modalBackdrop}
+          onClick={() => setShowSmsModal(false)}
+        >
+          <div className={styles.smsModal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>예약 안내 문자 보내기</h3>
+            <div className={styles.smsForm}>
+              <div className={styles.smsFormRow}>
+                <label className={styles.smsLabel}>받는 사람</label>
+                <span className={styles.smsValue}>
+                  {profile.name} ({profile.phone_number})
+                </span>
+              </div>
+              <div className={styles.smsFormRow}>
+                <label className={styles.smsLabel}>예약 날짜</label>
+                <input
+                  type="date"
+                  className={styles.smsInput}
+                  value={smsForm.date}
+                  onChange={(e) =>
+                    setSmsForm({ ...smsForm, date: e.target.value })
+                  }
+                />
+              </div>
+              <div className={styles.smsFormRow}>
+                <label className={styles.smsLabel}>예약 시간</label>
+                <input
+                  type="time"
+                  className={styles.smsInput}
+                  value={smsForm.time}
+                  onChange={(e) =>
+                    setSmsForm({ ...smsForm, time: e.target.value })
+                  }
+                />
+              </div>
+              <div className={styles.smsFormRow}>
+                <label className={styles.smsLabel}>안내 내용</label>
+                <textarea
+                  className={styles.smsTextarea}
+                  value={smsForm.message}
+                  onChange={(e) =>
+                    setSmsForm({ ...smsForm, message: e.target.value })
+                  }
+                  placeholder="안내할 내용을 입력하세요"
+                  rows={3}
+                />
+              </div>
+              <div className={styles.smsPreview}>
+                <div className={styles.smsPreviewTitle}>미리보기</div>
+                <div className={styles.smsPreviewContent}>
+                  [Lycon] 상담 예약 안내{"\n\n"}
+                  {profile.name}님, 안녕하세요.{"\n\n"}
+                  {smsForm.message}
+                  {"\n\n"}
+                  일시:{" "}
+                  {smsForm.date
+                    ? (() => {
+                        const d = new Date(smsForm.date);
+                        const weekdays = [
+                          "일",
+                          "월",
+                          "화",
+                          "수",
+                          "목",
+                          "금",
+                          "토",
+                        ];
+                        return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일(${weekdays[d.getDay()]})`;
+                      })()
+                    : "____년 __월 __일(__)"}{" "}
+                  {smsForm.time}
+                  {"\n"}
+                  문의: 010-6657-6155{"\n"}
+                </div>
+              </div>
+            </div>
+            <div className={styles.smsModalButtons}>
+              <button
+                className={styles.smsCancelBtn}
+                onClick={() => setShowSmsModal(false)}
+              >
+                취소
+              </button>
+              <button
+                className={styles.smsSendBtn}
+                onClick={handleSendBookingNotice}
+                disabled={sendingSms}
+              >
+                {sendingSms ? "발송중..." : "문자 보내기"}
+              </button>
+            </div>
           </div>
         </div>
       )}

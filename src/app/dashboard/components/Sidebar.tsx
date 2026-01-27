@@ -44,14 +44,20 @@ const financeMenu = [
   { id: "household-budget", label: "가계부", icon: Receipt },
 ];
 
+// 시장 정보
+const marketMenu = [
+  { id: "portfolio", label: "포트폴리오", icon: LineChart },
+];
+
 // 단축키용 탭 매핑 (위에서부터 순서대로)
 const shortcutTabs: { key: string; id: string; display: string }[] = [
   { key: "1", id: "dashboard", display: "1" },
   { key: "2", id: "current-asset", display: "2" },
   { key: "3", id: "progress", display: "3" },
   { key: "4", id: "household-budget", display: "4" },
-  { key: "5", id: "messages", display: "5" },
-  { key: "6", id: "consultation", display: "6" },
+  { key: "5", id: "portfolio", display: "5" },
+  { key: "6", id: "messages", display: "6" },
+  { key: "7", id: "consultation", display: "7" },
 ];
 
 export function Sidebar({
@@ -178,6 +184,32 @@ export function Sidebar({
 
           {/* 재무 현황 */}
           {financeMenu.map((item) => {
+            const shortcutDisplay = getShortcutDisplay(item.id);
+            return (
+              <button
+                key={item.id}
+                className={`${styles.navItem} ${
+                  currentSection === item.id ? styles.active : ""
+                }`}
+                onClick={() => onSectionChange(item.id)}
+                title={item.label}
+              >
+                <div className={styles.iconWrapper}>
+                  <item.icon size={20} />
+                  {isCtrlPressed && shortcutDisplay && (
+                    <span className={styles.shortcutHint}>{shortcutDisplay}</span>
+                  )}
+                </div>
+                <span className={styles.navLabel}>{item.label}</span>
+              </button>
+            );
+          })}
+
+          {/* 간격 */}
+          <div className={styles.spacer} />
+
+          {/* 시장 정보 */}
+          {marketMenu.map((item) => {
             const shortcutDisplay = getShortcutDisplay(item.id);
             return (
               <button

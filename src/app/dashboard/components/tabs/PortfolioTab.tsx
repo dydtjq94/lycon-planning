@@ -40,16 +40,16 @@ interface ExchangeRateData {
 }
 
 const INDICES = [
-  { symbol: "KS11", name: "코스피" },
-  { symbol: "KQ11", name: "코스닥" },
-  { symbol: "DJI", name: "다우존스" },
-  { symbol: "IXIC", name: "나스닥" },
+  { symbol: "^KS11", name: "코스피" },
+  { symbol: "^KQ11", name: "코스닥" },
+  { symbol: "^DJI", name: "다우존스" },
+  { symbol: "^IXIC", name: "나스닥" },
 ];
 
 const CURRENCIES = [
-  { currency: "USD/KRW", name: "달러/원" },
-  { currency: "EUR/KRW", name: "유로/원" },
-  { currency: "JPY/KRW", name: "엔/원" },
+  { currency: "USDKRW", name: "달러/원" },
+  { currency: "EURKRW", name: "유로/원" },
+  { currency: "JPYKRW", name: "엔/원" },
 ];
 
 export function PortfolioTab() {
