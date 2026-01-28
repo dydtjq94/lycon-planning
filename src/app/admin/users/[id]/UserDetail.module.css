@@ -1649,3 +1649,187 @@
   background: #ccc;
   cursor: not-allowed;
 }
+
+/* Snapshot Section */
+.snapshotSection {
+  padding: 24px;
+}
+
+.snapshotHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.snapshotDate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #57534e;
+}
+
+.snapshotType {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #057a55;
+  background-color: #def7ec;
+  border-radius: 4px;
+}
+
+.snapshotSummary {
+  margin-bottom: 24px;
+  padding: 20px;
+  background-color: #fafaf9;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.snapshotNetWorth {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.snapshotLabel {
+  font-size: 13px;
+  color: #78716c;
+}
+
+.snapshotValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #292524;
+}
+
+.snapshotGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.snapshotCard {
+  padding: 16px;
+  background-color: #ffffff;
+  border: 1px solid #e7e5e4;
+  border-radius: 8px;
+}
+
+.snapshotCardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #78716c;
+  margin: 0 0 8px 0;
+}
+
+.snapshotCardTotal {
+  font-size: 20px;
+  font-weight: 700;
+  color: #292524;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+.snapshotCardItems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.snapshotItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.snapshotItem span:first-child {
+  color: #78716c;
+}
+
+.snapshotItem span:last-child {
+  color: #292524;
+  font-weight: 500;
+}
+
+.snapshotMemo {
+  padding: 16px;
+  background-color: #fefce8;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.snapshotMemoLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #854d0e;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.snapshotMemo p {
+  font-size: 14px;
+  color: #713f12;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.snapshotHistory {
+  border-top: 1px solid #e7e5e4;
+  padding-top: 20px;
+}
+
+.snapshotHistory h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #78716c;
+  margin: 0 0 12px 0;
+}
+
+.snapshotHistoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.snapshotHistoryItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background-color: #fafaf9;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.snapshotHistoryDate {
+  color: #78716c;
+}
+
+.snapshotHistoryValue {
+  color: #292524;
+  font-weight: 500;
+}
+
+.snapshotEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.snapshotEmpty p {
+  margin: 0;
+  font-size: 14px;
+  color: #78716c;
+}
+
+.snapshotEmptyHint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #a8a29e;
+}

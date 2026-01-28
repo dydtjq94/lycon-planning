@@ -6,6 +6,7 @@ import styles from "./AgentPanel.module.css";
 
 // Agent 타입 정의
 type AgentType = "general" | "analysis" | "retirement" | "scenario" | "insight";
+type AgentMode = "plan" | "edit";
 
 interface AgentConfig {
   id: AgentType;
@@ -78,6 +79,8 @@ interface AgentPanelProps {
 interface Message {
   role: "user" | "assistant";
   content: string;
+  pendingActions?: AgentAction[];  // 승인 대기 중인 액션
+  actionsApproved?: boolean;  // 액션 승인 여부
 }
 
 const MIN_WIDTH = 320;
@@ -129,10 +132,12 @@ export function AgentPanel({
 }: AgentPanelProps) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [selectedAgent, setSelectedAgent] = useState<AgentType>("general");
+  const [agentMode, setAgentMode] = useState<AgentMode>("plan");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showModeSelector, setShowModeSelector] = useState(false);
+  const [showEditModeSelector, setShowEditModeSelector] = useState(false);
 
   const panelRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -162,6 +167,35 @@ export function AgentPanel({
   // 대화 초기화
   const handleReset = () => {
     setMessages([]);
+  };
+
+  // 액션 승인
+  const handleApproveActions = async (messageIndex: number) => {
+    const message = messages[messageIndex];
+    if (!message.pendingActions || !onAction) return;
+
+    try {
+      await onAction(message.pendingActions);
+      // 승인 완료 표시
+      const updatedMessages = [...messages];
+      updatedMessages[messageIndex] = {
+        ...message,
+        actionsApproved: true,
+      };
+      setMessages(updatedMessages);
+    } catch (error) {
+      console.error("[Action Error]", error);
+    }
+  };
+
+  // 액션 거절
+  const handleRejectActions = (messageIndex: number) => {
+    const updatedMessages = [...messages];
+    updatedMessages[messageIndex] = {
+      ...messages[messageIndex],
+      pendingActions: undefined,
+    };
+    setMessages(updatedMessages);
   };
 
   // 리사이즈 핸들러
@@ -217,6 +251,7 @@ export function AgentPanel({
           messages: newMessages,
           context: contextText,
           agentType: selectedAgent,
+          agentMode: agentMode,
         }),
       });
 
@@ -228,19 +263,14 @@ export function AgentPanel({
           { role: "assistant", content: "죄송합니다. 오류가 발생했습니다. 다시 시도해주세요." },
         ]);
       } else {
-        setMessages([
-          ...newMessages,
-          { role: "assistant", content: data.message },
-        ]);
-
-        // 액션이 있으면 실행
-        if (data.actions && data.actions.length > 0 && onAction) {
-          try {
-            await onAction(data.actions);
-          } catch (error) {
-            console.error("[Action Error]", error);
-          }
-        }
+        // 액션이 있으면 pendingActions로 저장 (바로 실행하지 않음)
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: data.message,
+          pendingActions: data.actions?.length > 0 ? data.actions : undefined,
+          actionsApproved: false,
+        };
+        setMessages([...newMessages, assistantMessage]);
       }
     } catch {
       setMessages([
@@ -313,10 +343,51 @@ export function AgentPanel({
                 {msg.role === "user" ? (
                   <div className={styles.messageContent}>{msg.content}</div>
                 ) : (
-                  <div
-                    className={styles.messageContent}
-                    dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(msg.content) }}
-                  />
+                  <>
+                    <div
+                      className={styles.messageContent}
+                      dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(msg.content) }}
+                    />
+                    {/* 액션 승인 UI */}
+                    {msg.pendingActions && msg.pendingActions.length > 0 && !msg.actionsApproved && (
+                      <div className={styles.actionApproval}>
+                        <div className={styles.actionList}>
+                          {msg.pendingActions.map((action, actionIdx) => (
+                            <div key={actionIdx} className={styles.actionItem}>
+                              <span className={styles.actionType}>
+                                {action.type === "update" ? "수정" : action.type === "insert" ? "추가" : "삭제"}
+                              </span>
+                              <span className={styles.actionTable}>{action.table}</span>
+                              {action.data && (
+                                <span className={styles.actionData}>
+                                  {Object.entries(action.data).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div className={styles.actionButtons}>
+                          <button
+                            className={styles.actionReject}
+                            onClick={() => handleRejectActions(idx)}
+                          >
+                            취소
+                          </button>
+                          <button
+                            className={styles.actionApprove}
+                            onClick={() => handleApproveActions(idx)}
+                          >
+                            적용하기
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {msg.actionsApproved && (
+                      <div className={styles.actionApplied}>
+                        변경사항이 적용되었습니다
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ))}
@@ -351,7 +422,10 @@ export function AgentPanel({
           <div className={styles.modeSelector}>
             <button
               className={styles.modeButton}
-              onClick={() => setShowModeSelector(!showModeSelector)}
+              onClick={() => {
+                setShowModeSelector(!showModeSelector);
+                setShowEditModeSelector(false);
+              }}
             >
               <span className={styles.modeLabel}>{currentAgent.name}</span>
               <ChevronUp size={12} className={`${styles.modeIcon} ${showModeSelector ? styles.modeIconOpen : ""}`} />
@@ -369,6 +443,45 @@ export function AgentPanel({
                     <span className={styles.modeOptionDesc}>{agent.description}</span>
                   </button>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* 계획/수정 모드 선택기 */}
+          <div className={styles.modeSelector}>
+            <button
+              className={styles.modeButton}
+              onClick={() => {
+                setShowEditModeSelector(!showEditModeSelector);
+                setShowModeSelector(false);
+              }}
+            >
+              <span className={styles.modeLabel}>{agentMode === "plan" ? "계획 모드" : "수정 모드"}</span>
+              <ChevronUp size={12} className={`${styles.modeIcon} ${showEditModeSelector ? styles.modeIconOpen : ""}`} />
+            </button>
+
+            {showEditModeSelector && (
+              <div className={styles.modeDropdown}>
+                <button
+                  className={`${styles.modeOption} ${agentMode === "plan" ? styles.modeOptionActive : ""}`}
+                  onClick={() => {
+                    setAgentMode("plan");
+                    setShowEditModeSelector(false);
+                  }}
+                >
+                  <span className={styles.modeOptionName}>계획 모드</span>
+                  <span className={styles.modeOptionDesc}>분석과 조언만 제공</span>
+                </button>
+                <button
+                  className={`${styles.modeOption} ${agentMode === "edit" ? styles.modeOptionActive : ""}`}
+                  onClick={() => {
+                    setAgentMode("edit");
+                    setShowEditModeSelector(false);
+                  }}
+                >
+                  <span className={styles.modeOptionName}>수정 모드</span>
+                  <span className={styles.modeOptionDesc}>데이터 수정 제안 가능</span>
+                </button>
               </div>
             )}
           </div>

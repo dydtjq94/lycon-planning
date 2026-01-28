@@ -96,7 +96,22 @@ interface Message {
   created_at: string;
 }
 
-type Section = "info" | "chat" | "consultation" | "status" | "scenario";
+interface FinancialSnapshot {
+  id: string;
+  profile_id: string;
+  recorded_at: string;
+  snapshot_type: string;
+  total_assets: number;
+  savings: number;
+  investments: number;
+  real_assets: number;
+  total_debts: number;
+  unsecured_debt: number;
+  net_worth: number;
+  memo: string | null;
+}
+
+type Section = "info" | "chat" | "consultation" | "snapshot" | "status" | "scenario";
 type StatusSubTab = "asset" | "budget";
 
 const STAGE_LABELS: Record<string, string> = {
@@ -207,7 +222,8 @@ const tabs = [
   { id: "info" as Section, label: "기본 정보", icon: User },
   { id: "chat" as Section, label: "채팅", icon: MessageCircle },
   { id: "consultation" as Section, label: "상담", icon: FileText },
-  { id: "status" as Section, label: "현황", icon: PieChart },
+  { id: "snapshot" as Section, label: "재무 현황", icon: Wallet },
+  { id: "status" as Section, label: "시뮬레이션", icon: PieChart },
   { id: "scenario" as Section, label: "시나리오", icon: Target },
 ];
 
@@ -288,6 +304,10 @@ export default function UserDetailPage() {
   // Gemini Agent 패널
   const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(true);
   const [prepData, setPrepData] = useState<PrepData | null>(null);
+
+  // 재무 스냅샷
+  const [snapshots, setSnapshots] = useState<FinancialSnapshot[]>([]);
+  const [latestSnapshot, setLatestSnapshot] = useState<FinancialSnapshot | null>(null);
 
   const [smsForm, setSmsForm] = useState({
     date: "",
@@ -409,7 +429,7 @@ export default function UserDetailPage() {
     initialHashProcessed.current = true;
 
     const hash = window.location.hash.replace("#", "");
-    if (["info", "chat", "consultation", "status", "scenario"].includes(hash)) {
+    if (["info", "chat", "consultation", "snapshot", "status", "scenario"].includes(hash)) {
       setCurrentSection(hash as Section);
       currentSectionRef.current = hash as Section;
     }
@@ -560,6 +580,18 @@ export default function UserDetailPage() {
         setPrepData(prepDataResult);
       } catch (err) {
         console.error("PrepData 로드 실패:", err);
+      }
+
+      // 재무 스냅샷 로드
+      const { data: snapshotData } = await supabase
+        .from("financial_snapshots")
+        .select("*")
+        .eq("profile_id", userId)
+        .order("recorded_at", { ascending: false });
+
+      if (snapshotData && snapshotData.length > 0) {
+        setSnapshots(snapshotData);
+        setLatestSnapshot(snapshotData[0]);
       }
 
       setLoading(false);
@@ -1292,6 +1324,111 @@ export default function UserDetailPage() {
                 <Send size={18} />
               </button>
             </div>
+          </div>
+        );
+
+      case "snapshot":
+        const formatMoney = (amount: number) => {
+          if (!amount && amount !== 0) return "-";
+          if (amount >= 10000) {
+            const billions = Math.floor(amount / 10000);
+            const millions = amount % 10000;
+            return millions > 0 ? `${billions}억 ${millions.toLocaleString()}만` : `${billions}억`;
+          }
+          return `${amount.toLocaleString()}만원`;
+        };
+
+        return (
+          <div className={styles.snapshotSection}>
+            {latestSnapshot ? (
+              <>
+                <div className={styles.snapshotHeader}>
+                  <div className={styles.snapshotDate}>
+                    <Calendar size={16} />
+                    {latestSnapshot.recorded_at} 기준
+                  </div>
+                  <span className={styles.snapshotType}>
+                    {latestSnapshot.snapshot_type === "initial" ? "최초 파악" :
+                     latestSnapshot.snapshot_type === "quarterly" ? "분기 점검" :
+                     latestSnapshot.snapshot_type === "annual" ? "연간 점검" : "팔로업"}
+                  </span>
+                </div>
+
+                <div className={styles.snapshotSummary}>
+                  <div className={styles.snapshotNetWorth}>
+                    <span className={styles.snapshotLabel}>순자산</span>
+                    <span className={styles.snapshotValue}>{formatMoney(latestSnapshot.net_worth)}</span>
+                  </div>
+                </div>
+
+                <div className={styles.snapshotGrid}>
+                  <div className={styles.snapshotCard}>
+                    <h4 className={styles.snapshotCardTitle}>자산</h4>
+                    <div className={styles.snapshotCardTotal}>
+                      {formatMoney(latestSnapshot.total_assets)}
+                    </div>
+                    <div className={styles.snapshotCardItems}>
+                      <div className={styles.snapshotItem}>
+                        <span>저축</span>
+                        <span>{formatMoney(latestSnapshot.savings)}</span>
+                      </div>
+                      <div className={styles.snapshotItem}>
+                        <span>투자</span>
+                        <span>{formatMoney(latestSnapshot.investments)}</span>
+                      </div>
+                      <div className={styles.snapshotItem}>
+                        <span>실물자산</span>
+                        <span>{formatMoney(latestSnapshot.real_assets)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.snapshotCard}>
+                    <h4 className={styles.snapshotCardTitle}>부채</h4>
+                    <div className={styles.snapshotCardTotal}>
+                      {formatMoney(latestSnapshot.total_debts)}
+                    </div>
+                    <div className={styles.snapshotCardItems}>
+                      <div className={styles.snapshotItem}>
+                        <span>무담보</span>
+                        <span>{formatMoney(latestSnapshot.unsecured_debt)}</span>
+                      </div>
+                      <div className={styles.snapshotItem}>
+                        <span>담보대출</span>
+                        <span>{formatMoney(latestSnapshot.total_debts - latestSnapshot.unsecured_debt)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {latestSnapshot.memo && (
+                  <div className={styles.snapshotMemo}>
+                    <span className={styles.snapshotMemoLabel}>메모</span>
+                    <p>{latestSnapshot.memo}</p>
+                  </div>
+                )}
+
+                {/* 스냅샷 히스토리 */}
+                {snapshots.length > 1 && (
+                  <div className={styles.snapshotHistory}>
+                    <h4>기록 히스토리</h4>
+                    <div className={styles.snapshotHistoryList}>
+                      {snapshots.slice(1).map((snap) => (
+                        <div key={snap.id} className={styles.snapshotHistoryItem}>
+                          <span className={styles.snapshotHistoryDate}>{snap.recorded_at}</span>
+                          <span className={styles.snapshotHistoryValue}>순자산 {formatMoney(snap.net_worth)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className={styles.snapshotEmpty}>
+                <p>기록된 재무 현황이 없습니다.</p>
+                <p className={styles.snapshotEmptyHint}>재무 상담 후 현황을 기록해주세요.</p>
+              </div>
+            )}
           </div>
         );
 
