@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Users, TrendingUp, Settings, Bot } from "lucide-react";
+import { Users, TrendingUp, Settings } from "lucide-react";
 import { useFinancialContext } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
@@ -20,7 +20,7 @@ import { runSimulationFromItems } from "@/lib/services/simulationEngine";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
 import { calculateEndYear } from "@/lib/utils/chartDataTransformer";
 import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_SETTINGS } from "@/types";
-import { Sidebar, AgentPanel } from "./components";
+import { Sidebar } from "./components";
 import {
   OverviewTab,
   MessagesTab,
@@ -82,7 +82,6 @@ export function DashboardContent() {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [selectedSimulationId, setSelectedSimulationId] = useState<string>(simulation.id);
-  const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(true);
 
   // 시뮬레이션(시나리오) 목록 조회
   const { data: simulations = [] } = useSimulations();
@@ -557,32 +556,11 @@ export function DashboardContent() {
             >
               <Settings size={18} />
             </button>
-            <button
-              className={`${styles.headerActionBtn} ${
-                isAgentPanelOpen ? styles.active : ""
-              }`}
-              onClick={() => setIsAgentPanelOpen(!isAgentPanelOpen)}
-              title="Agent"
-            >
-              <Bot size={18} />
-            </button>
           </div>
         </header>
 
         <div className={styles.content}>{renderContent()}</div>
       </main>
-
-      {/* Agent 패널 */}
-      <AgentPanel
-        isOpen={isAgentPanelOpen}
-        onClose={() => setIsAgentPanelOpen(false)}
-        profile={profile}
-        familyMembers={familyMembers}
-        simulationProfile={simulationProfile}
-        globalSettings={globalSettings}
-        items={deduplicatedItems}
-        simulationResult={simulationResult}
-      />
 
       {/* 모달 */}
       {activeModal === "scenario" && (

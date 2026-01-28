@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Send,
+  Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -38,6 +39,7 @@ import {
   RetirementDiagnosisForm,
 } from "./components";
 import { OnboardingSurveyModal } from "./components/finance/OnboardingSurveyModal";
+import { AgentPanel } from "@/components/AgentPanel";
 import styles from "./UserDetail.module.css";
 
 interface Profile {
@@ -280,6 +282,10 @@ export default function UserDetailPage() {
   // SMS 발송
   const [showSmsModal, setShowSmsModal] = useState(false);
   const [sendingSms, setSendingSms] = useState(false);
+
+  // Gemini Agent 패널
+  const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(true);
+
   const [smsForm, setSmsForm] = useState({
     date: "",
     time: "14:00",
@@ -1626,8 +1632,80 @@ export default function UserDetailPage() {
     }
   };
 
+  // Gemini Agent용 컨텍스트 생성
+  const generateAgentContext = () => {
+    if (!profile) return "";
+
+    const currentYear = new Date().getFullYear();
+    const birthYear = profile.birth_date ? parseInt(profile.birth_date.split("-")[0]) : null;
+    const age = birthYear ? currentYear - birthYear : null;
+    const prep = profile.prep_data || {};
+
+    let text = `## 고객 재무 현황
+
+### 기본 정보
+- 이름: ${profile.name}`;
+
+    if (age) {
+      text += `\n- 나이: ${age}세`;
+    }
+    text += `\n- 목표 은퇴 나이: ${profile.target_retirement_age}세`;
+
+    // 가족 구성
+    if (familyMembers.length > 0) {
+      text += `\n\n### 가족 구성`;
+      familyMembers.forEach(fm => {
+        const fmAge = fm.birth_date ? currentYear - parseInt(fm.birth_date.split("-")[0]) : null;
+        text += `\n- ${fm.name} (${fm.relation}${fmAge ? `, ${fmAge}세` : ""})`;
+      });
+    }
+
+    // 입력해두기 데이터 (prep_data)
+    if (prep.income) {
+      text += `\n\n### 소득`;
+      if (prep.income.laborIncome) text += `\n- 근로소득: ${prep.income.laborIncome}만원/월`;
+      if (prep.income.businessIncome) text += `\n- 사업소득: ${prep.income.businessIncome}만원/월`;
+      if (prep.income.otherIncome) text += `\n- 기타소득: ${prep.income.otherIncome}만원/월`;
+    }
+
+    if (prep.expense) {
+      text += `\n\n### 지출`;
+      if (prep.expense.fixedExpense) text += `\n- 고정지출: ${prep.expense.fixedExpense}만원/월`;
+      if (prep.expense.livingExpense) text += `\n- 생활비: ${prep.expense.livingExpense}만원/월`;
+    }
+
+    if (prep.asset) {
+      text += `\n\n### 자산`;
+      if (prep.asset.deposit) text += `\n- 예적금: ${prep.asset.deposit}만원`;
+      if (prep.asset.stock) text += `\n- 주식/펀드: ${prep.asset.stock}만원`;
+      if (prep.asset.realEstate) text += `\n- 부동산: ${prep.asset.realEstate}만원`;
+    }
+
+    if (prep.debt) {
+      text += `\n\n### 부채`;
+      if (prep.debt.mortgage) text += `\n- 주택담보대출: ${prep.debt.mortgage}만원`;
+      if (prep.debt.creditLoan) text += `\n- 신용대출: ${prep.debt.creditLoan}만원`;
+    }
+
+    if (prep.pension) {
+      text += `\n\n### 연금`;
+      if (prep.pension.nationalPension) text += `\n- 국민연금 예상 수령액: ${prep.pension.nationalPension}만원/월`;
+      if (prep.pension.retirementPension) text += `\n- 퇴직연금: ${prep.pension.retirementPension}만원`;
+      if (prep.pension.personalPension) text += `\n- 개인연금: ${prep.pension.personalPension}만원`;
+    }
+
+    if (prep.goal) {
+      text += `\n\n### 목표`;
+      if (prep.goal.retirementGoal) text += `\n- 은퇴 목표: ${prep.goal.retirementGoal}`;
+      if (prep.goal.concerns) text += `\n- 주요 관심사: ${prep.goal.concerns}`;
+    }
+
+    return text;
+  };
+
   return (
-    <div className={styles.container}>
+    <div className={styles.pageWrapper}>
+      <div className={styles.container}>
       {/* 헤더 */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
@@ -1639,6 +1717,17 @@ export default function UserDetailPage() {
           </span>
         </div>
         <div className={styles.headerRight}>
+          {/* Gemini 패널 토글 버튼 */}
+          {!isAgentPanelOpen && (
+            <button
+              className={styles.geminiButton}
+              onClick={() => setIsAgentPanelOpen(true)}
+            >
+              <Sparkles size={16} />
+              Gemini
+            </button>
+          )}
+
           {/* SMS 발송 버튼 */}
           <button
             className={styles.smsButton}
@@ -2494,6 +2583,22 @@ export default function UserDetailPage() {
           </div>
         </div>
       )}
+      </div>
+
+      {/* Gemini Agent 패널 */}
+      <AgentPanel
+        isOpen={isAgentPanelOpen}
+        onClose={() => setIsAgentPanelOpen(false)}
+        contextText={generateAgentContext()}
+        customerInfo={{
+          name: profile.name,
+          stage: STAGE_LABELS[profile.customer_stage] || "신규",
+          age: profile.birth_date
+            ? new Date().getFullYear() - new Date(profile.birth_date).getFullYear()
+            : undefined,
+          retirementAge: profile.target_retirement_age,
+        }}
+      />
     </div>
   );
 }

@@ -1,8 +1,18 @@
+/* Page Wrapper - Agent 패널 포함 */
+.pageWrapper {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
 /* Container */
 .container {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
   height: 100vh;
+  overflow: hidden;
 }
 
 /* Header */
@@ -137,6 +147,24 @@
 
 .moreButton:hover {
   background: #e5e5e7;
+}
+
+.geminiButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: #4285f4;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.geminiButton:hover {
+  background: #3367d6;
 }
 
 .smsButton {

@@ -61,7 +61,7 @@ export function AdminSidebar({
       <div className={styles.logoRow}>
         <div className={styles.logoItem}>
           <span className={styles.logoLetter}>L</span>
-          <span className={styles.navLabel}>전문가 전용</span>
+          <span className={styles.navLabel}>담당자</span>
         </div>
       </div>
 
