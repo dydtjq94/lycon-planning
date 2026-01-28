@@ -33,6 +33,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { loadPrepData } from "@/lib/services/prepDataService";
+import type { PrepData } from "@/components/forms";
 import {
   NotesSection,
   ProgressSection,
@@ -285,6 +287,7 @@ export default function UserDetailPage() {
 
   // Gemini Agent 패널
   const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(true);
+  const [prepData, setPrepData] = useState<PrepData | null>(null);
 
   const [smsForm, setSmsForm] = useState({
     date: "",
@@ -549,6 +552,14 @@ export default function UserDetailPage() {
           });
 
         setConsultationHistory(history);
+      }
+
+      // PrepData 로드 (Gemini 에이전트용)
+      try {
+        const prepDataResult = await loadPrepData(userId);
+        setPrepData(prepDataResult);
+      } catch (err) {
+        console.error("PrepData 로드 실패:", err);
       }
 
       setLoading(false);
@@ -1639,7 +1650,6 @@ export default function UserDetailPage() {
     const currentYear = new Date().getFullYear();
     const birthYear = profile.birth_date ? parseInt(profile.birth_date.split("-")[0]) : null;
     const age = birthYear ? currentYear - birthYear : null;
-    const prep = profile.prep_data || {};
 
     let text = `## 고객 재무 현황
 
@@ -1651,7 +1661,7 @@ export default function UserDetailPage() {
     }
     text += `\n- 목표 은퇴 나이: ${profile.target_retirement_age}세`;
 
-    // 가족 구성
+    // 가족 구성 (family_members 테이블)
     if (familyMembers.length > 0) {
       text += `\n\n### 가족 구성`;
       familyMembers.forEach(fm => {
@@ -1660,44 +1670,139 @@ export default function UserDetailPage() {
       });
     }
 
-    // 입력해두기 데이터 (prep_data)
-    if (prep.income) {
+    // PrepData가 로드되지 않았으면 여기서 반환
+    if (!prepData) return text;
+
+    // 주거 정보
+    if (prepData.housing) {
+      const h = prepData.housing;
+      text += `\n\n### 주거`;
+      text += `\n- 주거 형태: ${h.housingType}`;
+      if (h.housingType === "자가" && h.currentValue) {
+        text += `\n- 시세: ${h.currentValue.toLocaleString()}만원`;
+      }
+      if ((h.housingType === "전세" || h.housingType === "월세") && h.deposit) {
+        text += `\n- 보증금: ${h.deposit.toLocaleString()}만원`;
+      }
+      if (h.housingType === "월세" && h.monthlyRent) {
+        text += `\n- 월세: ${h.monthlyRent.toLocaleString()}만원`;
+      }
+      if (h.hasLoan && h.loanAmount) {
+        text += `\n- ${h.loanType === "mortgage" ? "주택담보대출" : "전세대출"}: ${h.loanAmount.toLocaleString()}만원 (금리 ${h.loanRate}%)`;
+      }
+    }
+
+    // 소득
+    if (prepData.income && prepData.income.length > 0) {
       text += `\n\n### 소득`;
-      if (prep.income.laborIncome) text += `\n- 근로소득: ${prep.income.laborIncome}만원/월`;
-      if (prep.income.businessIncome) text += `\n- 사업소득: ${prep.income.businessIncome}만원/월`;
-      if (prep.income.otherIncome) text += `\n- 기타소득: ${prep.income.otherIncome}만원/월`;
+      prepData.income.forEach(inc => {
+        const freq = inc.frequency === "monthly" ? "월" : "년";
+        const owner = inc.owner === "self" ? "본인" : "배우자";
+        text += `\n- ${inc.title} (${owner}): ${inc.amount.toLocaleString()}만원/${freq}`;
+      });
     }
 
-    if (prep.expense) {
+    // 지출
+    if (prepData.expense) {
+      const e = prepData.expense;
       text += `\n\n### 지출`;
-      if (prep.expense.fixedExpense) text += `\n- 고정지출: ${prep.expense.fixedExpense}만원/월`;
-      if (prep.expense.livingExpense) text += `\n- 생활비: ${prep.expense.livingExpense}만원/월`;
+      if (e.livingExpense) {
+        text += `\n- 생활비: ${e.livingExpense.toLocaleString()}만원/월`;
+      }
+      if (e.fixedExpenses && e.fixedExpenses.length > 0) {
+        e.fixedExpenses.forEach(exp => {
+          const freq = exp.frequency === "monthly" ? "월" : "년";
+          text += `\n- ${exp.title}: ${exp.amount.toLocaleString()}만원/${freq}`;
+        });
+      }
     }
 
-    if (prep.asset) {
-      text += `\n\n### 자산`;
-      if (prep.asset.deposit) text += `\n- 예적금: ${prep.asset.deposit}만원`;
-      if (prep.asset.stock) text += `\n- 주식/펀드: ${prep.asset.stock}만원`;
-      if (prep.asset.realEstate) text += `\n- 부동산: ${prep.asset.realEstate}만원`;
+    // 저축
+    if (prepData.savings && prepData.savings.length > 0) {
+      text += `\n\n### 저축`;
+      prepData.savings.forEach(s => {
+        const owner = s.owner === "self" ? "본인" : "배우자";
+        text += `\n- ${s.title} (${owner}): ${s.currentBalance.toLocaleString()}만원`;
+        if (s.monthlyDeposit) {
+          text += ` (월 ${s.monthlyDeposit.toLocaleString()}만원 납입)`;
+        }
+      });
     }
 
-    if (prep.debt) {
+    // 투자
+    if (prepData.investment) {
+      const inv = prepData.investment;
+      text += `\n\n### 투자`;
+      if (inv.securities) {
+        text += `\n- 증권 계좌: ${inv.securities.balance.toLocaleString()}만원`;
+        if (inv.securities.investmentTypes.length > 0) {
+          text += ` (${inv.securities.investmentTypes.join(", ")})`;
+        }
+      }
+      if (inv.crypto) {
+        text += `\n- 암호화폐: ${inv.crypto.balance.toLocaleString()}만원`;
+      }
+      if (inv.gold) {
+        text += `\n- 금: ${inv.gold.balance.toLocaleString()}만원`;
+      }
+    }
+
+    // 부채
+    if (prepData.debt && prepData.debt.length > 0) {
       text += `\n\n### 부채`;
-      if (prep.debt.mortgage) text += `\n- 주택담보대출: ${prep.debt.mortgage}만원`;
-      if (prep.debt.creditLoan) text += `\n- 신용대출: ${prep.debt.creditLoan}만원`;
+      prepData.debt.forEach(d => {
+        text += `\n- ${d.title}: ${d.currentBalance?.toLocaleString() || d.principal.toLocaleString()}만원 (금리 ${d.interestRate}%)`;
+        if (d.monthlyPayment) {
+          text += ` - 월 상환 ${d.monthlyPayment.toLocaleString()}만원`;
+        }
+      });
     }
 
-    if (prep.pension) {
-      text += `\n\n### 연금`;
-      if (prep.pension.nationalPension) text += `\n- 국민연금 예상 수령액: ${prep.pension.nationalPension}만원/월`;
-      if (prep.pension.retirementPension) text += `\n- 퇴직연금: ${prep.pension.retirementPension}만원`;
-      if (prep.pension.personalPension) text += `\n- 개인연금: ${prep.pension.personalPension}만원`;
+    // 국민연금
+    if (prepData.nationalPension) {
+      const np = prepData.nationalPension;
+      text += `\n\n### 국민연금`;
+      if (np.selfExpectedAmount) {
+        text += `\n- 본인 예상 수령액: ${np.selfExpectedAmount.toLocaleString()}만원/월`;
+      }
+      if (np.spouseExpectedAmount) {
+        text += `\n- 배우자 예상 수령액: ${np.spouseExpectedAmount.toLocaleString()}만원/월`;
+      }
     }
 
-    if (prep.goal) {
-      text += `\n\n### 목표`;
-      if (prep.goal.retirementGoal) text += `\n- 은퇴 목표: ${prep.goal.retirementGoal}`;
-      if (prep.goal.concerns) text += `\n- 주요 관심사: ${prep.goal.concerns}`;
+    // 퇴직연금
+    if (prepData.retirementPension) {
+      const rp = prepData.retirementPension;
+      text += `\n\n### 퇴직연금`;
+      if (rp.selfType !== "none") {
+        text += `\n- 본인: ${rp.selfType === "db" ? "DB형" : "DC형"}`;
+        if (rp.selfType === "db" && rp.selfYearsWorked) {
+          text += ` (근속 ${rp.selfYearsWorked}년)`;
+        } else if (rp.selfType === "dc" && rp.selfBalance) {
+          text += ` - 잔액 ${rp.selfBalance.toLocaleString()}만원`;
+        }
+      }
+      if (rp.spouseType !== "none") {
+        text += `\n- 배우자: ${rp.spouseType === "db" ? "DB형" : "DC형"}`;
+        if (rp.spouseType === "db" && rp.spouseYearsWorked) {
+          text += ` (근속 ${rp.spouseYearsWorked}년)`;
+        } else if (rp.spouseType === "dc" && rp.spouseBalance) {
+          text += ` - 잔액 ${rp.spouseBalance.toLocaleString()}만원`;
+        }
+      }
+    }
+
+    // 개인연금
+    if (prepData.personalPension && prepData.personalPension.length > 0) {
+      text += `\n\n### 개인연금`;
+      prepData.personalPension.forEach(pp => {
+        const owner = pp.owner === "self" ? "본인" : "배우자";
+        const typeName = pp.type === "irp" ? "IRP" : "연금저축";
+        text += `\n- ${typeName} (${owner}): ${pp.balance.toLocaleString()}만원`;
+        if (pp.monthlyDeposit) {
+          text += ` (월 ${pp.monthlyDeposit.toLocaleString()}만원 납입)`;
+        }
+      });
     }
 
     return text;

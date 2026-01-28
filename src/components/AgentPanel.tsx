@@ -29,19 +29,57 @@ const DEFAULT_WIDTH = 300;
 
 // 간단한 마크다운 파서
 function parseSimpleMarkdown(text: string): string {
-  return text
-    // 굵게 **text**
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // 기울임 *text*
-    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
-    // 번호 리스트
-    .replace(/^(\d+)\.\s+(.+)$/gm, '<li class="numbered">$2</li>')
-    // 불릿 리스트
-    .replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>')
-    // 연속된 li를 ul로 감싸기
-    .replace(/(<li[^>]*>.*?<\/li>\n?)+/g, '<ul>$&</ul>')
-    // 줄바꿈
-    .replace(/\n/g, '<br />');
+  // 테이블 파싱
+  const parseTable = (text: string): string => {
+    const tableRegex = /(\|.+\|[\r\n]*)+/g;
+    return text.replace(tableRegex, (match) => {
+      const rows = match.trim().split('\n').filter(row => row.trim());
+      // 구분선 제거 (|---|---| 또는 | --- | --- | 등)
+      const dataRows = rows.filter(row => !row.match(/^\|[\s\-:]+\|[\s\-:]*\|?$/));
+      if (dataRows.length === 0) return '';
+
+      const tableRows = dataRows.map((row, idx) => {
+        const cells = row.split('|').filter(cell => cell !== '');
+        // 셀이 모두 - 로만 이루어진 경우 스킵
+        if (cells.every(cell => cell.trim().match(/^[-:]+$/))) return '';
+        const cellTag = idx === 0 ? 'th' : 'td';
+        const cellsHtml = cells.map(cell => `<${cellTag}>${cell.trim()}</${cellTag}>`).join('');
+        return `<tr>${cellsHtml}</tr>`;
+      }).filter(row => row).join('');
+
+      return tableRows ? `<table>${tableRows}</table>` : '';
+    });
+  };
+
+  let result = text;
+
+  // 테이블 먼저 처리
+  result = parseTable(result);
+
+  // 굵게 **text**
+  result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  // 메인 불릿 리스트 (-, • 로 시작)
+  result = result.replace(/^[-•]\s+(.+)$/gm, '<li class="main">$1</li>');
+
+  // 서브 리스트 (* 로 시작)
+  result = result.replace(/^\*\s+(.+)$/gm, '<li class="sub">$1</li>');
+
+  // 번호 리스트
+  result = result.replace(/^(\d+)\.\s+(.+)$/gm, '<li class="numbered">$2</li>');
+
+  // 연속된 li를 ul로 감싸기
+  result = result.replace(/(<li[^>]*>.*?<\/li>\n?)+/g, (match) => {
+    return '<ul>' + match.replace(/\n/g, '') + '</ul>';
+  });
+
+  // 연속 줄바꿈은 하나로
+  result = result.replace(/\n{2,}/g, '<br /><br />');
+
+  // 단일 줄바꿈
+  result = result.replace(/\n/g, '<br />');
+
+  return result;
 }
 
 export function AgentPanel({
