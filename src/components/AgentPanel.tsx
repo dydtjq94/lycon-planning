@@ -81,6 +81,7 @@ interface Message {
   content: string;
   pendingActions?: AgentAction[];  // 승인 대기 중인 액션
   actionsApproved?: boolean;  // 액션 승인 여부
+  suggestEditMode?: boolean;  // 수정 모드 전환 제안
 }
 
 const MIN_WIDTH = 320;
@@ -198,6 +199,71 @@ export function AgentPanel({
     setMessages(updatedMessages);
   };
 
+  // 수정 모드로 전환하고 마지막 질문 다시 보내기
+  const handleSwitchToEditMode = async (messageIndex: number) => {
+    // 해당 메시지 바로 앞의 유저 메시지 찾기
+    let lastUserMessage = "";
+    for (let i = messageIndex - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        lastUserMessage = messages[i].content;
+        break;
+      }
+    }
+
+    if (!lastUserMessage) return;
+
+    // 수정 모드로 변경
+    setAgentMode("edit");
+
+    // 해당 assistant 메시지 제거하고 다시 요청
+    const messagesUntilUser = messages.slice(0, messageIndex);
+    setMessages(messagesUntilUser);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/agent/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: messagesUntilUser,
+          context: contextText,
+          agentType: selectedAgent,
+          agentMode: "edit",  // 수정 모드로 재요청
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        setMessages([
+          ...messagesUntilUser,
+          { role: "assistant", content: "죄송합니다. 오류가 발생했습니다. 다시 시도해주세요." },
+        ]);
+      } else {
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: data.message,
+          pendingActions: data.actions?.length > 0 ? data.actions : undefined,
+          actionsApproved: false,
+        };
+        setMessages([...messagesUntilUser, assistantMessage]);
+      }
+    } catch {
+      setMessages([
+        ...messagesUntilUser,
+        { role: "assistant", content: "네트워크 오류가 발생했습니다. 다시 시도해주세요." },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 수정 요청 키워드 감지
+  const detectEditRequest = (text: string): boolean => {
+    const editKeywords = ["수정", "변경", "추가", "삭제", "업데이트", "바꿔", "고쳐", "넣어", "빼", "만들어"];
+    return editKeywords.some(keyword => text.includes(keyword));
+  };
+
   // 리사이즈 핸들러
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -263,12 +329,16 @@ export function AgentPanel({
           { role: "assistant", content: "죄송합니다. 오류가 발생했습니다. 다시 시도해주세요." },
         ]);
       } else {
-        // 액션이 있으면 pendingActions로 저장 (바로 실행하지 않음)
+        // 계획 모드인데 수정 요청을 한 경우 감지
+        const userAskedForEdit = agentMode === "plan" && detectEditRequest(userMessage.content);
+        const noActionsReturned = !data.actions || data.actions.length === 0;
+
         const assistantMessage: Message = {
           role: "assistant",
           content: data.message,
           pendingActions: data.actions?.length > 0 ? data.actions : undefined,
           actionsApproved: false,
+          suggestEditMode: userAskedForEdit && noActionsReturned,
         };
         setMessages([...newMessages, assistantMessage]);
       }
@@ -385,6 +455,17 @@ export function AgentPanel({
                     {msg.actionsApproved && (
                       <div className={styles.actionApplied}>
                         변경사항이 적용되었습니다
+                      </div>
+                    )}
+                    {msg.suggestEditMode && (
+                      <div className={styles.modeSwitchSuggestion}>
+                        <span>데이터 수정이 필요하신가요?</span>
+                        <button
+                          className={styles.modeSwitchBtn}
+                          onClick={() => handleSwitchToEditMode(idx)}
+                        >
+                          수정 모드로 전환
+                        </button>
                       </div>
                     )}
                   </>
