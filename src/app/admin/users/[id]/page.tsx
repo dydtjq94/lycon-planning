@@ -41,7 +41,7 @@ import {
   RetirementDiagnosisForm,
 } from "./components";
 import { OnboardingSurveyModal } from "./components/finance/OnboardingSurveyModal";
-import { AgentPanel } from "@/components/AgentPanel";
+import { AgentPanel, AgentAction } from "@/components/AgentPanel";
 import styles from "./UserDetail.module.css";
 
 interface Profile {
@@ -906,6 +906,54 @@ export default function UserDetailPage() {
       alert("SMS 발송 중 오류가 발생했습니다.");
     } finally {
       setSendingSms(false);
+    }
+  };
+
+  // AI Agent 액션 처리 (Supabase 수정/추가/삭제)
+  const handleAgentAction = async (actions: AgentAction[]) => {
+    const supabase = createClient();
+
+    for (const action of actions) {
+      try {
+        if (action.type === "update" && action.id && action.data) {
+          const { error } = await supabase
+            .from(action.table)
+            .update(action.data)
+            .eq("id", action.id);
+
+          if (error) throw error;
+
+        } else if (action.type === "insert" && action.data) {
+          const { error } = await supabase
+            .from(action.table)
+            .insert(action.data);
+
+          if (error) throw error;
+
+        } else if (action.type === "delete" && action.id) {
+          const { error } = await supabase
+            .from(action.table)
+            .delete()
+            .eq("id", action.id);
+
+          if (error) throw error;
+        }
+      } catch (error) {
+        console.error(`[Agent Action Error] ${action.type} on ${action.table}:`, error);
+        throw error;
+      }
+    }
+
+    // 스냅샷 데이터 다시 로드
+    const { data: snapshotData } = await supabase
+      .from("financial_snapshots")
+      .select("*")
+      .eq("profile_id", profile?.id)
+      .order("recorded_at", { ascending: false });
+
+    if (snapshotData && snapshotData.length > 0) {
+      setSnapshots(snapshotData);
+      setLatestSnapshot(snapshotData[0]);
     }
   };
 
@@ -1942,6 +1990,23 @@ export default function UserDetailPage() {
       });
     }
 
+    // 재무 스냅샷 (수정/추가용)
+    text += `\n\n### 재무 스냅샷 (현재)`;
+    text += `\n- profile_id: ${profile.id}`;
+    if (latestSnapshot) {
+      text += `\n- snapshot_id: ${latestSnapshot.id}`;
+      text += `\n- 기록일: ${latestSnapshot.recorded_at}`;
+      text += `\n- 저축: ${latestSnapshot.savings?.toLocaleString() || 0}만원`;
+      text += `\n- 투자자산: ${latestSnapshot.investments?.toLocaleString() || 0}만원`;
+      text += `\n- 실물자산: ${latestSnapshot.real_assets?.toLocaleString() || 0}만원`;
+      text += `\n- 무담보부채: ${latestSnapshot.unsecured_debt?.toLocaleString() || 0}만원`;
+      text += `\n- 총자산: ${latestSnapshot.total_assets?.toLocaleString() || 0}만원`;
+      text += `\n- 총부채: ${latestSnapshot.total_debts?.toLocaleString() || 0}만원`;
+      text += `\n- 순자산: ${latestSnapshot.net_worth?.toLocaleString() || 0}만원`;
+    } else {
+      text += `\n- 스냅샷 없음 (새로 추가 필요)`;
+    }
+
     return text;
   };
 
@@ -2818,6 +2883,7 @@ export default function UserDetailPage() {
             : undefined,
           retirementAge: profile.target_retirement_age,
         }}
+        onAction={handleAgentAction}
       />
     </div>
   );
