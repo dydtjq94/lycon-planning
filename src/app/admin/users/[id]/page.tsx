@@ -1843,46 +1843,24 @@ export default function UserDetailPage() {
             예약 안내 문자
           </button>
 
-          {/* 더보기 드롭다운 */}
-          <div className={styles.dropdownContainer}>
+          {/* 담당 제외/추가 버튼 */}
+          {conversationId ? (
             <button
-              className={styles.moreButton}
-              onClick={() => setShowDropdown(!showDropdown)}
+              className={styles.removeButton}
+              onClick={() => setShowRemoveModal(true)}
             >
-              더보기
-              <ChevronDown size={16} />
+              <UserMinus size={16} />
+              담당 제외
             </button>
-            {showDropdown && (
-              <>
-                <div
-                  className={styles.dropdownBackdrop}
-                  onClick={() => setShowDropdown(false)}
-                />
-                <div className={styles.dropdown}>
-                  {conversationId ? (
-                    <button
-                      className={styles.dropdownItem}
-                      onClick={() => {
-                        setShowDropdown(false);
-                        setShowRemoveModal(true);
-                      }}
-                    >
-                      <UserMinus size={16} />
-                      담당 제외
-                    </button>
-                  ) : (
-                    <button
-                      className={styles.dropdownItem}
-                      onClick={handleAddToMyCustomers}
-                    >
-                      <UserPlus size={16} />
-                      담당 추가
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+          ) : (
+            <button
+              className={styles.addButton}
+              onClick={handleAddToMyCustomers}
+            >
+              <UserPlus size={16} />
+              담당 추가
+            </button>
+          )}
         </div>
       </div>
 

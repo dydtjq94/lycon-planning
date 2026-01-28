@@ -21,6 +21,12 @@ export async function POST(request: NextRequest) {
       context?: string;
     };
 
+    // 디버그: context 확인
+    console.log("[Agent Chat] Context length:", context?.length || 0);
+    if (context) {
+      console.log("[Agent Chat] Context preview:", context.substring(0, 200));
+    }
+
     const response = await fetch(`${FASTAPI_URL}/agent/chat`, {
       method: "POST",
       headers: {
