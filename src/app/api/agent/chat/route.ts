@@ -43,7 +43,10 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    return NextResponse.json({ message: data.message });
+    return NextResponse.json({
+      message: data.message,
+      actions: data.actions || null
+    });
   } catch (error) {
     console.error("[Agent Chat Error]", error);
     return NextResponse.json(

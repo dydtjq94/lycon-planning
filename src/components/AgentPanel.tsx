@@ -60,11 +60,19 @@ interface CustomerInfo {
   retirementAge?: number;
 }
 
+export interface AgentAction {
+  type: "update" | "insert" | "delete";
+  table: string;
+  id?: string;
+  data?: Record<string, unknown>;
+}
+
 interface AgentPanelProps {
   isOpen: boolean;
   onClose: () => void;
   contextText: string;
   customerInfo?: CustomerInfo;
+  onAction?: (actions: AgentAction[]) => Promise<void>;
 }
 
 interface Message {
@@ -117,6 +125,7 @@ export function AgentPanel({
   onClose,
   contextText,
   customerInfo,
+  onAction,
 }: AgentPanelProps) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [selectedAgent, setSelectedAgent] = useState<AgentType>("general");
@@ -223,6 +232,15 @@ export function AgentPanel({
           ...newMessages,
           { role: "assistant", content: data.message },
         ]);
+
+        // 액션이 있으면 실행
+        if (data.actions && data.actions.length > 0 && onAction) {
+          try {
+            await onAction(data.actions);
+          } catch (error) {
+            console.error("[Action Error]", error);
+          }
+        }
       }
     } catch {
       setMessages([
