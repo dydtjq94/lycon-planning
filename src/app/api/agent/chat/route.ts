@@ -16,23 +16,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { messages, context } = await request.json() as {
+    const { messages, context, agentType } = await request.json() as {
       messages: Message[];
       context?: string;
+      agentType?: string;
     };
 
     // 디버그: context 확인
-    console.log("[Agent Chat] Context length:", context?.length || 0);
-    if (context) {
-      console.log("[Agent Chat] Context preview:", context.substring(0, 200));
-    }
+    console.log("[Agent Chat] Agent:", agentType, "Context length:", context?.length || 0);
 
     const response = await fetch(`${FASTAPI_URL}/agent/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ messages, context }),
+      body: JSON.stringify({ messages, context, agent_type: agentType }),
     });
 
     if (!response.ok) {

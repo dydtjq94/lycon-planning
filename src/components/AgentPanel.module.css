@@ -48,6 +48,31 @@
   margin: 0;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.resetBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: #a8a29e;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.resetBtn:hover {
+  background-color: #f5f5f4;
+  color: #78716c;
+}
+
 .closeBtn {
   display: flex;
   align-items: center;
@@ -65,6 +90,103 @@
 .closeBtn:hover {
   background-color: #f5f5f4;
   color: #292524;
+}
+
+/* 모드 선택기 */
+.modeSelector {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.modeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #57534e;
+  background-color: #f5f5f4;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  white-space: nowrap;
+}
+
+.modeButton:hover {
+  background-color: #e7e5e4;
+}
+
+.modeLabel {
+  color: #292524;
+}
+
+.modeIcon {
+  color: #78716c;
+  transition: transform 0.2s;
+}
+
+.modeIconOpen {
+  transform: rotate(180deg);
+}
+
+.modeDropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 4px;
+  background-color: #ffffff;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  min-width: 220px;
+  overflow: hidden;
+  animation: dropdownSlide 0.15s ease-out;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modeOption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: left;
+  color: #292524;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.modeOption:hover {
+  background-color: #fafaf9;
+}
+
+.modeOptionActive {
+  background-color: #f5f5f4;
+}
+
+.modeOptionName {
+  font-weight: 500;
+}
+
+.modeOptionDesc {
+  font-size: 11px;
+  color: #a8a29e;
 }
 
 /* 고객 정보 */
@@ -106,17 +228,42 @@
   justify-content: center;
   padding: 24px;
   text-align: center;
+  animation: slideUp 0.25s ease-out;
 }
 
-.emptyGreeting {
-  font-size: 15px;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.agentBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 11px;
   font-weight: 600;
   color: #292524;
-  margin: 0 0 4px 0;
+  background-color: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  border-radius: 2px;
+  margin-bottom: 12px;
+  letter-spacing: 0.5px;
 }
 
 .emptyTitle {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #292524;
+  margin: 0 0 6px 0;
+}
+
+.emptyDescription {
+  font-size: 13px;
   color: #78716c;
   margin: 0;
 }
@@ -284,21 +431,14 @@
 
 /* 입력 영역 */
 .inputArea {
-  padding: 16px;
+  padding: 12px 16px 16px;
   background-color: #ffffff;
+  border-top: 1px solid #e7e5e4;
   flex-shrink: 0;
 }
 
-.inputWrapper {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  border-top: 1px solid #e7e5e4;
-  padding-top: 16px;
-}
-
 .input {
-  flex: 1;
+  width: 100%;
   border: none;
   background: none;
   font-size: 14px;
@@ -306,9 +446,16 @@
   resize: none;
   line-height: 1.6;
   min-height: 60px;
-  max-height: 160px;
+  max-height: 120px;
   outline: none;
   padding: 0;
+  margin-bottom: 8px;
+}
+
+.inputActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .input::placeholder {
@@ -323,14 +470,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: none;
   color: #78716c;
   cursor: pointer;
   transition: color 0.15s;
-  flex-shrink: 0;
   padding: 0;
 }
 
