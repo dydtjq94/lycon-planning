@@ -7,6 +7,97 @@ import { createClient } from "@/lib/supabase/client";
 import { DiagnosisReport, DiagnosisData } from "@/app/admin/users/[id]/report/DiagnosisReport";
 import styles from "./report.module.css";
 
+// prep_data 타입 정의
+interface FamilyMember {
+  relationship: string;
+  name: string;
+  birth_date: string | null;
+  gender: string | null;
+}
+
+interface HousingData {
+  housingType: "자가" | "전세" | "월세" | "무상";
+  currentValue?: number;
+  hasLoan: boolean;
+  loanAmount?: number;
+  loanRate?: number;
+}
+
+interface FinancialAssetItem {
+  type: string;
+  owner: "self" | "spouse";
+  currentBalance: number;
+}
+
+interface InvestmentAccountData {
+  securities?: { balance: number };
+  crypto?: { balance: number };
+  gold?: { balance: number };
+}
+
+interface DebtItem {
+  type: string;
+  principal: number;
+  currentBalance?: number;
+  interestRate: number;
+}
+
+interface IncomeFormData {
+  selfLaborIncome: number;
+  selfLaborFrequency: "monthly" | "yearly";
+  spouseLaborIncome: number;
+  spouseLaborFrequency: "monthly" | "yearly";
+  additionalIncomes: {
+    type: string;
+    owner: "self" | "spouse";
+    amount: number;
+    frequency: "monthly" | "yearly";
+  }[];
+}
+
+interface ExpenseFormData {
+  livingExpense: number;
+  livingExpenseDetails?: {
+    food?: number;
+    transport?: number;
+    shopping?: number;
+    leisure?: number;
+    other?: number;
+  };
+  fixedExpenses: Array<{ type: string; title: string; amount: number; frequency: "monthly" | "yearly" }>;
+}
+
+interface NationalPensionData {
+  selfExpectedAmount: number;
+  spouseExpectedAmount: number;
+}
+
+interface RetirementPensionData {
+  selfType: "db" | "dc" | "none";
+  selfBalance: number | null;
+  spouseType: "db" | "dc" | "none";
+  spouseBalance: number | null;
+}
+
+interface PersonalPensionItem {
+  type: string;
+  owner: "self" | "spouse";
+  balance: number;
+}
+
+interface PrepDataStore {
+  family?: FamilyMember[];
+  income?: IncomeFormData;
+  expense?: ExpenseFormData;
+  savings?: FinancialAssetItem[];
+  investment?: InvestmentAccountData;
+  housing?: HousingData;
+  debt?: DebtItem[];
+  nationalPension?: NationalPensionData;
+  retirementPension?: RetirementPensionData;
+  personalPension?: PersonalPensionItem[];
+}
+
 export default function WaitingReportPage() {
   return (
     <Suspense fallback={<LoadingFallback />}>
@@ -47,10 +138,10 @@ function WaitingReportPageContent() {
           return;
         }
 
-        // 1. 프로필 정보 조회
+        // 프로필 정보 및 prep_data 조회
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("name, birth_date, target_retirement_age, report_published_at, report_opinion")
+          .select("name, birth_date, target_retirement_age, report_published_at, report_opinion, prep_data")
           .eq("id", user.id)
           .single();
 
@@ -62,143 +153,163 @@ function WaitingReportPageContent() {
           return;
         }
 
+        const prepData = (profile.prep_data || {}) as PrepDataStore;
+
+        // 기본 정보
         const birthYear = profile.birth_date
           ? new Date(profile.birth_date).getFullYear()
           : new Date().getFullYear() - 40;
         const currentAge = new Date().getFullYear() - birthYear;
 
-        // 2. 배우자 정보 조회
-        const { data: spouse } = await supabase
-          .from("family_members")
-          .select("birth_date")
-          .eq("user_id", user.id)
-          .eq("relationship", "spouse")
-          .single();
-
+        // 배우자 나이 (prep_data.family에서 추출)
+        const spouse = prepData.family?.find((m) => m.relationship === "spouse");
         const spouseAge = spouse?.birth_date
           ? new Date().getFullYear() - new Date(spouse.birth_date).getFullYear()
           : null;
 
-        // 3. 시뮬레이션 조회
-        const { data: simulation } = await supabase
-          .from("simulations")
-          .select("id")
-          .eq("profile_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
-
-        if (!simulation) throw new Error("시뮬레이션 데이터가 없습니다.");
-
-        // 4. 모든 재무 데이터 병렬 조회
-        const [
-          { data: incomes },
-          { data: expenses },
-          { data: realEstates },
-          { data: savings },
-          { data: debts },
-          { data: nationalPensions },
-          { data: retirementPensions },
-          { data: personalPensions },
-        ] = await Promise.all([
-          supabase.from("incomes").select("*").eq("simulation_id", simulation.id),
-          supabase.from("expenses").select("*").eq("simulation_id", simulation.id),
-          supabase.from("real_estates").select("*").eq("simulation_id", simulation.id),
-          supabase.from("savings").select("*").eq("simulation_id", simulation.id),
-          supabase.from("debts").select("*").eq("simulation_id", simulation.id),
-          supabase.from("national_pensions").select("*").eq("simulation_id", simulation.id),
-          supabase.from("retirement_pensions").select("*").eq("simulation_id", simulation.id),
-          supabase.from("personal_pensions").select("*").eq("simulation_id", simulation.id),
-        ]);
-
-        // 5. 데이터 매핑
+        // 월환산 함수
         const toMonthly = (amount: number, frequency: string) =>
           frequency === "yearly" ? Math.round(amount / 12) : amount;
 
-        const monthlyIncome = (incomes || []).reduce(
-          (sum, i) => sum + toMonthly(i.amount || 0, i.frequency || "monthly"),
-          0
-        );
+        // 소득 계산 (prep_data.income)
+        const incomeData = prepData.income;
+        let monthlyIncome = 0;
+        if (incomeData) {
+          monthlyIncome += toMonthly(incomeData.selfLaborIncome || 0, incomeData.selfLaborFrequency || "monthly");
+          monthlyIncome += toMonthly(incomeData.spouseLaborIncome || 0, incomeData.spouseLaborFrequency || "monthly");
+          for (const additional of incomeData.additionalIncomes || []) {
+            monthlyIncome += toMonthly(additional.amount || 0, additional.frequency || "monthly");
+          }
+        }
 
-        const monthlyFixedExpense = (expenses || [])
-          .filter((e) => e.expense_category === "fixed")
-          .reduce((sum, e) => sum + toMonthly(e.amount || 0, e.frequency || "monthly"), 0);
+        // 지출 계산 (prep_data.expense)
+        const expenseData = prepData.expense;
+        let monthlyFixedExpense = 0;
+        let monthlyLivingExpense = 0;
+        let expenseFood = 0;
+        let expenseTransport = 0;
+        let expenseShopping = 0;
+        let expenseLeisure = 0;
+        let expenseOther = 0;
 
-        const monthlyLivingExpense = (expenses || [])
-          .filter((e) => e.expense_category !== "fixed")
-          .reduce((sum, e) => sum + toMonthly(e.amount || 0, e.frequency || "monthly"), 0);
+        if (expenseData) {
+          // 고정 지출
+          for (const fixed of expenseData.fixedExpenses || []) {
+            monthlyFixedExpense += toMonthly(fixed.amount || 0, fixed.frequency || "monthly");
+          }
 
-        const realEstateAsset =
-          (realEstates || []).reduce((sum, r) => sum + (r.current_value || 0), 0) / 10000;
+          // 변동 생활비 세부 항목
+          const details = expenseData.livingExpenseDetails;
+          if (details) {
+            expenseFood = details.food || 0;
+            expenseTransport = details.transport || 0;
+            expenseShopping = details.shopping || 0;
+            expenseLeisure = details.leisure || 0;
+            expenseOther = details.other || 0;
+            monthlyLivingExpense = expenseFood + expenseTransport + expenseShopping + expenseLeisure + expenseOther;
+          } else {
+            // livingExpenseDetails가 없으면 livingExpense를 비율로 분배
+            monthlyLivingExpense = expenseData.livingExpense || 0;
+            expenseFood = Math.round(monthlyLivingExpense * 0.35);
+            expenseTransport = Math.round(monthlyLivingExpense * 0.15);
+            expenseShopping = Math.round(monthlyLivingExpense * 0.20);
+            expenseLeisure = Math.round(monthlyLivingExpense * 0.15);
+            expenseOther = monthlyLivingExpense - expenseFood - expenseTransport - expenseShopping - expenseLeisure;
+          }
+        }
 
-        // 금융자산 분리: 현금성 vs 투자
-        const cashSavings = (savings || []).filter(
-          (s) => s.type === "deposit" || s.type === "savings" || s.type === "emergency"
-        );
-        const investmentSavings = (savings || []).filter(
-          (s) => s.type !== "deposit" && s.type !== "savings" && s.type !== "emergency"
-        );
-        const cashAsset =
-          cashSavings.reduce((sum, s) => sum + (s.current_balance || 0), 0) / 10000;
-        const investmentAsset =
-          investmentSavings.reduce((sum, s) => sum + (s.current_balance || 0), 0) / 10000;
+        // 부동산 자산 (억원) - prep_data.housing
+        const housingData = prepData.housing;
+        const realEstateAsset = housingData?.housingType === "자가"
+          ? (housingData.currentValue || 0) / 10000
+          : 0;
 
-        // 지출 세부 항목 (카테고리별 분류)
-        const toMonthlyExp = (amount: number, frequency: string) =>
-          frequency === "yearly" ? Math.round(amount / 12) : amount;
-        const expenseByCategory = (category: string) =>
-          (expenses || [])
-            .filter((e) => e.expense_type === category || e.name?.includes(category))
-            .reduce((sum, e) => sum + toMonthlyExp(e.amount || 0, e.frequency || "monthly"), 0);
+        // 현금성 자산 (억원) - prep_data.savings
+        const savingsData = prepData.savings || [];
+        const cashTypes = ["checking", "savings", "deposit"];
+        const cashAsset = savingsData
+          .filter((s) => cashTypes.includes(s.type))
+          .reduce((sum, s) => sum + (s.currentBalance || 0), 0) / 10000;
 
-        const expenseFood = expenseByCategory("food") || Math.round(monthlyLivingExpense * 0.3);
-        const expenseTransport = expenseByCategory("transport") || Math.round(monthlyLivingExpense * 0.15);
-        const expenseShopping = expenseByCategory("shopping") || Math.round(monthlyLivingExpense * 0.2);
-        const expenseLeisure = expenseByCategory("leisure") || Math.round(monthlyLivingExpense * 0.15);
-        const expenseOther = monthlyLivingExpense - expenseFood - expenseTransport - expenseShopping - expenseLeisure;
+        // 투자 자산 (억원) - prep_data.investment + prep_data.savings 중 투자형
+        const investmentData = prepData.investment;
+        let investmentAsset = 0;
+        if (investmentData) {
+          investmentAsset += (investmentData.securities?.balance || 0) / 10000;
+          investmentAsset += (investmentData.crypto?.balance || 0) / 10000;
+          investmentAsset += (investmentData.gold?.balance || 0) / 10000;
+        }
+        // savings에서 투자형 자산 추가
+        investmentAsset += savingsData
+          .filter((s) => !cashTypes.includes(s.type))
+          .reduce((sum, s) => sum + (s.currentBalance || 0), 0) / 10000;
 
-        const pensionAsset =
-          ((retirementPensions || []).reduce((sum, p) => sum + (p.current_balance || 0), 0) +
-            (personalPensions || []).reduce((sum, p) => sum + (p.current_balance || 0), 0)) /
-          10000;
+        // 연금 자산 (억원) - 퇴직연금 + 개인연금 현재 잔액
+        const retirementData = prepData.retirementPension;
+        const personalPensions = prepData.personalPension || [];
 
-        const mortgageDebts = (debts || []).filter((d) => d.type === "mortgage");
-        const creditDebts = (debts || []).filter(
-          (d) => d.type === "credit" || d.type === "credit_line"
-        );
-        const otherDebts = (debts || []).filter(
-          (d) => !["mortgage", "credit", "credit_line"].includes(d.type)
-        );
+        let pensionAsset = 0;
+        if (retirementData) {
+          pensionAsset += (retirementData.selfBalance || 0) / 10000;
+          pensionAsset += (retirementData.spouseBalance || 0) / 10000;
+        }
+        pensionAsset += personalPensions.reduce((sum, p) => sum + (p.balance || 0), 0) / 10000;
 
-        const mortgageAmount = mortgageDebts.reduce(
-          (sum, d) => sum + (d.current_balance || d.principal || 0),
-          0
-        );
-        const creditLoanAmount = creditDebts.reduce(
-          (sum, d) => sum + (d.current_balance || d.principal || 0),
-          0
-        );
-        const otherDebtAmount = otherDebts.reduce(
-          (sum, d) => sum + (d.current_balance || d.principal || 0),
-          0
-        );
+        // 부채 분류 - prep_data.debt + prep_data.housing 대출
+        const debtData = prepData.debt || [];
 
-        const selfNationalPension = (nationalPensions || []).find((p) => p.owner === "self");
-        const spouseNationalPension = (nationalPensions || []).find((p) => p.owner === "spouse");
+        // 주담대: housing 대출 + debt 중 mortgage 타입
+        let mortgageAmount = 0;
+        let mortgageRate = 4.5;
+        if (housingData?.hasLoan) {
+          mortgageAmount += housingData.loanAmount || 0;
+          mortgageRate = housingData.loanRate || 4.5;
+        }
+        const mortgageDebts = debtData.filter((d) => d.type === "mortgage");
+        mortgageAmount += mortgageDebts.reduce((sum, d) => sum + (d.currentBalance || d.principal || 0), 0);
+        if (mortgageDebts.length > 0) {
+          mortgageRate = mortgageDebts[0].interestRate || 4.5;
+        }
 
-        const calculateMonthlyPension = (balance: number, years: number) => {
-          const months = (years || 20) * 12;
+        // 신용대출
+        const creditDebts = debtData.filter((d) => d.type === "credit" || d.type === "credit_line");
+        const creditLoanAmount = creditDebts.reduce((sum, d) => sum + (d.currentBalance || d.principal || 0), 0);
+        const creditLoanRate = creditDebts[0]?.interestRate || 6.8;
+
+        // 기타 부채
+        const otherDebts = debtData.filter((d) => !["mortgage", "credit", "credit_line"].includes(d.type));
+        const otherDebtAmount = otherDebts.reduce((sum, d) => sum + (d.currentBalance || d.principal || 0), 0);
+        const otherDebtRate = otherDebts[0]?.interestRate || 5.0;
+
+        // 국민연금 - prep_data.nationalPension
+        const nationalPensionData = prepData.nationalPension;
+        const nationalPensionPersonal = nationalPensionData?.selfExpectedAmount || 0;
+        const nationalPensionSpouse = nationalPensionData?.spouseExpectedAmount || 0;
+
+        // 퇴직연금 월수령액 계산 (잔액 / 20년)
+        const calculateMonthlyPension = (balance: number, years: number = 20) => {
+          const months = years * 12;
           return Math.round(balance / months);
         };
 
-        const selfRetirementPension = (retirementPensions || []).find((p) => p.owner === "self");
-        const spouseRetirementPension = (retirementPensions || []).find(
-          (p) => p.owner === "spouse"
-        );
+        const retirementPensionPersonal = retirementData?.selfBalance
+          ? calculateMonthlyPension(retirementData.selfBalance)
+          : 0;
+        const retirementPensionSpouse = retirementData?.spouseBalance
+          ? calculateMonthlyPension(retirementData.spouseBalance)
+          : 0;
 
-        const selfPersonalPensions = (personalPensions || []).filter((p) => p.owner === "self");
-        const spousePersonalPensions = (personalPensions || []).filter(
-          (p) => p.owner === "spouse"
+        // 개인연금 월수령액
+        const selfPersonalPensions = personalPensions.filter((p) => p.owner === "self");
+        const spousePersonalPensions = personalPensions.filter((p) => p.owner === "spouse");
+
+        const privatePensionPersonal = selfPersonalPensions.reduce(
+          (sum, p) => sum + calculateMonthlyPension(p.balance || 0),
+          0
+        );
+        const privatePensionSpouse = spousePersonalPensions.reduce(
+          (sum, p) => sum + calculateMonthlyPension(p.balance || 0),
+          0
         );
 
         const diagnosisData: DiagnosisData = {
@@ -207,42 +318,28 @@ function WaitingReportPageContent() {
           spouseAge,
           lifeExpectancy: 90,
           targetRetirementAge: profile.target_retirement_age || 60,
-          nationalPensionPersonal: selfNationalPension?.expected_monthly_amount || 0,
-          nationalPensionSpouse: spouseNationalPension?.expected_monthly_amount || 0,
-          retirementPensionPersonal: selfRetirementPension
-            ? calculateMonthlyPension(
-                selfRetirementPension.current_balance || 0,
-                selfRetirementPension.receiving_years || 20
-              )
-            : 0,
-          retirementPensionSpouse: spouseRetirementPension
-            ? calculateMonthlyPension(
-                spouseRetirementPension.current_balance || 0,
-                spouseRetirementPension.receiving_years || 20
-              )
-            : 0,
-          privatePensionPersonal: selfPersonalPensions.reduce(
-            (sum, p) =>
-              sum + calculateMonthlyPension(p.current_balance || 0, p.receiving_years || 20),
-            0
-          ),
-          privatePensionSpouse: spousePersonalPensions.reduce(
-            (sum, p) =>
-              sum + calculateMonthlyPension(p.current_balance || 0, p.receiving_years || 20),
-            0
-          ),
+          // 연금 (만원/월)
+          nationalPensionPersonal,
+          nationalPensionSpouse,
+          retirementPensionPersonal,
+          retirementPensionSpouse,
+          privatePensionPersonal,
+          privatePensionSpouse,
           otherIncomePersonal: 0,
           otherIncomeSpouse: 0,
+          // 자산 (억원)
           realEstateAsset,
           cashAsset,
           investmentAsset,
           pensionAsset,
+          // 부채 (만원)
           mortgageAmount,
-          mortgageRate: mortgageDebts[0]?.interest_rate || 4.5,
+          mortgageRate,
           creditLoanAmount,
-          creditLoanRate: creditDebts[0]?.interest_rate || 6.8,
+          creditLoanRate,
           otherDebtAmount,
-          otherDebtRate: otherDebts[0]?.interest_rate || 5.0,
+          otherDebtRate,
+          // 현금흐름 (만원/월)
           monthlyIncome,
           monthlyFixedExpense,
           monthlyLivingExpense,

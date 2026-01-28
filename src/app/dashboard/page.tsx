@@ -7,8 +7,8 @@ import { FinancialProvider, type ProfileBasics, type FamilyMember } from "@/cont
 import type { Simulation } from "@/types";
 import { DashboardContent } from "./DashboardContent";
 
-// PIN 인증 유효 시간 (1시간)
-const PIN_VALID_DURATION = 60 * 60 * 1000;
+// PIN 인증 세션 키
+const PIN_SESSION_KEY = "pin_verified";
 
 interface DashboardData {
   simulation: Simulation;
@@ -49,14 +49,9 @@ export default function DashboardPage() {
         return;
       }
 
-      // PIN 인증 시간 확인
-      const pinVerifiedAt = profile.pin_verified_at
-        ? new Date(profile.pin_verified_at).getTime()
-        : 0;
-      const now = Date.now();
-
-      // PIN 인증이 유효한지 확인 (1시간 이내)
-      if (now - pinVerifiedAt > PIN_VALID_DURATION) {
+      // 세션 기반 PIN 인증 확인 (브라우저 탭/창 닫으면 초기화)
+      const pinVerified = sessionStorage.getItem(PIN_SESSION_KEY);
+      if (!pinVerified) {
         localStorage.setItem("returnUrl", "/dashboard");
         router.replace("/auth/pin-verify");
         return;

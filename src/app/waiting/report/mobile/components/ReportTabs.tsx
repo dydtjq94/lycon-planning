@@ -276,20 +276,31 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
     return "low";
   };
 
-  // 요약 카드 상태
-  const getSavingsStatus = () => {
-    if (savingsRate >= 20) return { status: "good", label: "양호" };
-    if (savingsRate >= 10) return { status: "caution", label: "주의" };
-    return { status: "warning", label: "위험" };
-  };
-  const savingsStatus = getSavingsStatus();
+  // 은퇴 판정 (요약 + 정밀진단에서 공통 사용)
+  const getRetirementVerdict = () => {
+    const isRetirementPossible = monthlyGap >= 0;
+    const coverageGap = monthlyExpense - monthlyPension;
+    const requiredAdditionalAsset =
+      coverageGap > 0 ? Math.round(((coverageGap * 12 * retirementYears) / 10000) * 10) / 10 : 0;
+    const hasEnoughAsset = liquidAssetAtRetirement >= requiredAdditionalAsset;
 
-  const getRetirementStatus = () => {
-    if (pensionCoverageRate >= 100) return { status: "good", label: "양호" };
-    if (pensionCoverageRate >= 70) return { status: "caution", label: "주의" };
-    return { status: "warning", label: "위험" };
+    if (isRetirementPossible) {
+      return { status: "possible" as const, label: "가능", message: `${data.targetRetirementAge}세 은퇴 가능` };
+    } else if (hasEnoughAsset) {
+      return { status: "conditional" as const, label: "조건부", message: `${data.targetRetirementAge}세 조건부 가능` };
+    } else {
+      return { status: "difficult" as const, label: "재검토", message: `${data.targetRetirementAge}세 재검토 필요` };
+    }
   };
-  const retirementStatus = getRetirementStatus();
+  const retirementVerdict = getRetirementVerdict();
+
+  // 요약 카드 상태
+  const getNetWorthStatus = () => {
+    if (netWorthPercentile.idx <= 3) return { status: "good", label: netWorthPercentile.display };
+    if (netWorthPercentile.idx <= 5) return { status: "caution", label: netWorthPercentile.display };
+    return { status: "warning", label: netWorthPercentile.display };
+  };
+  const netWorthStatus = getNetWorthStatus();
 
   const getPensionStatus = () => {
     if (pensionCoverageRate >= 80) return { status: "good", label: "양호" };
@@ -360,40 +371,42 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
       <div className={styles.tabContent}>
         {/* ===== 요약 탭 ===== */}
         {activeTab === "summary" && (
-          <div className={styles.summaryCards}>
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryCardTitle}>저축 여력</div>
-              <div className={styles.summaryCardValue}>
-                {savingsRate >= 0 ? `${Math.round(savingsRate)}%` : "적자"}
-              </div>
-              <div className={`${styles.summaryCardStatus} ${styles[savingsStatus.status]}`}>
-                {savingsStatus.label}
-              </div>
-            </div>
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryCardTitle}>은퇴 현금흐름</div>
-              <div className={styles.summaryCardValue}>
-                {monthlyGap >= 0 ? `+${monthlyGap}` : monthlyGap}만원
-              </div>
-              <div className={`${styles.summaryCardStatus} ${styles[retirementStatus.status]}`}>
-                {retirementStatus.label}
+          <>
+            {/* 은퇴 판정 - 전체 너비 */}
+            <div className={`${styles.summaryCard} ${styles.fullWidth}`}>
+              <div className={styles.summaryCardTitle}>은퇴 판정</div>
+              <div className={styles.verdictRow}>
+                <div className={`${styles.verdictBadgeLarge} ${styles[retirementVerdict.status]}`}>
+                  {retirementVerdict.label}
+                </div>
+                <div className={styles.verdictMessage}>{retirementVerdict.message}</div>
               </div>
             </div>
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryCardTitle}>연금 충당률</div>
-              <div className={styles.summaryCardValue}>{pensionCoverageRate}%</div>
-              <div className={`${styles.summaryCardStatus} ${styles[pensionStatus.status]}`}>
-                {pensionStatus.label}
+            {/* 나머지 3개 카드 */}
+            <div className={styles.summaryCards}>
+              <div className={styles.summaryCard}>
+                <div className={styles.summaryCardTitle}>순자산</div>
+                <div className={styles.summaryCardValue}>{netWorth}억원</div>
+                <div className={`${styles.summaryCardStatus} ${styles[netWorthStatus.status]}`}>
+                  {netWorthStatus.label}
+                </div>
+              </div>
+              <div className={styles.summaryCard}>
+                <div className={styles.summaryCardTitle}>연금 충당률</div>
+                <div className={styles.summaryCardValue}>{pensionCoverageRate}%</div>
+                <div className={`${styles.summaryCardStatus} ${styles[pensionStatus.status]}`}>
+                  {pensionStatus.label}
+                </div>
+              </div>
+              <div className={styles.summaryCard}>
+                <div className={styles.summaryCardTitle}>자산 지속성</div>
+                <div className={styles.summaryCardValue}>{sustainabilityStatus.value}</div>
+                <div className={`${styles.summaryCardStatus} ${styles[sustainabilityStatus.status]}`}>
+                  {sustainabilityStatus.label}
+                </div>
               </div>
             </div>
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryCardTitle}>자산 지속성</div>
-              <div className={styles.summaryCardValue}>{sustainabilityStatus.value}</div>
-              <div className={`${styles.summaryCardStatus} ${styles[sustainabilityStatus.status]}`}>
-                {sustainabilityStatus.label}
-              </div>
-            </div>
-          </div>
+          </>
         )}
 
         {/* ===== 기초진단 탭 ===== */}

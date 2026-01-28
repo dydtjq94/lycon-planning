@@ -188,15 +188,9 @@ function WaitingPageContent() {
         // 예약이 없거나 이미 confirmed인 경우 무시
       }
 
-      const PIN_TIMEOUT_MINUTES = 60;
-      const pinVerifiedAt = profileData?.pin_verified_at;
-      if (!pinVerifiedAt) {
-        router.replace("/auth/pin-verify");
-        return;
-      }
-      const minutesSinceVerified =
-        (Date.now() - new Date(pinVerifiedAt).getTime()) / 1000 / 60;
-      if (minutesSinceVerified > PIN_TIMEOUT_MINUTES) {
+      // 세션 기반 PIN 인증 확인 (브라우저 탭/창 닫으면 초기화)
+      const pinVerified = sessionStorage.getItem("pin_verified");
+      if (!pinVerified) {
         router.replace("/auth/pin-verify");
         return;
       }

@@ -78,8 +78,8 @@ export function DiagnosisReport({
   const [published, setPublished] = useState(isPublished);
 
   // 금융자산 = 현금 + 투자
-  const financialAsset = data.cashAsset + data.investmentAsset;
-  const totalAsset = data.realEstateAsset + financialAsset + data.pensionAsset;
+  const financialAsset = Math.round((data.cashAsset + data.investmentAsset) * 100) / 100;
+  const totalAsset = Math.round((data.realEstateAsset + financialAsset + data.pensionAsset) * 100) / 100;
   const totalDebt = data.mortgageAmount + data.creditLoanAmount + data.otherDebtAmount;
   const netWorth = Math.round((totalAsset - totalDebt / 10000) * 100) / 100;
 
@@ -537,7 +537,7 @@ export function DiagnosisReport({
           <div className={styles.summaryGrid}>
             <div className={styles.summaryItem}>
               <span className={styles.summaryLabel}>총자산</span>
-              <span className={styles.summaryValue}>{totalAsset}억원</span>
+              <span className={styles.summaryValue}>{totalAsset.toFixed(1)}억원</span>
             </div>
             <div className={styles.summaryItem}>
               <span className={styles.summaryLabel}>총부채</span>
@@ -547,7 +547,7 @@ export function DiagnosisReport({
             </div>
             <div className={`${styles.summaryItem} ${styles.highlight}`}>
               <span className={styles.summaryLabel}>순자산</span>
-              <span className={styles.summaryValue}>{netWorth}억원</span>
+              <span className={styles.summaryValue}>{netWorth.toFixed(1)}억원</span>
             </div>
             <div className={styles.summaryItem}>
               <span className={styles.summaryLabel}>월 저축여력</span>
@@ -1111,7 +1111,7 @@ export function DiagnosisReport({
                     <div className={styles.percentileLabels}>
                       <span>하위</span>
                       <span className={styles.percentileDetail}>
-                        {netWorthPercentile.display} ({netWorth}억)
+                        {netWorthPercentile.display} ({netWorth.toFixed(1)}억)
                       </span>
                       <span>상위</span>
                     </div>
@@ -1314,7 +1314,7 @@ export function DiagnosisReport({
               <span className={styles.dsLabel}>총수요</span>
               <div className={styles.dsTrack}>
                 <div className={`${styles.dsBar} ${styles.demand}`} style={{ width: "100%" }}>
-                  <span className={styles.dsValue}>{totalDemand}억</span>
+                  <span className={styles.dsValue}>{totalDemand.toFixed(1)}억</span>
                 </div>
               </div>
             </div>
@@ -1322,11 +1322,11 @@ export function DiagnosisReport({
               <span className={styles.dsLabel}>총공급</span>
               <div className={styles.dsTrack}>
                 <div className={`${styles.dsBar} ${styles.supply}`} style={{ width: `${supplyRatio}%` }}>
-                  <span className={styles.dsValue}>{totalSupply}억</span>
+                  <span className={styles.dsValue}>{totalSupply.toFixed(1)}억</span>
                 </div>
                 {supplyDeficit > 0 && (
                   <div className={`${styles.dsBar} ${styles.deficit}`} style={{ width: `${deficitRatio}%` }}>
-                    <span className={styles.dsValue}>-{supplyDeficit}억</span>
+                    <span className={styles.dsValue}>-{supplyDeficit.toFixed(1)}억</span>
                   </div>
                 )}
               </div>
@@ -1391,12 +1391,12 @@ export function DiagnosisReport({
                 <div className={styles.assetComparisonCol}>
                   <div className={styles.assetComparisonItem}>
                     <div className={styles.comparisonLabel}>현재</div>
-                    <div className={styles.comparisonValue}>{totalAsset}억</div>
+                    <div className={styles.comparisonValue}>{totalAsset.toFixed(1)}억</div>
                   </div>
                   <div className={styles.assetComparisonArrow}>↓</div>
                   <div className={`${styles.assetComparisonItem} ${styles.highlight}`}>
                     <div className={styles.comparisonLabel}>{yearsToRetirement}년 후</div>
-                    <div className={styles.comparisonValue}>{totalAtRetirement}억</div>
+                    <div className={styles.comparisonValue}>{totalAtRetirement.toFixed(1)}억</div>
                   </div>
                 </div>
                 <div className={styles.assetDetailCol}>
@@ -1404,26 +1404,26 @@ export function DiagnosisReport({
                     <div className={styles.assetBreakdownItem}>
                       <span className={`${styles.legendDot} ${styles.realestate}`}></span>
                       <span className={styles.breakdownName}>부동산</span>
-                      <span className={styles.breakdownAmount}>{realEstateAtRetirement}억</span>
+                      <span className={styles.breakdownAmount}>{realEstateAtRetirement.toFixed(1)}억</span>
                       <span className={styles.breakdownRatio}>({realEstateRatioAtRetirement}%)</span>
                     </div>
                     <div className={styles.assetBreakdownItem}>
                       <span className={`${styles.legendDot} ${styles.investment}`}></span>
                       <span className={styles.breakdownName}>금융자산</span>
-                      <span className={styles.breakdownAmount}>{financialAtRetirement}억</span>
+                      <span className={styles.breakdownAmount}>{financialAtRetirement.toFixed(1)}억</span>
                       <span className={styles.breakdownRatio}>({financialRatioAtRetirement}%)</span>
                     </div>
                     <div className={styles.assetBreakdownItem}>
                       <span className={`${styles.legendDot} ${styles.pension}`}></span>
                       <span className={styles.breakdownName}>연금</span>
-                      <span className={styles.breakdownAmount}>{pensionAtRetirement}억</span>
+                      <span className={styles.breakdownAmount}>{pensionAtRetirement.toFixed(1)}억</span>
                       <span className={styles.breakdownRatio}>({pensionRatioAtRetirement}%)</span>
                     </div>
                   </div>
                   <div className={styles.assetSummaryStats}>
                     <div className={styles.summaryStatItem}>
                       <span className={styles.statLabel}>예상 총자산</span>
-                      <span className={styles.statValue}>{totalAtRetirement}억원</span>
+                      <span className={styles.statValue}>{totalAtRetirement.toFixed(1)}억원</span>
                     </div>
                     <div className={styles.summaryStatItem}>
                       <span className={styles.statLabel}>예상 부채</span>
@@ -1433,7 +1433,7 @@ export function DiagnosisReport({
                     </div>
                     <div className={`${styles.summaryStatItem} ${styles.highlight}`}>
                       <span className={styles.statLabel}>예상 순자산</span>
-                      <span className={styles.statValue}>{netWorthAtRetirement}억원</span>
+                      <span className={styles.statValue}>{netWorthAtRetirement.toFixed(1)}억원</span>
                     </div>
                   </div>
                 </div>
@@ -1459,7 +1459,7 @@ export function DiagnosisReport({
                 <div className={styles.scenarioAge}>{earlyRetirement.retireAge}세 은퇴</div>
                 <div className={styles.scenarioStat}>
                   <span className={styles.scenarioLabel}>은퇴 시 금융자산</span>
-                  <span className={styles.scenarioValue}>{earlyRetirement.assetAtRetire}억</span>
+                  <span className={styles.scenarioValue}>{earlyRetirement.assetAtRetire.toFixed(1)}억</span>
                 </div>
                 <div className={styles.scenarioStat}>
                   <span className={styles.scenarioLabel}>자산 소진시점</span>
@@ -1475,7 +1475,7 @@ export function DiagnosisReport({
                 <div className={styles.scenarioAge}>{normalRetirement.retireAge}세 은퇴</div>
                 <div className={styles.scenarioStat}>
                   <span className={styles.scenarioLabel}>은퇴 시 금융자산</span>
-                  <span className={styles.scenarioValue}>{normalRetirement.assetAtRetire}억</span>
+                  <span className={styles.scenarioValue}>{normalRetirement.assetAtRetire.toFixed(1)}억</span>
                 </div>
                 <div className={styles.scenarioStat}>
                   <span className={styles.scenarioLabel}>자산 소진시점</span>
@@ -1491,7 +1491,7 @@ export function DiagnosisReport({
                 <div className={styles.scenarioAge}>{lateRetirement.retireAge}세 은퇴</div>
                 <div className={styles.scenarioStat}>
                   <span className={styles.scenarioLabel}>은퇴 시 금융자산</span>
-                  <span className={styles.scenarioValue}>{lateRetirement.assetAtRetire}억</span>
+                  <span className={styles.scenarioValue}>{lateRetirement.assetAtRetire.toFixed(1)}억</span>
                 </div>
                 <div className={styles.scenarioStat}>
                   <span className={styles.scenarioLabel}>자산 소진시점</span>

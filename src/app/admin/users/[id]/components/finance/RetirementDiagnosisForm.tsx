@@ -1,40 +1,190 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Pencil, X, FileText } from "lucide-react";
+import { Plus, Trash2, Pencil, Check, X, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatMoney } from "@/lib/utils";
-import {
-  getFamilyMembers,
-  createFamilyMember,
-  updateFamilyMember,
-  deleteFamilyMember,
-  FamilyMember,
-  RELATIONSHIP_LABELS,
-} from "@/lib/services/familyService";
-import { getRealEstates, createRealEstate, deleteRealEstate } from "@/lib/services/realEstateService";
-import { getSavings, createSavings, deleteSavings } from "@/lib/services/savingsService";
-import { getDebts, createDebt, deleteDebt, getDefaultMaturity } from "@/lib/services/debtService";
-import { getIncomes, createIncome, deleteIncome, INCOME_TYPE_LABELS } from "@/lib/services/incomeService";
-import { getExpenses, createExpense, deleteExpense, EXPENSE_TYPE_LABELS } from "@/lib/services/expenseService";
-import { getNationalPensions, createNationalPension, deleteNationalPension } from "@/lib/services/nationalPensionService";
-import { getRetirementPensions, createRetirementPension, deleteRetirementPension } from "@/lib/services/retirementPensionService";
-import { getPersonalPensions, createPersonalPension, deletePersonalPension } from "@/lib/services/personalPensionService";
-import type {
-  RealEstate,
-  Savings,
-  Debt,
-  Income,
-  Expense,
-  NationalPension,
-  RetirementPension,
-  PersonalPension,
-  Owner,
-  IncomeType,
-  ExpenseType,
-} from "@/types/tables";
 import styles from "./RetirementDiagnosisForm.module.css";
+
+// prep_data 타입 정의
+type RelationshipType = "self" | "spouse" | "child" | "parent";
+type GenderType = "male" | "female";
+
+interface PrepFamilyMember {
+  relationship: RelationshipType;
+  name: string;
+  birth_date: string | null;
+  gender: GenderType | null;
+}
+
+interface PrepHousingData {
+  housingType: "자가" | "전세" | "월세" | "무상";
+  currentValue?: number;
+  deposit?: number;
+  monthlyRent?: number;
+  maintenanceFee?: number;
+  hasLoan: boolean;
+  loanType?: "mortgage" | "jeonse";
+  loanAmount?: number;
+  loanRate?: number;
+}
+
+interface PrepSavingsItem {
+  id?: string;
+  type: string;
+  title: string;
+  owner: "self" | "spouse";
+  currentBalance: number;
+}
+
+interface PrepInvestmentData {
+  securities?: { balance: number; investmentTypes?: string[] };
+  crypto?: { balance: number };
+  gold?: { balance: number };
+}
+
+interface PrepDebtItem {
+  id?: string;
+  type: string;
+  title: string;
+  principal: number;
+  currentBalance?: number;
+  interestRate: number;
+}
+
+interface PrepIncomeData {
+  selfLaborIncome: number;
+  selfLaborFrequency: "monthly" | "yearly";
+  spouseLaborIncome: number;
+  spouseLaborFrequency: "monthly" | "yearly";
+  additionalIncomes: {
+    id?: string;
+    type: string;
+    owner: "self" | "spouse";
+    title?: string;
+    amount: number;
+    frequency: "monthly" | "yearly";
+  }[];
+}
+
+interface PrepExpenseData {
+  livingExpense: number;
+  livingExpenseDetails?: {
+    food?: number;
+    transport?: number;
+    shopping?: number;
+    leisure?: number;
+    other?: number;
+  };
+  fixedExpenses: Array<{ id?: string; type: string; title: string; amount: number; frequency: "monthly" | "yearly" }>;
+}
+
+interface PrepNationalPensionData {
+  selfType: string;
+  selfExpectedAmount: number;
+  selfStartAge?: number; // 수령 시작 나이 (기본 65)
+  spouseType: string;
+  spouseExpectedAmount: number;
+  spouseStartAge?: number;
+}
+
+interface PrepRetirementPensionData {
+  selfType: "db" | "dc" | "none";
+  selfYearsWorked: number | null;
+  selfBalance: number | null;
+  selfWithdrawalPeriod?: number; // 인출 기간 (기본 20년)
+  spouseType: "db" | "dc" | "none";
+  spouseYearsWorked: number | null;
+  spouseBalance: number | null;
+  spouseWithdrawalPeriod?: number;
+}
+
+interface PrepPersonalPensionItem {
+  id?: string;
+  type: string;
+  owner: "self" | "spouse";
+  balance: number;
+  withdrawalPeriod?: number; // 인출 기간 (기본 20년)
+}
+
+interface PrepRetirementGoals {
+  targetRetirementAge: number;
+  targetMonthlyExpense: number;
+  lifeExpectancy?: number; // 기대수명 (기본 90)
+}
+
+interface PrepDataStore {
+  family?: PrepFamilyMember[];
+  income?: PrepIncomeData;
+  expense?: PrepExpenseData;
+  savings?: PrepSavingsItem[];
+  investment?: PrepInvestmentData;
+  housing?: PrepHousingData;
+  debt?: PrepDebtItem[];
+  nationalPension?: PrepNationalPensionData;
+  retirementPension?: PrepRetirementPensionData;
+  personalPension?: PrepPersonalPensionItem[];
+  retirementGoals?: PrepRetirementGoals;
+}
+
+// 라벨 정의
+const DEBT_TYPE_LABELS: Record<string, string> = {
+  mortgage: "주택담보대출",
+  jeonse: "전세자금대출",
+  credit: "신용대출",
+  car: "자동차대출",
+  student: "학자금대출",
+  card: "카드론",
+  other: "기타",
+};
+
+const INCOME_TYPE_LABELS: Record<string, string> = {
+  labor: "근로소득",
+  business: "사업소득",
+  pension: "연금소득",
+  rental: "임대소득",
+  financial: "금융소득",
+  other: "기타소득",
+};
+
+const EXPENSE_TYPE_LABELS: Record<string, string> = {
+  housing: "주거비",
+  education: "교육비",
+  insurance: "보험료",
+  loan: "대출상환",
+  other: "기타",
+};
+
+const LIVING_EXPENSE_LABELS: Record<string, string> = {
+  food: "식비",
+  transport: "교통비",
+  shopping: "쇼핑/미용",
+  leisure: "여가/문화",
+  other: "기타",
+};
+
+const SAVINGS_TYPE_LABELS: Record<string, string> = {
+  checking: "입출금통장",
+  savings: "적금",
+  deposit: "예금",
+};
+
+const INVESTMENT_TYPE_LABELS: Record<string, string> = {
+  domestic_stock: "국내주식",
+  foreign_stock: "해외주식",
+  fund: "펀드",
+  bond: "채권",
+  crypto: "암호화폐",
+  gold: "금",
+  other: "기타",
+};
+
+const PERSONAL_PENSION_TYPE_LABELS: Record<string, string> = {
+  pension_savings: "연금저축",
+  irp: "개인IRP",
+  isa: "ISA",
+};
 
 interface RetirementDiagnosisFormProps {
   userId: string;
@@ -49,581 +199,238 @@ export function RetirementDiagnosisForm({
 }: RetirementDiagnosisFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [simulationId, setSimulationId] = useState<string | null>(null);
+  const [prepData, setPrepData] = useState<PrepDataStore>({});
   const [customerName, setCustomerName] = useState("고객님");
-
-  // Section 1: 가계 정보
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  const [familyModalOpen, setFamilyModalOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
-  const [memberForm, setMemberForm] = useState({
-    name: "",
-    relationship: "spouse" as "spouse" | "child" | "parent",
-    birth_date: "",
-    gender: "male" as "male" | "female",
-  });
-
-  // Section 2: 자산 (금융 자산 제외)
-  const [realEstates, setRealEstates] = useState<RealEstate[]>([]);
-  const [addingRealEstate, setAddingRealEstate] = useState(false);
-  const [realEstateForm, setRealEstateForm] = useState({
-    type: "residence" as RealEstate["type"],
-    title: "",
-    value: 0,
-    loan: 0,
-    owner: "self" as Owner,
-  });
-
-  // Section 3: 부채
-  const [debts, setDebts] = useState<Debt[]>([]);
-  const [addingDebt, setAddingDebt] = useState(false);
-  const [debtForm, setDebtForm] = useState({
-    type: "mortgage" as Debt["type"],
-    title: "",
-    balance: 0,
-    rate: 4.0,
-  });
-
-  // Section 4: 소득/지출
-  const [incomes, setIncomes] = useState<Income[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [addingIncome, setAddingIncome] = useState(false);
-  const [addingExpense, setAddingExpense] = useState(false);
-  const [incomeForm, setIncomeForm] = useState({
-    type: "labor" as IncomeType,
-    owner: "self" as "self" | "spouse",
-    title: "",
-    amount: 0,
-  });
-  const [expenseForm, setExpenseForm] = useState({
-    type: "living" as ExpenseType,
-    title: "",
-    amount: 0,
-  });
-
-  // Section 5: 연금
-  const [nationalPensions, setNationalPensions] = useState<NationalPension[]>([]);
-  const [retirementPensions, setRetirementPensions] = useState<RetirementPension[]>([]);
-  const [personalPensions, setPersonalPensions] = useState<PersonalPension[]>([]);
-  const [addingPension, setAddingPension] = useState<"national" | "retirement" | "personal" | null>(null);
-  const [pensionForm, setPensionForm] = useState({
-    category: "national" as "national" | "retirement" | "personal",
-    type: "national" as string,
-    amount: 0,
-    owner: "self" as Owner,
-    startAge: 65,
-  });
-
-  // Section 6: 금융자산
-  const [savings, setSavings] = useState<Savings[]>([]);
-  const [addingSavings, setAddingSavings] = useState<"savings" | "investment" | null>(null);
-  const [savingsForm, setSavingsForm] = useState({
-    type: "savings" as Savings["type"],
-    title: "",
-    balance: 0,
-    owner: "self" as Owner,
-  });
-
   const [saving, setSaving] = useState(false);
 
+  // 편집 상태
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+
+  // 폼 데이터
+  const [familyMembers, setFamilyMembers] = useState<PrepFamilyMember[]>([]);
+  const [housingData, setHousingData] = useState<PrepHousingData | null>(null);
+  const [debts, setDebts] = useState<PrepDebtItem[]>([]);
+  const [incomeData, setIncomeData] = useState<PrepIncomeData | null>(null);
+  const [expenseData, setExpenseData] = useState<PrepExpenseData | null>(null);
+  const [nationalPensionData, setNationalPensionData] = useState<PrepNationalPensionData | null>(null);
+  const [retirementPensionData, setRetirementPensionData] = useState<PrepRetirementPensionData | null>(null);
+  const [personalPensions, setPersonalPensions] = useState<PrepPersonalPensionItem[]>([]);
+  const [savingsItems, setSavingsItems] = useState<PrepSavingsItem[]>([]);
+  const [retirementGoals, setRetirementGoals] = useState<PrepRetirementGoals>({
+    targetRetirementAge: retirementAge,
+    targetMonthlyExpense: 300,
+  });
+
   const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
   const currentAge = currentYear - birthYear;
 
-  // Load all data
+  // prep_data 저장 함수
+  const savePrepData = useCallback(async (newPrepData: PrepDataStore) => {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ prep_data: newPrepData })
+      .eq("id", userId);
+
+    if (error) {
+      console.error("Failed to save prep_data:", error);
+      throw error;
+    }
+    setPrepData(newPrepData);
+  }, [userId]);
+
+  // 데이터 로드
   useEffect(() => {
     const loadData = async () => {
       const supabase = createClient();
 
-      // Get customer name
       const { data: profile } = await supabase
         .from("profiles")
-        .select("name")
+        .select("name, prep_data")
         .eq("id", userId)
         .single();
+
       if (profile?.name) {
         setCustomerName(profile.name);
       }
 
-      // Get or create simulation
-      const { data: existing } = await supabase
-        .from("simulations")
-        .select("id")
-        .eq("profile_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+      const loaded = (profile?.prep_data || {}) as PrepDataStore;
+      setPrepData(loaded);
 
-      let simId: string;
-      if (existing) {
-        simId = existing.id;
-      } else {
-        const { data: newSim } = await supabase
-          .from("simulations")
-          .insert({
-            profile_id: userId,
-            name: "기본 시뮬레이션",
-            birth_year: birthYear,
-            retirement_age: retirementAge,
-          })
-          .select("id")
-          .single();
-        simId = newSim!.id;
+      setFamilyMembers(loaded.family || []);
+      setHousingData(loaded.housing || null);
+      setDebts((loaded.debt || []).map((d, idx) => ({ ...d, id: d.id || `debt-${idx}` })));
+      setIncomeData(loaded.income || null);
+      setExpenseData(loaded.expense || null);
+      setNationalPensionData(loaded.nationalPension || null);
+      setRetirementPensionData(loaded.retirementPension || null);
+      setPersonalPensions((loaded.personalPension || []).map((p, idx) => ({ ...p, id: p.id || `personal-${idx}` })));
+      setSavingsItems((loaded.savings || []).map((s, idx) => ({ ...s, id: s.id || `savings-${idx}` })));
+      if (loaded.retirementGoals) {
+        setRetirementGoals(loaded.retirementGoals);
       }
-      setSimulationId(simId);
-
-      // Load all data in parallel
-      const [
-        familyData,
-        realEstatesData,
-        debtsData,
-        incomesData,
-        expensesData,
-        nationalPensionsData,
-        retirementPensionsData,
-        personalPensionsData,
-        savingsData,
-      ] = await Promise.all([
-        getFamilyMembers(userId),
-        getRealEstates(simId),
-        getDebts(simId),
-        getIncomes(simId),
-        getExpenses(simId),
-        getNationalPensions(simId),
-        getRetirementPensions(simId),
-        getPersonalPensions(simId),
-        getSavings(simId),
-      ]);
-
-      setFamilyMembers(familyData);
-      setRealEstates(realEstatesData);
-      setDebts(debtsData);
-      setIncomes(incomesData);
-      setExpenses(expensesData);
-      setNationalPensions(nationalPensionsData);
-      setRetirementPensions(retirementPensionsData);
-      setPersonalPensions(personalPensionsData);
-      setSavings(savingsData);
 
       setLoading(false);
     };
 
     loadData();
-  }, [userId, birthYear, retirementAge]);
+  }, [userId]);
 
-  // Helper functions
+  // Helper
   const getAge = (birthDate: string | null) => {
     if (!birthDate) return null;
-    const today = new Date();
     const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    let age = currentYear - birth.getFullYear();
+    const m = new Date().getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && new Date().getDate() < birth.getDate())) age--;
     return age;
   };
 
-  const getBirthYear = (birthDate: string | null) => {
-    if (!birthDate) return null;
-    return new Date(birthDate).getFullYear();
-  };
+  // === 저장 핸들러 ===
 
-  // Section 1: Family handlers
-  const handleSaveMember = async () => {
-    if (!memberForm.name.trim()) {
-      alert("이름을 입력해주세요.");
-      return;
-    }
+  // 가계 정보 저장
+  const handleSaveFamily = async () => {
     setSaving(true);
     try {
-      if (editingMember) {
-        await updateFamilyMember(editingMember.id, {
-          name: memberForm.name,
-          relationship: memberForm.relationship,
-          birth_date: memberForm.birth_date || null,
-          gender: memberForm.gender,
-        });
-      } else {
-        await createFamilyMember({
-          user_id: userId,
-          name: memberForm.name,
-          relationship: memberForm.relationship,
-          birth_date: memberForm.birth_date || null,
-          gender: memberForm.gender,
-          is_dependent: memberForm.relationship === "child" || memberForm.relationship === "parent",
-          is_working: memberForm.relationship === "spouse",
-          retirement_age: memberForm.relationship === "spouse" ? 60 : null,
-          monthly_income: 0,
-          notes: null,
-        });
-      }
-      const updated = await getFamilyMembers(userId);
-      setFamilyMembers(updated);
-      setFamilyModalOpen(false);
-      setEditingMember(null);
-      resetMemberForm();
-    } catch (error) {
-      console.error("Error saving member:", error);
-      alert("저장 중 오류가 발생했습니다.");
+      const newPrepData = { ...prepData, family: familyMembers };
+      await savePrepData(newPrepData);
+      setEditingSection(null);
+    } catch {
+      alert("저장 실패");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeleteMember = async (member: FamilyMember) => {
-    if (!confirm(`${member.name}을(를) 삭제하시겠습니까?`)) return;
-    await deleteFamilyMember(member.id);
-    const updated = await getFamilyMembers(userId);
+  // 거주 부동산 저장
+  const handleSaveHousing = async () => {
+    setSaving(true);
+    try {
+      const newPrepData = { ...prepData, housing: housingData || undefined };
+      await savePrepData(newPrepData);
+      setEditingSection(null);
+    } catch {
+      alert("저장 실패");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 부채 저장
+  const handleSaveDebts = async () => {
+    setSaving(true);
+    try {
+      const newPrepData = { ...prepData, debt: debts };
+      await savePrepData(newPrepData);
+      setEditingSection(null);
+    } catch {
+      alert("저장 실패");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 소득/지출 저장
+  const handleSaveIncomeExpense = async () => {
+    setSaving(true);
+    try {
+      const newPrepData = { ...prepData, income: incomeData || undefined, expense: expenseData || undefined };
+      await savePrepData(newPrepData);
+      setEditingSection(null);
+    } catch {
+      alert("저장 실패");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 연금 저장
+  const handleSavePensions = async () => {
+    setSaving(true);
+    try {
+      const newPrepData = {
+        ...prepData,
+        nationalPension: nationalPensionData || undefined,
+        retirementPension: retirementPensionData || undefined,
+        personalPension: personalPensions,
+      };
+      await savePrepData(newPrepData);
+      setEditingSection(null);
+    } catch {
+      alert("저장 실패");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 금융자산 저장
+  const handleSaveSavings = async () => {
+    setSaving(true);
+    try {
+      const newPrepData = { ...prepData, savings: savingsItems };
+      await savePrepData(newPrepData);
+      setEditingSection(null);
+    } catch {
+      alert("저장 실패");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 은퇴 목표 저장
+  const handleSaveGoals = async () => {
+    setSaving(true);
+    try {
+      const newPrepData = { ...prepData, retirementGoals };
+      await savePrepData(newPrepData);
+      setEditingSection(null);
+    } catch {
+      alert("저장 실패");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // === 편집 핸들러 ===
+
+  // 가족 구성원 추가
+  const addFamilyMember = (relationship: RelationshipType) => {
+    setFamilyMembers([...familyMembers, {
+      relationship,
+      name: "",
+      birth_date: null,
+      gender: "male",
+    }]);
+  };
+
+  // 가족 구성원 삭제
+  const deleteFamilyMember = (index: number) => {
+    setFamilyMembers(familyMembers.filter((_, i) => i !== index));
+  };
+
+  // 가족 구성원 수정
+  const updateFamilyMember = (index: number, field: keyof PrepFamilyMember, value: string | null) => {
+    const updated = [...familyMembers];
+    updated[index] = { ...updated[index], [field]: value };
     setFamilyMembers(updated);
   };
 
-  const resetMemberForm = () => {
-    setMemberForm({
-      name: "",
-      relationship: "spouse",
-      birth_date: "",
-      gender: "male",
-    });
-  };
-
-  // Section 2: Real Estate handlers
-  const handleSaveRealEstate = async () => {
-    if (!simulationId || !realEstateForm.title.trim()) {
-      alert("명칭을 입력해주세요.");
-      return;
-    }
-    setSaving(true);
-    try {
-      await createRealEstate({
-        simulation_id: simulationId,
-        type: realEstateForm.type,
-        title: realEstateForm.title,
-        current_value: realEstateForm.value,
-        loan_amount: realEstateForm.loan || null,
-        owner: realEstateForm.owner,
-      });
-      const updated = await getRealEstates(simulationId);
-      setRealEstates(updated);
-      setAddingRealEstate(false);
-      setRealEstateForm({ type: "residence", title: "", value: 0, loan: 0, owner: "self" });
-    } catch (error) {
-      console.error("Error saving real estate:", error);
-      alert("저장 중 오류가 발생했습니다.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteRealEstate = async (id: string) => {
-    if (!simulationId || !confirm("삭제하시겠습니까?")) return;
-    await deleteRealEstate(id);
-    const updated = await getRealEstates(simulationId);
-    setRealEstates(updated);
-  };
-
-  // Section 3: Debt handlers
-  const handleSaveDebt = async () => {
-    if (!simulationId || !debtForm.title.trim()) {
-      alert("명칭을 입력해주세요.");
-      return;
-    }
-    setSaving(true);
-    try {
-      const maturity = getDefaultMaturity();
-      await createDebt({
-        simulation_id: simulationId,
-        type: debtForm.type,
-        title: debtForm.title,
-        principal: debtForm.balance,
-        current_balance: debtForm.balance,
-        interest_rate: debtForm.rate,
-        repayment_type: "원리금균등상환",
-        start_year: currentYear,
-        start_month: currentMonth,
-        maturity_year: maturity.year,
-        maturity_month: maturity.month,
-      });
-      const updated = await getDebts(simulationId);
-      setDebts(updated);
-      setAddingDebt(false);
-      setDebtForm({ type: "mortgage", title: "", balance: 0, rate: 4.0 });
-    } catch (error) {
-      console.error("Error saving debt:", error);
-      alert("저장 중 오류가 발생했습니다.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteDebt = async (id: string) => {
-    if (!simulationId || !confirm("삭제하시겠습니까?")) return;
-    await deleteDebt(id);
-    const updated = await getDebts(simulationId);
-    setDebts(updated);
-  };
-
-  // Section 4: Income/Expense handlers
-  const handleSaveIncome = async () => {
-    if (!simulationId || !incomeForm.title.trim()) {
-      alert("명칭을 입력해주세요.");
-      return;
-    }
-    setSaving(true);
-    try {
-      await createIncome({
-        simulation_id: simulationId,
-        type: incomeForm.type,
-        owner: incomeForm.owner,
-        title: incomeForm.title,
-        amount: incomeForm.amount,
-        frequency: "monthly",
-        start_year: currentYear,
-        start_month: currentMonth,
-        end_year: currentYear + (retirementAge - currentAge),
-        end_month: currentMonth,
-        is_fixed_to_retirement: true,
-        growth_rate: 3.0,
-        rate_category: "income",
-      });
-      const updated = await getIncomes(simulationId);
-      setIncomes(updated);
-      setAddingIncome(false);
-      setIncomeForm({ type: "labor", owner: "self", title: "", amount: 0 });
-    } catch (error) {
-      console.error("Error saving income:", error);
-      alert("저장 중 오류가 발생했습니다.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteIncome = async (id: string) => {
-    if (!simulationId || !confirm("삭제하시겠습니까?")) return;
-    await deleteIncome(id);
-    const updated = await getIncomes(simulationId);
-    setIncomes(updated);
-  };
-
-  const handleSaveExpense = async () => {
-    if (!simulationId || !expenseForm.title.trim()) {
-      alert("명칭을 입력해주세요.");
-      return;
-    }
-    setSaving(true);
-    try {
-      await createExpense({
-        simulation_id: simulationId,
-        type: expenseForm.type,
-        title: expenseForm.title,
-        amount: expenseForm.amount,
-        frequency: "monthly",
-        start_year: currentYear,
-        start_month: currentMonth,
-        end_year: currentYear + (retirementAge - currentAge),
-        end_month: currentMonth,
-        is_fixed_to_retirement: true,
-        growth_rate: 2.5,
-        rate_category: "inflation",
-      });
-      const updated = await getExpenses(simulationId);
-      setExpenses(updated);
-      setAddingExpense(false);
-      setExpenseForm({ type: "living", title: "", amount: 0 });
-    } catch (error) {
-      console.error("Error saving expense:", error);
-      alert("저장 중 오류가 발생했습니다.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteExpense = async (id: string) => {
-    if (!simulationId || !confirm("삭제하시겠습니까?")) return;
-    await deleteExpense(id);
-    const updated = await getExpenses(simulationId);
-    setExpenses(updated);
-  };
-
-  // Section 5: Pension handlers
-  const handleSavePension = async () => {
-    if (!simulationId) return;
-    setSaving(true);
-    try {
-      if (addingPension === "national") {
-        await createNationalPension(
-          {
-            simulation_id: simulationId,
-            owner: pensionForm.owner,
-            pension_type: pensionForm.type as NationalPension["pension_type"],
-            expected_monthly_amount: pensionForm.amount,
-            start_age: pensionForm.startAge,
-            end_age: null,
-          },
-          birthYear
-        );
-        const updated = await getNationalPensions(simulationId);
-        setNationalPensions(updated);
-      } else if (addingPension === "retirement") {
-        await createRetirementPension(
-          {
-            simulation_id: simulationId,
-            owner: pensionForm.owner,
-            pension_type: pensionForm.type as RetirementPension["pension_type"],
-            current_balance: pensionForm.amount,
-            receive_type: "lump_sum",
-          },
-          birthYear,
-          retirementAge
-        );
-        const updated = await getRetirementPensions(simulationId);
-        setRetirementPensions(updated);
-      } else if (addingPension === "personal") {
-        await createPersonalPension(
-          {
-            simulation_id: simulationId,
-            owner: pensionForm.owner,
-            pension_type: pensionForm.type as PersonalPension["pension_type"],
-            current_balance: pensionForm.amount,
-          },
-          birthYear,
-          retirementAge
-        );
-        const updated = await getPersonalPensions(simulationId);
-        setPersonalPensions(updated);
-      }
-      setAddingPension(null);
-      setPensionForm({ category: "national", type: "national", amount: 0, owner: "self", startAge: 65 });
-    } catch (error) {
-      console.error("Error saving pension:", error);
-      alert("저장 중 오류가 발생했습니다.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteNationalPension = async (id: string) => {
-    if (!simulationId || !confirm("삭제하시겠습니까?")) return;
-    await deleteNationalPension(id);
-    const updated = await getNationalPensions(simulationId);
-    setNationalPensions(updated);
-  };
-
-  const handleDeleteRetirementPension = async (id: string) => {
-    if (!simulationId || !confirm("삭제하시겠습니까?")) return;
-    await deleteRetirementPension(id);
-    const updated = await getRetirementPensions(simulationId);
-    setRetirementPensions(updated);
-  };
-
-  const handleDeletePersonalPension = async (id: string) => {
-    if (!simulationId || !confirm("삭제하시겠습니까?")) return;
-    await deletePersonalPension(id);
-    const updated = await getPersonalPensions(simulationId);
-    setPersonalPensions(updated);
-  };
-
-  // Section 6: Financial Assets handlers
-  const handleSaveSavings = async () => {
-    if (!simulationId || !savingsForm.title.trim()) {
-      alert("명칭을 입력해주세요.");
-      return;
-    }
-    setSaving(true);
-    try {
-      await createSavings({
-        simulation_id: simulationId,
-        type: savingsForm.type,
-        title: savingsForm.title,
-        current_balance: savingsForm.balance,
-        owner: savingsForm.owner,
-      });
-      const updated = await getSavings(simulationId);
-      setSavings(updated);
-      setAddingSavings(null);
-      setSavingsForm({ type: "savings", title: "", balance: 0, owner: "self" });
-    } catch (error) {
-      console.error("Error saving savings:", error);
-      alert("저장 중 오류가 발생했습니다.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteSavings = async (id: string) => {
-    if (!simulationId || !confirm("삭제하시겠습니까?")) return;
-    await deleteSavings(id);
-    const updated = await getSavings(simulationId);
-    setSavings(updated);
-  };
-
-  // Type labels
-  const REAL_ESTATE_TYPE_LABELS: Record<string, string> = {
-    residence: "거주용",
-    investment: "투자용",
-    rental: "임대용",
-    land: "토지",
-  };
-
-  const DEBT_TYPE_LABELS: Record<string, string> = {
-    mortgage: "주택담보대출",
-    jeonse: "전세자금대출",
-    credit: "신용대출",
-    car: "자동차대출",
-    student: "학자금대출",
-    card: "카드론",
-    other: "기타",
-  };
-
-  const NATIONAL_PENSION_TYPE_LABELS: Record<string, string> = {
-    national: "국민연금",
-    government: "공무원연금",
-    military: "군인연금",
-    private_school: "사학연금",
-  };
-
-  const RETIREMENT_PENSION_TYPE_LABELS: Record<string, string> = {
-    severance: "퇴직금",
-    db: "DB형",
-    dc: "DC형",
-    corporate_irp: "기업IRP",
-  };
-
-  const PERSONAL_PENSION_TYPE_LABELS: Record<string, string> = {
-    pension_savings: "연금저축",
-    irp: "개인IRP",
-    isa: "ISA",
-  };
-
-  const SAVINGS_TYPE_LABELS: Record<string, string> = {
-    checking: "입출금통장",
-    savings: "적금",
-    deposit: "예금",
-  };
-
-  const INVESTMENT_TYPE_LABELS: Record<string, string> = {
-    domestic_stock: "국내주식",
-    foreign_stock: "해외주식",
-    fund: "펀드",
-    bond: "채권",
-    crypto: "암호화폐",
-    gold: "금",
-    other: "기타",
-  };
-
-  // Derived values
+  // 파생 값 계산
   const spouse = familyMembers.find((m) => m.relationship === "spouse");
   const children = familyMembers.filter((m) => m.relationship === "child");
   const parents = familyMembers.filter((m) => m.relationship === "parent");
-  const hasSpouse = !!spouse;
 
-  const totalRealEstateValue = realEstates.reduce((sum, re) => sum + re.current_value, 0);
-  const totalRealEstateLoan = realEstates.reduce((sum, re) => sum + (re.loan_amount || 0), 0);
-  const totalDebt = debts.reduce((sum, d) => sum + (d.current_balance || d.principal), 0);
-  const totalMonthlyIncome = incomes.reduce((sum, i) => sum + i.amount, 0);
-  const totalMonthlyExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const savingsAccounts = savings.filter((s) => ["checking", "savings", "deposit"].includes(s.type));
-  const investmentAccounts = savings.filter((s) => !["checking", "savings", "deposit"].includes(s.type));
-  const totalSavings = savingsAccounts.reduce((sum, s) => sum + s.current_balance, 0);
-  const totalInvestments = investmentAccounts.reduce((sum, s) => sum + s.current_balance, 0);
+  const totalRealEstateValue = housingData?.housingType === "자가" ? (housingData.currentValue || 0) : 0;
+  const totalDebt = debts.reduce((sum, d) => sum + (d.currentBalance || d.principal), 0);
+  const totalMonthlyIncome = (incomeData?.selfLaborIncome || 0) +
+    (incomeData?.spouseLaborIncome || 0) +
+    (incomeData?.additionalIncomes || []).reduce((sum, i) => sum + i.amount, 0);
+  const totalMonthlyExpense = (expenseData?.livingExpense || 0) +
+    (expenseData?.fixedExpenses || []).reduce((sum, e) => sum + e.amount, 0);
+  const savingsAccounts = savingsItems.filter((s) => ["checking", "savings", "deposit"].includes(s.type));
+  const investmentAccounts = savingsItems.filter((s) => !["checking", "savings", "deposit"].includes(s.type));
+  const totalSavings = savingsAccounts.reduce((sum, s) => sum + s.currentBalance, 0);
+  const totalInvestments = investmentAccounts.reduce((sum, s) => sum + s.currentBalance, 0);
 
   if (loading) {
     return (
@@ -646,913 +453,1332 @@ export function RetirementDiagnosisForm({
         </button>
       </div>
 
-      {/* Section 1: 가계 정보 */}
+      {/* Section 1: 기본 정보 + 은퇴 목표 */}
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>1. 가계 정보</h2>
-          <button
-            className={styles.editButton}
-            onClick={() => {
-              setFamilyModalOpen(true);
-              resetMemberForm();
-              setEditingMember(null);
-            }}
-          >
-            수정
-          </button>
-        </div>
-        <div className={styles.sectionContent}>
-          <div className={styles.infoGrid}>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>이름</span>
-              <span className={styles.infoValue}>{customerName}</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>생년</span>
-              <span className={styles.infoValue}>{birthYear}년</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>현재 나이</span>
-              <span className={styles.infoValue}>{currentAge}세</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>배우자</span>
-              <span className={styles.infoValue}>
-                {spouse
-                  ? `있음 (${getBirthYear(spouse.birth_date)}년생, ${getAge(spouse.birth_date)}세)`
-                  : "없음"}
-              </span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>자녀</span>
-              <span className={styles.infoValue}>
-                {children.length > 0
-                  ? `${children.length}명 (${children.map((c) => `${getAge(c.birth_date)}세`).join(", ")})`
-                  : "없음"}
-              </span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>부양가족</span>
-              <span className={styles.infoValue}>
-                {parents.length > 0
-                  ? `${parents.length}명 (${parents.map((p) => `${p.name} ${getAge(p.birth_date)}세`).join(", ")})`
-                  : "없음"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 2: 자산 파악 (금융 자산 제외) */}
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>2. 자산 파악 (금융 자산 제외)</h2>
-          <div className={styles.sectionActions}>
-            {totalRealEstateValue > 0 && (
-              <span className={styles.sectionSummary}>
-                총 {formatMoney(totalRealEstateValue)}
-                {totalRealEstateLoan > 0 && ` (담보대출 ${formatMoney(totalRealEstateLoan)})`}
-              </span>
-            )}
-            <button className={styles.headerAddBtn} onClick={() => setAddingRealEstate(true)}>
-              <Plus size={12} /> 추가
-            </button>
-          </div>
-        </div>
-        <div className={styles.sectionContent}>
-          <div className={styles.itemList}>
-            {realEstates.map((re) => (
-              <div key={re.id} className={styles.item}>
-                <span className={styles.itemType}>{REAL_ESTATE_TYPE_LABELS[re.type]}</span>
-                <span className={styles.itemTitle}>{re.title}</span>
-                <span className={styles.itemValue}>{formatMoney(re.current_value)}</span>
-                {re.loan_amount && re.loan_amount > 0 && (
-                  <span className={styles.itemSub}>대출 {formatMoney(re.loan_amount)}</span>
-                )}
-                <span className={styles.itemOwner}>
-                  {re.owner === "self" ? "본인" : re.owner === "spouse" ? "배우자" : "공동"}
-                </span>
-                <button className={styles.deleteBtn} onClick={() => handleDeleteRealEstate(re.id)}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-            {realEstates.length === 0 && !addingRealEstate && (
-              <span className={styles.emptyText}>등록된 부동산이 없습니다</span>
-            )}
-          </div>
-
-          {addingRealEstate && (
-            <div className={styles.addForm}>
-              <select
-                className={styles.select}
-                value={realEstateForm.type}
-                onChange={(e) => setRealEstateForm({ ...realEstateForm, type: e.target.value as RealEstate["type"] })}
-              >
-                {Object.entries(REAL_ESTATE_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="명칭 (예: 아파트)"
-                value={realEstateForm.title}
-                onChange={(e) => setRealEstateForm({ ...realEstateForm, title: e.target.value })}
-              />
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="시세"
-                  value={realEstateForm.value || ""}
-                  onChange={(e) => setRealEstateForm({ ...realEstateForm, value: Number(e.target.value) || 0 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="담보대출"
-                  value={realEstateForm.loan || ""}
-                  onChange={(e) => setRealEstateForm({ ...realEstateForm, loan: Number(e.target.value) || 0 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <select
-                className={styles.selectSmall}
-                value={realEstateForm.owner}
-                onChange={(e) => setRealEstateForm({ ...realEstateForm, owner: e.target.value as Owner })}
-              >
-                <option value="self">본인</option>
-                <option value="spouse">배우자</option>
-                <option value="joint">공동</option>
-              </select>
-              <div className={styles.formActions}>
-                <button className={styles.cancelBtn} onClick={() => setAddingRealEstate(false)}>취소</button>
-                <button className={styles.saveBtn} onClick={handleSaveRealEstate} disabled={saving}>
-                  {saving ? "저장 중..." : "저장"}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Section 3: 부채 파악 */}
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>3. 부채 파악</h2>
-          <div className={styles.sectionActions}>
-            {totalDebt > 0 && <span className={styles.sectionSummary}>총 {formatMoney(totalDebt)}</span>}
-            <button className={styles.headerAddBtn} onClick={() => setAddingDebt(true)}>
-              <Plus size={12} /> 추가
-            </button>
-          </div>
-        </div>
-        <div className={styles.sectionContent}>
-          <div className={styles.itemList}>
-            {debts.map((d) => (
-              <div key={d.id} className={styles.item}>
-                <span className={styles.itemType}>{DEBT_TYPE_LABELS[d.type]}</span>
-                <span className={styles.itemTitle}>{d.title}</span>
-                <span className={styles.itemValue}>{formatMoney(d.current_balance || d.principal)}</span>
-                <span className={styles.itemSub}>{d.interest_rate}%</span>
-                <button className={styles.deleteBtn} onClick={() => handleDeleteDebt(d.id)}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-            {debts.length === 0 && !addingDebt && (
-              <span className={styles.emptyText}>등록된 부채가 없습니다</span>
-            )}
-          </div>
-
-          {addingDebt && (
-            <div className={styles.addForm}>
-              <select
-                className={styles.select}
-                value={debtForm.type}
-                onChange={(e) => setDebtForm({ ...debtForm, type: e.target.value as Debt["type"] })}
-              >
-                {Object.entries(DEBT_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="명칭"
-                value={debtForm.title}
-                onChange={(e) => setDebtForm({ ...debtForm, title: e.target.value })}
-              />
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="잔액"
-                  value={debtForm.balance || ""}
-                  onChange={(e) => setDebtForm({ ...debtForm, balance: Number(e.target.value) || 0 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="금리"
-                  value={debtForm.rate || ""}
-                  onChange={(e) => setDebtForm({ ...debtForm, rate: Number(e.target.value) || 0 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                  step="0.1"
-                />
-                <span className={styles.unit}>%</span>
-              </div>
-              <div className={styles.formActions}>
-                <button className={styles.cancelBtn} onClick={() => setAddingDebt(false)}>취소</button>
-                <button className={styles.saveBtn} onClick={handleSaveDebt} disabled={saving}>
-                  {saving ? "저장 중..." : "저장"}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Section 4: 소득/지출 파악 */}
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>4. 소득/지출 파악</h2>
-          <span className={styles.sectionSummary}>
-            월 수입 {formatMoney(totalMonthlyIncome)} / 지출 {formatMoney(totalMonthlyExpense)}
-          </span>
-        </div>
-        <div className={styles.sectionContent}>
-          {/* 소득 */}
-          <div className={styles.subHeader}>
-            <h3 className={styles.subTitle}>소득</h3>
-            <button className={styles.subAddBtn} onClick={() => setAddingIncome(true)}>
-              <Plus size={12} /> 추가
-            </button>
-          </div>
-          <div className={styles.itemList}>
-            {incomes.map((i) => (
-              <div key={i.id} className={styles.item}>
-                <span className={styles.itemType}>{INCOME_TYPE_LABELS[i.type]}</span>
-                <span className={styles.itemTitle}>{i.title}</span>
-                <span className={styles.itemValue}>{formatMoney(i.amount)}/월</span>
-                <span className={styles.itemOwner}>{i.owner === "self" ? "본인" : "배우자"}</span>
-                <button className={styles.deleteBtn} onClick={() => handleDeleteIncome(i.id)}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-            {incomes.length === 0 && !addingIncome && (
-              <span className={styles.emptyText}>등록된 소득이 없습니다</span>
-            )}
-          </div>
-
-          {addingIncome && (
-            <div className={styles.addForm}>
-              <select
-                className={styles.select}
-                value={incomeForm.type}
-                onChange={(e) => setIncomeForm({ ...incomeForm, type: e.target.value as IncomeType })}
-              >
-                {Object.entries(INCOME_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <select
-                className={styles.selectSmall}
-                value={incomeForm.owner}
-                onChange={(e) => setIncomeForm({ ...incomeForm, owner: e.target.value as "self" | "spouse" })}
-              >
-                <option value="self">본인</option>
-                <option value="spouse">배우자</option>
-              </select>
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="명칭"
-                value={incomeForm.title}
-                onChange={(e) => setIncomeForm({ ...incomeForm, title: e.target.value })}
-              />
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="금액"
-                  value={incomeForm.amount || ""}
-                  onChange={(e) => setIncomeForm({ ...incomeForm, amount: Number(e.target.value) || 0 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원/월</span>
-              </div>
-              <div className={styles.formActions}>
-                <button className={styles.cancelBtn} onClick={() => setAddingIncome(false)}>취소</button>
-                <button className={styles.saveBtn} onClick={handleSaveIncome} disabled={saving}>
-                  {saving ? "저장 중..." : "저장"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* 지출 */}
-          <div className={styles.subHeader}>
-            <h3 className={styles.subTitle}>지출</h3>
-            <button className={styles.subAddBtn} onClick={() => setAddingExpense(true)}>
-              <Plus size={12} /> 추가
-            </button>
-          </div>
-          <div className={styles.itemList}>
-            {expenses.map((e) => (
-              <div key={e.id} className={styles.item}>
-                <span className={styles.itemType}>{EXPENSE_TYPE_LABELS[e.type]}</span>
-                <span className={styles.itemTitle}>{e.title}</span>
-                <span className={styles.itemValue}>{formatMoney(e.amount)}/월</span>
-                <button className={styles.deleteBtn} onClick={() => handleDeleteExpense(e.id)}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-            {expenses.length === 0 && !addingExpense && (
-              <span className={styles.emptyText}>등록된 지출이 없습니다</span>
-            )}
-          </div>
-
-          {addingExpense && (
-            <div className={styles.addForm}>
-              <select
-                className={styles.select}
-                value={expenseForm.type}
-                onChange={(e) => setExpenseForm({ ...expenseForm, type: e.target.value as ExpenseType })}
-              >
-                {Object.entries(EXPENSE_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="명칭"
-                value={expenseForm.title}
-                onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
-              />
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="금액"
-                  value={expenseForm.amount || ""}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, amount: Number(e.target.value) || 0 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원/월</span>
-              </div>
-              <div className={styles.formActions}>
-                <button className={styles.cancelBtn} onClick={() => setAddingExpense(false)}>취소</button>
-                <button className={styles.saveBtn} onClick={handleSaveExpense} disabled={saving}>
-                  {saving ? "저장 중..." : "저장"}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Section 5: 연금 현황 */}
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>5. 연금 현황</h2>
-        </div>
-        <div className={styles.sectionContent}>
-          {/* 공적연금 */}
-          <div className={styles.subHeader}>
-            <h3 className={styles.subTitle}>공적연금 (국민연금, 공무원연금 등)</h3>
-            <button className={styles.subAddBtn} onClick={() => { setAddingPension("national"); setPensionForm({ ...pensionForm, type: "national", category: "national" }); }}>
-              <Plus size={12} /> 추가
-            </button>
-          </div>
-          <div className={styles.itemList}>
-            {nationalPensions.map((np) => (
-              <div key={np.id} className={styles.item}>
-                <span className={styles.itemType}>{NATIONAL_PENSION_TYPE_LABELS[np.pension_type || "national"]}</span>
-                <span className={styles.itemTitle}>{np.start_age}세부터</span>
-                <span className={styles.itemValue}>월 {formatMoney(np.expected_monthly_amount)}</span>
-                <span className={styles.itemOwner}>{np.owner === "self" ? "본인" : "배우자"}</span>
-                <button className={styles.deleteBtn} onClick={() => handleDeleteNationalPension(np.id)}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-            {nationalPensions.length === 0 && addingPension !== "national" && (
-              <span className={styles.emptyText}>등록된 공적연금이 없습니다</span>
-            )}
-          </div>
-          {addingPension === "national" && (
-            <div className={styles.addForm}>
-              <select
-                className={styles.select}
-                value={pensionForm.type}
-                onChange={(e) => setPensionForm({ ...pensionForm, type: e.target.value })}
-              >
-                {Object.entries(NATIONAL_PENSION_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <select
-                className={styles.selectSmall}
-                value={pensionForm.owner}
-                onChange={(e) => setPensionForm({ ...pensionForm, owner: e.target.value as Owner })}
-              >
-                <option value="self">본인</option>
-                <option value="spouse">배우자</option>
-              </select>
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="예상 월 수령액"
-                  value={pensionForm.amount || ""}
-                  onChange={(e) => setPensionForm({ ...pensionForm, amount: Number(e.target.value) || 0 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원/월</span>
-              </div>
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="수령 시작 나이"
-                  value={pensionForm.startAge || ""}
-                  onChange={(e) => setPensionForm({ ...pensionForm, startAge: Number(e.target.value) || 65 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>세</span>
-              </div>
-              <div className={styles.formActions}>
-                <button className={styles.cancelBtn} onClick={() => setAddingPension(null)}>취소</button>
-                <button className={styles.saveBtn} onClick={handleSavePension} disabled={saving}>
-                  {saving ? "저장 중..." : "저장"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* 퇴직연금/퇴직금 */}
-          <div className={styles.subHeader}>
-            <h3 className={styles.subTitle}>퇴직연금/퇴직금</h3>
-            <button className={styles.subAddBtn} onClick={() => { setAddingPension("retirement"); setPensionForm({ ...pensionForm, type: "severance", category: "retirement" }); }}>
-              <Plus size={12} /> 추가
-            </button>
-          </div>
-          <div className={styles.itemList}>
-            {retirementPensions.map((rp) => (
-              <div key={rp.id} className={styles.item}>
-                <span className={styles.itemType}>{RETIREMENT_PENSION_TYPE_LABELS[rp.pension_type]}</span>
-                <span className={styles.itemTitle}>{rp.receive_type === "lump_sum" ? "일시금" : "연금"}</span>
-                <span className={styles.itemValue}>
-                  {rp.current_balance ? formatMoney(rp.current_balance) : `${rp.years_of_service}년`}
-                </span>
-                <span className={styles.itemOwner}>{rp.owner === "self" ? "본인" : "배우자"}</span>
-                <button className={styles.deleteBtn} onClick={() => handleDeleteRetirementPension(rp.id)}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-            {retirementPensions.length === 0 && addingPension !== "retirement" && (
-              <span className={styles.emptyText}>등록된 퇴직연금이 없습니다</span>
-            )}
-          </div>
-          {addingPension === "retirement" && (
-            <div className={styles.addForm}>
-              <select
-                className={styles.select}
-                value={pensionForm.type}
-                onChange={(e) => setPensionForm({ ...pensionForm, type: e.target.value })}
-              >
-                {Object.entries(RETIREMENT_PENSION_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <select
-                className={styles.selectSmall}
-                value={pensionForm.owner}
-                onChange={(e) => setPensionForm({ ...pensionForm, owner: e.target.value as Owner })}
-              >
-                <option value="self">본인</option>
-                <option value="spouse">배우자</option>
-              </select>
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="현재 적립금"
-                  value={pensionForm.amount || ""}
-                  onChange={(e) => setPensionForm({ ...pensionForm, amount: Number(e.target.value) || 0 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <div className={styles.formActions}>
-                <button className={styles.cancelBtn} onClick={() => setAddingPension(null)}>취소</button>
-                <button className={styles.saveBtn} onClick={handleSavePension} disabled={saving}>
-                  {saving ? "저장 중..." : "저장"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* 개인연금 (연금저축, IRP, ISA) */}
-          <div className={styles.subHeader}>
-            <h3 className={styles.subTitle}>개인연금 (연금저축, IRP, ISA)</h3>
-            <button className={styles.subAddBtn} onClick={() => { setAddingPension("personal"); setPensionForm({ ...pensionForm, type: "pension_savings", category: "personal" }); }}>
-              <Plus size={12} /> 추가
-            </button>
-          </div>
-          <div className={styles.itemList}>
-            {personalPensions.map((pp) => (
-              <div key={pp.id} className={styles.item}>
-                <span className={styles.itemType}>{PERSONAL_PENSION_TYPE_LABELS[pp.pension_type]}</span>
-                <span className={styles.itemValue}>{formatMoney(pp.current_balance)}</span>
-                <span className={styles.itemOwner}>{pp.owner === "self" ? "본인" : "배우자"}</span>
-                <button className={styles.deleteBtn} onClick={() => handleDeletePersonalPension(pp.id)}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-            {personalPensions.length === 0 && addingPension !== "personal" && (
-              <span className={styles.emptyText}>등록된 개인연금이 없습니다</span>
-            )}
-          </div>
-          {addingPension === "personal" && (
-            <div className={styles.addForm}>
-              <select
-                className={styles.select}
-                value={pensionForm.type}
-                onChange={(e) => setPensionForm({ ...pensionForm, type: e.target.value })}
-              >
-                {Object.entries(PERSONAL_PENSION_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <select
-                className={styles.selectSmall}
-                value={pensionForm.owner}
-                onChange={(e) => setPensionForm({ ...pensionForm, owner: e.target.value as Owner })}
-              >
-                <option value="self">본인</option>
-                <option value="spouse">배우자</option>
-              </select>
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="현재 적립금"
-                  value={pensionForm.amount || ""}
-                  onChange={(e) => setPensionForm({ ...pensionForm, amount: Number(e.target.value) || 0 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <div className={styles.formActions}>
-                <button className={styles.cancelBtn} onClick={() => setAddingPension(null)}>취소</button>
-                <button className={styles.saveBtn} onClick={handleSavePension} disabled={saving}>
-                  {saving ? "저장 중..." : "저장"}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Section 6: 금융자산 파악 */}
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>6. 금융자산 파악</h2>
-          {totalSavings + totalInvestments > 0 && (
-            <span className={styles.sectionSummary}>총 {formatMoney(totalSavings + totalInvestments)}</span>
-          )}
-        </div>
-        <div className={styles.sectionContent}>
-          {/* 저축 계좌 */}
-          <div className={styles.subHeader}>
-            <h3 className={styles.subTitle}>저축 계좌 (예금, 적금)</h3>
-            <button className={styles.subAddBtn} onClick={() => { setAddingSavings("savings"); setSavingsForm({ ...savingsForm, type: "savings" }); }}>
-              <Plus size={12} /> 추가
-            </button>
-          </div>
-          <div className={styles.itemList}>
-            {savingsAccounts.map((s) => (
-              <div key={s.id} className={styles.item}>
-                <span className={styles.itemType}>{SAVINGS_TYPE_LABELS[s.type]}</span>
-                <span className={styles.itemTitle}>{s.title}</span>
-                <span className={styles.itemValue}>{formatMoney(s.current_balance)}</span>
-                <span className={styles.itemOwner}>{s.owner === "self" ? "본인" : "배우자"}</span>
-                <button className={styles.deleteBtn} onClick={() => handleDeleteSavings(s.id)}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-            {savingsAccounts.length === 0 && addingSavings !== "savings" && (
-              <span className={styles.emptyText}>등록된 저축 계좌가 없습니다</span>
-            )}
-          </div>
-          {addingSavings === "savings" && (
-            <div className={styles.addForm}>
-              <select
-                className={styles.select}
-                value={savingsForm.type}
-                onChange={(e) => setSavingsForm({ ...savingsForm, type: e.target.value as Savings["type"] })}
-              >
-                {Object.entries(SAVINGS_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="명칭"
-                value={savingsForm.title}
-                onChange={(e) => setSavingsForm({ ...savingsForm, title: e.target.value })}
-              />
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="잔액"
-                  value={savingsForm.balance || ""}
-                  onChange={(e) => setSavingsForm({ ...savingsForm, balance: Number(e.target.value) || 0 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <select
-                className={styles.selectSmall}
-                value={savingsForm.owner}
-                onChange={(e) => setSavingsForm({ ...savingsForm, owner: e.target.value as Owner })}
-              >
-                <option value="self">본인</option>
-                <option value="spouse">배우자</option>
-              </select>
-              <div className={styles.formActions}>
-                <button className={styles.cancelBtn} onClick={() => setAddingSavings(null)}>취소</button>
-                <button className={styles.saveBtn} onClick={handleSaveSavings} disabled={saving}>
-                  {saving ? "저장 중..." : "저장"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* 투자 계좌 */}
-          <div className={styles.subHeader}>
-            <h3 className={styles.subTitle}>투자 계좌 (주식, 펀드, 코인, 금 등)</h3>
-            <button className={styles.subAddBtn} onClick={() => { setAddingSavings("investment"); setSavingsForm({ ...savingsForm, type: "domestic_stock" }); }}>
-              <Plus size={12} /> 추가
-            </button>
-          </div>
-          <div className={styles.itemList}>
-            {investmentAccounts.map((s) => (
-              <div key={s.id} className={styles.item}>
-                <span className={styles.itemType}>{INVESTMENT_TYPE_LABELS[s.type] || s.type}</span>
-                <span className={styles.itemTitle}>{s.title}</span>
-                <span className={styles.itemValue}>{formatMoney(s.current_balance)}</span>
-                <span className={styles.itemOwner}>{s.owner === "self" ? "본인" : "배우자"}</span>
-                <button className={styles.deleteBtn} onClick={() => handleDeleteSavings(s.id)}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-            {investmentAccounts.length === 0 && addingSavings !== "investment" && (
-              <span className={styles.emptyText}>등록된 투자 계좌가 없습니다</span>
-            )}
-          </div>
-          {addingSavings === "investment" && (
-            <div className={styles.addForm}>
-              <select
-                className={styles.select}
-                value={savingsForm.type}
-                onChange={(e) => setSavingsForm({ ...savingsForm, type: e.target.value as Savings["type"] })}
-              >
-                {Object.entries(INVESTMENT_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="명칭"
-                value={savingsForm.title}
-                onChange={(e) => setSavingsForm({ ...savingsForm, title: e.target.value })}
-              />
-              <div className={styles.inputGroup}>
-                <input
-                  type="number"
-                  className={styles.inputSmall}
-                  placeholder="잔액"
-                  value={savingsForm.balance || ""}
-                  onChange={(e) => setSavingsForm({ ...savingsForm, balance: Number(e.target.value) || 0 })}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원</span>
-              </div>
-              <select
-                className={styles.selectSmall}
-                value={savingsForm.owner}
-                onChange={(e) => setSavingsForm({ ...savingsForm, owner: e.target.value as Owner })}
-              >
-                <option value="self">본인</option>
-                <option value="spouse">배우자</option>
-              </select>
-              <div className={styles.formActions}>
-                <button className={styles.cancelBtn} onClick={() => setAddingSavings(null)}>취소</button>
-                <button className={styles.saveBtn} onClick={handleSaveSavings} disabled={saving}>
-                  {saving ? "저장 중..." : "저장"}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Family Edit Modal */}
-      {familyModalOpen && (
-        <div className={styles.modalBackdrop} onClick={() => setFamilyModalOpen(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>가계 정보 수정</h2>
-              <button className={styles.modalCloseBtn} onClick={() => setFamilyModalOpen(false)} type="button">
-                <X size={20} />
+          <h2 className={styles.sectionTitle}>1. 기본 정보</h2>
+          {editingSection === "goals" ? (
+            <div className={styles.headerActions}>
+              <button className={styles.cancelBtn} onClick={() => setEditingSection(null)}>취소</button>
+              <button className={styles.saveBtn} onClick={handleSaveGoals} disabled={saving}>
+                {saving ? "저장 중..." : "저장"}
               </button>
             </div>
-
-            <div className={styles.modalBody}>
-              {/* Current members list */}
-              <div className={styles.memberList}>
-                <h4 className={styles.memberListTitle}>가구원 목록</h4>
-                {familyMembers.map((member) => (
-                  <div key={member.id} className={styles.memberItem}>
-                    <div className={styles.memberInfo}>
-                      <span className={`${styles.memberBadge} ${styles[member.relationship]}`}>
-                        {RELATIONSHIP_LABELS[member.relationship as keyof typeof RELATIONSHIP_LABELS]}
-                      </span>
-                      <span className={styles.memberName}>{member.name}</span>
-                      {member.birth_date && (
-                        <span className={styles.memberAge}>({getAge(member.birth_date)}세)</span>
-                      )}
-                    </div>
-                    <div className={styles.memberActions}>
-                      <button
-                        className={styles.memberActionBtn}
-                        onClick={() => {
-                          setEditingMember(member);
-                          setMemberForm({
-                            name: member.name,
-                            relationship: member.relationship as "spouse" | "child" | "parent",
-                            birth_date: member.birth_date || "",
-                            gender: (member.gender || "male") as "male" | "female",
-                          });
-                        }}
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        className={`${styles.memberActionBtn} ${styles.delete}`}
-                        onClick={() => handleDeleteMember(member)}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Add member buttons */}
-              <div className={styles.addMemberSection}>
-                <h4 className={styles.addMemberTitle}>가구원 추가</h4>
-                <div className={styles.addMemberButtons}>
-                  {!hasSpouse && (
-                    <button
-                      className={styles.addMemberBtn}
-                      onClick={() => {
-                        setEditingMember(null);
-                        setMemberForm({ name: "", relationship: "spouse", birth_date: "", gender: "male" });
-                      }}
-                    >
-                      <Plus size={14} />
-                      <span>배우자 추가</span>
-                    </button>
-                  )}
-                  <button
-                    className={styles.addMemberBtn}
-                    onClick={() => {
-                      setEditingMember(null);
-                      setMemberForm({ name: "", relationship: "child", birth_date: "", gender: "male" });
-                    }}
-                  >
-                    <Plus size={14} />
-                    <span>자녀 추가</span>
-                  </button>
-                  <button
-                    className={styles.addMemberBtn}
-                    onClick={() => {
-                      setEditingMember(null);
-                      setMemberForm({ name: "", relationship: "parent", birth_date: "", gender: "male" });
-                    }}
-                  >
-                    <Plus size={14} />
-                    <span>부모님 추가</span>
-                  </button>
+          ) : (
+            <button className={styles.editBtn} onClick={() => setEditingSection("goals")}>
+              <Pencil size={12} /> 수정
+            </button>
+          )}
+        </div>
+        <div className={styles.sectionContent}>
+          <div className={styles.infoTable}>
+            <div className={styles.infoRow}>
+              <span className={styles.label}>이름</span>
+              <span className={styles.value}>{customerName}</span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.label}>생년 / 나이</span>
+              <span className={styles.value}>{birthYear}년 ({currentAge}세)</span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.label}>목표 은퇴 나이</span>
+              {editingSection === "goals" ? (
+                <div className={styles.inlineEdit}>
+                  <input
+                    type="number"
+                    className={styles.smallInput}
+                    value={retirementGoals.targetRetirementAge}
+                    onChange={(e) => setRetirementGoals({ ...retirementGoals, targetRetirementAge: Number(e.target.value) || 60 })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>세</span>
                 </div>
-              </div>
-
-              {/* Edit/Add form */}
-              {(editingMember || memberForm.name !== "" || memberForm.relationship !== "spouse") && (
-                <div className={styles.memberForm}>
-                  <h4 className={styles.formTitle}>
-                    {editingMember ? "정보 수정" : "새 가구원"}
-                  </h4>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>관계</label>
-                    <select
-                      className={styles.formSelect}
-                      value={memberForm.relationship}
-                      onChange={(e) => setMemberForm({ ...memberForm, relationship: e.target.value as "spouse" | "child" | "parent" })}
-                    >
-                      <option value="spouse" disabled={hasSpouse && editingMember?.relationship !== "spouse"}>배우자</option>
-                      <option value="child">자녀</option>
-                      <option value="parent">부모님</option>
-                    </select>
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>이름</label>
-                    <input
-                      type="text"
-                      className={styles.formInput}
-                      value={memberForm.name}
-                      onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
-                      placeholder="이름 입력"
-                    />
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>생년월일</label>
-                    <input
-                      type="date"
-                      className={styles.formInput}
-                      value={memberForm.birth_date}
-                      onChange={(e) => setMemberForm({ ...memberForm, birth_date: e.target.value })}
-                    />
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>성별</label>
-                    <div className={styles.genderButtons}>
-                      <button
-                        type="button"
-                        className={`${styles.genderBtn} ${memberForm.gender === "male" ? styles.selected : ""}`}
-                        onClick={() => setMemberForm({ ...memberForm, gender: "male" })}
-                      >
-                        남성
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.genderBtn} ${memberForm.gender === "female" ? styles.selected : ""}`}
-                        onClick={() => setMemberForm({ ...memberForm, gender: "female" })}
-                      >
-                        여성
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className={styles.formActions}>
-                    <button
-                      className={styles.cancelBtn}
-                      onClick={() => {
-                        setEditingMember(null);
-                        resetMemberForm();
-                      }}
-                    >
-                      취소
-                    </button>
-                    <button className={styles.saveBtn} onClick={handleSaveMember} disabled={saving}>
-                      {saving ? "저장 중..." : "저장"}
-                    </button>
-                  </div>
+              ) : (
+                <span className={styles.value}>{retirementGoals.targetRetirementAge}세</span>
+              )}
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.label}>은퇴 후 목표 생활비</span>
+              {editingSection === "goals" ? (
+                <div className={styles.inlineEdit}>
+                  <input
+                    type="number"
+                    className={styles.smallInput}
+                    value={retirementGoals.targetMonthlyExpense || ""}
+                    onChange={(e) => setRetirementGoals({ ...retirementGoals, targetMonthlyExpense: Number(e.target.value) || 0 })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원/월</span>
                 </div>
+              ) : (
+                <span className={styles.value}>{formatMoney(retirementGoals.targetMonthlyExpense)}/월</span>
+              )}
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.label}>기대수명</span>
+              {editingSection === "goals" ? (
+                <div className={styles.inlineEdit}>
+                  <input
+                    type="number"
+                    className={styles.smallInput}
+                    value={retirementGoals.lifeExpectancy || 90}
+                    onChange={(e) => setRetirementGoals({ ...retirementGoals, lifeExpectancy: Number(e.target.value) || 90 })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>세</span>
+                </div>
+              ) : (
+                <span className={styles.value}>{retirementGoals.lifeExpectancy || 90}세</span>
               )}
             </div>
           </div>
         </div>
-      )}
+      </section>
 
+      {/* Section 2: 가계 구성 */}
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>2. 가계 구성</h2>
+          {editingSection === "family" ? (
+            <div className={styles.headerActions}>
+              <button className={styles.cancelBtn} onClick={() => {
+                setFamilyMembers(prepData.family || []);
+                setEditingSection(null);
+              }}>취소</button>
+              <button className={styles.saveBtn} onClick={handleSaveFamily} disabled={saving}>
+                {saving ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          ) : (
+            <button className={styles.editBtn} onClick={() => setEditingSection("family")}>
+              <Pencil size={12} /> 수정
+            </button>
+          )}
+        </div>
+        <div className={styles.sectionContent}>
+          {editingSection === "family" ? (
+            <div className={styles.editList}>
+              {familyMembers.map((member, idx) => (
+                <div key={idx} className={styles.editRow}>
+                  <select
+                    className={styles.selectSmall}
+                    value={member.relationship}
+                    onChange={(e) => updateFamilyMember(idx, "relationship", e.target.value)}
+                  >
+                    <option value="spouse">배우자</option>
+                    <option value="child">자녀</option>
+                    <option value="parent">부모님</option>
+                  </select>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder="이름"
+                    value={member.name}
+                    onChange={(e) => updateFamilyMember(idx, "name", e.target.value)}
+                  />
+                  <input
+                    type="date"
+                    className={styles.input}
+                    value={member.birth_date || ""}
+                    onChange={(e) => updateFamilyMember(idx, "birth_date", e.target.value || null)}
+                  />
+                  <select
+                    className={styles.selectSmall}
+                    value={member.gender || "male"}
+                    onChange={(e) => updateFamilyMember(idx, "gender", e.target.value)}
+                  >
+                    <option value="male">남</option>
+                    <option value="female">여</option>
+                  </select>
+                  <button className={styles.deleteBtn} onClick={() => deleteFamilyMember(idx)}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              <div className={styles.addButtons}>
+                {!spouse && (
+                  <button className={styles.addBtn} onClick={() => addFamilyMember("spouse")}>
+                    <Plus size={12} /> 배우자
+                  </button>
+                )}
+                <button className={styles.addBtn} onClick={() => addFamilyMember("child")}>
+                  <Plus size={12} /> 자녀
+                </button>
+                <button className={styles.addBtn} onClick={() => addFamilyMember("parent")}>
+                  <Plus size={12} /> 부모님
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.infoTable}>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>배우자</span>
+                <span className={styles.value}>
+                  {spouse ? `${spouse.name} (${getAge(spouse.birth_date)}세)` : "없음"}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>자녀</span>
+                <span className={styles.value}>
+                  {children.length > 0
+                    ? children.map((c) => `${c.name || "이름 미입력"} (${getAge(c.birth_date)}세)`).join(", ")
+                    : "없음"}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>부양가족</span>
+                <span className={styles.value}>
+                  {parents.length > 0
+                    ? parents.map((p) => `${p.name || "이름 미입력"} (${getAge(p.birth_date)}세)`).join(", ")
+                    : "없음"}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Section 3: 거주 부동산 */}
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>3. 거주 부동산</h2>
+          <div className={styles.headerRight}>
+            {totalRealEstateValue > 0 && <span className={styles.summary}>시세 {formatMoney(totalRealEstateValue)}</span>}
+            {editingSection === "housing" ? (
+              <div className={styles.headerActions}>
+                <button className={styles.cancelBtn} onClick={() => {
+                  setHousingData(prepData.housing || null);
+                  setEditingSection(null);
+                }}>취소</button>
+                <button className={styles.saveBtn} onClick={handleSaveHousing} disabled={saving}>
+                  {saving ? "저장 중..." : "저장"}
+                </button>
+              </div>
+            ) : (
+              <button className={styles.editBtn} onClick={() => setEditingSection("housing")}>
+                <Pencil size={12} /> 수정
+              </button>
+            )}
+          </div>
+        </div>
+        <div className={styles.sectionContent}>
+          {editingSection === "housing" ? (
+            <div className={styles.editForm}>
+              <div className={styles.formRow}>
+                <label>주거 형태</label>
+                <select
+                  className={styles.select}
+                  value={housingData?.housingType || "무상"}
+                  onChange={(e) => {
+                    const type = e.target.value as "자가" | "전세" | "월세" | "무상";
+                    setHousingData({
+                      housingType: type,
+                      currentValue: type === "자가" ? (housingData?.currentValue || 0) : undefined,
+                      deposit: type === "전세" || type === "월세" ? (housingData?.deposit || 0) : undefined,
+                      monthlyRent: type === "월세" ? (housingData?.monthlyRent || 0) : undefined,
+                      hasLoan: housingData?.hasLoan || false,
+                      loanAmount: housingData?.loanAmount,
+                      loanRate: housingData?.loanRate,
+                    });
+                  }}
+                >
+                  <option value="자가">자가</option>
+                  <option value="전세">전세</option>
+                  <option value="월세">월세</option>
+                  <option value="무상">무상</option>
+                </select>
+              </div>
+              {housingData?.housingType === "자가" && (
+                <>
+                  <div className={styles.formRow}>
+                    <label>시세</label>
+                    <div className={styles.inputWithUnit}>
+                      <input
+                        type="number"
+                        className={styles.input}
+                        value={housingData.currentValue || ""}
+                        onChange={(e) => setHousingData({ ...housingData, currentValue: Number(e.target.value) || 0 })}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
+                      />
+                      <span className={styles.unit}>만원</span>
+                    </div>
+                  </div>
+                  <div className={styles.formRow}>
+                    <label>담보대출</label>
+                    <div className={styles.inputWithUnit}>
+                      <input
+                        type="number"
+                        className={styles.input}
+                        value={housingData.loanAmount || ""}
+                        onChange={(e) => setHousingData({
+                          ...housingData,
+                          hasLoan: Number(e.target.value) > 0,
+                          loanAmount: Number(e.target.value) || 0
+                        })}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
+                      />
+                      <span className={styles.unit}>만원</span>
+                    </div>
+                  </div>
+                  {housingData.hasLoan && (
+                    <div className={styles.formRow}>
+                      <label>대출 금리</label>
+                      <div className={styles.inputWithUnit}>
+                        <input
+                          type="number"
+                          className={styles.input}
+                          value={housingData.loanRate || ""}
+                          onChange={(e) => setHousingData({ ...housingData, loanRate: Number(e.target.value) || 4.5 })}
+                          onWheel={(e) => (e.target as HTMLElement).blur()}
+                          step="0.1"
+                        />
+                        <span className={styles.unit}>%</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              {(housingData?.housingType === "전세" || housingData?.housingType === "월세") && (
+                <div className={styles.formRow}>
+                  <label>보증금</label>
+                  <div className={styles.inputWithUnit}>
+                    <input
+                      type="number"
+                      className={styles.input}
+                      value={housingData.deposit || ""}
+                      onChange={(e) => setHousingData({ ...housingData, deposit: Number(e.target.value) || 0 })}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                    />
+                    <span className={styles.unit}>만원</span>
+                  </div>
+                </div>
+              )}
+              {housingData?.housingType === "월세" && (
+                <div className={styles.formRow}>
+                  <label>월세</label>
+                  <div className={styles.inputWithUnit}>
+                    <input
+                      type="number"
+                      className={styles.input}
+                      value={housingData.monthlyRent || ""}
+                      onChange={(e) => setHousingData({ ...housingData, monthlyRent: Number(e.target.value) || 0 })}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                    />
+                    <span className={styles.unit}>만원/월</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className={styles.infoTable}>
+              {housingData ? (
+                <>
+                  <div className={styles.infoRow}>
+                    <span className={styles.label}>주거 형태</span>
+                    <span className={styles.value}>{housingData.housingType}</span>
+                  </div>
+                  {housingData.housingType === "자가" && (
+                    <>
+                      <div className={styles.infoRow}>
+                        <span className={styles.label}>시세</span>
+                        <span className={styles.value}>{formatMoney(housingData.currentValue || 0)}</span>
+                      </div>
+                      {housingData.hasLoan && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.label}>담보대출</span>
+                          <span className={styles.value}>{formatMoney(housingData.loanAmount || 0)} ({housingData.loanRate || 4.5}%)</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {(housingData.housingType === "전세" || housingData.housingType === "월세") && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.label}>보증금</span>
+                      <span className={styles.value}>{formatMoney(housingData.deposit || 0)}</span>
+                    </div>
+                  )}
+                  {housingData.housingType === "월세" && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.label}>월세</span>
+                      <span className={styles.value}>{formatMoney(housingData.monthlyRent || 0)}/월</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <span className={styles.empty}>등록된 거주 정보가 없습니다</span>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Section 4: 부채 */}
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>4. 부채</h2>
+          <div className={styles.headerRight}>
+            {totalDebt > 0 && <span className={styles.summary}>총 {formatMoney(totalDebt)}</span>}
+            {editingSection === "debt" ? (
+              <div className={styles.headerActions}>
+                <button className={styles.cancelBtn} onClick={() => {
+                  setDebts((prepData.debt || []).map((d, idx) => ({ ...d, id: d.id || `debt-${idx}` })));
+                  setEditingSection(null);
+                }}>취소</button>
+                <button className={styles.saveBtn} onClick={handleSaveDebts} disabled={saving}>
+                  {saving ? "저장 중..." : "저장"}
+                </button>
+              </div>
+            ) : (
+              <button className={styles.editBtn} onClick={() => setEditingSection("debt")}>
+                <Pencil size={12} /> 수정
+              </button>
+            )}
+          </div>
+        </div>
+        <div className={styles.sectionContent}>
+          {editingSection === "debt" ? (
+            <div className={styles.editList}>
+              {debts.map((debt, idx) => (
+                <div key={debt.id} className={styles.editRow}>
+                  <select
+                    className={styles.selectSmall}
+                    value={debt.type}
+                    onChange={(e) => {
+                      const updated = [...debts];
+                      updated[idx] = { ...updated[idx], type: e.target.value };
+                      setDebts(updated);
+                    }}
+                  >
+                    {Object.entries(DEBT_TYPE_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder="명칭"
+                    value={debt.title}
+                    onChange={(e) => {
+                      const updated = [...debts];
+                      updated[idx] = { ...updated[idx], title: e.target.value };
+                      setDebts(updated);
+                    }}
+                  />
+                  <div className={styles.inputWithUnit}>
+                    <input
+                      type="number"
+                      className={styles.smallInput}
+                      placeholder="잔액"
+                      value={debt.currentBalance || debt.principal || ""}
+                      onChange={(e) => {
+                        const updated = [...debts];
+                        updated[idx] = { ...updated[idx], principal: Number(e.target.value) || 0, currentBalance: Number(e.target.value) || 0 };
+                        setDebts(updated);
+                      }}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                    />
+                    <span className={styles.unit}>만원</span>
+                  </div>
+                  <div className={styles.inputWithUnit}>
+                    <input
+                      type="number"
+                      className={styles.smallInput}
+                      placeholder="금리"
+                      value={debt.interestRate || ""}
+                      onChange={(e) => {
+                        const updated = [...debts];
+                        updated[idx] = { ...updated[idx], interestRate: Number(e.target.value) || 0 };
+                        setDebts(updated);
+                      }}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                      step="0.1"
+                    />
+                    <span className={styles.unit}>%</span>
+                  </div>
+                  <button className={styles.deleteBtn} onClick={() => setDebts(debts.filter((_, i) => i !== idx))}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              <button
+                className={styles.addBtn}
+                onClick={() => setDebts([...debts, { id: `debt-${Date.now()}`, type: "credit", title: "", principal: 0, interestRate: 5.0 }])}
+              >
+                <Plus size={12} /> 부채 추가
+              </button>
+            </div>
+          ) : (
+            <div className={styles.itemList}>
+              {debts.length > 0 ? debts.map((d) => (
+                <div key={d.id} className={styles.item}>
+                  <span className={styles.itemBadge}>{DEBT_TYPE_LABELS[d.type]}</span>
+                  <span className={styles.itemTitle}>{d.title}</span>
+                  <span className={styles.itemValue}>{formatMoney(d.currentBalance || d.principal)}</span>
+                  <span className={styles.itemSub}>{d.interestRate}%</span>
+                </div>
+              )) : (
+                <span className={styles.empty}>등록된 부채가 없습니다</span>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Section 5: 소득/지출 */}
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>5. 소득/지출</h2>
+          <div className={styles.headerRight}>
+            <span className={styles.summary}>
+              월 수입 {formatMoney(totalMonthlyIncome)} / 지출 {formatMoney(totalMonthlyExpense)}
+            </span>
+            {editingSection === "income" ? (
+              <div className={styles.headerActions}>
+                <button className={styles.cancelBtn} onClick={() => {
+                  setIncomeData(prepData.income || null);
+                  setExpenseData(prepData.expense || null);
+                  setEditingSection(null);
+                }}>취소</button>
+                <button className={styles.saveBtn} onClick={handleSaveIncomeExpense} disabled={saving}>
+                  {saving ? "저장 중..." : "저장"}
+                </button>
+              </div>
+            ) : (
+              <button className={styles.editBtn} onClick={() => setEditingSection("income")}>
+                <Pencil size={12} /> 수정
+              </button>
+            )}
+          </div>
+        </div>
+        <div className={styles.sectionContent}>
+          {editingSection === "income" ? (
+            <div className={styles.editForm}>
+              <h4 className={styles.subTitle}>근로소득</h4>
+              <div className={styles.formRow}>
+                <label>본인 월 소득</label>
+                <div className={styles.inputWithUnit}>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={incomeData?.selfLaborIncome || ""}
+                    onChange={(e) => setIncomeData({
+                      ...(incomeData || { selfLaborIncome: 0, selfLaborFrequency: "monthly", spouseLaborIncome: 0, spouseLaborFrequency: "monthly", additionalIncomes: [] }),
+                      selfLaborIncome: Number(e.target.value) || 0
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원</span>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <label>배우자 월 소득</label>
+                <div className={styles.inputWithUnit}>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={incomeData?.spouseLaborIncome || ""}
+                    onChange={(e) => setIncomeData({
+                      ...(incomeData || { selfLaborIncome: 0, selfLaborFrequency: "monthly", spouseLaborIncome: 0, spouseLaborFrequency: "monthly", additionalIncomes: [] }),
+                      spouseLaborIncome: Number(e.target.value) || 0
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원</span>
+                </div>
+              </div>
+
+              <h4 className={styles.subTitle}>기타 소득</h4>
+              {(incomeData?.additionalIncomes || []).map((income, idx) => (
+                <div key={income.id || idx} className={styles.editRow}>
+                  <select
+                    className={styles.selectSmall}
+                    value={income.type}
+                    onChange={(e) => {
+                      const updated = { ...incomeData! };
+                      updated.additionalIncomes[idx] = { ...updated.additionalIncomes[idx], type: e.target.value };
+                      setIncomeData(updated);
+                    }}
+                  >
+                    {Object.entries(INCOME_TYPE_LABELS).filter(([k]) => k !== "labor").map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder="명칭"
+                    value={income.title || ""}
+                    onChange={(e) => {
+                      const updated = { ...incomeData! };
+                      updated.additionalIncomes[idx] = { ...updated.additionalIncomes[idx], title: e.target.value };
+                      setIncomeData(updated);
+                    }}
+                  />
+                  <div className={styles.inputWithUnit}>
+                    <input
+                      type="number"
+                      className={styles.smallInput}
+                      value={income.amount || ""}
+                      onChange={(e) => {
+                        const updated = { ...incomeData! };
+                        updated.additionalIncomes[idx] = { ...updated.additionalIncomes[idx], amount: Number(e.target.value) || 0 };
+                        setIncomeData(updated);
+                      }}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                    />
+                    <span className={styles.unit}>만원/월</span>
+                  </div>
+                  <button className={styles.deleteBtn} onClick={() => {
+                    const updated = { ...incomeData! };
+                    updated.additionalIncomes = updated.additionalIncomes.filter((_, i) => i !== idx);
+                    setIncomeData(updated);
+                  }}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              <button
+                className={styles.addBtn}
+                onClick={() => {
+                  const current = incomeData || { selfLaborIncome: 0, selfLaborFrequency: "monthly" as const, spouseLaborIncome: 0, spouseLaborFrequency: "monthly" as const, additionalIncomes: [] };
+                  setIncomeData({
+                    ...current,
+                    additionalIncomes: [...current.additionalIncomes, { id: `income-${Date.now()}`, type: "rental", owner: "self", amount: 0, frequency: "monthly" }]
+                  });
+                }}
+              >
+                <Plus size={12} /> 기타소득 추가
+              </button>
+
+              <h4 className={styles.subTitle}>지출 (변동비)</h4>
+              <div className={styles.formRow}>
+                <label>식비</label>
+                <div className={styles.inputWithUnit}>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={expenseData?.livingExpenseDetails?.food || ""}
+                    onChange={(e) => setExpenseData({
+                      ...(expenseData || { livingExpense: 0, fixedExpenses: [] }),
+                      livingExpenseDetails: {
+                        ...(expenseData?.livingExpenseDetails || {}),
+                        food: Number(e.target.value) || 0
+                      },
+                      livingExpense: (Number(e.target.value) || 0) +
+                        (expenseData?.livingExpenseDetails?.transport || 0) +
+                        (expenseData?.livingExpenseDetails?.shopping || 0) +
+                        (expenseData?.livingExpenseDetails?.leisure || 0) +
+                        (expenseData?.livingExpenseDetails?.other || 0)
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원/월</span>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <label>교통비</label>
+                <div className={styles.inputWithUnit}>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={expenseData?.livingExpenseDetails?.transport || ""}
+                    onChange={(e) => setExpenseData({
+                      ...(expenseData || { livingExpense: 0, fixedExpenses: [] }),
+                      livingExpenseDetails: {
+                        ...(expenseData?.livingExpenseDetails || {}),
+                        transport: Number(e.target.value) || 0
+                      },
+                      livingExpense: (expenseData?.livingExpenseDetails?.food || 0) +
+                        (Number(e.target.value) || 0) +
+                        (expenseData?.livingExpenseDetails?.shopping || 0) +
+                        (expenseData?.livingExpenseDetails?.leisure || 0) +
+                        (expenseData?.livingExpenseDetails?.other || 0)
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원/월</span>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <label>쇼핑/미용</label>
+                <div className={styles.inputWithUnit}>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={expenseData?.livingExpenseDetails?.shopping || ""}
+                    onChange={(e) => setExpenseData({
+                      ...(expenseData || { livingExpense: 0, fixedExpenses: [] }),
+                      livingExpenseDetails: {
+                        ...(expenseData?.livingExpenseDetails || {}),
+                        shopping: Number(e.target.value) || 0
+                      },
+                      livingExpense: (expenseData?.livingExpenseDetails?.food || 0) +
+                        (expenseData?.livingExpenseDetails?.transport || 0) +
+                        (Number(e.target.value) || 0) +
+                        (expenseData?.livingExpenseDetails?.leisure || 0) +
+                        (expenseData?.livingExpenseDetails?.other || 0)
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원/월</span>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <label>여가/문화</label>
+                <div className={styles.inputWithUnit}>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={expenseData?.livingExpenseDetails?.leisure || ""}
+                    onChange={(e) => setExpenseData({
+                      ...(expenseData || { livingExpense: 0, fixedExpenses: [] }),
+                      livingExpenseDetails: {
+                        ...(expenseData?.livingExpenseDetails || {}),
+                        leisure: Number(e.target.value) || 0
+                      },
+                      livingExpense: (expenseData?.livingExpenseDetails?.food || 0) +
+                        (expenseData?.livingExpenseDetails?.transport || 0) +
+                        (expenseData?.livingExpenseDetails?.shopping || 0) +
+                        (Number(e.target.value) || 0) +
+                        (expenseData?.livingExpenseDetails?.other || 0)
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원/월</span>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <label>기타</label>
+                <div className={styles.inputWithUnit}>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={expenseData?.livingExpenseDetails?.other || ""}
+                    onChange={(e) => setExpenseData({
+                      ...(expenseData || { livingExpense: 0, fixedExpenses: [] }),
+                      livingExpenseDetails: {
+                        ...(expenseData?.livingExpenseDetails || {}),
+                        other: Number(e.target.value) || 0
+                      },
+                      livingExpense: (expenseData?.livingExpenseDetails?.food || 0) +
+                        (expenseData?.livingExpenseDetails?.transport || 0) +
+                        (expenseData?.livingExpenseDetails?.shopping || 0) +
+                        (expenseData?.livingExpenseDetails?.leisure || 0) +
+                        (Number(e.target.value) || 0)
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원/월</span>
+                </div>
+              </div>
+
+              <h4 className={styles.subTitle}>고정 지출</h4>
+              {(expenseData?.fixedExpenses || []).map((expense, idx) => (
+                <div key={expense.id || idx} className={styles.editRow}>
+                  <select
+                    className={styles.selectSmall}
+                    value={expense.type}
+                    onChange={(e) => {
+                      const updated = { ...expenseData! };
+                      updated.fixedExpenses[idx] = { ...updated.fixedExpenses[idx], type: e.target.value };
+                      setExpenseData(updated);
+                    }}
+                  >
+                    {Object.entries(EXPENSE_TYPE_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder="명칭"
+                    value={expense.title}
+                    onChange={(e) => {
+                      const updated = { ...expenseData! };
+                      updated.fixedExpenses[idx] = { ...updated.fixedExpenses[idx], title: e.target.value };
+                      setExpenseData(updated);
+                    }}
+                  />
+                  <div className={styles.inputWithUnit}>
+                    <input
+                      type="number"
+                      className={styles.smallInput}
+                      value={expense.amount || ""}
+                      onChange={(e) => {
+                        const updated = { ...expenseData! };
+                        updated.fixedExpenses[idx] = { ...updated.fixedExpenses[idx], amount: Number(e.target.value) || 0 };
+                        setExpenseData(updated);
+                      }}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                    />
+                    <span className={styles.unit}>만원/월</span>
+                  </div>
+                  <button className={styles.deleteBtn} onClick={() => {
+                    const updated = { ...expenseData! };
+                    updated.fixedExpenses = updated.fixedExpenses.filter((_, i) => i !== idx);
+                    setExpenseData(updated);
+                  }}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              <button
+                className={styles.addBtn}
+                onClick={() => {
+                  const current = expenseData || { livingExpense: 0, fixedExpenses: [] };
+                  setExpenseData({
+                    ...current,
+                    fixedExpenses: [...current.fixedExpenses, { id: `expense-${Date.now()}`, type: "insurance", title: "", amount: 0, frequency: "monthly" }]
+                  });
+                }}
+              >
+                <Plus size={12} /> 고정지출 추가
+              </button>
+            </div>
+          ) : (
+            <div className={styles.infoTable}>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>본인 근로소득</span>
+                <span className={styles.value}>{formatMoney(incomeData?.selfLaborIncome || 0)}/월</span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>배우자 근로소득</span>
+                <span className={styles.value}>{formatMoney(incomeData?.spouseLaborIncome || 0)}/월</span>
+              </div>
+              {(incomeData?.additionalIncomes || []).map((i) => (
+                <div key={i.id} className={styles.infoRow}>
+                  <span className={styles.label}>{INCOME_TYPE_LABELS[i.type] || i.type}</span>
+                  <span className={styles.value}>{formatMoney(i.amount)}/월</span>
+                </div>
+              ))}
+              <div className={styles.divider} />
+              {expenseData?.livingExpenseDetails && Object.values(expenseData.livingExpenseDetails).some(v => v && v > 0) ? (
+                <>
+                  {expenseData.livingExpenseDetails.food ? (
+                    <div className={styles.infoRow}>
+                      <span className={styles.label}>식비</span>
+                      <span className={styles.value}>{formatMoney(expenseData.livingExpenseDetails.food)}/월</span>
+                    </div>
+                  ) : null}
+                  {expenseData.livingExpenseDetails.transport ? (
+                    <div className={styles.infoRow}>
+                      <span className={styles.label}>교통비</span>
+                      <span className={styles.value}>{formatMoney(expenseData.livingExpenseDetails.transport)}/월</span>
+                    </div>
+                  ) : null}
+                  {expenseData.livingExpenseDetails.shopping ? (
+                    <div className={styles.infoRow}>
+                      <span className={styles.label}>쇼핑/미용</span>
+                      <span className={styles.value}>{formatMoney(expenseData.livingExpenseDetails.shopping)}/월</span>
+                    </div>
+                  ) : null}
+                  {expenseData.livingExpenseDetails.leisure ? (
+                    <div className={styles.infoRow}>
+                      <span className={styles.label}>여가/문화</span>
+                      <span className={styles.value}>{formatMoney(expenseData.livingExpenseDetails.leisure)}/월</span>
+                    </div>
+                  ) : null}
+                  {expenseData.livingExpenseDetails.other ? (
+                    <div className={styles.infoRow}>
+                      <span className={styles.label}>기타 생활비</span>
+                      <span className={styles.value}>{formatMoney(expenseData.livingExpenseDetails.other)}/월</span>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <div className={styles.infoRow}>
+                  <span className={styles.label}>월 생활비</span>
+                  <span className={styles.value}>{formatMoney(expenseData?.livingExpense || 0)}/월</span>
+                </div>
+              )}
+              {(expenseData?.fixedExpenses || []).map((e) => (
+                <div key={e.id} className={styles.infoRow}>
+                  <span className={styles.label}>{e.title || EXPENSE_TYPE_LABELS[e.type]}</span>
+                  <span className={styles.value}>{formatMoney(e.amount)}/월</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Section 6: 연금 */}
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>6. 연금</h2>
+          {editingSection === "pension" ? (
+            <div className={styles.headerActions}>
+              <button className={styles.cancelBtn} onClick={() => {
+                setNationalPensionData(prepData.nationalPension || null);
+                setRetirementPensionData(prepData.retirementPension || null);
+                setPersonalPensions((prepData.personalPension || []).map((p, idx) => ({ ...p, id: p.id || `personal-${idx}` })));
+                setEditingSection(null);
+              }}>취소</button>
+              <button className={styles.saveBtn} onClick={handleSavePensions} disabled={saving}>
+                {saving ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          ) : (
+            <button className={styles.editBtn} onClick={() => setEditingSection("pension")}>
+              <Pencil size={12} /> 수정
+            </button>
+          )}
+        </div>
+        <div className={styles.sectionContent}>
+          {editingSection === "pension" ? (
+            <div className={styles.editForm}>
+              <h4 className={styles.subTitle}>국민연금</h4>
+              <div className={styles.formRow}>
+                <label>본인 예상 수령액</label>
+                <div className={styles.inputWithUnit}>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={nationalPensionData?.selfExpectedAmount || ""}
+                    onChange={(e) => setNationalPensionData({
+                      ...(nationalPensionData || { selfType: "national", selfExpectedAmount: 0, spouseType: "national", spouseExpectedAmount: 0 }),
+                      selfExpectedAmount: Number(e.target.value) || 0
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원/월</span>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <label>배우자 예상 수령액</label>
+                <div className={styles.inputWithUnit}>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={nationalPensionData?.spouseExpectedAmount || ""}
+                    onChange={(e) => setNationalPensionData({
+                      ...(nationalPensionData || { selfType: "national", selfExpectedAmount: 0, spouseType: "national", spouseExpectedAmount: 0 }),
+                      spouseExpectedAmount: Number(e.target.value) || 0
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원/월</span>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <label>본인 수령 시작 나이</label>
+                <div className={styles.inputWithUnit}>
+                  <select
+                    className={styles.selectSmall}
+                    value={nationalPensionData?.selfStartAge || 65}
+                    onChange={(e) => setNationalPensionData({
+                      ...(nationalPensionData || { selfType: "national", selfExpectedAmount: 0, spouseType: "national", spouseExpectedAmount: 0 }),
+                      selfStartAge: Number(e.target.value)
+                    })}
+                  >
+                    <option value={62}>62세 (조기)</option>
+                    <option value={63}>63세</option>
+                    <option value={64}>64세</option>
+                    <option value={65}>65세 (정상)</option>
+                    <option value={66}>66세</option>
+                    <option value={67}>67세</option>
+                    <option value={68}>68세</option>
+                    <option value={69}>69세</option>
+                    <option value={70}>70세 (연기)</option>
+                  </select>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <label>배우자 수령 시작 나이</label>
+                <div className={styles.inputWithUnit}>
+                  <select
+                    className={styles.selectSmall}
+                    value={nationalPensionData?.spouseStartAge || 65}
+                    onChange={(e) => setNationalPensionData({
+                      ...(nationalPensionData || { selfType: "national", selfExpectedAmount: 0, spouseType: "national", spouseExpectedAmount: 0 }),
+                      spouseStartAge: Number(e.target.value)
+                    })}
+                  >
+                    <option value={62}>62세 (조기)</option>
+                    <option value={63}>63세</option>
+                    <option value={64}>64세</option>
+                    <option value={65}>65세 (정상)</option>
+                    <option value={66}>66세</option>
+                    <option value={67}>67세</option>
+                    <option value={68}>68세</option>
+                    <option value={69}>69세</option>
+                    <option value={70}>70세 (연기)</option>
+                  </select>
+                </div>
+              </div>
+
+              <h4 className={styles.subTitle}>퇴직연금</h4>
+              <div className={styles.formRow}>
+                <label>본인 적립금</label>
+                <div className={styles.inputWithUnit}>
+                  <select
+                    className={styles.selectSmall}
+                    value={retirementPensionData?.selfType || "dc"}
+                    onChange={(e) => setRetirementPensionData({
+                      ...(retirementPensionData || { selfType: "dc", selfYearsWorked: null, selfBalance: null, spouseType: "dc", spouseYearsWorked: null, spouseBalance: null }),
+                      selfType: e.target.value as "db" | "dc" | "none"
+                    })}
+                  >
+                    <option value="db">DB형</option>
+                    <option value="dc">DC형</option>
+                    <option value="none">없음</option>
+                  </select>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={retirementPensionData?.selfBalance || ""}
+                    onChange={(e) => setRetirementPensionData({
+                      ...(retirementPensionData || { selfType: "dc", selfYearsWorked: null, selfBalance: null, spouseType: "dc", spouseYearsWorked: null, spouseBalance: null }),
+                      selfBalance: Number(e.target.value) || null
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원</span>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <label>배우자 적립금</label>
+                <div className={styles.inputWithUnit}>
+                  <select
+                    className={styles.selectSmall}
+                    value={retirementPensionData?.spouseType || "dc"}
+                    onChange={(e) => setRetirementPensionData({
+                      ...(retirementPensionData || { selfType: "dc", selfYearsWorked: null, selfBalance: null, spouseType: "dc", spouseYearsWorked: null, spouseBalance: null }),
+                      spouseType: e.target.value as "db" | "dc" | "none"
+                    })}
+                  >
+                    <option value="db">DB형</option>
+                    <option value="dc">DC형</option>
+                    <option value="none">없음</option>
+                  </select>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={retirementPensionData?.spouseBalance || ""}
+                    onChange={(e) => setRetirementPensionData({
+                      ...(retirementPensionData || { selfType: "dc", selfYearsWorked: null, selfBalance: null, spouseType: "dc", spouseYearsWorked: null, spouseBalance: null }),
+                      spouseBalance: Number(e.target.value) || null
+                    })}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.unit}>만원</span>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <label>퇴직연금 인출 기간</label>
+                <div className={styles.inputWithUnit}>
+                  <select
+                    className={styles.selectSmall}
+                    value={retirementPensionData?.selfWithdrawalPeriod || 20}
+                    onChange={(e) => setRetirementPensionData({
+                      ...(retirementPensionData || { selfType: "dc", selfYearsWorked: null, selfBalance: null, spouseType: "dc", spouseYearsWorked: null, spouseBalance: null }),
+                      selfWithdrawalPeriod: Number(e.target.value),
+                      spouseWithdrawalPeriod: Number(e.target.value)
+                    })}
+                  >
+                    <option value={10}>10년</option>
+                    <option value={15}>15년</option>
+                    <option value={20}>20년</option>
+                    <option value={25}>25년</option>
+                    <option value={30}>30년</option>
+                  </select>
+                </div>
+              </div>
+
+              <h4 className={styles.subTitle}>개인연금</h4>
+              {personalPensions.map((pp, idx) => (
+                <div key={pp.id} className={styles.editRow}>
+                  <select
+                    className={styles.selectSmall}
+                    value={pp.type}
+                    onChange={(e) => {
+                      const updated = [...personalPensions];
+                      updated[idx] = { ...updated[idx], type: e.target.value };
+                      setPersonalPensions(updated);
+                    }}
+                  >
+                    {Object.entries(PERSONAL_PENSION_TYPE_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
+                    ))}
+                  </select>
+                  <select
+                    className={styles.selectSmall}
+                    value={pp.owner}
+                    onChange={(e) => {
+                      const updated = [...personalPensions];
+                      updated[idx] = { ...updated[idx], owner: e.target.value as "self" | "spouse" };
+                      setPersonalPensions(updated);
+                    }}
+                  >
+                    <option value="self">본인</option>
+                    <option value="spouse">배우자</option>
+                  </select>
+                  <div className={styles.inputWithUnit}>
+                    <input
+                      type="number"
+                      className={styles.smallInput}
+                      value={pp.balance || ""}
+                      onChange={(e) => {
+                        const updated = [...personalPensions];
+                        updated[idx] = { ...updated[idx], balance: Number(e.target.value) || 0 };
+                        setPersonalPensions(updated);
+                      }}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                    />
+                    <span className={styles.unit}>만원</span>
+                  </div>
+                  <button className={styles.deleteBtn} onClick={() => setPersonalPensions(personalPensions.filter((_, i) => i !== idx))}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              <button
+                className={styles.addBtn}
+                onClick={() => setPersonalPensions([...personalPensions, { id: `personal-${Date.now()}`, type: "pension_savings", owner: "self", balance: 0 }])}
+              >
+                <Plus size={12} /> 개인연금 추가
+              </button>
+            </div>
+          ) : (
+            <div className={styles.infoTable}>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>국민연금 (본인)</span>
+                <span className={styles.value}>{formatMoney(nationalPensionData?.selfExpectedAmount || 0)}/월</span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>국민연금 (배우자)</span>
+                <span className={styles.value}>{formatMoney(nationalPensionData?.spouseExpectedAmount || 0)}/월</span>
+              </div>
+              <div className={styles.divider} />
+              <div className={styles.infoRow}>
+                <span className={styles.label}>퇴직연금 (본인)</span>
+                <span className={styles.value}>
+                  {retirementPensionData?.selfBalance
+                    ? `${retirementPensionData.selfType === "db" ? "DB" : "DC"} ${formatMoney(retirementPensionData.selfBalance)}`
+                    : "없음"}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>퇴직연금 (배우자)</span>
+                <span className={styles.value}>
+                  {retirementPensionData?.spouseBalance
+                    ? `${retirementPensionData.spouseType === "db" ? "DB" : "DC"} ${formatMoney(retirementPensionData.spouseBalance)}`
+                    : "없음"}
+                </span>
+              </div>
+              {personalPensions.length > 0 && (
+                <>
+                  <div className={styles.divider} />
+                  {personalPensions.map((pp) => (
+                    <div key={pp.id} className={styles.infoRow}>
+                      <span className={styles.label}>{PERSONAL_PENSION_TYPE_LABELS[pp.type]} ({pp.owner === "self" ? "본인" : "배우자"})</span>
+                      <span className={styles.value}>{formatMoney(pp.balance)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Section 7: 금융자산 */}
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>7. 금융자산</h2>
+          <div className={styles.headerRight}>
+            {(totalSavings + totalInvestments) > 0 && <span className={styles.summary}>총 {formatMoney(totalSavings + totalInvestments)}</span>}
+            {editingSection === "savings" ? (
+              <div className={styles.headerActions}>
+                <button className={styles.cancelBtn} onClick={() => {
+                  setSavingsItems((prepData.savings || []).map((s, idx) => ({ ...s, id: s.id || `savings-${idx}` })));
+                  setEditingSection(null);
+                }}>취소</button>
+                <button className={styles.saveBtn} onClick={handleSaveSavings} disabled={saving}>
+                  {saving ? "저장 중..." : "저장"}
+                </button>
+              </div>
+            ) : (
+              <button className={styles.editBtn} onClick={() => setEditingSection("savings")}>
+                <Pencil size={12} /> 수정
+              </button>
+            )}
+          </div>
+        </div>
+        <div className={styles.sectionContent}>
+          {editingSection === "savings" ? (
+            <div className={styles.editForm}>
+              <h4 className={styles.subTitle}>저축 (예금, 적금)</h4>
+              {savingsAccounts.map((s, idx) => {
+                const realIdx = savingsItems.findIndex((item) => item.id === s.id);
+                return (
+                  <div key={s.id} className={styles.editRow}>
+                    <select
+                      className={styles.selectSmall}
+                      value={s.type}
+                      onChange={(e) => {
+                        const updated = [...savingsItems];
+                        updated[realIdx] = { ...updated[realIdx], type: e.target.value };
+                        setSavingsItems(updated);
+                      }}
+                    >
+                      {Object.entries(SAVINGS_TYPE_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      className={styles.input}
+                      placeholder="명칭"
+                      value={s.title}
+                      onChange={(e) => {
+                        const updated = [...savingsItems];
+                        updated[realIdx] = { ...updated[realIdx], title: e.target.value };
+                        setSavingsItems(updated);
+                      }}
+                    />
+                    <select
+                      className={styles.selectSmall}
+                      value={s.owner}
+                      onChange={(e) => {
+                        const updated = [...savingsItems];
+                        updated[realIdx] = { ...updated[realIdx], owner: e.target.value as "self" | "spouse" };
+                        setSavingsItems(updated);
+                      }}
+                    >
+                      <option value="self">본인</option>
+                      <option value="spouse">배우자</option>
+                    </select>
+                    <div className={styles.inputWithUnit}>
+                      <input
+                        type="number"
+                        className={styles.smallInput}
+                        value={s.currentBalance || ""}
+                        onChange={(e) => {
+                          const updated = [...savingsItems];
+                          updated[realIdx] = { ...updated[realIdx], currentBalance: Number(e.target.value) || 0 };
+                          setSavingsItems(updated);
+                        }}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
+                      />
+                      <span className={styles.unit}>만원</span>
+                    </div>
+                    <button className={styles.deleteBtn} onClick={() => setSavingsItems(savingsItems.filter((_, i) => i !== realIdx))}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                );
+              })}
+              <button
+                className={styles.addBtn}
+                onClick={() => setSavingsItems([...savingsItems, { id: `savings-${Date.now()}`, type: "savings", title: "", owner: "self", currentBalance: 0 }])}
+              >
+                <Plus size={12} /> 저축 추가
+              </button>
+
+              <h4 className={styles.subTitle}>투자 (주식, 펀드, 코인 등)</h4>
+              {investmentAccounts.map((s, idx) => {
+                const realIdx = savingsItems.findIndex((item) => item.id === s.id);
+                return (
+                  <div key={s.id} className={styles.editRow}>
+                    <select
+                      className={styles.selectSmall}
+                      value={s.type}
+                      onChange={(e) => {
+                        const updated = [...savingsItems];
+                        updated[realIdx] = { ...updated[realIdx], type: e.target.value };
+                        setSavingsItems(updated);
+                      }}
+                    >
+                      {Object.entries(INVESTMENT_TYPE_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      className={styles.input}
+                      placeholder="명칭"
+                      value={s.title}
+                      onChange={(e) => {
+                        const updated = [...savingsItems];
+                        updated[realIdx] = { ...updated[realIdx], title: e.target.value };
+                        setSavingsItems(updated);
+                      }}
+                    />
+                    <select
+                      className={styles.selectSmall}
+                      value={s.owner}
+                      onChange={(e) => {
+                        const updated = [...savingsItems];
+                        updated[realIdx] = { ...updated[realIdx], owner: e.target.value as "self" | "spouse" };
+                        setSavingsItems(updated);
+                      }}
+                    >
+                      <option value="self">본인</option>
+                      <option value="spouse">배우자</option>
+                    </select>
+                    <div className={styles.inputWithUnit}>
+                      <input
+                        type="number"
+                        className={styles.smallInput}
+                        value={s.currentBalance || ""}
+                        onChange={(e) => {
+                          const updated = [...savingsItems];
+                          updated[realIdx] = { ...updated[realIdx], currentBalance: Number(e.target.value) || 0 };
+                          setSavingsItems(updated);
+                        }}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
+                      />
+                      <span className={styles.unit}>만원</span>
+                    </div>
+                    <button className={styles.deleteBtn} onClick={() => setSavingsItems(savingsItems.filter((_, i) => i !== realIdx))}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                );
+              })}
+              <button
+                className={styles.addBtn}
+                onClick={() => setSavingsItems([...savingsItems, { id: `investment-${Date.now()}`, type: "domestic_stock", title: "", owner: "self", currentBalance: 0 }])}
+              >
+                <Plus size={12} /> 투자 추가
+              </button>
+            </div>
+          ) : (
+            <div className={styles.itemList}>
+              {savingsAccounts.length > 0 && (
+                <>
+                  <div className={styles.itemGroupTitle}>저축</div>
+                  {savingsAccounts.map((s) => (
+                    <div key={s.id} className={styles.item}>
+                      <span className={styles.itemBadge}>{SAVINGS_TYPE_LABELS[s.type]}</span>
+                      <span className={styles.itemTitle}>{s.title}</span>
+                      <span className={styles.itemOwner}>{s.owner === "self" ? "본인" : "배우자"}</span>
+                      <span className={styles.itemValue}>{formatMoney(s.currentBalance)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+              {investmentAccounts.length > 0 && (
+                <>
+                  <div className={styles.itemGroupTitle}>투자</div>
+                  {investmentAccounts.map((s) => (
+                    <div key={s.id} className={styles.item}>
+                      <span className={styles.itemBadge}>{INVESTMENT_TYPE_LABELS[s.type] || s.type}</span>
+                      <span className={styles.itemTitle}>{s.title}</span>
+                      <span className={styles.itemOwner}>{s.owner === "self" ? "본인" : "배우자"}</span>
+                      <span className={styles.itemValue}>{formatMoney(s.currentBalance)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+              {savingsAccounts.length === 0 && investmentAccounts.length === 0 && (
+                <span className={styles.empty}>등록된 금융자산이 없습니다</span>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

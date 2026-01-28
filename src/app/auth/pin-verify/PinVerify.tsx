@@ -178,11 +178,8 @@ export function PinVerify() {
 
       // 비교
       if (hashedInput === profile.pin_hash) {
-        // PIN 인증 시간 저장
-        await supabase
-          .from('profiles')
-          .update({ pin_verified_at: new Date().toISOString() })
-          .eq('id', user.id)
+        // 세션 기반 PIN 인증 저장 (브라우저 탭/창 닫으면 초기화)
+        sessionStorage.setItem("pin_verified", "true")
 
         // 성공 - 저장된 URL 또는 웨이팅 화면으로
         const returnUrl = localStorage.getItem("returnUrl") || "/waiting";

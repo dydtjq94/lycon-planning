@@ -240,6 +240,9 @@ export function PinSetup() {
         }
       }
 
+      // 세션 기반 PIN 인증 저장
+      sessionStorage.setItem("pin_verified", "true");
+
       // 온보딩으로 이동
       router.replace("/onboarding");
     } catch (err) {

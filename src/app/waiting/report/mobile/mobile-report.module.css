@@ -996,6 +996,44 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+.summaryCard.fullWidth {
+  grid-column: 1 / -1;
+  margin-bottom: 12px;
+}
+
+.verdictRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.verdictBadgeLarge {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+
+.verdictBadgeLarge.possible {
+  background: #38a169;
+}
+
+.verdictBadgeLarge.conditional {
+  background: #d69e2e;
+}
+
+.verdictBadgeLarge.difficult {
+  background: #c53030;
+}
+
+.verdictMessage {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
 .summaryCardTitle {
   font-size: 13px;
   color: #86868b;
