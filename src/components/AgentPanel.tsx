@@ -186,18 +186,6 @@ export function AgentPanel({
         </button>
       </div>
 
-      {/* 고객 정보 */}
-      {customerInfo && (
-        <div className={styles.customerInfo}>
-          <span className={styles.customerName}>{customerInfo.name}</span>
-          <span className={styles.customerMeta}>
-            {customerInfo.age && `${customerInfo.age}세`}
-            {customerInfo.age && customerInfo.retirementAge && " / "}
-            {customerInfo.retirementAge && `목표 은퇴 ${customerInfo.retirementAge}세`}
-          </span>
-        </div>
-      )}
-
       {/* 메시지 영역 */}
       <div className={styles.messagesArea}>
         {messages.length === 0 ? (
