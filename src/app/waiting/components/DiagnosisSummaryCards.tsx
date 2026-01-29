@@ -310,9 +310,7 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
           {formatBillion(totalDemand + additionalTotal)}
           <span className={styles.summaryUnit}>억</span>
         </div>
-        <div className={styles.summarySubtext}>
-          평생 필요한 돈
-        </div>
+        <div className={styles.summarySubtext}>우리 가족이 평생 필요한 돈</div>
       </div>
     </div>
   );
