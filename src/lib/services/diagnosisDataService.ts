@@ -791,8 +791,8 @@ export interface CalculationParams {
 export const DEFAULT_CALC_PARAMS: CalculationParams = {
   retirementAgeOffset: 0,
   livingExpenseRatio: 0.7,
-  inflationRate: 0.02,
-  incomeGrowthRate: 0.02,
+  inflationRate: 0.03,
+  incomeGrowthRate: 0.035,
   financialGrowthRate: 0.05,
   lifeExpectancy: null,
 };
@@ -1515,8 +1515,17 @@ export function getHousingOptions(): HousingCostOption[] {
       ],
     },
     {
-      area: "수도권",
-      description: "분당, 판교, 광교 등",
+      area: "수도권 외곽",
+      description: "인천, 의정부, 수원, 안산 등",
+      tiers: [
+        { tier: "일반", price: 40000, priceDisplay: "4억" },
+        { tier: "프리미엄", price: 60000, priceDisplay: "6억" },
+        { tier: "하이엔드", price: 80000, priceDisplay: "8억" },
+      ],
+    },
+    {
+      area: "수도권 주요",
+      description: "분당, 판교, 광교, 동탄 등",
       tiers: [
         { tier: "일반", price: 100000, priceDisplay: "10억" },
         { tier: "프리미엄", price: 150000, priceDisplay: "15억" },

@@ -4,7 +4,11 @@
   margin: 0 auto;
   background: #f8f9fa;
   min-height: 100vh;
-  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    "Pretendard",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
 }
 
 /* 헤더 */
@@ -451,7 +455,7 @@
   color: #a0aec0;
 }
 
-/* 동연령대 비교 */
+/* 동연령대 가계 비교 */
 .percentileRow {
   margin-bottom: 16px;
 }
@@ -1506,7 +1510,6 @@
   color: #94a3b8;
 }
 
-
 /* ===== Step 배지 ===== */
 .stepBadge {
   display: inline-block;
@@ -2290,7 +2293,6 @@
   color: #1d1d1f;
 }
 
-
 /* ===== 접히는 섹션 ===== */
 .collapsibleHeader {
   display: flex;
@@ -2633,6 +2635,13 @@
   background: #1a365d;
   color: white;
   font-weight: 600;
+}
+
+.housingAreaDesc {
+  font-size: 11px;
+  font-weight: 400;
+  color: #94a3b8;
+  margin-top: 2px;
 }
 
 /* 진단 결과 배지 */
@@ -3138,7 +3147,7 @@
   margin-top: 8px;
 }
 
-/* 동연령대 비교 그리드 */
+/* 동연령대 가계 비교 그리드 */
 .percentileGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

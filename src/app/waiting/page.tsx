@@ -19,7 +19,14 @@ import {
   Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { ChatRoom, ProgramDetailView, Toast, TipModal, MessageNotificationToast, DiagnosisSummaryCards } from "./components";
+import {
+  ChatRoom,
+  ProgramDetailView,
+  Toast,
+  TipModal,
+  MessageNotificationToast,
+  DiagnosisSummaryCards,
+} from "./components";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
 import { confirmUserBooking } from "@/lib/services/bookingService";
 import { trackPageView } from "@/lib/analytics/mixpanel";
@@ -111,16 +118,22 @@ function WaitingPageContent() {
   } | null>(null);
   const [selectedTip, setSelectedTip] = useState<string | null>(null);
   const [tipModalKey, setTipModalKey] = useState(0);
-  const [prepDataCategories, setPrepDataCategories] = useState<Set<string>>(new Set());
+  const [prepDataCategories, setPrepDataCategories] = useState<Set<string>>(
+    new Set(),
+  );
   const [reportPublished, setReportPublished] = useState(false);
-  const [reportPublishedAt, setReportPublishedAt] = useState<string | null>(null);
+  const [reportPublishedAt, setReportPublishedAt] = useState<string | null>(
+    null,
+  );
 
   // 메시지 알림 상태 (여러 개 쌓임)
-  const [messageNotifications, setMessageNotifications] = useState<{
-    id: number;
-    senderName: string;
-    message: string;
-  }[]>([]);
+  const [messageNotifications, setMessageNotifications] = useState<
+    {
+      id: number;
+      senderName: string;
+      message: string;
+    }[]
+  >([]);
   const notificationIdRef = useRef(0);
   const pageViewTrackedRef = useRef(false);
 
@@ -198,11 +211,19 @@ function WaitingPageContent() {
         setProfile(profileData as Profile);
 
         // prep_data에서 데이터가 있는 카테고리 추출
-        if (profileData.prep_data && typeof profileData.prep_data === 'object') {
+        if (
+          profileData.prep_data &&
+          typeof profileData.prep_data === "object"
+        ) {
           const categories = new Set<string>();
           const prepData = profileData.prep_data as Record<string, unknown>;
           for (const [key, value] of Object.entries(prepData)) {
-            if (value && (Array.isArray(value) ? value.length > 0 : Object.keys(value as object).length > 0)) {
+            if (
+              value &&
+              (Array.isArray(value)
+                ? value.length > 0
+                : Object.keys(value as object).length > 0)
+            ) {
               categories.add(key);
             }
           }
@@ -286,12 +307,12 @@ function WaitingPageContent() {
   // 알림 추가 헬퍼
   const addNotification = (senderName: string, message: string) => {
     const id = ++notificationIdRef.current;
-    setMessageNotifications(prev => [...prev, { id, senderName, message }]);
+    setMessageNotifications((prev) => [...prev, { id, senderName, message }]);
   };
 
   // 알림 제거 헬퍼
   const removeNotification = (id: number) => {
-    setMessageNotifications(prev => prev.filter(n => n.id !== id));
+    setMessageNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   // 새 메시지 도착 시 알림 표시 (홈 탭일 때만)
@@ -304,21 +325,25 @@ function WaitingPageContent() {
   // 메시지 로드 완료 시 (웰컴 알림용)
   const handleMessagesLoaded = (messages: Message[], expertName: string) => {
     // 웰컴 알림 플래그 체크
-    const shouldShowWelcome = sessionStorage.getItem("showWelcomeNotifications") === "true";
+    const shouldShowWelcome =
+      sessionStorage.getItem("showWelcomeNotifications") === "true";
     if (!shouldShowWelcome) return;
 
     // 플래그 즉시 제거 (중복 방지)
     sessionStorage.removeItem("showWelcomeNotifications");
 
     // 전문가 메시지만 필터
-    const expertMessages = messages.filter(m => m.sender_type === "expert");
+    const expertMessages = messages.filter((m) => m.sender_type === "expert");
     if (expertMessages.length === 0) return;
 
     // 2초 후부터 순차적으로 알림
     expertMessages.forEach((msg, index) => {
-      setTimeout(() => {
-        addNotification(expertName, msg.content);
-      }, 2000 + (index * 2000)); // 2초, 4초, 6초...
+      setTimeout(
+        () => {
+          addNotification(expertName, msg.content);
+        },
+        2000 + index * 2000,
+      ); // 2초, 4초, 6초...
     });
   };
 
@@ -416,27 +441,37 @@ function WaitingPageContent() {
               </div>
             </button>
           )}
-
-          {/* 검진 결과 안내 - 보고서 발행 후에만 표시 */}
-          {reportPublished && (
-            <div className={styles.reportArrivalBanner}>
-              <span className={styles.reportArrivalText}>
-                {profile?.name || "고객"}님,{" "}
-                {bookingInfo && (() => {
-                  const date = new Date(bookingInfo.date);
-                  return `${date.getMonth() + 1}월 ${date.getDate()}일에 진행된`;
-                })()}{" "}
-                검진 결과가 도착했습니다.
-              </span>
-            </div>
-          )}
         </div>
 
-        <main className={`${styles.main} ${reportPublished ? styles.mainWithReportButton : ""}`}>
+        <main className={styles.main}>
           <div className={styles.tabContent}>
             {reportPublished ? (
-              /* 보고서 발행됨 - 진단 요약 카드 표시 */
-              <DiagnosisSummaryCards userId={userId!} />
+              /* 보고서 발행됨 - Lycon Score 표시 */
+              <>
+                <h2 className={styles.mainTitle}>
+                  {profile?.name || "고객"}님,{" "}
+                  {bookingInfo &&
+                    (() => {
+                      const date = new Date(bookingInfo.date);
+                      return `${date.getMonth() + 1}월 ${date.getDate()}일에 진행된`;
+                    })()}
+                  <br />
+                  검진 결과가 도착했습니다.
+                </h2>
+                <DiagnosisSummaryCards userId={userId!} />
+                <button
+                  className={styles.reportDetailButton}
+                  onClick={() =>
+                    (window.location.href = "/waiting/report/mobile")
+                  }
+                >
+                  검진 결과 자세히 보기
+                </button>
+                <p className={styles.reportDisclaimer}>
+                  모든 금액은 은퇴 시점 및 미래 시점의 물가 상승률이 반영된
+                  금액이라 실제보다 굉장히 크게 느껴질 수 있습니다.
+                </p>
+              </>
             ) : (
               /* 보고서 미발행 - 예약 안내 및 가이드 표시 */
               <>
@@ -464,14 +499,16 @@ function WaitingPageContent() {
                         className={styles.tipCard}
                         onClick={() => {
                           setSelectedTip(category.id);
-                          setTipModalKey(prev => prev + 1);
+                          setTipModalKey((prev) => prev + 1);
                           // 가이드 클릭 트래킹
                           if (userId) {
                             trackGuideClick(userId, category.id);
                           }
                         }}
                       >
-                        <span className={styles.tipTitle}>{category.title}</span>
+                        <span className={styles.tipTitle}>
+                          {category.title}
+                        </span>
                         <div className={styles.tipIconWrapper}>
                           <IconComponent size={18} />
                         </div>
@@ -483,18 +520,6 @@ function WaitingPageContent() {
             )}
           </div>
         </main>
-
-        {/* 검진 결과 자세히보기 버튼 - 하단 고정 */}
-        {reportPublished && (
-          <div className={styles.reportButtonWrapper}>
-            <button
-              className={styles.reportDetailButton}
-              onClick={() => window.location.href = "/waiting/report/mobile"}
-            >
-              검진 결과 자세히 보기
-            </button>
-          </div>
-        )}
 
         {/* 하단 네비게이션 */}
         <nav className={styles.bottomNav}>
@@ -525,7 +550,7 @@ function WaitingPageContent() {
             categoryId={selectedTip}
             initialHasData={prepDataCategories.has(selectedTip)}
             onDataSaved={(category) => {
-              setPrepDataCategories(prev => new Set([...prev, category]));
+              setPrepDataCategories((prev) => new Set([...prev, category]));
             }}
             onClose={() => setSelectedTip(null)}
           />
@@ -556,7 +581,6 @@ function WaitingPageContent() {
             onClick={() => handleTabChange("chat")}
           />
         ))}
-
       </div>
 
       {/* 채팅 탭 - 항상 마운트, display로 숨김 */}

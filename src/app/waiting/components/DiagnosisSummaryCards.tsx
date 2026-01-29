@@ -10,7 +10,11 @@ import {
   PrepDataStore,
   DiagnosisData,
 } from "@/lib/services/diagnosisDataService";
-import { householdFinance2025, type AgeGroup, estimatePercentiles } from "@/lib/data/householdFinance2025";
+import {
+  householdFinance2025,
+  type AgeGroup,
+  estimatePercentiles,
+} from "@/lib/data/householdFinance2025";
 import styles from "./DiagnosisSummaryCards.module.css";
 
 type DiagnosisStatus = "good" | "caution" | "warning";
@@ -35,7 +39,10 @@ const getAgeGroup = (age: number): AgeGroup => {
 };
 
 // Lycon Score 계산
-const calcPrecisePercentile = (value: number, percentiles: ReturnType<typeof estimatePercentiles>) => {
+const calcPrecisePercentile = (
+  value: number,
+  percentiles: ReturnType<typeof estimatePercentiles>,
+) => {
   const thresholds = [
     { p: 95, v: percentiles.p90 * 1.2 },
     { p: 90, v: percentiles.p90 },
@@ -56,7 +63,11 @@ const calcPrecisePercentile = (value: number, percentiles: ReturnType<typeof est
 };
 
 // 퍼센타일 범위 계산 (ReportTabs와 동일)
-const getPercentileRange = (value: number, percentiles: ReturnType<typeof estimatePercentiles>, median: number) => {
+const getPercentileRange = (
+  value: number,
+  percentiles: ReturnType<typeof estimatePercentiles>,
+  median: number,
+) => {
   if (value >= percentiles.p90) return { idx: 0, display: "상위 10%" };
   if (value >= percentiles.p80) return { idx: 1, display: "상위 20%" };
   if (value >= percentiles.p70) return { idx: 2, display: "상위 30%" };
@@ -69,7 +80,10 @@ const getPercentileRange = (value: number, percentiles: ReturnType<typeof estima
 };
 
 // Lycon Score 계산 함수
-const calculateLyconScore = (data: DiagnosisData, metrics: ReturnType<typeof calculateAllDiagnosisMetrics>) => {
+const calculateLyconScore = (
+  data: DiagnosisData,
+  metrics: ReturnType<typeof calculateAllDiagnosisMetrics>,
+) => {
   const ageGroup = getAgeGroup(data.currentAge);
   const ageStats = householdFinance2025[ageGroup];
 
@@ -79,19 +93,27 @@ const calculateLyconScore = (data: DiagnosisData, metrics: ReturnType<typeof cal
   const netWorthPercentilesData = estimatePercentiles(ageStats.netWorth.median);
 
   const incomeScore = calcPrecisePercentile(annualIncome, incomePercentiles);
-  const assetScore = calcPrecisePercentile(metrics.totalAsset * 10000, assetPercentilesData);
-  const netWorthScore = calcPrecisePercentile(metrics.netWorth * 10000, netWorthPercentilesData);
+  const assetScore = calcPrecisePercentile(
+    metrics.totalAsset * 10000,
+    assetPercentilesData,
+  );
+  const netWorthScore = calcPrecisePercentile(
+    metrics.netWorth * 10000,
+    netWorthPercentilesData,
+  );
 
-  const debtRatio = data.monthlyIncome > 0 ? (metrics.totalDebt / annualIncome) : 0;
-  const debtScore = metrics.totalDebt === 0 ? 100 : Math.max(0, 100 - debtRatio * 25);
+  const debtRatio =
+    data.monthlyIncome > 0 ? metrics.totalDebt / annualIncome : 0;
+  const debtScore =
+    metrics.totalDebt === 0 ? 100 : Math.max(0, 100 - debtRatio * 25);
   const savingsRateScore = Math.min(100, metrics.savingsRate * 2.5);
 
   const lyconScore = Math.round(
-    netWorthScore * 0.30 +
-    savingsRateScore * 0.25 +
-    debtScore * 0.20 +
-    incomeScore * 0.15 +
-    assetScore * 0.10
+    netWorthScore * 0.3 +
+      savingsRateScore * 0.25 +
+      debtScore * 0.2 +
+      incomeScore * 0.15 +
+      assetScore * 0.1,
   );
 
   return lyconScore;
@@ -102,7 +124,10 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
   const [lyconScore, setLyconScore] = useState(0);
   const [lyconGradeLabel, setLyconGradeLabel] = useState("");
   const [netWorth, setNetWorth] = useState(0);
-  const [netWorthStatus, setNetWorthStatus] = useState<{ status: DiagnosisStatus; label: string }>({ status: "good", label: "" });
+  const [netWorthStatus, setNetWorthStatus] = useState<{
+    status: DiagnosisStatus;
+    label: string;
+  }>({ status: "good", label: "" });
   const [savingsRate, setSavingsRate] = useState(0);
   const [monthlyGap, setMonthlyGap] = useState(0);
   const [yearsToRetirement, setYearsToRetirement] = useState(0);
@@ -158,12 +183,23 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
         setNetWorth(metrics.netWorth);
         const ageGroup = getAgeGroup(diagnosisData.currentAge);
         const ageStats = householdFinance2025[ageGroup];
-        const netWorthPercentilesData = estimatePercentiles(ageStats.netWorth.median);
-        const netWorthPercentile = getPercentileRange(metrics.netWorth * 10000, netWorthPercentilesData, ageStats.netWorth.median);
+        const netWorthPercentilesData = estimatePercentiles(
+          ageStats.netWorth.median,
+        );
+        const netWorthPercentile = getPercentileRange(
+          metrics.netWorth * 10000,
+          netWorthPercentilesData,
+          ageStats.netWorth.median,
+        );
 
-        const getNetWorthStatus = (): { status: DiagnosisStatus; label: string } => {
-          if (netWorthPercentile.idx <= 3) return { status: "good", label: netWorthPercentile.display };
-          if (netWorthPercentile.idx <= 5) return { status: "caution", label: netWorthPercentile.display };
+        const getNetWorthStatus = (): {
+          status: DiagnosisStatus;
+          label: string;
+        } => {
+          if (netWorthPercentile.idx <= 3)
+            return { status: "good", label: netWorthPercentile.display };
+          if (netWorthPercentile.idx <= 5)
+            return { status: "caution", label: netWorthPercentile.display };
           return { status: "warning", label: netWorthPercentile.display };
         };
         setNetWorthStatus(getNetWorthStatus());
@@ -177,31 +213,46 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
         setVariableExpense(metrics.variableExpense);
 
         // 3층 연금
-        setNationalPensionTotal(diagnosisData.nationalPensionPersonal + diagnosisData.nationalPensionSpouse);
-        setRetirementPensionTotal(diagnosisData.retirementPensionBalanceSelf + diagnosisData.retirementPensionBalanceSpouse);
+        setNationalPensionTotal(
+          diagnosisData.nationalPensionPersonal +
+            diagnosisData.nationalPensionSpouse,
+        );
+        setRetirementPensionTotal(
+          diagnosisData.retirementPensionBalanceSelf +
+            diagnosisData.retirementPensionBalanceSpouse,
+        );
         setPersonalPensionTotal(
           diagnosisData.personalPensionStatus.irp.balance +
-          diagnosisData.personalPensionStatus.pensionSavings.balance +
-          diagnosisData.personalPensionStatus.isa.balance
+            diagnosisData.personalPensionStatus.pensionSavings.balance +
+            diagnosisData.personalPensionStatus.isa.balance,
         );
 
         // 총 필요 자금
         setTotalDemand(metrics.totalDemand);
 
         // 추가 비용 계산 (ReportTabs와 동일한 calcParams 사용)
-        const additionalCosts = calculateAdditionalCosts(diagnosisData, calcParams);
+        const additionalCosts = calculateAdditionalCosts(
+          diagnosisData,
+          calcParams,
+        );
 
         // 기본 costOptions: education="normal", leisure=1, consumerGoods=1, medical=true, housing=null
         const educationCost = additionalCosts.childEducation.grandTotalNormal;
-        const leisureCost = (additionalCosts.leisure[1]?.totalUntilRetirement || 0) +
+        const leisureCost =
+          (additionalCosts.leisure[1]?.totalUntilRetirement || 0) +
           (additionalCosts.leisure[1]?.totalAfterRetirement || 0);
-        const consumerGoodsCost = additionalCosts.consumerGoods[1]?.totalUntilLifeExpectancy || 0;
+        const consumerGoodsCost =
+          additionalCosts.consumerGoods[1]?.totalUntilLifeExpectancy || 0;
         const medicalCost = additionalCosts.medical.grandTotal;
         const housingCost = 0; // 기본값은 미선택
 
-        const totalAdditional = educationCost + leisureCost + consumerGoodsCost + medicalCost + housingCost;
+        const totalAdditional =
+          educationCost +
+          leisureCost +
+          consumerGoodsCost +
+          medicalCost +
+          housingCost;
         setAdditionalTotal(totalAdditional / 10000); // 억 단위로 변환
-
       } catch (error) {
         console.error("진단 요약 데이터 로드 실패:", error);
       } finally {
@@ -223,104 +274,44 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
     );
   }
 
-  const fixedRatio = (fixedExpense + variableExpense) > 0
-    ? Math.round((fixedExpense / (fixedExpense + variableExpense)) * 100)
-    : 0;
-  const variableRatio = (fixedExpense + variableExpense) > 0
-    ? Math.round((variableExpense / (fixedExpense + variableExpense)) * 100)
-    : 0;
+  const fixedRatio =
+    fixedExpense + variableExpense > 0
+      ? Math.round((fixedExpense / (fixedExpense + variableExpense)) * 100)
+      : 0;
+  const variableRatio =
+    fixedExpense + variableExpense > 0
+      ? Math.round((variableExpense / (fixedExpense + variableExpense)) * 100)
+      : 0;
 
   return (
-    <div className={styles.container}>
+    <div className={styles.summaryGrid}>
       {/* Lycon 점수 */}
-      <div className={styles.stepCard}>
-        <div className={styles.stepHeader}>
-          <span className={styles.stepNumber}>Score</span>
-          <span className={styles.stepTitle}>Lycon 재무점수</span>
+      <div className={styles.summaryCard}>
+        <div className={styles.summaryHeader}>
+          <span className={styles.summaryLabel}>Score</span>
+          <span className={styles.summaryTitle}>Lycon 재무점수</span>
         </div>
-        <div className={styles.stepMainResult}>
-          <div className={styles.stepMainValue}>{lyconScore}<span className={styles.stepMainUnit}>점</span></div>
-          <div className={styles.stepMainLabel}>동연령대 상위 {100 - lyconScore}% ({lyconGradeLabel})</div>
+        <div className={styles.summaryValue}>
+          {lyconScore}
+          <span className={styles.summaryUnit}>점</span>
         </div>
-      </div>
-
-      {/* 핵심 지표 */}
-      <div className={styles.stepCard}>
-        <div className={styles.stepHeader}>
-          <span className={styles.stepNumber}>Key</span>
-          <span className={styles.stepTitle}>핵심 지표</span>
-        </div>
-        <div className={styles.keyMetricsGrid}>
-          <div className={styles.keyMetricItem}>
-            <span className={styles.keyMetricLabel}>순자산</span>
-            <span className={styles.keyMetricValue}>{formatBillion(netWorth)}억</span>
-            <span className={`${styles.keyMetricBadge} ${styles[netWorthStatus.status]}`}>{netWorthStatus.label}</span>
-          </div>
-          <div className={styles.keyMetricItem}>
-            <span className={styles.keyMetricLabel}>저축률</span>
-            <span className={styles.keyMetricValue}>{Math.round(savingsRate)}%</span>
-            <span className={`${styles.keyMetricBadge} ${monthlyGap >= 0 ? styles.sufficient : styles.critical}`}>
-              월 {monthlyGap >= 0 ? "+" : ""}{monthlyGap}만
-            </span>
-          </div>
-          <div className={styles.keyMetricItem}>
-            <span className={styles.keyMetricLabel}>은퇴까지</span>
-            <span className={styles.keyMetricValue}>{yearsToRetirement}년</span>
-            <span className={styles.keyMetricBadge}>{effectiveRetirementAge}세 목표</span>
-          </div>
-          <div className={styles.keyMetricItem}>
-            <span className={styles.keyMetricLabel}>고정비:변동비</span>
-            <span className={styles.keyMetricValue}>{fixedRatio}:{variableRatio}</span>
-            <span className={styles.keyMetricBadge}>{fixedExpense}만/{variableExpense}만</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3층 연금 준비 */}
-      <div className={styles.stepCard}>
-        <div className={styles.stepHeader}>
-          <span className={styles.stepNumber}>Pension</span>
-          <span className={styles.stepTitle}>3층 연금 준비</span>
-        </div>
-        <div className={styles.pensionSummaryGrid}>
-          <div className={styles.pensionSummaryItem}>
-            <span className={styles.pensionSummaryBadge} style={{ background: "#38a169" }}>1층</span>
-            <span className={styles.pensionSummaryLabel}>국민연금</span>
-            <span className={styles.pensionSummaryValue}>{nationalPensionTotal.toLocaleString()}만/월</span>
-          </div>
-          <div className={styles.pensionSummaryItem}>
-            <span className={styles.pensionSummaryBadge} style={{ background: "#3182ce" }}>2층</span>
-            <span className={styles.pensionSummaryLabel}>퇴직연금</span>
-            <span className={styles.pensionSummaryValue}>{retirementPensionTotal.toLocaleString()}만</span>
-          </div>
-          <div className={styles.pensionSummaryItem}>
-            <span className={styles.pensionSummaryBadge} style={{ background: "#805ad5" }}>3층</span>
-            <span className={styles.pensionSummaryLabel}>개인연금</span>
-            <span className={styles.pensionSummaryValue}>{personalPensionTotal.toLocaleString()}만</span>
-          </div>
+        <div className={styles.summarySubtext}>
+          동연령대 상위 {100 - lyconScore}%
         </div>
       </div>
 
       {/* 총 필요 자금 */}
-      <div className={styles.stepCard}>
-        <div className={styles.stepHeader}>
-          <span className={styles.stepNumber}>Funding</span>
-          <span className={styles.stepTitle}>총 필요 자금</span>
+      <div className={styles.summaryCard}>
+        <div className={styles.summaryHeader}>
+          <span className={styles.summaryLabel}>Funding</span>
+          <span className={styles.summaryTitle}>총 필요 자금</span>
         </div>
-        <div className={styles.stepMainResult}>
-          <div className={styles.stepMainValue}>{formatBillion(totalDemand + additionalTotal)}<span className={styles.stepMainUnit}>억</span></div>
-          <div className={styles.stepMainLabel}>은퇴 시점까지 준비 목표</div>
+        <div className={styles.summaryValue}>
+          {formatBillion(totalDemand + additionalTotal)}
+          <span className={styles.summaryUnit}>억</span>
         </div>
-        <div className={styles.fundingBreakdown}>
-          <div className={styles.fundingBreakdownItem}>
-            <span className={styles.fundingBreakdownLabel}>최소</span>
-            <span className={styles.fundingBreakdownValue}>{formatBillion(totalDemand)}억</span>
-          </div>
-          <span className={styles.fundingBreakdownPlus}>+</span>
-          <div className={styles.fundingBreakdownItem}>
-            <span className={styles.fundingBreakdownLabel}>추가</span>
-            <span className={styles.fundingBreakdownValue}>{formatBillion(additionalTotal)}억</span>
-          </div>
+        <div className={styles.summarySubtext}>
+          평생 필요한 돈
         </div>
       </div>
     </div>

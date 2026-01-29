@@ -1,7 +1,18 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import { Plus, Trash2, TrendingDown, Pencil, ChevronDown, ChevronUp, Info, CreditCard, Link, Building2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  TrendingDown,
+  Pencil,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  CreditCard,
+  Link,
+  Building2,
+} from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -18,8 +29,16 @@ import type {
 } from "@/types";
 import type { Expense } from "@/types/tables";
 import type { SimulationResult } from "@/lib/services/simulationEngine";
-import { DEFAULT_GLOBAL_SETTINGS, MEDICAL_EXPENSE_INFO, MEDICAL_EXPENSE_BY_AGE } from "@/types";
-import { formatMoney, getDefaultRateCategory, getEffectiveRate } from "@/lib/utils";
+import {
+  DEFAULT_GLOBAL_SETTINGS,
+  MEDICAL_EXPENSE_INFO,
+  MEDICAL_EXPENSE_BY_AGE,
+} from "@/types";
+import {
+  formatMoney,
+  getDefaultRateCategory,
+  getEffectiveRate,
+} from "@/lib/utils";
 import { CHART_COLORS, categorizeExpense } from "@/lib/utils/tooltipCategories";
 import { useExpenses, useInvalidateByCategory } from "@/hooks/useFinancialData";
 import {
@@ -75,13 +94,22 @@ export function ExpenseTab({
   const selfRetirementYear = currentYear + (retirementAge - currentAge);
 
   // 배우자 나이 계산
-  const spouseCurrentAge = spouseBirthYear ? currentYear - spouseBirthYear : null;
+  const spouseCurrentAge = spouseBirthYear
+    ? currentYear - spouseBirthYear
+    : null;
 
   // 배우자 은퇴년도
   const spouseRetirementYear = useMemo(() => {
-    if (!spouseBirthYear || spouseCurrentAge === null) return selfRetirementYear;
+    if (!spouseBirthYear || spouseCurrentAge === null)
+      return selfRetirementYear;
     return currentYear + (spouseRetirementAge - spouseCurrentAge);
-  }, [spouseBirthYear, currentYear, selfRetirementYear, spouseCurrentAge, spouseRetirementAge]);
+  }, [
+    spouseBirthYear,
+    currentYear,
+    selfRetirementYear,
+    spouseCurrentAge,
+    spouseRetirementAge,
+  ]);
 
   const hasSpouse = isMarried && spouseBirthYear;
   const currentMonth = new Date().getMonth() + 1;
@@ -97,7 +125,7 @@ export function ExpenseTab({
 
   // 종료 년월 계산
   const getEndYearMonth = (
-    item: ExpenseItem
+    item: ExpenseItem,
   ): { year: number; month: number } => {
     if (item.endType === "self-retirement")
       return { year: selfRetirementYear, month: 12 };
@@ -124,10 +152,10 @@ export function ExpenseTab({
     return dbExpenses.map((expense) => {
       // endType 결정: retirement_link 기반
       let endType: ExpenseItem["endType"] = "custom";
-      if (expense.retirement_link === 'self') {
-        endType = 'self-retirement';
-      } else if (expense.retirement_link === 'spouse') {
-        endType = 'spouse-retirement';
+      if (expense.retirement_link === "self") {
+        endType = "self-retirement";
+      } else if (expense.retirement_link === "spouse") {
+        endType = "spouse-retirement";
       }
 
       return {
@@ -154,26 +182,31 @@ export function ExpenseTab({
 
   // simulationResult에서 현재 연도의 부채 관련 지출 추출
   const debtExpensesFromSimulation = useMemo(() => {
-    const currentSnapshot = simulationResult.snapshots.find(s => s.year === currentYear);
+    const currentSnapshot = simulationResult.snapshots.find(
+      (s) => s.year === currentYear,
+    );
     if (!currentSnapshot) return [];
 
     // expenseBreakdown에서 이자/원금상환 항목 추출
     return currentSnapshot.expenseBreakdown
-      .filter(item => item.title.includes('이자') || item.title.includes('원금상환'))
+      .filter(
+        (item) =>
+          item.title.includes("이자") || item.title.includes("원금상환"),
+      )
       .map((item, index) => ({
         id: `sim-debt-${index}`,
-        type: 'interest' as const,
+        type: "interest" as const,
         label: item.title,
         amount: Math.round(item.amount / 12), // 연간 → 월간
-        frequency: 'monthly' as const,
+        frequency: "monthly" as const,
         startYear: currentYear,
         startMonth: 1,
-        endType: 'custom' as const,
+        endType: "custom" as const,
         endYear: currentYear + 10,
         endMonth: 12,
         growthRate: 0,
-        rateCategory: 'fixed' as const,
-        sourceType: 'debt' as const,
+        rateCategory: "fixed" as const,
+        sourceType: "debt" as const,
         sourceId: `sim-${index}`,
         displayGrowthRate: 0,
       }));
@@ -182,12 +215,13 @@ export function ExpenseTab({
   // 사용자 지출 표시용 데이터 (부채 지출은 simulationResult에서 가져옴)
   const displayItems = useMemo(() => {
     return expenseItems.map((item) => {
-      const rateCategory = item.rateCategory || getDefaultRateCategory(item.type);
+      const rateCategory =
+        item.rateCategory || getDefaultRateCategory(item.type);
       const effectiveRate = getEffectiveRate(
         item.growthRate,
         rateCategory,
         globalSettings.scenarioMode,
-        globalSettings
+        globalSettings,
       );
       return {
         ...item,
@@ -245,15 +279,16 @@ export function ExpenseTab({
     if (item.type === "onetime") {
       return item.startYear === currentYear;
     }
-    const endYear = item.endType === "self-retirement"
-      ? selfRetirementYear
-      : item.endType === "spouse-retirement"
-        ? spouseRetirementYear
-        : item.endYear || 9999;
+    const endYear =
+      item.endType === "self-retirement"
+        ? selfRetirementYear
+        : item.endType === "spouse-retirement"
+          ? spouseRetirementYear
+          : item.endYear || 9999;
     return currentYear >= item.startYear && currentYear <= endYear;
   };
 
-  // 월 총 지출 (현재 연도에 해당하는 항목만 + simulationResult의 부채 지출)
+  // 월 지출 (현재 연도에 해당하는 항목만 + simulationResult의 부채 지출)
   const monthlyExpense = useMemo(() => {
     // 일반 지출
     const regularExpense = displayItems
@@ -261,11 +296,19 @@ export function ExpenseTab({
       .reduce((sum, item) => sum + toMonthlyAmount(item), 0);
 
     // 부채 지출 (simulationResult에서 - 이미 월간으로 변환됨)
-    const debtExpense = debtExpensesFromSimulation
-      .reduce((sum, item) => sum + item.amount, 0);
+    const debtExpense = debtExpensesFromSimulation.reduce(
+      (sum, item) => sum + item.amount,
+      0,
+    );
 
     return regularExpense + debtExpense;
-  }, [displayItems, debtExpensesFromSimulation, currentYear, selfRetirementYear, spouseRetirementYear]);
+  }, [
+    displayItems,
+    debtExpensesFromSimulation,
+    currentYear,
+    selfRetirementYear,
+    spouseRetirementYear,
+  ]);
 
   // 은퇴까지 총 지출 (상승률 반영, 은퇴 전에 시작하는 항목만)
   const lifetimeExpense = useMemo(() => {
@@ -285,14 +328,18 @@ export function ExpenseTab({
       // 종료 시점을 은퇴년도로 제한
       const itemEnd = getEndYearMonth(item);
       const effectiveEndYear = Math.min(itemEnd.year, selfRetirementYear);
-      const effectiveEndMonth = itemEnd.year <= selfRetirementYear ? itemEnd.month : 12;
+      const effectiveEndMonth =
+        itemEnd.year <= selfRetirementYear ? itemEnd.month : 12;
 
       // 실제 개월 수 계산 (은퇴까지만)
-      const months = (effectiveEndYear - item.startYear) * 12 + (effectiveEndMonth - item.startMonth);
+      const months =
+        (effectiveEndYear - item.startYear) * 12 +
+        (effectiveEndMonth - item.startMonth);
       if (months <= 0) return;
 
       // displayGrowthRate 사용 (이미 시나리오 적용됨)
-      const monthlyGrowthRate = Math.pow(1 + item.displayGrowthRate / 100, 1 / 12) - 1;
+      const monthlyGrowthRate =
+        Math.pow(1 + item.displayGrowthRate / 100, 1 / 12) - 1;
       let monthlyAmount =
         item.frequency === "yearly" ? item.amount / 12 : item.amount;
       for (let i = 0; i < months; i++) {
@@ -306,15 +353,33 @@ export function ExpenseTab({
   // 지출 유형별 월 지출 (현재 연도 해당 항목만)
   const expenseByType = useMemo(
     () => ({
-      fixed: fixedItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
-      variable: variableItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
-      onetime: onetimeItems.filter(isCurrentYearItem).reduce((s, i) => s + i.amount, 0),
+      fixed: fixedItems
+        .filter(isCurrentYearItem)
+        .reduce((s, i) => s + toMonthlyAmount(i), 0),
+      variable: variableItems
+        .filter(isCurrentYearItem)
+        .reduce((s, i) => s + toMonthlyAmount(i), 0),
+      onetime: onetimeItems
+        .filter(isCurrentYearItem)
+        .reduce((s, i) => s + i.amount, 0),
       medical: currentMedicalItems.reduce((s, i) => s + toMonthlyAmount(i), 0),
       // interest는 simulationResult에서 가져온 데이터 사용 (이미 월간으로 변환됨)
       interest: debtExpensesFromSimulation.reduce((s, i) => s + i.amount, 0),
-      housing: housingItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
+      housing: housingItems
+        .filter(isCurrentYearItem)
+        .reduce((s, i) => s + toMonthlyAmount(i), 0),
     }),
-    [fixedItems, variableItems, onetimeItems, currentMedicalItems, debtExpensesFromSimulation, housingItems, currentYear, selfRetirementYear, spouseRetirementYear]
+    [
+      fixedItems,
+      variableItems,
+      onetimeItems,
+      currentMedicalItems,
+      debtExpensesFromSimulation,
+      housingItems,
+      currentYear,
+      selfRetirementYear,
+      spouseRetirementYear,
+    ],
   );
 
   // 차트 데이터 - simulationResult에서 직접 가져옴 (Single Source of Truth)
@@ -336,64 +401,77 @@ export function ExpenseTab({
       let housingTotal = 0;
 
       // expenseBreakdown을 type 필드로 정확히 분류
-      snapshot.expenseBreakdown.forEach((item: { title: string; amount: number; type?: string }) => {
-        const itemType = item.type || '';
-        switch (itemType) {
-          // 고정비
-          case 'insurance':
-          case 'subscription':
-          case 'maintenance':
-            fixedTotal += item.amount;
-            break;
-          // 생활비/변동비
-          case 'living':
-          case 'food':
-          case 'transport':
-          case 'education':
-          case 'child':
-          case 'leisure':
-          case 'parents':
-          case 'other':
-            variableTotal += item.amount;
-            break;
-          // 의료비
-          case 'health':
-          case 'medical':
-            medicalTotal += item.amount;
-            break;
-          // 대출/이자
-          case 'loan':
-          case 'interest':
-            interestTotal += item.amount;
-            break;
-          // 주거비
-          case 'housing':
-          case 'rent':
-            housingTotal += item.amount;
-            break;
-          // 일시 지출
-          case 'travel':
-          case 'wedding':
-          case 'onetime':
-            onetimeTotal += item.amount;
-            break;
-          default:
-            // type이 없으면 키워드 기반 분류로 폴백
-            if (itemType === '') {
-              const category = categorizeExpense(item.title);
-              switch (category.id) {
-                case 'fixed': fixedTotal += item.amount; break;
-                case 'living': variableTotal += item.amount; break;
-                case 'medical': medicalTotal += item.amount; break;
-                case 'loan': interestTotal += item.amount; break;
-                case 'housing': housingTotal += item.amount; break;
-                default: variableTotal += item.amount;
-              }
-            } else {
+      snapshot.expenseBreakdown.forEach(
+        (item: { title: string; amount: number; type?: string }) => {
+          const itemType = item.type || "";
+          switch (itemType) {
+            // 고정비
+            case "insurance":
+            case "subscription":
+            case "maintenance":
+              fixedTotal += item.amount;
+              break;
+            // 생활비/변동비
+            case "living":
+            case "food":
+            case "transport":
+            case "education":
+            case "child":
+            case "leisure":
+            case "parents":
+            case "other":
               variableTotal += item.amount;
-            }
-        }
-      });
+              break;
+            // 의료비
+            case "health":
+            case "medical":
+              medicalTotal += item.amount;
+              break;
+            // 대출/이자
+            case "loan":
+            case "interest":
+              interestTotal += item.amount;
+              break;
+            // 주거비
+            case "housing":
+            case "rent":
+              housingTotal += item.amount;
+              break;
+            // 일시 지출
+            case "travel":
+            case "wedding":
+            case "onetime":
+              onetimeTotal += item.amount;
+              break;
+            default:
+              // type이 없으면 키워드 기반 분류로 폴백
+              if (itemType === "") {
+                const category = categorizeExpense(item.title);
+                switch (category.id) {
+                  case "fixed":
+                    fixedTotal += item.amount;
+                    break;
+                  case "living":
+                    variableTotal += item.amount;
+                    break;
+                  case "medical":
+                    medicalTotal += item.amount;
+                    break;
+                  case "loan":
+                    interestTotal += item.amount;
+                    break;
+                  case "housing":
+                    housingTotal += item.amount;
+                    break;
+                  default:
+                    variableTotal += item.amount;
+                }
+              } else {
+                variableTotal += item.amount;
+              }
+          }
+        },
+      );
 
       labels.push(`${snapshot.year}`);
       fixedData.push(fixedTotal);
@@ -404,7 +482,15 @@ export function ExpenseTab({
       housingData.push(housingTotal);
     });
 
-    return { labels, fixedData, variableData, onetimeData, medicalData, interestData, housingData };
+    return {
+      labels,
+      fixedData,
+      variableData,
+      onetimeData,
+      medicalData,
+      interestData,
+      housingData,
+    };
   }, [simulationResult]);
 
   // 차트 데이터셋
@@ -466,7 +552,7 @@ export function ExpenseTab({
   // 커스텀 툴팁
   const getOrCreateTooltip = (chart: ChartJS) => {
     let tooltipEl = chart.canvas.parentNode?.querySelector(
-      "div.chart-tooltip"
+      "div.chart-tooltip",
     ) as HTMLDivElement | null;
     if (!tooltipEl) {
       tooltipEl = document.createElement("div");
@@ -516,9 +602,10 @@ export function ExpenseTab({
 
     const selfAgeAtYear = getAgeAtYear(yearNum, true);
     const spouseAgeAtYear = hasSpouse ? getAgeAtYear(yearNum, false) : null;
-    const ageDisplay = spouseAgeAtYear !== null
-      ? `본인 ${selfAgeAtYear}세, 배우자 ${spouseAgeAtYear}세`
-      : `본인 ${selfAgeAtYear}세`;
+    const ageDisplay =
+      spouseAgeAtYear !== null
+        ? `본인 ${selfAgeAtYear}세, 배우자 ${spouseAgeAtYear}세`
+        : `본인 ${selfAgeAtYear}세`;
 
     const items: { label: string; value: number; color: string }[] = [];
     let total = 0;
@@ -542,7 +629,7 @@ export function ExpenseTab({
           </div>
           <span style="font-size: 14px; font-weight: 600; color: #1d1d1f;">${formatMoney(item.value)}</span>
         </div>
-      `
+      `,
         )
         .join("");
 
@@ -630,7 +717,9 @@ export function ExpenseTab({
   const generateMedicalExpenses = async () => {
     if (!simulationId) return;
 
-    const ageKeys = Object.keys(MEDICAL_EXPENSE_BY_AGE).map(Number).sort((a, b) => a - b);
+    const ageKeys = Object.keys(MEDICAL_EXPENSE_BY_AGE)
+      .map(Number)
+      .sort((a, b) => a - b);
 
     try {
       // 기존 의료비 항목 삭제
@@ -693,7 +782,7 @@ export function ExpenseTab({
         }
       }
 
-      invalidate('expenses');
+      invalidate("expenses");
       setMedicalExpanded(true);
     } catch (error) {
       console.error("Failed to generate medical expenses:", error);
@@ -706,7 +795,7 @@ export function ExpenseTab({
 
     const isOnetime = addingType === "onetime";
     // 지출은 기본적으로 본인 은퇴까지
-    const retirementLink = isOnetime ? null : 'self';
+    const retirementLink = isOnetime ? null : "self";
 
     try {
       await createExpense({
@@ -725,7 +814,7 @@ export function ExpenseTab({
         growth_rate: isOnetime ? 0 : DEFAULT_GLOBAL_SETTINGS.inflationRate,
         rate_category: getDefaultRateCategory(addingType),
       });
-      invalidate('expenses');
+      invalidate("expenses");
       resetAddForm();
     } catch (error) {
       console.error("Failed to add expense:", error);
@@ -734,11 +823,16 @@ export function ExpenseTab({
 
   const getDefaultLabel = (type: ExpenseType): string => {
     switch (type) {
-      case "fixed": return "고정 지출";
-      case "variable": return "변동 지출";
-      case "onetime": return "일시 지출";
-      case "medical": return "의료비";
-      default: return "지출";
+      case "fixed":
+        return "고정 지출";
+      case "variable":
+        return "변동 지출";
+      case "onetime":
+        return "일시 지출";
+      case "medical":
+        return "의료비";
+      default:
+        return "지출";
     }
   };
 
@@ -755,7 +849,7 @@ export function ExpenseTab({
   const handleDelete = async (id: string) => {
     try {
       await deleteExpense(id);
-      invalidate('expenses');
+      invalidate("expenses");
       if (editingId === id) {
         setEditingId(null);
         setEditForm(null);
@@ -798,14 +892,17 @@ export function ExpenseTab({
         }
       : editForm;
 
-    const isFixedToRetirement = finalForm.endType === "self-retirement" || finalForm.endType === "spouse-retirement";
+    const isFixedToRetirement =
+      finalForm.endType === "self-retirement" ||
+      finalForm.endType === "spouse-retirement";
 
     // retirement_link 결정: endType에 따라 'self', 'spouse', null
-    const retirementLink = finalForm.endType === 'self-retirement'
-      ? 'self'
-      : finalForm.endType === 'spouse-retirement'
-        ? 'spouse'
-        : null;
+    const retirementLink =
+      finalForm.endType === "self-retirement"
+        ? "self"
+        : finalForm.endType === "spouse-retirement"
+          ? "spouse"
+          : null;
 
     // retirement_link가 있으면 end_year는 null - 시뮬레이션 시점에 동적 계산
     const endYearToSave = retirementLink ? null : finalForm.endYear;
@@ -826,7 +923,7 @@ export function ExpenseTab({
         growth_rate: finalForm.growthRate,
         rate_category: finalForm.rateCategory,
       });
-      invalidate('expenses');
+      invalidate("expenses");
       cancelEdit();
     } catch (error) {
       console.error("Failed to update expense:", error);
@@ -842,7 +939,8 @@ export function ExpenseTab({
     const startStr = `${item.startYear}.${String(item.startMonth).padStart(2, "0")}`;
 
     if (item.endType === "self-retirement") return `${startStr} ~ 본인 은퇴`;
-    if (item.endType === "spouse-retirement") return `${startStr} ~ 배우자 은퇴`;
+    if (item.endType === "spouse-retirement")
+      return `${startStr} ~ 배우자 은퇴`;
 
     // 종료일이 없으면 "시작일 ~" 형식으로 표시
     if (!item.endYear) return `${startStr} ~`;
@@ -867,7 +965,7 @@ export function ExpenseTab({
     title: string,
     type: ExpenseType,
     items: DisplayItem[],
-    description?: string
+    description?: string,
   ) => (
     <div className={styles.expenseSection}>
       <div className={styles.sectionHeader}>
@@ -945,7 +1043,7 @@ export function ExpenseTab({
                         onChange={(e) => {
                           const month = Math.min(
                             12,
-                            Math.max(1, parseInt(e.target.value) || 1)
+                            Math.max(1, parseInt(e.target.value) || 1),
                           );
                           setEditForm({
                             ...editForm,
@@ -1058,7 +1156,7 @@ export function ExpenseTab({
                           ...editForm,
                           startMonth: Math.min(
                             12,
-                            Math.max(1, parseInt(e.target.value) || 1)
+                            Math.max(1, parseInt(e.target.value) || 1),
                           ),
                         })
                       }
@@ -1075,10 +1173,15 @@ export function ExpenseTab({
                       <button
                         type="button"
                         className={`${styles.endTypeBtn} ${
-                          editForm.endType === "self-retirement" ? styles.active : ""
+                          editForm.endType === "self-retirement"
+                            ? styles.active
+                            : ""
                         }`}
                         onClick={() =>
-                          setEditForm({ ...editForm, endType: "self-retirement" })
+                          setEditForm({
+                            ...editForm,
+                            endType: "self-retirement",
+                          })
                         }
                       >
                         본인 은퇴
@@ -1087,10 +1190,15 @@ export function ExpenseTab({
                         <button
                           type="button"
                           className={`${styles.endTypeBtn} ${
-                            editForm.endType === "spouse-retirement" ? styles.active : ""
+                            editForm.endType === "spouse-retirement"
+                              ? styles.active
+                              : ""
                           }`}
                           onClick={() =>
-                            setEditForm({ ...editForm, endType: "spouse-retirement" })
+                            setEditForm({
+                              ...editForm,
+                              endType: "spouse-retirement",
+                            })
                           }
                         >
                           배우자 은퇴
@@ -1141,7 +1249,7 @@ export function ExpenseTab({
                               ...editForm,
                               endMonth: Math.min(
                                 12,
-                                Math.max(1, parseInt(e.target.value) || 12)
+                                Math.max(1, parseInt(e.target.value) || 12),
                               ),
                             })
                           }
@@ -1182,14 +1290,18 @@ export function ExpenseTab({
                         key={preset.id}
                         type="button"
                         className={`${styles.rateBtn} ${
-                          !isCustomRateMode && editForm.growthRate === preset.value
+                          !isCustomRateMode &&
+                          editForm.growthRate === preset.value
                             ? styles.active
                             : ""
                         }`}
                         onClick={() => {
                           setIsCustomRateMode(false);
                           setCustomRateInput("");
-                          setEditForm({ ...editForm, growthRate: preset.value });
+                          setEditForm({
+                            ...editForm,
+                            growthRate: preset.value,
+                          });
                         }}
                       >
                         {preset.value}%
@@ -1303,7 +1415,9 @@ export function ExpenseTab({
                       max={2200}
                       value={newOnetimeYear}
                       onChange={(e) =>
-                        setNewOnetimeYear(parseInt(e.target.value) || currentYear)
+                        setNewOnetimeYear(
+                          parseInt(e.target.value) || currentYear,
+                        )
                       }
                       onWheel={(e) => (e.target as HTMLElement).blur()}
                     />
@@ -1316,7 +1430,10 @@ export function ExpenseTab({
                       max={12}
                       onChange={(e) =>
                         setNewOnetimeMonth(
-                          Math.min(12, Math.max(1, parseInt(e.target.value) || 1))
+                          Math.min(
+                            12,
+                            Math.max(1, parseInt(e.target.value) || 1),
+                          ),
                         )
                       }
                       onWheel={(e) => (e.target as HTMLElement).blur()}
@@ -1358,7 +1475,10 @@ export function ExpenseTab({
               )}
 
               <div className={styles.inlineActions}>
-                <button className={styles.inlineCancelBtn} onClick={resetAddForm}>
+                <button
+                  className={styles.inlineCancelBtn}
+                  onClick={resetAddForm}
+                >
                   취소
                 </button>
                 <button
@@ -1406,19 +1526,19 @@ export function ExpenseTab({
           "고정비",
           "fixed",
           fixedItems,
-          "보험료, 통신비, 구독료 등 매월 고정적으로 나가는 지출"
+          "보험료, 통신비, 구독료 등 매월 고정적으로 나가는 지출",
         )}
         {renderSection(
           "변동비",
           "variable",
           variableItems,
-          "식비, 교통비, 여가비 등 매월 변동되는 지출"
+          "식비, 교통비, 여가비 등 매월 변동되는 지출",
         )}
         {renderSection(
           "일회성 지출",
           "onetime",
           onetimeItems,
-          "여행, 결혼, 차량구입, 이사 등 특정 시점의 큰 지출"
+          "여행, 결혼, 차량구입, 이사 등 특정 시점의 큰 지출",
         )}
         {/* 의료비 섹션 (토글 가능) */}
         <div className={styles.expenseSection}>
@@ -1441,7 +1561,11 @@ export function ExpenseTab({
               </button>
             </div>
             <div className={styles.sectionToggle}>
-              {medicalExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              {medicalExpanded ? (
+                <ChevronUp size={18} />
+              ) : (
+                <ChevronDown size={18} />
+              )}
             </div>
           </div>
 
@@ -1480,13 +1604,18 @@ export function ExpenseTab({
                         <div key={item.id} className={styles.expenseItem}>
                           <div className={styles.editMode}>
                             <div className={styles.editRow}>
-                              <span className={styles.editRowLabel}>항목명</span>
+                              <span className={styles.editRowLabel}>
+                                항목명
+                              </span>
                               <input
                                 type="text"
                                 className={styles.editLabelInput}
                                 value={editForm.label}
                                 onChange={(e) =>
-                                  setEditForm({ ...editForm, label: e.target.value })
+                                  setEditForm({
+                                    ...editForm,
+                                    label: e.target.value,
+                                  })
                                 }
                               />
                             </div>
@@ -1503,7 +1632,9 @@ export function ExpenseTab({
                                       amount: parseInt(e.target.value) || 0,
                                     })
                                   }
-                                  onWheel={(e) => (e.target as HTMLElement).blur()}
+                                  onWheel={(e) =>
+                                    (e.target as HTMLElement).blur()
+                                  }
                                 />
                                 <span className={styles.editUnit}>만원</span>
                                 <select
@@ -1512,7 +1643,8 @@ export function ExpenseTab({
                                   onChange={(e) =>
                                     setEditForm({
                                       ...editForm,
-                                      frequency: e.target.value as ExpenseFrequency,
+                                      frequency: e.target
+                                        .value as ExpenseFrequency,
                                     })
                                   }
                                 >
@@ -1522,10 +1654,16 @@ export function ExpenseTab({
                               </div>
                             </div>
                             <div className={styles.editActions}>
-                              <button className={styles.saveBtn} onClick={saveEdit}>
+                              <button
+                                className={styles.saveBtn}
+                                onClick={saveEdit}
+                              >
                                 저장
                               </button>
-                              <button className={styles.cancelBtn} onClick={() => setEditingId(null)}>
+                              <button
+                                className={styles.cancelBtn}
+                                onClick={() => setEditingId(null)}
+                              >
                                 취소
                               </button>
                             </div>
@@ -1582,8 +1720,14 @@ export function ExpenseTab({
 
           {!medicalExpanded && medicalItems.length > 0 && (
             <div className={styles.collapsedSummary}>
-              {medicalItems.length}개 항목 (현재 적용: {currentMedicalItems.length}개), 월 {formatMoney(
-                currentMedicalItems.reduce((sum, i) => sum + (i.frequency === "yearly" ? i.amount / 12 : i.amount), 0)
+              {medicalItems.length}개 항목 (현재 적용:{" "}
+              {currentMedicalItems.length}개), 월{" "}
+              {formatMoney(
+                currentMedicalItems.reduce(
+                  (sum, i) =>
+                    sum + (i.frequency === "yearly" ? i.amount / 12 : i.amount),
+                  0,
+                ),
               )}
             </div>
           )}
@@ -1592,14 +1736,16 @@ export function ExpenseTab({
           "주거비",
           "housing",
           housingItems,
-          "부동산 탭에서 등록한 월세, 관리비가 표시됩니다"
+          "부동산 탭에서 등록한 월세, 관리비가 표시됩니다",
         )}
         {/* 이자 비용 섹션 - simulationResult에서 가져옴 (Single Source of Truth) */}
         <div className={styles.expenseSection}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionTitle}>이자/원금 상환</span>
           </div>
-          <p className={styles.sectionDesc}>부채 탭에서 등록한 대출 상환금이 표시됩니다</p>
+          <p className={styles.sectionDesc}>
+            부채 탭에서 등록한 대출 상환금이 표시됩니다
+          </p>
 
           <div className={styles.itemList}>
             {interestItems.map((item) => (

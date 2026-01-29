@@ -4,6 +4,60 @@
   gap: 12px;
 }
 
+/* 2열 요약 그리드 */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.summaryCard {
+  background: white;
+  padding: 20px 16px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.summaryHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.summaryLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summaryTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.summaryValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a365d;
+  line-height: 1;
+}
+
+.summaryUnit {
+  font-size: 18px;
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+.summarySubtext {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 8px;
+}
+
 /* Step Card (기본 카드) */
 .stepCard {
   background: white;
