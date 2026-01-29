@@ -466,13 +466,13 @@ export function DiagnosisReport({
                   {m.currentMonthlyGap}만원
                 </div>
                 <div className={styles.stepMainLabel}>
-                  월 저축여력 (소득 - 지출)
+                  월 현금흐름 (소득 - 지출)
                 </div>
               </div>
               <div className={styles.cashflowChartContainer}>
                 <Bar
                   data={{
-                    labels: ["월 소득", "월 지출", "저축여력"],
+                    labels: ["월 소득", "월 지출", "저축/투자 여력"],
                     datasets: [
                       {
                         data: [
@@ -616,6 +616,9 @@ export function DiagnosisReport({
                     {m.fixedExpense}만원
                   </span>
                 </div>
+                <p className={styles.expenseSectionDesc}>
+                  매달 일정하게 나가는 비용
+                </p>
                 {fixedExpenseItemsForChart.length > 0 ? (
                   <div className={styles.expenseItemsGrid}>
                     {fixedExpenseItemsForChart
@@ -654,6 +657,9 @@ export function DiagnosisReport({
                     {m.variableExpense}만원
                   </span>
                 </div>
+                <p className={styles.expenseSectionDesc}>
+                  생활 패턴에 따라 달라지는 비용
+                </p>
                 {expenseItems.length > 0 ? (
                   <div className={styles.expenseItemsGrid}>
                     {expenseItems
@@ -908,7 +914,9 @@ export function DiagnosisReport({
                     >
                       3층
                     </span>
-                    <span className={styles.pensionFloorTitle}>개인연금 + ISA</span>
+                    <span className={styles.pensionFloorTitle}>
+                      개인연금 + ISA
+                    </span>
                   </div>
                   <div className={styles.pensionProductsGrid}>
                     <div
@@ -1528,8 +1536,8 @@ export function DiagnosisReport({
                             총 필요자금)
                           </div>
                           <div className={styles.diagnosisCriteria}>
-                            연금수입 + 현재자산 + 저축여력 기준, 필요자금 대비{" "}
-                            {Math.abs(Math.round(gapRatio * 100))}%{" "}
+                            연금수입 + 현재자산 + 저축/투자 여력 기준, 필요자금
+                            대비 {Math.abs(Math.round(gapRatio * 100))}%{" "}
                             {gapRatio >= 0 ? "여유" : "부족"}
                           </div>
                         </div>
@@ -2489,48 +2497,143 @@ export function DiagnosisReport({
               )}
             </div>
 
-            {/* Lycon Membership 소개 */}
+            {/* 은퇴 준비 기본 상식 */}
             <div className={styles.stepCard}>
               <div className={styles.stepHeader}>
-                <span className={styles.stepNumber}>Membership</span>
-                <span className={styles.stepTitle}>Lycon 멤버십</span>
+                <span className={styles.stepNumber}>GUIDE</span>
+                <span className={styles.stepTitle}>은퇴 준비 기본 상식</span>
               </div>
-              <div className={styles.membershipIntro}>
-                <p>주기적인 관리로 원활한 재무 목표 달성</p>
+              <div className={styles.guideContent}>
+                <p>
+                  은퇴는 단순히 "회사를 그만두는 것"이 아닙니다.{" "}
+                  <strong>매달 들어오던 월급이 멈추는 순간</strong>입니다.
+                </p>
+                <p>
+                  하지만 생활비, 병원비, 경조사비는 계속 나갑니다. 그래서 은퇴
+                  준비의 핵심은{" "}
+                  <strong>"월급 없이도 돈이 들어오는 구조"</strong>를 만드는
+                  것입니다.
+                </p>
               </div>
-              <div className={styles.membershipTimeline}>
-                <div className={styles.membershipTimelineItem}>
-                  <span className={styles.membershipCycle}>주간</span>
-                  <span className={styles.membershipService}>
-                    맞춤 투자 전략 서한
+            </div>
+
+            {/* 3층 연금 */}
+            <div className={styles.stepCard}>
+              <div className={styles.stepHeader}>
+                <span className={styles.stepNumber}>PENSION</span>
+                <span className={styles.stepTitle}>연금의 3가지 종류</span>
+              </div>
+              <div className={styles.guidePensionGrid}>
+                <div className={styles.guidePensionItem}>
+                  <span
+                    className={styles.guidePensionBadge}
+                    style={{ background: "#38a169" }}
+                  >
+                    1층
+                  </span>
+                  <span className={styles.guidePensionLabel}>국민연금</span>
+                  <span className={styles.guidePensionDesc}>
+                    나라에서 주는 연금, 월 60~100만원
                   </span>
                 </div>
-                <div className={styles.membershipTimelineItem}>
-                  <span className={styles.membershipCycle}>월간</span>
-                  <span className={styles.membershipService}>가계부 정리</span>
-                </div>
-                <div className={styles.membershipTimelineItem}>
-                  <span className={styles.membershipCycle}>분기</span>
-                  <span className={styles.membershipService}>
-                    포트폴리오 리밸런싱
+                <div className={styles.guidePensionItem}>
+                  <span
+                    className={styles.guidePensionBadge}
+                    style={{ background: "#3182ce" }}
+                  >
+                    2층
+                  </span>
+                  <span className={styles.guidePensionLabel}>퇴직연금</span>
+                  <span className={styles.guidePensionDesc}>
+                    회사에서 쌓아주는 연금
                   </span>
                 </div>
-                <div className={styles.membershipTimelineItem}>
-                  <span className={styles.membershipCycle}>반기</span>
-                  <span className={styles.membershipService}>
-                    자산 진단 리포트
+                <div className={styles.guidePensionItem}>
+                  <span
+                    className={styles.guidePensionBadge}
+                    style={{ background: "#805ad5" }}
+                  >
+                    3층
                   </span>
-                </div>
-                <div className={styles.membershipTimelineItem}>
-                  <span className={styles.membershipCycle}>연간</span>
-                  <span className={styles.membershipService}>
-                    종합 재무 컨설팅
+                  <span className={styles.guidePensionLabel}>개인연금</span>
+                  <span className={styles.guidePensionDesc}>
+                    연금저축, IRP 등 직접 준비
                   </span>
                 </div>
               </div>
-              <button className={styles.membershipButton}>
-                멤버십 알아보기
-              </button>
+              <div className={styles.guideTipBox}>
+                1층만으로는 부족합니다. 2층, 3층을 함께 쌓아야 안정적인 노후가
+                됩니다.
+              </div>
+            </div>
+
+            {/* 복리의 힘 */}
+            <div className={styles.stepCard}>
+              <div className={styles.stepHeader}>
+                <span className={styles.stepNumber}>COMPOUND</span>
+                <span className={styles.stepTitle}>복리의 힘</span>
+              </div>
+              <div className={styles.guideSubtitle}>
+                1,000만원을 연 7%로 굴리면
+              </div>
+              <div className={styles.guideCompoundGrid}>
+                <div className={styles.guideCompoundItem}>
+                  <span className={styles.guideCompoundYear}>10년 후</span>
+                  <span className={styles.guideCompoundValue}>2,000만</span>
+                </div>
+                <div className={styles.guideCompoundItem}>
+                  <span className={styles.guideCompoundYear}>20년 후</span>
+                  <span className={styles.guideCompoundValue}>4,000만</span>
+                </div>
+                <div className={styles.guideCompoundItem}>
+                  <span className={styles.guideCompoundYear}>30년 후</span>
+                  <span className={styles.guideCompoundValue}>7,600만</span>
+                </div>
+              </div>
+              <div className={styles.guideTipBox}>
+                내가 일하지 않아도 돈이 스스로 불어납니다. 시간이 길수록 효과가
+                커집니다.
+              </div>
+            </div>
+
+            {/* 인플레이션 */}
+            <div className={styles.stepCard}>
+              <div className={styles.stepHeader}>
+                <span className={styles.stepNumber}>INFLATION</span>
+                <span className={styles.stepTitle}>물가 상승의 무서움</span>
+              </div>
+              <div className={styles.guideInflationRow}>
+                <div className={styles.guideInflationItem}>
+                  <span className={styles.guideInflationLabel}>20년 전</span>
+                  <span className={styles.guideInflationValue}>3,000원</span>
+                </div>
+                <div className={styles.guideInflationArrow}>
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#94a3b8"
+                    strokeWidth="2"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </div>
+                <div className={styles.guideInflationItem}>
+                  <span className={styles.guideInflationLabel}>현재</span>
+                  <span className={styles.guideInflationValue}>8,000원</span>
+                </div>
+              </div>
+              <div className={styles.guideContent}>
+                <p>
+                  지금 100만원으로 살 수 있는 것들이, 20년 후에는 60만원어치밖에
+                  못 삽니다.
+                </p>
+                <p>
+                  은퇴 자금은 "지금 필요한 돈"이 아니라{" "}
+                  <strong>"미래에 필요한 돈"</strong>으로 계산해야 합니다.
+                </p>
+              </div>
             </div>
           </>
         )}

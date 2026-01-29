@@ -284,33 +284,37 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
       : 0;
 
   return (
-    <div className={styles.summaryGrid}>
+    <div className={styles.container}>
       {/* Lycon 점수 */}
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Score</span>
-          <span className={styles.summaryTitle}>Lycon 재무점수</span>
+      <div className={styles.stepCard}>
+        <div className={styles.stepHeader}>
+          <span className={styles.stepNumber}>Score</span>
+          <span className={styles.stepTitle}>Lycon 재무점수</span>
         </div>
-        <div className={styles.summaryValue}>
-          {lyconScore}
-          <span className={styles.summaryUnit}>점</span>
-        </div>
-        <div className={styles.summarySubtext}>
-          동연령대 상위 {100 - lyconScore}%
+        <div className={styles.stepMainResult}>
+          <div className={styles.stepMainValue}>
+            {lyconScore}
+            <span className={styles.stepMainUnit}>점</span>
+          </div>
+          <div className={styles.stepMainLabel}>
+            동연령대 상위 {100 - lyconScore}% ({lyconGradeLabel})
+          </div>
         </div>
       </div>
 
       {/* 총 필요 자금 */}
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Funding</span>
-          <span className={styles.summaryTitle}>총 필요 자금</span>
+      <div className={styles.stepCard}>
+        <div className={styles.stepHeader}>
+          <span className={styles.stepNumber}>Funding</span>
+          <span className={styles.stepTitle}>총 필요 자금</span>
         </div>
-        <div className={styles.summaryValue}>
-          {formatBillion(totalDemand + additionalTotal)}
-          <span className={styles.summaryUnit}>억</span>
+        <div className={styles.stepMainResult}>
+          <div className={styles.stepMainValue}>
+            {formatBillion(totalDemand + additionalTotal)}
+            <span className={styles.stepMainUnit}>억</span>
+          </div>
+          <div className={styles.stepMainLabel}>우리 가족이 평생 필요한 돈</div>
         </div>
-        <div className={styles.summarySubtext}>우리 가족이 평생 필요한 돈</div>
       </div>
     </div>
   );

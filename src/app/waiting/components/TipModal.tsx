@@ -32,7 +32,6 @@ import { PersonalPensionInputForm } from "./PersonalPensionInputForm";
 import type {
   FamilyMember,
   FinancialAssetItem,
-  InvestmentAccountData,
   HousingData,
   DebtItem,
   NationalPensionData,
@@ -47,7 +46,7 @@ interface PrepDataStore {
   income?: IncomeFormData;
   expense?: ExpenseFormData;
   savings?: FinancialAssetItem[];
-  investment?: InvestmentAccountData;
+  investment?: FinancialAssetItem[];
   housing?: HousingData;
   debt?: DebtItem[];
   nationalPension?: NationalPensionData;
@@ -430,7 +429,7 @@ export function TipModal({
     setShowInputForm(false);
   };
 
-  const handleSaveInvestment = async (data: InvestmentAccountData) => {
+  const handleSaveInvestment = async (data: FinancialAssetItem[]) => {
     await saveData("investment", data);
     setShowInputForm(false);
   };
@@ -596,9 +595,9 @@ export function TipModal({
         {categoryId === "investment" && (
           <InvestmentInputForm
             hasSpouse={hasSpouse()}
-            initialData={getStoredData<InvestmentAccountData | null>(
+            initialData={getStoredData<FinancialAssetItem[]>(
               "investment",
-              null,
+              [],
             )}
             isCompleted={hasData}
             onClose={() => setShowInputForm(false)}

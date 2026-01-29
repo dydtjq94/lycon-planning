@@ -165,7 +165,7 @@ export interface PrepData {
   family: FamilyMember[];
   housing: HousingData | null;
   savings: FinancialAssetItem[];           // 저축 계좌
-  investment: InvestmentAccountData | null; // 투자 계좌
+  investment: FinancialAssetItem[];        // 투자 계좌
   debt: DebtItem[];
   income: IncomeItem[];
   nationalPension: NationalPensionData | null;    // 국민(공적)연금

@@ -38,11 +38,6 @@ interface PrepSavingsItem {
   currentBalance: number;
 }
 
-interface PrepInvestmentData {
-  securities?: { balance: number; investmentTypes?: string[] };
-  crypto?: { balance: number };
-  gold?: { balance: number };
-}
 
 interface PrepDebtItem {
   id?: string;
@@ -119,7 +114,7 @@ interface PrepDataStore {
   income?: PrepIncomeData;
   expense?: PrepExpenseData;
   savings?: PrepSavingsItem[];
-  investment?: PrepInvestmentData;
+  investment?: PrepSavingsItem[];
   housing?: PrepHousingData;
   debt?: PrepDebtItem[];
   nationalPension?: PrepNationalPensionData;
@@ -265,7 +260,10 @@ export function RetirementDiagnosisForm({
       setNationalPensionData(loaded.nationalPension || null);
       setRetirementPensionData(loaded.retirementPension || null);
       setPersonalPensions((loaded.personalPension || []).map((p, idx) => ({ ...p, id: p.id || `personal-${idx}` })));
-      setSavingsItems((loaded.savings || []).map((s, idx) => ({ ...s, id: s.id || `savings-${idx}` })));
+      // savings와 investment 배열 합쳐서 로드
+      const loadedSavings = (loaded.savings || []).map((s, idx) => ({ ...s, id: s.id || `savings-${idx}` }));
+      const loadedInvestment = (loaded.investment || []).map((i, idx) => ({ ...i, id: i.id || `investment-${idx}` }));
+      setSavingsItems([...loadedSavings, ...loadedInvestment]);
       if (loaded.retirementGoals) {
         setRetirementGoals(loaded.retirementGoals);
       }
@@ -359,11 +357,19 @@ export function RetirementDiagnosisForm({
     }
   };
 
-  // 금융자산 저장
+  // 금융자산 저장 (저축/투자 분리)
   const handleSaveSavings = async () => {
     setSaving(true);
     try {
-      const newPrepData = { ...prepData, savings: savingsItems };
+      // 저축 (checking, savings, deposit)과 투자 (나머지) 분리
+      const savingsOnly = savingsItems.filter((s) => ["checking", "savings", "deposit"].includes(s.type));
+      const investmentOnly = savingsItems.filter((s) => !["checking", "savings", "deposit"].includes(s.type));
+
+      const newPrepData = {
+        ...prepData,
+        savings: savingsOnly,
+        investment: investmentOnly,
+      };
       await savePrepData(newPrepData);
       setEditingSection(null);
     } catch {

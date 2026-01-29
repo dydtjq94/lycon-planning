@@ -25,17 +25,13 @@ interface HousingData {
 }
 
 interface FinancialAssetItem {
+  id?: string;
   type: string;
   title?: string;
   owner: "self" | "spouse";
   currentBalance: number;
 }
 
-interface InvestmentAccountData {
-  securities?: { balance: number; investmentTypes?: string[] };
-  crypto?: { balance: number };
-  gold?: { balance: number };
-}
 
 interface DebtItem {
   type: string;
@@ -103,7 +99,7 @@ export interface PrepDataStore {
   income?: IncomeFormData;
   expense?: ExpenseFormData;
   savings?: FinancialAssetItem[];
-  investment?: InvestmentAccountData;
+  investment?: FinancialAssetItem[];
   housing?: HousingData;
   debt?: DebtItem[];
   nationalPension?: NationalPensionData;
@@ -312,25 +308,11 @@ export function convertPrepDataToDiagnosisData(
     .filter((s) => cashTypes.includes(s.type))
     .reduce((sum, s) => sum + (s.currentBalance || 0), 0) / 10000;
 
-  // 투자 자산 (억원) - prep_data.investment 또는 prep_data.savings 중 투자형
-  // 주의: 양쪽에 중복 저장된 경우 중복 계산 방지
+  // 투자 자산 (억원) - prep_data.investment 배열
   const investmentData = prepData.investment;
-  let investmentAsset = 0;
-
-  // investment 데이터가 있으면 사용 (waiting survey에서 저장된 경우)
-  const investmentFromInvestment = investmentData
-    ? (investmentData.securities?.balance || 0) / 10000 +
-      (investmentData.crypto?.balance || 0) / 10000 +
-      (investmentData.gold?.balance || 0) / 10000
+  const investmentAsset = Array.isArray(investmentData)
+    ? investmentData.reduce((sum, i) => sum + (i.currentBalance || 0), 0) / 10000
     : 0;
-
-  // savings에서 투자형 자산 (admin form에서 저장된 경우)
-  const investmentFromSavings = savingsData
-    .filter((s) => !cashTypes.includes(s.type))
-    .reduce((sum, s) => sum + (s.currentBalance || 0), 0) / 10000;
-
-  // 중복 방지: investment 데이터가 있으면 그것만 사용, 없으면 savings 사용
-  investmentAsset = investmentFromInvestment > 0 ? investmentFromInvestment : investmentFromSavings;
 
   // 연금 자산 (억원) - 퇴직연금 + 개인연금 현재 잔액
   const retirementData = prepData.retirementPension;
@@ -532,47 +514,16 @@ export function convertPrepDataToDiagnosisData(
       });
     });
 
-  // 3. 투자 자산 (개별 항목)
-  if (investmentFromInvestment > 0) {
-    // prep_data.investment에서 개별 항목
-    if (investmentData?.securities?.balance && investmentData.securities.balance > 0) {
-      const types = investmentData.securities.investmentTypes || [];
-      const label = types.length > 0
-        ? types.map((t: string) => savingsTypeLabels[t] || t).join("/")
-        : "증권";
-      assetItems.push({
-        key: "investment-securities",
-        label,
-        amount: investmentData.securities.balance / 10000,
-        color: getNextColor(),
-      });
-    }
-    if (investmentData?.crypto?.balance && investmentData.crypto.balance > 0) {
-      assetItems.push({
-        key: "investment-crypto",
-        label: "코인",
-        amount: investmentData.crypto.balance / 10000,
-        color: getNextColor(),
-      });
-    }
-    if (investmentData?.gold?.balance && investmentData.gold.balance > 0) {
-      assetItems.push({
-        key: "investment-gold",
-        label: "금",
-        amount: investmentData.gold.balance / 10000,
-        color: getNextColor(),
-      });
-    }
-  } else if (investmentFromSavings > 0) {
-    // prep_data.savings에서 투자형 개별 항목
-    savingsData
-      .filter((s) => !cashTypes.includes(s.type) && (s.currentBalance || 0) > 0)
-      .forEach((s) => {
-        const label = s.title || savingsTypeLabels[s.type] || s.type;
+  // 3. 투자 자산 (개별 항목) - investment 배열
+  if (Array.isArray(investmentData)) {
+    investmentData
+      .filter((i) => (i.currentBalance || 0) > 0)
+      .forEach((i) => {
+        const label = i.title || savingsTypeLabels[i.type] || i.type;
         assetItems.push({
-          key: `savings-inv-${s.type}-${s.title}`,
+          key: `investment-${i.type}-${i.title || i.id}`,
           label,
-          amount: (s.currentBalance || 0) / 10000,
+          amount: (i.currentBalance || 0) / 10000,
           color: getNextColor(),
         });
       });
@@ -1479,8 +1430,8 @@ export function getHousingOptions(): HousingCostOption[] {
   // 2025-2026년 실거래가 기준 (전용 84㎡ 기준)
   return [
     {
-      area: "서울 외곽",
-      description: "노원, 도봉, 강북, 금천 등",
+      area: "노도강/금관구",
+      description: "노원, 도봉, 강북, 금천, 관악, 구로",
       tiers: [
         { tier: "일반", price: 70000, priceDisplay: "7억" },
         { tier: "프리미엄", price: 100000, priceDisplay: "10억" },
@@ -1488,25 +1439,16 @@ export function getHousingOptions(): HousingCostOption[] {
       ],
     },
     {
-      area: "서울 중간",
-      description: "마포, 영등포, 성동, 동작 등",
+      area: "마용성",
+      description: "마포, 용산, 성동",
       tiers: [
-        { tier: "일반", price: 130000, priceDisplay: "13억" },
-        { tier: "프리미엄", price: 180000, priceDisplay: "18억" },
-        { tier: "하이엔드", price: 230000, priceDisplay: "23억" },
+        { tier: "일반", price: 150000, priceDisplay: "15억" },
+        { tier: "프리미엄", price: 200000, priceDisplay: "20억" },
+        { tier: "하이엔드", price: 260000, priceDisplay: "26억" },
       ],
     },
     {
-      area: "서울 주요",
-      description: "용산, 광진 등",
-      tiers: [
-        { tier: "일반", price: 180000, priceDisplay: "18억" },
-        { tier: "프리미엄", price: 220000, priceDisplay: "22억" },
-        { tier: "하이엔드", price: 280000, priceDisplay: "28억" },
-      ],
-    },
-    {
-      area: "강남권",
+      area: "강남3구",
       description: "강남, 서초, 송파",
       tiers: [
         { tier: "일반", price: 250000, priceDisplay: "25억" },
@@ -1515,21 +1457,30 @@ export function getHousingOptions(): HousingCostOption[] {
       ],
     },
     {
-      area: "수도권 외곽",
-      description: "인천, 의정부, 수원, 안산 등",
-      tiers: [
-        { tier: "일반", price: 40000, priceDisplay: "4억" },
-        { tier: "프리미엄", price: 60000, priceDisplay: "6억" },
-        { tier: "하이엔드", price: 80000, priceDisplay: "8억" },
-      ],
-    },
-    {
-      area: "수도권 주요",
-      description: "분당, 판교, 광교, 동탄 등",
+      area: "수용성",
+      description: "수원, 용인, 성남(분당/판교)",
       tiers: [
         { tier: "일반", price: 100000, priceDisplay: "10억" },
         { tier: "프리미엄", price: 150000, priceDisplay: "15억" },
         { tier: "하이엔드", price: 220000, priceDisplay: "22억" },
+      ],
+    },
+    {
+      area: "안시성/김부검",
+      description: "안산, 시흥, 화성, 김포, 부천, 검단",
+      tiers: [
+        { tier: "일반", price: 50000, priceDisplay: "5억" },
+        { tier: "프리미엄", price: 70000, priceDisplay: "7억" },
+        { tier: "하이엔드", price: 100000, priceDisplay: "10억" },
+      ],
+    },
+    {
+      area: "지방 광역시",
+      description: "부산, 대구, 대전, 광주 등",
+      tiers: [
+        { tier: "일반", price: 40000, priceDisplay: "4억" },
+        { tier: "프리미엄", price: 60000, priceDisplay: "6억" },
+        { tier: "하이엔드", price: 80000, priceDisplay: "8억" },
       ],
     },
   ];

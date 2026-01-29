@@ -1802,9 +1802,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.expenseSectionDesc {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0 0 12px 0;
 }
 
 .expenseSectionTitle {
@@ -2835,4 +2841,167 @@
   background: #3182ce;
   border-color: #3182ce;
   color: white;
+}
+
+/* 은퇴 준비 기본 상식 가이드 */
+.guideContent {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #475569;
+}
+
+.guideContent p {
+  margin: 0 0 8px 0;
+}
+
+.guideContent p:last-child {
+  margin-bottom: 0;
+}
+
+.guideSubtitle {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 12px;
+}
+
+.guideTipBox {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* 연금 3층 그리드 */
+.guidePensionGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guidePensionItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.guidePensionBadge {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.guidePensionLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  min-width: 60px;
+}
+
+.guidePensionDesc {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* 복리 그리드 */
+.guideCompoundGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.guideCompoundItem {
+  text-align: center;
+  padding: 16px 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.guideCompoundYear {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.guideCompoundValue {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #805ad5;
+}
+
+/* 인플레이션 */
+.guideInflationRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.guideInflationItem {
+  text-align: center;
+}
+
+.guideInflationLabel {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.guideInflationValue {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.guideInflationArrow {
+  display: flex;
+  align-items: center;
+}
+
+/* 핵심 숫자 그리드 */
+.guideKeyNumbersGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.guideKeyNumberItem {
+  text-align: center;
+  padding: 16px 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.guideKeyNumberValue {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: #3182ce;
+  margin-bottom: 6px;
+}
+
+.guideKeyNumberDesc {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
 }

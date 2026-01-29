@@ -7,7 +7,6 @@ import type {
   FamilyMember,
   HousingData,
   FinancialAssetItem,
-  InvestmentAccountData,
   DebtItem,
   NationalPensionData,
   RetirementPensionData,
@@ -164,12 +163,14 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
     goldData = data;
   }
 
-  // 투자 데이터 구성
-  let investment: InvestmentAccountData | null = null;
-  if (securitiesData || cryptoData || goldData) {
+  // 투자 데이터 구성 (FinancialAssetItem[] 배열 형식)
+  const investment: FinancialAssetItem[] = [];
+
+  // 증권 계좌
+  if (securitiesData && (securitiesData.current_balance as number) > 0) {
     // memo에서 투자 유형 파싱
     let investmentTypes: string[] = [];
-    if (securitiesData?.memo) {
+    if (securitiesData.memo) {
       try {
         const parsed = JSON.parse(securitiesData.memo as string);
         investmentTypes = parsed.investmentTypes || [];
@@ -177,25 +178,62 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
         // JSON 파싱 실패 시 빈 배열
       }
     }
-
-    investment = {
-      securities: {
-        balance: (securitiesData?.current_balance as number) || 0,
-        investmentTypes,
-      },
+    // 투자 유형별로 아이템 생성
+    const typeLabels: Record<string, string> = {
+      domestic_stock: "국내주식",
+      foreign_stock: "해외주식",
+      fund: "펀드",
+      bond: "채권",
     };
-
-    if (cryptoData) {
-      investment.crypto = {
-        balance: cryptoData.current_balance as number,
-      };
+    if (investmentTypes.length > 0) {
+      for (const type of investmentTypes) {
+        investment.push({
+          id: `securities-${type}`,
+          category: "investment",
+          type,
+          title: typeLabels[type] || type,
+          owner: "self",
+          currentBalance: 0, // 총액은 나눠서 표시하지 않음
+        });
+      }
+      // 첫 번째 아이템에 총액 설정
+      if (investment.length > 0) {
+        investment[0].currentBalance = securitiesData.current_balance as number;
+      }
+    } else {
+      investment.push({
+        id: `securities-other`,
+        category: "investment",
+        type: "other",
+        title: "증권 계좌",
+        owner: "self",
+        currentBalance: securitiesData.current_balance as number,
+      });
     }
+  }
 
-    if (goldData) {
-      investment.gold = {
-        balance: goldData.current_value as number,
-      };
-    }
+  // 코인
+  if (cryptoData && (cryptoData.current_balance as number) > 0) {
+    investment.push({
+      id: `crypto-${cryptoData.id}`,
+      category: "investment",
+      type: "crypto",
+      title: "코인",
+      owner: cryptoData.owner as "self" | "spouse" || "self",
+      currentBalance: cryptoData.current_balance as number,
+    });
+  }
+
+  // 금 현물
+  if (goldData && (goldData.current_value as number) > 0) {
+    investment.push({
+      id: `gold-${goldData.id}`,
+      category: "investment",
+      type: "gold",
+      title: "금",
+      owner: goldData.owner as "self" | "spouse" || "self",
+      currentBalance: goldData.current_value as number,
+    });
   }
 
   // 부채 데이터 변환
@@ -505,7 +543,7 @@ export async function saveSavingsData(
  */
 export async function saveInvestmentData(
   userId: string,
-  data: InvestmentAccountData
+  items: FinancialAssetItem[]
 ): Promise<void> {
   const supabase = createClient();
 
@@ -515,29 +553,22 @@ export async function saveInvestmentData(
     throw new Error("시뮬레이션을 찾을 수 없습니다.");
   }
 
-  // 기존 투자 계좌 삭제 (savings 테이블)
-  // 1. 증권 계좌 삭제 (type='other', title='증권 계좌')
-  await supabase
-    .from("savings")
-    .delete()
-    .eq("simulation_id", simulation.id)
-    .eq("type", "other")
-    .eq("title", "증권 계좌");
+  // 투자 유형들 (저축 제외)
+  const investmentTypes = ["domestic_stock", "foreign_stock", "fund", "bond", "crypto", "gold", "other"];
 
-  // 2. 코인 거래소 삭제
+  // 기존 투자 계좌 삭제 (savings 테이블)
   await supabase
     .from("savings")
     .delete()
     .eq("simulation_id", simulation.id)
-    .eq("type", "crypto");
+    .in("type", investmentTypes);
 
   // 기존 금 현물 삭제 (physical_assets 테이블)
   await supabase
     .from("physical_assets")
     .delete()
     .eq("simulation_id", simulation.id)
-    .eq("type", "precious_metal")
-    .eq("title", "금 현물");
+    .eq("type", "precious_metal");
 
   // 새 투자 데이터 저장
   const savingsToInsert: Array<{
@@ -547,35 +578,42 @@ export async function saveInvestmentData(
     owner: string;
     current_balance: number;
     expected_return: number | null;
-    memo: string | null;
   }> = [];
 
-  // 1. 증권 계좌 (type: 'other'로 저장, title로 구분)
-  if (data.securities && data.securities.balance > 0) {
-    savingsToInsert.push({
-      simulation_id: simulation.id,
-      type: "other",
-      title: "증권 계좌",
-      owner: "self",
-      current_balance: data.securities.balance,
-      expected_return: 7, // 기본 수익률
-      memo: data.securities.investmentTypes.length > 0
-        ? JSON.stringify({ investmentTypes: data.securities.investmentTypes })
-        : null,
-    });
-  }
+  const goldToInsert: Array<{
+    simulation_id: string;
+    type: string;
+    title: string;
+    owner: string;
+    current_value: number;
+    annual_rate: number;
+  }> = [];
 
-  // 2. 코인 거래소
-  if (data.crypto && data.crypto.balance > 0) {
-    savingsToInsert.push({
-      simulation_id: simulation.id,
-      type: "crypto",
-      title: "코인 거래소",
-      owner: "self",
-      current_balance: data.crypto.balance,
-      expected_return: 10, // 코인 기본 수익률 (높은 변동성)
-      memo: null,
-    });
+  for (const item of items) {
+    if (item.currentBalance <= 0) continue;
+
+    // 금은 physical_assets에 저장
+    if (item.type === "gold") {
+      goldToInsert.push({
+        simulation_id: simulation.id,
+        type: "precious_metal",
+        title: item.title || "금",
+        owner: item.owner,
+        current_value: item.currentBalance,
+        annual_rate: 3, // 금 기본 상승률
+      });
+    } else {
+      // 나머지는 savings에 저장
+      const expectedReturn = item.type === "crypto" ? 10 : 7; // 코인은 10%, 나머지 7%
+      savingsToInsert.push({
+        simulation_id: simulation.id,
+        type: item.type,
+        title: item.title || item.type,
+        owner: item.owner,
+        current_balance: item.currentBalance,
+        expected_return: expectedReturn,
+      });
+    }
   }
 
   // savings 테이블에 삽입
@@ -584,16 +622,9 @@ export async function saveInvestmentData(
     if (error) throw error;
   }
 
-  // 3. 금 현물 (physical_assets 테이블)
-  if (data.gold && data.gold.balance > 0) {
-    const { error } = await supabase.from("physical_assets").insert({
-      simulation_id: simulation.id,
-      type: "precious_metal",
-      title: "금 현물",
-      owner: "self",
-      current_value: data.gold.balance,
-      annual_rate: 3, // 금 기본 상승률
-    });
+  // physical_assets 테이블에 금 삽입
+  if (goldToInsert.length > 0) {
+    const { error } = await supabase.from("physical_assets").insert(goldToInsert);
     if (error) throw error;
   }
 

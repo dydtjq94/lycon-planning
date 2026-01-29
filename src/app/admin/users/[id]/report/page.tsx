@@ -24,6 +24,8 @@ export default function ReportPage() {
   const [opinion, setOpinion] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [diagnosisDate, setDiagnosisDate] = useState<string | undefined>();
+  const [savingOpinion, setSavingOpinion] = useState(false);
+  const [savedOpinion, setSavedOpinion] = useState(""); // 저장된 소견 (변경 감지용)
 
   useEffect(() => {
     const loadData = async () => {
@@ -50,6 +52,7 @@ export default function ReportPage() {
         setData(diagnosisData);
         setIsPublished(!!profile.report_published_at);
         setOpinion(profile.report_opinion || "");
+        setSavedOpinion(profile.report_opinion || "");
 
         // 첫 예약일 조회 (진단일로 사용)
         const { data: booking } = await supabase
@@ -95,6 +98,26 @@ export default function ReportPage() {
       </div>
     );
   }
+
+  const handleSaveOpinion = async () => {
+    setSavingOpinion(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("profiles")
+        .update({ report_opinion: opinion })
+        .eq("id", userId);
+
+      if (error) throw error;
+
+      setSavedOpinion(opinion);
+      alert("소견이 저장되었습니다.");
+    } catch {
+      alert("소견 저장에 실패했습니다.");
+    } finally {
+      setSavingOpinion(false);
+    }
+  };
 
   const handlePublish = async () => {
     if (isPublished) {
@@ -148,14 +171,22 @@ export default function ReportPage() {
         </div>
         <div className={styles.sidePanel}>
           <div className={styles.opinionPanel}>
-            <h3 className={styles.panelTitle}>담당자 소견 작성</h3>
+            <div className={styles.panelHeader}>
+              <h3 className={styles.panelTitle}>담당자 소견 작성</h3>
+              <button
+                className={`${styles.saveOpinionBtn} ${opinion !== savedOpinion ? styles.hasChanges : ""}`}
+                onClick={handleSaveOpinion}
+                disabled={savingOpinion || opinion === savedOpinion}
+              >
+                {savingOpinion ? "저장 중..." : opinion !== savedOpinion ? "저장" : "저장됨"}
+              </button>
+            </div>
             <textarea
               className={styles.opinionTextarea}
               placeholder="고객에게 전달할 소견을 작성하세요..."
               value={opinion}
               onChange={(e) => setOpinion(e.target.value)}
               rows={8}
-              disabled={isPublished}
             />
             <div className={styles.formatGuide}>
               <span className={styles.formatItem}><strong>**굵게**</strong></span>
