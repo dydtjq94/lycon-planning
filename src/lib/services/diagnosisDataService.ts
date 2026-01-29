@@ -26,12 +26,13 @@ interface HousingData {
 
 interface FinancialAssetItem {
   type: string;
+  title?: string;
   owner: "self" | "spouse";
   currentBalance: number;
 }
 
 interface InvestmentAccountData {
-  securities?: { balance: number };
+  securities?: { balance: number; investmentTypes?: string[] };
   crypto?: { balance: number };
   gold?: { balance: number };
 }
@@ -181,6 +182,16 @@ export interface DiagnosisData {
   fixedExpenseItems: FixedExpenseItem[];
   // 개인연금 가입 상태
   personalPensionStatus: PersonalPensionStatus;
+  // 개별 자산 항목 목록 (차트용)
+  assetItems: AssetItem[];
+}
+
+// 개별 자산 항목
+export interface AssetItem {
+  key: string;
+  label: string;
+  amount: number; // 억원
+  color: string;
 }
 
 interface ProfileData {
@@ -301,18 +312,25 @@ export function convertPrepDataToDiagnosisData(
     .filter((s) => cashTypes.includes(s.type))
     .reduce((sum, s) => sum + (s.currentBalance || 0), 0) / 10000;
 
-  // 투자 자산 (억원) - prep_data.investment + prep_data.savings 중 투자형
+  // 투자 자산 (억원) - prep_data.investment 또는 prep_data.savings 중 투자형
+  // 주의: 양쪽에 중복 저장된 경우 중복 계산 방지
   const investmentData = prepData.investment;
   let investmentAsset = 0;
-  if (investmentData) {
-    investmentAsset += (investmentData.securities?.balance || 0) / 10000;
-    investmentAsset += (investmentData.crypto?.balance || 0) / 10000;
-    investmentAsset += (investmentData.gold?.balance || 0) / 10000;
-  }
-  // savings에서 투자형 자산 추가
-  investmentAsset += savingsData
+
+  // investment 데이터가 있으면 사용 (waiting survey에서 저장된 경우)
+  const investmentFromInvestment = investmentData
+    ? (investmentData.securities?.balance || 0) / 10000 +
+      (investmentData.crypto?.balance || 0) / 10000 +
+      (investmentData.gold?.balance || 0) / 10000
+    : 0;
+
+  // savings에서 투자형 자산 (admin form에서 저장된 경우)
+  const investmentFromSavings = savingsData
     .filter((s) => !cashTypes.includes(s.type))
     .reduce((sum, s) => sum + (s.currentBalance || 0), 0) / 10000;
+
+  // 중복 방지: investment 데이터가 있으면 그것만 사용, 없으면 savings 사용
+  investmentAsset = investmentFromInvestment > 0 ? investmentFromInvestment : investmentFromSavings;
 
   // 연금 자산 (억원) - 퇴직연금 + 개인연금 현재 잔액
   const retirementData = prepData.retirementPension;
@@ -470,6 +488,135 @@ export function convertPrepDataToDiagnosisData(
     },
   };
 
+  // 개별 자산 항목 목록 생성
+  const assetItems: AssetItem[] = [];
+  const assetColors = [
+    "#1a365d", "#2c5282", "#3182ce", "#4299e1", "#63b3ed",
+    "#805ad5", "#9f7aea", "#b794f4", "#38a169", "#48bb78",
+    "#ed8936", "#f6ad55", "#e53e3e", "#fc8181", "#4a5568",
+  ];
+  let colorIndex = 0;
+  const getNextColor = () => assetColors[colorIndex++ % assetColors.length];
+
+  // 저축 타입 레이블
+  const savingsTypeLabels: Record<string, string> = {
+    checking: "입출금통장",
+    savings: "적금",
+    deposit: "정기예금",
+    domestic_stock: "국내주식",
+    foreign_stock: "해외주식",
+    fund: "펀드",
+    bond: "채권",
+    crypto: "코인",
+    other: "기타",
+  };
+
+  // 1. 부동산/보증금
+  if (realEstateAsset > 0) {
+    assetItems.push({ key: "realestate", label: "부동산", amount: realEstateAsset, color: getNextColor() });
+  }
+  if (depositAsset > 0) {
+    assetItems.push({ key: "deposit", label: "보증금", amount: depositAsset, color: getNextColor() });
+  }
+
+  // 2. 저축 계좌 (개별 항목)
+  savingsData
+    .filter((s) => cashTypes.includes(s.type) && (s.currentBalance || 0) > 0)
+    .forEach((s) => {
+      const label = s.title || savingsTypeLabels[s.type] || s.type;
+      assetItems.push({
+        key: `savings-${s.type}-${s.title}`,
+        label,
+        amount: (s.currentBalance || 0) / 10000,
+        color: getNextColor(),
+      });
+    });
+
+  // 3. 투자 자산 (개별 항목)
+  if (investmentFromInvestment > 0) {
+    // prep_data.investment에서 개별 항목
+    if (investmentData?.securities?.balance && investmentData.securities.balance > 0) {
+      const types = investmentData.securities.investmentTypes || [];
+      const label = types.length > 0
+        ? types.map((t: string) => savingsTypeLabels[t] || t).join("/")
+        : "증권";
+      assetItems.push({
+        key: "investment-securities",
+        label,
+        amount: investmentData.securities.balance / 10000,
+        color: getNextColor(),
+      });
+    }
+    if (investmentData?.crypto?.balance && investmentData.crypto.balance > 0) {
+      assetItems.push({
+        key: "investment-crypto",
+        label: "코인",
+        amount: investmentData.crypto.balance / 10000,
+        color: getNextColor(),
+      });
+    }
+    if (investmentData?.gold?.balance && investmentData.gold.balance > 0) {
+      assetItems.push({
+        key: "investment-gold",
+        label: "금",
+        amount: investmentData.gold.balance / 10000,
+        color: getNextColor(),
+      });
+    }
+  } else if (investmentFromSavings > 0) {
+    // prep_data.savings에서 투자형 개별 항목
+    savingsData
+      .filter((s) => !cashTypes.includes(s.type) && (s.currentBalance || 0) > 0)
+      .forEach((s) => {
+        const label = s.title || savingsTypeLabels[s.type] || s.type;
+        assetItems.push({
+          key: `savings-inv-${s.type}-${s.title}`,
+          label,
+          amount: (s.currentBalance || 0) / 10000,
+          color: getNextColor(),
+        });
+      });
+  }
+
+  // 4. 연금 자산 (개별 항목)
+  if (retirementData?.selfBalance && retirementData.selfBalance > 0) {
+    assetItems.push({
+      key: "retirement-self",
+      label: "퇴직연금(본인)",
+      amount: retirementData.selfBalance / 10000,
+      color: getNextColor(),
+    });
+  }
+  if (retirementData?.spouseBalance && retirementData.spouseBalance > 0) {
+    assetItems.push({
+      key: "retirement-spouse",
+      label: "퇴직연금(배우자)",
+      amount: retirementData.spouseBalance / 10000,
+      color: getNextColor(),
+    });
+  }
+
+  // 개인연금 개별 항목
+  const personalPensionTypeLabels: Record<string, string> = {
+    irp: "IRP",
+    pension_savings: "연금저축",
+    pension_savings_tax: "연금저축(세액공제)",
+    pension_savings_invest: "연금저축(투자)",
+    isa: "ISA",
+  };
+  personalPensions
+    .filter((p) => (p.balance || 0) > 0)
+    .forEach((p) => {
+      const ownerLabel = p.owner === "spouse" ? "(배우자)" : "";
+      const typeLabel = personalPensionTypeLabels[p.type] || p.type;
+      assetItems.push({
+        key: `personal-${p.type}-${p.owner}`,
+        label: `${typeLabel}${ownerLabel}`,
+        amount: (p.balance || 0) / 10000,
+        color: getNextColor(),
+      });
+    });
+
   return {
     customerName: profile.name || "고객",
     currentAge,
@@ -519,6 +666,8 @@ export function convertPrepDataToDiagnosisData(
     fixedExpenseItems,
     // 개인연금 가입 상태
     personalPensionStatus,
+    // 개별 자산 항목 목록
+    assetItems,
   };
 }
 

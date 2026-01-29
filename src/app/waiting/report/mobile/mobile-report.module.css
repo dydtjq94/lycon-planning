@@ -2674,8 +2674,17 @@
   background: white;
   border-bottom: 1px solid #e5e5e5;
   position: sticky;
-  top: 52px;
+  top: 114px;
   z-index: 90;
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.settingsBarHidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .settingsBarBtn {

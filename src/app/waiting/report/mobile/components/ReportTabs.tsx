@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -62,6 +62,31 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
     medical: true as boolean,
     housing: null as { areaIndex: number; tierIndex: number } | null,
   });
+
+  // 스크롤 방향 감지 (settingsBar 숨김용)
+  const [isSettingsBarHidden, setIsSettingsBarHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDelta = currentScrollY - lastScrollY.current;
+
+      // 스크롤 내림 (10px 이상 움직임)
+      if (scrollDelta > 10 && currentScrollY > 120) {
+        setIsSettingsBarHidden(true);
+      }
+      // 스크롤 올림 (10px 이상 움직임)
+      else if (scrollDelta < -10) {
+        setIsSettingsBarHidden(false);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
@@ -271,7 +296,7 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
 
       {/* 필요 자금 탭 설정 바 */}
       {activeTab === "retirement" && (
-        <div className={styles.settingsBar}>
+        <div className={`${styles.settingsBar} ${isSettingsBarHidden ? styles.settingsBarHidden : ""}`}>
           <button
             className={styles.settingsBarBtn}
             onClick={() => setActiveSheet("cost")}
@@ -630,53 +655,56 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                 <div className={styles.stepMainLabel}>총자산</div>
               </div>
 
-              <div className={styles.chartWithLegend}>
-                <div className={styles.doughnutChartContainer}>
-                  <Doughnut
-                    data={{
-                      labels: ["부동산", "보증금", "현금성", "투자", "연금"].filter((_, i) =>
-                        [m.realEstateRatio, m.depositRatio, m.cashRatio, m.investmentRatio, m.pensionRatio][i] > 0
-                      ),
-                      datasets: [{
-                        data: [m.realEstateRatio, m.depositRatio, m.cashRatio, m.investmentRatio, m.pensionRatio].filter(v => v > 0),
-                        backgroundColor: ["#1a365d", "#4a5568", "#3182ce", "#2c5282", "#63b3ed"].filter((_, i) =>
-                          [m.realEstateRatio, m.depositRatio, m.cashRatio, m.investmentRatio, m.pensionRatio][i] > 0
-                        ),
-                        borderWidth: 0,
-                      }]
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      cutout: "60%",
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                          callbacks: {
-                            label: (ctx) => `${ctx.label}: ${ctx.raw}%`
+              {/* 개별 자산 항목 차트 */}
+              {data.assetItems.length > 0 && (() => {
+                const totalAmount = data.assetItems.reduce((sum, item) => sum + item.amount, 0);
+                const itemsWithRatio = data.assetItems
+                  .filter(item => item.amount > 0)
+                  .map(item => ({
+                    ...item,
+                    ratio: totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0,
+                  }))
+                  .sort((a, b) => b.amount - a.amount);
+                return (
+                  <div className={styles.chartWithLegend}>
+                    <div className={styles.doughnutChartContainer}>
+                      <Doughnut
+                        data={{
+                          labels: itemsWithRatio.map(item => item.label),
+                          datasets: [{
+                            data: itemsWithRatio.map(item => Math.round(item.ratio)),
+                            backgroundColor: itemsWithRatio.map(item => item.color),
+                            borderWidth: 0,
+                          }]
+                        }}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          cutout: "60%",
+                          plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                              callbacks: {
+                                label: (ctx) => `${ctx.label}: ${ctx.raw}%`
+                              }
+                            }
                           }
-                        }
-                      }
-                    }}
-                  />
-                </div>
-                <div className={styles.chartLegend}>
-                  {[
-                    { key: "realestate", label: "부동산", amount: data.realEstateAsset, ratio: m.realEstateRatio, color: "#1a365d" },
-                    { key: "deposit", label: "보증금", amount: data.depositAsset, ratio: m.depositRatio, color: "#4a5568" },
-                    { key: "cash", label: "현금성", amount: data.cashAsset, ratio: m.cashRatio, color: "#3182ce" },
-                    { key: "investment", label: "투자", amount: data.investmentAsset, ratio: m.investmentRatio, color: "#2c5282" },
-                    { key: "pension", label: "연금", amount: data.pensionAsset, ratio: m.pensionRatio, color: "#63b3ed" },
-                  ].filter(item => item.ratio > 0).sort((a, b) => b.ratio - a.ratio).map((item) => (
-                    <div key={item.key} className={styles.legendItem}>
-                      <span className={styles.legendDot} style={{ backgroundColor: item.color }}></span>
-                      <span className={styles.legendLabel}>{item.label}</span>
-                      <span className={styles.legendValue}>{formatBillion(item.amount)}억</span>
-                      <span className={styles.legendPercent}>{Math.round(item.ratio)}%</span>
+                        }}
+                      />
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div className={styles.chartLegend}>
+                      {itemsWithRatio.map((item) => (
+                        <div key={item.key} className={styles.legendItem}>
+                          <span className={styles.legendDot} style={{ backgroundColor: item.color }}></span>
+                          <span className={styles.legendLabel}>{item.label}</span>
+                          <span className={styles.legendValue}>{formatBillion(item.amount)}억</span>
+                          <span className={styles.legendPercent}>{Math.round(item.ratio)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* 부채 구성 */}

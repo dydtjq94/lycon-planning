@@ -1,118 +1,199 @@
 .container {
-  padding: 0 0 16px;
-}
-
-/* 은퇴 판정 카드 */
-.verdictCard {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-}
-
-.verdictLabel {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 10px;
-}
-
-.verdictContent {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
 }
 
-.verdictBadge {
-  display: inline-flex;
+/* Step Card (기본 카드) */
+.stepCard {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.stepHeader {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px 16px;
-  border-radius: 20px;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.stepNumber {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.stepTitle {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
+  color: #64748b;
 }
 
-.verdictBadge.good {
-  background: #3b82f6;
-  color: #fff;
+.stepMainResult {
+  text-align: center;
+  padding: 20px 0;
 }
 
-.verdictBadge.caution {
-  background: #f59e0b;
-  color: #fff;
+.stepMainValue {
+  font-size: 40px;
+  font-weight: 700;
+  color: #1a365d;
+  line-height: 1;
 }
 
-.verdictBadge.warning {
-  background: #ef4444;
-  color: #fff;
+.stepMainUnit {
+  font-size: 22px;
+  font-weight: 500;
+  margin-left: 2px;
 }
 
-.verdictText {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a1a1a;
+.stepMainLabel {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-top: 6px;
 }
 
-.cardGrid {
+/* 핵심 지표 그리드 */
+.keyMetricsGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 16px;
 }
 
-.card {
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 10px;
-  padding: 14px;
+.keyMetricItem {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 6px;
+  padding: 16px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
 }
 
-.cardHeader {
+.keyMetricLabel {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.keyMetricValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.keyMetricBadge {
+  font-size: 11px;
+  padding: 3px 8px;
+  background: #e2e8f0;
+  color: #475569;
+  border-radius: 10px;
+}
+
+.keyMetricBadge.good {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.keyMetricBadge.caution {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.keyMetricBadge.warning {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.keyMetricBadge.sufficient {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.keyMetricBadge.critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* 3층 연금 준비 */
+.pensionSummaryGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pensionSummaryItem {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
 }
 
-.cardTitle {
+.pensionSummaryBadge {
   font-size: 12px;
-  color: #666;
-  font-weight: 500;
-}
-
-.cardValue {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1a1a1a;
-}
-
-.cardStatus {
-  font-size: 11px;
   font-weight: 600;
-  padding: 4px 8px;
+  color: white;
+  padding: 4px 10px;
   border-radius: 4px;
-  width: fit-content;
+  min-width: 36px;
+  text-align: center;
 }
 
-.cardStatus.good {
-  background: #e6f7e6;
-  color: #1a8c1a;
+.pensionSummaryLabel {
+  font-size: 14px;
+  color: #475569;
+  flex: 1;
 }
 
-.cardStatus.caution {
-  background: #fff3e0;
-  color: #e65100;
+.pensionSummaryValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
 }
 
-.cardStatus.warning {
-  background: #ffebee;
-  color: #c62828;
+/* 총 필요 자금 breakdown */
+.fundingBreakdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-top: 8px;
 }
 
+.fundingBreakdownItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.fundingBreakdownLabel {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.fundingBreakdownValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.fundingBreakdownPlus {
+  font-size: 18px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+/* 버튼 */
 .reportButton {
   width: 100%;
-  margin-top: 12px;
+  margin-top: 4px;
   padding: 14px;
   background: #1a1a1a;
   color: #fff;
@@ -133,18 +214,12 @@
 }
 
 /* 스켈레톤 */
-.skeletonGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
 .skeletonCard {
-  height: 90px;
+  height: 140px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 @keyframes shimmer {

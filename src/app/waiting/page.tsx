@@ -19,7 +19,7 @@ import {
   Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { ChatRoom, ProgramDetailView, Toast, TipModal, MessageNotificationToast, DiagnosisSummaryCards, MembershipModal } from "./components";
+import { ChatRoom, ProgramDetailView, Toast, TipModal, MessageNotificationToast, DiagnosisSummaryCards } from "./components";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
 import { confirmUserBooking } from "@/lib/services/bookingService";
 import { trackPageView } from "@/lib/analytics/mixpanel";
@@ -114,7 +114,6 @@ function WaitingPageContent() {
   const [prepDataCategories, setPrepDataCategories] = useState<Set<string>>(new Set());
   const [reportPublished, setReportPublished] = useState(false);
   const [reportPublishedAt, setReportPublishedAt] = useState<string | null>(null);
-  const [showMembershipModal, setShowMembershipModal] = useState(false);
 
   // 메시지 알림 상태 (여러 개 쌓임)
   const [messageNotifications, setMessageNotifications] = useState<{
@@ -418,38 +417,26 @@ function WaitingPageContent() {
             </button>
           )}
 
-          {/* 멤버십 안내 - 보고서 발행 후에만 표시 */}
+          {/* 검진 결과 안내 - 보고서 발행 후에만 표시 */}
           {reportPublished && (
-            <button
-              className={styles.subscribeRow}
-              onClick={() => setShowMembershipModal(true)}
-            >
-              <span className={styles.subscribeLabel}>Lycon Membership</span>
-              <div className={styles.subscribeRight}>
-                <span className={styles.subscribeValue}>지금 가입하기</span>
-                <ChevronRight size={20} className={styles.subscribeArrow} />
-              </div>
-            </button>
+            <div className={styles.reportArrivalBanner}>
+              <span className={styles.reportArrivalText}>
+                {profile?.name || "고객"}님,{" "}
+                {bookingInfo && (() => {
+                  const date = new Date(bookingInfo.date);
+                  return `${date.getMonth() + 1}월 ${date.getDate()}일에 진행된`;
+                })()}{" "}
+                검진 결과가 도착했습니다.
+              </span>
+            </div>
           )}
         </div>
 
-        <main className={styles.main}>
+        <main className={`${styles.main} ${reportPublished ? styles.mainWithReportButton : ""}`}>
           <div className={styles.tabContent}>
             {reportPublished ? (
               /* 보고서 발행됨 - 진단 요약 카드 표시 */
-              <>
-                <h2 className={styles.mainTitle}>
-                  {profile?.name || "고객"}님,
-                  <br />
-                  {bookingInfo && (() => {
-                    const date = new Date(bookingInfo.date);
-                    return `${date.getMonth() + 1}월 ${date.getDate()}일에 진행된`;
-                  })()}
-                  <br />
-                  검진 결과가 도착했습니다.
-                </h2>
-                <DiagnosisSummaryCards userId={userId!} />
-              </>
+              <DiagnosisSummaryCards userId={userId!} />
             ) : (
               /* 보고서 미발행 - 예약 안내 및 가이드 표시 */
               <>
@@ -496,6 +483,18 @@ function WaitingPageContent() {
             )}
           </div>
         </main>
+
+        {/* 검진 결과 자세히보기 버튼 - 하단 고정 */}
+        {reportPublished && (
+          <div className={styles.reportButtonWrapper}>
+            <button
+              className={styles.reportDetailButton}
+              onClick={() => window.location.href = "/waiting/report/mobile"}
+            >
+              검진 결과 자세히 보기
+            </button>
+          </div>
+        )}
 
         {/* 하단 네비게이션 */}
         <nav className={styles.bottomNav}>
@@ -558,11 +557,6 @@ function WaitingPageContent() {
           />
         ))}
 
-        {/* 멤버십 모달 */}
-        <MembershipModal
-          isOpen={showMembershipModal}
-          onClose={() => setShowMembershipModal(false)}
-        />
       </div>
 
       {/* 채팅 탭 - 항상 마운트, display로 숨김 */}
