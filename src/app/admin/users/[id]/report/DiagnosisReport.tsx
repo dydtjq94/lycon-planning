@@ -65,8 +65,8 @@ export function DiagnosisReport({
   // 비용 옵션 선택 상태
   const [costOptions, setCostOptions] = useState({
     education: "normal" as "normal" | "premium" | "none",  // 자녀 교육비
-    leisure: 1 as number | "none",      // 여행/여가 (0: 기본, 1: 보통, 2: 여유, "none": 포함안함)
-    consumerGoods: 1 as number | "none", // 소비재 (0: 검소, 1: 평균, 2: 사치, "none": 포함안함)
+    leisure: 1 as number | "none",      // 여행/여가 (0: 검소, 1: 보통, 2: 여유, "none": 포함안함)
+    consumerGoods: 1 as number | "none", // 소비재 (0: 검소, 1: 보통, 2: 여유, "none": 포함안함)
     medical: true as boolean,  // 의료/간병비 (true: 포함, false: 포함안함)
     housing: null as { areaIndex: number; tierIndex: number } | null, // 주거 (null: 미선택)
   });
@@ -199,13 +199,13 @@ export function DiagnosisReport({
           className={`${styles.tabButton} ${activeTab === "current" ? styles.active : ""}`}
           onClick={() => setActiveTab("current")}
         >
-          현재 파악
+          자산 현황
         </button>
         <button
           className={`${styles.tabButton} ${activeTab === "retirement" ? styles.active : ""}`}
           onClick={() => setActiveTab("retirement")}
         >
-          은퇴 자금
+          필요 자금
         </button>
         <button
           className={`${styles.tabButton} ${activeTab === "opinion" ? styles.active : ""}`}
@@ -217,7 +217,7 @@ export function DiagnosisReport({
 
       {/* 탭 콘텐츠 */}
       <div className={styles.tabContent}>
-        {/* ===== 현재 파악 탭 ===== */}
+        {/* ===== 자산 현황 탭 ===== */}
         {activeTab === "current" && (
           <>
             {/* 순자산 히어로 카드 */}
@@ -725,8 +725,8 @@ export function DiagnosisReport({
                   {/* Step 1: 기본 은퇴자금 */}
                   <div className={styles.stepCard}>
                     <div className={styles.stepHeader}>
-                      <span className={styles.stepNumber}>STEP 1</span>
-                      <span className={styles.stepTitle}>기본 은퇴자금</span>
+                      <span className={styles.stepNumber}>Base</span>
+                      <span className={styles.stepTitle}>최소 필요 자금</span>
                     </div>
                     <div className={styles.stepMainResult}>
                       <div className={`${styles.stepMainValue} ${styles.animatedValue}`}>{formatBillion(m.totalDemand)}억</div>
@@ -753,8 +753,8 @@ export function DiagnosisReport({
                   {/* Step 2: 추가 비용 */}
                   <div className={styles.stepCard}>
                     <div className={styles.stepHeader}>
-                      <span className={styles.stepNumber}>STEP 2</span>
-                      <span className={styles.stepTitle}>추가 필요 비용</span>
+                      <span className={styles.stepNumber}>Extra</span>
+                      <span className={styles.stepTitle}>추가 필요 자금</span>
                     </div>
                     <div className={styles.stepMainResult}>
                       <div className={`${styles.stepMainValue} ${styles.animatedValue}`}>+{formatBillion(additionalCostTotal / 10000)}억</div>
@@ -766,7 +766,7 @@ export function DiagnosisReport({
                       {data.children.length > 0 && (
                         <div className={styles.stepDetailRow}>
                           <span className={styles.stepDetailLabel}>자녀 교육/양육비</span>
-                          <span className={styles.stepDetailNote}>{costOptions.education === "none" ? "포함 안함" : costOptions.education === "normal" ? "일반" : "여유"}</span>
+                          <span className={styles.stepDetailNote}>{costOptions.education === "none" ? "포함 안함" : costOptions.education === "normal" ? "보통" : "여유"}</span>
                           <span className={`${styles.stepDetailValue} ${styles.animatedValue}`}>{formatBillion(educationCost / 10000)}억</span>
                         </div>
                       )}
@@ -800,7 +800,7 @@ export function DiagnosisReport({
                   {/* Step 3: 총 필요 자금 */}
                   <div className={styles.stepCard}>
                     <div className={styles.stepHeader}>
-                      <span className={styles.stepNumber}>STEP 3</span>
+                      <span className={styles.stepNumber}>Total</span>
                       <span className={styles.stepTitle}>총 필요 자금</span>
                     </div>
                     <div className={styles.stepMainResult}>
@@ -826,18 +826,50 @@ export function DiagnosisReport({
                     </div>
                   </div>
 
-                  {/* Step 4: 현재 상황 */}
+                  {/* Step 4: 진단 결과 */}
+                  {(() => {
+                    const totalSupply = m.monthlyPension * 12 * m.retirementYears / 10000 + m.liquidAssetAtRetirement;
+                    const gap = totalSupply - totalRetirementNeed;
+                    const gapRatio = totalRetirementNeed > 0 ? gap / totalRetirementNeed : 0;
+
+                    // 진단 상태 결정: 심각, 주의, 부족, 양호, 충분, 여유
+                    let diagnosisStatus: "critical" | "caution" | "lacking" | "fair" | "sufficient" | "abundant";
+                    let diagnosisLabel: string;
+                    if (gapRatio < -0.5) {
+                      diagnosisStatus = "critical";
+                      diagnosisLabel = "심각";
+                    } else if (gapRatio < -0.2) {
+                      diagnosisStatus = "caution";
+                      diagnosisLabel = "주의";
+                    } else if (gapRatio < 0) {
+                      diagnosisStatus = "lacking";
+                      diagnosisLabel = "부족";
+                    } else if (gapRatio < 0.1) {
+                      diagnosisStatus = "fair";
+                      diagnosisLabel = "양호";
+                    } else if (gapRatio < 0.3) {
+                      diagnosisStatus = "sufficient";
+                      diagnosisLabel = "충분";
+                    } else {
+                      diagnosisStatus = "abundant";
+                      diagnosisLabel = "여유";
+                    }
+
+                    return (
                   <div className={styles.stepCard}>
                     <div className={styles.stepHeader}>
-                      <span className={styles.stepNumber}>STEP 4</span>
-                      <span className={styles.stepTitle}>현재 상황</span>
+                      <span className={styles.stepNumber}>Result</span>
+                      <span className={styles.stepTitle}>진단 결과</span>
                     </div>
                     <div className={styles.stepMainResult}>
-                      <div className={`${styles.stepMainValue} ${styles.stepMainValueLarge} ${styles.animatedValue} ${(m.monthlyPension * 12 * m.retirementYears / 10000 + m.liquidAssetAtRetirement) >= totalRetirementNeed ? styles.positive : styles.negative}`}>
-                        {(m.monthlyPension * 12 * m.retirementYears / 10000 + m.liquidAssetAtRetirement) >= totalRetirementNeed ? "+" : "-"}{formatBillion(Math.abs((m.monthlyPension * 12 * m.retirementYears / 10000 + m.liquidAssetAtRetirement) - totalRetirementNeed))}억
+                      <div className={`${styles.diagnosisBadge} ${styles[diagnosisStatus]}`}>
+                        {diagnosisLabel}
+                      </div>
+                      <div className={`${styles.stepMainValue} ${styles.stepMainValueLarge} ${styles.animatedValue} ${gap >= 0 ? styles.positive : styles.negative}`}>
+                        {gap >= 0 ? "+" : ""}{formatBillion(gap)}억
                       </div>
                       <div className={styles.stepMainLabel}>
-                        {(m.monthlyPension * 12 * m.retirementYears / 10000 + m.liquidAssetAtRetirement) >= totalRetirementNeed ? "여유분" : "부족분"} (연금 + 금융자산 - 총 필요자금)
+                        {gap >= 0 ? "여유분" : "부족분"} (연금 + 금융자산 - 총 필요자금)
                       </div>
                     </div>
 
@@ -904,6 +936,8 @@ export function DiagnosisReport({
                       </div>
                     </div>
                   </div>
+                    );
+                  })()}
                 </>
               );
             })()}
@@ -951,7 +985,7 @@ export function DiagnosisReport({
                               className={`${styles.costOptionBtn} ${costOptions.education === "normal" ? styles.active : ""}`}
                               onClick={() => setCostOptions(p => ({ ...p, education: "normal" }))}
                             >
-                              일반
+                              보통
                             </button>
                             <button
                               className={`${styles.costOptionBtn} ${costOptions.education === "premium" ? styles.active : ""}`}
@@ -976,7 +1010,7 @@ export function DiagnosisReport({
                           <div className={styles.simpleColumnHeader}>
                             <span>단계</span>
                             <div className={styles.simpleColumnLabels}>
-                              <span>일반</span>
+                              <span>보통</span>
                               <span>여유</span>
                             </div>
                           </div>
@@ -1274,8 +1308,8 @@ export function DiagnosisReport({
                 <div className={styles.calcSettingOptions}>
                   {[
                     { value: 0.7, label: "70%", desc: "검소" },
-                    { value: 1.0, label: "100%", desc: "유지" },
-                    { value: 1.2, label: "120%", desc: "사치" },
+                    { value: 1.0, label: "100%", desc: "보통" },
+                    { value: 1.2, label: "120%", desc: "여유" },
                   ].map((opt) => (
                     <div key={opt.value} className={styles.calcSettingBtnWrapper}>
                       <button

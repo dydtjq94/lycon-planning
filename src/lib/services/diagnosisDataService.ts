@@ -1225,7 +1225,7 @@ export function calculateLeisureCosts(
   const retirementYears = lifeExpectancy - targetRetirementAge;
 
   const options = [
-    { level: "기본", description: "국내 여행 연 2회", annualCost: 300 },
+    { level: "검소", description: "국내 여행 연 2회", annualCost: 300 },
     { level: "보통", description: "국내 3회 + 해외 1회", annualCost: 600 },
     { level: "여유", description: "국내 + 해외 연 2회", annualCost: 1200 },
   ];
@@ -1251,7 +1251,7 @@ export function calculateLeisureCosts(
 
 // 소비재 비용 옵션 (자동차, 가전, 가구 등)
 export interface ConsumerGoodsCostOption {
-  level: string;          // 검소, 평균, 사치
+  level: string;          // 검소, 보통, 여유
   description: string;
   annualCost: number;     // 연간 비용 (만원)
   breakdown: {
@@ -1280,7 +1280,7 @@ export function calculateConsumerGoodsCosts(
       },
     },
     {
-      level: "평균",
+      level: "보통",
       description: "적당한 소비, 7년 주기 교체",
       annualCost: 600,  // 연 600만원
       breakdown: {
@@ -1289,12 +1289,12 @@ export function calculateConsumerGoodsCosts(
       },
     },
     {
-      level: "사치",
+      level: "여유",
       description: "좋은 것 선호, 5년 주기 교체",
       annualCost: 1200, // 연 1200만원
       breakdown: {
         car: "수입차/대형차 5년 사용",
-        appliances: "프리미엄 가전, 인테리어 투자",
+        appliances: "고급 가전, 인테리어 투자",
       },
     },
   ];
