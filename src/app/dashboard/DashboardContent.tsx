@@ -29,6 +29,7 @@ import {
   CurrentAssetTab,
   AssetRecordTab,
   PortfolioTab,
+  BudgetTab,
   IncomeTab,
   ExpenseTab,
   SavingsTab,
@@ -396,7 +397,7 @@ export function DashboardContent() {
       case "portfolio":
         return <PortfolioTab />;
       case "household-budget":
-        return <div style={{ padding: 40, color: "#888" }}>가계부 (준비중)</div>;
+        return <BudgetTab profileId={profile.id} />;
       // 설정
       case "settings":
         return <SettingsTab profileName={profile.name || ""} />;

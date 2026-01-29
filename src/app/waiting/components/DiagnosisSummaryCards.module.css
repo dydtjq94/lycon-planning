@@ -2,11 +2,55 @@
   padding: 0 0 16px;
 }
 
-.title {
+/* 은퇴 판정 카드 */
+.verdictCard {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.verdictLabel {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.verdictContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.verdictBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.verdictBadge.good {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.verdictBadge.caution {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.verdictBadge.warning {
+  background: #ef4444;
+  color: #fff;
+}
+
+.verdictText {
   font-size: 16px;
   font-weight: 600;
   color: #1a1a1a;
-  margin-bottom: 12px;
 }
 
 .cardGrid {

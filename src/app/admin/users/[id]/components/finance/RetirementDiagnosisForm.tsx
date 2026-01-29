@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Pencil, Check, X, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { formatMoney } from "@/lib/utils";
+import { formatMoney, calculateAge } from "@/lib/utils";
 import styles from "./RetirementDiagnosisForm.module.css";
 
 // prep_data 타입 정의
@@ -221,8 +221,8 @@ export function RetirementDiagnosisForm({
     targetMonthlyExpense: 300,
   });
 
-  const currentYear = new Date().getFullYear();
-  const currentAge = currentYear - birthYear;
+  // 만 나이 계산 (birthYear만 있으면 1월 1일 기준)
+  const currentAge = calculateAge(birthYear);
 
   // prep_data 저장 함수
   const savePrepData = useCallback(async (newPrepData: PrepDataStore) => {
@@ -276,14 +276,10 @@ export function RetirementDiagnosisForm({
     loadData();
   }, [userId]);
 
-  // Helper
+  // Helper - 만 나이 계산
   const getAge = (birthDate: string | null) => {
     if (!birthDate) return null;
-    const birth = new Date(birthDate);
-    let age = currentYear - birth.getFullYear();
-    const m = new Date().getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && new Date().getDate() < birth.getDate())) age--;
-    return age;
+    return calculateAge(birthDate);
   };
 
   // === 저장 핸들러 ===
@@ -478,7 +474,7 @@ export function RetirementDiagnosisForm({
             </div>
             <div className={styles.infoRow}>
               <span className={styles.label}>생년 / 나이</span>
-              <span className={styles.value}>{birthYear}년 ({currentAge}세)</span>
+              <span className={styles.value}>{birthYear}년 (만 {currentAge}세)</span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.label}>목표 은퇴 나이</span>
@@ -614,14 +610,14 @@ export function RetirementDiagnosisForm({
               <div className={styles.infoRow}>
                 <span className={styles.label}>배우자</span>
                 <span className={styles.value}>
-                  {spouse ? `${spouse.name} (${getAge(spouse.birth_date)}세)` : "없음"}
+                  {spouse ? `${spouse.name} (만 ${getAge(spouse.birth_date)}세)` : "없음"}
                 </span>
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.label}>자녀</span>
                 <span className={styles.value}>
                   {children.length > 0
-                    ? children.map((c) => `${c.name || "이름 미입력"} (${getAge(c.birth_date)}세)`).join(", ")
+                    ? children.map((c) => `${c.name || "이름 미입력"} (만 ${getAge(c.birth_date)}세)`).join(", ")
                     : "없음"}
                 </span>
               </div>
@@ -629,7 +625,7 @@ export function RetirementDiagnosisForm({
                 <span className={styles.label}>부양가족</span>
                 <span className={styles.value}>
                   {parents.length > 0
-                    ? parents.map((p) => `${p.name || "이름 미입력"} (${getAge(p.birth_date)}세)`).join(", ")
+                    ? parents.map((p) => `${p.name || "이름 미입력"} (만 ${getAge(p.birth_date)}세)`).join(", ")
                     : "없음"}
                 </span>
               </div>
@@ -768,6 +764,21 @@ export function RetirementDiagnosisForm({
                   </div>
                 </div>
               )}
+              {housingData && (
+                <div className={styles.formRow}>
+                  <label>관리비</label>
+                  <div className={styles.inputWithUnit}>
+                    <input
+                      type="number"
+                      className={styles.input}
+                      value={housingData.maintenanceFee || ""}
+                      onChange={(e) => setHousingData({ ...housingData, maintenanceFee: Number(e.target.value) || 0 })}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                    />
+                    <span className={styles.unit}>만원/월</span>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className={styles.infoTable}>
@@ -801,6 +812,12 @@ export function RetirementDiagnosisForm({
                     <div className={styles.infoRow}>
                       <span className={styles.label}>월세</span>
                       <span className={styles.value}>{formatMoney(housingData.monthlyRent || 0)}/월</span>
+                    </div>
+                  )}
+                  {(housingData.maintenanceFee || 0) > 0 && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.label}>관리비</span>
+                      <span className={styles.value}>{formatMoney(housingData.maintenanceFee || 0)}/월</span>
                     </div>
                   )}
                 </>

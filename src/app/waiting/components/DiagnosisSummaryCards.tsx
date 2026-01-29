@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  convertPrepDataToDiagnosisData,
+  calculateAllDiagnosisMetrics,
+  PrepDataStore,
+} from "@/lib/services/diagnosisDataService";
 import styles from "./DiagnosisSummaryCards.module.css";
 
 type DiagnosisStatus = "good" | "caution" | "warning";
@@ -14,12 +19,20 @@ interface DiagnosisCard {
   statusLabel: string;
 }
 
+interface RetirementVerdict {
+  canRetire: boolean;
+  targetAge: number;
+  status: DiagnosisStatus;
+  label: string;
+}
+
 interface DiagnosisSummaryCardsProps {
   userId: string;
 }
 
 export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
   const [cards, setCards] = useState<DiagnosisCard[]>([]);
+  const [retirementVerdict, setRetirementVerdict] = useState<RetirementVerdict | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,233 +40,100 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
       try {
         const supabase = createClient();
 
-        // 1. 프로필 정보 조회
+        // 프로필 정보 및 prep_data 조회
         const { data: profile } = await supabase
           .from("profiles")
-          .select("birth_date, target_retirement_age")
+          .select("name, birth_date, target_retirement_age, prep_data")
           .eq("id", userId)
           .single();
 
         if (!profile) return;
 
-        const birthYear = profile.birth_date
-          ? new Date(profile.birth_date).getFullYear()
-          : new Date().getFullYear() - 40;
-        const currentAge = new Date().getFullYear() - birthYear;
-        const targetRetirementAge = profile.target_retirement_age || 60;
-        const lifeExpectancy = 90;
+        // 공통 유틸리티로 데이터 변환 (prep_data가 없어도 기본값으로 계산)
+        const diagnosisData = convertPrepDataToDiagnosisData({
+          name: profile.name,
+          birth_date: profile.birth_date,
+          target_retirement_age: profile.target_retirement_age,
+          prep_data: profile.prep_data as PrepDataStore,
+        });
 
-        // 2. 시뮬레이션 조회
-        const { data: simulation } = await supabase
-          .from("simulations")
-          .select("id")
-          .eq("profile_id", userId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
+        // 중앙집중화된 계산 함수 사용
+        const metrics = calculateAllDiagnosisMetrics(diagnosisData);
+        const targetAge = diagnosisData.targetRetirementAge;
 
-        if (!simulation) return;
-
-        // 3. 재무 데이터 병렬 조회
-        const [
-          { data: incomes },
-          { data: expenses },
-          { data: realEstates },
-          { data: savings },
-          { data: debts },
-          { data: nationalPensions },
-          { data: retirementPensions },
-          { data: personalPensions },
-        ] = await Promise.all([
-          supabase.from("incomes").select("*").eq("simulation_id", simulation.id),
-          supabase.from("expenses").select("*").eq("simulation_id", simulation.id),
-          supabase.from("real_estates").select("*").eq("simulation_id", simulation.id),
-          supabase.from("savings").select("*").eq("simulation_id", simulation.id),
-          supabase.from("debts").select("*").eq("simulation_id", simulation.id),
-          supabase.from("national_pensions").select("*").eq("simulation_id", simulation.id),
-          supabase.from("retirement_pensions").select("*").eq("simulation_id", simulation.id),
-          supabase.from("personal_pensions").select("*").eq("simulation_id", simulation.id),
-        ]);
-
-        // 4. 계산 로직
-        const toMonthly = (amount: number, frequency: string) =>
-          frequency === "yearly" ? Math.round(amount / 12) : amount;
-
-        const monthlyIncome = (incomes || []).reduce(
-          (sum, i) => sum + toMonthly(i.amount || 0, i.frequency || "monthly"),
-          0
-        );
-
-        const monthlyFixedExpense = (expenses || [])
-          .filter((e) => e.expense_category === "fixed")
-          .reduce((sum, e) => sum + toMonthly(e.amount || 0, e.frequency || "monthly"), 0);
-
-        const monthlyLivingExpense = (expenses || [])
-          .filter((e) => e.expense_category !== "fixed")
-          .reduce((sum, e) => sum + toMonthly(e.amount || 0, e.frequency || "monthly"), 0);
-
-        // 자산 (억원)
-        const realEstateAsset =
-          (realEstates || []).reduce((sum, r) => sum + (r.current_value || 0), 0) / 10000;
-        const financialAsset =
-          (savings || []).reduce((sum, s) => sum + (s.current_balance || 0), 0) / 10000;
-        const pensionAsset =
-          ((retirementPensions || []).reduce((sum, p) => sum + (p.current_balance || 0), 0) +
-            (personalPensions || []).reduce((sum, p) => sum + (p.current_balance || 0), 0)) /
-          10000;
-        const totalAsset = realEstateAsset + financialAsset + pensionAsset;
-
-        // 부채 (만원)
-        const totalDebt = (debts || []).reduce(
-          (sum, d) => sum + (d.current_balance || d.principal || 0),
-          0
-        );
-
-        // 부채 이자
-        const monthlyInterest = (debts || []).reduce((sum, d) => {
-          const balance = d.current_balance || d.principal || 0;
-          const rate = d.interest_rate || 5;
-          return sum + Math.round((balance * rate) / 100 / 12);
-        }, 0);
-
-        // 현재 현금흐름
-        const currentMonthlyExpense = monthlyFixedExpense + monthlyLivingExpense + monthlyInterest;
-        const currentMonthlyGap = monthlyIncome - currentMonthlyExpense;
-
-        // 저축률
-        const savingsRate = monthlyIncome > 0 ? (currentMonthlyGap / monthlyIncome) * 100 : 0;
-
-        // 연금 수령액 계산
-        const calculateMonthlyPension = (balance: number, years: number) => {
-          const months = (years || 20) * 12;
-          return Math.round(balance / months);
-        };
-
-        const selfNationalPension = (nationalPensions || []).find((p) => p.owner === "self");
-        const spouseNationalPension = (nationalPensions || []).find((p) => p.owner === "spouse");
-        const selfRetirementPension = (retirementPensions || []).find((p) => p.owner === "self");
-        const spouseRetirementPension = (retirementPensions || []).find((p) => p.owner === "spouse");
-        const selfPersonalPensions = (personalPensions || []).filter((p) => p.owner === "self");
-        const spousePersonalPensions = (personalPensions || []).filter((p) => p.owner === "spouse");
-
-        const monthlyPension =
-          (selfNationalPension?.expected_monthly_amount || 0) +
-          (spouseNationalPension?.expected_monthly_amount || 0) +
-          (selfRetirementPension
-            ? calculateMonthlyPension(
-                selfRetirementPension.current_balance || 0,
-                selfRetirementPension.receiving_years || 20
-              )
-            : 0) +
-          (spouseRetirementPension
-            ? calculateMonthlyPension(
-                spouseRetirementPension.current_balance || 0,
-                spouseRetirementPension.receiving_years || 20
-              )
-            : 0) +
-          selfPersonalPensions.reduce(
-            (sum, p) => sum + calculateMonthlyPension(p.current_balance || 0, p.receiving_years || 20),
-            0
-          ) +
-          spousePersonalPensions.reduce(
-            (sum, p) => sum + calculateMonthlyPension(p.current_balance || 0, p.receiving_years || 20),
-            0
-          );
-
-        // 은퇴 후 월지출 (현재의 70%)
-        const currentExpenseBase = monthlyFixedExpense + monthlyLivingExpense;
-        const monthlyExpense = Math.round(currentExpenseBase * 0.7);
-        const monthlyGap = monthlyPension - monthlyExpense;
-
-        // 연금 충당률
-        const pensionCoverageRate = monthlyExpense > 0 ? Math.round((monthlyPension / monthlyExpense) * 100) : 0;
-
-        // 자산 지속성 계산
-        const yearsToRetirement = Math.max(0, targetRetirementAge - currentAge);
-        const growthRate = 0.025;
-        const liquidAsset = Math.round((financialAsset + pensionAsset - totalDebt / 10000) * 100) / 100;
-        const liquidAssetAtRetirement =
-          Math.round(liquidAsset * Math.pow(1 + growthRate, yearsToRetirement) * 100) / 100;
-        const retirementYears = lifeExpectancy - targetRetirementAge;
-        const annualShortfall = monthlyGap < 0 ? (Math.abs(monthlyGap) * 12) / 10000 : 0;
-        const yearsOfWithdrawal =
-          liquidAssetAtRetirement <= 0
-            ? 0
-            : annualShortfall > 0
-              ? Math.round((liquidAssetAtRetirement / annualShortfall) * 10) / 10
-              : 999;
-
-        // 부동산 비율
-        const realEstateRatio = totalAsset > 0 ? Math.round((realEstateAsset / totalAsset) * 100) : 0;
-
-        // 5. 카드 생성
+        // 카드 생성 - 모바일 리포트 요약 탭과 동일한 항목
         const diagnosisCards: DiagnosisCard[] = [];
 
-        // 카드 1: 저축 여력
-        const getSavingsStatus = (): { status: DiagnosisStatus; label: string } => {
-          if (savingsRate >= 20) return { status: "good", label: "양호" };
-          if (savingsRate >= 10) return { status: "caution", label: "경과 관찰" };
-          return { status: "warning", label: "정밀 검진 권고" };
+        // 카드 1: 순자산 (상위 퍼센트 포함)
+        const getNetWorthPercentile = (nw: number): string => {
+          if (nw >= 10) return "상위 0~20%";
+          if (nw >= 5) return "상위 20~40%";
+          if (nw >= 2) return "상위 40~60%";
+          if (nw >= 1) return "상위 60~80%";
+          return "상위 80~100%";
         };
-        const savingsStatus = getSavingsStatus();
+        const getNetWorthStatus = (): { status: DiagnosisStatus; label: string } => {
+          if (metrics.netWorth >= 5) return { status: "good", label: getNetWorthPercentile(metrics.netWorth) };
+          if (metrics.netWorth >= 2) return { status: "caution", label: getNetWorthPercentile(metrics.netWorth) };
+          return { status: "warning", label: getNetWorthPercentile(metrics.netWorth) };
+        };
+        const netWorthStatus = getNetWorthStatus();
         diagnosisCards.push({
-          id: "savings",
-          title: "저축 여력",
-          value: savingsRate >= 0 ? `${Math.round(savingsRate)}%` : "적자",
-          status: savingsStatus.status,
-          statusLabel: savingsStatus.label,
+          id: "netWorth",
+          title: "순자산",
+          value: `${Math.round(metrics.netWorth)}억원`,
+          status: netWorthStatus.status,
+          statusLabel: netWorthStatus.label,
         });
 
-        // 카드 2: 은퇴 현금흐름 (연금 충당률 기준)
-        const getRetirementStatus = (): { status: DiagnosisStatus; label: string } => {
-          // 연금 충당률 100% 이상 (연금으로 생활비 충당 가능)
-          if (pensionCoverageRate >= 100) return { status: "good", label: "양호" };
-          // 연금 충당률 70% 이상
-          if (pensionCoverageRate >= 70) return { status: "caution", label: "경과 관찰" };
-          // 연금 충당률 70% 미만
-          return { status: "warning", label: "정밀 검진 권고" };
-        };
-        const retirementStatus = getRetirementStatus();
-        diagnosisCards.push({
-          id: "retirement",
-          title: "은퇴 현금흐름",
-          value: monthlyGap >= 0 ? `+${monthlyGap}만원/월` : `${monthlyGap}만원/월`,
-          status: retirementStatus.status,
-          statusLabel: retirementStatus.label,
-        });
-
-        // 카드 3: 연금 충당률
+        // 카드 2: 연금 충당률
         const getPensionStatus = (): { status: DiagnosisStatus; label: string } => {
-          if (pensionCoverageRate >= 80) return { status: "good", label: "양호" };
-          if (pensionCoverageRate >= 50) return { status: "caution", label: "경과 관찰" };
-          return { status: "warning", label: "정밀 검진 권고" };
+          if (metrics.pensionCoverageRate >= 100) return { status: "good", label: "안전" };
+          if (metrics.pensionCoverageRate >= 70) return { status: "caution", label: "주의" };
+          return { status: "warning", label: "위험" };
         };
         const pensionStatus = getPensionStatus();
         diagnosisCards.push({
           id: "pension",
           title: "연금 충당률",
-          value: `${pensionCoverageRate}%`,
+          value: `${metrics.pensionCoverageRate}%`,
           status: pensionStatus.status,
           statusLabel: pensionStatus.label,
         });
 
-        // 카드 4: 자산 지속성
-        const getSustainabilityStatus = (): { status: DiagnosisStatus; label: string; value: string } => {
-          if (yearsOfWithdrawal >= retirementYears) {
-            return { status: "good", label: "양호", value: "충분" };
-          }
-          if (yearsOfWithdrawal >= retirementYears * 0.7) {
-            return { status: "caution", label: "경과 관찰", value: `${Math.round(yearsOfWithdrawal)}년` };
-          }
-          return { status: "warning", label: "정밀 검진 권고", value: `${Math.round(yearsOfWithdrawal)}년` };
+        // 카드 3: 자산 지속성
+        const getSustainabilityStatus = (): { status: DiagnosisStatus; label: string } => {
+          if (metrics.yearsOfWithdrawal >= metrics.retirementYears) return { status: "good", label: "안전" };
+          if (metrics.yearsOfWithdrawal >= metrics.retirementYears * 0.7) return { status: "caution", label: "주의" };
+          return { status: "warning", label: "위험" };
         };
         const sustainabilityStatus = getSustainabilityStatus();
+        const sustainabilityValue = metrics.yearsOfWithdrawal >= 999
+          ? "충분"
+          : `${Math.round(metrics.yearsOfWithdrawal)}년`;
         diagnosisCards.push({
           id: "sustainability",
           title: "자산 지속성",
-          value: sustainabilityStatus.value,
+          value: sustainabilityValue,
           status: sustainabilityStatus.status,
           statusLabel: sustainabilityStatus.label,
+        });
+
+        // 은퇴 판정 데이터 저장 (중앙집중화된 결과 사용)
+        let verdictStatus: DiagnosisStatus;
+        if (metrics.retirementVerdict.status === "possible") {
+          verdictStatus = "good";
+        } else if (metrics.retirementVerdict.status === "conditional") {
+          verdictStatus = "caution";
+        } else {
+          verdictStatus = "warning";
+        }
+
+        setRetirementVerdict({
+          canRetire: metrics.retirementVerdict.status !== "difficult",
+          targetAge,
+          status: verdictStatus,
+          label: metrics.retirementVerdict.label,
         });
 
         setCards(diagnosisCards);
@@ -279,25 +159,38 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
     );
   }
 
-  if (cards.length === 0) {
-    return null;
-  }
-
   return (
     <div className={styles.container}>
-      <div className={styles.cardGrid}>
-        {cards.map((card) => (
-          <div key={card.id} className={styles.card}>
-            <div className={styles.cardHeader}>
-              <span className={styles.cardTitle}>{card.title}</span>
-            </div>
-            <div className={styles.cardValue}>{card.value}</div>
-            <div className={`${styles.cardStatus} ${styles[card.status]}`}>
-              {card.statusLabel}
-            </div>
+      {/* 은퇴 판정 카드 */}
+      {retirementVerdict && (
+        <div className={`${styles.verdictCard} ${styles[retirementVerdict.status]}`}>
+          <div className={styles.verdictLabel}>은퇴 판정</div>
+          <div className={styles.verdictContent}>
+            <span className={`${styles.verdictBadge} ${styles[retirementVerdict.status]}`}>
+              {retirementVerdict.label}
+            </span>
+            <span className={styles.verdictText}>
+              만 {retirementVerdict.targetAge}세 은퇴 {retirementVerdict.label === "재검토" ? "재검토 필요" : retirementVerdict.label}
+            </span>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* 요약 카드 그리드 */}
+      {cards.length > 0 && (
+        <div className={styles.cardGrid}>
+          {cards.map((card) => (
+            <div key={card.id} className={styles.card}>
+              <div className={styles.cardTitle}>{card.title}</div>
+              <div className={styles.cardValue}>{card.value}</div>
+              <div className={`${styles.cardStatus} ${styles[card.status]}`}>
+                {card.statusLabel}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <button
         className={styles.reportButton}
         onClick={() => window.location.href = "/waiting/report/mobile"}

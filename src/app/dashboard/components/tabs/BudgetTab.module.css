@@ -1,0 +1,544 @@
+/* 가계부 탭 스타일 */
+
+.container {
+  padding: 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 헤더: 월 선택기 + 추가 버튼 */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.monthSelector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.monthButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  background: #fff;
+  color: #57534e;
+  cursor: pointer;
+}
+
+.monthButton:hover {
+  background: #f5f5f4;
+}
+
+.monthLabel {
+  font-size: 18px;
+  font-weight: 600;
+  color: #292524;
+  min-width: 120px;
+  text-align: center;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #292524;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  background: #1c1917;
+}
+
+/* 콘텐츠 레이아웃: 1:2 */
+.content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 왼쪽: 요약 섹션 */
+.summarySection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.summaryCard {
+  background: #fff;
+  border: 1px solid #e7e5e4;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.summaryTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #78716c;
+  margin: 0 0 8px 0;
+}
+
+.summaryTotal {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ef4444;
+  margin-bottom: 16px;
+}
+
+.summaryTotalIncome {
+  font-size: 24px;
+  font-weight: 700;
+  color: #22c55e;
+  margin-bottom: 16px;
+}
+
+.categoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.categoryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.categoryName {
+  color: #57534e;
+}
+
+.categoryAmount {
+  color: #292524;
+  font-weight: 500;
+}
+
+.emptyText {
+  font-size: 13px;
+  color: #a8a29e;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.balanceCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafaf9;
+  border: 1px solid #e7e5e4;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.balanceLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #78716c;
+}
+
+.balancePositive {
+  font-size: 20px;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.balanceNegative {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ef4444;
+}
+
+/* 오른쪽: 거래 목록 섹션 */
+.transactionSection {
+  background: #fff;
+  border: 1px solid #e7e5e4;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #78716c;
+  margin: 0 0 16px 0;
+}
+
+.transactionList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.transactionRow {
+  display: grid;
+  grid-template-columns: 60px 72px 1fr auto 32px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 6px;
+  background: #fafaf9;
+}
+
+.transactionRow:hover {
+  background: #f5f5f4;
+}
+
+.transactionDate {
+  font-size: 13px;
+  color: #78716c;
+}
+
+.transactionCategory {
+  font-size: 13px;
+  color: #57534e;
+  background: #e7e5e4;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.transactionTitle {
+  font-size: 14px;
+  color: #292524;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transactionAmountExpense {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ef4444;
+  text-align: right;
+}
+
+.transactionAmountIncome {
+  font-size: 14px;
+  font-weight: 600;
+  color: #22c55e;
+  text-align: right;
+}
+
+.deleteButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  color: #a8a29e;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.deleteButton:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* 빈 상태 */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #78716c;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 16px;
+  color: #78716c;
+}
+
+.addFirstButton {
+  padding: 8px 16px;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  color: #57534e;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.addFirstButton:hover {
+  background: #e7e5e4;
+}
+
+/* 모달 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 400px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #292524;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: #78716c;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.closeButton:hover {
+  background: #f5f5f4;
+}
+
+/* 폼 */
+.form {
+  padding: 20px;
+}
+
+.typeSelector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.typeButton {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  background: #fff;
+  color: #78716c;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.typeButton:hover {
+  background: #fafaf9;
+}
+
+.typeButtonActive {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.typeButtonActiveIncome {
+  background: #f0fdf4;
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.formLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #57534e;
+}
+
+.input {
+  padding: 10px 12px;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #292524;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #a8a29e;
+}
+
+.select {
+  padding: 10px 12px;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #292524;
+  background: #fff;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #a8a29e;
+}
+
+.dateInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.monthDisplay {
+  font-size: 14px;
+  color: #292524;
+  padding: 10px 12px;
+  background: #fafaf9;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+}
+
+.dayInput {
+  width: 60px;
+  padding: 10px 12px;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #292524;
+  text-align: center;
+}
+
+.dayInput:focus {
+  outline: none;
+  border-color: #a8a29e;
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.dayInput::-webkit-outer-spin-button,
+.dayInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.unitText {
+  font-size: 14px;
+  color: #78716c;
+}
+
+.optionalText {
+  font-size: 12px;
+  color: #a8a29e;
+}
+
+.amountInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.amountInput {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #292524;
+  text-align: right;
+}
+
+.amountInput:focus {
+  outline: none;
+  border-color: #a8a29e;
+}
+
+.amountInput::-webkit-outer-spin-button,
+.amountInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.formButtons {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancelButton {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  background: #fff;
+  color: #57534e;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancelButton:hover {
+  background: #fafaf9;
+}
+
+.submitButton {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  background: #292524;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.submitButton:hover {
+  background: #1c1917;
+}
+
+.submitButton:disabled {
+  background: #d6d3d1;
+  cursor: not-allowed;
+}

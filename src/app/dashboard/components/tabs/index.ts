@@ -11,6 +11,7 @@ export { ScenarioTab } from './ScenarioTab'
 export { SettingsTab } from './SettingsTab'
 
 // Finance tabs
+export { BudgetTab } from './BudgetTab'
 export { IncomeTab } from './IncomeTab'
 export { ExpenseTab } from './ExpenseTab'
 export { SavingsTab } from './SavingsTab'

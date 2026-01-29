@@ -1,0 +1,40 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.chartSection {
+  background: white;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.chartTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 4px 0;
+}
+
+.chartSubtitle {
+  font-size: 12px;
+  color: #718096;
+  margin: 0 0 16px 0;
+}
+
+.chartWrapper {
+  height: 280px;
+  position: relative;
+}
+
+@media print {
+  .chartSection {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .chartWrapper {
+    height: 240px;
+  }
+}

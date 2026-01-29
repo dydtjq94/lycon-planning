@@ -45,6 +45,54 @@ retirement_pensions, personal_pensions
 - **날짜**: date (YYYY-MM-DD) 또는 year/month 분리
 - **boolean**: true/false, 기본값 확인 필수
 
+## RLS 정책 (Row Level Security) - 반드시 확인!
+
+### 데이터 저장/수정 안 될 때 가장 먼저 확인할 것
+프론트엔드에서 Supabase로 INSERT/UPDATE/DELETE가 안 되면 **99% RLS 정책 문제**입니다.
+
+### RLS 정책 확인 방법
+```sql
+-- 특정 테이블의 RLS 정책 확인
+SELECT policyname, cmd, qual
+FROM pg_policies
+WHERE tablename = '테이블명';
+```
+
+### 현재 주요 테이블별 RLS 정책 현황
+```
+profiles
+├── SELECT: 본인 프로필 조회 가능
+├── SELECT: Expert가 담당 고객 프로필 조회 가능 (conversations 통해)
+├── INSERT: 본인 프로필 생성 가능
+├── UPDATE: 본인 프로필 수정 가능
+└── UPDATE: Expert가 담당 고객 프로필 수정 가능 (conversations 통해)
+
+conversations
+├── SELECT/INSERT/UPDATE: 본인 대화 가능
+└── SELECT/INSERT/UPDATE: Expert가 담당 대화 가능
+```
+
+### 새 기능 추가 시 체크리스트
+1. **Admin이 고객 데이터 수정** → Expert용 UPDATE 정책 있는지 확인
+2. **새 테이블 생성** → RLS 활성화 + 적절한 정책 추가
+3. **저장 실패 시** → 브라우저 콘솔 에러 확인 + RLS 정책 확인
+
+### 정책 추가 예시
+```sql
+-- Expert가 담당 고객 데이터 수정 가능하도록
+CREATE POLICY "Experts can update assigned user data"
+ON 테이블명
+FOR UPDATE
+USING (
+  EXISTS (
+    SELECT 1 FROM conversations c
+    JOIN experts e ON c.expert_id = e.id
+    WHERE c.user_id = 테이블명.user_id
+    AND e.user_id = auth.uid()
+  )
+);
+```
+
 ## CSS 스타일
 
 - **CSS Modules 사용**: Tailwind 사용 금지
@@ -223,6 +271,21 @@ const spouseAge100Year = spouseCurrentAge !== null
   ? currentYear + (100 - spouseCurrentAge)
   : selfAge100Year;
 const maxYear = Math.max(selfAge100Year, spouseAge100Year);
+```
+
+## 나이 계산 규칙 (만 나이)
+
+- **모든 나이는 만 나이로 계산**: 생일 기준으로 정확히 계산
+- **전역 유틸리티 사용**: `calculateAge` 함수를 `@/lib/utils`에서 import하여 사용
+- **연 나이 계산 금지**: `currentYear - birthYear` 방식 사용 금지
+
+```tsx
+import { calculateAge } from '@/lib/utils'
+
+// 사용 예시
+calculateAge("1994-12-15")  // 생년월일 문자열 → 만 나이
+calculateAge(new Date(1994, 11, 15))  // Date 객체 → 만 나이
+calculateAge(1994)  // 출생년도만 있으면 1월 1일 기준으로 계산
 ```
 
 ## 금액 단위 규칙

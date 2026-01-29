@@ -7,6 +7,35 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * 만 나이 계산 (생일 기준)
+ * @param birthDate - 생년월일 (Date 객체, "YYYY-MM-DD" 문자열, 또는 출생년도 숫자)
+ * @param referenceDate - 기준일 (기본값: 오늘)
+ * @returns 만 나이
+ */
+export function calculateAge(birthDate: Date | string | number, referenceDate: Date = new Date()): number {
+  let birth: Date;
+
+  if (typeof birthDate === 'number') {
+    // 출생년도만 주어진 경우 (예: 1994) - 1월 1일생으로 가정
+    birth = new Date(birthDate, 0, 1);
+  } else if (typeof birthDate === 'string') {
+    birth = new Date(birthDate);
+  } else {
+    birth = birthDate;
+  }
+
+  let age = referenceDate.getFullYear() - birth.getFullYear();
+  const monthDiff = referenceDate.getMonth() - birth.getMonth();
+
+  // 생일이 아직 안 지났으면 1살 빼기
+  if (monthDiff < 0 || (monthDiff === 0 && referenceDate.getDate() < birth.getDate())) {
+    age--;
+  }
+
+  return age;
+}
+
 // 금액 포맷팅 (만원 단위 입력, 억+만원 단위로 상세 표시)
 export function formatMoney(amount: number): string {
   const absAmount = Math.abs(amount)
