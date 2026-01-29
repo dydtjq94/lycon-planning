@@ -7,15 +7,19 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  PointElement,
+  LineElement,
+  Filler,
   Tooltip,
   Legend,
 } from "chart.js";
-import { Doughnut, Bar } from "react-chartjs-2";
+import { Doughnut, Bar, Line } from "react-chartjs-2";
+import annotationPlugin from "chartjs-plugin-annotation";
 import styles from "./DiagnosisReport.module.css";
 import { householdFinance2025, type AgeGroup, estimatePercentiles } from "@/lib/data/householdFinance2025";
 import { type DiagnosisData, type FixedExpenseItem, type CalculationParams, DEFAULT_CALC_PARAMS, calculateAllDiagnosisMetrics, calculateAdditionalCosts } from "@/lib/services/diagnosisDataService";
 
-ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler, Tooltip, Legend, annotationPlugin);
 
 interface DiagnosisReportProps {
   data: DiagnosisData;
@@ -95,29 +99,87 @@ export function DiagnosisReport({
   const ageGroup = getAgeGroup(data.currentAge);
   const ageStats = householdFinance2025[ageGroup];
 
+  // Lycon Score: 정밀 분위 계산 (0~100, 높을수록 좋음)
+  const calcPrecisePercentile = (value: number, percentiles: ReturnType<typeof estimatePercentiles>) => {
+    const thresholds = [
+      { p: 95, v: percentiles.p90 * 1.2 },
+      { p: 90, v: percentiles.p90 },
+      { p: 80, v: percentiles.p80 },
+      { p: 70, v: percentiles.p70 },
+      { p: 60, v: percentiles.p60 },
+      { p: 50, v: (percentiles.p40 + percentiles.p60) / 2 },
+      { p: 40, v: percentiles.p40 },
+      { p: 30, v: percentiles.p30 },
+      { p: 20, v: percentiles.p20 },
+      { p: 10, v: percentiles.p20 * 0.5 },
+      { p: 0, v: 0 },
+    ];
+    for (let i = 0; i < thresholds.length - 1; i++) {
+      if (value >= thresholds[i].v) {
+        const range = thresholds[i].p - (thresholds[i + 1]?.p || 0);
+        const valueRange = thresholds[i].v - thresholds[i + 1].v;
+        const position = valueRange > 0 ? (value - thresholds[i + 1].v) / valueRange : 1;
+        return Math.min(100, thresholds[i + 1].p + range * position);
+      }
+    }
+    return 5;
+  };
+
   const annualIncome = data.monthlyIncome * 12;
   const incomePercentiles = estimatePercentiles(ageStats.income.median);
+  const assetPercentilesData = estimatePercentiles(ageStats.asset.median);
+  const netWorthPercentilesData = estimatePercentiles(ageStats.netWorth.median);
+  const debtPercentilesData = estimatePercentiles(ageStats.debt.median);
+
+  // 각 항목별 정밀 점수 (0~100)
+  const incomeScore = calcPrecisePercentile(annualIncome, incomePercentiles);
+  const assetScore = calcPrecisePercentile(m.totalAsset * 10000, assetPercentilesData);
+  const netWorthScore = calcPrecisePercentile(m.netWorth * 10000, netWorthPercentilesData);
+
+  // 부채 점수 (부채는 역산: 부채 없으면 100점)
+  const debtRatio = data.monthlyIncome > 0 ? (m.totalDebt / (annualIncome)) : 0; // DTI
+  const debtScore = m.totalDebt === 0 ? 100 : Math.max(0, 100 - debtRatio * 25);
+
+  // 저축률 점수 (저축률 높을수록 좋음)
+  const savingsRateScore = Math.min(100, m.savingsRate * 2.5); // 40% 저축률 = 100점
+
+  // Lycon Score 가중 평균
+  const lyconScore = Math.round(
+    netWorthScore * 0.30 +      // 순자산 30%
+    savingsRateScore * 0.25 +   // 저축률 25%
+    debtScore * 0.20 +          // 부채건전성 20%
+    incomeScore * 0.15 +        // 소득 15%
+    assetScore * 0.10           // 총자산 10%
+  );
+
+  // Lycon 등급
+  const getLyconGrade = (score: number) => {
+    if (score >= 90) return { grade: "S", label: "최상위", color: "#059669" };
+    if (score >= 80) return { grade: "A", label: "우수", color: "#0284c7" };
+    if (score >= 70) return { grade: "B", label: "양호", color: "#2563eb" };
+    if (score >= 60) return { grade: "C", label: "보통", color: "#7c3aed" };
+    if (score >= 50) return { grade: "D", label: "주의", color: "#ea580c" };
+    return { grade: "F", label: "개선필요", color: "#dc2626" };
+  };
+  const lyconGrade = getLyconGrade(lyconScore);
+
+  // 기존 분위 표시용 (UI 호환)
   const getPercentileRange = (value: number, percentiles: ReturnType<typeof estimatePercentiles>, median: number) => {
     if (value >= percentiles.p90) return { idx: 0, display: "상위 10%" };
-    if (value >= percentiles.p80) return { idx: 1, display: "상위 10~20%" };
-    if (value >= percentiles.p70) return { idx: 2, display: "상위 20~30%" };
-    if (value >= percentiles.p60) return { idx: 3, display: "상위 30~40%" };
-    if (value >= median) return { idx: 4, display: "상위 40~50%" };
-    if (value >= percentiles.p40) return { idx: 5, display: "상위 50~60%" };
-    if (value >= percentiles.p30) return { idx: 6, display: "상위 60~70%" };
-    if (value >= percentiles.p20) return { idx: 7, display: "상위 70~80%" };
-    return { idx: 8, display: "상위 80~100%" };
+    if (value >= percentiles.p80) return { idx: 1, display: "상위 20%" };
+    if (value >= percentiles.p70) return { idx: 2, display: "상위 30%" };
+    if (value >= percentiles.p60) return { idx: 3, display: "상위 40%" };
+    if (value >= median) return { idx: 4, display: "상위 50%" };
+    if (value >= percentiles.p40) return { idx: 5, display: "상위 60%" };
+    if (value >= percentiles.p30) return { idx: 6, display: "상위 70%" };
+    if (value >= percentiles.p20) return { idx: 7, display: "상위 80%" };
+    return { idx: 8, display: "상위 90%" };
   };
   const incomePercentile = getPercentileRange(annualIncome, incomePercentiles, ageStats.income.median);
-  const netWorthPercentilesData = estimatePercentiles(ageStats.netWorth.median);
   const netWorthPercentile = getPercentileRange(m.netWorth * 10000, netWorthPercentilesData, ageStats.netWorth.median);
-
-  // 총자산 비교
-  const assetPercentilesData = estimatePercentiles(ageStats.asset.median);
   const assetPercentile = getPercentileRange(m.totalAsset * 10000, assetPercentilesData, ageStats.asset.median);
 
-  // 부채 비교 (부채는 낮을수록 좋으므로 직관적 라벨 사용)
-  const debtPercentilesData = estimatePercentiles(ageStats.debt.median);
+  // 부채 레벨 표시
   const getDebtLevel = (value: number, percentiles: ReturnType<typeof estimatePercentiles>, median: number) => {
     if (value === 0) return { idx: 0, display: "무부채" };
     if (value <= percentiles.p20) return { idx: 1, display: "최소" };
@@ -175,8 +237,8 @@ export function DiagnosisReport({
   const verdictStatus = getVerdictStatus();
 
   // 퍼센타일 트랙 렌더링
-  const renderPercentileTrack = (indicatorIdx: number) => (
-    <div className={styles.percentileTrack}>
+  const renderPercentileTrack = (indicatorIdx: number, reversed: boolean = false) => (
+    <div className={reversed ? styles.percentileTrackReversed : styles.percentileTrack}>
       {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((idx) => (
         <div key={idx} className={styles.percentileSegment}>
           {idx === (9 - indicatorIdx) && <div className={styles.percentileIndicator} />}
@@ -623,41 +685,122 @@ export function DiagnosisReport({
               </div>
             </div>
 
-            {/* 동연령대 비교 */}
+            {/* 동연령대 통계 비교 */}
             <div className={styles.stepCard}>
               <div className={styles.stepHeader}>
-                <span className={styles.stepNumber}>COMPARE</span>
-                <span className={styles.stepTitle}>동연령대 비교 ({ageGroup})</span>
+                <span className={styles.stepNumber}>Statistics</span>
+                <span className={styles.stepTitle}>동연령대 비교</span>
               </div>
-              <div className={styles.percentileGrid}>
-                <div className={styles.percentileItem}>
-                  <div className={styles.percentileItemHeader}>
-                    <span className={styles.percentileItemLabel}>연소득</span>
-                    <span className={styles.percentileItemBadge}>{incomePercentile.display}</span>
+              <div className={styles.stepMainResult}>
+                <div className={styles.stepMainValue}>{netWorthPercentile.display}</div>
+                <div className={styles.stepMainLabel}>{ageGroup} 순자산 기준</div>
+              </div>
+              <div className={styles.statisticsList}>
+                <div className={styles.statisticsRow}>
+                  <span className={styles.statisticsLabel}>연소득</span>
+                  <div className={styles.statisticsTrackWrapper}>
+                    {renderPercentileTrack(incomePercentile.idx)}
+                    <div className={styles.statisticsTrackLabels}>
+                      <span>하위</span>
+                      <span>상위</span>
+                    </div>
                   </div>
-                  {renderPercentileTrack(incomePercentile.idx)}
+                  <span className={styles.statisticsValue}>{incomePercentile.display}</span>
                 </div>
-                <div className={styles.percentileItem}>
-                  <div className={styles.percentileItemHeader}>
-                    <span className={styles.percentileItemLabel}>총자산</span>
-                    <span className={styles.percentileItemBadge}>{assetPercentile.display}</span>
+                <div className={styles.statisticsRow}>
+                  <span className={styles.statisticsLabel}>총자산</span>
+                  <div className={styles.statisticsTrackWrapper}>
+                    {renderPercentileTrack(assetPercentile.idx)}
+                    <div className={styles.statisticsTrackLabels}>
+                      <span>하위</span>
+                      <span>상위</span>
+                    </div>
                   </div>
-                  {renderPercentileTrack(assetPercentile.idx)}
+                  <span className={styles.statisticsValue}>{assetPercentile.display}</span>
                 </div>
-                <div className={styles.percentileItem}>
-                  <div className={styles.percentileItemHeader}>
-                    <span className={styles.percentileItemLabel}>순자산</span>
-                    <span className={styles.percentileItemBadge}>{netWorthPercentile.display}</span>
+                <div className={styles.statisticsRow}>
+                  <span className={styles.statisticsLabel}>순자산</span>
+                  <div className={styles.statisticsTrackWrapper}>
+                    {renderPercentileTrack(netWorthPercentile.idx)}
+                    <div className={styles.statisticsTrackLabels}>
+                      <span>하위</span>
+                      <span>상위</span>
+                    </div>
                   </div>
-                  {renderPercentileTrack(netWorthPercentile.idx)}
+                  <span className={styles.statisticsValue}>{netWorthPercentile.display}</span>
                 </div>
-                <div className={styles.percentileItem}>
-                  <div className={styles.percentileItemHeader}>
-                    <span className={styles.percentileItemLabel}>부채</span>
-                    <span className={styles.percentileItemBadge}>{debtPercentile.display}</span>
+                <div className={styles.statisticsRow}>
+                  <span className={styles.statisticsLabel}>부채</span>
+                  <div className={styles.statisticsTrackWrapper}>
+                    {renderPercentileTrack(debtPercentile.idx, true)}
+                    <div className={styles.statisticsTrackLabels}>
+                      <span>많음</span>
+                      <span>없음</span>
+                    </div>
                   </div>
-                  {renderPercentileTrack(debtPercentile.idx)}
+                  <span className={styles.statisticsValue}>{debtPercentile.display}</span>
                 </div>
+              </div>
+              <div className={styles.statisticsSource}>통계청 가계금융복지조사 2024 기준</div>
+            </div>
+
+            {/* Lycon Score */}
+            <div className={styles.stepCard}>
+              <div className={styles.stepHeader}>
+                <span className={styles.stepNumber}>Score</span>
+                <span className={styles.stepTitle}>Lycon 재무점수</span>
+              </div>
+              <div className={styles.stepMainResult}>
+                <div className={styles.stepMainValue}>{lyconScore}<span className={styles.stepMainUnit}>점</span></div>
+                <div className={styles.stepMainLabel}>동연령대 상위 {100 - lyconScore}% ({lyconGrade.label})</div>
+              </div>
+              <div className={styles.lyconScoreContainer}>
+                <div className={styles.lyconScoreBar}>
+                  <div className={styles.lyconScoreBarFill} style={{ width: `${lyconScore}%` }}></div>
+                  <div className={styles.lyconScoreBarIndicator} style={{ left: `${lyconScore}%` }}></div>
+                </div>
+                <div className={styles.lyconScoreBarLabels}>
+                  <span>하위</span>
+                  <span>상위</span>
+                </div>
+                <div className={styles.lyconScoreBreakdown}>
+                  <div className={styles.lyconScoreItem}>
+                    <span className={styles.lyconScoreItemLabel}>순자산</span>
+                    <div className={styles.lyconScoreItemBar}>
+                      <div className={styles.lyconScoreItemFill} style={{ width: `${netWorthScore}%` }}></div>
+                    </div>
+                    <span className={styles.lyconScoreItemValue}>{Math.round(netWorthScore)}</span>
+                  </div>
+                  <div className={styles.lyconScoreItem}>
+                    <span className={styles.lyconScoreItemLabel}>저축률</span>
+                    <div className={styles.lyconScoreItemBar}>
+                      <div className={styles.lyconScoreItemFill} style={{ width: `${savingsRateScore}%` }}></div>
+                    </div>
+                    <span className={styles.lyconScoreItemValue}>{Math.round(savingsRateScore)}</span>
+                  </div>
+                  <div className={styles.lyconScoreItem}>
+                    <span className={styles.lyconScoreItemLabel}>부채건전성</span>
+                    <div className={styles.lyconScoreItemBar}>
+                      <div className={styles.lyconScoreItemFill} style={{ width: `${debtScore}%` }}></div>
+                    </div>
+                    <span className={styles.lyconScoreItemValue}>{Math.round(debtScore)}</span>
+                  </div>
+                  <div className={styles.lyconScoreItem}>
+                    <span className={styles.lyconScoreItemLabel}>소득</span>
+                    <div className={styles.lyconScoreItemBar}>
+                      <div className={styles.lyconScoreItemFill} style={{ width: `${incomeScore}%` }}></div>
+                    </div>
+                    <span className={styles.lyconScoreItemValue}>{Math.round(incomeScore)}</span>
+                  </div>
+                  <div className={styles.lyconScoreItem}>
+                    <span className={styles.lyconScoreItemLabel}>총자산</span>
+                    <div className={styles.lyconScoreItemBar}>
+                      <div className={styles.lyconScoreItemFill} style={{ width: `${assetScore}%` }}></div>
+                    </div>
+                    <span className={styles.lyconScoreItemValue}>{Math.round(assetScore)}</span>
+                  </div>
+                </div>
+                <div className={styles.lyconScoreSource}>Lycon 데이터 기반 ({ageGroup})</div>
               </div>
             </div>
           </>
@@ -870,6 +1013,9 @@ export function DiagnosisReport({
                       </div>
                       <div className={styles.stepMainLabel}>
                         {gap >= 0 ? "여유분" : "부족분"} (연금 + 금융자산 - 총 필요자금)
+                      </div>
+                      <div className={styles.diagnosisCriteria}>
+                        연금수입 + 현재자산 + 저축여력 기준, 필요자금 대비 {Math.abs(Math.round(gapRatio * 100))}% {gapRatio >= 0 ? "여유" : "부족"}
                       </div>
                     </div>
 
