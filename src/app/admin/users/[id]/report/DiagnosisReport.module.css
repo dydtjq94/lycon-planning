@@ -3197,6 +3197,61 @@
   color: #991b1b;
 }
 
+/* Lycon Membership */
+.membershipIntro {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.membershipIntro p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.membershipTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 20px;
+}
+
+.membershipTimelineItem {
+  display: flex;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.membershipTimelineItem:last-child {
+  border-bottom: none;
+}
+
+.membershipCycle {
+  width: 48px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a365d;
+  flex-shrink: 0;
+}
+
+.membershipService {
+  font-size: 14px;
+  color: #475569;
+}
+
+.membershipButton {
+  width: 100%;
+  padding: 14px;
+  background: #1a365d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 @media print {
   .tabNav,
   .actionButtons {

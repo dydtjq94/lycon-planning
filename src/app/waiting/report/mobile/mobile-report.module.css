@@ -864,30 +864,7 @@
   border-radius: 8px;
 }
 
-.stepNumber {
-  width: 24px;
-  height: 24px;
-  background: #1a365d;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.stepContent {
-  flex: 1;
-}
-
-.stepTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin-bottom: 2px;
-}
+/* 이전 stepNumber 스타일 제거됨 - 하단의 stepNumber 사용 */
 
 .stepDesc {
   font-size: 12px;
@@ -1068,6 +1045,174 @@
 .summaryCardStatus.warning {
   background: #fed7d7;
   color: #c53030;
+}
+
+/* 필요자금 vs 준비자금 비교 */
+.fundingCompareRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.fundingCompareItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.fundingCompareLabel {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.fundingCompareValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.fundingCompareDivider {
+  font-size: 14px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* 핵심 지표 그리드 */
+.keyMetricsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.keyMetricItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.keyMetricLabel {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.keyMetricValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.keyMetricValue.positive {
+  color: #16a34a;
+}
+
+.keyMetricValue.negative {
+  color: #dc2626;
+}
+
+.keyMetricBadge {
+  font-size: 11px;
+  padding: 3px 8px;
+  background: #e2e8f0;
+  color: #475569;
+  border-radius: 10px;
+}
+
+.keyMetricBadge.good {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.keyMetricBadge.caution {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.keyMetricBadge.warning {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Pension Summary */
+.pensionSummaryGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pensionSummaryItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.pensionSummaryBadge {
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  min-width: 36px;
+  text-align: center;
+}
+
+.pensionSummaryLabel {
+  font-size: 14px;
+  color: #475569;
+  flex: 1;
+}
+
+.pensionSummaryValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Funding Breakdown */
+.fundingBreakdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.fundingBreakdownItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.fundingBreakdownLabel {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.fundingBreakdownValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.fundingBreakdownPlus {
+  font-size: 18px;
+  font-weight: 500;
+  color: #94a3b8;
 }
 
 /* Insight Box */
@@ -1325,4 +1470,1353 @@
 .optionTag.free {
   background: #c6f6d5;
   color: #276749;
+}
+
+/* ========================================
+   Admin DiagnosisReport Styles (User Version)
+   - Font sizes increased from admin version
+   ======================================== */
+
+/* Report Container */
+.reportContainer {
+  max-width: 480px;
+  margin: 0 auto;
+  background: #f8f9fa;
+  min-height: 100vh;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Report Header */
+.reportHeader {
+  background: white;
+  padding: 20px;
+  border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.headerTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin: 0 0 4px 0;
+}
+
+.headerSubtitle {
+  font-size: 14px;
+  color: #86868b;
+}
+
+/* Step Card */
+.stepCard {
+  background: white;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.stepHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.stepNumber {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+
+.stepTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.stepMainResult {
+  text-align: center;
+  padding: 20px 0;
+  margin-bottom: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.stepMainValue {
+  font-size: 40px;
+  font-weight: 700;
+  color: #1a365d;
+  line-height: 1.2;
+}
+
+.stepMainValue.positive {
+  color: #16a34a;
+}
+
+.stepMainValue.negative {
+  color: #dc2626;
+}
+
+.stepMainValueLarge {
+  font-size: 46px;
+}
+
+.stepMainLabel {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+.stepMainUnit {
+  font-size: 22px;
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+.stepDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stepDetailRow {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.stepDetailLabel {
+  font-size: 14px;
+  color: #4a5568;
+  flex: 1;
+}
+
+.stepDetailNote {
+  font-size: 12px;
+  color: #94a3b8;
+  min-width: 70px;
+  text-align: right;
+  margin-right: 12px;
+}
+
+.stepDetailValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a365d;
+  min-width: 60px;
+  text-align: right;
+}
+
+.stepFootnote {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+/* Step Calc Box */
+.stepCalcBox {
+  background: #f8fafc;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.stepCalcRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.stepCalcDivider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 8px 0;
+}
+
+.stepCalcTotal {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a365d;
+}
+
+/* Step Section */
+.stepSection {
+  padding: 14px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.stepSection:last-child {
+  margin-bottom: 0;
+}
+
+.stepSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.stepSectionIcon {
+  width: 18px;
+  height: 18px;
+  background: #1a365d;
+  color: white;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stepSectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  flex: 1;
+}
+
+.stepSectionValue {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a365d;
+}
+
+.stepSectionDesc {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-left: 26px;
+  margin-bottom: 10px;
+}
+
+.stepSubDetails {
+  margin-left: 26px;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.stepSubRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #64748b;
+  padding: 3px 0;
+}
+
+.stepSubRow span:last-child {
+  font-weight: 500;
+  color: #475569;
+}
+
+.stepSubNote {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: right;
+  margin-left: 26px;
+  margin-top: 8px;
+}
+
+/* Current Summary Row */
+.currentSummaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.currentSummaryItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.currentSummaryLabel {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.currentSummaryValue {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a365d;
+}
+
+.currentSummaryValue.negative {
+  color: #e53e3e;
+}
+
+.currentSummaryDivider {
+  font-size: 18px;
+  color: #94a3b8;
+  font-weight: 300;
+}
+
+/* Cashflow Chart Container */
+.cashflowChartContainer {
+  height: 180px;
+  margin-bottom: 16px;
+}
+
+/* Expense Compare Container */
+.expenseCompareContainer {
+  height: 160px;
+  margin-bottom: 20px;
+  padding: 12px 0;
+}
+
+/* Expense Section */
+.expenseSection {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.expenseSection:last-child {
+  margin-bottom: 0;
+}
+
+.expenseSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.expenseSectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a5568;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.expenseSectionDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.expenseSectionAmount {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a365d;
+}
+
+.expenseItemsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.expenseItemCard {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.expenseItemDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.expenseItemName {
+  font-size: 13px;
+  color: #4a5568;
+}
+
+.expenseItemValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a365d;
+}
+
+.noExpenseMessage {
+  font-size: 12px;
+  color: #86868b;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* Chart With Legend */
+.chartWithLegend {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.doughnutChartContainer {
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+.chartLegend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  color: #4a5568;
+  min-width: 40px;
+}
+
+.legendValue {
+  font-weight: 600;
+  color: #1a365d;
+  margin-left: auto;
+}
+
+.legendPercent {
+  color: #94a3b8;
+  min-width: 32px;
+  text-align: right;
+}
+
+.legendRate {
+  color: #94a3b8;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* Pension Tower */
+.pensionTowerNew {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pensionFloorNew {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.pensionFloorHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pensionFloorBadge {
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.pensionFloorTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.pensionProductsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.pensionProductNew {
+  text-align: center;
+  padding: 10px 8px;
+  border-radius: 6px;
+}
+
+.pensionProductNew.active {
+  background: #e6f4ea;
+  border: 1px solid #38a169;
+}
+
+.pensionProductNew.inactive {
+  background: white;
+  border: 1px solid #e2e8f0;
+}
+
+.pensionProductName {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.pensionProductValue {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.pensionProductNew.active .pensionProductValue {
+  color: #38a169;
+}
+
+.pensionProductNew.inactive .pensionProductValue {
+  color: #a0aec0;
+}
+
+.pensionFloorValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a365d;
+  margin-bottom: 2px;
+}
+
+.pensionFloorDesc {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.pensionFloorSub {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+/* Statistics List */
+.statisticsList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.statisticsRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.statisticsLabel {
+  width: 56px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.statisticsTrackWrapper {
+  flex: 1;
+}
+
+.statisticsTrackLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #b0b8c4;
+  margin-top: 6px;
+  padding: 0 2px;
+}
+
+.statisticsValue {
+  width: 80px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e3a5f;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.statisticsSource {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Percentile Track */
+.percentileTrack {
+  display: flex;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: visible;
+  position: relative;
+}
+
+.percentileTrackReversed {
+  display: flex;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: visible;
+  position: relative;
+}
+
+.percentileSegment {
+  flex: 1;
+  position: relative;
+}
+
+.percentileIndicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #1e3a5f;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+/* Lycon Score */
+.lyconScoreContainer {
+  text-align: center;
+}
+
+.lyconScoreBar {
+  position: relative;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.lyconScoreBarFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #e2e8f0, #3b82f6);
+  border-radius: 4px;
+}
+
+.lyconScoreBarIndicator {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #1e3a5f;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.lyconScoreBarLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 20px;
+}
+
+.lyconScoreBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.lyconScoreItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lyconScoreItemLabel {
+  width: 70px;
+  font-size: 14px;
+  color: #64748b;
+  text-align: left;
+}
+
+.lyconScoreItemBar {
+  flex: 1;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.lyconScoreItemFill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.lyconScoreItemValue {
+  width: 28px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  text-align: right;
+}
+
+.lyconScoreSource {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Retirement Goal Card */
+.retirementGoalCard {
+  display: flex;
+  background: white;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.retirementGoalItem {
+  flex: 1;
+  text-align: center;
+}
+
+.retirementGoalValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a365d;
+  margin-bottom: 4px;
+}
+
+.retirementGoalLabel {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.retirementGoalDivider {
+  width: 1px;
+  background: #e2e8f0;
+  margin: 0 8px;
+}
+
+/* Cost Detail Header */
+.costDetailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0;
+  padding-bottom: 12px;
+}
+
+.costDetailHeader .cardTitle {
+  flex-shrink: 0;
+  margin-bottom: 0;
+  padding-top: 6px;
+  cursor: pointer;
+}
+
+.costDetailTopRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-end;
+}
+
+.costDetailOptions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.costOptionBtn {
+  padding: 5px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.15s ease;
+}
+
+.costOptionBtn.active {
+  background: #1a365d;
+  border-color: #1a365d;
+  color: white;
+}
+
+.costDetailAmount {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a365d;
+}
+
+.costDetailNote {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.costDetailBottomRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.costDetailDesc {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Chevron */
+.chevron {
+  width: 20px;
+  height: 20px;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chevron.expanded {
+  transform: rotate(180deg);
+}
+
+/* Simple Expand Content */
+.simpleExpandContent {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.simpleList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.simpleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.simpleRow:last-child {
+  border-bottom: none;
+}
+
+.simpleRowLabel {
+  color: #4a5568;
+}
+
+.simpleRowSub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-left: 8px;
+}
+
+.simpleRowValue {
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.simpleSubSection {
+  margin-top: 12px;
+}
+
+.simpleSubTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.simpleColumnHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.simpleColumnLabels {
+  display: flex;
+  gap: 16px;
+}
+
+.simpleTotalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  margin-top: 8px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a365d;
+}
+
+.simpleRowValues {
+  display: flex;
+  gap: 16px;
+}
+
+.simpleRowValueNormal {
+  font-weight: 500;
+  color: #475569;
+}
+
+.simpleRowValuePremium {
+  font-weight: 500;
+  color: #92400e;
+}
+
+/* Housing Table */
+.housingTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.housingTable th,
+.housingTable td {
+  padding: 10px 8px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.housingTable th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.housingTable th:first-child {
+  text-align: left;
+  padding-left: 12px;
+}
+
+.housingTable td:first-child {
+  text-align: left;
+  padding-left: 12px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.housingTableCell {
+  cursor: pointer;
+  color: #475569;
+}
+
+.housingTableCell:hover {
+  background: #f0f7ff;
+}
+
+.housingTableCell.selected {
+  background: #1a365d;
+  color: white;
+  font-weight: 600;
+}
+
+/* Calc Setting Row */
+.calcSettingRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.calcSettingRow:last-child {
+  border-bottom: none;
+}
+
+.calcSettingLabel {
+  font-size: 14px;
+  color: #4a5568;
+  flex-shrink: 0;
+  min-width: 90px;
+  padding-top: 8px;
+}
+
+.calcSettingOptions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.calcSettingBtnWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.calcSettingBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 52px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.calcSettingDesc {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.calcSettingBtn.active {
+  background: #1a365d;
+  border-color: #1a365d;
+  color: white;
+}
+
+/* Diagnosis Badge */
+.diagnosisBadge {
+  display: inline-block;
+  padding: 6px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 20px;
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+}
+
+.diagnosisBadge.critical {
+  background: #b91c1c;
+  color: white;
+}
+
+.diagnosisBadge.caution {
+  background: #ea580c;
+  color: white;
+}
+
+.diagnosisBadge.lacking {
+  background: #d97706;
+  color: white;
+}
+
+.diagnosisBadge.fair {
+  background: #2563eb;
+  color: white;
+}
+
+.diagnosisBadge.sufficient {
+  background: #16a34a;
+  color: white;
+}
+
+.diagnosisBadge.abundant {
+  background: #047857;
+  color: white;
+}
+
+.diagnosisCriteria {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 13px;
+  color: #64748b;
+  text-align: center;
+}
+
+/* Animated Value */
+.animatedValue {
+  transition: all 0.3s ease;
+}
+
+/* Membership */
+.membershipIntro {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.membershipIntro p {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+}
+
+.membershipTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 20px;
+}
+
+.membershipTimelineItem {
+  display: flex;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.membershipTimelineItem:last-child {
+  border-bottom: none;
+}
+
+.membershipCycle {
+  width: 48px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a365d;
+  flex-shrink: 0;
+}
+
+.membershipService {
+  font-size: 15px;
+  color: #475569;
+}
+
+.membershipButton {
+  width: 100%;
+  padding: 14px;
+  background: #1a365d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* No Data Message */
+.noDataMessage {
+  text-align: center;
+  color: #86868b;
+  font-size: 14px;
+  padding: 24px 0;
+}
+
+/* Opinion Content */
+.opinionContent {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #2d3748;
+}
+
+.opinionContent strong {
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.opinionContent em {
+  font-style: italic;
+  color: #3182ce;
+}
+
+.opinionContent u {
+  text-decoration: underline;
+}
+
+/* Settings Bar */
+.settingsBar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: 52px;
+  z-index: 90;
+}
+
+.settingsBarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+}
+
+.settingsBarBtn:hover {
+  background: #f1f5f9;
+}
+
+.settingsBarBtn svg {
+  color: #64748b;
+}
+
+/* Bottom Sheet */
+.bottomSheetOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bottomSheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px 16px 0 0;
+  z-index: 1001;
+  transform: translateY(100%);
+  transition: transform 0.3s ease-out;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bottomSheet.open {
+  transform: translateY(0);
+}
+
+.bottomSheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e5e5;
+  flex-shrink: 0;
+}
+
+.bottomSheetTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.bottomSheetClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.bottomSheetClose:hover {
+  background: #f1f5f9;
+}
+
+.bottomSheetContent {
+  padding: 16px 20px 32px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Sheet Setting Row */
+.sheetSettingRow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.sheetSettingRow:last-child {
+  border-bottom: none;
+}
+
+.sheetSettingLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.sheetSettingOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sheetOptionBtn {
+  padding: 8px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sheetOptionBtn:hover {
+  background: #f1f5f9;
+}
+
+.sheetOptionBtn.active {
+  background: #3182ce;
+  border-color: #3182ce;
+  color: white;
 }

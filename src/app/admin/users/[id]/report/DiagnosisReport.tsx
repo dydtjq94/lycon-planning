@@ -1562,17 +1562,56 @@ export function DiagnosisReport({
 
         {/* ===== 종합소견 탭 ===== */}
         {activeTab === "opinion" && (
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>전문가 소견</h3>
-            {opinion ? (
-              <div
-                className={styles.opinionContent}
-                dangerouslySetInnerHTML={{ __html: parseMarkdown(opinion) }}
-              />
-            ) : (
-              <div className={styles.noDataMessage}>담당자 소견이 아직 작성되지 않았습니다.</div>
-            )}
-          </div>
+          <>
+            <div className={styles.stepCard}>
+              <div className={styles.stepHeader}>
+                <span className={styles.stepNumber}>Opinion</span>
+                <span className={styles.stepTitle}>전문가 소견</span>
+              </div>
+              {opinion ? (
+                <div
+                  className={styles.opinionContent}
+                  dangerouslySetInnerHTML={{ __html: parseMarkdown(opinion) }}
+                />
+              ) : (
+                <div className={styles.noDataMessage}>담당자 소견이 아직 작성되지 않았습니다.</div>
+              )}
+            </div>
+
+            {/* Lycon Membership 소개 */}
+            <div className={styles.stepCard}>
+              <div className={styles.stepHeader}>
+                <span className={styles.stepNumber}>Membership</span>
+                <span className={styles.stepTitle}>Lycon 멤버십</span>
+              </div>
+              <div className={styles.membershipIntro}>
+                <p>주기적인 관리로 원활한 재무 목표 달성</p>
+              </div>
+              <div className={styles.membershipTimeline}>
+                <div className={styles.membershipTimelineItem}>
+                  <span className={styles.membershipCycle}>주간</span>
+                  <span className={styles.membershipService}>맞춤 투자 전략 서한</span>
+                </div>
+                <div className={styles.membershipTimelineItem}>
+                  <span className={styles.membershipCycle}>월간</span>
+                  <span className={styles.membershipService}>가계부 정리</span>
+                </div>
+                <div className={styles.membershipTimelineItem}>
+                  <span className={styles.membershipCycle}>분기</span>
+                  <span className={styles.membershipService}>포트폴리오 리밸런싱</span>
+                </div>
+                <div className={styles.membershipTimelineItem}>
+                  <span className={styles.membershipCycle}>반기</span>
+                  <span className={styles.membershipService}>자산 진단 리포트</span>
+                </div>
+                <div className={styles.membershipTimelineItem}>
+                  <span className={styles.membershipCycle}>연간</span>
+                  <span className={styles.membershipService}>종합 재무 컨설팅</span>
+                </div>
+              </div>
+              <button className={styles.membershipButton}>멤버십 알아보기</button>
+            </div>
+          </>
         )}
       </div>
     </div>
