@@ -76,8 +76,9 @@
 
 /* 설정 바 */
 .settingsBar {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
   padding: 12px 16px;
   background: white;
   border-bottom: 1px solid #e5e5e5;
@@ -87,23 +88,28 @@
 }
 
 .settingsBarBtn {
-  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
-  background: white;
-  border-radius: 20px;
-  font-size: 13px;
-  color: #64748b;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
   cursor: pointer;
 }
 
 .settingsBarBtn:hover {
-  background: #f8fafc;
+  background: #f1f5f9;
 }
 
 .settingsBarBtn.active {
-  background: #1a365d;
-  border-color: #1a365d;
-  color: white;
+  background: #e0f2fe;
+  border-color: #0ea5e9;
+  color: #0369a1;
 }
 
 /* 설정 패널 */

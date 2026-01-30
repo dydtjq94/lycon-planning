@@ -2030,7 +2030,7 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                       legend: { display: false },
                       tooltip: {
                         callbacks: {
-                          label: (ctx) => `${ctx.parsed.y.toLocaleString()}만원`,
+                          label: (ctx) => `${(ctx.parsed.y ?? 0).toLocaleString()}만원`,
                           title: (ctx) => `${ctx[0].label}년 후`,
                         },
                       },
