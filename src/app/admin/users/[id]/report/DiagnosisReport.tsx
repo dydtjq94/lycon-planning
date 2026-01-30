@@ -997,15 +997,20 @@ export function DiagnosisReport({
                   <div className={styles.pensionFloorDesc}>현재 잔액</div>
                   <div className={styles.pensionFloorSub}>
                     {(() => {
-                      // 동적으로 은퇴시점 예상 잔액 계산 (선택한 수익률 반영)
-                      const pensionGrowthRate =
-                        calcParams.financialGrowthRate || 0.04;
-                      const currentBalance =
-                        data.retirementPensionBalanceSelf +
-                        data.retirementPensionBalanceSpouse;
+                      // 기준 수익률 (5%)로 계산된 값을 선택한 수익률로 재조정
+                      const baseRate = 0.05;
+                      const selectedRate = calcParams.financialGrowthRate || 0.05;
+                      const baseProjected =
+                        data.retirementPensionBalanceAtRetireSelf +
+                        data.retirementPensionBalanceAtRetireSpouse;
+
+                      // 수익률 변경에 따른 비례 조정
+                      // (1 + selectedRate)^years / (1 + baseRate)^years
+                      const rateAdjustment =
+                        Math.pow(1 + selectedRate, m.yearsToRetirement) /
+                        Math.pow(1 + baseRate, m.yearsToRetirement);
                       const projectedBalance = Math.round(
-                        currentBalance *
-                          Math.pow(1 + pensionGrowthRate, m.yearsToRetirement),
+                        baseProjected * rateAdjustment,
                       );
                       return (
                         <>은퇴시 예상: 약 {formatMoney(projectedBalance)}</>
