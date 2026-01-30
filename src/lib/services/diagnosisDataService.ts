@@ -310,11 +310,20 @@ export function convertPrepDataToDiagnosisData(
     .filter((s) => cashTypes.includes(s.type))
     .reduce((sum, s) => sum + (s.currentBalance || 0), 0) / 10000;
 
-  // 투자 자산 (억원) - prep_data.investment 배열
+  // 투자 자산 (억원) - prep_data.investment (배열 또는 객체 형식 지원)
   const investmentData = prepData.investment;
-  const investmentAsset = Array.isArray(investmentData)
-    ? investmentData.reduce((sum, i) => sum + (i.currentBalance || 0), 0) / 10000
-    : 0;
+  let investmentAsset = 0;
+
+  if (Array.isArray(investmentData)) {
+    // 새 배열 형식: [{type, currentBalance, ...}, ...]
+    investmentAsset = investmentData.reduce((sum, i) => sum + (i.currentBalance || 0), 0) / 10000;
+  } else if (investmentData && typeof investmentData === "object") {
+    // 구 객체 형식: {gold: {balance: 1100}, stock: {balance: 1050}, ...}
+    for (const key of Object.keys(investmentData)) {
+      const item = (investmentData as Record<string, { balance?: number }>)[key];
+      investmentAsset += (item?.balance || 0) / 10000;
+    }
+  }
 
   // 연금 자산 (억원) - 퇴직연금 + 개인연금 현재 잔액
   const retirementData = prepData.retirementPension;
@@ -516,8 +525,21 @@ export function convertPrepDataToDiagnosisData(
       });
     });
 
-  // 3. 투자 자산 (개별 항목) - investment 배열
+  // 3. 투자 자산 (개별 항목) - investment (배열 또는 객체 형식 지원)
+  // 구 객체 형식의 투자 타입 레이블
+  const investmentTypeLabels: Record<string, string> = {
+    gold: "금",
+    stock: "주식",
+    domestic_stock: "국내주식",
+    foreign_stock: "해외주식",
+    fund: "펀드",
+    bond: "채권",
+    crypto: "코인",
+    other: "기타투자",
+  };
+
   if (Array.isArray(investmentData)) {
+    // 새 배열 형식
     investmentData
       .filter((i) => (i.currentBalance || 0) > 0)
       .forEach((i) => {
@@ -529,6 +551,21 @@ export function convertPrepDataToDiagnosisData(
           color: getNextColor(),
         });
       });
+  } else if (investmentData && typeof investmentData === "object") {
+    // 구 객체 형식: {gold: {balance: 1100}, stock: {balance: 1050}, ...}
+    for (const key of Object.keys(investmentData)) {
+      const item = (investmentData as Record<string, { balance?: number }>)[key];
+      const balance = item?.balance || 0;
+      if (balance > 0) {
+        const label = investmentTypeLabels[key] || key;
+        assetItems.push({
+          key: `investment-${key}`,
+          label,
+          amount: balance / 10000,
+          color: getNextColor(),
+        });
+      }
+    }
   }
 
   // 4. 연금 자산 (개별 항목)

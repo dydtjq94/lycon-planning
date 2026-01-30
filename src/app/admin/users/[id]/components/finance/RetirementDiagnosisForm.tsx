@@ -109,8 +109,16 @@ interface PrepRetirementGoals {
   lifeExpectancy?: number; // 기대수명 (기본 90)
 }
 
-// investment 객체 타입 (실제 DB 구조)
-interface PrepInvestmentData {
+// investment 타입: 배열 형식 (새 형식) 또는 객체 형식 (구 형식)
+interface PrepInvestmentItem {
+  id?: string;
+  type: string;
+  title?: string;
+  owner: "self" | "spouse";
+  currentBalance: number;
+}
+
+interface PrepInvestmentDataOld {
   securities?: {
     balance: number;
     investmentTypes?: string[];
@@ -122,6 +130,8 @@ interface PrepInvestmentData {
     balance: number;
   };
 }
+
+type PrepInvestmentData = PrepInvestmentItem[] | PrepInvestmentDataOld;
 
 interface PrepDataStore {
   family?: PrepFamilyMember[];
@@ -277,35 +287,50 @@ export function RetirementDiagnosisForm({
       // savings 배열 로드
       const loadedSavings = (loaded.savings || []).map((s, idx) => ({ ...s, id: s.id || `savings-${idx}` }));
 
-      // investment 객체를 배열로 변환
+      // investment 로드 (배열 형식 또는 객체 형식 지원)
       const loadedInvestment: PrepSavingsItem[] = [];
       if (loaded.investment) {
-        if (loaded.investment.securities?.balance) {
-          loadedInvestment.push({
-            id: `investment-securities`,
-            type: "securities",
-            title: "증권",
-            owner: "self",
-            currentBalance: loaded.investment.securities.balance,
+        if (Array.isArray(loaded.investment)) {
+          // 새 배열 형식: [{type, currentBalance, ...}, ...]
+          loaded.investment.forEach((item, idx) => {
+            loadedInvestment.push({
+              id: item.id || `investment-${idx}`,
+              type: item.type,
+              title: item.title || INVESTMENT_TYPE_LABELS[item.type] || item.type,
+              owner: item.owner || "self",
+              currentBalance: item.currentBalance || 0,
+            });
           });
-        }
-        if (loaded.investment.crypto?.balance) {
-          loadedInvestment.push({
-            id: `investment-crypto`,
-            type: "crypto",
-            title: "암호화폐",
-            owner: "self",
-            currentBalance: loaded.investment.crypto.balance,
-          });
-        }
-        if (loaded.investment.gold?.balance) {
-          loadedInvestment.push({
-            id: `investment-gold`,
-            type: "gold",
-            title: "금",
-            owner: "self",
-            currentBalance: loaded.investment.gold.balance,
-          });
+        } else {
+          // 구 객체 형식: {securities: {...}, crypto: {...}, gold: {...}}
+          const oldFormat = loaded.investment as PrepInvestmentDataOld;
+          if (oldFormat.securities?.balance) {
+            loadedInvestment.push({
+              id: `investment-securities`,
+              type: "domestic_stock",
+              title: "증권",
+              owner: "self",
+              currentBalance: oldFormat.securities.balance,
+            });
+          }
+          if (oldFormat.crypto?.balance) {
+            loadedInvestment.push({
+              id: `investment-crypto`,
+              type: "crypto",
+              title: "암호화폐",
+              owner: "self",
+              currentBalance: oldFormat.crypto.balance,
+            });
+          }
+          if (oldFormat.gold?.balance) {
+            loadedInvestment.push({
+              id: `investment-gold`,
+              type: "gold",
+              title: "금",
+              owner: "self",
+              currentBalance: oldFormat.gold.balance,
+            });
+          }
         }
       }
       setSavingsItems([...loadedSavings, ...loadedInvestment]);
@@ -410,26 +435,24 @@ export function RetirementDiagnosisForm({
       const savingsOnly = savingsItems.filter((s) => ["checking", "savings", "deposit"].includes(s.type));
       const investmentOnly = savingsItems.filter((s) => !["checking", "savings", "deposit"].includes(s.type));
 
-      // 투자 배열을 객체로 변환
-      const investmentData: PrepInvestmentData = {};
-      investmentOnly.forEach((item) => {
-        if (item.type === "securities") {
-          investmentData.securities = { balance: item.currentBalance, investmentTypes: [] };
-        } else if (item.type === "crypto") {
-          investmentData.crypto = { balance: item.currentBalance };
-        } else if (item.type === "gold") {
-          investmentData.gold = { balance: item.currentBalance };
-        }
-      });
+      // 투자를 배열 형식으로 저장 (모든 타입 지원)
+      const investmentArray: PrepInvestmentItem[] = investmentOnly.map((item) => ({
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        owner: item.owner,
+        currentBalance: item.currentBalance,
+      }));
 
       const newPrepData = {
         ...prepData,
         savings: savingsOnly,
-        investment: Object.keys(investmentData).length > 0 ? investmentData : undefined,
+        investment: investmentArray.length > 0 ? investmentArray : undefined,
       };
       await savePrepData(newPrepData);
       setEditingSection(null);
-    } catch {
+    } catch (error) {
+      console.error("저장 실패:", error);
       alert("저장 실패");
     } finally {
       setSaving(false);
@@ -1671,7 +1694,34 @@ export function RetirementDiagnosisForm({
             {editingSection === "savings" ? (
               <div className={styles.headerActions}>
                 <button className={styles.cancelBtn} onClick={() => {
-                  setSavingsItems((prepData.savings || []).map((s, idx) => ({ ...s, id: s.id || `savings-${idx}` })));
+                  // 저축 + 투자 모두 원래 데이터로 복구
+                  const restoredSavings = (prepData.savings || []).map((s, idx) => ({ ...s, id: s.id || `savings-${idx}` }));
+                  const restoredInvestment: PrepSavingsItem[] = [];
+                  if (prepData.investment) {
+                    if (Array.isArray(prepData.investment)) {
+                      prepData.investment.forEach((item, idx) => {
+                        restoredInvestment.push({
+                          id: item.id || `investment-${idx}`,
+                          type: item.type,
+                          title: item.title || INVESTMENT_TYPE_LABELS[item.type] || item.type,
+                          owner: item.owner || "self",
+                          currentBalance: item.currentBalance || 0,
+                        });
+                      });
+                    } else {
+                      const oldFormat = prepData.investment as PrepInvestmentDataOld;
+                      if (oldFormat.securities?.balance) {
+                        restoredInvestment.push({ id: `investment-securities`, type: "domestic_stock", title: "증권", owner: "self", currentBalance: oldFormat.securities.balance });
+                      }
+                      if (oldFormat.crypto?.balance) {
+                        restoredInvestment.push({ id: `investment-crypto`, type: "crypto", title: "암호화폐", owner: "self", currentBalance: oldFormat.crypto.balance });
+                      }
+                      if (oldFormat.gold?.balance) {
+                        restoredInvestment.push({ id: `investment-gold`, type: "gold", title: "금", owner: "self", currentBalance: oldFormat.gold.balance });
+                      }
+                    }
+                  }
+                  setSavingsItems([...restoredSavings, ...restoredInvestment]);
                   setEditingSection(null);
                 }}>취소</button>
                 <button className={styles.saveBtn} onClick={handleSaveSavings} disabled={saving}>
