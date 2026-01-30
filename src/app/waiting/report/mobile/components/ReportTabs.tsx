@@ -1035,7 +1035,8 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                     {(() => {
                       // 기준 수익률 (5%)로 계산된 값을 선택한 수익률로 재조정
                       const baseRate = 0.05;
-                      const selectedRate = calcParams.financialGrowthRate || 0.05;
+                      const selectedRate =
+                        calcParams.financialGrowthRate || 0.05;
                       const baseProjected =
                         data.retirementPensionBalanceAtRetireSelf +
                         data.retirementPensionBalanceAtRetireSpouse;
@@ -1299,11 +1300,20 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
               const medicalCost = costOptions.medical
                 ? additionalCosts.medical.grandTotal
                 : 0;
-              const housingCost = costOptions.housing
+              // 주거비는 현재 가격으로 제공됨 (다른 비용들은 이미 미래가치로 계산됨)
+              const housingCostCurrent = costOptions.housing
                 ? additionalCosts.housing[costOptions.housing.areaIndex]?.tiers[
                     costOptions.housing.tierIndex
                   ]?.price || 0
                 : 0;
+              // 은퇴 시점 주거비 = 현재 가격 * 물가상승률
+              const housingInflationFactor = Math.pow(
+                1 + calcParams.inflationRate,
+                m.yearsToRetirement,
+              );
+              const housingCost = Math.round(
+                housingCostCurrent * housingInflationFactor,
+              );
 
               const additionalCostTotal =
                 educationCost +
@@ -1752,7 +1762,8 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                                   </div>
                                   <div className={styles.assetGoalRight}>
                                     <div className={styles.assetGoalDesc}>
-                                      수익률 연 5%
+                                      연 {Math.round(100 / m.retirementYears)}%
+                                      인출
                                     </div>
                                     <div className={styles.assetGoalValue}>
                                       {needPension}억
@@ -1828,7 +1839,8 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                                   </div>
                                   <div className={styles.assetGoalRight}>
                                     <div className={styles.assetGoalDesc}>
-                                      수익률 연 5%
+                                      연 {Math.round(100 / m.retirementYears)}%
+                                      인출
                                     </div>
                                     <div
                                       className={styles.assetGoalValue}
@@ -1920,9 +1932,8 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                     const presentConsumer = Math.round(
                       consumerGoodsCost / presentValueFactor,
                     );
-                    const presentHousing = Math.round(
-                      housingCost / presentValueFactor,
-                    );
+                    // 주거비는 이미 현재 가격이므로 그대로 사용
+                    const presentHousing = housingCostCurrent;
 
                     return (
                       <div className={styles.stepCard}>
@@ -2203,7 +2214,7 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                           혼자서는 못합니다. 아니, <strong>안 합니다.</strong>
                         </p>
                         <p>
-                          Lycon 자산 관리사에게 생각 없이 관리받으세요.
+                          Lycon 자산 관리사에게 고민 없이 관리받으세요.
                           <br />
                           잊고 있다 보면, 때가 되면 알아서 액션하도록
                           도와드립니다.

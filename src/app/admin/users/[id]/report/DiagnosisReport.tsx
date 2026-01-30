@@ -999,7 +999,8 @@ export function DiagnosisReport({
                     {(() => {
                       // 기준 수익률 (5%)로 계산된 값을 선택한 수익률로 재조정
                       const baseRate = 0.05;
-                      const selectedRate = calcParams.financialGrowthRate || 0.05;
+                      const selectedRate =
+                        calcParams.financialGrowthRate || 0.05;
                       const baseProjected =
                         data.retirementPensionBalanceAtRetireSelf +
                         data.retirementPensionBalanceAtRetireSpouse;
@@ -1280,11 +1281,20 @@ export function DiagnosisReport({
               const medicalCost = costOptions.medical
                 ? additionalCosts.medical.grandTotal
                 : 0;
-              const housingCost = costOptions.housing
+              // 주거비는 현재 가격으로 제공됨 (다른 비용들은 이미 미래가치로 계산됨)
+              const housingCostCurrent = costOptions.housing
                 ? additionalCosts.housing[costOptions.housing.areaIndex]?.tiers[
                     costOptions.housing.tierIndex
                   ]?.price || 0
                 : 0;
+              // 은퇴 시점 주거비 = 현재 가격 * 물가상승률
+              const housingInflationFactor = Math.pow(
+                1 + calcParams.inflationRate,
+                m.yearsToRetirement,
+              );
+              const housingCost = Math.round(
+                housingCostCurrent * housingInflationFactor,
+              );
 
               const additionalCostTotal =
                 educationCost +
@@ -1740,7 +1750,8 @@ export function DiagnosisReport({
                                   </div>
                                   <div className={styles.assetGoalRight}>
                                     <div className={styles.assetGoalDesc}>
-                                      수익률 연 5%
+                                      연 {Math.round(100 / m.retirementYears)}%
+                                      인출
                                     </div>
                                     <div className={styles.assetGoalValue}>
                                       {needPension}억
@@ -1816,7 +1827,8 @@ export function DiagnosisReport({
                                   </div>
                                   <div className={styles.assetGoalRight}>
                                     <div className={styles.assetGoalDesc}>
-                                      수익률 연 5%
+                                      연 {Math.round(100 / m.retirementYears)}%
+                                      인출
                                     </div>
                                     <div
                                       className={styles.assetGoalValue}
@@ -1908,9 +1920,8 @@ export function DiagnosisReport({
                     const presentConsumer = Math.round(
                       consumerGoodsCost / presentValueFactor,
                     );
-                    const presentHousing = Math.round(
-                      housingCost / presentValueFactor,
-                    );
+                    // 주거비는 이미 현재 가격이므로 그대로 사용
+                    const presentHousing = housingCostCurrent;
 
                     return (
                       <div className={styles.stepCard}>
@@ -2191,7 +2202,7 @@ export function DiagnosisReport({
                           혼자서는 못합니다. 아니, <strong>안 합니다.</strong>
                         </p>
                         <p>
-                          Lycon 자산 관리사에게 생각 없이 관리받으세요.
+                          Lycon 자산 관리사에게 고민 없이 관리받으세요.
                           <br />
                           잊고 있다 보면, 때가 되면 알아서 액션하도록
                           도와드립니다.
@@ -2823,6 +2834,123 @@ export function DiagnosisReport({
                       억
                     </span>
                   </div>
+                </div>
+
+                {/* 주거 */}
+                <div className={styles.card}>
+                  <div className={styles.costDetailHeader}>
+                    <h3
+                      className={styles.cardTitle}
+                      onClick={() => toggleSection("housing")}
+                    >
+                      주거
+                    </h3>
+                    <div className={styles.costDetailTopRow}>
+                      <div className={styles.costDetailOptions}>
+                        <button
+                          className={`${styles.costOptionBtn} ${costOptions.housing === null ? styles.active : ""}`}
+                          onClick={() =>
+                            setCostOptions((p) => ({ ...p, housing: null }))
+                          }
+                        >
+                          선택 안함
+                        </button>
+                        {costOptions.housing && (
+                          <span className={styles.costDetailNote}>
+                            {
+                              additionalCosts.housing[
+                                costOptions.housing.areaIndex
+                              ]?.area
+                            }{" "}
+                            {
+                              additionalCosts.housing[
+                                costOptions.housing.areaIndex
+                              ]?.tiers[costOptions.housing.tierIndex]?.tier
+                            }
+                          </span>
+                        )}
+                      </div>
+                      <svg
+                        className={`${styles.chevron} ${expandedSections["housing"] ? styles.expanded : ""}`}
+                        onClick={() => toggleSection("housing")}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className={styles.costDetailBottomRow}>
+                    <span className={styles.costDetailDesc}>
+                      은퇴 후 예상 주거비 (전용 84m 기준)
+                    </span>
+                    <span
+                      className={`${styles.costDetailAmount} ${styles.animatedValue}`}
+                    >
+                      {costOptions.housing
+                        ? formatBillion(
+                            (additionalCosts.housing[
+                              costOptions.housing.areaIndex
+                            ]?.tiers[costOptions.housing.tierIndex]?.price ||
+                              0) / 10000,
+                          )
+                        : "0"}
+                      억
+                    </span>
+                  </div>
+                  {expandedSections["housing"] && (
+                    <div className={styles.simpleExpandContent}>
+                      <table className={styles.housingTable}>
+                        <thead>
+                          <tr>
+                            <th>지역</th>
+                            {additionalCosts.housing[0]?.tiers.map(
+                              (tier, idx) => (
+                                <th key={idx}>{tier.tier}</th>
+                              ),
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {additionalCosts.housing.map((area, areaIdx) => (
+                            <tr key={areaIdx}>
+                              <td>
+                                <div>{area.area}</div>
+                                <div className={styles.housingAreaDesc}>
+                                  {area.description}
+                                </div>
+                              </td>
+                              {area.tiers.map((tier, tierIdx) => (
+                                <td
+                                  key={tierIdx}
+                                  className={`${styles.housingTableCell} ${
+                                    costOptions.housing?.areaIndex ===
+                                      areaIdx &&
+                                    costOptions.housing?.tierIndex === tierIdx
+                                      ? styles.selected
+                                      : ""
+                                  }`}
+                                  onClick={() =>
+                                    setCostOptions((p) => ({
+                                      ...p,
+                                      housing: {
+                                        areaIndex: areaIdx,
+                                        tierIndex: tierIdx,
+                                      },
+                                    }))
+                                  }
+                                >
+                                  {tier.priceDisplay}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </>
             );
