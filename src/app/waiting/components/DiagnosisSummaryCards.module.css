@@ -284,3 +284,94 @@
     background-position: 200px 0;
   }
 }
+
+/* Lycon Score 프로그레스바 */
+.lyconScoreContainer {
+  margin-top: 12px;
+}
+
+.lyconScoreBar {
+  position: relative;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 5px;
+  overflow: visible;
+}
+
+.lyconScoreBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #22c55e);
+  border-radius: 5px;
+  transition: width 0.5s ease-out;
+}
+
+.lyconScoreBarIndicator {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  background: white;
+  border: 3px solid #1e293b;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.lyconScoreBarLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.lyconScoreBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.lyconScoreItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lyconScoreItemLabel {
+  width: 70px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.lyconScoreItemBar {
+  flex: 1;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.lyconScoreItemFill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 3px;
+  transition: width 0.5s ease-out;
+}
+
+.lyconScoreItemValue {
+  width: 28px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  text-align: right;
+}
+
+.lyconScoreSource {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #94a3b8;
+  text-align: center;
+}

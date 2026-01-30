@@ -1583,15 +1583,23 @@
 
 .stepDetailRow {
   display: flex;
-  align-items: center;
-  padding: 10px 12px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
   background: #f8f9fa;
-  border-radius: 6px;
+  border-radius: 8px;
+}
+
+.stepDetailTop {
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 .stepDetailLabel {
   font-size: 14px;
-  color: #4a5568;
+  font-weight: 500;
+  color: #374151;
   flex: 1;
 }
 
@@ -1603,12 +1611,72 @@
   margin-right: 12px;
 }
 
+.stepDetailPersonalized {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
 .stepDetailValue {
   font-size: 15px;
   font-weight: 600;
   color: #1a365d;
   min-width: 60px;
   text-align: right;
+}
+
+.stepDetailValues {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 80px;
+}
+
+.stepDetailValueFuture {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.stepDetailValuePresent {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0369a1;
+}
+
+/* Extra Step Comparison */
+.extraValueComparison {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.extraValueItem {
+  flex: 1;
+  padding: 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.extraValueLabel {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.extraValueAmount {
+  font-size: 20px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.extraValueNote {
+  font-size: 11px;
+  color: #94a3b8;
 }
 
 .stepFootnote {
@@ -1649,6 +1717,396 @@
   font-size: 15px;
   font-weight: 600;
   color: #1a365d;
+}
+
+.stepCalcNote {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* Present Value Box */
+.presentValueBox {
+  margin-top: 16px;
+  padding: 14px;
+  background: #fefce8;
+  border-radius: 8px;
+  border: 1px solid #fef08a;
+}
+
+.presentValueLabel {
+  font-size: 13px;
+  color: #713f12;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.presentValueChart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.presentValueItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.presentValueItemLabel {
+  font-size: 12px;
+  color: #92400e;
+}
+
+.presentValueItemValue {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.presentValueArrow {
+  font-size: 20px;
+  color: #ca8a04;
+  font-weight: 500;
+}
+
+.presentValueNote {
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 12px;
+}
+
+/* Timeline Chart */
+.timelineChart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timelineRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timelineLabel {
+  width: 70px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.timelineYear {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a365d;
+}
+
+.timelineDesc {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.timelineBarContainer {
+  flex: 1;
+  height: 28px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.timelineBar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.timelineValue {
+  width: 90px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Goal Section */
+.goalMainValue {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.goalMainLabel {
+  display: block;
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.goalMainAmount {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  color: #dc2626;
+  margin-bottom: 4px;
+}
+
+.goalMainSub {
+  display: block;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.goalExplanation {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.goalExplanationRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.goalExplanationNote {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.goalAssetTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a365d;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.goalAssetOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.goalAssetOption {
+  padding: 14px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border: 1px solid #bae6fd;
+  text-align: center;
+}
+
+.goalAssetValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0369a1;
+  margin-bottom: 4px;
+}
+
+.goalAssetName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 2px;
+}
+
+.goalAssetDesc {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Asset Goal */
+.assetGoalMessage {
+  text-align: center;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.assetGoalMessage strong {
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.assetGoalList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.assetGoalRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.assetGoalRow:first-child {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.assetGoalName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.assetGoalRight {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.assetGoalDesc {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.assetGoalValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e40af;
+  min-width: 55px;
+  text-align: right;
+}
+
+.assetGoalRow:first-child .assetGoalValue {
+  color: #1e40af;
+}
+
+.assetGoalExample {
+  padding: 16px 20px;
+  background: #f0f9ff;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #0369a1;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.assetGoalExample strong {
+  font-weight: 600;
+  color: #1e40af;
+}
+
+/* Notice Section */
+.noticeMessage {
+  text-align: center;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+/* But Card - 추가 고려사항 */
+.butCardContent {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.butCardQuestion {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0 0 12px 0;
+}
+
+.butCardAnswer {
+  font-size: 16px;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.butCardAnswer strong {
+  color: #0369a1;
+}
+
+.butCardList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.butCardList span {
+  padding: 6px 14px;
+  background: #f1f5f9;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.deficitTitle {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a365d;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.deficitOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.deficitOption {
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.deficitOptionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.deficitOptionName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.deficitOptionRate {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.deficitOptionValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a365d;
+}
+
+.surplusMessage {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f0fdf4;
+  border-radius: 8px;
+  border: 1px solid #bbf7d0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #166534;
 }
 
 /* Step Section */
@@ -2858,10 +3316,169 @@
   margin-bottom: 0;
 }
 
-.guideSubtitle {
+/* Lycon 소개 */
+.lyconIntro {
+  text-align: center;
+}
+
+.lyconSection {
+  margin-bottom: 20px;
+}
+
+.lyconParagraph {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.7;
+  margin: 0 0 10px 0;
+}
+
+.lyconParagraph strong {
+  color: #1e293b;
+}
+
+.lyconHighlight {
+  font-size: 15px;
+  color: #1e293b;
+  line-height: 1.6;
+  margin: 0 0 12px 0;
+}
+
+.lyconHighlight strong {
+  color: #0369a1;
+}
+
+.lyconChallenges {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.lyconChallenges span {
+  font-size: 13px;
+  color: #64748b;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+
+.lyconSubNote {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 12px 0 0 0;
+}
+
+.lyconSubNote strong {
+  color: #0369a1;
+}
+
+.lyconServices {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 20px;
+}
+
+.lyconServiceItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.lyconServiceItem:first-child {
+  padding-top: 0;
+}
+
+.lyconServiceItem:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.lyconServiceNum {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0ea5e9;
+  min-width: 20px;
+  padding-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+.lyconServiceContent {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  text-align: left;
+}
+
+.lyconServiceContent strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.lyconServiceContent span {
   font-size: 13px;
   color: #94a3b8;
+  line-height: 1.5;
+}
+
+.lyconCta {
+  margin-bottom: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.lyconCta p {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 8px 0;
+}
+
+.lyconCta p:last-child {
+  margin-bottom: 0;
+}
+
+.lyconCta strong {
+  color: #334155;
+}
+
+.lyconBelief {
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.lyconBeliefTitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  margin: 0 0 8px 0;
+}
+
+.lyconBeliefText {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 8px 0;
+}
+
+.lyconBeliefText:last-child {
+  margin-bottom: 0;
+}
+
+.guideSubtitle {
+  font-size: 13px;
+  color: #64748b;
   margin-bottom: 12px;
+}
+
+.guideSubtitleNote {
+  font-size: 11px;
+  color: #94a3b8;
 }
 
 .guideTipBox {
@@ -2940,7 +3557,36 @@
   display: block;
   font-size: 16px;
   font-weight: 700;
-  color: #805ad5;
+  color: #1e293b;
+}
+
+.compoundAmounts {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.compoundAmountItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.compoundAmountValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.compoundAmountYear {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.compoundChartContainer {
+  height: 120px;
+  margin: 0 0 12px 0;
 }
 
 /* 인플레이션 */
@@ -3004,4 +3650,168 @@
   font-size: 11px;
   color: #64748b;
   line-height: 1.4;
+}
+
+/* ===== 은퇴 시점 현금흐름 차트 ===== */
+.cashflowChart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cashflowRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cashflowLabel {
+  width: 60px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.cashflowBarContainer {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  height: 36px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.cashflowBarIncome {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #3182ce;
+  min-width: fit-content;
+  padding: 0 12px;
+}
+
+.cashflowBarExpense {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #c9a227;
+  min-width: fit-content;
+  padding: 0 12px;
+}
+
+.cashflowBarDeficit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(
+    45deg,
+    #fee2e2,
+    #fee2e2 4px,
+    #fecaca 4px,
+    #fecaca 8px
+  );
+  border: 1px dashed #ef4444;
+  border-left: none;
+  min-width: fit-content;
+  padding: 0 12px;
+}
+
+.cashflowBarValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+}
+
+.cashflowBarDeficit .cashflowBarValue {
+  color: #dc2626;
+}
+
+.cashflowDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.cashflowSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cashflowSectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.cashflowDetailRow {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.cashflowDetailLabel {
+  font-size: 13px;
+  color: #475569;
+  flex: 1;
+}
+
+.cashflowDetailNote {
+  font-size: 11px;
+  color: #94a3b8;
+  text-align: right;
+  margin-right: 12px;
+}
+
+.cashflowDetailValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  min-width: 80px;
+  text-align: right;
+}
+
+.cashflowResult {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.cashflowResult.positive {
+  background: #ecfdf5;
+}
+
+.cashflowResult.negative {
+  background: #fef2f2;
+}
+
+.cashflowResultLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.cashflowResultValue {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.cashflowResult.positive .cashflowResultValue {
+  color: #059669;
+}
+
+.cashflowResult.negative .cashflowResultValue {
+  color: #dc2626;
 }

@@ -127,6 +127,7 @@ export interface ChildInfo {
   name: string;
   age: number;
   gender: "male" | "female" | null;
+  birthDate: string | null;  // YYYY-MM-DD 형식
 }
 
 export interface DiagnosisData {
@@ -227,6 +228,7 @@ export function convertPrepDataToDiagnosisData(
         name: child.name || `자녀${idx + 1}`,
         age: child.birth_date ? calculateAge(child.birth_date) : 0,
         gender,
+        birthDate: child.birth_date || null,
       };
     })
     .sort((a, b) => b.age - a.age); // 나이 많은 순 정렬
@@ -699,7 +701,10 @@ export interface DiagnosisMetrics {
   };
 
   // 자금 수급
-  totalDemand: number;
+  totalDemand: number; // 은퇴 후 필요 생활비
+  lifetimeLivingCost: number; // 현재~사망까지 총 생활비
+  preRetirementLivingCost: number; // 현재~은퇴까지 생활비
+  postRetirementLivingCost: number; // 은퇴~사망까지 생활비
   totalPensionSupply: number;
   totalSupply: number;
   supplyDeficit: number;
@@ -923,6 +928,12 @@ export function calculateAllDiagnosisMetrics(
 
   // === 자금 수급 ===
   const totalDemand = Math.round(((retirementYears * monthlyExpense * 12) / 10000) * 100) / 100;
+
+  // 현재~사망까지 총 생활비 (현재 소비 습관 유지 기준)
+  const preRetirementLivingCost = Math.round(((yearsToRetirement * currentExpenseBase * 12) / 10000) * 100) / 100;
+  const postRetirementLivingCost = Math.round(((retirementYears * currentExpenseBase * 12) / 10000) * 100) / 100;
+  const lifetimeLivingCost = Math.round((preRetirementLivingCost + postRetirementLivingCost) * 100) / 100;
+
   const totalPensionSupply = Math.round(((retirementYears * monthlyPension * 12) / 10000) * 100) / 100;
   const totalSupply = Math.round((totalPensionSupply + Math.max(0, liquidAssetAtRetirement)) * 100) / 100;
   const supplyDeficit = Math.round((totalDemand - totalSupply) * 100) / 100;
@@ -1049,6 +1060,9 @@ export function calculateAllDiagnosisMetrics(
 
     // 자금 수급
     totalDemand,
+    lifetimeLivingCost,
+    preRetirementLivingCost,
+    postRetirementLivingCost,
     totalPensionSupply,
     totalSupply,
     supplyDeficit,

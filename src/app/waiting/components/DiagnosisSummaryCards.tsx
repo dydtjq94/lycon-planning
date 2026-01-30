@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import {
   convertPrepDataToDiagnosisData,
   calculateAllDiagnosisMetrics,
-  calculateAdditionalCosts,
   DEFAULT_CALC_PARAMS,
   PrepDataStore,
   DiagnosisData,
@@ -17,16 +16,9 @@ import {
 } from "@/lib/data/householdFinance2025";
 import styles from "./DiagnosisSummaryCards.module.css";
 
-type DiagnosisStatus = "good" | "caution" | "warning";
-
 interface DiagnosisSummaryCardsProps {
   userId: string;
 }
-
-// 억 단위 포맷
-const formatBillion = (value: number): string => {
-  return value.toFixed(1);
-};
 
 // 연령대 그룹 분류
 const getAgeGroup = (age: number): AgeGroup => {
@@ -62,25 +54,8 @@ const calcPrecisePercentile = (
   return 5;
 };
 
-// 퍼센타일 범위 계산 (ReportTabs와 동일)
-const getPercentileRange = (
-  value: number,
-  percentiles: ReturnType<typeof estimatePercentiles>,
-  median: number,
-) => {
-  if (value >= percentiles.p90) return { idx: 0, display: "상위 10%" };
-  if (value >= percentiles.p80) return { idx: 1, display: "상위 20%" };
-  if (value >= percentiles.p70) return { idx: 2, display: "상위 30%" };
-  if (value >= percentiles.p60) return { idx: 3, display: "상위 40%" };
-  if (value >= median) return { idx: 4, display: "상위 50%" };
-  if (value >= percentiles.p40) return { idx: 5, display: "상위 60%" };
-  if (value >= percentiles.p30) return { idx: 6, display: "상위 70%" };
-  if (value >= percentiles.p20) return { idx: 7, display: "상위 80%" };
-  return { idx: 8, display: "상위 90%" };
-};
-
-// Lycon Score 계산 함수
-const calculateLyconScore = (
+// Lycon Score 및 개별 점수 계산 함수
+const calculateLyconScores = (
   data: DiagnosisData,
   metrics: ReturnType<typeof calculateAllDiagnosisMetrics>,
 ) => {
@@ -116,29 +91,27 @@ const calculateLyconScore = (
       assetScore * 0.1,
   );
 
-  return lyconScore;
+  return {
+    lyconScore,
+    netWorthScore,
+    savingsRateScore,
+    debtScore,
+    incomeScore,
+    assetScore,
+    ageGroup,
+  };
 };
 
 export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
   const [loading, setLoading] = useState(true);
   const [lyconScore, setLyconScore] = useState(0);
   const [lyconGradeLabel, setLyconGradeLabel] = useState("");
-  const [netWorth, setNetWorth] = useState(0);
-  const [netWorthStatus, setNetWorthStatus] = useState<{
-    status: DiagnosisStatus;
-    label: string;
-  }>({ status: "good", label: "" });
-  const [savingsRate, setSavingsRate] = useState(0);
-  const [monthlyGap, setMonthlyGap] = useState(0);
-  const [yearsToRetirement, setYearsToRetirement] = useState(0);
-  const [effectiveRetirementAge, setEffectiveRetirementAge] = useState(0);
-  const [fixedExpense, setFixedExpense] = useState(0);
-  const [variableExpense, setVariableExpense] = useState(0);
-  const [nationalPensionTotal, setNationalPensionTotal] = useState(0);
-  const [retirementPensionTotal, setRetirementPensionTotal] = useState(0);
-  const [personalPensionTotal, setPersonalPensionTotal] = useState(0);
-  const [totalDemand, setTotalDemand] = useState(0);
-  const [additionalTotal, setAdditionalTotal] = useState(0);
+  const [netWorthScore, setNetWorthScore] = useState(0);
+  const [savingsRateScore, setSavingsRateScore] = useState(0);
+  const [debtScore, setDebtScore] = useState(0);
+  const [incomeScore, setIncomeScore] = useState(0);
+  const [assetScore, setAssetScore] = useState(0);
+  const [ageGroup, setAgeGroup] = useState<AgeGroup>("30대");
 
   useEffect(() => {
     const loadDiagnosisData = async () => {
@@ -160,16 +133,21 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
           prep_data: profile.prep_data as PrepDataStore,
         });
 
-        // ReportTabs와 동일하게 calcParams 설정
         const calcParams = {
           ...DEFAULT_CALC_PARAMS,
           lifeExpectancy: diagnosisData.lifeExpectancy,
         };
         const metrics = calculateAllDiagnosisMetrics(diagnosisData, calcParams);
 
-        // Lycon 점수 계산
-        const score = calculateLyconScore(diagnosisData, metrics);
-        setLyconScore(score);
+        // Lycon 점수 및 개별 점수 계산
+        const scores = calculateLyconScores(diagnosisData, metrics);
+        setLyconScore(scores.lyconScore);
+        setNetWorthScore(scores.netWorthScore);
+        setSavingsRateScore(scores.savingsRateScore);
+        setDebtScore(scores.debtScore);
+        setIncomeScore(scores.incomeScore);
+        setAssetScore(scores.assetScore);
+        setAgeGroup(scores.ageGroup);
 
         const getGradeLabel = (s: number) => {
           if (s >= 90) return "우수";
@@ -177,82 +155,7 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
           if (s >= 50) return "보통";
           return "주의";
         };
-        setLyconGradeLabel(getGradeLabel(score));
-
-        // 순자산 및 상태 (ReportTabs와 동일한 백분위 기반 계산)
-        setNetWorth(metrics.netWorth);
-        const ageGroup = getAgeGroup(diagnosisData.currentAge);
-        const ageStats = householdFinance2025[ageGroup];
-        const netWorthPercentilesData = estimatePercentiles(
-          ageStats.netWorth.median,
-        );
-        const netWorthPercentile = getPercentileRange(
-          metrics.netWorth * 10000,
-          netWorthPercentilesData,
-          ageStats.netWorth.median,
-        );
-
-        const getNetWorthStatus = (): {
-          status: DiagnosisStatus;
-          label: string;
-        } => {
-          if (netWorthPercentile.idx <= 3)
-            return { status: "good", label: netWorthPercentile.display };
-          if (netWorthPercentile.idx <= 5)
-            return { status: "caution", label: netWorthPercentile.display };
-          return { status: "warning", label: netWorthPercentile.display };
-        };
-        setNetWorthStatus(getNetWorthStatus());
-
-        // 핵심 지표
-        setSavingsRate(metrics.savingsRate);
-        setMonthlyGap(metrics.currentMonthlyGap);
-        setYearsToRetirement(metrics.yearsToRetirement);
-        setEffectiveRetirementAge(metrics.effectiveRetirementAge);
-        setFixedExpense(metrics.fixedExpense);
-        setVariableExpense(metrics.variableExpense);
-
-        // 3층 연금
-        setNationalPensionTotal(
-          diagnosisData.nationalPensionPersonal +
-            diagnosisData.nationalPensionSpouse,
-        );
-        setRetirementPensionTotal(
-          diagnosisData.retirementPensionBalanceSelf +
-            diagnosisData.retirementPensionBalanceSpouse,
-        );
-        setPersonalPensionTotal(
-          diagnosisData.personalPensionStatus.irp.balance +
-            diagnosisData.personalPensionStatus.pensionSavings.balance +
-            diagnosisData.personalPensionStatus.isa.balance,
-        );
-
-        // 총 필요 자금
-        setTotalDemand(metrics.totalDemand);
-
-        // 추가 비용 계산 (ReportTabs와 동일한 calcParams 사용)
-        const additionalCosts = calculateAdditionalCosts(
-          diagnosisData,
-          calcParams,
-        );
-
-        // 기본 costOptions: education="normal", leisure=1, consumerGoods=1, medical=true, housing=null
-        const educationCost = additionalCosts.childEducation.grandTotalNormal;
-        const leisureCost =
-          (additionalCosts.leisure[1]?.totalUntilRetirement || 0) +
-          (additionalCosts.leisure[1]?.totalAfterRetirement || 0);
-        const consumerGoodsCost =
-          additionalCosts.consumerGoods[1]?.totalUntilLifeExpectancy || 0;
-        const medicalCost = additionalCosts.medical.grandTotal;
-        const housingCost = 0; // 기본값은 미선택
-
-        const totalAdditional =
-          educationCost +
-          leisureCost +
-          consumerGoodsCost +
-          medicalCost +
-          housingCost;
-        setAdditionalTotal(totalAdditional / 10000); // 억 단위로 변환
+        setLyconGradeLabel(getGradeLabel(scores.lyconScore));
       } catch (error) {
         console.error("진단 요약 데이터 로드 실패:", error);
       } finally {
@@ -267,21 +170,9 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
     return (
       <div className={styles.container}>
         <div className={styles.skeletonCard} />
-        <div className={styles.skeletonCard} />
-        <div className={styles.skeletonCard} />
-        <div className={styles.skeletonCard} />
       </div>
     );
   }
-
-  const fixedRatio =
-    fixedExpense + variableExpense > 0
-      ? Math.round((fixedExpense / (fixedExpense + variableExpense)) * 100)
-      : 0;
-  const variableRatio =
-    fixedExpense + variableExpense > 0
-      ? Math.round((variableExpense / (fixedExpense + variableExpense)) * 100)
-      : 0;
 
   return (
     <div className={styles.container}>
@@ -300,20 +191,86 @@ export function DiagnosisSummaryCards({ userId }: DiagnosisSummaryCardsProps) {
             동연령대 상위 {100 - lyconScore}% ({lyconGradeLabel})
           </div>
         </div>
-      </div>
-
-      {/* 총 필요 자금 */}
-      <div className={styles.stepCard}>
-        <div className={styles.stepHeader}>
-          <span className={styles.stepNumber}>Funding</span>
-          <span className={styles.stepTitle}>총 필요 자금</span>
-        </div>
-        <div className={styles.stepMainResult}>
-          <div className={styles.stepMainValue}>
-            {formatBillion(totalDemand + additionalTotal)}
-            <span className={styles.stepMainUnit}>억</span>
+        <div className={styles.lyconScoreContainer}>
+          <div className={styles.lyconScoreBar}>
+            <div
+              className={styles.lyconScoreBarFill}
+              style={{ width: `${lyconScore}%` }}
+            ></div>
+            <div
+              className={styles.lyconScoreBarIndicator}
+              style={{ left: `${lyconScore}%` }}
+            ></div>
           </div>
-          <div className={styles.stepMainLabel}>우리 가족이 평생 필요한 돈</div>
+          <div className={styles.lyconScoreBarLabels}>
+            <span>하위</span>
+            <span>상위</span>
+          </div>
+          <div className={styles.lyconScoreBreakdown}>
+            <div className={styles.lyconScoreItem}>
+              <span className={styles.lyconScoreItemLabel}>순자산</span>
+              <div className={styles.lyconScoreItemBar}>
+                <div
+                  className={styles.lyconScoreItemFill}
+                  style={{ width: `${netWorthScore}%` }}
+                ></div>
+              </div>
+              <span className={styles.lyconScoreItemValue}>
+                {Math.round(netWorthScore)}
+              </span>
+            </div>
+            <div className={styles.lyconScoreItem}>
+              <span className={styles.lyconScoreItemLabel}>저축률</span>
+              <div className={styles.lyconScoreItemBar}>
+                <div
+                  className={styles.lyconScoreItemFill}
+                  style={{ width: `${savingsRateScore}%` }}
+                ></div>
+              </div>
+              <span className={styles.lyconScoreItemValue}>
+                {Math.round(savingsRateScore)}
+              </span>
+            </div>
+            <div className={styles.lyconScoreItem}>
+              <span className={styles.lyconScoreItemLabel}>부채건전성</span>
+              <div className={styles.lyconScoreItemBar}>
+                <div
+                  className={styles.lyconScoreItemFill}
+                  style={{ width: `${debtScore}%` }}
+                ></div>
+              </div>
+              <span className={styles.lyconScoreItemValue}>
+                {Math.round(debtScore)}
+              </span>
+            </div>
+            <div className={styles.lyconScoreItem}>
+              <span className={styles.lyconScoreItemLabel}>소득</span>
+              <div className={styles.lyconScoreItemBar}>
+                <div
+                  className={styles.lyconScoreItemFill}
+                  style={{ width: `${incomeScore}%` }}
+                ></div>
+              </div>
+              <span className={styles.lyconScoreItemValue}>
+                {Math.round(incomeScore)}
+              </span>
+            </div>
+            <div className={styles.lyconScoreItem}>
+              <span className={styles.lyconScoreItemLabel}>총자산</span>
+              <div className={styles.lyconScoreItemBar}>
+                <div
+                  className={styles.lyconScoreItemFill}
+                  style={{ width: `${assetScore}%` }}
+                ></div>
+              </div>
+              <span className={styles.lyconScoreItemValue}>
+                {Math.round(assetScore)}
+              </span>
+            </div>
+          </div>
+          <div className={styles.lyconScoreSource}>
+            Lycon 데이터 기반 ({ageGroup})
+          </div>
         </div>
       </div>
     </div>

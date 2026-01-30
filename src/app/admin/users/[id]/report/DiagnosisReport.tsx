@@ -68,6 +68,17 @@ function formatBillion(value: number): string {
   return parseFloat(fixed).toString();
 }
 
+// PMT 계산 (연금 월 수령액): 잔액을 n개월 동안 r% 수익률로 매월 동일 금액 인출
+function calculatePMT(balance: number, years: number, annualRate: number = 0.04): number {
+  if (balance <= 0 || years <= 0) return 0;
+  const months = years * 12;
+  const monthlyRate = annualRate / 12;
+  if (monthlyRate === 0) return Math.round(balance / months);
+  // PMT = PV * r * (1+r)^n / ((1+r)^n - 1)
+  const factor = Math.pow(1 + monthlyRate, months);
+  return Math.round((balance * monthlyRate * factor) / (factor - 1));
+}
+
 type TabId = "current" | "retirement" | "opinion";
 
 export function DiagnosisReport({
@@ -98,6 +109,9 @@ export function DiagnosisReport({
     medical: true as boolean, // 의료/간병비 (true: 포함, false: 포함안함)
     housing: null as { areaIndex: number; tierIndex: number } | null, // 주거 (null: 미선택)
   });
+
+  // 설정 패널 상태 (비용 변경 / 가정 변경)
+  const [activeSettingPanel, setActiveSettingPanel] = useState<"cost" | "assumption" | null>(null);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
@@ -397,7 +411,7 @@ export function DiagnosisReport({
           className={`${styles.tabButton} ${activeTab === "retirement" ? styles.active : ""}`}
           onClick={() => setActiveTab("retirement")}
         >
-          필요 자금
+          은퇴 진단
         </button>
         <button
           className={`${styles.tabButton} ${activeTab === "opinion" ? styles.active : ""}`}
@@ -1199,6 +1213,161 @@ export function DiagnosisReport({
         {/* ===== 은퇴 준비 탭 ===== */}
         {activeTab === "retirement" && (
           <>
+            {/* 설정 바 */}
+            <div className={styles.settingsBar}>
+              <button
+                className={`${styles.settingsBarBtn} ${activeSettingPanel === "cost" ? styles.active : ""}`}
+                onClick={() => setActiveSettingPanel(activeSettingPanel === "cost" ? null : "cost")}
+              >
+                비용 변경
+              </button>
+              <button
+                className={`${styles.settingsBarBtn} ${activeSettingPanel === "assumption" ? styles.active : ""}`}
+                onClick={() => setActiveSettingPanel(activeSettingPanel === "assumption" ? null : "assumption")}
+              >
+                가정 변경
+              </button>
+            </div>
+
+            {/* 설정 패널 - 비용 변경 */}
+            {activeSettingPanel === "cost" && (
+              <div className={styles.settingsPanel}>
+                <div className={styles.settingGroup}>
+                  <span className={styles.settingLabel}>자녀 교육</span>
+                  <div className={styles.settingOptions}>
+                    {[
+                      { value: "none", label: "없음" },
+                      { value: "normal", label: "보통" },
+                      { value: "premium", label: "여유" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        className={`${styles.settingBtn} ${costOptions.education === opt.value ? styles.active : ""}`}
+                        onClick={() => setCostOptions((p) => ({ ...p, education: opt.value as "normal" | "premium" | "none" }))}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.settingGroup}>
+                  <span className={styles.settingLabel}>의료/간병</span>
+                  <div className={styles.settingOptions}>
+                    <button
+                      className={`${styles.settingBtn} ${!costOptions.medical ? styles.active : ""}`}
+                      onClick={() => setCostOptions((p) => ({ ...p, medical: false }))}
+                    >
+                      미포함
+                    </button>
+                    <button
+                      className={`${styles.settingBtn} ${costOptions.medical ? styles.active : ""}`}
+                      onClick={() => setCostOptions((p) => ({ ...p, medical: true }))}
+                    >
+                      포함
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.settingGroup}>
+                  <span className={styles.settingLabel}>여행/여가</span>
+                  <div className={styles.settingOptions}>
+                    {[
+                      { value: "none", label: "없음" },
+                      { value: 0, label: "검소" },
+                      { value: 1, label: "보통" },
+                      { value: 2, label: "여유" },
+                    ].map((opt) => (
+                      <button
+                        key={String(opt.value)}
+                        className={`${styles.settingBtn} ${costOptions.leisure === opt.value ? styles.active : ""}`}
+                        onClick={() => setCostOptions((p) => ({ ...p, leisure: opt.value as number | "none" }))}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.settingGroup}>
+                  <span className={styles.settingLabel}>소비재</span>
+                  <div className={styles.settingOptions}>
+                    {[
+                      { value: "none", label: "없음" },
+                      { value: 0, label: "검소" },
+                      { value: 1, label: "보통" },
+                      { value: 2, label: "여유" },
+                    ].map((opt) => (
+                      <button
+                        key={String(opt.value)}
+                        className={`${styles.settingBtn} ${costOptions.consumerGoods === opt.value ? styles.active : ""}`}
+                        onClick={() => setCostOptions((p) => ({ ...p, consumerGoods: opt.value as number | "none" }))}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 설정 패널 - 가정 변경 */}
+            {activeSettingPanel === "assumption" && (
+              <div className={styles.settingsPanel}>
+                <div className={styles.settingGroup}>
+                  <span className={styles.settingLabel}>은퇴 나이</span>
+                  <div className={styles.settingOptions}>
+                    {[
+                      { value: -5, label: `${data.targetRetirementAge - 5}세` },
+                      { value: 0, label: `${data.targetRetirementAge}세` },
+                      { value: 5, label: `${data.targetRetirementAge + 5}세` },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        className={`${styles.settingBtn} ${calcParams.retirementAgeOffset === opt.value ? styles.active : ""}`}
+                        onClick={() => setCalcParams((p) => ({ ...p, retirementAgeOffset: opt.value }))}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.settingGroup}>
+                  <span className={styles.settingLabel}>물가상승률</span>
+                  <div className={styles.settingOptions}>
+                    {[
+                      { value: 0.025, label: "2.5%" },
+                      { value: 0.035, label: "3.5%" },
+                      { value: 0.045, label: "4.5%" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        className={`${styles.settingBtn} ${calcParams.inflationRate === opt.value ? styles.active : ""}`}
+                        onClick={() => setCalcParams((p) => ({ ...p, inflationRate: opt.value }))}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.settingGroup}>
+                  <span className={styles.settingLabel}>기대수명</span>
+                  <div className={styles.settingOptions}>
+                    {[
+                      { value: 80, label: "80세" },
+                      { value: 90, label: "90세" },
+                      { value: 100, label: "100세" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        className={`${styles.settingBtn} ${calcParams.lifeExpectancy === opt.value ? styles.active : ""}`}
+                        onClick={() => setCalcParams((p) => ({ ...p, lifeExpectancy: opt.value }))}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {(() => {
               const additionalCosts = calculateAdditionalCosts(
                 data,
@@ -1286,1194 +1455,559 @@ export function DiagnosisReport({
                     </div>
                   </div>
 
-                  {/* Step 1: 기본 은퇴자금 */}
-                  <div className={styles.stepCard}>
-                    <div className={styles.stepHeader}>
-                      <span className={styles.stepNumber}>Base</span>
-                      <span className={styles.stepTitle}>최소 필요 자금</span>
-                    </div>
-                    <div className={styles.stepMainResult}>
-                      <div
-                        className={`${styles.stepMainValue} ${styles.animatedValue}`}
-                      >
-                        {formatBillion(m.totalDemand)}억
-                      </div>
-                      <div className={styles.stepMainLabel}>
-                        {m.retirementYears}년간 기본 생활비 (
-                        {effectiveRetirementAge}세 → {m.effectiveLifeExpectancy}
-                        세)
-                      </div>
-                    </div>
-                    <div className={styles.stepDetails}>
-                      <div className={styles.stepDetailRow}>
-                        <span className={styles.stepDetailLabel}>
-                          현재 월 지출
-                        </span>
-                        <span className={styles.stepDetailValue}>
-                          {m.currentMonthlyExpense}만원
-                        </span>
-                      </div>
-                      <div className={styles.stepDetailRow}>
-                        <span className={styles.stepDetailLabel}>
-                          은퇴 후 월 생활비
-                        </span>
-                        <span className={styles.stepDetailNote}>
-                          물가상승 x{" "}
-                          {Math.round(calcParams.livingExpenseRatio * 100)}%
-                        </span>
-                        <span
-                          className={`${styles.stepDetailValue} ${styles.animatedValue}`}
-                        >
-                          {m.monthlyExpense}만원
-                        </span>
-                      </div>
-                    </div>
-                    <div className={styles.stepFootnote}>
-                      이 금액에는 자녀 교육비, 의료비, 여행, 자동차, 주거 비용이
-                      포함되어 있지 않습니다
-                    </div>
-                  </div>
-
-                  {/* Step 2: 추가 비용 */}
-                  <div className={styles.stepCard}>
-                    <div className={styles.stepHeader}>
-                      <span className={styles.stepNumber}>Extra</span>
-                      <span className={styles.stepTitle}>추가 필요 자금</span>
-                    </div>
-                    <div className={styles.stepMainResult}>
-                      <div
-                        className={`${styles.stepMainValue} ${styles.animatedValue}`}
-                      >
-                        +{formatBillion(additionalCostTotal / 10000)}억
-                      </div>
-                      <div className={styles.stepMainLabel}>
-                        기본 생활비 외 반드시 고려해야 할 비용
-                      </div>
-                    </div>
-                    <div className={styles.stepDetails}>
-                      {data.children.length > 0 && (
-                        <div className={styles.stepDetailRow}>
-                          <span className={styles.stepDetailLabel}>
-                            자녀 교육/양육비
-                          </span>
-                          <span className={styles.stepDetailNote}>
-                            {costOptions.education === "none"
-                              ? "포함 안함"
-                              : costOptions.education === "normal"
-                                ? "보통"
-                                : "여유"}
-                          </span>
-                          <span
-                            className={`${styles.stepDetailValue} ${styles.animatedValue}`}
-                          >
-                            {formatBillion(educationCost / 10000)}억
-                          </span>
-                        </div>
-                      )}
-                      <div className={styles.stepDetailRow}>
-                        <span className={styles.stepDetailLabel}>
-                          의료/간병비
-                        </span>
-                        <span className={styles.stepDetailNote}>
-                          {costOptions.medical
-                            ? `본인${data.spouseAge ? " + 배우자" : ""}`
-                            : "포함 안함"}
-                        </span>
-                        <span
-                          className={`${styles.stepDetailValue} ${styles.animatedValue}`}
-                        >
-                          {formatBillion(medicalCost / 10000)}억
-                        </span>
-                      </div>
-                      <div className={styles.stepDetailRow}>
-                        <span className={styles.stepDetailLabel}>
-                          여행/여가
-                        </span>
-                        <span className={styles.stepDetailNote}>
-                          {costOptions.leisure === "none"
-                            ? "포함 안함"
-                            : additionalCosts.leisure[
-                                costOptions.leisure as number
-                              ]?.level}
-                        </span>
-                        <span
-                          className={`${styles.stepDetailValue} ${styles.animatedValue}`}
-                        >
-                          {formatBillion(leisureCost / 10000)}억
-                        </span>
-                      </div>
-                      <div className={styles.stepDetailRow}>
-                        <span className={styles.stepDetailLabel}>소비재</span>
-                        <span className={styles.stepDetailNote}>
-                          {costOptions.consumerGoods === "none"
-                            ? "포함 안함"
-                            : additionalCosts.consumerGoods[
-                                costOptions.consumerGoods as number
-                              ]?.level}
-                        </span>
-                        <span
-                          className={`${styles.stepDetailValue} ${styles.animatedValue}`}
-                        >
-                          {formatBillion(consumerGoodsCost / 10000)}억
-                        </span>
-                      </div>
-                      <div className={styles.stepDetailRow}>
-                        <span className={styles.stepDetailLabel}>주거</span>
-                        <span className={styles.stepDetailNote}>
-                          {costOptions.housing
-                            ? `${additionalCosts.housing[costOptions.housing.areaIndex]?.area} ${additionalCosts.housing[costOptions.housing.areaIndex]?.tiers[costOptions.housing.tierIndex]?.tier}`
-                            : "미선택"}
-                        </span>
-                        <span
-                          className={`${styles.stepDetailValue} ${styles.animatedValue}`}
-                        >
-                          {costOptions.housing
-                            ? formatBillion(housingCost / 10000)
-                            : "0"}
-                          억
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Step 3: 총 필요 자금 */}
-                  <div className={styles.stepCard}>
-                    <div className={styles.stepHeader}>
-                      <span className={styles.stepNumber}>Total</span>
-                      <span className={styles.stepTitle}>총 필요 자금</span>
-                    </div>
-                    <div className={styles.stepMainResult}>
-                      <div
-                        className={`${styles.stepMainValue} ${styles.stepMainValueLarge} ${styles.animatedValue}`}
-                      >
-                        {formatBillion(totalRetirementNeed)}억
-                      </div>
-                      <div className={styles.stepMainLabel}>
-                        우리 가족이 평생 필요한 돈
-                      </div>
-                    </div>
-                    <div className={styles.stepCalcBox}>
-                      <div className={styles.stepCalcRow}>
-                        <span>기본 생활비</span>
-                        <span className={styles.animatedValue}>
-                          {formatBillion(m.totalDemand)}억
-                        </span>
-                      </div>
-                      <div className={styles.stepCalcRow}>
-                        <span>추가 비용</span>
-                        <span className={styles.animatedValue}>
-                          +{formatBillion(additionalCostTotal / 10000)}억
-                        </span>
-                      </div>
-                      <div className={styles.stepCalcDivider}></div>
-                      <div className={styles.stepCalcTotal}>
-                        <span>총 필요 자금</span>
-                        <span className={styles.animatedValue}>
-                          {formatBillion(totalRetirementNeed)}억
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Step 4: 진단 결과 */}
+                  {/* 은퇴 시점 월 현금흐름 분석 */}
                   {(() => {
-                    const totalSupply =
-                      (m.monthlyPension * 12 * m.retirementYears) / 10000 +
-                      m.liquidAssetAtRetirement;
-                    const gap = totalSupply - totalRetirementNeed;
-                    const gapRatio =
-                      totalRetirementNeed > 0 ? gap / totalRetirementNeed : 0;
+                    // 은퇴 시점 예상 연금/자산 잔액
+                    const retirementPensionAtRetire = data.retirementPensionBalanceAtRetireSelf + data.retirementPensionBalanceAtRetireSpouse;
+                    const personalPensionAtRetire = (data.personalPensionStatus.irp.balance + data.personalPensionStatus.pensionSavings.balance) *
+                      Math.pow(1 + 0.05, m.yearsToRetirement); // 5% 수익률 가정
 
-                    // 진단 상태 결정: 심각, 주의, 부족, 양호, 충분, 여유
-                    let diagnosisStatus:
-                      | "critical"
-                      | "caution"
-                      | "lacking"
-                      | "fair"
-                      | "sufficient"
-                      | "abundant";
-                    let diagnosisLabel: string;
-                    if (gapRatio < -0.5) {
-                      diagnosisStatus = "critical";
-                      diagnosisLabel = "심각";
-                    } else if (gapRatio < -0.2) {
-                      diagnosisStatus = "caution";
-                      diagnosisLabel = "주의";
-                    } else if (gapRatio < 0) {
-                      diagnosisStatus = "lacking";
-                      diagnosisLabel = "부족";
-                    } else if (gapRatio < 0.1) {
-                      diagnosisStatus = "fair";
-                      diagnosisLabel = "양호";
-                    } else if (gapRatio < 0.3) {
-                      diagnosisStatus = "sufficient";
-                      diagnosisLabel = "충분";
-                    } else {
-                      diagnosisStatus = "abundant";
-                      diagnosisLabel = "여유";
-                    }
+                    // PMT 계산 (4% 인출 수익률 가정)
+                    const retirementPensionPMT = calculatePMT(retirementPensionAtRetire, m.retirementYears, 0.04);
+                    const personalPensionPMT = calculatePMT(personalPensionAtRetire, m.retirementYears, 0.04);
+
+                    // 월 수입 합계
+                    const monthlyIncomeTotal = m.nationalPensionInflated + retirementPensionPMT + personalPensionPMT;
+
+                    // 월 지출 (은퇴 후)
+                    const monthlyExpenseTotal = m.monthlyExpense;
+
+                    // 월 현금흐름
+                    const monthlyCashflow = monthlyIncomeTotal - monthlyExpenseTotal;
+
+                    // 현재 가치로 환산 (물가상승률 역산)
+                    const presentValueCashflow = Math.round(monthlyCashflow / Math.pow(1 + calcParams.inflationRate, m.yearsToRetirement));
+
+                    // 차트용 최대값
+                    const maxValue = Math.max(monthlyIncomeTotal, monthlyExpenseTotal);
 
                     return (
                       <div className={styles.stepCard}>
                         <div className={styles.stepHeader}>
-                          <span className={styles.stepNumber}>Result</span>
-                          <span className={styles.stepTitle}>진단 결과</span>
+                          <span className={styles.stepNumber}>Cashflow</span>
+                          <span className={styles.stepTitle}>은퇴 시점 월 현금흐름</span>
+                        </div>
+
+                        {/* 현금흐름 차트 */}
+                        <div className={styles.cashflowChart}>
+                          {/* 월 수입 바 */}
+                          <div className={styles.cashflowRow}>
+                            <span className={styles.cashflowLabel}>월 수입</span>
+                            <div className={styles.cashflowBarContainer}>
+                              <div
+                                className={styles.cashflowBarIncome}
+                                style={{ width: `${maxValue > 0 ? (monthlyIncomeTotal / maxValue) * 100 : 0}%` }}
+                              >
+                                <span className={styles.cashflowBarValue}>{monthlyIncomeTotal.toLocaleString()}만원</span>
+                              </div>
+                              {monthlyCashflow < 0 && (
+                                <div
+                                  className={styles.cashflowBarDeficit}
+                                  style={{ width: `${maxValue > 0 ? (Math.abs(monthlyCashflow) / maxValue) * 100 : 0}%` }}
+                                >
+                                  <span className={styles.cashflowBarValue}>{monthlyCashflow.toLocaleString()}만원</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 월 지출 바 */}
+                          <div className={styles.cashflowRow}>
+                            <span className={styles.cashflowLabel}>월 지출</span>
+                            <div className={styles.cashflowBarContainer}>
+                              <div
+                                className={styles.cashflowBarExpense}
+                                style={{ width: `${maxValue > 0 ? (monthlyExpenseTotal / maxValue) * 100 : 0}%` }}
+                              >
+                                <span className={styles.cashflowBarValue}>{monthlyExpenseTotal.toLocaleString()}만원</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 상세 내역 */}
+                        <div className={styles.stepCalcBox}>
+                          <div className={styles.stepCalcRow}>
+                            <span>국민연금 <span className={styles.stepCalcNote}>물가상승 반영</span></span>
+                            <span>+{m.nationalPensionInflated.toLocaleString()}만원</span>
+                          </div>
+                          <div className={styles.stepCalcRow}>
+                            <span>퇴직연금 <span className={styles.stepCalcNote}>{m.retirementYears}년 PMT</span></span>
+                            <span>+{retirementPensionPMT.toLocaleString()}만원</span>
+                          </div>
+                          <div className={styles.stepCalcRow}>
+                            <span>개인연금 <span className={styles.stepCalcNote}>{m.retirementYears}년 PMT</span></span>
+                            <span>+{personalPensionPMT.toLocaleString()}만원</span>
+                          </div>
+                          <div className={styles.stepCalcDivider} />
+                          <div className={styles.stepCalcRow}>
+                            <span>생활비 <span className={styles.stepCalcNote}>물가상승 x {(calcParams.livingExpenseRatio * 100)}%</span></span>
+                            <span>-{monthlyExpenseTotal.toLocaleString()}만원</span>
+                          </div>
+                          <div className={styles.stepCalcDivider} />
+                          <div className={styles.stepCalcTotal}>
+                            <span>월 현금흐름</span>
+                            <span style={{ color: monthlyCashflow >= 0 ? '#16a34a' : '#dc2626' }}>
+                              {monthlyCashflow >= 0 ? "+" : ""}{monthlyCashflow.toLocaleString()}만원
+                            </span>
+                          </div>
+                        </div>
+
+                      </div>
+                    );
+                  })()}
+
+                  {/* 현재 가치 환산 Step */}
+                  {(() => {
+                    // 다시 계산 (IIFE 밖이라서)
+                    const retirementPensionAtRetire = data.retirementPensionBalanceAtRetireSelf + data.retirementPensionBalanceAtRetireSpouse;
+                    const personalPensionAtRetire = (data.personalPensionStatus.irp.balance + data.personalPensionStatus.pensionSavings.balance) *
+                      Math.pow(1 + 0.05, m.yearsToRetirement);
+                    const retirementPensionPMT = calculatePMT(retirementPensionAtRetire, m.retirementYears, 0.04);
+                    const personalPensionPMT = calculatePMT(personalPensionAtRetire, m.retirementYears, 0.04);
+                    const monthlyIncomeTotal = m.nationalPensionInflated + retirementPensionPMT + personalPensionPMT;
+                    const monthlyExpenseTotal = m.monthlyExpense;
+                    const monthlyCashflow = monthlyIncomeTotal - monthlyExpenseTotal;
+                    const presentValueCashflow = Math.round(monthlyCashflow / Math.pow(1 + calcParams.inflationRate, m.yearsToRetirement));
+
+                    // 부족분 채우기 위한 필요 자산 계산 (현재 가치 기준, 연간 환산 후 억원 변환)
+                    const annualDeficit = Math.abs(presentValueCashflow) * 12; // 만원/년
+                    const needRealEstate = Math.round(annualDeficit / 0.03 / 10000 * 10) / 10; // 억원
+                    const needCash = Math.round(annualDeficit / 0.02 / 10000 * 10) / 10; // 억원
+                    const needStocks = Math.round(annualDeficit / 0.04 / 10000 * 10) / 10; // 억원
+                    const needAssets = Math.round(annualDeficit / 0.4 / 10000 * 10) / 10; // 억원
+
+                    const isDeficit = presentValueCashflow < 0;
+                    const currentYear = new Date().getFullYear();
+                    const retirementYear = currentYear + m.yearsToRetirement;
+
+                    // 개인연금 필요액 (연 5% 수익률, 은퇴까지 적립)
+                    const yearsToRetire = m.yearsToRetirement;
+                    const monthlyContribForPension = yearsToRetire > 0
+                      ? Math.round(annualDeficit / 0.05 / 10000 / yearsToRetire * 12 * 10) / 10
+                      : 0;
+                    const needPension = Math.round(annualDeficit / 0.05 / 10000 * 10) / 10; // 억원
+
+                    // 배당주 필요액 (연 4% 배당)
+                    const needDividend = Math.round(annualDeficit / 0.04 / 10000 * 10) / 10; // 억원
+
+                    return (
+                      <>
+                        {/* Step: 지금 기준 환산 */}
+                        <div className={styles.stepCard}>
+                          <div className={styles.stepHeader}>
+                            <span className={styles.stepNumber}>Now</span>
+                            <span className={styles.stepTitle}>지금 기준 환산</span>
+                          </div>
+
+                          {isDeficit ? (
+                            <>
+                              {/* 현재 가치 크게 표시 */}
+                              <div className={styles.goalMainValue}>
+                                <span className={styles.goalMainLabel}>현재 가치로</span>
+                                <span className={styles.goalMainAmount}>월 {Math.abs(presentValueCashflow).toLocaleString()}만원</span>
+                                <span className={styles.goalMainSub}>의 현금흐름이 필요합니다</span>
+                              </div>
+
+                              {/* 설명 */}
+                              <div className={styles.goalExplanation}>
+                                <div className={styles.goalExplanationRow}>
+                                  <span>은퇴 시점 부족분</span>
+                                  <span>월 {Math.abs(monthlyCashflow).toLocaleString()}만원</span>
+                                </div>
+                                <div className={styles.goalExplanationRow}>
+                                  <span>현재 가치 환산</span>
+                                  <span>월 {Math.abs(presentValueCashflow).toLocaleString()}만원</span>
+                                </div>
+                                <div className={styles.goalExplanationNote}>
+                                  {m.yearsToRetirement}년간 물가상승률 {(calcParams.inflationRate * 100)}% 역산
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              {/* 흑자: 현재 가치 여유분 표시 */}
+                              <div className={styles.goalMainValue}>
+                                <span className={styles.goalMainLabel}>현재 가치로</span>
+                                <span className={styles.goalMainAmount} style={{ color: '#059669' }}>월 +{Math.abs(presentValueCashflow).toLocaleString()}만원</span>
+                                <span className={styles.goalMainSub}>의 여유가 있습니다</span>
+                              </div>
+
+                              {/* 설명 */}
+                              <div className={styles.goalExplanation}>
+                                <div className={styles.goalExplanationRow}>
+                                  <span>은퇴 시점 여유분</span>
+                                  <span style={{ color: '#059669' }}>월 +{Math.abs(monthlyCashflow).toLocaleString()}만원</span>
+                                </div>
+                                <div className={styles.goalExplanationRow}>
+                                  <span>현재 가치 환산</span>
+                                  <span style={{ color: '#059669' }}>월 +{Math.abs(presentValueCashflow).toLocaleString()}만원</span>
+                                </div>
+                                <div className={styles.goalExplanationNote}>
+                                  {m.yearsToRetirement}년간 물가상승률 {(calcParams.inflationRate * 100)}% 역산
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Step: 자산 목표 (적자) / 예상 자산 (흑자) */}
+                        <div className={styles.stepCard}>
+                          <div className={styles.stepHeader}>
+                            <span className={styles.stepNumber}>Asset</span>
+                            <span className={styles.stepTitle}>{isDeficit ? "자산 목표" : "예상 자산"}</span>
+                          </div>
+
+                          {isDeficit ? (
+                            <>
+                              <div className={styles.assetGoalMessage}>
+                                아래 자산 중 하나를 <strong>은퇴 전까지</strong> 만들면 됩니다
+                              </div>
+
+                              <div className={styles.assetGoalList}>
+                                <div className={styles.assetGoalRow}>
+                                  <div className={styles.assetGoalName}>부동산</div>
+                                  <div className={styles.assetGoalRight}>
+                                    <div className={styles.assetGoalDesc}>월세 연 3%</div>
+                                    <div className={styles.assetGoalValue}>{needRealEstate}억</div>
+                                  </div>
+                                </div>
+                                <div className={styles.assetGoalRow}>
+                                  <div className={styles.assetGoalName}>예적금</div>
+                                  <div className={styles.assetGoalRight}>
+                                    <div className={styles.assetGoalDesc}>이자 연 2%</div>
+                                    <div className={styles.assetGoalValue}>{needCash}억</div>
+                                  </div>
+                                </div>
+                                <div className={styles.assetGoalRow}>
+                                  <div className={styles.assetGoalName}>개인연금</div>
+                                  <div className={styles.assetGoalRight}>
+                                    <div className={styles.assetGoalDesc}>수익률 연 5%</div>
+                                    <div className={styles.assetGoalValue}>{needPension}억</div>
+                                  </div>
+                                </div>
+                                <div className={styles.assetGoalRow}>
+                                  <div className={styles.assetGoalName}>배당주</div>
+                                  <div className={styles.assetGoalRight}>
+                                    <div className={styles.assetGoalDesc}>배당 연 4%</div>
+                                    <div className={styles.assetGoalValue}>{needDividend}억</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className={styles.assetGoalExample}>
+                                지금 가치 기준 <strong>{needRealEstate}억</strong> 부동산을<br/>
+                                <strong>{retirementYear}년</strong>까지 마련하면 부족분 해결
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className={styles.assetGoalMessage}>
+                                이대로 유지하면 <strong>은퇴 후</strong> 아래 자산과 동일한 가치입니다
+                              </div>
+
+                              <div className={styles.assetGoalList}>
+                                <div className={styles.assetGoalRow}>
+                                  <div className={styles.assetGoalName}>부동산</div>
+                                  <div className={styles.assetGoalRight}>
+                                    <div className={styles.assetGoalDesc}>월세 연 3%</div>
+                                    <div className={styles.assetGoalValue} style={{ color: '#059669' }}>+{needRealEstate}억</div>
+                                  </div>
+                                </div>
+                                <div className={styles.assetGoalRow}>
+                                  <div className={styles.assetGoalName}>예적금</div>
+                                  <div className={styles.assetGoalRight}>
+                                    <div className={styles.assetGoalDesc}>이자 연 2%</div>
+                                    <div className={styles.assetGoalValue} style={{ color: '#059669' }}>+{needCash}억</div>
+                                  </div>
+                                </div>
+                                <div className={styles.assetGoalRow}>
+                                  <div className={styles.assetGoalName}>개인연금</div>
+                                  <div className={styles.assetGoalRight}>
+                                    <div className={styles.assetGoalDesc}>수익률 연 5%</div>
+                                    <div className={styles.assetGoalValue} style={{ color: '#059669' }}>+{needPension}억</div>
+                                  </div>
+                                </div>
+                                <div className={styles.assetGoalRow}>
+                                  <div className={styles.assetGoalName}>배당주</div>
+                                  <div className={styles.assetGoalRight}>
+                                    <div className={styles.assetGoalDesc}>배당 연 4%</div>
+                                    <div className={styles.assetGoalValue} style={{ color: '#059669' }}>+{needDividend}억</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className={styles.assetGoalExample}>
+                                연금 외 여유분은 <strong>{needRealEstate}억</strong> 부동산의<br/>
+                                월세 수익과 동일한 가치
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Step: 추가 고려사항 */}
+                        <div className={styles.stepCard}>
+                          <div className={styles.stepHeader}>
+                            <span className={styles.stepNumber}>But</span>
+                            <span className={styles.stepTitle}>잠깐, 이게 전부일까요?</span>
+                          </div>
+                          <div className={styles.butCardContent}>
+                            <p className={styles.butCardQuestion}>
+                              {isDeficit ? "목표 자산" : "예상 자산"}만 있으면 충분할까요?
+                            </p>
+                            <p className={styles.butCardAnswer}>
+                              살면서 써야 할 <strong>추가 지출 이벤트</strong>는 생각보다 많습니다.
+                            </p>
+                            <div className={styles.butCardList}>
+                              <span>자녀 교육/결혼</span>
+                              <span>의료/간병</span>
+                              <span>주거</span>
+                              <span>여행/경조사</span>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+
+                  {/* Step 2: 추가 비용 */}
+                  {(() => {
+                    // 현재 가치 환산 (평균 지출 시점 기준)
+                    const avgYearsToExpense = Math.round((m.yearsToRetirement + m.retirementYears) / 2);
+                    const presentValueFactor = Math.pow(1 + calcParams.inflationRate, avgYearsToExpense);
+                    const presentValueTotal = Math.round(additionalCostTotal / presentValueFactor);
+                    const presentEducation = Math.round(educationCost / presentValueFactor);
+                    const presentMedical = Math.round(medicalCost / presentValueFactor);
+                    const presentLeisure = Math.round(leisureCost / presentValueFactor);
+                    const presentConsumer = Math.round(consumerGoodsCost / presentValueFactor);
+                    const presentHousing = Math.round(housingCost / presentValueFactor);
+
+                    return (
+                      <div className={styles.stepCard}>
+                        <div className={styles.stepHeader}>
+                          <span className={styles.stepNumber}>Extra</span>
+                          <span className={styles.stepTitle}>추가 필요 자금</span>
                         </div>
                         <div className={styles.stepMainResult}>
-                          <div
-                            className={`${styles.diagnosisBadge} ${styles[diagnosisStatus]}`}
-                          >
-                            {diagnosisLabel}
-                          </div>
-                          <div
-                            className={`${styles.stepMainValue} ${styles.stepMainValueLarge} ${styles.animatedValue} ${gap >= 0 ? styles.positive : styles.negative}`}
-                          >
-                            {gap >= 0 ? "+" : ""}
-                            {formatBillion(gap)}억
-                          </div>
                           <div className={styles.stepMainLabel}>
-                            {gap >= 0 ? "여유분" : "부족분"} (연금 + 금융자산 -
-                            총 필요자금)
-                          </div>
-                          <div className={styles.diagnosisCriteria}>
-                            연금수입 + 현재자산 + 저축/투자 여력 기준, 필요자금
-                            대비 {Math.abs(Math.round(gapRatio * 100))}%{" "}
-                            {gapRatio >= 0 ? "여유" : "부족"}
+                            현재 가치로 평생 <strong>{formatBillion(presentValueTotal / 10000)}억</strong>의 추가 비용 발생 예상
                           </div>
                         </div>
-
-                        <div className={styles.stepSection}>
-                          <div className={styles.stepSectionHeader}>
-                            <span className={styles.stepSectionIcon}>1</span>
-                            <span className={styles.stepSectionTitle}>
-                              연금으로 충당
-                            </span>
-                            <span
-                              className={`${styles.stepSectionValue} ${styles.animatedValue}`}
-                            >
-                              {formatBillion(
-                                Math.round(
-                                  ((m.monthlyPension * 12 * m.retirementYears) /
-                                    10000) *
-                                    100,
-                                ) / 100,
-                              )}
-                              억
-                            </span>
+                        <div className={styles.extraValueComparison}>
+                          <div className={styles.extraValueItem}>
+                            <div className={styles.extraValueLabel}>미래 가치</div>
+                            <div className={styles.extraValueAmount}>+{formatBillion(additionalCostTotal / 10000)}억</div>
+                            <div className={styles.extraValueNote}>물가상승 반영</div>
                           </div>
-                          <div className={styles.stepSectionDesc}>
-                            월 {m.monthlyPension}만원 x {m.retirementYears}년
-                          </div>
-                          <div className={styles.stepSubDetails}>
-                            <div className={styles.stepSubRow}>
-                              <span>국민연금</span>
-                              <span>
-                                {formatBillion(
-                                  Math.round(
-                                    ((m.nationalPensionInflated *
-                                      12 *
-                                      m.retirementYears) /
-                                      10000) *
-                                      100,
-                                  ) / 100,
-                                )}
-                                억
-                              </span>
-                            </div>
-                            {data.retirementPensionPersonal +
-                              data.retirementPensionSpouse >
-                              0 && (
-                              <div className={styles.stepSubRow}>
-                                <span>퇴직연금</span>
-                                <span>
-                                  {formatBillion(
-                                    Math.round(
-                                      (((data.retirementPensionPersonal +
-                                        data.retirementPensionSpouse) *
-                                        12 *
-                                        m.retirementYears) /
-                                        10000) *
-                                        100,
-                                    ) / 100,
-                                  )}
-                                  억
-                                </span>
-                              </div>
-                            )}
-                            {data.privatePensionPersonal +
-                              data.privatePensionSpouse >
-                              0 && (
-                              <div className={styles.stepSubRow}>
-                                <span>개인연금</span>
-                                <span>
-                                  {formatBillion(
-                                    Math.round(
-                                      (((data.privatePensionPersonal +
-                                        data.privatePensionSpouse) *
-                                        12 *
-                                        m.retirementYears) /
-                                        10000) *
-                                        100,
-                                    ) / 100,
-                                  )}
-                                  억
-                                </span>
-                              </div>
-                            )}
-                            {data.otherIncomePersonal + data.otherIncomeSpouse >
-                              0 && (
-                              <div className={styles.stepSubRow}>
-                                <span>기타소득</span>
-                                <span>
-                                  {formatBillion(
-                                    Math.round(
-                                      (((data.otherIncomePersonal +
-                                        data.otherIncomeSpouse) *
-                                        12 *
-                                        m.retirementYears) /
-                                        10000) *
-                                        100,
-                                    ) / 100,
-                                  )}
-                                  억
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className={styles.stepSubNote}>
-                            물가상승률{" "}
-                            {Math.round(calcParams.inflationRate * 100)}%,
-                            투자수익률{" "}
-                            {Math.round(calcParams.financialGrowthRate * 100)}%
-                            반영
+                          <div className={styles.extraValueItem}>
+                            <div className={styles.extraValueLabel}>현재 가치</div>
+                            <div className={styles.extraValueAmount} style={{ color: '#0369a1' }}>+{formatBillion(presentValueTotal / 10000)}억</div>
+                            <div className={styles.extraValueNote}>지금 기준</div>
                           </div>
                         </div>
-
-                        <div className={styles.stepSection}>
-                          <div className={styles.stepSectionHeader}>
-                            <span className={styles.stepSectionIcon}>2</span>
-                            <span className={styles.stepSectionTitle}>
-                              은퇴 시점 예상 금융자산
-                            </span>
-                            <span
-                              className={`${styles.stepSectionValue} ${styles.animatedValue}`}
-                            >
-                              {formatBillion(m.liquidAssetAtRetirement)}억
-                            </span>
-                          </div>
-                          <div className={styles.stepSectionDesc}>
-                            현재 저축 유지 + 투자수익률 (부동산 제외)
-                          </div>
-                          <div className={styles.stepSubDetails}>
-                            <div className={styles.stepSubRow}>
-                              <span>현재 금융자산</span>
-                              <span>{formatBillion(m.financialAsset)}억</span>
-                            </div>
-                            <div className={styles.stepSubRow}>
-                              <span>저축률 (유지 가정)</span>
-                              <span>{Math.round(m.savingsRate)}%</span>
-                            </div>
-                            <div className={styles.stepSubRow}>
-                              <span>소득 상승률</span>
-                              <span className={styles.animatedValue}>
-                                연{" "}
-                                {Math.round(calcParams.incomeGrowthRate * 100)}%
+                        <div className={styles.stepDetails}>
+                          {data.children.length > 0 && (
+                            <div className={styles.stepDetailRow}>
+                              <div className={styles.stepDetailTop}>
+                                <span className={styles.stepDetailLabel}>
+                                  자녀 교육/양육비
+                                </span>
+                                <span className={styles.stepDetailValues}>
+                                  <span className={styles.stepDetailValueFuture}>{formatBillion(educationCost / 10000)}억</span>
+                                  <span className={styles.stepDetailValuePresent}>{formatBillion(presentEducation / 10000)}억</span>
+                                </span>
+                              </div>
+                              <span className={styles.stepDetailPersonalized}>
+                                {costOptions.education === "none"
+                                  ? "포함 안함"
+                                  : `자녀 ${data.children.length}명, 영아~대학교 + 결혼자금`
+                                }
                               </span>
                             </div>
-                            <div className={styles.stepSubRow}>
-                              <span>금융자산 수익률</span>
-                              <span className={styles.animatedValue}>
-                                연{" "}
-                                {Math.round(
-                                  calcParams.financialGrowthRate * 100,
-                                )}
-                                %
+                          )}
+                          <div className={styles.stepDetailRow}>
+                            <div className={styles.stepDetailTop}>
+                              <span className={styles.stepDetailLabel}>
+                                의료/간병비
+                              </span>
+                              <span className={styles.stepDetailValues}>
+                                <span className={styles.stepDetailValueFuture}>{formatBillion(medicalCost / 10000)}억</span>
+                                <span className={styles.stepDetailValuePresent}>{formatBillion(presentMedical / 10000)}억</span>
                               </span>
                             </div>
+                            <span className={styles.stepDetailPersonalized}>
+                              {costOptions.medical
+                                ? `본인${data.spouseAge ? "+배우자" : ""} 연령대별 예상 의료비`
+                                : "포함 안함"}
+                            </span>
+                          </div>
+                          <div className={styles.stepDetailRow}>
+                            <div className={styles.stepDetailTop}>
+                              <span className={styles.stepDetailLabel}>
+                                여행/여가
+                              </span>
+                              <span className={styles.stepDetailValues}>
+                                <span className={styles.stepDetailValueFuture}>{formatBillion(leisureCost / 10000)}억</span>
+                                <span className={styles.stepDetailValuePresent}>{formatBillion(presentLeisure / 10000)}억</span>
+                              </span>
+                            </div>
+                            <span className={styles.stepDetailPersonalized}>
+                              {costOptions.leisure === "none"
+                                ? "포함 안함"
+                                : `연간 여행/취미활동 (${m.effectiveLifeExpectancy}세까지)`
+                              }
+                            </span>
+                          </div>
+                          <div className={styles.stepDetailRow}>
+                            <div className={styles.stepDetailTop}>
+                              <span className={styles.stepDetailLabel}>소비재</span>
+                              <span className={styles.stepDetailValues}>
+                                <span className={styles.stepDetailValueFuture}>{formatBillion(consumerGoodsCost / 10000)}억</span>
+                                <span className={styles.stepDetailValuePresent}>{formatBillion(presentConsumer / 10000)}억</span>
+                              </span>
+                            </div>
+                            <span className={styles.stepDetailPersonalized}>
+                              {costOptions.consumerGoods === "none"
+                                ? "포함 안함"
+                                : `자동차, 가전, 가구 등 (${m.effectiveLifeExpectancy}세까지)`
+                              }
+                            </span>
+                          </div>
+                          <div className={styles.stepDetailRow}>
+                            <div className={styles.stepDetailTop}>
+                              <span className={styles.stepDetailLabel}>주거</span>
+                              <span className={styles.stepDetailValues}>
+                                <span className={styles.stepDetailValueFuture}>{costOptions.housing ? formatBillion(housingCost / 10000) : "0"}억</span>
+                                <span className={styles.stepDetailValuePresent}>{costOptions.housing ? formatBillion(presentHousing / 10000) : "0"}억</span>
+                              </span>
+                            </div>
+                            <span className={styles.stepDetailPersonalized}>
+                              {costOptions.housing
+                                ? "은퇴 후 예상 주거비 (전용 84㎡ 기준)"
+                                : "미선택"}
+                            </span>
                           </div>
                         </div>
                       </div>
                     );
                   })()}
+
+                  {/* Lycon 소개 카드 */}
+                  <div className={styles.stepCard}>
+                    <div className={styles.stepHeader}>
+                      <span className={styles.stepNumber}>Lycon</span>
+                      <span className={styles.stepTitle}>자산 관리 서비스</span>
+                    </div>
+                    <div className={styles.lyconIntro}>
+                      {/* 문제 제기 */}
+                      <div className={styles.lyconSection}>
+                        <p className={styles.lyconParagraph}>
+                          은퇴 목표만 해도 이렇게 많은 것들을 신경써야 합니다.
+                        </p>
+                        <p className={styles.lyconParagraph}>
+                          하지만 우리의 목표가 은퇴만은 아니잖아요?<br />
+                          <strong>내 집 마련, 자녀 계획, 교육 계획, 심지어 어떤 자동차를 살지까지.</strong><br />
+                          이 모든 것을 고려하며 미래를 계획해야 합니다.
+                        </p>
+                      </div>
+
+                      {/* 현실의 어려움 */}
+                      <div className={styles.lyconSection}>
+                        <p className={styles.lyconHighlight}>
+                          이를 위해 가장 중요한 건 <strong>현재의 관리</strong>입니다.
+                        </p>
+                        <p className={styles.lyconParagraph}>
+                          하지만 가계부 하나 쓰는 것도 어렵지 않나요?
+                        </p>
+                        <div className={styles.lyconChallenges}>
+                          <span>매달, 매년 바뀌는 세금과 정부 정책</span>
+                          <span>매일 요동치는 주식 시장에 의해 흔들리는 장기 투자</span>
+                          <span>놓치고 있는 연말정산 공제, 정부 지원금, 보험 청구</span>
+                        </div>
+                        <p className={styles.lyconSubNote}>
+                          돈을 버는 것만이 전부가 아닙니다.<br />
+                          <strong>돌려받을 것, 내지 않아도 될 것</strong>을 챙기는 것도 돈을 버는 것입니다.
+                        </p>
+                      </div>
+
+                      {/* 해결책 */}
+                      <div className={styles.lyconSection}>
+                        <p className={styles.lyconHighlight}>
+                          그래서 당신과 가족을 위한<br />
+                          <strong>자산 관리 전문가</strong>가 필요합니다.
+                        </p>
+                      </div>
+
+                      {/* Lycon 서비스 */}
+                      <div className={styles.lyconServices}>
+                        <div className={styles.lyconServiceItem}>
+                          <span className={styles.lyconServiceNum}>01</span>
+                          <div className={styles.lyconServiceContent}>
+                            <strong>목표 검증</strong>
+                            <span>은퇴 목표를 기반으로 모든 단기 목표를 검증합니다</span>
+                          </div>
+                        </div>
+                        <div className={styles.lyconServiceItem}>
+                          <span className={styles.lyconServiceNum}>02</span>
+                          <div className={styles.lyconServiceContent}>
+                            <strong>맞춤 시나리오</strong>
+                            <span>사용자 성향에 따라 시나리오를 생성하고 매년 시뮬레이션을 관리합니다</span>
+                          </div>
+                        </div>
+                        <div className={styles.lyconServiceItem}>
+                          <span className={styles.lyconServiceNum}>03</span>
+                          <div className={styles.lyconServiceContent}>
+                            <strong>정기 관리</strong>
+                            <span>가계부 정리, 연말정산, 포트폴리오 리밸런싱까지 주기적으로 챙깁니다</span>
+                          </div>
+                        </div>
+                        <div className={styles.lyconServiceItem}>
+                          <span className={styles.lyconServiceNum}>04</span>
+                          <div className={styles.lyconServiceContent}>
+                            <strong>통합 관리</strong>
+                            <span>모든 자산과 재무를 한 곳에서 투명하게, 언제 어디서든 관리합니다</span>
+                          </div>
+                        </div>
+                        <div className={styles.lyconServiceItem}>
+                          <span className={styles.lyconServiceNum}>05</span>
+                          <div className={styles.lyconServiceContent}>
+                            <strong>자산 관리 대시보드</strong>
+                            <span>내 자산 현황, 목표 달성률, 할 일 목록을 한눈에 확인합니다</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* CTA */}
+                      <div className={styles.lyconCta}>
+                        <p>
+                          혼자서는 못합니다. 아니, <strong>안 합니다.</strong>
+                        </p>
+                        <p>
+                          Lycon 전문 설계사에게 생각 없이 관리받으세요.<br />
+                          잊고 있다 보면, 때가 되면 알아서 액션하도록 도와드립니다.
+                        </p>
+                      </div>
+
+                      {/* Lycon 비전 */}
+                      <div className={styles.lyconBelief}>
+                        <p className={styles.lyconBeliefTitle}>
+                          Lycon이 믿고 있는 것
+                        </p>
+                        <p className={styles.lyconBeliefText}>
+                          상위 5% 자산가들은 이미 은행과 금융권에서 관리받고 있습니다.<br />
+                          바로 PB(Private Banking) 서비스입니다.
+                        </p>
+                        <p className={styles.lyconBeliefText}>
+                          은행, 증권사에게 소외되고 있는 중산층부터 모든 국민에게<br />
+                          자산 관리사가 반드시 필요하다고 믿습니다.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                 </>
               );
             })()}
-
-            {/* 비용 상세 내역 */}
-            <div className={styles.stepCard}>
-              <div className={styles.stepHeader}>
-                <span className={styles.stepNumber}>SETTING</span>
-                <span className={styles.stepTitle}>비용 변경</span>
-              </div>
-
-              {(() => {
-                const additionalCosts = calculateAdditionalCosts(
-                  data,
-                  calcParams,
-                );
-
-                // 선택된 옵션에 따른 비용 계산
-                const educationCost =
-                  costOptions.education === "none"
-                    ? 0
-                    : costOptions.education === "normal"
-                      ? additionalCosts.childEducation.grandTotalNormal
-                      : additionalCosts.childEducation.grandTotalPremium;
-                const leisureCost =
-                  costOptions.leisure === "none"
-                    ? 0
-                    : (additionalCosts.leisure[costOptions.leisure as number]
-                        ?.totalUntilRetirement || 0) +
-                      (additionalCosts.leisure[costOptions.leisure as number]
-                        ?.totalAfterRetirement || 0);
-                const consumerGoodsCost =
-                  costOptions.consumerGoods === "none"
-                    ? 0
-                    : additionalCosts.consumerGoods[
-                        costOptions.consumerGoods as number
-                      ]?.totalUntilLifeExpectancy || 0;
-                const medicalCost = costOptions.medical
-                  ? additionalCosts.medical.grandTotal
-                  : 0;
-                const housingCost = costOptions.housing
-                  ? additionalCosts.housing[costOptions.housing.areaIndex]
-                      ?.tiers[costOptions.housing.tierIndex]?.price || 0
-                  : 0;
-
-                return (
-                  <>
-                    {/* 자녀 교육/양육비 상세 */}
-                    {data.children.length > 0 && (
-                      <div className={styles.card}>
-                        <div className={styles.costDetailHeader}>
-                          <h3
-                            className={styles.cardTitle}
-                            onClick={() => toggleSection("childEducation")}
-                          >
-                            자녀 교육/양육비
-                          </h3>
-                          <div className={styles.costDetailTopRow}>
-                            <div className={styles.costDetailOptions}>
-                              <button
-                                className={`${styles.costOptionBtn} ${costOptions.education === "normal" ? styles.active : ""}`}
-                                onClick={() =>
-                                  setCostOptions((p) => ({
-                                    ...p,
-                                    education: "normal",
-                                  }))
-                                }
-                              >
-                                보통
-                              </button>
-                              <button
-                                className={`${styles.costOptionBtn} ${costOptions.education === "premium" ? styles.active : ""}`}
-                                onClick={() =>
-                                  setCostOptions((p) => ({
-                                    ...p,
-                                    education: "premium",
-                                  }))
-                                }
-                              >
-                                여유
-                              </button>
-                            </div>
-                            <svg
-                              className={`${styles.chevron} ${expandedSections["childEducation"] ? styles.expanded : ""}`}
-                              onClick={() => toggleSection("childEducation")}
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            >
-                              <path d="M6 9l6 6 6-6" />
-                            </svg>
-                          </div>
-                        </div>
-                        <div className={styles.costDetailBottomRow}>
-                          <span className={styles.costDetailDesc}>
-                            자녀 {data.children.length}명, 영아~대학교 +
-                            결혼자금
-                          </span>
-                          <span
-                            className={`${styles.costDetailAmount} ${styles.animatedValue}`}
-                          >
-                            {formatBillion(educationCost / 10000)}억
-                          </span>
-                        </div>
-                        {expandedSections["childEducation"] && (
-                          <div className={styles.simpleExpandContent}>
-                            <div className={styles.simpleColumnHeader}>
-                              <span>단계</span>
-                              <div className={styles.simpleColumnLabels}>
-                                <span>보통</span>
-                                <span>여유</span>
-                              </div>
-                            </div>
-                            {additionalCosts.childEducation.details.map(
-                              (child, idx) => (
-                                <div
-                                  key={idx}
-                                  className={styles.simpleSubSection}
-                                >
-                                  <div className={styles.simpleSubTitle}>
-                                    {child.childName} (현재 {child.childAge}세)
-                                  </div>
-                                  <div className={styles.simpleList}>
-                                    {child.stageDetails.map((stage, sIdx) => (
-                                      <div
-                                        key={sIdx}
-                                        className={styles.simpleRow}
-                                      >
-                                        <span className={styles.simpleRowLabel}>
-                                          {stage.stage}
-                                          <span className={styles.simpleRowSub}>
-                                            {stage.years}년
-                                          </span>
-                                        </span>
-                                        <div className={styles.simpleRowValues}>
-                                          <span
-                                            className={
-                                              styles.simpleRowValueNormal
-                                            }
-                                          >
-                                            {formatBillion(
-                                              stage.normalCost / 10000,
-                                            )}
-                                            억
-                                          </span>
-                                          <span
-                                            className={
-                                              styles.simpleRowValuePremium
-                                            }
-                                          >
-                                            {formatBillion(
-                                              stage.premiumCost / 10000,
-                                            )}
-                                            억
-                                          </span>
-                                        </div>
-                                      </div>
-                                    ))}
-                                    <div className={styles.simpleRow}>
-                                      <span className={styles.simpleRowLabel}>
-                                        결혼자금
-                                      </span>
-                                      <div className={styles.simpleRowValues}>
-                                        <span
-                                          className={
-                                            styles.simpleRowValueNormal
-                                          }
-                                        >
-                                          {formatBillion(
-                                            child.weddingNormal / 10000,
-                                          )}
-                                          억
-                                        </span>
-                                        <span
-                                          className={
-                                            styles.simpleRowValuePremium
-                                          }
-                                        >
-                                          {formatBillion(
-                                            child.weddingPremium / 10000,
-                                          )}
-                                          억
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              ),
-                            )}
-                            <div className={styles.simpleTotalRow}>
-                              <span>총계</span>
-                              <div className={styles.simpleRowValues}>
-                                <span className={styles.simpleRowValueNormal}>
-                                  {formatBillion(
-                                    additionalCosts.childEducation
-                                      .grandTotalNormal / 10000,
-                                  )}
-                                  억
-                                </span>
-                                <span className={styles.simpleRowValuePremium}>
-                                  {formatBillion(
-                                    additionalCosts.childEducation
-                                      .grandTotalPremium / 10000,
-                                  )}
-                                  억
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* 의료/간병비 */}
-                    <div className={styles.card}>
-                      <div className={styles.costDetailHeader}>
-                        <h3
-                          className={styles.cardTitle}
-                          onClick={() => toggleSection("medical")}
-                        >
-                          의료/간병비
-                        </h3>
-                        <div className={styles.costDetailTopRow}>
-                          <div className={styles.costDetailOptions}>
-                            <span className={styles.costDetailNote}>
-                              평균 의료비 적용
-                            </span>
-                          </div>
-                          <svg
-                            className={`${styles.chevron} ${expandedSections["medical"] ? styles.expanded : ""}`}
-                            onClick={() => toggleSection("medical")}
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <path d="M6 9l6 6 6-6" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className={styles.costDetailBottomRow}>
-                        <span className={styles.costDetailDesc}>
-                          본인{data.spouseAge ? "+배우자" : ""} 연령대별 예상
-                          의료비
-                        </span>
-                        <span
-                          className={`${styles.costDetailAmount} ${styles.animatedValue}`}
-                        >
-                          {formatBillion(medicalCost / 10000)}억
-                        </span>
-                      </div>
-                      {expandedSections["medical"] && (
-                        <div className={styles.simpleExpandContent}>
-                          <div className={styles.simpleSubSection}>
-                            <div className={styles.simpleSubTitle}>
-                              본인 ({data.currentAge}세)
-                            </div>
-                            <div className={styles.simpleList}>
-                              {additionalCosts.medical.selfCosts.map(
-                                (cost, idx) => (
-                                  <div key={idx} className={styles.simpleRow}>
-                                    <span className={styles.simpleRowLabel}>
-                                      {cost.ageRange}
-                                      <span className={styles.simpleRowSub}>
-                                        {cost.yearsInRange}년
-                                      </span>
-                                    </span>
-                                    <span className={styles.simpleRowValue}>
-                                      {formatBillion(cost.totalCost / 10000)}억
-                                    </span>
-                                  </div>
-                                ),
-                              )}
-                            </div>
-                          </div>
-                          {data.spouseAge &&
-                            additionalCosts.medical.spouseCosts.length > 0 && (
-                              <div className={styles.simpleSubSection}>
-                                <div className={styles.simpleSubTitle}>
-                                  배우자 ({data.spouseAge}세)
-                                </div>
-                                <div className={styles.simpleList}>
-                                  {additionalCosts.medical.spouseCosts.map(
-                                    (cost, idx) => (
-                                      <div
-                                        key={idx}
-                                        className={styles.simpleRow}
-                                      >
-                                        <span className={styles.simpleRowLabel}>
-                                          {cost.ageRange}
-                                          <span className={styles.simpleRowSub}>
-                                            {cost.yearsInRange}년
-                                          </span>
-                                        </span>
-                                        <span className={styles.simpleRowValue}>
-                                          {formatBillion(
-                                            cost.totalCost / 10000,
-                                          )}
-                                          억
-                                        </span>
-                                      </div>
-                                    ),
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          <div className={styles.simpleTotalRow}>
-                            <span>총계</span>
-                            <span>
-                              {formatBillion(
-                                additionalCosts.medical.grandTotal / 10000,
-                              )}
-                              억
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 여행/여가 */}
-                    <div className={styles.card}>
-                      <div className={styles.costDetailHeader}>
-                        <h3
-                          className={styles.cardTitle}
-                          onClick={() => toggleSection("leisure")}
-                        >
-                          여행/여가
-                        </h3>
-                        <div className={styles.costDetailTopRow}>
-                          <div className={styles.costDetailOptions}>
-                            {additionalCosts.leisure.map((opt, idx) => (
-                              <button
-                                key={idx}
-                                className={`${styles.costOptionBtn} ${costOptions.leisure === idx ? styles.active : ""}`}
-                                onClick={() =>
-                                  setCostOptions((p) => ({
-                                    ...p,
-                                    leisure: idx,
-                                  }))
-                                }
-                              >
-                                {opt.level}
-                              </button>
-                            ))}
-                          </div>
-                          <svg
-                            className={`${styles.chevron} ${expandedSections["leisure"] ? styles.expanded : ""}`}
-                            onClick={() => toggleSection("leisure")}
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <path d="M6 9l6 6 6-6" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className={styles.costDetailBottomRow}>
-                        <span className={styles.costDetailDesc}>
-                          연간 여행/취미활동 ({m.effectiveLifeExpectancy}세까지)
-                        </span>
-                        <span
-                          className={`${styles.costDetailAmount} ${styles.animatedValue}`}
-                        >
-                          {formatBillion(leisureCost / 10000)}억
-                        </span>
-                      </div>
-                      {expandedSections["leisure"] && (
-                        <div className={styles.simpleExpandContent}>
-                          <div className={styles.simpleList}>
-                            {additionalCosts.leisure.map((opt, idx) => (
-                              <div key={idx} className={styles.simpleRow}>
-                                <span className={styles.simpleRowLabel}>
-                                  {opt.level}
-                                  <span className={styles.simpleRowSub}>
-                                    연 {opt.annualCost}만
-                                  </span>
-                                </span>
-                                <span className={styles.simpleRowValue}>
-                                  {formatBillion(
-                                    (opt.totalUntilRetirement +
-                                      opt.totalAfterRetirement) /
-                                      10000,
-                                  )}
-                                  억
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 소비재 (자동차, 가전 등) */}
-                    <div className={styles.card}>
-                      <div className={styles.costDetailHeader}>
-                        <h3
-                          className={styles.cardTitle}
-                          onClick={() => toggleSection("consumerGoods")}
-                        >
-                          소비재
-                        </h3>
-                        <div className={styles.costDetailTopRow}>
-                          <div className={styles.costDetailOptions}>
-                            {additionalCosts.consumerGoods.map((opt, idx) => (
-                              <button
-                                key={idx}
-                                className={`${styles.costOptionBtn} ${costOptions.consumerGoods === idx ? styles.active : ""}`}
-                                onClick={() =>
-                                  setCostOptions((p) => ({
-                                    ...p,
-                                    consumerGoods: idx,
-                                  }))
-                                }
-                              >
-                                {opt.level}
-                              </button>
-                            ))}
-                          </div>
-                          <svg
-                            className={`${styles.chevron} ${expandedSections["consumerGoods"] ? styles.expanded : ""}`}
-                            onClick={() => toggleSection("consumerGoods")}
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <path d="M6 9l6 6 6-6" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className={styles.costDetailBottomRow}>
-                        <span className={styles.costDetailDesc}>
-                          자동차, 가전, 가구 등 ({m.effectiveLifeExpectancy}
-                          세까지)
-                        </span>
-                        <span
-                          className={`${styles.costDetailAmount} ${styles.animatedValue}`}
-                        >
-                          {formatBillion(consumerGoodsCost / 10000)}억
-                        </span>
-                      </div>
-                      {expandedSections["consumerGoods"] && (
-                        <div className={styles.simpleExpandContent}>
-                          <div className={styles.simpleList}>
-                            {additionalCosts.consumerGoods.map((opt, idx) => (
-                              <div key={idx} className={styles.simpleRow}>
-                                <span className={styles.simpleRowLabel}>
-                                  {opt.level}
-                                  <span className={styles.simpleRowSub}>
-                                    연 {opt.annualCost}만
-                                  </span>
-                                </span>
-                                <span className={styles.simpleRowValue}>
-                                  {formatBillion(
-                                    opt.totalUntilLifeExpectancy / 10000,
-                                  )}
-                                  억
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 주거 */}
-                    <div className={styles.card}>
-                      <div className={styles.costDetailHeader}>
-                        <h3
-                          className={styles.cardTitle}
-                          onClick={() => toggleSection("housing")}
-                        >
-                          주거
-                        </h3>
-                        <div className={styles.costDetailTopRow}>
-                          <div className={styles.costDetailOptions}>
-                            <button
-                              className={`${styles.costOptionBtn} ${costOptions.housing === null ? styles.active : ""}`}
-                              onClick={() =>
-                                setCostOptions((p) => ({ ...p, housing: null }))
-                              }
-                            >
-                              선택 안함
-                            </button>
-                            {costOptions.housing && (
-                              <span className={styles.costDetailNote}>
-                                {
-                                  additionalCosts.housing[
-                                    costOptions.housing.areaIndex
-                                  ]?.area
-                                }{" "}
-                                {
-                                  additionalCosts.housing[
-                                    costOptions.housing.areaIndex
-                                  ]?.tiers[costOptions.housing.tierIndex]?.tier
-                                }
-                              </span>
-                            )}
-                          </div>
-                          <svg
-                            className={`${styles.chevron} ${expandedSections["housing"] ? styles.expanded : ""}`}
-                            onClick={() => toggleSection("housing")}
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <path d="M6 9l6 6 6-6" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className={styles.costDetailBottomRow}>
-                        <span className={styles.costDetailDesc}>
-                          은퇴 후 예상 주거비 (전용 84㎡ 기준)
-                        </span>
-                        <span
-                          className={`${styles.costDetailAmount} ${styles.animatedValue}`}
-                        >
-                          {costOptions.housing
-                            ? formatBillion(housingCost / 10000)
-                            : "0"}
-                          억
-                        </span>
-                      </div>
-                      {expandedSections["housing"] && (
-                        <div className={styles.simpleExpandContent}>
-                          <table className={styles.housingTable}>
-                            <thead>
-                              <tr>
-                                <th>지역</th>
-                                {additionalCosts.housing[0]?.tiers.map(
-                                  (tier, idx) => (
-                                    <th key={idx}>{tier.tier}</th>
-                                  ),
-                                )}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {additionalCosts.housing.map((area, areaIdx) => (
-                                <tr key={areaIdx}>
-                                  <td>
-                                    <div>{area.area}</div>
-                                    <div className={styles.housingAreaDesc}>
-                                      {area.description}
-                                    </div>
-                                  </td>
-                                  {area.tiers.map((tier, tierIdx) => (
-                                    <td
-                                      key={tierIdx}
-                                      className={`${styles.housingTableCell} ${
-                                        costOptions.housing?.areaIndex ===
-                                          areaIdx &&
-                                        costOptions.housing?.tierIndex ===
-                                          tierIdx
-                                          ? styles.selected
-                                          : ""
-                                      }`}
-                                      onClick={() =>
-                                        setCostOptions((p) => ({
-                                          ...p,
-                                          housing: {
-                                            areaIndex: areaIdx,
-                                            tierIndex: tierIdx,
-                                          },
-                                        }))
-                                      }
-                                    >
-                                      {tier.priceDisplay}
-                                    </td>
-                                  ))}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* 시뮬레이션 설정 */}
-            <div className={styles.stepCard}>
-              <div className={styles.stepHeader}>
-                <span className={styles.stepNumber}>SETTING</span>
-                <span className={styles.stepTitle}>가정 변경</span>
-              </div>
-
-              {/* 은퇴 나이 */}
-              <div className={styles.calcSettingRow}>
-                <span className={styles.calcSettingLabel}>은퇴 나이</span>
-                <div className={styles.calcSettingOptions}>
-                  {[
-                    {
-                      value: -5,
-                      label: `${data.targetRetirementAge - 5}세`,
-                      desc: "-5년",
-                    },
-                    {
-                      value: 0,
-                      label: `${data.targetRetirementAge}세`,
-                      desc: "기준",
-                    },
-                    {
-                      value: 5,
-                      label: `${data.targetRetirementAge + 5}세`,
-                      desc: "+5년",
-                    },
-                  ].map((opt) => (
-                    <div
-                      key={opt.value}
-                      className={styles.calcSettingBtnWrapper}
-                    >
-                      <button
-                        className={`${styles.calcSettingBtn} ${calcParams.retirementAgeOffset === opt.value ? styles.active : ""}`}
-                        onClick={() =>
-                          setCalcParams((p) => ({
-                            ...p,
-                            retirementAgeOffset: opt.value,
-                          }))
-                        }
-                      >
-                        {opt.label}
-                      </button>
-                      <span className={styles.calcSettingDesc}>{opt.desc}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 생활비 수준 */}
-              <div className={styles.calcSettingRow}>
-                <span className={styles.calcSettingLabel}>은퇴 후 생활비</span>
-                <div className={styles.calcSettingOptions}>
-                  {[
-                    { value: 0.5, label: "50%", desc: "검소" },
-                    { value: 0.7, label: "70%", desc: "보통" },
-                    { value: 1.0, label: "100%", desc: "여유" },
-                  ].map((opt) => (
-                    <div
-                      key={opt.value}
-                      className={styles.calcSettingBtnWrapper}
-                    >
-                      <button
-                        className={`${styles.calcSettingBtn} ${calcParams.livingExpenseRatio === opt.value ? styles.active : ""}`}
-                        onClick={() =>
-                          setCalcParams((p) => ({
-                            ...p,
-                            livingExpenseRatio: opt.value,
-                          }))
-                        }
-                      >
-                        {opt.label}
-                      </button>
-                      <span className={styles.calcSettingDesc}>{opt.desc}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 물가상승률 */}
-              <div className={styles.calcSettingRow}>
-                <span className={styles.calcSettingLabel}>물가상승률</span>
-                <div className={styles.calcSettingOptions}>
-                  {[
-                    { value: 0.045, label: "4.5%", desc: "비관" },
-                    { value: 0.03, label: "3%", desc: "평균" },
-                    { value: 0.015, label: "1.5%", desc: "낙관" },
-                  ].map((opt) => (
-                    <div
-                      key={opt.value}
-                      className={styles.calcSettingBtnWrapper}
-                    >
-                      <button
-                        className={`${styles.calcSettingBtn} ${calcParams.inflationRate === opt.value ? styles.active : ""}`}
-                        onClick={() =>
-                          setCalcParams((p) => ({
-                            ...p,
-                            inflationRate: opt.value,
-                          }))
-                        }
-                      >
-                        {opt.label}
-                      </button>
-                      <span className={styles.calcSettingDesc}>{opt.desc}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 소득상승률 */}
-              <div className={styles.calcSettingRow}>
-                <span className={styles.calcSettingLabel}>소득상승률</span>
-                <div className={styles.calcSettingOptions}>
-                  {[
-                    { value: 0.02, label: "2%", desc: "비관" },
-                    { value: 0.035, label: "3.5%", desc: "평균" },
-                    { value: 0.05, label: "5%", desc: "낙관" },
-                  ].map((opt) => (
-                    <div
-                      key={opt.value}
-                      className={styles.calcSettingBtnWrapper}
-                    >
-                      <button
-                        className={`${styles.calcSettingBtn} ${calcParams.incomeGrowthRate === opt.value ? styles.active : ""}`}
-                        onClick={() =>
-                          setCalcParams((p) => ({
-                            ...p,
-                            incomeGrowthRate: opt.value,
-                          }))
-                        }
-                      >
-                        {opt.label}
-                      </button>
-                      <span className={styles.calcSettingDesc}>{opt.desc}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 금융자산 수익률 */}
-              <div className={styles.calcSettingRow}>
-                <span className={styles.calcSettingLabel}>금융자산 수익률</span>
-                <div className={styles.calcSettingOptions}>
-                  {[
-                    { value: 0.02, label: "2%", desc: "비관" },
-                    { value: 0.05, label: "5%", desc: "평균" },
-                    { value: 0.07, label: "7%", desc: "낙관" },
-                    { value: 0.1, label: "10%", desc: "Lycon" },
-                  ].map((opt) => (
-                    <div
-                      key={opt.value}
-                      className={styles.calcSettingBtnWrapper}
-                    >
-                      <button
-                        className={`${styles.calcSettingBtn} ${calcParams.financialGrowthRate === opt.value ? styles.active : ""}`}
-                        onClick={() =>
-                          setCalcParams((p) => ({
-                            ...p,
-                            financialGrowthRate: opt.value,
-                          }))
-                        }
-                      >
-                        {opt.label}
-                      </button>
-                      <span className={styles.calcSettingDesc}>{opt.desc}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 기대수명 */}
-              <div className={styles.calcSettingRow}>
-                <span className={styles.calcSettingLabel}>기대수명</span>
-                <div className={styles.calcSettingOptions}>
-                  {[
-                    { value: 80, label: "80세" },
-                    { value: 90, label: "90세" },
-                    { value: 100, label: "100세" },
-                  ].map((opt) => (
-                    <button
-                      key={opt.value}
-                      className={`${styles.calcSettingBtn} ${calcParams.lifeExpectancy === opt.value ? styles.active : ""}`}
-                      onClick={() =>
-                        setCalcParams((p) => ({
-                          ...p,
-                          lifeExpectancy: opt.value,
-                        }))
-                      }
-                    >
-                      <span>{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
           </>
         )}
 
@@ -2574,21 +2108,70 @@ export function DiagnosisReport({
                 <span className={styles.stepTitle}>복리의 힘</span>
               </div>
               <div className={styles.guideSubtitle}>
-                1,000만원을 연 7%로 굴리면
+                1,000만원을 연 10%로 굴리면 <span className={styles.guideSubtitleNote}>(Lycon 자산 관리사 연평균 수익률)</span>
               </div>
-              <div className={styles.guideCompoundGrid}>
-                <div className={styles.guideCompoundItem}>
-                  <span className={styles.guideCompoundYear}>10년 후</span>
-                  <span className={styles.guideCompoundValue}>2,000만</span>
+              <div className={styles.compoundAmounts}>
+                <div className={styles.compoundAmountItem}>
+                  <span className={styles.compoundAmountValue}>1,000만</span>
+                  <span className={styles.compoundAmountYear}>0년</span>
                 </div>
-                <div className={styles.guideCompoundItem}>
-                  <span className={styles.guideCompoundYear}>20년 후</span>
-                  <span className={styles.guideCompoundValue}>4,000만</span>
+                <div className={styles.compoundAmountItem}>
+                  <span className={styles.compoundAmountValue}>2,594만</span>
+                  <span className={styles.compoundAmountYear}>10년</span>
                 </div>
-                <div className={styles.guideCompoundItem}>
-                  <span className={styles.guideCompoundYear}>30년 후</span>
-                  <span className={styles.guideCompoundValue}>7,600만</span>
+                <div className={styles.compoundAmountItem}>
+                  <span className={styles.compoundAmountValue}>6,727만</span>
+                  <span className={styles.compoundAmountYear}>20년</span>
                 </div>
+                <div className={styles.compoundAmountItem}>
+                  <span className={styles.compoundAmountValue}>1억 7,449만</span>
+                  <span className={styles.compoundAmountYear}>30년</span>
+                </div>
+              </div>
+              <div className={styles.compoundChartContainer}>
+                <Line
+                  data={{
+                    labels: Array.from({ length: 31 }, (_, i) => i),
+                    datasets: [
+                      {
+                        data: Array.from({ length: 31 }, (_, i) =>
+                          Math.round(1000 * Math.pow(1.10, i))
+                        ),
+                        borderColor: "#3b82f6",
+                        backgroundColor: "rgba(59, 130, 246, 0.1)",
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: (ctx) => {
+                          const index = ctx.dataIndex;
+                          return [0, 10, 20, 30].includes(index) ? 4 : 0;
+                        },
+                        pointBackgroundColor: "#3b82f6",
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: {
+                        callbacks: {
+                          label: (ctx) => `${ctx.parsed.y.toLocaleString()}만원`,
+                          title: (ctx) => `${ctx[0].label}년 후`,
+                        },
+                      },
+                    },
+                    scales: {
+                      x: {
+                        display: false,
+                      },
+                      y: {
+                        display: false,
+                        beginAtZero: true,
+                      },
+                    },
+                  }}
+                />
               </div>
               <div className={styles.guideTipBox}>
                 내가 일하지 않아도 돈이 스스로 불어납니다. 시간이 길수록 효과가

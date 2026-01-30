@@ -109,12 +109,26 @@ interface PrepRetirementGoals {
   lifeExpectancy?: number; // 기대수명 (기본 90)
 }
 
+// investment 객체 타입 (실제 DB 구조)
+interface PrepInvestmentData {
+  securities?: {
+    balance: number;
+    investmentTypes?: string[];
+  };
+  crypto?: {
+    balance: number;
+  };
+  gold?: {
+    balance: number;
+  };
+}
+
 interface PrepDataStore {
   family?: PrepFamilyMember[];
   income?: PrepIncomeData;
   expense?: PrepExpenseData;
   savings?: PrepSavingsItem[];
-  investment?: PrepSavingsItem[];
+  investment?: PrepInvestmentData;
   housing?: PrepHousingData;
   debt?: PrepDebtItem[];
   nationalPension?: PrepNationalPensionData;
@@ -260,9 +274,40 @@ export function RetirementDiagnosisForm({
       setNationalPensionData(loaded.nationalPension || null);
       setRetirementPensionData(loaded.retirementPension || null);
       setPersonalPensions((loaded.personalPension || []).map((p, idx) => ({ ...p, id: p.id || `personal-${idx}` })));
-      // savings와 investment 배열 합쳐서 로드
+      // savings 배열 로드
       const loadedSavings = (loaded.savings || []).map((s, idx) => ({ ...s, id: s.id || `savings-${idx}` }));
-      const loadedInvestment = (loaded.investment || []).map((i, idx) => ({ ...i, id: i.id || `investment-${idx}` }));
+
+      // investment 객체를 배열로 변환
+      const loadedInvestment: PrepSavingsItem[] = [];
+      if (loaded.investment) {
+        if (loaded.investment.securities?.balance) {
+          loadedInvestment.push({
+            id: `investment-securities`,
+            type: "securities",
+            title: "증권",
+            owner: "self",
+            currentBalance: loaded.investment.securities.balance,
+          });
+        }
+        if (loaded.investment.crypto?.balance) {
+          loadedInvestment.push({
+            id: `investment-crypto`,
+            type: "crypto",
+            title: "암호화폐",
+            owner: "self",
+            currentBalance: loaded.investment.crypto.balance,
+          });
+        }
+        if (loaded.investment.gold?.balance) {
+          loadedInvestment.push({
+            id: `investment-gold`,
+            type: "gold",
+            title: "금",
+            owner: "self",
+            currentBalance: loaded.investment.gold.balance,
+          });
+        }
+      }
       setSavingsItems([...loadedSavings, ...loadedInvestment]);
       if (loaded.retirementGoals) {
         setRetirementGoals(loaded.retirementGoals);
@@ -365,10 +410,22 @@ export function RetirementDiagnosisForm({
       const savingsOnly = savingsItems.filter((s) => ["checking", "savings", "deposit"].includes(s.type));
       const investmentOnly = savingsItems.filter((s) => !["checking", "savings", "deposit"].includes(s.type));
 
+      // 투자 배열을 객체로 변환
+      const investmentData: PrepInvestmentData = {};
+      investmentOnly.forEach((item) => {
+        if (item.type === "securities") {
+          investmentData.securities = { balance: item.currentBalance, investmentTypes: [] };
+        } else if (item.type === "crypto") {
+          investmentData.crypto = { balance: item.currentBalance };
+        } else if (item.type === "gold") {
+          investmentData.gold = { balance: item.currentBalance };
+        }
+      });
+
       const newPrepData = {
         ...prepData,
         savings: savingsOnly,
-        investment: investmentOnly,
+        investment: Object.keys(investmentData).length > 0 ? investmentData : undefined,
       };
       await savePrepData(newPrepData);
       setEditingSection(null);
