@@ -22,15 +22,9 @@ export default function PhoneVerifyPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('pin_hash, onboarding_step, phone_number')
+        .select('onboarding_step, phone_number')
         .eq('id', user.id)
         .single()
-
-      // PIN 없음 → PIN 설정으로
-      if (!profile?.pin_hash) {
-        router.replace('/auth/pin-setup')
-        return
-      }
 
       // 온보딩 미완료 → 온보딩으로
       if (profile?.onboarding_step !== 'completed') {

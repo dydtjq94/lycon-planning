@@ -72,40 +72,34 @@ export function LoginForm() {
       OnboardingEvents.loginCompleted(data.user.id);
       const { data: profile } = await supabase
         .from("profiles")
-        .select("phone_number, pin_hash, onboarding_step")
+        .select("phone_number, onboarding_step")
         .eq("id", data.user.id)
         .single();
 
-      // 1. 프로필 없음 → PIN 설정
+      // 1. 프로필 없음 → 온보딩
       if (!profile) {
-        router.replace("/auth/pin-setup");
+        router.replace("/onboarding");
         return;
       }
 
-      // 2. PIN 미설정 → PIN 설정
-      if (!profile.pin_hash) {
-        router.replace("/auth/pin-setup");
-        return;
-      }
-
-      // 3. 온보딩 미완료 → 온보딩
+      // 2. 온보딩 미완료 → 온보딩
       if (profile.onboarding_step !== "completed") {
         router.replace("/onboarding");
         return;
       }
 
-      // 4. 전화번호 미인증 → 전화번호 인증
+      // 3. 전화번호 미인증 → 전화번호 인증
       if (!profile.phone_number) {
         router.replace("/auth/phone-verify");
         return;
       }
 
-      // 5. 모두 완료 (재방문) → PIN 입력
-      router.replace("/auth/pin-verify");
+      // 4. 모두 완료 (재방문) → 웨이팅
+      router.replace("/waiting");
       return;
     }
 
-    router.replace("/auth/pin-setup");
+    router.replace("/onboarding");
   };
 
   // 초기화 중

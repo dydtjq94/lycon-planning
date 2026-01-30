@@ -35,15 +35,9 @@ export default function OnboardingPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("name, gender, birth_date, onboarding_step, pin_hash, phone_number")
+        .select("name, gender, birth_date, onboarding_step, phone_number")
         .eq("id", user.id)
         .single();
-
-      // PIN 없음 → PIN 설정으로
-      if (!profile?.pin_hash) {
-        router.replace("/auth/pin-setup");
-        return;
-      }
 
       // 온보딩 완료 + 전화번호 인증 완료 → 대기 화면으로
       if (profile?.onboarding_step === "completed" && profile?.phone_number) {

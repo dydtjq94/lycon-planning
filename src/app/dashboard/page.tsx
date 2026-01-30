@@ -7,8 +7,6 @@ import { FinancialProvider, type ProfileBasics, type FamilyMember } from "@/cont
 import type { Simulation } from "@/types";
 import { DashboardContent } from "./DashboardContent";
 
-// PIN 인증 세션 키
-const PIN_SESSION_KEY = "pin_verified";
 
 interface DashboardData {
   simulation: Simulation;
@@ -40,20 +38,6 @@ export default function DashboardPage() {
 
       if (!profile) {
         router.replace("/onboarding");
-        return;
-      }
-
-      // PIN이 설정되지 않은 경우
-      if (!profile.pin_hash) {
-        router.replace("/auth/pin-setup");
-        return;
-      }
-
-      // 세션 기반 PIN 인증 확인 (브라우저 탭/창 닫으면 초기화)
-      const pinVerified = sessionStorage.getItem(PIN_SESSION_KEY);
-      if (!pinVerified) {
-        localStorage.setItem("returnUrl", "/dashboard");
-        router.replace("/auth/pin-verify");
         return;
       }
 

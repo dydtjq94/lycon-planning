@@ -173,15 +173,10 @@ function WaitingPageContent() {
       const { data: profileData } = await supabase
         .from("profiles")
         .select(
-          "name, booking_info, pin_hash, onboarding_step, phone_number, pin_verified_at, prep_data, report_published_at",
+          "name, booking_info, onboarding_step, phone_number, prep_data, report_published_at",
         )
         .eq("id", user.id)
         .single();
-
-      if (!profileData?.pin_hash) {
-        router.replace("/auth/pin-setup");
-        return;
-      }
 
       if (profileData?.onboarding_step !== "completed") {
         router.replace("/onboarding");
@@ -198,13 +193,6 @@ function WaitingPageContent() {
         await confirmUserBooking();
       } catch {
         // 예약이 없거나 이미 confirmed인 경우 무시
-      }
-
-      // 세션 기반 PIN 인증 확인 (브라우저 탭/창 닫으면 초기화)
-      const pinVerified = sessionStorage.getItem("pin_verified");
-      if (!pinVerified) {
-        router.replace("/auth/pin-verify");
-        return;
       }
 
       if (profileData) {
