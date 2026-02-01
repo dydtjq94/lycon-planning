@@ -239,7 +239,6 @@
 .cashflowBarContainer {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
 .cashflowBar {
@@ -3136,7 +3135,16 @@
   text-decoration: underline;
 }
 
-/* Settings Bar */
+/* Settings Bar Wrapper - sticky 담당 */
+.settingsBarWrapper {
+  position: sticky;
+  top: 115px; /* header 69px + tabNav 46px */
+  z-index: 90;
+  background: white;
+  overflow: hidden;
+}
+
+/* Settings Bar - 애니메이션 담당 */
 .settingsBar {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3144,9 +3152,6 @@
   padding: 12px 16px;
   background: white;
   border-bottom: 1px solid #e5e5e5;
-  position: sticky;
-  top: 114px;
-  z-index: 90;
   transform: translateY(0);
   opacity: 1;
   transition: transform 0.3s ease, opacity 0.3s ease;

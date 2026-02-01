@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, X, Maximize2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { DiagnosisReport } from "./DiagnosisReport";
+import { ReportTabs } from "@/app/waiting/report/mobile/components";
 import {
   convertPrepDataToDiagnosisData,
   PrepDataStore,
   DiagnosisData,
 } from "@/lib/services/diagnosisDataService";
 import styles from "./report.module.css";
+import mobileStyles from "@/app/waiting/report/mobile/mobile-report.module.css";
 
 export default function ReportPage() {
   const params = useParams();
@@ -26,6 +27,7 @@ export default function ReportPage() {
   const [diagnosisDate, setDiagnosisDate] = useState<string | undefined>();
   const [savingOpinion, setSavingOpinion] = useState(false);
   const [savedOpinion, setSavedOpinion] = useState(""); // 저장된 소견 (변경 감지용)
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -153,67 +155,82 @@ export default function ReportPage() {
   };
 
   return (
-    <div className={styles.pageContainer}>
-      <button className={styles.backButton} onClick={() => router.back()}>
-        <ArrowLeft size={16} />
-        뒤로 가기
-      </button>
-      <div className={styles.contentLayout}>
-        <div className={styles.reportWrapper}>
-          <DiagnosisReport
-            data={data}
-            userId={userId}
-            isPublished={isPublished}
-            hideActions
-            opinion={opinion}
-            diagnosisDate={diagnosisDate}
-          />
+    <div className={`${styles.pageContainer} ${isFullscreen ? styles.fullscreen : ""}`}>
+      {/* 뒤로 가기 버튼 (전체 화면 아닐 때만) */}
+      {!isFullscreen && (
+        <button className={styles.backButton} onClick={() => router.back()}>
+          <ArrowLeft size={16} />
+          뒤로 가기
+        </button>
+      )}
+
+      {/* 전체 화면 모드: mobile 레이아웃 */}
+      {isFullscreen ? (
+        <div className={mobileStyles.container}>
+          <header className={mobileStyles.header}>
+            <button
+              className={mobileStyles.backButton}
+              onClick={() => setIsFullscreen(false)}
+            >
+              <X size={20} />
+            </button>
+            <h1 className={mobileStyles.headerTitle}>{data.customerName}님의 검진 결과</h1>
+          </header>
+          <ReportTabs data={data} opinion={opinion} />
         </div>
-        <div className={styles.sidePanel}>
-          <div className={styles.opinionPanel}>
-            <div className={styles.panelHeader}>
-              <h3 className={styles.panelTitle}>담당자 소견 작성</h3>
+      ) : (
+        <div className={styles.contentLayout}>
+          <div className={styles.reportWrapper}>
+            <ReportTabs data={data} opinion={opinion} />
+          </div>
+
+          <div className={styles.sidePanel}>
+            <div className={styles.opinionPanel}>
+              <div className={styles.panelHeader}>
+                <h3 className={styles.panelTitle}>담당자 소견 작성</h3>
+                <button
+                  className={`${styles.saveOpinionBtn} ${opinion !== savedOpinion ? styles.hasChanges : ""}`}
+                  onClick={handleSaveOpinion}
+                  disabled={savingOpinion || opinion === savedOpinion}
+                >
+                  {savingOpinion ? "저장 중..." : opinion !== savedOpinion ? "저장" : "저장됨"}
+                </button>
+              </div>
+              <textarea
+                className={styles.opinionTextarea}
+                placeholder="고객에게 전달할 소견을 작성하세요..."
+                value={opinion}
+                onChange={(e) => setOpinion(e.target.value)}
+                rows={8}
+              />
+              <div className={styles.formatGuide}>
+                <span className={styles.formatItem}><strong>**굵게**</strong></span>
+                <span className={styles.formatItem}><em>*기울임*</em></span>
+                <span className={styles.formatItem}><u>__밑줄__</u></span>
+              </div>
+              <p className={styles.opinionHint}>
+                작성하지 않으면 자동 생성된 소견이 표시됩니다.
+              </p>
+            </div>
+            <div className={styles.actionPanel}>
               <button
-                className={`${styles.saveOpinionBtn} ${opinion !== savedOpinion ? styles.hasChanges : ""}`}
-                onClick={handleSaveOpinion}
-                disabled={savingOpinion || opinion === savedOpinion}
+                className={styles.printButton}
+                onClick={() => setIsFullscreen(true)}
               >
-                {savingOpinion ? "저장 중..." : opinion !== savedOpinion ? "저장" : "저장됨"}
+                <Maximize2 size={16} />
+                전체 화면으로 보기
+              </button>
+              <button
+                className={`${styles.publishButton} ${isPublished ? styles.published : ""}`}
+                onClick={handlePublish}
+                disabled={publishing || isPublished}
+              >
+                {publishing ? "발행 중..." : isPublished ? "발행 완료" : "보고서 발행하기"}
               </button>
             </div>
-            <textarea
-              className={styles.opinionTextarea}
-              placeholder="고객에게 전달할 소견을 작성하세요..."
-              value={opinion}
-              onChange={(e) => setOpinion(e.target.value)}
-              rows={8}
-            />
-            <div className={styles.formatGuide}>
-              <span className={styles.formatItem}><strong>**굵게**</strong></span>
-              <span className={styles.formatItem}><em>*기울임*</em></span>
-              <span className={styles.formatItem}><u>__밑줄__</u></span>
-            </div>
-            <p className={styles.opinionHint}>
-              작성하지 않으면 자동 생성된 소견이 표시됩니다.
-            </p>
-          </div>
-          <div className={styles.actionPanel}>
-            <button
-              className={styles.printButton}
-              onClick={() => window.print()}
-            >
-              인쇄하기
-            </button>
-            <button
-              className={`${styles.publishButton} ${isPublished ? styles.published : ""}`}
-              onClick={handlePublish}
-              disabled={publishing || isPublished}
-            >
-              {publishing ? "발행 중..." : isPublished ? "발행 완료" : "보고서 발행하기"}
-            </button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

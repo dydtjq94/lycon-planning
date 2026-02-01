@@ -450,21 +450,23 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
 
       {/* 필요 자금 탭 설정 바 */}
       {activeTab === "retirement" && (
-        <div
-          className={`${styles.settingsBar} ${isSettingsBarHidden ? styles.settingsBarHidden : ""}`}
-        >
-          <button
-            className={styles.settingsBarBtn}
-            onClick={() => setActiveSheet("cost")}
+        <div className={styles.settingsBarWrapper}>
+          <div
+            className={`${styles.settingsBar} ${isSettingsBarHidden ? styles.settingsBarHidden : ""}`}
           >
-            비용 변경
-          </button>
-          <button
-            className={styles.settingsBarBtn}
-            onClick={() => setActiveSheet("assumption")}
-          >
-            가정 변경
-          </button>
+            <button
+              className={styles.settingsBarBtn}
+              onClick={() => setActiveSheet("cost")}
+            >
+              비용 변경
+            </button>
+            <button
+              className={styles.settingsBarBtn}
+              onClick={() => setActiveSheet("assumption")}
+            >
+              가정 변경
+            </button>
+          </div>
         </div>
       )}
 
