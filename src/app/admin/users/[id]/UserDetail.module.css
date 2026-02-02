@@ -1595,7 +1595,164 @@
 .chatTime {
   font-size: 11px;
   color: #86868b;
+}
+
+.chatMessageFooter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 4px;
+}
+
+.messageActions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.chatMessage:hover .messageActions {
+  opacity: 1;
+}
+
+.messageActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.messageActionBtn:hover {
+  background: rgba(0, 122, 255, 0.2);
+}
+
+.messageActionBtnDanger {
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
+}
+
+.messageActionBtnDanger:hover {
+  background: rgba(255, 59, 48, 0.2);
+}
+
+/* Edit Modal */
+.editModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.editModal {
+  width: 100%;
+  max-width: 500px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 20px;
+}
+
+.editModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.editModalHeader h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.editModalClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: #86868b;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.15s;
+}
+
+.editModalClose:hover {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+.editModalTextarea {
+  width: 100%;
+  padding: 16px 20px;
+  border: none;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: none;
+  min-height: 120px;
+  font-family: inherit;
+  outline: none;
+}
+
+.editModalTextarea::placeholder {
+  color: #a1a1a6;
+}
+
+.editModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e5e5;
+  background: #f9f9f9;
+}
+
+.editModalCancelBtn,
+.editModalSaveBtn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.editModalCancelBtn {
+  background: #e5e5e5;
+  color: #1d1d1f;
+}
+
+.editModalCancelBtn:hover {
+  background: #d5d5d5;
+}
+
+.editModalSaveBtn {
+  background: #007aff;
+  color: white;
+}
+
+.editModalSaveBtn:hover {
+  background: #0066d6;
+}
+
+.editModalSaveBtn:disabled {
+  background: #a1a1a6;
+  cursor: not-allowed;
 }
 
 .chatInputArea {
@@ -1615,6 +1772,25 @@
   border-radius: 20px;
   outline: none;
   transition: border-color 0.15s;
+}
+
+.chatTextarea {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid #e7e5e4;
+  border-radius: 16px;
+  outline: none;
+  resize: none;
+  min-height: 40px;
+  max-height: 120px;
+  line-height: 1.4;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.chatTextarea:focus {
+  border-color: #007aff;
 }
 
 .chatInput:focus {

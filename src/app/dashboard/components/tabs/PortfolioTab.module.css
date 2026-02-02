@@ -13,68 +13,29 @@
   font-size: 14px;
 }
 
-.errorState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-  color: #6b7280;
-  text-align: center;
-  gap: 12px;
-}
-
-.errorState h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.errorState p {
-  margin: 0;
-  font-size: 14px;
-}
-
-.errorState code {
-  margin-top: 8px;
-  padding: 8px 16px;
-  background: #f3f4f6;
-  border-radius: 6px;
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.errorIcon {
-  color: #d1d5db;
-}
-
-/* 검색 섹션 */
+/* 티커 검색 */
 .searchSection {
-  margin-bottom: 32px;
-}
-
-.sectionTitle {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 16px 0;
+  margin-bottom: 24px;
 }
 
 .searchBar {
   display: flex;
   gap: 8px;
-  max-width: 400px;
+}
+
+.searchInputWrapper {
+  position: relative;
+  flex: 1;
 }
 
 .searchInput {
-  flex: 1;
+  width: 100%;
   padding: 12px 16px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 14px;
   color: #1a1a1a;
-  background: #f9fafb;
+  background: white;
 }
 
 .searchInput:focus {
@@ -86,12 +47,70 @@
   color: #9ca3af;
 }
 
+/* 자동완성 드롭다운 */
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.suggestionItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  text-align: left;
+}
+
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.suggestionItem:hover {
+  background: #f9fafb;
+}
+
+.suggestionName {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.suggestionTicker {
+  font-size: 12px;
+  font-family: monospace;
+  color: #6b7280;
+}
+
+.suggestionMarket {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  color: #6b7280;
+}
+
 .searchButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border: none;
   border-radius: 8px;
   background: #1a1a1a;
@@ -100,99 +119,699 @@
   transition: background-color 0.15s;
 }
 
-.searchButton:hover {
+.searchButton:hover:not(:disabled) {
   background: #333;
 }
 
+.searchButton:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.apiError {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.searchError {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #dc2626;
+}
+
 .searchResultCard {
-  margin-top: 16px;
-  padding: 20px;
+  margin-top: 12px;
+  padding: 16px;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #14b8a6;
   border-radius: 12px;
-  max-width: 400px;
 }
 
-/* 섹션 */
-.section {
-  margin-bottom: 32px;
+.searchResultHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-/* 카드 그리드 */
-.cardGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+.searchResultInfo {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
 }
 
-/* 카드 */
-.card {
-  padding: 20px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  min-height: 140px;
+.searchResultSymbol {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  font-family: monospace;
 }
 
-.cardLoading,
-.cardError {
+.searchResultPrice {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.searchResultChange {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.searchResultChange.positive {
+  color: #22c55e;
+}
+
+.searchResultChange.negative {
+  color: #ef4444;
+}
+
+.dataDateNotice {
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dataDateWarning {
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  background: #fef3c7;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #92400e;
+}
+
+.searchResultActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.applyBtn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #14b8a6;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.applyBtn:hover {
+  background: #0d9488;
+}
+
+.closeBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.closeBtn:hover {
+  background: #f9fafb;
+}
+
+/* 상단 요약 */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.summaryLabel {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.summaryValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.profitLoss {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.profit {
+  color: #22c55e;
+}
+
+.loss {
+  color: #ef4444;
+}
+
+/* 차트 섹션 */
+.chartSection {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.chartWrapper {
+  position: relative;
+}
+
+.chartInner {
+  position: relative;
+  height: 200px;
+}
+
+.periodSelector {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.periodBtn {
+  padding: 4px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  color: #6b7280;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.periodBtn:hover {
+  background: #f9fafb;
+}
+
+.periodBtnActive {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  color: white;
+}
+
+.periodBtnActive:hover {
+  background: #333;
+}
+
+.chartLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   color: #9ca3af;
   font-size: 13px;
 }
 
-.cardError {
-  color: #ef4444;
-}
-
-.cardHeader {
+/* 거래 추가 버튼 */
+.addButton {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.cardName {
+  gap: 8px;
+  padding: 12px 20px;
+  background: #1a1a1a;
+  color: white;
+  border: none;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  cursor: pointer;
+  margin-bottom: 24px;
+  transition: background-color 0.15s;
 }
 
-.cardSymbol {
+.addButton:hover {
+  background: #333;
+}
+
+/* 폼 섹션 */
+.formSection {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.formTitle {
   font-size: 16px;
   font-weight: 600;
   color: #1a1a1a;
+  margin: 0 0 20px 0;
 }
 
-.cardChange {
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formRow {
+  display: flex;
+  gap: 16px;
+}
+
+.formGroup {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.input,
+.select {
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1a1a1a;
+  background: #f9fafb;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: #14b8a6;
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.input[type="number"]::-webkit-outer-spin-button,
+.input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 토글 버튼 그룹 */
+.toggleGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.toggleBtn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toggleBtn.active {
+  background: #dcfce7;
+  border-color: #22c55e;
+  color: #16a34a;
+}
+
+.toggleBtn.activeSell {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #dc2626;
+}
+
+/* 총액 미리보기 */
+.totalPreview {
+  padding: 12px 16px;
+  background: #f0fdfa;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0d9488;
+}
+
+.usdAmount {
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* 폼 액션 */
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cancelBtn {
+  padding: 10px 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  color: #6b7280;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: #f9fafb;
+}
+
+.submitBtn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.submitBtn:hover {
+  background: #333;
+}
+
+/* 섹션 */
+.section {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.sectionHeader {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 8px;
+  width: 100%;
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
 }
 
-.cardChange.positive {
+.sectionHeader:hover {
+  background: #f9fafb;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+  flex: 1;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  background: #f3f4f6;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+/* 빈 상태 */
+.emptyState {
+  padding: 40px 20px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* 보유 종목 */
+.holdingsList {
+  border-top: 1px solid #e5e7eb;
+}
+
+.holdingCard {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.holdingCard:last-child {
+  border-bottom: none;
+}
+
+.holdingInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.holdingName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.holdingTicker {
+  font-size: 12px;
+  color: #9ca3af;
+  font-family: monospace;
+}
+
+.holdingDetails {
+  display: flex;
+  gap: 24px;
+}
+
+.holdingDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.detailLabel {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.detailValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.detailValue.profitText {
   color: #22c55e;
 }
 
-.cardChange.negative {
+.detailValue.lossText {
   color: #ef4444;
 }
 
-.cardPrice {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 12px;
+.assetTypeTag {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
 }
 
-/* 미니 차트 */
-.miniChart {
-  height: 50px;
+.assetTypeTag.domestic_stock {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.assetTypeTag.foreign_stock {
+  background: #fae8ff;
+  color: #a855f7;
+}
+
+.assetTypeTag.etf {
+  background: #f0fdfa;
+  color: #14b8a6;
+}
+
+.assetTypeTag.crypto {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.assetTypeTag.fund {
+  background: #e0e7ff;
+  color: #4f46e5;
+}
+
+.assetTypeTag.bond {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.assetTypeTag.other {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* 거래 내역 */
+.transactionsList {
+  border-top: 1px solid #e5e7eb;
+}
+
+.transactionCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.transactionCard:last-child {
+  border-bottom: none;
+}
+
+.txLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.txType {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.txType.buy {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.txType.sell {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.txInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.txName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.txTicker {
+  font-size: 11px;
+  color: #9ca3af;
+  font-family: monospace;
+}
+
+.txCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.txQty {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.txPrice {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.txRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 100px;
+}
+
+.txTotal {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.txDate {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.txActions {
+  display: flex;
+  gap: 4px;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.actionBtn:hover {
+  background: #f3f4f6;
+  color: #6b7280;
 }
 
 /* 반응형 */
@@ -201,15 +820,48 @@
     padding: 16px;
   }
 
-  .cardGrid {
+  .summary {
     grid-template-columns: 1fr;
   }
 
-  .searchBar {
-    max-width: 100%;
+  .summaryValue {
+    font-size: 20px;
   }
 
-  .searchResultCard {
-    max-width: 100%;
+  .formRow {
+    flex-direction: column;
+  }
+
+  .holdingCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .holdingDetails {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .holdingDetail {
+    align-items: flex-start;
+  }
+
+  .transactionCard {
+    flex-wrap: wrap;
+  }
+
+  .txLeft {
+    width: 100%;
+  }
+
+  .txCenter,
+  .txRight {
+    align-items: flex-start;
+  }
+
+  .txActions {
+    position: absolute;
+    right: 20px;
   }
 }

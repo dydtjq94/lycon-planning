@@ -177,7 +177,8 @@ export function ChatRoom({ userId, isVisible = true, onNewMessage, onMessagesLoa
   const handleSend = async () => {
     if (!conversation || (!newMessage.trim() && pendingImages.length === 0) || sending) return;
 
-    const content = newMessage.trim();
+    // 앞뒤 줄바꿈만 제거하고 공백/들여쓰기는 유지
+    const content = newMessage.replace(/^\n+|\n+$/g, '');
     const tempId = `temp-${Date.now()}`;
     const imagesToUpload = [...pendingImages];
 
@@ -542,7 +543,7 @@ export function ChatRoom({ userId, isVisible = true, onNewMessage, onMessagesLoa
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             onCompositionEnd={handleCompositionEnd}
-            placeholder="메시지 입력"
+            placeholder="메시지 입력 (Shift+Enter로 줄바꿈)"
             disabled={sending}
           />
           <div className={styles.sendButtonRow}>

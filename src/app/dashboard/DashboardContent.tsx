@@ -395,7 +395,7 @@ export function DashboardContent() {
       case "progress":
         return <AssetRecordTab profileId={profile.id} />;
       case "portfolio":
-        return <PortfolioTab />;
+        return <PortfolioTab profileId={profile.id} />;
       case "household-budget":
         return <BudgetTab profileId={profile.id} />;
       // 설정

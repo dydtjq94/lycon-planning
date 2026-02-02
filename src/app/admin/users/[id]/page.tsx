@@ -31,6 +31,9 @@ import {
   AlertCircle,
   Send,
   Sparkles,
+  Pencil,
+  Trash2,
+  X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { loadPrepData } from "@/lib/services/prepDataService";
@@ -251,6 +254,11 @@ export default function UserDetailPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatMessagesRef = useRef<HTMLDivElement>(null);
+
+  // 메시지 수정/삭제
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const editInputRef = useRef<HTMLTextAreaElement>(null);
 
   // 담당 제외 모달
   const [showRemoveModal, setShowRemoveModal] = useState(false);
@@ -634,13 +642,16 @@ export default function UserDetailPage() {
   const sendMessage = async () => {
     if (!conversationId || !messageInput.trim() || sendingMessage) return;
 
+    // 앞뒤 줄바꿈만 제거하고 공백/들여쓰기는 유지
+    const content = messageInput.replace(/^\n+|\n+$/g, '');
+
     setSendingMessage(true);
     const supabase = createClient();
 
     const { error } = await supabase.from("messages").insert({
       conversation_id: conversationId,
       sender_type: "expert",
-      content: messageInput.trim(),
+      content,
       is_read: false,
     });
 
@@ -651,6 +662,78 @@ export default function UserDetailPage() {
 
     setSendingMessage(false);
   };
+
+  // 메시지 수정
+  const handleEditClick = (msg: Message) => {
+    setEditingMessageId(msg.id);
+    setEditContent(msg.content);
+  };
+
+  const handleEditSave = async () => {
+    if (!editingMessageId || !editContent.trim()) return;
+
+    // 앞뒤 줄바꿈만 제거하고 공백/들여쓰기는 유지
+    const content = editContent.replace(/^\n+|\n+$/g, '');
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("messages")
+      .update({ content })
+      .eq("id", editingMessageId);
+
+    if (!error) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === editingMessageId ? { ...m, content } : m
+        )
+      );
+    }
+
+    setEditingMessageId(null);
+    setEditContent("");
+  };
+
+  const handleEditCancel = () => {
+    setEditingMessageId(null);
+    setEditContent("");
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing) return;
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleEditSave();
+    }
+    if (e.key === "Escape") {
+      handleEditCancel();
+    }
+  };
+
+  // 메시지 삭제
+  const handleDeleteClick = async (messageId: string) => {
+    if (!confirm("메시지를 삭제하시겠습니까?")) return;
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .eq("id", messageId);
+
+    if (!error) {
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    }
+  };
+
+  // 수정 input focus
+  useEffect(() => {
+    if (editingMessageId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.setSelectionRange(
+        editInputRef.current.value.length,
+        editInputRef.current.value.length
+      );
+    }
+  }, [editingMessageId]);
 
   // 메시지 읽음 처리
   const markMessagesAsRead = async () => {
@@ -1341,28 +1424,49 @@ export default function UserDetailPage() {
                     <div className={styles.chatBubble}>
                       <p>{message.content}</p>
                     </div>
-                    <span className={styles.chatTime}>
-                      {formatMessageTime(message.created_at)}
-                    </span>
+                    <div className={styles.chatMessageFooter}>
+                      {message.sender_type === "expert" && (
+                        <div className={styles.messageActions}>
+                          <button
+                            className={styles.messageActionBtn}
+                            onClick={() => handleEditClick(message)}
+                            title="수정"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button
+                            className={`${styles.messageActionBtn} ${styles.messageActionBtnDanger}`}
+                            onClick={() => handleDeleteClick(message.id)}
+                            title="삭제"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
+                      <span className={styles.chatTime}>
+                        {formatMessageTime(message.created_at)}
+                      </span>
+                    </div>
                   </div>
                 ))
               )}
               <div ref={messagesEndRef} />
             </div>
             <div className={styles.chatInputArea}>
-              <input
-                type="text"
-                className={styles.chatInput}
-                placeholder="메시지를 입력하세요..."
+              <textarea
+                className={styles.chatTextarea}
+                placeholder="메시지를 입력하세요... (Shift+Enter로 줄바꿈)"
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
                 onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return;
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     sendMessage();
                   }
                 }}
                 disabled={sendingMessage}
+                rows={1}
               />
               <button
                 className={styles.chatSendButton}
@@ -1372,6 +1476,41 @@ export default function UserDetailPage() {
                 <Send size={18} />
               </button>
             </div>
+
+            {/* 메시지 수정 모달 */}
+            {editingMessageId && (
+              <div className={styles.editModalOverlay} onClick={handleEditCancel}>
+                <div className={styles.editModal} onClick={(e) => e.stopPropagation()}>
+                  <div className={styles.editModalHeader}>
+                    <h3>메시지 수정</h3>
+                    <button className={styles.editModalClose} onClick={handleEditCancel}>
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <textarea
+                    ref={editInputRef}
+                    className={styles.editModalTextarea}
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    onKeyDown={handleEditKeyDown}
+                    rows={5}
+                    placeholder="메시지를 입력하세요..."
+                  />
+                  <div className={styles.editModalFooter}>
+                    <button className={styles.editModalCancelBtn} onClick={handleEditCancel}>
+                      취소
+                    </button>
+                    <button
+                      className={styles.editModalSaveBtn}
+                      onClick={handleEditSave}
+                      disabled={!editContent.trim()}
+                    >
+                      저장
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
 

@@ -645,3 +645,61 @@ export interface FinancialSnapshotItemInput {
   metadata?: Record<string, unknown>
   sort_order?: number
 }
+
+// ============================================
+// 포트폴리오 거래 내역 (portfolio_transactions)
+// ============================================
+
+export type PortfolioTransactionType = 'buy' | 'sell'
+export type PortfolioAssetType = 'domestic_stock' | 'foreign_stock' | 'etf' | 'crypto' | 'fund' | 'bond' | 'other'
+export type PortfolioCurrency = 'KRW' | 'USD' | 'EUR' | 'JPY'
+
+export interface PortfolioTransaction {
+  id: string
+  profile_id: string
+  type: PortfolioTransactionType
+  asset_type: PortfolioAssetType
+  ticker: string          // 종목코드 (005930.KS, AAPL, BTC-USD 등)
+  name: string            // 종목명
+  quantity: number        // 수량
+  price: number           // 매수/매도 단가
+  total_amount: number    // 총금액 (만원)
+  currency: PortfolioCurrency
+  exchange_rate: number   // 환율 (해외주식용)
+  fee: number             // 수수료 (만원)
+  trade_date: string      // 거래일 (YYYY-MM-DD)
+  memo: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PortfolioTransactionInput {
+  profile_id: string
+  type: PortfolioTransactionType
+  asset_type: PortfolioAssetType
+  ticker: string
+  name: string
+  quantity: number
+  price: number
+  total_amount: number
+  currency?: PortfolioCurrency
+  exchange_rate?: number
+  fee?: number
+  trade_date: string
+  memo?: string | null
+}
+
+// 보유 종목 (거래 내역에서 계산)
+export interface PortfolioHolding {
+  ticker: string
+  name: string
+  asset_type: PortfolioAssetType
+  quantity: number          // 보유 수량
+  avg_price: number         // 평균 매수가
+  total_invested: number    // 총 투자금액 (만원)
+  current_price?: number    // 현재가 (API에서)
+  current_value?: number    // 평가금액 (만원)
+  profit_loss?: number      // 손익 (만원)
+  profit_rate?: number      // 수익률 (%)
+  currency: PortfolioCurrency
+}
