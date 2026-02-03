@@ -9,7 +9,7 @@ import {
   Legend,
 } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
-import type { Savings, SavingsInput, PersonalPension, PersonalPensionInput, Owner } from '@/types/tables'
+import type { Savings, SavingsInput, PersonalPension, PersonalPensionInput, Owner, CurrencyType } from '@/types/tables'
 import { formatMoney } from '@/lib/utils'
 import { CHART_COLORS } from '@/lib/utils/tooltipCategories'
 import { useSavingsData, usePersonalPensions, useInvalidateByCategory } from '@/hooks/useFinancialData'
@@ -106,7 +106,17 @@ export function SavingsTab({
   const startAddAccount = (section: 'savings' | 'investment') => {
     setEditingAccount({ section, id: null })
     if (section === 'savings') {
-      setEditValues({ type: 'checking', name: '', balance: '', interestRate: '' })
+      setEditValues({
+        type: 'deposit',
+        name: '',
+        balance: '',
+        interestRate: '',
+        startYear: String(currentYear),
+        startMonth: String(new Date().getMonth() + 1),
+        durationMonths: '12',
+        isTaxFree: 'false',
+        currency: 'KRW',
+      })
     } else {
       setEditValues({ type: 'domestic_stock', name: '', balance: '', expectedReturn: '' })
     }
@@ -116,13 +126,26 @@ export function SavingsTab({
     const section = ['checking', 'savings', 'deposit'].includes(account.type) ? 'savings' : 'investment'
     setEditingAccount({ section, id: account.id })
     if (section === 'savings') {
+      // 기간(개월) 계산: 가입일 ~ 만기일
+      let durationMonths = ''
+      if (account.contribution_start_year && account.maturity_year) {
+        const startDate = new Date(account.contribution_start_year, (account.contribution_start_month || 1) - 1)
+        const endDate = new Date(account.maturity_year, (account.maturity_month || 12) - 1)
+        const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth())
+        durationMonths = String(months)
+      }
       setEditValues({
         type: account.type,
         name: account.title,
         balance: account.current_balance.toString(),
         interestRate: account.interest_rate?.toString() || '',
+        startYear: account.contribution_start_year?.toString() || '',
+        startMonth: account.contribution_start_month?.toString() || '',
+        durationMonths,
         maturityYear: account.maturity_year?.toString() || '',
         maturityMonth: account.maturity_month?.toString() || '',
+        isTaxFree: account.is_tax_free ? 'true' : 'false',
+        currency: account.currency || 'KRW',
       })
     } else {
       setEditValues({
@@ -143,14 +166,31 @@ export function SavingsTab({
     if (!editValues.name || !editValues.balance) return
 
     try {
+      // 만기일 계산: 가입일 + 기간(개월)
+      let maturityYear = editValues.maturityYear ? parseInt(editValues.maturityYear) : null
+      let maturityMonth = editValues.maturityMonth ? parseInt(editValues.maturityMonth) : null
+
+      if (editValues.startYear && editValues.durationMonths && !maturityYear) {
+        const startYear = parseInt(editValues.startYear)
+        const startMonth = parseInt(editValues.startMonth || '1')
+        const duration = parseInt(editValues.durationMonths)
+        const endDate = new Date(startYear, startMonth - 1 + duration)
+        maturityYear = endDate.getFullYear()
+        maturityMonth = endDate.getMonth() + 1
+      }
+
       const input: SavingsInput = {
         simulation_id: simulationId,
         type: editValues.type as UISavingsType,
         title: editValues.name,
         current_balance: parseFloat(editValues.balance),
         interest_rate: editValues.interestRate ? parseFloat(editValues.interestRate) : null,
-        maturity_year: editValues.maturityYear ? parseInt(editValues.maturityYear) : null,
-        maturity_month: editValues.maturityMonth ? parseInt(editValues.maturityMonth) : null,
+        contribution_start_year: editValues.startYear ? parseInt(editValues.startYear) : null,
+        contribution_start_month: editValues.startMonth ? parseInt(editValues.startMonth) : null,
+        maturity_year: maturityYear,
+        maturity_month: maturityMonth,
+        is_tax_free: editValues.isTaxFree === 'true',
+        currency: (editValues.currency || 'KRW') as CurrencyType,
       }
 
       if (editingAccount?.id) {
@@ -381,46 +421,113 @@ export function SavingsTab({
                       <span className={styles.editUnit}>만원</span>
                     </div>
                   </div>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>금리</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="number"
-                        className={styles.editInputSmall}
-                        value={editValues.interestRate || ''}
-                        onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
-                        onWheel={e => (e.target as HTMLElement).blur()}
-                        step="0.1"
-                        placeholder="0"
-                      />
-                      <span className={styles.editUnit}>%</span>
-                    </div>
-                  </div>
                   {(editValues.type === 'savings' || editValues.type === 'deposit') && (
+                    <>
+                      <div className={styles.editRow}>
+                        <span className={styles.editRowLabel}>가입일</span>
+                        <div className={styles.editField}>
+                          <input
+                            type="number"
+                            className={styles.editInputSmall}
+                            value={editValues.startYear || ''}
+                            onChange={e => setEditValues({ ...editValues, startYear: e.target.value })}
+                            onWheel={e => (e.target as HTMLElement).blur()}
+                            placeholder={String(currentYear)}
+                          />
+                          <span className={styles.editUnit}>년</span>
+                          <input
+                            type="number"
+                            className={styles.editInputSmall}
+                            value={editValues.startMonth || ''}
+                            onChange={e => setEditValues({ ...editValues, startMonth: e.target.value })}
+                            onWheel={e => (e.target as HTMLElement).blur()}
+                            min={1}
+                            max={12}
+                            placeholder="1"
+                          />
+                          <span className={styles.editUnit}>월</span>
+                        </div>
+                      </div>
+                      <div className={styles.editRow}>
+                        <span className={styles.editRowLabel}>이율</span>
+                        <div className={styles.editField}>
+                          <input
+                            type="number"
+                            className={styles.editInputSmall}
+                            value={editValues.interestRate || ''}
+                            onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
+                            onWheel={e => (e.target as HTMLElement).blur()}
+                            step="0.01"
+                            placeholder="0"
+                          />
+                          <span className={styles.editUnit}>%</span>
+                        </div>
+                      </div>
+                      <div className={styles.editRow}>
+                        <span className={styles.editRowLabel}>기간</span>
+                        <div className={styles.editField}>
+                          <input
+                            type="number"
+                            className={styles.editInputSmall}
+                            value={editValues.durationMonths || ''}
+                            onChange={e => setEditValues({ ...editValues, durationMonths: e.target.value })}
+                            onWheel={e => (e.target as HTMLElement).blur()}
+                            min={1}
+                            placeholder="12"
+                          />
+                          <span className={styles.editUnit}>개월</span>
+                        </div>
+                      </div>
+                      <div className={styles.editRow}>
+                        <span className={styles.editRowLabel}>비과세</span>
+                        <div className={styles.typeButtons}>
+                          <button
+                            type="button"
+                            className={`${styles.typeBtn} ${editValues.isTaxFree === 'true' ? styles.active : ''}`}
+                            onClick={() => setEditValues({ ...editValues, isTaxFree: 'true' })}
+                          >
+                            O
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.typeBtn} ${editValues.isTaxFree !== 'true' ? styles.active : ''}`}
+                            onClick={() => setEditValues({ ...editValues, isTaxFree: 'false' })}
+                          >
+                            X
+                          </button>
+                        </div>
+                      </div>
+                      <div className={styles.editRow}>
+                        <span className={styles.editRowLabel}>통화</span>
+                        <div className={styles.editField}>
+                          <select
+                            className={styles.editSelect}
+                            value={editValues.currency || 'KRW'}
+                            onChange={e => setEditValues({ ...editValues, currency: e.target.value })}
+                          >
+                            <option value="KRW">KRW (원)</option>
+                            <option value="USD">USD (달러)</option>
+                            <option value="EUR">EUR (유로)</option>
+                            <option value="JPY">JPY (엔)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {editValues.type === 'checking' && (
                     <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>만기</span>
+                      <span className={styles.editRowLabel}>금리</span>
                       <div className={styles.editField}>
                         <input
                           type="number"
                           className={styles.editInputSmall}
-                          value={editValues.maturityYear || ''}
-                          onChange={e => setEditValues({ ...editValues, maturityYear: e.target.value })}
+                          value={editValues.interestRate || ''}
+                          onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
                           onWheel={e => (e.target as HTMLElement).blur()}
-                          min={currentYear}
-                          placeholder={String(currentYear + 1)}
+                          step="0.01"
+                          placeholder="0"
                         />
-                        <span className={styles.editUnit}>년</span>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.maturityMonth || ''}
-                          onChange={e => setEditValues({ ...editValues, maturityMonth: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          min={1}
-                          max={12}
-                          placeholder="12"
-                        />
-                        <span className={styles.editUnit}>월</span>
+                        <span className={styles.editUnit}>%</span>
                       </div>
                     </div>
                   )}
@@ -508,46 +615,113 @@ export function SavingsTab({
                     <span className={styles.editUnit}>만원</span>
                   </div>
                 </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>금리</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInputSmall}
-                      value={editValues.interestRate || ''}
-                      onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      step="0.1"
-                      placeholder="0"
-                    />
-                    <span className={styles.editUnit}>%</span>
-                  </div>
-                </div>
                 {(editValues.type === 'savings' || editValues.type === 'deposit') && (
+                  <>
+                    <div className={styles.editRow}>
+                      <span className={styles.editRowLabel}>가입일</span>
+                      <div className={styles.editField}>
+                        <input
+                          type="number"
+                          className={styles.editInputSmall}
+                          value={editValues.startYear || ''}
+                          onChange={e => setEditValues({ ...editValues, startYear: e.target.value })}
+                          onWheel={e => (e.target as HTMLElement).blur()}
+                          placeholder={String(currentYear)}
+                        />
+                        <span className={styles.editUnit}>년</span>
+                        <input
+                          type="number"
+                          className={styles.editInputSmall}
+                          value={editValues.startMonth || ''}
+                          onChange={e => setEditValues({ ...editValues, startMonth: e.target.value })}
+                          onWheel={e => (e.target as HTMLElement).blur()}
+                          min={1}
+                          max={12}
+                          placeholder="1"
+                        />
+                        <span className={styles.editUnit}>월</span>
+                      </div>
+                    </div>
+                    <div className={styles.editRow}>
+                      <span className={styles.editRowLabel}>이율</span>
+                      <div className={styles.editField}>
+                        <input
+                          type="number"
+                          className={styles.editInputSmall}
+                          value={editValues.interestRate || ''}
+                          onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
+                          onWheel={e => (e.target as HTMLElement).blur()}
+                          step="0.01"
+                          placeholder="0"
+                        />
+                        <span className={styles.editUnit}>%</span>
+                      </div>
+                    </div>
+                    <div className={styles.editRow}>
+                      <span className={styles.editRowLabel}>기간</span>
+                      <div className={styles.editField}>
+                        <input
+                          type="number"
+                          className={styles.editInputSmall}
+                          value={editValues.durationMonths || ''}
+                          onChange={e => setEditValues({ ...editValues, durationMonths: e.target.value })}
+                          onWheel={e => (e.target as HTMLElement).blur()}
+                          min={1}
+                          placeholder="12"
+                        />
+                        <span className={styles.editUnit}>개월</span>
+                      </div>
+                    </div>
+                    <div className={styles.editRow}>
+                      <span className={styles.editRowLabel}>비과세</span>
+                      <div className={styles.typeButtons}>
+                        <button
+                          type="button"
+                          className={`${styles.typeBtn} ${editValues.isTaxFree === 'true' ? styles.active : ''}`}
+                          onClick={() => setEditValues({ ...editValues, isTaxFree: 'true' })}
+                        >
+                          O
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.typeBtn} ${editValues.isTaxFree !== 'true' ? styles.active : ''}`}
+                          onClick={() => setEditValues({ ...editValues, isTaxFree: 'false' })}
+                        >
+                          X
+                        </button>
+                      </div>
+                    </div>
+                    <div className={styles.editRow}>
+                      <span className={styles.editRowLabel}>통화</span>
+                      <div className={styles.editField}>
+                        <select
+                          className={styles.editSelect}
+                          value={editValues.currency || 'KRW'}
+                          onChange={e => setEditValues({ ...editValues, currency: e.target.value })}
+                        >
+                          <option value="KRW">KRW (원)</option>
+                          <option value="USD">USD (달러)</option>
+                          <option value="EUR">EUR (유로)</option>
+                          <option value="JPY">JPY (엔)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {editValues.type === 'checking' && (
                   <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>만기</span>
+                    <span className={styles.editRowLabel}>금리</span>
                     <div className={styles.editField}>
                       <input
                         type="number"
                         className={styles.editInputSmall}
-                        value={editValues.maturityYear || ''}
-                        onChange={e => setEditValues({ ...editValues, maturityYear: e.target.value })}
+                        value={editValues.interestRate || ''}
+                        onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
                         onWheel={e => (e.target as HTMLElement).blur()}
-                        min={currentYear}
-                        placeholder={String(currentYear + 1)}
+                        step="0.01"
+                        placeholder="0"
                       />
-                      <span className={styles.editUnit}>년</span>
-                      <input
-                        type="number"
-                        className={styles.editInputSmall}
-                        value={editValues.maturityMonth || ''}
-                        onChange={e => setEditValues({ ...editValues, maturityMonth: e.target.value })}
-                        onWheel={e => (e.target as HTMLElement).blur()}
-                        min={1}
-                        max={12}
-                        placeholder="12"
-                      />
-                      <span className={styles.editUnit}>월</span>
+                      <span className={styles.editUnit}>%</span>
                     </div>
                   </div>
                 )}
@@ -558,7 +732,7 @@ export function SavingsTab({
               </div>
             ) : (
               <button className={styles.addBtn} onClick={() => startAddAccount('savings')}>
-                + 저축 계좌 추가
+                + 정기 예금/적금 추가
               </button>
             )}
           </div>

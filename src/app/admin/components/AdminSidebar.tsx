@@ -13,8 +13,10 @@ import {
   ChevronRight,
   UserPlus,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./AdminSidebar.module.css";
+
+type ThemeId = "dark" | "darker" | "light" | "blue";
 
 interface Customer {
   id: string;
@@ -44,6 +46,26 @@ export function AdminSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [isCustomerOpen, setIsCustomerOpen] = useState(true);
+  const [theme, setTheme] = useState<ThemeId>("darker");
+
+  // 테마 로드 및 이벤트 리스너
+  useEffect(() => {
+    const loadTheme = () => {
+      const saved = localStorage.getItem("admin-theme") as ThemeId | null;
+      if (saved) setTheme(saved);
+    };
+
+    loadTheme();
+
+    const handleThemeChange = (e: CustomEvent<ThemeId>) => {
+      setTheme(e.detail);
+    };
+
+    window.addEventListener("admin-theme-change", handleThemeChange as EventListener);
+    return () => {
+      window.removeEventListener("admin-theme-change", handleThemeChange as EventListener);
+    };
+  }, []);
 
   const isActive = (path: string) => {
     if (path === "/admin") {
@@ -56,7 +78,7 @@ export function AdminSidebar({
   const currentUserId = isUserDetailPage ? pathname.split("/")[3] : null;
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={styles.sidebar} data-theme={theme}>
       {/* 로고 */}
       <div className={styles.logoRow}>
         <div className={styles.logoItem}>

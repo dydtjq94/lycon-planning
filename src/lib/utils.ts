@@ -50,6 +50,39 @@ export function formatMoney(amount: number): string {
   return `${absAmount.toLocaleString()}만원`
 }
 
+// 금액 포맷팅 (원 단위 입력, 억+만+원 단위로 표시)
+// 예: 4723332 → "472만 3,332원", 2347245342 → "23억 4,724만 5,342원"
+export function formatWon(amount: number): string {
+  const absAmount = Math.abs(amount)
+
+  if (absAmount >= 100000000) {
+    // 1억 이상: "23억 4,724만 5,342원"
+    const uk = Math.floor(absAmount / 100000000)
+    const remainder = absAmount % 100000000
+    const man = Math.floor(remainder / 10000)
+    const won = remainder % 10000
+
+    let result = `${uk.toLocaleString()}억`
+    if (man > 0) result += ` ${man.toLocaleString()}만`
+    if (won > 0) result += ` ${won.toLocaleString()}`
+    return result + "원"
+  }
+
+  if (absAmount >= 10000) {
+    // 1만 이상: "472만 3,332원"
+    const man = Math.floor(absAmount / 10000)
+    const won = absAmount % 10000
+
+    if (won === 0) {
+      return `${man.toLocaleString()}만원`
+    }
+    return `${man.toLocaleString()}만 ${won.toLocaleString()}원`
+  }
+
+  // 1만 미만: "3,332원"
+  return `${absAmount.toLocaleString()}원`
+}
+
 // 시나리오 모드에 따른 실제 적용 상승률 계산
 export function getEffectiveRate(
   baseRate: number,

@@ -33,6 +33,8 @@ export interface BudgetTransaction {
   memo: string | null
   is_recurring: boolean
   sort_order: number
+  account_id: string | null
+  payment_method_id: string | null
   created_at: string
   updated_at: string
 }
@@ -48,6 +50,8 @@ export interface BudgetTransactionInput {
   day?: number | null
   memo?: string | null
   is_recurring?: boolean
+  account_id?: string | null
+  payment_method_id?: string | null
 }
 
 // ============================================
@@ -231,4 +235,133 @@ export async function getMonthlyTotal(
   if (error) throw error
 
   return (data || []).reduce((sum, tx) => sum + tx.amount, 0)
+}
+
+// ============================================
+// 계좌 관련 (portfolio_accounts 테이블 사용)
+// ============================================
+
+import type { Account } from '@/types/tables'
+
+// 모든 계좌 조회 (증권 + 은행)
+export async function getAllAccounts(profileId: string): Promise<Account[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('accounts')
+    .select('*')
+    .eq('profile_id', profileId)
+    .eq('is_active', true)
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+// 입출금 계좌만 조회 (checking, savings, deposit)
+export async function getBankAccounts(profileId: string): Promise<Account[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('accounts')
+    .select('*')
+    .eq('profile_id', profileId)
+    .eq('is_active', true)
+    .in('account_type', ['checking', 'savings', 'deposit'])
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+// 계좌 잔액 업데이트
+export async function updateAccountBalance(
+  accountId: string,
+  newBalance: number
+): Promise<void> {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('accounts')
+    .update({
+      current_balance: newBalance,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', accountId)
+
+  if (error) throw error
+}
+
+// 정기 예금/적금 계좌만 조회
+export async function getTermDepositAccounts(profileId: string): Promise<Account[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('accounts')
+    .select('*')
+    .eq('profile_id', profileId)
+    .eq('is_active', true)
+    .in('account_type', ['savings', 'deposit', 'free_savings', 'housing'])
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+// 계좌 생성
+export async function createAccount(
+  input: Omit<Account, 'id' | 'created_at' | 'updated_at' | 'is_active' | 'balance_updated_at'>
+): Promise<Account> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('accounts')
+    .insert({
+      ...input,
+      is_active: true,
+      balance_updated_at: new Date().toISOString()
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// 계좌 수정
+export async function updateAccount(
+  accountId: string,
+  input: Partial<Omit<Account, 'id' | 'created_at' | 'profile_id'>>
+): Promise<Account> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('accounts')
+    .update({
+      ...input,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', accountId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// 계좌 삭제 (soft delete)
+export async function deleteAccount(accountId: string): Promise<void> {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('accounts')
+    .update({
+      is_active: false,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', accountId)
+
+  if (error) throw error
 }

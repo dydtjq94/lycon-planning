@@ -408,6 +408,8 @@ export interface PhysicalAssetInput {
 
 export type SavingsType = 'checking' | 'savings' | 'deposit' | 'domestic_stock' | 'foreign_stock' | 'fund' | 'bond' | 'crypto' | 'other'
 
+export type CurrencyType = 'KRW' | 'USD' | 'EUR' | 'JPY'
+
 export interface Savings {
   id: string
   simulation_id: string
@@ -425,6 +427,8 @@ export interface Savings {
   expected_return: number | null  // 투자
   maturity_year: number | null
   maturity_month: number | null
+  is_tax_free: boolean  // 비과세 여부
+  currency: CurrencyType  // 통화
   memo: string | null
   sort_order: number
   is_active: boolean
@@ -448,6 +452,8 @@ export interface SavingsInput {
   expected_return?: number | null
   maturity_year?: number | null
   maturity_month?: number | null
+  is_tax_free?: boolean
+  currency?: CurrencyType
   memo?: string | null
   sort_order?: number
 }
@@ -651,12 +657,13 @@ export interface FinancialSnapshotItemInput {
 // ============================================
 
 export type PortfolioTransactionType = 'buy' | 'sell'
-export type PortfolioAssetType = 'domestic_stock' | 'foreign_stock' | 'etf' | 'crypto' | 'fund' | 'bond' | 'other'
+export type PortfolioAssetType = 'domestic_stock' | 'foreign_stock' | 'domestic_etf' | 'foreign_etf' | 'etf' | 'crypto' | 'fund' | 'bond' | 'other'
 export type PortfolioCurrency = 'KRW' | 'USD' | 'EUR' | 'JPY'
 
 export interface PortfolioTransaction {
   id: string
   profile_id: string
+  account_id: string | null  // 증권 계좌 ID
   type: PortfolioTransactionType
   asset_type: PortfolioAssetType
   ticker: string          // 종목코드 (005930.KS, AAPL, BTC-USD 등)
@@ -675,6 +682,7 @@ export interface PortfolioTransaction {
 
 export interface PortfolioTransactionInput {
   profile_id: string
+  account_id?: string | null  // 증권 계좌 ID
   type: PortfolioTransactionType
   asset_type: PortfolioAssetType
   ticker: string
@@ -703,3 +711,95 @@ export interface PortfolioHolding {
   profit_rate?: number      // 수익률 (%)
   currency: PortfolioCurrency
 }
+
+// ============================================
+// 계좌 (accounts 테이블)
+// 증권 계좌 + 은행 계좌 통합 관리
+// ============================================
+
+// 계좌 유형
+// - 증권: general(일반), isa(ISA), pension_savings(연금저축), irp(IRP)
+// - 은행: checking(입출금), savings(정기적금), deposit(정기예금), free_savings(자유적금), housing(청약)
+export type AccountType = 'general' | 'isa' | 'pension_savings' | 'irp' | 'checking' | 'savings' | 'deposit' | 'free_savings' | 'housing'
+
+export interface Account {
+  id: string
+  profile_id: string
+  name: string              // 계좌 별명 (예: "미국주식 계좌", "월급통장")
+  broker_name: string       // 증권사/은행명 (예: "키움증권", "국민은행")
+  account_number: string | null  // 계좌번호 (마스킹)
+  account_type: AccountType
+  current_balance: number | null  // 현재 잔액 (만원) - 입출금/예금 계좌용
+  balance_updated_at: string | null  // 잔액 기록 시점 (checkpoint)
+  is_default: boolean       // 기본 계좌 여부
+  is_active: boolean
+  memo: string | null
+  // 정기 예금/적금 필드
+  interest_rate: number | null  // 이율 (%)
+  start_year: number | null     // 가입 연도
+  start_month: number | null    // 가입 월
+  start_day: number | null      // 가입 일
+  maturity_year: number | null  // 만기 연도
+  maturity_month: number | null // 만기 월
+  maturity_day: number | null   // 만기 일
+  is_tax_free: boolean          // 비과세 여부
+  currency: CurrencyType        // 통화
+  monthly_contribution: number | null  // 월 납입액 (적금용, 만원)
+  created_at: string
+  updated_at: string
+}
+
+export interface AccountInput {
+  profile_id: string
+  name: string
+  broker_name: string
+  account_number?: string | null
+  account_type?: AccountType
+  current_balance?: number
+  is_default?: boolean
+  memo?: string | null
+  // 정기 예금/적금 필드
+  interest_rate?: number | null
+  start_year?: number | null
+  start_month?: number | null
+  start_day?: number | null
+  maturity_year?: number | null
+  maturity_month?: number | null
+  maturity_day?: number | null
+  is_tax_free?: boolean
+  currency?: CurrencyType
+  monthly_contribution?: number | null
+}
+
+// 기존 코드 호환성을 위한 alias
+export type PortfolioAccountType = AccountType
+export type PortfolioAccount = Account
+export type PortfolioAccountInput = AccountInput
+
+// ============================================
+// 결제수단 (payment_methods)
+// 카드/페이 등 계좌에 연동된 결제수단
+// ============================================
+
+export type PaymentMethodType = 'debit_card' | 'credit_card' | 'pay'
+
+export interface PaymentMethod {
+  id: string
+  profile_id: string
+  account_id: string           // 연결된 계좌
+  name: string                 // 결제수단 이름 (예: "카카오 체크카드")
+  type: PaymentMethodType      // 체크카드, 신용카드, 페이
+  card_company: string | null  // 카드사 (신한, 삼성 등)
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PaymentMethodInput {
+  profile_id: string
+  account_id: string
+  name: string
+  type: PaymentMethodType
+  card_company?: string | null
+}
+

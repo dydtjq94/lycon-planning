@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+
+type ThemeId = "dark" | "darker" | "light" | "blue";
 import {
   ChevronDown,
   ChevronRight,
@@ -16,6 +18,7 @@ import {
   TrendingUp,
   Target,
   LineChart,
+  PiggyBank,
 } from "lucide-react";
 import type { Simulation } from "@/types";
 import styles from "./Sidebar.module.css";
@@ -37,27 +40,29 @@ const expertMenu = [
   { id: "consultation", label: "상담", icon: CalendarCheck },
 ];
 
-// 재무 현황
+// 재무 관리
 const financeMenu = [
-  { id: "current-asset", label: "현재 자산", icon: PieChart },
-  { id: "progress", label: "프로그레스", icon: TrendingUp },
   { id: "household-budget", label: "가계부", icon: Receipt },
+  { id: "savings-deposits", label: "정기 예금/적금", icon: PiggyBank },
+  { id: "portfolio", label: "포트폴리오", icon: LineChart },
+  { id: "current-asset", label: "현재 자산", icon: PieChart },
 ];
 
-// 시장 정보
-const marketMenu = [
-  { id: "portfolio", label: "포트폴리오", icon: LineChart },
+// 분석
+const analysisMenu = [
+  { id: "progress", label: "자산 추이", icon: TrendingUp },
 ];
 
 // 단축키용 탭 매핑 (위에서부터 순서대로)
 const shortcutTabs: { key: string; id: string; display: string }[] = [
   { key: "1", id: "dashboard", display: "1" },
-  { key: "2", id: "current-asset", display: "2" },
-  { key: "3", id: "progress", display: "3" },
-  { key: "4", id: "household-budget", display: "4" },
-  { key: "5", id: "portfolio", display: "5" },
-  { key: "6", id: "messages", display: "6" },
-  { key: "7", id: "consultation", display: "7" },
+  { key: "2", id: "household-budget", display: "2" },
+  { key: "3", id: "savings-deposits", display: "3" },
+  { key: "4", id: "portfolio", display: "4" },
+  { key: "5", id: "current-asset", display: "5" },
+  { key: "6", id: "progress", display: "6" },
+  { key: "7", id: "messages", display: "7" },
+  { key: "8", id: "consultation", display: "8" },
 ];
 
 export function Sidebar({
@@ -71,8 +76,28 @@ export function Sidebar({
   onSimulationChange,
 }: SidebarProps) {
   const [isScenarioOpen, setIsScenarioOpen] = useState(true);
-  const [isPinned, setIsPinned] = useState(false);
+  const [isPinned, setIsPinned] = useState(true);
   const [isCtrlPressed, setIsCtrlPressed] = useState(false);
+  const [theme, setTheme] = useState<ThemeId>("darker");
+
+  // 테마 로드 및 이벤트 리스너
+  useEffect(() => {
+    const loadTheme = () => {
+      const saved = localStorage.getItem("user-theme") as ThemeId | null;
+      if (saved) setTheme(saved);
+    };
+
+    loadTheme();
+
+    const handleThemeChange = (e: CustomEvent<ThemeId>) => {
+      setTheme(e.detail);
+    };
+
+    window.addEventListener("user-theme-change", handleThemeChange as EventListener);
+    return () => {
+      window.removeEventListener("user-theme-change", handleThemeChange as EventListener);
+    };
+  }, []);
 
   // 키보드 단축키 처리
   useEffect(() => {
@@ -142,6 +167,7 @@ export function Sidebar({
       className={`${styles.sidebar} ${
         isExpanded || isPinned ? styles.expanded : ""
       }`}
+      data-theme={theme}
       onMouseEnter={() => onExpandChange(true)}
       onMouseLeave={handleMouseLeave}
     >
@@ -209,7 +235,7 @@ export function Sidebar({
           <div className={styles.spacer} />
 
           {/* 시장 정보 */}
-          {marketMenu.map((item) => {
+          {analysisMenu.map((item) => {
             const shortcutDisplay = getShortcutDisplay(item.id);
             return (
               <button

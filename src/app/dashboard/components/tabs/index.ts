@@ -12,6 +12,8 @@ export { SettingsTab } from './SettingsTab'
 
 // Finance tabs
 export { BudgetTab } from './BudgetTab'
+export { CheckingAccountTab } from './CheckingAccountTab'
+export { SavingsDepositsTab } from './SavingsDepositsTab'
 export { IncomeTab } from './IncomeTab'
 export { ExpenseTab } from './ExpenseTab'
 export { SavingsTab } from './SavingsTab'

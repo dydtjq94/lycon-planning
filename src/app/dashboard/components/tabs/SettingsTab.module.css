@@ -96,3 +96,86 @@
 .logoutButton:hover {
   background: #fef2f2;
 }
+
+/* 테마 그리드 */
+.themeGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.themeCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #e5e5e5;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.themeCard:hover {
+  border-color: #007aff;
+}
+
+.themeCardActive {
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+.themePreview {
+  height: 60px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.previewItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 3px;
+}
+
+.previewDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.previewLine {
+  height: 4px;
+  width: 40px;
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+.themeInfo {
+  padding: 8px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.themeName {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.checkMark {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  background: #007aff;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

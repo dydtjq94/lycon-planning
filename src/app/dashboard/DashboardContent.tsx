@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Users, TrendingUp, Settings } from "lucide-react";
+import { Search, RefreshCw, ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { AccountManagementModal } from "./components/AccountManagementModal";
 import { useFinancialContext } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
@@ -10,7 +11,6 @@ import {
   useSnapshots,
 } from "@/hooks/useFinancialData";
 import type {
-  GlobalSettings,
   FinancialItem,
   IncomeData,
   PensionData,
@@ -30,6 +30,8 @@ import {
   AssetRecordTab,
   PortfolioTab,
   BudgetTab,
+  CheckingAccountTab,
+  SavingsDepositsTab,
   IncomeTab,
   ExpenseTab,
   SavingsTab,
@@ -42,11 +44,8 @@ import {
   ScenarioTab,
   SettingsTab,
 } from "./components/tabs";
-import { ScenarioModal } from "./components/modals/ScenarioModal";
-import { FamilyModal } from "./components/modals/FamilyModal";
 import styles from "./dashboard.module.css";
 
-type ModalType = "family" | "scenario" | "settings" | null;
 
 const sectionTitles: Record<string, string> = {
   // 대시보드
@@ -56,9 +55,11 @@ const sectionTitles: Record<string, string> = {
   consultation: "상담",
   // 재무 현황
   "current-asset": "현재 자산",
-  progress: "프로그레스",
+  progress: "자산 추이",
   portfolio: "포트폴리오",
   "household-budget": "가계부",
+  "checking-account": "입출금통장",
+  "savings-deposits": "정기 예금/적금",
   // 시뮬레이션
   scenario: "시뮬레이션",
   // 설정
@@ -75,14 +76,98 @@ export function DashboardContent() {
     familyMembers,
     simulationProfile,
     globalSettings,
-    updateGlobalSettings,
   } = useFinancialContext();
 
   const [currentSection, setCurrentSection] = useState<string>("dashboard");
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false); // 기본값: 닫혀있음
-  const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [selectedSimulationId, setSelectedSimulationId] = useState<string>(simulation.id);
+
+  // 포트폴리오 검색 상태 (헤더에서 입력, PortfolioTab에서 처리)
+  const [portfolioSearchQuery, setPortfolioSearchQuery] = useState("");
+  const [portfolioSearchLoading, setPortfolioSearchLoading] = useState(false);
+  const portfolioSearchTriggerRef = useRef<(() => void) | null>(null);
+
+  // 가계부 년/월 상태
+  const today = new Date();
+  const [budgetYear, setBudgetYear] = useState(today.getFullYear());
+  const [budgetMonth, setBudgetMonth] = useState(today.getMonth() + 1);
+
+  // 계좌 관리 모달
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "securities">("checking");
+
+  // 종목 자동완성
+  interface StockItem {
+    code: string;
+    name: string;
+    ticker: string;
+    market: string;
+    country: string;
+  }
+  const [stocksList, setStocksList] = useState<StockItem[]>([]);
+  const [suggestions, setSuggestions] = useState<StockItem[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // 종목 데이터 로드
+  useEffect(() => {
+    fetch("/data/stocks.json")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.data && Array.isArray(json.data)) {
+          setStocksList(json.data);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  // 자동완성 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(e.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 검색어로 종목 필터링
+  const filterSuggestions = useCallback((query: string) => {
+    if (!query.trim() || stocksList.length === 0) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const q = query.toLowerCase();
+    const filtered = stocksList
+      .filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.ticker.toLowerCase().includes(q) ||
+          s.code.toLowerCase().includes(q)
+      )
+      .slice(0, 10);
+    setSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
+  }, [stocksList]);
+
+  // 자동완성 선택
+  const selectSuggestion = useCallback((stock: StockItem) => {
+    setPortfolioSearchQuery(stock.ticker);
+    setShowSuggestions(false);
+    // 선택 후 자동 검색
+    setTimeout(() => {
+      portfolioSearchTriggerRef.current?.();
+    }, 100);
+  }, []);
 
   // 시뮬레이션(시나리오) 목록 조회
   const { data: simulations = [] } = useSimulations();
@@ -389,15 +474,27 @@ export function DashboardContent() {
         );
       case "consultation":
         return <div style={{ padding: 40, color: "#888" }}>상담 기록 (준비중)</div>;
-      // 프로그레스
+      // 자산 추이
       case "current-asset":
-        return <CurrentAssetTab profileId={profile.id} />;
+        return <CurrentAssetTab profileId={profile.id} onNavigate={handleSectionChange} />;
       case "progress":
         return <AssetRecordTab profileId={profile.id} />;
       case "portfolio":
-        return <PortfolioTab profileId={profile.id} />;
+        return (
+          <PortfolioTab
+            profileId={profile.id}
+            searchQuery={portfolioSearchQuery}
+            setSearchQuery={setPortfolioSearchQuery}
+            setSearchLoading={setPortfolioSearchLoading}
+            onSearchTrigger={(fn) => { portfolioSearchTriggerRef.current = fn; }}
+          />
+        );
       case "household-budget":
-        return <BudgetTab profileId={profile.id} />;
+        return <BudgetTab profileId={profile.id} year={budgetYear} month={budgetMonth} />;
+      case "checking-account":
+        return <CheckingAccountTab profileId={profile.id} />;
+      case "savings-deposits":
+        return <SavingsDepositsTab profileId={profile.id} />;
       // 설정
       case "settings":
         return <SettingsTab profileName={profile.name || ""} />;
@@ -499,11 +596,6 @@ export function DashboardContent() {
     }
   };
 
-  // 글로벌 설정 업데이트
-  const handleUpdateGlobalSettings = (newSettings: GlobalSettings) => {
-    updateGlobalSettings(newSettings);
-  };
-
   return (
     <div className={styles.layout}>
       <Sidebar
@@ -519,64 +611,130 @@ export function DashboardContent() {
 
       <main className={styles.main}>
         <header className={styles.header}>
-          <h1 key={currentSection} className={styles.pageTitle}>
-            {sectionTitles[currentSection] || currentSection}
-          </h1>
+          <div className={styles.headerInner}>
+            <h1 key={currentSection} className={styles.pageTitle}>
+              {sectionTitles[currentSection] || currentSection}
+            </h1>
 
-          <div className={styles.headerActions}>
-            <button
-              className={`${styles.headerActionBtn} ${
-                activeModal === "family" ? styles.active : ""
-              }`}
-              onClick={() =>
-                setActiveModal(activeModal === "family" ? null : "family")
-              }
-              title="가족 구성원"
-            >
-              <Users size={18} />
-            </button>
-            <button
-              className={`${styles.headerActionBtn} ${
-                activeModal === "scenario" ? styles.active : ""
-              }`}
-              onClick={() =>
-                setActiveModal(activeModal === "scenario" ? null : "scenario")
-              }
-              title="시나리오 설정"
-            >
-              <TrendingUp size={18} />
-            </button>
-            <button
-              className={`${styles.headerActionBtn} ${
-                activeModal === "settings" ? styles.active : ""
-              }`}
-              onClick={() =>
-                setActiveModal(activeModal === "settings" ? null : "settings")
-              }
-              title="설정"
-            >
-              <Settings size={18} />
-            </button>
+            {/* 가계부 월 선택기 */}
+            {currentSection === "household-budget" && (
+              <div className={styles.budgetMonthSelector}>
+                <button
+                  onClick={() => {
+                    if (budgetMonth === 1) {
+                      setBudgetYear((y) => y - 1);
+                      setBudgetMonth(12);
+                    } else {
+                      setBudgetMonth((m) => m - 1);
+                    }
+                  }}
+                  className={styles.budgetMonthBtn}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className={styles.budgetMonthLabel}>
+                  {budgetYear}년 {budgetMonth}월
+                </span>
+                <button
+                  onClick={() => {
+                    if (budgetMonth === 12) {
+                      setBudgetYear((y) => y + 1);
+                      setBudgetMonth(1);
+                    } else {
+                      setBudgetMonth((m) => m + 1);
+                    }
+                  }}
+                  className={styles.budgetMonthBtn}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+
+            {/* 계좌 관리 버튼 (가계부, 정기예금/적금, 포트폴리오) */}
+            {["household-budget", "savings-deposits", "portfolio"].includes(currentSection) && (
+              <button
+                className={styles.accountManageBtn}
+                onClick={() => {
+                  // 섹션에 따라 적절한 탭 열기
+                  if (currentSection === "household-budget") setAccountModalTab("checking");
+                  else if (currentSection === "savings-deposits") setAccountModalTab("savings");
+                  else if (currentSection === "portfolio") setAccountModalTab("securities");
+                  setShowAccountModal(true);
+                }}
+              >
+                <Settings size={14} />
+                계좌 관리
+              </button>
+            )}
+
+            {/* 포트폴리오 검색 (포트폴리오 탭에서만 표시) */}
+            {currentSection === "portfolio" && (
+              <div className={styles.headerSearch}>
+                <div className={styles.headerSearchWrapper}>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="종목 검색 후 거래 내역 추가하기"
+                    value={portfolioSearchQuery}
+                    onChange={(e) => {
+                      setPortfolioSearchQuery(e.target.value);
+                      filterSuggestions(e.target.value);
+                    }}
+                    onFocus={() => {
+                      if (suggestions.length > 0) setShowSuggestions(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        setShowSuggestions(false);
+                        portfolioSearchTriggerRef.current?.();
+                      }
+                    }}
+                    className={styles.headerSearchInput}
+                  />
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div ref={suggestionsRef} className={styles.headerSuggestions}>
+                      {suggestions.map((stock) => (
+                        <button
+                          key={stock.ticker}
+                          type="button"
+                          className={styles.headerSuggestionItem}
+                          onClick={() => selectSuggestion(stock)}
+                        >
+                          <span className={styles.suggestionName}>{stock.name}</span>
+                          <span className={styles.suggestionTicker}>{stock.ticker}</span>
+                          <span className={styles.suggestionMarket}>{stock.market}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setShowSuggestions(false);
+                    portfolioSearchTriggerRef.current?.();
+                  }}
+                  disabled={portfolioSearchLoading}
+                  className={styles.headerSearchBtn}
+                >
+                  {portfolioSearchLoading ? <RefreshCw size={16} className={styles.spinning} /> : <Search size={16} />}
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
-        <div className={styles.content}>{renderContent()}</div>
+        <div className={styles.content}>
+          <div className={styles.contentInner}>{renderContent()}</div>
+        </div>
       </main>
 
-      {/* 모달 */}
-      {activeModal === "scenario" && (
-        <ScenarioModal
-          globalSettings={globalSettings}
-          onUpdate={handleUpdateGlobalSettings}
-          onClose={() => setActiveModal(null)}
-        />
-      )}
-      {activeModal === "family" && (
-        <FamilyModal
-          profile={profile}
-          familyMembers={familyMembers}
-          onClose={() => setActiveModal(null)}
-          onSaved={() => window.location.reload()}
+      {/* 계좌 관리 모달 */}
+      {showAccountModal && (
+        <AccountManagementModal
+          profileId={profile.id}
+          onClose={() => setShowAccountModal(false)}
+          initialTab={accountModalTab}
         />
       )}
     </div>

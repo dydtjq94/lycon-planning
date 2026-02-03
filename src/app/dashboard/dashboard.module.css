@@ -24,13 +24,28 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  background-color: white;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+.headerInner {
   display: flex;
   justify-content: space-between;
   align-items: center;
   height: 48px;
-  padding: 0 32px;
-  background-color: white;
-  border-bottom: 1px solid #e7e5e4;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1400px) {
+  .headerInner {
+    width: 80%;
+    max-width: 1400px;
+    padding: 0 24px;
+  }
 }
 
 .pageTitle {
@@ -70,6 +85,181 @@
 .headerActionBtn.active {
   background-color: #292524;
   color: white;
+}
+
+/* 가계부 월 선택기 */
+.budgetMonthSelector {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.budgetMonthBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.budgetMonthBtn:hover {
+  background: #f3f4f6;
+  color: #1a1a1a;
+}
+
+.budgetMonthLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* 계좌 관리 버튼 */
+.accountManageBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: white;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.accountManageBtn:hover {
+  background: #f9fafb;
+  color: #1a1a1a;
+  border-color: #d1d5db;
+}
+
+/* 헤더 검색 (포트폴리오 탭) */
+.headerSearch {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerSearchWrapper {
+  position: relative;
+}
+
+.headerSearchInput {
+  width: 400px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.headerSearchInput:focus {
+  border-color: #3b82f6;
+}
+
+.headerSearchInput::placeholder {
+  color: #9ca3af;
+}
+
+.headerSuggestions {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 400px;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.headerSuggestionItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.headerSuggestionItem:hover {
+  background-color: #f5f5f4;
+}
+
+.suggestionName {
+  flex: 1;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.suggestionTicker {
+  font-size: 13px;
+  font-family: monospace;
+  color: #3b82f6;
+  min-width: 90px;
+}
+
+.suggestionMarket {
+  font-size: 12px;
+  color: #9ca3af;
+  min-width: 40px;
+}
+
+.headerSearchBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.headerSearchBtn:hover {
+  background-color: #2563eb;
+}
+
+.headerSearchBtn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes fadeIn {
@@ -135,9 +325,23 @@
 .content {
   flex: 1;
   min-width: 0; /* flexbox 자식이 shrink 되도록 */
-  padding: 24px;
+  padding: 24px 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* 콘텐츠 내부 래퍼 - 너비 제한 */
+.contentInner {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+@media (min-width: 1400px) {
+  .contentInner {
+    width: 80%;
+    max-width: 1400px;
+  }
 }
 
 /* 핵심 지표 카드 */

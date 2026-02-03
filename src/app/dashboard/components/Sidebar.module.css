@@ -1,14 +1,70 @@
+/* 테마 변수 - 기본값 (dark) */
+.sidebar {
+  --sidebar-bg: #1a1a1a;
+  --sidebar-border: #2a2a2a;
+  --sidebar-item-bg: transparent;
+  --sidebar-item-bg-hover: #2a2a2a;
+  --sidebar-item-bg-active: #2a2a2a;
+  --sidebar-text: #aaaaaa;
+  --sidebar-text-hover: #ffffff;
+  --sidebar-text-active: #ffffff;
+  --sidebar-text-muted: #666666;
+  --sidebar-accent: #007aff;
+}
+
+/* 다크 고대비 테마 */
+.sidebar[data-theme="darker"] {
+  --sidebar-bg: #0f0f0f;
+  --sidebar-border: #1f1f1f;
+  --sidebar-item-bg: transparent;
+  --sidebar-item-bg-hover: #1f1f1f;
+  --sidebar-item-bg-active: #252525;
+  --sidebar-text: #cccccc;
+  --sidebar-text-hover: #ffffff;
+  --sidebar-text-active: #ffffff;
+  --sidebar-text-muted: #888888;
+  --sidebar-accent: #007aff;
+}
+
+/* 라이트 테마 */
+.sidebar[data-theme="light"] {
+  --sidebar-bg: #f5f5f7;
+  --sidebar-border: #e5e5e5;
+  --sidebar-item-bg: transparent;
+  --sidebar-item-bg-hover: #e8e8ea;
+  --sidebar-item-bg-active: #ffffff;
+  --sidebar-text: #6e6e73;
+  --sidebar-text-hover: #1d1d1f;
+  --sidebar-text-active: #1d1d1f;
+  --sidebar-text-muted: #a1a1a6;
+  --sidebar-accent: #007aff;
+}
+
+/* 네이비 테마 */
+.sidebar[data-theme="blue"] {
+  --sidebar-bg: #1e2a3a;
+  --sidebar-border: #2a3a4d;
+  --sidebar-item-bg: transparent;
+  --sidebar-item-bg-hover: #2a3a4d;
+  --sidebar-item-bg-active: #354861;
+  --sidebar-text: #9cb3c9;
+  --sidebar-text-hover: #ffffff;
+  --sidebar-text-active: #ffffff;
+  --sidebar-text-muted: #6b8299;
+  --sidebar-accent: #5ac8fa;
+}
+
 /* 다크 사이드바 - 아이콘 위치 고정 */
 .sidebar {
   width: 56px;
   height: 100vh;
-  background-color: #1a1a1a;
+  background-color: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
 }
 
 .sidebar:hover,
@@ -23,8 +79,7 @@
   align-items: center;
   width: 100%;
   height: 48px;
-  border-bottom: 1px solid #2a2a2a;
-  margin-bottom: 8px;
+  border-bottom: 1px solid var(--sidebar-border);
 }
 
 /* 로고 아이템 */
@@ -42,14 +97,14 @@
   justify-content: center;
   font-size: 18px;
   font-weight: 700;
-  color: white;
+  color: var(--sidebar-text-active);
   flex-shrink: 0;
 }
 
 .logoText {
   font-size: 18px;
   font-weight: 700;
-  color: white;
+  color: var(--sidebar-text-active);
   margin-left: -22px;
   opacity: 0;
   transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -71,7 +126,7 @@
   height: 28px;
   border: none;
   background: none;
-  color: #666;
+  color: var(--sidebar-text-muted);
   cursor: pointer;
   border-radius: 6px;
   opacity: 0;
@@ -84,16 +139,16 @@
 }
 
 .pinButton:hover {
-  background-color: #2a2a2a;
-  color: #888;
+  background-color: var(--sidebar-item-bg-hover);
+  color: var(--sidebar-text);
 }
 
 .pinButton.pinned {
-  color: #fff;
+  color: var(--sidebar-text-active);
 }
 
 .pinButton.pinned:hover {
-  color: #fff;
+  color: var(--sidebar-text-active);
 }
 
 /* 네비게이션 */
@@ -115,11 +170,11 @@
   width: 100%;
   height: 40px;
   border: none;
-  background: none;
+  background: var(--sidebar-item-bg);
   border-radius: 0;
   font-size: 14px;
   font-weight: 500;
-  color: #888;
+  color: var(--sidebar-text);
   cursor: pointer;
   text-align: left;
   transition: background-color 0.15s, color 0.15s;
@@ -127,13 +182,13 @@
 }
 
 .navItem:hover {
-  background-color: #2a2a2a;
-  color: white;
+  background-color: var(--sidebar-item-bg-hover);
+  color: var(--sidebar-text-hover);
 }
 
 .navItem.active {
-  background-color: #2a2a2a;
-  color: white;
+  background-color: var(--sidebar-item-bg-active);
+  color: var(--sidebar-text-active);
 }
 
 /* 아이콘 래퍼 - 항상 56px 중앙 고정 */
@@ -187,7 +242,7 @@
   margin-right: 12px;
   opacity: 0;
   transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: #666;
+  color: var(--sidebar-text-muted);
   flex-shrink: 0;
 }
 
@@ -216,7 +271,7 @@
 /* 구분선 */
 .divider {
   height: 1px;
-  background-color: #2a2a2a;
+  background-color: var(--sidebar-border);
   margin: 8px 12px;
 }
 
@@ -229,7 +284,7 @@
 .sectionLabel {
   font-size: 11px;
   font-weight: 600;
-  color: #007aff;
+  color: var(--sidebar-accent);
   letter-spacing: 0.5px;
   padding: 8px 12px 4px 12px;
   height: 27px;
@@ -276,7 +331,7 @@
   background: none;
   font-size: 13px;
   font-weight: 500;
-  color: #777;
+  color: var(--sidebar-text);
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
@@ -290,13 +345,13 @@
 }
 
 .submenuItem:hover {
-  background-color: #2a2a2a;
-  color: white;
+  background-color: var(--sidebar-item-bg-hover);
+  color: var(--sidebar-text-hover);
 }
 
 .submenuItem.active {
-  background-color: #333;
-  color: white;
+  background-color: var(--sidebar-item-bg-active);
+  color: var(--sidebar-text-active);
 }
 
 /* 중첩 서브메뉴 (나의 재무) */
@@ -316,7 +371,7 @@
   background: none;
   font-size: 12px;
   font-weight: 500;
-  color: #666;
+  color: var(--sidebar-text-muted);
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
@@ -330,13 +385,13 @@
 }
 
 .nestedItem:hover {
-  background-color: #2a2a2a;
-  color: #aaa;
+  background-color: var(--sidebar-item-bg-hover);
+  color: var(--sidebar-text);
 }
 
 .nestedItem.active {
-  background-color: #333;
-  color: white;
+  background-color: var(--sidebar-item-bg-active);
+  color: var(--sidebar-text-active);
 }
 
 /* 시나리오 추가 버튼 */
@@ -348,12 +403,12 @@
   width: calc(100% - 24px);
   margin: 8px 12px 4px 12px;
   height: 32px;
-  border: 1px dashed #444;
+  border: 1px dashed var(--sidebar-border);
   background: none;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
-  color: #555;
+  color: var(--sidebar-text-muted);
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
   opacity: 0;
@@ -365,8 +420,8 @@
 }
 
 .addScenarioBtn:hover {
-  border-color: #666;
-  color: #888;
+  border-color: var(--sidebar-accent);
+  color: var(--sidebar-accent);
 }
 
 .addScenarioBtn span {
@@ -396,7 +451,7 @@
   background: none;
   font-size: 13px;
   font-weight: 500;
-  color: #666;
+  color: var(--sidebar-text-muted);
   cursor: pointer;
   text-align: left;
   transition: background-color 0.15s, color 0.15s;
@@ -409,11 +464,11 @@
 }
 
 .footerItem:hover {
-  background-color: #2a2a2a;
-  color: white;
+  background-color: var(--sidebar-item-bg-hover);
+  color: var(--sidebar-text-hover);
 }
 
 .footerItem.active {
-  background-color: #2a2a2a;
-  color: white;
+  background-color: var(--sidebar-item-bg-active);
+  color: var(--sidebar-text-active);
 }

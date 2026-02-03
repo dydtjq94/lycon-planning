@@ -40,9 +40,9 @@ retirement_pensions, personal_pensions
 - **profiles는 id**: `.eq("id", user.id)` 사용
 
 ### 데이터 타입 주의
-- **금액**: integer (만원 단위) - NOT bigint
+- **금액**: integer 또는 bigint (원 단위) - 큰 금액은 bigint 권장
 - **비율**: numeric (예: 5.0, 2.5)
-- **날짜**: date (YYYY-MM-DD) 또는 year/month 분리
+- **날짜**: date (YYYY-MM-DD) 또는 year/month/day 분리
 - **boolean**: true/false, 기본값 확인 필수
 
 ## RLS 정책 (Row Level Security) - 반드시 확인!
@@ -105,6 +105,31 @@ USING (
 ```tsx
 import styles from './Component.module.css'
 <div className={styles.container}>
+```
+
+## 주식/금융 색상 규칙 (한국식)
+
+- **상승(수익)은 빨간색**: `#ef4444` - 양수, 상승, 수익
+- **하락(손실)은 파란색**: `#3b82f6` - 음수, 하락, 손실
+- **매수는 빨간색**: `#ef4444` - 사는 행위
+- **매도는 파란색**: `#3b82f6` - 파는 행위
+- **가격 차트**: `#10b981` (틸트/에메랄드) 고정
+- **손익 차트**: 수익 구간 빨간색, 손실 구간 파란색
+- **절대 반대로 하지 말 것**: 서양식(초록=상승, 빨강=하락) 사용 금지
+
+```css
+/* 한국식 주식 색상 */
+.positive { color: #ef4444; }  /* 빨강 = 상승/수익 */
+.negative { color: #3b82f6; }  /* 파랑 = 하락/손실 */
+.buy { color: #ef4444; }       /* 빨강 = 매수 */
+.sell { color: #3b82f6; }      /* 파랑 = 매도 */
+
+/* 가격 차트 - 틸트 고정 */
+borderColor: "#10b981"
+
+/* 손익 차트 - 빨강/파랑 */
+profit: "#ef4444"   /* 수익 = 빨강 */
+loss: "#3b82f6"     /* 손실 = 파랑 */
 ```
 
 ## 스켈레톤 로딩 애니메이션
@@ -290,22 +315,22 @@ calculateAge(1994)  // 출생년도만 있으면 1월 1일 기준으로 계산
 
 ## 금액 단위 규칙
 
-- **모든 금액 입력은 만원 단위**: 사용자가 입력하는 모든 금액은 만원 단위
-- **예시**: 사용자가 `10000` 입력 = 10000만원 = 1억원
-- **표시는 억+만 병행**: 1억 이상은 `6억 4,724만` 형식으로 표시
-- **전역 유틸리티 사용**: `formatMoney` 함수를 `@/lib/utils`에서 import하여 사용
-- **원 단위 변환 필요시**: `만원 * 10000 = 원`
+- **데이터 저장은 항상 원 단위**: DB에 저장되는 모든 금액은 원(KRW) 단위
+- **사용자 입력도 원 단위**: 사용자가 입력하는 금액도 원 단위
+- **표시는 상황에 맞게**: 작은 금액은 원, 큰 금액은 만원/억원으로 자동 변환 표시
+- **전역 유틸리티 사용**: `formatWon` 함수를 `@/lib/utils`에서 import하여 사용
 
 ```tsx
-import { formatMoney } from '@/lib/utils'
+import { formatWon } from '@/lib/utils'
 
-// formatMoney 사용 예시
-formatMoney(5000)     // "5,000만원"
-formatMoney(10000)    // "1억"
-formatMoney(64724)    // "6억 4,724만"
+// formatWon 사용 예시 (원 단위 입력)
+formatWon(50000000)     // "5,000만원"
+formatWon(100000000)    // "1억원"
+formatWon(647240000)    // "6억 4,724만원"
+formatWon(500000)       // "50만원"
 
-// 원 단위 변환 (계산용)
-const wonValue = inputValue * 10000 // 100,000,000원
+// 데이터 저장 예시
+const balance = 50000000  // 5천만원을 원 단위로 저장
 ```
 
 ## 시간 단위 규칙 (매우 중요!)

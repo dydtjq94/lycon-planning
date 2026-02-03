@@ -104,11 +104,11 @@
 }
 
 .changeInfo.positive {
-  color: #14b8a6;
+  color: #ef4444;
 }
 
 .changeInfo.negative {
-  color: #ef4444;
+  color: #3b82f6;
 }
 
 .changeLabel {
@@ -263,7 +263,7 @@
 }
 
 .tableWrapper {
-  overflow-x: auto;
+  overflow: visible;
 }
 
 .table {
@@ -334,8 +334,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   min-width: 100px;
-  z-index: 10;
-  overflow: hidden;
+  z-index: 100;
 }
 
 .dropdownItem {

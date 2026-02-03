@@ -1,0 +1,864 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* 상단 계좌 바 */
+.accountBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 32px;
+  padding: 16px 24px;
+  flex-shrink: 0;
+}
+
+.accountItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border: none;
+  background: none;
+  padding: 8px 0;
+  cursor: default;
+  text-align: left;
+}
+
+.accountItem .accountItemName {
+  color: #9ca3af;
+}
+
+.accountItem .accountItemBalance {
+  color: #9ca3af;
+}
+
+.accountItemSelected .accountItemName {
+  color: #6b7280;
+}
+
+.accountItemSelected .accountItemBalance {
+  color: #1a1a1a;
+}
+
+.accountItemSelected .accountItemChange.positive {
+  color: #059669;
+}
+
+.accountItemName {
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.accountItemValues {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.accountItemBalance {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.accountItemChange {
+  font-size: 11px;
+  color: #d1d5db;
+}
+
+.accountItemChange.positive {
+  color: #d1d5db;
+}
+
+.accountDivider {
+  width: 1px;
+  height: 32px;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+
+.noAccountsText {
+  font-size: 13px;
+  color: #9ca3af;
+  padding: 8px 0;
+}
+
+/* 요약 헤더 - PortfolioTab 스타일 */
+.summaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 40px;
+  padding: 32px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.mainMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metricLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.mainValue {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -1px;
+}
+
+.changeInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.changeInfo.positive {
+  color: #059669;
+}
+
+.sideMetrics {
+  display: flex;
+  gap: 48px;
+}
+
+.sideMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+}
+
+.sideLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.sideValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+/* 보유 목록 섹션 */
+.holdingsSection {
+  padding: 24px;
+}
+
+.holdingsSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.holdingsSectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+/* 보유 목록 그리드 (2열) */
+.holdingsList {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+}
+
+@media (max-width: 1200px) {
+  .holdingsList {
+    grid-template-columns: 1fr;
+  }
+}
+
+.holdingItem {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  position: relative;
+}
+
+.holdingItem:nth-child(odd) {
+  border-right: 1px solid #f3f4f6;
+}
+
+@media (max-width: 1200px) {
+  .holdingItem:nth-child(odd) {
+    border-right: none;
+  }
+}
+
+/* 왼쪽: 입력 패널 */
+.inputPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  padding-right: 40px;
+  background: #fff;
+}
+
+/* 로딩 상태 */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #86868b;
+  font-size: 14px;
+}
+
+/* 항목 리스트 */
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ========== 읽기 모드 - 포트폴리오 스타일 ========== */
+.holdingItem {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 0;
+  border-bottom: 1px solid #f3f4f6;
+  position: relative;
+}
+
+.holdingItem:last-of-type {
+  border-bottom: none;
+}
+
+/* 보유 항목 헤더 */
+.holdingHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.holdingTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 사용자 입력 필드 행 (파란색) */
+.inputFieldsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* 계산된 필드 행 (검정색) */
+.calculatedFieldsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  padding-top: 12px;
+}
+
+.fieldItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 70px;
+}
+
+.fieldLabel {
+  font-size: 10px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.fieldValueInput {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.fieldValueCalc {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.fieldValueCalc.highlight {
+  font-weight: 700;
+}
+
+.holdingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.holdingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.holdingLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.typeLabel {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.typeLabel.deposit {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.typeLabel.savings {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.taxFreeBadge {
+  font-size: 10px;
+  font-weight: 500;
+  color: #059669;
+  background: #d1fae5;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.maturityBadge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #ea580c;
+  background: #ffedd5;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.holdingName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.holdingBroker {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.holdingSubInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.rateLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #059669;
+}
+
+.contributionLabel {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.holdingMetricsRow {
+  display: flex;
+  gap: 32px;
+}
+
+.holdingMetric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 100px;
+}
+
+.metricLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.metricValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.interestColor {
+  color: #059669;
+}
+
+.holdingActions {
+  position: absolute;
+  top: 20px;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.holdingItem:hover .holdingActions {
+  opacity: 1;
+}
+
+.editBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: #c7c7cc;
+  cursor: pointer;
+}
+
+.editBtn:hover {
+  color: #007aff;
+}
+
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: #c7c7cc;
+  cursor: pointer;
+}
+
+.deleteBtn:hover {
+  color: #ff3b30;
+}
+
+/* ========== 편집 모드 ========== */
+.editItem {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 0;
+  border-bottom: 1px solid #e8e8ed;
+}
+
+.editRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.editRowLabel {
+  font-size: 13px;
+  color: #86868b;
+  width: 60px;
+  flex-shrink: 0;
+  padding-top: 8px;
+}
+
+.editField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.editInput {
+  width: 120px;
+  padding: 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 1px solid #d2d2d7;
+  outline: none;
+  background: transparent;
+  text-align: right;
+}
+
+.editInput:focus {
+  border-bottom-color: #007aff;
+}
+
+.editInput::-webkit-outer-spin-button,
+.editInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.editInputSmall {
+  width: 60px;
+  padding: 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 1px solid #d2d2d7;
+  outline: none;
+  background: transparent;
+  text-align: center;
+}
+
+.editInputSmall:focus {
+  border-bottom-color: #007aff;
+}
+
+.editInputSmall::-webkit-outer-spin-button,
+.editInputSmall::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.editUnit {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.editInputWide {
+  width: 240px;
+  padding: 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1d1d1f;
+  border: none;
+  border-bottom: 1px solid #d2d2d7;
+  outline: none;
+  background: transparent;
+}
+
+.editInputWide:focus {
+  border-bottom-color: #007aff;
+}
+
+.editSelect {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+}
+
+.editSelect:focus {
+  background: #e8e8ed;
+}
+
+/* 유형 선택 버튼 */
+.typeButtons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.typeBtn {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.typeBtn:hover {
+  background: #e8e8ed;
+}
+
+.typeBtn.active {
+  background: #1d1d1f;
+  color: #fff;
+}
+
+/* 편집 액션 */
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #86868b;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  color: #1d1d1f;
+}
+
+.saveBtn {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: #007aff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.saveBtn:hover {
+  background: #0066d6;
+}
+
+/* 추가 버튼 */
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #007aff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.addBtn:hover {
+  color: #0066d6;
+}
+
+/* ========== 오른쪽: 요약 패널 ========== */
+.summaryPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  background: #f5f5f7;
+  padding: 12px 12px 240px 12px;
+  margin: -24px -24px -24px 0;
+}
+
+.summaryCard {
+  background: #fff;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.totalAssets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.totalLabel {
+  font-size: 13px;
+  color: #86868b;
+}
+
+.totalValue {
+  font-size: 36px;
+  font-weight: 700;
+  color: #007aff;
+  letter-spacing: -1px;
+}
+
+.subValues {
+  display: flex;
+  gap: 32px;
+}
+
+.subValueItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.subLabel {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.subValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.interestValue {
+  color: #059669;
+}
+
+.typeBreakdown {
+  display: flex;
+  gap: 24px;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.breakdownItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.breakdownLabel {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.breakdownValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+/* 빈 상태 */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  color: #c7c7cc;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.emptyState svg {
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.emptyState p {
+  font-size: 14px;
+  color: #86868b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 스켈레톤 shimmer 애니메이션 */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeletonAccountItem {
+  width: 80px;
+  height: 48px;
+  border-radius: 4px;
+}
+
+.skeletonRow {
+  width: 100%;
+  height: 80px;
+  margin-bottom: 16px;
+}
+
+.skeletonLabel {
+  width: 80px;
+  height: 14px;
+  margin-bottom: 8px;
+}
+
+.skeletonMainValue {
+  width: 200px;
+  height: 36px;
+}
+
+.skeletonSideValue {
+  width: 120px;
+  height: 28px;
+}
+
+.skeletonHoldingItem {
+  width: 100%;
+  height: 140px;
+  border-radius: 4px;
+}
+
+.skeletonValue {
+  width: 160px;
+  height: 36px;
+}
+
+/* 반응형 */
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .inputPanel {
+    padding-right: 0;
+    padding-bottom: 32px;
+  }
+
+  .summaryPanel {
+    margin: 0;
+    padding: 24px 20px 48px;
+  }
+
+  .accountBar {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .editField {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .totalValue {
+    font-size: 28px;
+  }
+
+  .editInputWide {
+    width: 100%;
+  }
+}

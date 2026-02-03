@@ -28,6 +28,9 @@ import {
 } from '@/lib/services/snapshotService'
 import type { FinancialSnapshotItemInput } from '@/types/tables'
 import { simulationService } from '@/lib/services/simulationService'
+import { createClient } from '@/lib/supabase/client'
+import { getStockData, getExchangeRate } from '@/lib/services/financeApiService'
+import type { PortfolioTransaction, PortfolioAssetType, PortfolioCurrency } from '@/types/tables'
 
 // Query Keys
 export const financialKeys = {
@@ -432,5 +435,269 @@ export function useSimulations(enabled: boolean = true) {
     queryKey: simulationKeys.list(),
     queryFn: () => simulationService.getAll(),
     enabled,
+  })
+}
+
+// ============================================
+// 포트폴리오 (Portfolio) 훅
+// ============================================
+
+export const portfolioKeys = {
+  all: ['portfolio'] as const,
+  transactions: (profileId: string) => [...portfolioKeys.all, 'transactions', profileId] as const,
+  value: (profileId: string) => [...portfolioKeys.all, 'value', profileId] as const,
+  chartPriceData: (profileId: string) => [...portfolioKeys.all, 'chartPriceData', profileId] as const,
+}
+
+interface PortfolioHolding {
+  ticker: string
+  name: string
+  asset_type: PortfolioAssetType
+  quantity: number
+  avg_price: number
+  total_invested: number
+  currency: PortfolioCurrency
+}
+
+/**
+ * 포트폴리오 거래 내역 로드 훅
+ */
+export function usePortfolioTransactions(profileId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: portfolioKeys.transactions(profileId),
+    queryFn: async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('portfolio_transactions')
+        .select('*')
+        .eq('profile_id', profileId)
+        .order('trade_date', { ascending: false })
+
+      if (error) throw error
+      return data as PortfolioTransaction[]
+    },
+    enabled: enabled && !!profileId,
+  })
+}
+
+/**
+ * 포트폴리오 총 평가금액 로드 훅
+ * - 거래 내역 → 보유 종목 계산 → 현재가 조회 → 총액 반환
+ */
+export function usePortfolioValue(profileId: string, enabled: boolean = true) {
+  const { data: transactions = [], isLoading: txLoading } = usePortfolioTransactions(profileId, enabled)
+
+  return useQuery({
+    queryKey: portfolioKeys.value(profileId),
+    queryFn: async () => {
+      if (transactions.length === 0) {
+        return { totalValue: 0, totalInvested: 0, holdings: [] }
+      }
+
+      // 보유 종목 계산
+      const holdingsMap = new Map<string, PortfolioHolding>()
+
+      transactions.forEach((tx) => {
+        const key = tx.ticker
+        const existing = holdingsMap.get(key)
+        const txTotalWon = tx.quantity * tx.price
+
+        if (!existing) {
+          if (tx.type === 'buy') {
+            holdingsMap.set(key, {
+              ticker: tx.ticker,
+              name: tx.name,
+              asset_type: tx.asset_type as PortfolioAssetType,
+              quantity: tx.quantity,
+              avg_price: tx.price,
+              total_invested: txTotalWon,
+              currency: tx.currency as PortfolioCurrency,
+            })
+          }
+        } else {
+          if (tx.type === 'buy') {
+            const newTotalQty = existing.quantity + tx.quantity
+            const newTotalInvested = existing.total_invested + txTotalWon
+            existing.avg_price = newTotalInvested / newTotalQty
+            existing.quantity = newTotalQty
+            existing.total_invested = newTotalInvested
+          } else {
+            existing.quantity -= tx.quantity
+            const sellRatio = tx.quantity / (existing.quantity + tx.quantity)
+            existing.total_invested *= (1 - sellRatio)
+          }
+        }
+      })
+
+      const holdings = Array.from(holdingsMap.values()).filter((h) => h.quantity > 0)
+
+      if (holdings.length === 0) {
+        return { totalValue: 0, totalInvested: 0, holdings: [] }
+      }
+
+      // 환율 조회 (해외 종목이 있는 경우)
+      const hasForeign = holdings.some(
+        (h) => h.asset_type === 'foreign_stock' || h.asset_type === 'foreign_etf'
+      )
+
+      let exchangeRate = 1
+      if (hasForeign) {
+        try {
+          const fxRes = await getExchangeRate('USDKRW', { days: 5 })
+          if (fxRes.data.length > 0) {
+            exchangeRate = fxRes.data[fxRes.data.length - 1].Close
+          }
+        } catch {
+          exchangeRate = 1400 // fallback
+        }
+      }
+
+      // 현재가 조회 및 총액 계산
+      let totalValue = 0
+      const totalInvested = holdings.reduce((sum, h) => sum + h.total_invested, 0)
+
+      const pricePromises = holdings.map(async (holding) => {
+        try {
+          const res = await getStockData(holding.ticker, { days: 5 })
+          if (res.data.length > 0) {
+            return { ticker: holding.ticker, price: res.data[res.data.length - 1].Close, success: true }
+          }
+          return { ticker: holding.ticker, price: 0, success: false }
+        } catch {
+          return { ticker: holding.ticker, price: 0, success: false }
+        }
+      })
+
+      const priceResults = await Promise.all(pricePromises)
+
+      priceResults.forEach((result, idx) => {
+        const holding = holdings[idx]
+        if (result.success) {
+          const isForeign = holding.asset_type === 'foreign_stock' || holding.asset_type === 'foreign_etf'
+          const holdingValue = isForeign && holding.currency === 'USD'
+            ? holding.quantity * result.price * exchangeRate
+            : holding.quantity * result.price
+          totalValue += holdingValue
+        } else {
+          totalValue += holding.total_invested
+        }
+      })
+
+      return { totalValue, totalInvested, holdings }
+    },
+    enabled: enabled && !!profileId && !txLoading && transactions.length > 0,
+    staleTime: 1000 * 60 * 5, // 5분간 fresh 유지
+  })
+}
+
+/**
+ * 포트폴리오 차트용 주가 데이터 캐싱 훅
+ * - 거래 내역의 모든 종목에 대한 과거 주가를 한 번만 로드
+ * - 탭 전환 시에도 캐시 유지 (5분)
+ */
+export interface PortfolioPriceCache {
+  priceDataMap: Map<string, Map<string, number>>
+  exchangeRateMap: Map<string, number>
+  tickerCurrencyMap: Map<string, string>
+  dates: string[]
+}
+
+export function usePortfolioChartPriceData(
+  profileId: string,
+  transactions: PortfolioTransaction[],
+  enabled: boolean = true
+) {
+  return useQuery({
+    queryKey: portfolioKeys.chartPriceData(profileId),
+    queryFn: async (): Promise<PortfolioPriceCache> => {
+      if (transactions.length === 0) {
+        return {
+          priceDataMap: new Map(),
+          exchangeRateMap: new Map(),
+          tickerCurrencyMap: new Map(),
+          dates: [],
+        }
+      }
+
+      // 전체 거래 내역 정렬
+      const sortedTx = [...transactions].sort(
+        (a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime()
+      )
+
+      const firstDate = sortedTx[0].trade_date
+      const today = new Date().toISOString().split('T')[0]
+
+      // 고유 티커 목록 + 통화 정보
+      const tickerCurrencyMap = new Map<string, string>()
+      transactions.forEach((tx) => {
+        if (!tickerCurrencyMap.has(tx.ticker)) {
+          tickerCurrencyMap.set(tx.ticker, tx.currency)
+        }
+      })
+      const tickers = [...tickerCurrencyMap.keys()]
+
+      // 해외주식 있는지 확인
+      const hasForeignStock = [...tickerCurrencyMap.values()].some((c) => c === 'USD')
+
+      // 첫 거래일부터 오늘까지 전체 기간
+      const diffDays = Math.ceil(
+        (new Date().getTime() - new Date(firstDate).getTime()) / (1000 * 60 * 60 * 24)
+      )
+      const fetchDays = diffDays + 30
+
+      // 주가 데이터 + 환율 병렬 fetch
+      const priceDataMap = new Map<string, Map<string, number>>()
+      const exchangeRateMap = new Map<string, number>()
+
+      const stockPromises = tickers.map(async (ticker) => {
+        try {
+          const res = await getStockData(ticker, { days: fetchDays })
+          const tickerPrices = new Map<string, number>()
+          res.data.forEach((d) => {
+            tickerPrices.set(d.Date, d.Close)
+          })
+          return { ticker, prices: tickerPrices }
+        } catch {
+          return { ticker, prices: new Map<string, number>() }
+        }
+      })
+
+      const fxPromise = hasForeignStock
+        ? getExchangeRate('USDKRW', { days: fetchDays })
+            .then((res) => {
+              res.data.forEach((d) => {
+                exchangeRateMap.set(d.Date, d.Close)
+              })
+            })
+            .catch(() => {
+              console.log('환율 데이터 로드 실패, 기본 환율 사용')
+            })
+        : Promise.resolve()
+
+      const [stockResults] = await Promise.all([Promise.all(stockPromises), fxPromise])
+
+      stockResults.forEach(({ ticker, prices }) => {
+        priceDataMap.set(ticker, prices)
+      })
+
+      // 날짜 범위 생성 (첫 거래일 ~ 오늘)
+      const dates: string[] = []
+      const current = new Date(firstDate)
+      const end = new Date(today)
+
+      while (current <= end) {
+        dates.push(current.toISOString().split('T')[0])
+        current.setDate(current.getDate() + 1)
+      }
+
+      return {
+        priceDataMap,
+        exchangeRateMap,
+        tickerCurrencyMap,
+        dates,
+      }
+    },
+    enabled: enabled && !!profileId && transactions.length > 0,
+    staleTime: 1000 * 60 * 5, // 5분간 fresh 유지
   })
 }

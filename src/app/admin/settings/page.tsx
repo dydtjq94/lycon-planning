@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ChevronLeft, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { LogOut, User, Bell, Shield, HelpCircle, ChevronRight, Check } from "lucide-react";
-import styles from "./SettingsTab.module.css";
+import styles from "./settings.module.css";
 
 type ThemeId = "dark" | "darker" | "light" | "blue";
 
@@ -67,16 +66,12 @@ const themes: Theme[] = [
   },
 ];
 
-interface SettingsTabProps {
-  profileName: string;
-}
-
-export function SettingsTab({ profileName }: SettingsTabProps) {
+export default function SettingsPage() {
   const router = useRouter();
   const [currentTheme, setCurrentTheme] = useState<ThemeId>("darker");
 
   useEffect(() => {
-    const saved = localStorage.getItem("user-theme") as ThemeId | null;
+    const saved = localStorage.getItem("admin-theme") as ThemeId | null;
     if (saved && themes.some((t) => t.id === saved)) {
       setCurrentTheme(saved);
     }
@@ -84,38 +79,25 @@ export function SettingsTab({ profileName }: SettingsTabProps) {
 
   const handleThemeChange = (themeId: ThemeId) => {
     setCurrentTheme(themeId);
-    localStorage.setItem("user-theme", themeId);
-    window.dispatchEvent(new CustomEvent("user-theme-change", { detail: themeId }));
-  };
-
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
+    localStorage.setItem("admin-theme", themeId);
+    // 테마 적용을 위한 커스텀 이벤트
+    window.dispatchEvent(new CustomEvent("admin-theme-change", { detail: themeId }));
   };
 
   return (
     <div className={styles.container}>
-      <div className={styles.content}>
-        {/* 프로필 섹션 */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>프로필</h2>
-          <div className={styles.menuList}>
-            <button className={styles.menuItem}>
-              <User size={20} />
-              <div className={styles.menuInfo}>
-                <span className={styles.menuLabel}>내 정보</span>
-                <span className={styles.menuValue}>{profileName || "이름 없음"}</span>
-              </div>
-              <ChevronRight size={16} className={styles.chevron} />
-            </button>
-          </div>
-        </section>
+      <div className={styles.header}>
+        <button className={styles.backButton} onClick={() => router.back()}>
+          <ChevronLeft size={18} />
+        </button>
+        <h1 className={styles.title}>설정</h1>
+      </div>
 
-        {/* 테마 설정 */}
+      <div className={styles.content}>
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>사이드바 테마</h2>
+          <p className={styles.sectionDesc}>사이드바의 색상 테마를 선택하세요</p>
+
           <div className={styles.themeGrid}>
             {themes.map((theme) => (
               <button
@@ -123,6 +105,7 @@ export function SettingsTab({ profileName }: SettingsTabProps) {
                 className={`${styles.themeCard} ${currentTheme === theme.id ? styles.themeCardActive : ""}`}
                 onClick={() => handleThemeChange(theme.id)}
               >
+                {/* 미리보기 */}
                 <div
                   className={styles.themePreview}
                   style={{ backgroundColor: theme.preview.bg }}
@@ -140,7 +123,23 @@ export function SettingsTab({ profileName }: SettingsTabProps) {
                       style={{ backgroundColor: theme.preview.text }}
                     />
                   </div>
-                  <div className={styles.previewItem}>
+                  <div
+                    className={styles.previewItem}
+                    style={{ backgroundColor: "transparent" }}
+                  >
+                    <div
+                      className={styles.previewDot}
+                      style={{ backgroundColor: theme.preview.textMuted }}
+                    />
+                    <div
+                      className={styles.previewLine}
+                      style={{ backgroundColor: theme.preview.textMuted }}
+                    />
+                  </div>
+                  <div
+                    className={styles.previewItem}
+                    style={{ backgroundColor: "transparent" }}
+                  >
                     <div
                       className={styles.previewDot}
                       style={{ backgroundColor: theme.preview.textMuted }}
@@ -151,61 +150,21 @@ export function SettingsTab({ profileName }: SettingsTabProps) {
                     />
                   </div>
                 </div>
+
+                {/* 정보 */}
                 <div className={styles.themeInfo}>
                   <span className={styles.themeName}>{theme.name}</span>
+                  <span className={styles.themeDesc}>{theme.description}</span>
                 </div>
+
+                {/* 선택 표시 */}
                 {currentTheme === theme.id && (
                   <div className={styles.checkMark}>
-                    <Check size={14} />
+                    <Check size={16} />
                   </div>
                 )}
               </button>
             ))}
-          </div>
-        </section>
-
-        {/* 앱 설정 섹션 */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>앱 설정</h2>
-          <div className={styles.menuList}>
-            <button className={styles.menuItem}>
-              <Bell size={20} />
-              <div className={styles.menuInfo}>
-                <span className={styles.menuLabel}>알림</span>
-              </div>
-              <ChevronRight size={16} className={styles.chevron} />
-            </button>
-            <button className={styles.menuItem}>
-              <Shield size={20} />
-              <div className={styles.menuInfo}>
-                <span className={styles.menuLabel}>보안</span>
-              </div>
-              <ChevronRight size={16} className={styles.chevron} />
-            </button>
-          </div>
-        </section>
-
-        {/* 지원 섹션 */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>지원</h2>
-          <div className={styles.menuList}>
-            <button className={styles.menuItem}>
-              <HelpCircle size={20} />
-              <div className={styles.menuInfo}>
-                <span className={styles.menuLabel}>도움말</span>
-              </div>
-              <ChevronRight size={16} className={styles.chevron} />
-            </button>
-          </div>
-        </section>
-
-        {/* 로그아웃 */}
-        <section className={styles.section}>
-          <div className={styles.menuList}>
-            <button className={styles.logoutButton} onClick={handleLogout}>
-              <LogOut size={20} />
-              <span>로그아웃</span>
-            </button>
           </div>
         </section>
       </div>

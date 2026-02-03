@@ -1,5 +1,9 @@
 .container {
-  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  width: 100%;
   height: 100%;
   overflow-y: auto;
 }
@@ -13,9 +17,248 @@
   font-size: 14px;
 }
 
+/* 상단 계좌 바 - BudgetTab과 동일 */
+.accountBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 32px;
+  padding: 16px 24px;
+}
+
+.accountItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border: none;
+  background: none;
+  padding: 8px 0;
+  border-radius: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.accountItem .accountItemName {
+  color: #9ca3af;
+}
+
+.accountItem .accountItemBalance {
+  color: #9ca3af;
+}
+
+.accountItem:hover .accountItemName,
+.accountItem:hover .accountItemBalance {
+  color: #6b7280;
+}
+
+.accountItemSelected .accountItemName {
+  color: #6b7280;
+}
+
+.accountItemSelected .accountItemBalance {
+  color: #1a1a1a;
+}
+
+.accountItemName {
+  font-size: 11px;
+  font-weight: 400;
+  transition: color 0.15s;
+}
+
+.accountItemValues {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.accountItemBalance {
+  font-size: 14px;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+
+.accountItemChange {
+  font-size: 11px;
+  font-weight: 500;
+  transition: color 0.15s;
+  color: #d1d5db;
+}
+
+.accountItemChange.positive {
+  color: #d1d5db;
+}
+
+.accountItemChange.negative {
+  color: #d1d5db;
+}
+
+.accountItemSelected .accountItemChange.positive {
+  color: #ef4444;
+}
+
+.accountItemSelected .accountItemChange.negative {
+  color: #3b82f6;
+}
+
+.accountDivider {
+  width: 1px;
+  height: 32px;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+
+.noAccountsText {
+  font-size: 13px;
+  color: #9ca3af;
+  padding: 8px 0;
+}
+
+.defaultBadge {
+  padding: 2px 6px;
+  background: #dcfce7;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+/* 모달 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modalHeader h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.modalCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.modalCloseBtn:hover {
+  background: #f3f4f6;
+}
+
+.modalContent {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* 계좌 폼 */
+.accountForm {
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.accountForm h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 16px 0;
+}
+
+.accountFormRow {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.accountFormRow:last-of-type {
+  margin-bottom: 0;
+}
+
+.accountFormGroup {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.accountFormGroup label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 24px;
+  font-size: 13px;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #007aff;
+}
+
+.accountFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* 계좌 목록 */
+.accountList h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 12px 0;
+}
+
+
 /* 티커 검색 */
 .searchSection {
-  margin-bottom: 24px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .searchBar {
@@ -32,15 +275,16 @@
   width: 100%;
   padding: 12px 16px;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 14px;
   color: #1a1a1a;
-  background: white;
+  background: #f9fafb;
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #14b8a6;
+  border-color: #007aff;
+  background: white;
 }
 
 .searchInput::placeholder {
@@ -56,7 +300,7 @@
   margin-top: 4px;
   background: white;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   max-height: 320px;
   overflow-y: auto;
@@ -112,15 +356,15 @@
   width: 48px;
   height: 48px;
   border: none;
-  border-radius: 8px;
-  background: #1a1a1a;
+  border-radius: 10px;
+  background: #007aff;
   color: white;
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .searchButton:hover:not(:disabled) {
-  background: #333;
+  background: #0066d6;
 }
 
 .searchButton:disabled {
@@ -156,11 +400,10 @@
 }
 
 .searchResultCard {
-  margin-top: 12px;
+  margin: 16px 24px;
   padding: 16px;
-  background: white;
-  border: 1px solid #14b8a6;
-  border-radius: 12px;
+  background: #f0f9ff;
+  border-radius: 10px;
 }
 
 .searchResultHeader {
@@ -198,17 +441,17 @@
 }
 
 .searchResultChange.positive {
-  color: #22c55e;
+  color: #ef4444;
 }
 
 .searchResultChange.negative {
-  color: #ef4444;
+  color: #3b82f6;
 }
 
 .dataDateNotice {
   margin-bottom: 12px;
   padding: 6px 10px;
-  background: #f3f4f6;
+  background: rgba(255, 255, 255, 0.6);
   border-radius: 6px;
   font-size: 12px;
   color: #6b7280;
@@ -234,7 +477,7 @@
   padding: 10px 16px;
   border: none;
   border-radius: 8px;
-  background: #14b8a6;
+  background: #007aff;
   color: white;
   font-size: 14px;
   font-weight: 500;
@@ -243,7 +486,7 @@
 }
 
 .applyBtn:hover {
-  background: #0d9488;
+  background: #0066d6;
 }
 
 .closeBtn {
@@ -263,95 +506,441 @@
   background: #f9fafb;
 }
 
-/* 상단 요약 */
-.summary {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+/* 검색 결과 슬라이드 패널 */
+.searchPanelOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
 }
 
-.summaryCard {
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.searchPanelOverlay.closing {
+  animation: fadeOut 0.25s ease-out forwards;
+}
+
+.searchPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 520px;
+  height: 100%;
+  background: white;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 20px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  animation: slideIn 0.3s ease-out;
 }
 
-.summaryLabel {
-  font-size: 13px;
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+.searchPanel.closing {
+  animation: slideOut 0.25s ease-out forwards;
+}
+
+.searchPanelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.searchPanelTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.searchPanelName {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.searchPanelSymbol {
+  font-size: 14px;
+  font-family: monospace;
   color: #6b7280;
 }
 
-.summaryValue {
-  font-size: 24px;
+.searchPanelPrice {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.searchPanelChange {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.searchPanelChange.positive {
+  color: #ef4444;
+}
+
+.searchPanelChange.negative {
+  color: #3b82f6;
+}
+
+.searchPanelCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.searchPanelCloseBtn:hover {
+  background: #f5f5f4;
+}
+
+.searchPanelChart {
+  flex: 1;
+  padding: 24px;
+  min-height: 300px;
+}
+
+.searchPanelAddBtn {
+  margin: 24px;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  background: #3b82f6;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.searchPanelAddBtn:hover {
+  background: #2563eb;
+}
+
+/* 상단 요약 헤더 - AssetRecordTab 스타일 */
+.summaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 40px;
+  padding: 32px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.mainMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metricLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.mainValue {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -1px;
+}
+
+.changeInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.changeInfo.positive {
+  color: #ef4444;
+}
+
+.changeInfo.negative {
+  color: #3b82f6;
+}
+
+.changeLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+  letter-spacing: 0.3px;
+  margin-right: 4px;
+}
+
+.sideMetrics {
+  display: flex;
+  gap: 48px;
+}
+
+.sideMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+}
+
+.sideLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.sideValue {
+  font-size: 28px;
   font-weight: 700;
   color: #1a1a1a;
 }
 
-.profitLoss {
-  font-size: 13px;
-  font-weight: 500;
-}
-
 .profit {
-  color: #22c55e;
+  color: #ef4444;
 }
 
 .loss {
-  color: #ef4444;
+  color: #3b82f6;
 }
 
 /* 차트 섹션 */
 .chartSection {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.chartWrapper {
-  position: relative;
+.chartContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .chartInner {
   position: relative;
-  height: 200px;
+  height: 280px;
 }
 
 .periodSelector {
   display: flex;
-  gap: 4px;
-  margin-bottom: 12px;
+  justify-content: center;
+  gap: 8px;
 }
 
 .periodBtn {
-  padding: 4px 10px;
-  border: 1px solid #e5e7eb;
+  padding: 8px 16px;
+  background: none;
+  border: none;
   border-radius: 6px;
-  background: white;
+  font-size: 13px;
+  font-weight: 500;
   color: #6b7280;
-  font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .periodBtn:hover {
-  background: #f9fafb;
+  background: #f3f4f6;
 }
 
 .periodBtnActive {
   background: #1a1a1a;
-  border-color: #1a1a1a;
   color: white;
 }
 
 .periodBtnActive:hover {
-  background: #333;
+  background: #1a1a1a;
+  color: white;
+}
+
+/* 스켈레톤 shimmer 애니메이션 */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+/* 메인 값 스켈레톤 */
+.skeletonMainValue {
+  width: 200px;
+  height: 40px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+/* 사이드 값 스켈레톤 */
+.skeletonSideValue {
+  width: 120px;
+  height: 32px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+/* 변화 정보 스켈레톤 */
+.skeletonChangeInfo {
+  width: 180px;
+  height: 18px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+/* 차트 스켈레톤 */
+.chartSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.chartSkeletonHeader {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.chartSkeletonPeriodBtn {
+  width: 60px;
+  height: 32px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+.chartSkeletonArea {
+  height: 280px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.chartSkeletonLegend {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+}
+
+.chartSkeletonLegendItem {
+  width: 80px;
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+/* 계좌 아이템 스켈레톤 */
+.skeletonAccountItem {
+  width: 80px;
+  height: 40px;
+  border-radius: 4px;
+}
+
+/* 라벨 스켈레톤 */
+.skeletonLabel {
+  width: 60px;
+  height: 14px;
+}
+
+/* 섹션 타이틀 스켈레톤 */
+.skeletonSectionTitle {
+  width: 80px;
+  height: 20px;
+}
+
+/* 정렬 버튼 스켈레톤 */
+.skeletonSortBtn {
+  width: 70px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+/* 자산 유형 스켈레톤 */
+.skeletonAssetType {
+  width: 50px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+/* 티커 스켈레톤 */
+.skeletonTicker {
+  width: 80px;
+  height: 14px;
+}
+
+/* 종목명 스켈레톤 */
+.skeletonHoldingName {
+  width: 100px;
+  height: 18px;
+}
+
+/* 지표 라벨 스켈레톤 */
+.skeletonMetricLabel {
+  width: 50px;
+  height: 12px;
+}
+
+/* 지표 값 스켈레톤 */
+.skeletonMetricValue {
+  width: 90px;
+  height: 16px;
+}
+
+/* 수량 값 스켈레톤 */
+.skeletonQtyValue {
+  width: 60px;
+  height: 16px;
 }
 
 .chartLoading {
@@ -363,38 +952,87 @@
   font-size: 13px;
 }
 
+/* 커스텀 범례 */
+.chartLegend {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 16px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legendLines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.legendLine {
+  display: block;
+  width: 24px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.legendLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.legendDots {
+  display: flex;
+  gap: 4px;
+}
+
+.legendDot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legendDashed {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-left: 2px dashed rgba(156, 163, 175, 0.7);
+}
+
 /* 거래 추가 버튼 */
 .addButton {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: 16px 24px;
   padding: 12px 20px;
-  background: #1a1a1a;
+  background: #007aff;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  margin-bottom: 24px;
   transition: background-color 0.15s;
 }
 
 .addButton:hover {
-  background: #333;
+  background: #0066d6;
 }
 
 /* 폼 섹션 */
 .formSection {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
   padding: 24px;
-  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .formTitle {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #1a1a1a;
   margin: 0 0 20px 0;
@@ -419,9 +1057,9 @@
 }
 
 .formGroup label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #4b5563;
+  color: #6b7280;
 }
 
 .input,
@@ -437,7 +1075,8 @@
 .input:focus,
 .select:focus {
   outline: none;
-  border-color: #14b8a6;
+  border-color: #007aff;
+  background: white;
 }
 
 /* 숫자 입력 스핀 버튼 제거 */
@@ -445,6 +1084,43 @@
 .input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* 날짜 입력 그룹 */
+.dateInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dateInput {
+  padding: 10px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1a1a1a;
+  background: #f9fafb;
+  text-align: center;
+}
+
+.dateInput:first-child {
+  width: 70px;
+}
+
+.dateInput:nth-child(3),
+.dateInput:nth-child(5) {
+  width: 50px;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: #007aff;
+  background: white;
+}
+
+.dateSeparator {
+  color: #9ca3af;
+  font-size: 14px;
 }
 
 /* 토글 버튼 그룹 */
@@ -467,25 +1143,25 @@
 }
 
 .toggleBtn.active {
-  background: #dcfce7;
-  border-color: #22c55e;
-  color: #16a34a;
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #dc2626;
 }
 
 .toggleBtn.activeSell {
-  background: #fee2e2;
-  border-color: #ef4444;
-  color: #dc2626;
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #2563eb;
 }
 
 /* 총액 미리보기 */
 .totalPreview {
   padding: 12px 16px;
-  background: #f0fdfa;
+  background: #f0f9ff;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #0d9488;
+  color: #0369a1;
 }
 
 .usdAmount {
@@ -519,24 +1195,240 @@
   padding: 10px 24px;
   border: none;
   border-radius: 8px;
-  background: #1a1a1a;
+  background: #007aff;
   color: white;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
 }
 
 .submitBtn:hover {
-  background: #333;
+  background: #0066d6;
 }
 
-/* 섹션 */
-.section {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+/* 보유 종목 섹션 */
+.holdingsSection {
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.holdingsSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
-  overflow: hidden;
+}
+
+.holdingsSectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.holdingSortGroup {
+  display: flex;
+  gap: 4px;
+}
+
+.holdingSortBtn {
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.holdingSortBtn:hover {
+  color: #6b7280;
+}
+
+.holdingSortActive {
+  background: #f3f4f6;
+  color: #1a1a1a;
+}
+
+/* 빈 상태 */
+.emptyState {
+  padding: 40px 24px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* 보유 종목 그리드 (2열) */
+.holdingsList {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+}
+
+@media (max-width: 1200px) {
+  .holdingsList {
+    grid-template-columns: 1fr;
+  }
+}
+
+.holdingItem {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.holdingItem:nth-child(odd) {
+  border-right: 1px solid #f3f4f6;
+}
+
+@media (max-width: 1200px) {
+  .holdingItem:nth-child(odd) {
+    border-right: none;
+  }
+}
+
+/* 각 행 */
+.holdingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* 왼쪽: 종목 정보 */
+.holdingStockInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+/* 왼쪽: 보유 주식 */
+.holdingQtyInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.metricValueLeft {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.assetTypeLabel {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.assetTypeLabel.domestic_stock {
+  color: #2563eb;
+}
+
+.assetTypeLabel.foreign_stock {
+  color: #a855f7;
+}
+
+.assetTypeLabel.etf {
+  color: #0d9488;
+}
+
+.assetTypeLabel.domestic_etf {
+  color: #0d9488;
+}
+
+.assetTypeLabel.foreign_etf {
+  color: #7c3aed;
+}
+
+.assetTypeLabel.crypto {
+  color: #d97706;
+}
+
+.assetTypeLabel.fund {
+  color: #4f46e5;
+}
+
+.assetTypeLabel.bond {
+  color: #6b7280;
+}
+
+.assetTypeLabel.other {
+  color: #6b7280;
+}
+
+.holdingLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.holdingTicker {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+.holdingName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* 오른쪽: 금액 정보 */
+.holdingRight {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.holdingMetricsRow {
+  display: flex;
+  gap: 32px;
+}
+
+.holdingMetric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 100px;
+}
+
+.metricLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.metricValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.profitColor {
+  color: #ef4444 !important;
+}
+
+.lossColor {
+  color: #3b82f6 !important;
+}
+
+.plRateSmall {
+  font-size: 11px;
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* 기존 섹션 (거래 내역용) */
+.section {
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .sectionHeader {
@@ -544,7 +1436,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 16px 20px;
+  padding: 16px 24px;
   background: none;
   border: none;
   cursor: pointer;
@@ -556,7 +1448,7 @@
 }
 
 .sectionTitle {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #1a1a1a;
   margin: 0;
@@ -567,94 +1459,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 8px;
-  background: #f3f4f6;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-/* 빈 상태 */
-.emptyState {
-  padding: 40px 20px;
-  text-align: center;
-  color: #9ca3af;
-  font-size: 14px;
-}
-
-/* 보유 종목 */
-.holdingsList {
-  border-top: 1px solid #e5e7eb;
-}
-
-.holdingCard {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.holdingCard:last-child {
-  border-bottom: none;
-}
-
-.holdingInfo {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.holdingName {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.holdingTicker {
-  font-size: 12px;
-  color: #9ca3af;
-  font-family: monospace;
-}
-
-.holdingDetails {
-  display: flex;
-  gap: 24px;
-}
-
-.holdingDetail {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  align-items: flex-end;
-}
-
-.detailLabel {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  background: #007aff;
+  border-radius: 11px;
   font-size: 11px;
-  color: #9ca3af;
-}
-
-.detailValue {
-  font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
-}
-
-.detailValue.profitText {
-  color: #22c55e;
-}
-
-.detailValue.lossText {
-  color: #ef4444;
+  color: white;
 }
 
 .assetTypeTag {
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
 }
@@ -671,7 +1488,17 @@
 
 .assetTypeTag.etf {
   background: #f0fdfa;
-  color: #14b8a6;
+  color: #0d9488;
+}
+
+.assetTypeTag.domestic_etf {
+  background: #f0fdfa;
+  color: #0d9488;
+}
+
+.assetTypeTag.foreign_etf {
+  background: #f5f3ff;
+  color: #7c3aed;
 }
 
 .assetTypeTag.crypto {
@@ -696,14 +1523,14 @@
 
 /* 거래 내역 */
 .transactionsList {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #f3f4f6;
 }
 
 .transactionCard {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 14px 20px;
+  padding: 12px 24px;
   border-bottom: 1px solid #f3f4f6;
 }
 
@@ -719,32 +1546,38 @@
 }
 
 .txType {
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .txType.buy {
-  background: #dcfce7;
-  color: #16a34a;
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .txType.sell {
-  background: #fee2e2;
-  color: #dc2626;
+  background: #eff6ff;
+  color: #2563eb;
 }
 
 .txInfo {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .txName {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #1a1a1a;
+}
+
+.txMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .txTicker {
@@ -753,21 +1586,29 @@
   font-family: monospace;
 }
 
+.txAccount {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  color: #6b7280;
+}
+
 .txCenter {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2px;
+  gap: 1px;
 }
 
 .txQty {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #1a1a1a;
 }
 
 .txPrice {
-  font-size: 12px;
+  font-size: 11px;
   color: #6b7280;
 }
 
@@ -775,12 +1616,12 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2px;
+  gap: 1px;
   min-width: 100px;
 }
 
 .txTotal {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #1a1a1a;
 }
@@ -816,12 +1657,17 @@
 
 /* 반응형 */
 @media (max-width: 768px) {
-  .container {
-    padding: 16px;
-  }
-
   .summary {
     grid-template-columns: 1fr;
+  }
+
+  .summaryCard {
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .summaryCard:last-child {
+    border-bottom: none;
   }
 
   .summaryValue {
@@ -862,6 +1708,6 @@
 
   .txActions {
     position: absolute;
-    right: 20px;
+    right: 24px;
   }
 }

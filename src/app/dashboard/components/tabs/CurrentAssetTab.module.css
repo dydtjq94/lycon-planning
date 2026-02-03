@@ -1,5 +1,9 @@
 .container {
-  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  width: 100%;
   height: 100%;
   overflow-y: auto;
 }
@@ -9,31 +13,95 @@
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #6b7280;
+  color: #9ca3af;
+  font-size: 14px;
 }
 
-/* 차트 섹션 - 4개 가로 배치 */
-.chartsSection {
+/* 헤더 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* 날짜 라벨 */
+.dateLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* 저장 버튼 */
+.saveButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+}
+
+.saveButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.saveButton.saved {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #059669;
+}
+
+/* 차트 섹션 */
+.chartSection {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
-  margin-bottom: 32px;
-  padding: 24px 0;
+  gap: 32px;
+  padding: 40px 32px;
+  border-bottom: 1px solid #e5e7eb;
+  overflow-x: auto;
 }
 
-/* 메인 차트 (순자산) */
-.mainChartWrapper {
+.chartWrapper {
   flex-shrink: 0;
 }
 
-.chartBox {
+.chartBoxMain {
   position: relative;
-  width: 180px;
-  height: 180px;
+  width: 200px;
+  height: 200px;
 }
 
-.chartCenterText {
+.subChartsGroup {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  margin-left: 48px;
+  flex-shrink: 0;
+}
+
+.chartCardSmall {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.chartBoxSmall {
+  position: relative;
+  width: 160px;
+  height: 160px;
+}
+
+.chartCenter {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -41,270 +109,330 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   text-align: center;
 }
 
-.chartAmount {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1a1a1a;
-}
-
 .chartLabel {
-  font-size: 12px;
-  color: #9ca3af;
-  font-weight: 500;
-}
-
-/* 작은 차트들 */
-.smallChartsRow {
-  display: flex;
-  gap: 24px;
-}
-
-.smallChartWrapper {
-  flex-shrink: 0;
-}
-
-.smallChartBox {
-  position: relative;
-  width: 120px;
-  height: 120px;
-}
-
-.smallChartAmount {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1a1a1a;
-}
-
-.smallChartLabel {
-  font-size: 11px;
-  color: #9ca3af;
-  font-weight: 500;
-}
-
-/* 카테고리 탭 */
-.categoryTabs {
-  display: flex;
-  justify-content: center;
-  gap: 64px;
-  margin-bottom: 24px;
-}
-
-.categoryTab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 8px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-width: 80px;
-}
-
-.categoryTab:hover {
-  background: #f9fafb;
-}
-
-.categoryTab.active {
-  border-bottom-color: #14b8a6;
-}
-
-.categoryTab.active .tabAmount {
-  color: #1a1a1a;
-}
-
-.categoryTab.active .tabLabel {
-  color: #14b8a6;
-  font-weight: 600;
-}
-
-.tabIcon {
-  color: #9ca3af;
-}
-
-.categoryTab.active .tabIcon {
-  color: #14b8a6;
-}
-
-.tabIconLarge {
-  color: #6b7280;
-  margin-bottom: 2px;
-}
-
-.categoryTab.active .tabIconLarge {
-  color: #1a1a1a;
-}
-
-.tabAmount {
-  font-size: 18px;
-  font-weight: 700;
-  color: #6b7280;
-  line-height: 1.2;
-}
-
-.tabLabel {
   font-size: 13px;
   font-weight: 500;
   color: #9ca3af;
 }
 
-/* 항목 섹션 */
-.itemsSection {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-width: 900px;
-  margin: 0 auto;
+.chartAmount {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
 }
 
-.emptyState {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px;
-  background: #f9fafb;
-  border-radius: 12px;
-  color: #9ca3af;
-  font-size: 14px;
-  width: 100%;
-}
-
-.aboutYouSection {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px;
-  background: #f9fafb;
-  border-radius: 12px;
-}
-
-.comingSoon {
-  font-size: 14px;
+.chartLabelSmall {
+  font-size: 13px;
+  font-weight: 500;
   color: #9ca3af;
 }
 
-.itemsList {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* 아이템 카드 */
-.itemCard {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-}
-
-.itemIcon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  color: white;
+.chartAmountSmall {
   font-size: 18px;
-  font-weight: 600;
-  flex-shrink: 0;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
 }
 
-.itemContent {
-  flex: 1;
+/* 범례 섹션 */
+.legendSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.legendItems {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.itemRow {
+.legendItem {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  gap: 12px;
 }
 
-.inputGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.inputGroup label {
-  font-size: 11px;
+.legendLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  min-width: 70px;
+}
+
+.legendValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  min-width: 100px;
+}
+
+.legendPercent {
+  font-size: 13px;
   font-weight: 500;
   color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
 }
 
+.legendDivider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 4px 0;
+}
+
+/* 탭 섹션 - 레퍼런스 스타일 */
+.tabsSection {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 24px 32px;
+  border-bottom: 1px solid #e5e7eb;
+  background: white;
+}
+
+.tabButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  min-width: 80px;
+}
+
+.tabButton.active {
+  /* no underline */
+}
+
+.tabAmount {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+.tabButton:not(.active) .tabAmount {
+  color: #9ca3af;
+}
+
+.tabLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.tabButton.active .tabLabel {
+  color: #1a1a1a;
+}
+
+/* 프로필 탭 아이콘 */
+.tabIcon {
+  width: 24px;
+  height: 24px;
+  color: #9ca3af;
+}
+
+.tabButton.active .tabIcon {
+  color: #1a1a1a;
+}
+
+/* 콘텐츠 섹션 */
+.contentSection {
+  padding: 24px 32px;
+  width: 100%;
+  max-width: 840px;
+  margin: 0 auto;
+  animation: fadeIn 0.2s ease-out;
+  box-sizing: border-box;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.sectionTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.linkedBadgeSmall {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.sectionTotal {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+/* 테이블 */
+.tableWrapper {
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #1a1a1a;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+
+/* hover 제거 - 클릭 기능 없음 */
+
+.amountHeader {
+  text-align: right !important;
+  width: 140px;
+}
+
+.amountCell {
+  text-align: right;
+  font-weight: 600;
+  width: 140px;
+}
+
+/* 증권사/계좌명 스타일 */
+.accountCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.accountName {
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.brokerName {
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* 입력 필드 */
 .selectInput {
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 500;
   color: #1a1a1a;
-  background: #f9fafb;
+  background: white;
   cursor: pointer;
-  min-width: 140px;
+  min-width: 120px;
+  transition: border-color 0.15s;
 }
 
 .selectInput:focus {
   outline: none;
-  border-color: #14b8a6;
+  border-color: #1a1a1a;
 }
 
 .textInput {
-  padding: 10px 12px;
+  width: 100%;
+  padding: 8px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 14px;
   color: #1a1a1a;
-  background: #f9fafb;
-  width: 100%;
+  background: white;
+  transition: border-color 0.15s;
 }
 
 .textInput:focus {
   outline: none;
-  border-color: #14b8a6;
+  border-color: #1a1a1a;
 }
 
 .textInput::placeholder {
-  color: #9ca3af;
+  color: #d1d5db;
 }
 
-.amountWrapper {
+.amountInputWrapper {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .amountInput {
-  width: 120px;
-  padding: 10px 12px;
+  width: 100px;
+  padding: 8px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #1a1a1a;
   text-align: right;
-  background: #f9fafb;
+  background: white;
+  transition: border-color 0.15s;
 }
 
 .amountInput:focus {
   outline: none;
-  border-color: #14b8a6;
+  border-color: #1a1a1a;
 }
 
-/* 숫자 입력 스핀 버튼 제거 */
 .amountInput::-webkit-outer-spin-button,
 .amountInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -312,11 +440,12 @@
 }
 
 .unit {
-  font-size: 14px;
+  font-size: 13px;
   color: #6b7280;
   white-space: nowrap;
 }
 
+/* 버튼 */
 .deleteBtn {
   display: flex;
   align-items: center;
@@ -328,89 +457,929 @@
   color: #d1d5db;
   cursor: pointer;
   border-radius: 6px;
-  transition: color 0.15s;
-  flex-shrink: 0;
-  margin-top: 8px;
+  transition: all 0.15s;
 }
 
 .deleteBtn:hover {
+  background: #fef2f2;
   color: #ef4444;
 }
 
-/* 추가 버튼 - teal 색상 */
-.addBtn {
+.addButton {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  width: fit-content;
-  padding: 10px 20px;
-  border: 1px solid #14b8a6;
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed #d1d5db;
   border-radius: 8px;
   background: none;
   font-size: 14px;
   font-weight: 500;
-  color: #14b8a6;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.addButton:hover {
+  border-color: #1a1a1a;
+  color: #1a1a1a;
+}
+
+/* 빈 상태 */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px dashed #e5e7eb;
+}
+
+.emptyState p {
+  font-size: 14px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.addButtonEmpty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
-.addBtn:hover {
-  background: #f0fdfa;
+.addButtonEmpty:hover {
+  background: #374151;
+}
+
+/* 투자 섹션 */
+.investmentSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.linkedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #ecfdf5;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #059669;
+  width: fit-content;
+}
+
+.linkButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.linkButton:hover {
+  border-color: #1a1a1a;
+  color: #1a1a1a;
+}
+
+.linkButtonGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.linkButtonGroup .linkButton {
+  flex: 1;
+}
+
+/* 테이블 헤더 + 연동 배지 */
+.tableHeaderWithBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 하단 합계 섹션 */
+.sectionFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footerTotalLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.footerTotalValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* 버튼 + 합계 한 줄 */
+.sectionFooterWithButtons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  margin-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footerButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.footerLinkButton {
+  padding: 6px 12px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.footerLinkButton:hover {
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.footerTotalGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 부동산 섹션 */
+.realEstateSection {
+  display: block;
+  width: 100%;
+}
+
+.realEstateGroup {
+  display: block;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.realEstateGroupHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.realEstateGroupTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.realEstateGroupDesc {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.realEstateList {
+  display: block;
+  width: 100%;
+}
+
+.realEstateCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.realEstateInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.selectInputSmall {
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: white;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.selectInputSmall:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+.textInputInline {
+  flex: 1;
+  min-width: 100px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: white;
+}
+
+.textInputInline:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+.textInputInline::placeholder {
+  color: #d1d5db;
+}
+
+.realEstateAmountGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.fieldGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fieldGroup label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.fieldGroupInput {
+  width: 90px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: right;
+  background: white;
+}
+
+.fieldGroupInput:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+.fieldGroupInput::-webkit-outer-spin-button,
+.fieldGroupInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.addButtonSmall {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.addButtonSmall:hover {
+  color: #1a1a1a;
+}
+
+/* 계좌 유형 라벨 - 통장 이름 오른쪽에 작게 */
+.accountTypeLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin-left: 6px;
+}
+
+/* 계좌명 행 (이름 + 라벨) */
+.accountNameRow {
+  display: flex;
+  align-items: center;
+}
+
+/* 스켈레톤 로딩 */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.skeleton {
+  display: inline-block;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeletonDate {
+  width: 120px;
+  height: 20px;
+}
+
+.skeletonSaveBtn {
+  width: 130px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.skeletonChartMain {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonChartSmall {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeletonLegendLabel {
+  width: 40px;
+  height: 14px;
+}
+
+.skeletonLegendValue {
+  width: 80px;
+  height: 16px;
+}
+
+.skeletonTab {
+  width: 60px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.skeletonSectionTitle {
+  width: 50px;
+  height: 18px;
+}
+
+.skeletonTotal {
+  width: 100px;
+  height: 24px;
+}
+
+.skeletonTableHeader {
+  width: 50px;
+  height: 12px;
+}
+
+.skeletonName {
+  width: 100px;
+  height: 16px;
+}
+
+.skeletonAmount {
+  width: 80px;
+  height: 16px;
+  margin-left: auto;
+}
+
+/* Progress Points 섹션 */
+.progressSection {
+  padding: 24px 32px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.progressHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.progressTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progressTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.periodLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.periodFilters {
+  display: flex;
+  gap: 6px;
+}
+
+.periodButton {
+  padding: 6px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.periodButton:hover {
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.periodButton.active {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  color: white;
+}
+
+.growthDisplay {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.growthValue {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.growthValue.positive {
+  color: #ef4444;
+}
+
+.growthValue.negative {
+  color: #3b82f6;
+}
+
+.growthPercent {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.growthPercent.positive {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.growthPercent.negative {
+  color: #3b82f6;
+  background: #eff6ff;
+}
+
+.lineChartContainer {
+  height: 280px;
+  margin-bottom: 24px;
+}
+
+.emptyChart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px dashed #e5e7eb;
+}
+
+.emptyChart p {
+  font-size: 14px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.snapshotTableWrapper {
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.snapshotTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.snapshotTable th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.snapshotTable td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #1a1a1a;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.snapshotAmountHeader {
+  text-align: right !important;
+  width: 120px;
+}
+
+.snapshotAmountCell {
+  text-align: right;
+  font-weight: 600;
+}
+
+.snapshotActionHeader {
+  width: 80px;
+}
+
+.snapshotActionCell {
+  width: 80px;
+}
+
+.snapshotActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.editSnapshotBtn,
+.deleteSnapshotBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.editSnapshotBtn {
+  color: #9ca3af;
+}
+
+.editSnapshotBtn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.deleteSnapshotBtn {
+  color: #d1d5db;
+}
+
+.deleteSnapshotBtn:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.addSnapshotBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.addSnapshotBtn:hover {
+  border-color: #1a1a1a;
+  color: #1a1a1a;
+}
+
+/* 스냅샷 모달 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modalHeader h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.modalCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: #9ca3af;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.modalCloseBtn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modalBody {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.modalField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modalField label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.modalInput {
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1a1a1a;
+  transition: border-color 0.15s;
+}
+
+.modalInput:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+.modalInput::-webkit-outer-spin-button,
+.modalInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.modalCancelBtn {
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.modalCancelBtn:hover {
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.modalSaveBtn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #1a1a1a;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.modalSaveBtn:hover:not(:disabled) {
+  background: #374151;
+}
+
+.modalSaveBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 /* 반응형 */
-@media (max-width: 900px) {
-  .chartsSection {
-    flex-direction: column;
-    align-items: center;
+@media (max-width: 1024px) {
+  .chartSection {
     gap: 24px;
+    padding: 32px 24px;
   }
 
-  .smallChartsRow {
-    flex-wrap: wrap;
-    justify-content: center;
+  .chartBoxMain {
+    width: 180px;
+    height: 180px;
   }
 
-  .categoryTabs {
-    overflow-x: auto;
-    gap: 4px;
-  }
-
-  .categoryTab {
-    padding: 12px 16px;
-    min-width: 80px;
-  }
-
-  .itemRow {
-    flex-wrap: wrap;
-  }
-}
-
-@media (max-width: 600px) {
-  .container {
-    padding: 16px;
-  }
-
-  .chartBox {
+  .chartBoxSmall {
     width: 140px;
     height: 140px;
   }
 
-  .smallChartBox {
-    width: 90px;
-    height: 90px;
-  }
-
-  .smallChartsRow {
-    gap: 16px;
+  .subChartsGroup {
+    gap: 32px;
+    margin-left: 32px;
   }
 
   .chartAmount {
-    font-size: 16px;
+    font-size: 20px;
   }
 
-  .smallChartAmount {
+  .chartAmountSmall {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chartSection {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 24px;
+    padding: 24px;
+  }
+
+  .chartBoxMain {
+    width: 160px;
+    height: 160px;
+  }
+
+  .chartBoxSmall {
+    width: 120px;
+    height: 120px;
+  }
+
+  .subChartsGroup {
+    gap: 24px;
+    margin-left: 0;
+  }
+
+  .chartAmount {
+    font-size: 18px;
+  }
+
+  .chartLabel {
     font-size: 12px;
+  }
+
+  .chartAmountSmall {
+    font-size: 14px;
+  }
+
+  .chartLabelSmall {
+    font-size: 11px;
+  }
+
+  .legendSection {
+    width: 100%;
+  }
+
+  .legendItem {
+    justify-content: space-between;
+  }
+
+  .progressSection {
+    padding: 20px 24px;
+  }
+
+  .progressHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .periodFilters {
+    flex-wrap: wrap;
+  }
+
+  .lineChartContainer {
+    height: 220px;
+  }
+
+  .modal {
+    margin: 16px;
+    max-width: calc(100% - 32px);
+  }
+
+  .tabsSection {
+    padding: 16px 24px;
+    overflow-x: auto;
+    gap: 4px;
+  }
+
+  .tabButton {
+    padding: 8px 12px;
+    min-width: 60px;
   }
 
   .tabAmount {
@@ -418,6 +1387,124 @@
   }
 
   .tabLabel {
+    font-size: 10px;
+  }
+
+  .contentSection {
+    padding: 20px 24px;
+  }
+
+  .header {
+    padding: 20px 24px;
+  }
+
+  .saveButton {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chartSection {
+    padding: 20px 16px;
+    gap: 16px;
+  }
+
+  .chartBoxMain {
+    width: 140px;
+    height: 140px;
+  }
+
+  .chartBoxSmall {
+    width: 100px;
+    height: 100px;
+  }
+
+  .subChartsGroup {
+    gap: 16px;
+  }
+
+  .chartAmount {
+    font-size: 16px;
+  }
+
+  .chartLabel {
     font-size: 11px;
+  }
+
+  .chartAmountSmall {
+    font-size: 12px;
+  }
+
+  .chartLabelSmall {
+    font-size: 10px;
+  }
+
+  .sectionTotal {
+    font-size: 20px;
+  }
+
+  .table th,
+  .table td {
+    padding: 10px 12px;
+  }
+
+  .selectInput,
+  .textInput,
+  .amountInput {
+    font-size: 13px;
+  }
+
+  .progressSection {
+    padding: 16px;
+  }
+
+  .progressTitle {
+    font-size: 16px;
+  }
+
+  .periodButton {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .growthValue {
+    font-size: 18px;
+  }
+
+  .growthPercent {
+    font-size: 12px;
+  }
+
+  .lineChartContainer {
+    height: 180px;
+  }
+
+  .snapshotTable th,
+  .snapshotTable td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .tabsSection {
+    padding: 12px 16px;
+  }
+
+  .tabButton {
+    padding: 6px 8px;
+    min-width: 50px;
+  }
+
+  .tabAmount {
+    font-size: 12px;
+  }
+
+  .tabLabel {
+    font-size: 9px;
+  }
+
+  .tabIcon {
+    width: 20px;
+    height: 20px;
   }
 }
