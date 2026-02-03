@@ -1119,92 +1119,129 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
           </div>
         ) : activeTab === "profile" ? (
           /* 프로필 탭 */
-          <div className={styles.emptyState}>
-            <p>프로필 정보를 설정하세요</p>
-            <button className={styles.linkButton} onClick={() => onNavigate?.("settings")}>
-              설정으로 이동
-            </button>
-          </div>
-        ) : activeTab === "debt" || activeTab === "realAsset" ? (
-          /* 부채/실물자산 탭 */
-          currentItems.length === 0 ? (
-            <div className={styles.emptyState}>
-              <p>등록된 항목이 없습니다</p>
-              <button className={styles.addButtonEmpty} onClick={handleAddItem}>
-                <Plus size={16} />
-                {TABS.find(t => t.id === activeTab)?.label} 추가
+          <div className={styles.simpleSection}>
+            <div className={styles.simpleSectionHeader}>
+              <span className={styles.simpleSectionTitle}>프로필</span>
+            </div>
+            <div className={styles.profileContent}>
+              <p>프로필 정보는 설정에서 관리할 수 있습니다</p>
+              <button className={styles.profileLinkButton} onClick={() => onNavigate?.("settings")}>
+                설정으로 이동
               </button>
             </div>
-          ) : (
-            <>
-              <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>종류</th>
-                      <th>메모</th>
-                      <th>금액</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentItems.map(item => (
-                      <tr key={item.id}>
-                        <td>
-                          <select
-                            className={styles.selectInput}
-                            value={item.item_type}
-                            onChange={e => handleUpdateItem(item.id, { item_type: e.target.value })}
-                          >
-                            {ITEM_TYPES[activeTab].map(type => (
-                              <option key={type.value} value={type.value}>{type.label}</option>
-                            ))}
-                          </select>
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            className={styles.textInput}
-                            placeholder="예: 메모"
-                            value={item.title}
-                            onChange={e => handleUpdateItem(item.id, { title: e.target.value })}
-                          />
-                        </td>
-                        <td>
-                          <div className={styles.amountInputWrapper}>
-                            <input
-                              type="number"
-                              className={styles.amountInput}
-                              value={item.amount || ""}
-                              onChange={e => handleUpdateItem(item.id, { amount: parseInt(e.target.value) || 0 })}
-                              onWheel={e => (e.target as HTMLElement).blur()}
-                            />
-                            <span className={styles.unit}>만원</span>
-                          </div>
-                        </td>
-                        <td>
-                          <button className={styles.deleteBtn} onClick={() => handleDeleteItem(item.id)}>
-                            <Trash2 size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* 하단 합계 */}
+          </div>
+        ) : activeTab === "realAsset" ? (
+          /* 실물자산 탭 */
+          <div className={styles.simpleSection}>
+            <div className={styles.simpleSectionHeader}>
+              <span className={styles.simpleSectionTitle}>실물 자산</span>
+              <span className={styles.simpleSectionDesc}>자동차, 귀금속, 미술품 등</span>
+            </div>
+            <div className={styles.simpleList}>
+              {currentItems.map(item => (
+                <div key={item.id} className={styles.simpleRow}>
+                  <div className={styles.simpleRowInfo}>
+                    <select
+                      className={styles.selectInputSmall}
+                      value={item.item_type}
+                      onChange={e => handleUpdateItem(item.id, { item_type: e.target.value })}
+                    >
+                      {ITEM_TYPES.realAsset.map(type => (
+                        <option key={type.value} value={type.value}>{type.label}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      className={styles.textInputInline}
+                      placeholder="메모 (예: 2020 그랜저)"
+                      value={item.title}
+                      onChange={e => handleUpdateItem(item.id, { title: e.target.value })}
+                    />
+                  </div>
+                  <div className={styles.simpleRowAmount}>
+                    <input
+                      type="number"
+                      className={styles.fieldGroupInput}
+                      placeholder="0"
+                      value={item.amount || ""}
+                      onChange={e => handleUpdateItem(item.id, { amount: parseInt(e.target.value) || 0 })}
+                      onWheel={e => (e.target as HTMLElement).blur()}
+                    />
+                    <span className={styles.unit}>만원</span>
+                  </div>
+                  <button className={styles.deleteBtn} onClick={() => handleDeleteItem(item.id)}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button className={styles.addButtonSmall} onClick={handleAddItem}>
+              <Plus size={14} />
+              실물 자산 추가
+            </button>
+            {totals.realAsset > 0 && (
               <div className={styles.sectionFooter}>
                 <span className={styles.footerTotalLabel}>합계</span>
-                <span className={styles.footerTotalValue}>{formatMoney(getTabAmount(activeTab))}</span>
+                <span className={styles.footerTotalValue}>{formatMoney(totals.realAsset)}</span>
               </div>
-
-              <button className={styles.addButton} onClick={handleAddItem}>
-                <Plus size={16} />
-                {TABS.find(t => t.id === activeTab)?.label} 추가
-              </button>
-            </>
-          )
+            )}
+          </div>
+        ) : activeTab === "debt" ? (
+          /* 부채 탭 */
+          <div className={styles.simpleSection}>
+            <div className={styles.simpleSectionHeader}>
+              <span className={styles.simpleSectionTitle}>부채</span>
+              <span className={styles.simpleSectionDesc}>대출, 카드대출, 할부금 등</span>
+            </div>
+            <div className={styles.simpleList}>
+              {currentItems.map(item => (
+                <div key={item.id} className={styles.simpleRow}>
+                  <div className={styles.simpleRowInfo}>
+                    <select
+                      className={styles.selectInputSmall}
+                      value={item.item_type}
+                      onChange={e => handleUpdateItem(item.id, { item_type: e.target.value })}
+                    >
+                      {ITEM_TYPES.debt.map(type => (
+                        <option key={type.value} value={type.value}>{type.label}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      className={styles.textInputInline}
+                      placeholder="메모 (예: 신한은행)"
+                      value={item.title}
+                      onChange={e => handleUpdateItem(item.id, { title: e.target.value })}
+                    />
+                  </div>
+                  <div className={styles.simpleRowAmount}>
+                    <input
+                      type="number"
+                      className={styles.fieldGroupInput}
+                      placeholder="0"
+                      value={item.amount || ""}
+                      onChange={e => handleUpdateItem(item.id, { amount: parseInt(e.target.value) || 0 })}
+                      onWheel={e => (e.target as HTMLElement).blur()}
+                    />
+                    <span className={styles.unit}>만원</span>
+                  </div>
+                  <button className={styles.deleteBtn} onClick={() => handleDeleteItem(item.id)}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button className={styles.addButtonSmall} onClick={handleAddItem}>
+              <Plus size={14} />
+              부채 추가
+            </button>
+            {totals.debt > 0 && (
+              <div className={styles.sectionFooter}>
+                <span className={styles.footerTotalLabel}>합계</span>
+                <span className={styles.footerTotalValue}>{formatMoney(totals.debt)}</span>
+              </div>
+            )}
+          </div>
         ) : null}
       </div>
     </div>
