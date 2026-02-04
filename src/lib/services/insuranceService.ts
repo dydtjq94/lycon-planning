@@ -1,3 +1,12 @@
+/**
+ * 보험 서비스
+ *
+ * 금액 단위:
+ * - DB: 원 단위
+ * - 클라이언트: 만원 단위
+ * - 변환: 조회 시 원->만원, 저장 시 만원->원
+ */
+
 import { createClient } from '@/lib/supabase/client'
 import type {
   Insurance,
@@ -5,6 +14,10 @@ import type {
   InsuranceType,
 } from '@/types/tables'
 import { createExpense, deleteLinkedExpenses } from './expenseService'
+import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
+
+// 금액 필드 목록
+const INSURANCE_MONEY_FIELDS = ['monthly_premium', 'coverage_amount', 'current_value', 'maturity_amount'] as const
 
 // ============================================
 // 보험 CRUD
@@ -20,7 +33,8 @@ export async function getInsurances(simulationId: string): Promise<Insurance[]> 
     .order('sort_order', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], INSURANCE_MONEY_FIELDS)
 }
 
 export async function getInsuranceById(id: string): Promise<Insurance | null> {
@@ -35,7 +49,8 @@ export async function getInsuranceById(id: string): Promise<Insurance | null> {
     if (error.code === 'PGRST116') return null
     throw error
   }
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, INSURANCE_MONEY_FIELDS)
 }
 
 export async function createInsurance(input: InsuranceInput): Promise<Insurance> {
@@ -44,42 +59,46 @@ export async function createInsurance(input: InsuranceInput): Promise<Insurance>
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth() + 1
 
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedInput = convertToWon(input, INSURANCE_MONEY_FIELDS)
+
   const { data, error } = await supabase
     .from('insurances')
     .insert({
-      simulation_id: input.simulation_id,
-      type: input.type,
-      title: input.title,
-      owner: input.owner || 'self',
-      insurance_company: input.insurance_company || null,
-      monthly_premium: input.monthly_premium,
-      premium_start_year: input.premium_start_year ?? currentYear,
-      premium_start_month: input.premium_start_month ?? currentMonth,
-      premium_end_year: input.premium_end_year ?? null,
-      premium_end_month: input.premium_end_month ?? null,
-      is_premium_fixed_to_retirement: input.is_premium_fixed_to_retirement ?? false,
-      coverage_amount: input.coverage_amount ?? null,
-      coverage_end_year: input.coverage_end_year ?? null,
-      coverage_end_month: input.coverage_end_month ?? null,
-      current_value: input.current_value ?? null,
-      maturity_year: input.maturity_year ?? null,
-      maturity_month: input.maturity_month ?? null,
-      maturity_amount: input.maturity_amount ?? null,
-      return_rate: input.return_rate ?? null,
-      pension_start_age: input.pension_start_age ?? null,
-      pension_receiving_years: input.pension_receiving_years ?? null,
-      memo: input.memo ?? null,
-      sort_order: input.sort_order ?? 0,
+      simulation_id: convertedInput.simulation_id,
+      type: convertedInput.type,
+      title: convertedInput.title,
+      owner: convertedInput.owner || 'self',
+      insurance_company: convertedInput.insurance_company || null,
+      monthly_premium: convertedInput.monthly_premium,
+      premium_start_year: convertedInput.premium_start_year ?? currentYear,
+      premium_start_month: convertedInput.premium_start_month ?? currentMonth,
+      premium_end_year: convertedInput.premium_end_year ?? null,
+      premium_end_month: convertedInput.premium_end_month ?? null,
+      is_premium_fixed_to_retirement: convertedInput.is_premium_fixed_to_retirement ?? false,
+      coverage_amount: convertedInput.coverage_amount ?? null,
+      coverage_end_year: convertedInput.coverage_end_year ?? null,
+      coverage_end_month: convertedInput.coverage_end_month ?? null,
+      current_value: convertedInput.current_value ?? null,
+      maturity_year: convertedInput.maturity_year ?? null,
+      maturity_month: convertedInput.maturity_month ?? null,
+      maturity_amount: convertedInput.maturity_amount ?? null,
+      return_rate: convertedInput.return_rate ?? null,
+      pension_start_age: convertedInput.pension_start_age ?? null,
+      pension_receiving_years: convertedInput.pension_receiving_years ?? null,
+      memo: convertedInput.memo ?? null,
+      sort_order: convertedInput.sort_order ?? 0,
     })
     .select()
     .single()
 
   if (error) throw error
 
-  // 보험료 지출 연동 생성
+  // 보험료 지출 연동 생성 (DB 원 단위 데이터로)
   await createLinkedExpenseForInsurance(data)
 
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, INSURANCE_MONEY_FIELDS)
 }
 
 export async function updateInsurance(
@@ -88,10 +107,13 @@ export async function updateInsurance(
 ): Promise<Insurance> {
   const supabase = createClient()
 
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedInput = convertPartialToWon(input, INSURANCE_MONEY_FIELDS)
+
   const { data, error } = await supabase
     .from('insurances')
     .update({
-      ...input,
+      ...convertedInput,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -100,11 +122,12 @@ export async function updateInsurance(
 
   if (error) throw error
 
-  // 연동 지출 재생성
+  // 연동 지출 재생성 (DB 원 단위 데이터로)
   await deleteLinkedExpenses('insurance', id)
   await createLinkedExpenseForInsurance(data)
 
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, INSURANCE_MONEY_FIELDS)
 }
 
 export async function deleteInsurance(id: string): Promise<void> {
@@ -137,7 +160,8 @@ export async function getProtectionInsurances(simulationId: string): Promise<Ins
     .order('sort_order', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], INSURANCE_MONEY_FIELDS)
 }
 
 // 저축성/연금 보험
@@ -152,7 +176,8 @@ export async function getSavingsInsurances(simulationId: string): Promise<Insura
     .order('sort_order', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], INSURANCE_MONEY_FIELDS)
 }
 
 // ============================================

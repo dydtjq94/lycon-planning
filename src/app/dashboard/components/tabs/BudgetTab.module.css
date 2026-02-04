@@ -890,10 +890,22 @@
   cursor: pointer;
 }
 
+.editAccountSelect {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px;
+  border: none;
+  border-right: 1px solid #e5e7eb;
+  font-size: 12px;
+  background: #fffbeb;
+  cursor: pointer;
+}
+
 .editDayInput:focus,
 .editAmountInput:focus,
 .editTitleInput:focus,
-.editCategorySelect:focus {
+.editCategorySelect:focus,
+.editAccountSelect:focus {
   outline: none;
 }
 

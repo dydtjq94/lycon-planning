@@ -4,6 +4,50 @@
 // ============================================
 
 // ============================================
+// 프로필 (profiles)
+// ============================================
+
+export type Gender = 'male' | 'female'
+
+export interface Profile {
+  id: string
+  name: string | null
+  birth_date: string | null  // DATE (YYYY-MM-DD)
+  gender: Gender | null
+  target_retirement_age: number
+  target_retirement_fund: number
+  settings: {
+    inflationRate: number
+    lifeExpectancy: number
+    investmentReturn: number
+  }
+  created_at: string
+  updated_at: string
+}
+
+// ============================================
+// 가족 구성원 (family_members)
+// ============================================
+
+export type FamilyRelationship = 'spouse' | 'child' | 'parent'
+
+export interface FamilyMember {
+  id: string
+  user_id: string
+  relationship: FamilyRelationship
+  name: string | null
+  birth_date: string | null  // DATE (YYYY-MM-DD)
+  gender: Gender | null
+  is_dependent: boolean
+  is_working: boolean
+  retirement_age: number | null
+  monthly_income: number | null  // 원 (서비스에서 만원으로 변환)
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ============================================
 // 공통 타입
 // ============================================
 
@@ -33,7 +77,7 @@ export interface Income {
   type: IncomeType
   title: string
   owner: Owner
-  amount: number  // 만원
+  amount: number  // 원 (서비스에서 만원으로 변환)
   frequency: Frequency
   start_year: number
   start_month: number
@@ -84,7 +128,7 @@ export interface Expense {
   simulation_id: string
   type: ExpenseType
   title: string
-  amount: number  // 만원
+  amount: number  // 원 (서비스에서 만원으로 변환)
   frequency: Frequency
   start_year: number
   start_month: number
@@ -134,7 +178,7 @@ export interface NationalPension {
   simulation_id: string
   owner: Owner
   pension_type: PublicPensionType  // 공적연금 유형
-  expected_monthly_amount: number  // 만원
+  expected_monthly_amount: number  // 원 (서비스에서 만원으로 변환)
   start_age: number
   end_age: number | null
   memo: string | null
@@ -202,7 +246,7 @@ export interface PersonalPension {
   simulation_id: string
   owner: Owner
   pension_type: PersonalPensionType
-  current_balance: number  // 만원
+  current_balance: number  // 원 (서비스에서 만원으로 변환)
   monthly_contribution: number | null
   contribution_end_year: number | null
   contribution_end_month: number | null
@@ -251,7 +295,7 @@ export interface RealEstate {
   type: RealEstateType
   title: string
   owner: OwnerWithCommon
-  current_value: number  // 만원
+  current_value: number  // 원 (서비스에서 만원으로 변환)
   purchase_price: number | null
   purchase_year: number | null
   purchase_month: number | null
@@ -349,7 +393,7 @@ export interface PhysicalAsset {
   type: PhysicalAssetType
   title: string
   owner: OwnerWithCommon
-  current_value: number  // 만원
+  current_value: number  // 원 (서비스에서 만원으로 변환)
   purchase_price: number | null
   purchase_year: number | null
   purchase_month: number | null
@@ -416,7 +460,7 @@ export interface Savings {
   type: SavingsType
   title: string
   owner: Owner
-  current_balance: number  // 만원
+  current_balance: number  // 원 (서비스에서 만원으로 변환)
   monthly_contribution: number | null
   contribution_start_year: number | null
   contribution_start_month: number | null
@@ -469,7 +513,7 @@ export interface Debt {
   simulation_id: string
   type: DebtType
   title: string
-  principal: number  // 만원
+  principal: number  // 원 (서비스에서 만원으로 변환)
   current_balance: number | null
   interest_rate: number
   rate_type: RateType
@@ -525,7 +569,7 @@ export interface Insurance {
   insurance_company: string | null
 
   // 보험료
-  monthly_premium: number  // 만원
+  monthly_premium: number  // 원 (서비스에서 만원으로 변환)
   premium_start_year: number | null
   premium_start_month: number | null
   premium_end_year: number | null
@@ -533,15 +577,15 @@ export interface Insurance {
   is_premium_fixed_to_retirement: boolean
 
   // 보장
-  coverage_amount: number | null  // 만원
+  coverage_amount: number | null  // 원 (서비스에서 만원으로 변환)
   coverage_end_year: number | null
   coverage_end_month: number | null
 
   // 저축성/연금보험
-  current_value: number | null  // 해지환급금 (만원)
+  current_value: number | null  // 해지환급금 (원, 서비스에서 만원으로 변환)
   maturity_year: number | null
   maturity_month: number | null
-  maturity_amount: number | null  // 만기금액 (만원)
+  maturity_amount: number | null  // 만기금액 (원, 서비스에서 만원으로 변환)
   return_rate: number | null
 
   // 연금보험
@@ -596,16 +640,17 @@ export interface FinancialSnapshot {
   recorded_by: string | null  // expert_id
   snapshot_type: SnapshotType
 
-  // 요약 데이터
-  total_assets: number      // 만원 (저축 + 투자 + 실물자산)
-  total_debts: number       // 만원 (담보대출 + 무담보부채)
-  net_worth: number         // 만원 (총자산 - 총부채)
+  // 요약 데이터 (DB: 원 단위, 클라이언트: 훅에서 만원으로 변환)
+  total_assets: number      // 원 (저축 + 투자 + 실물자산)
+  total_debts: number       // 원 (담보대출 + 무담보부채)
+  net_worth: number         // 원 (총자산 - 총부채)
 
-  // 자산 분류별
-  savings: number           // 만원 (예금, 적금, 비상금)
-  investments: number       // 만원 (주식, 펀드, 채권, 암호화폐)
-  real_assets: number       // 만원 (부동산, 자동차, 귀금속)
-  unsecured_debt: number    // 만원 (신용대출, 카드대출 등 무담보)
+  // 자산 분류별 (DB: 원 단위, 클라이언트: 훅에서 만원으로 변환)
+  savings: number           // 원 (예금, 적금, 비상금)
+  investments: number       // 원 (주식, 펀드, 채권, 암호화폐)
+  real_estate: number       // 원 (부동산)
+  real_assets: number       // 원 (자동차, 귀금속 등 실물자산)
+  unsecured_debt: number    // 원 (신용대출, 카드대출 등 무담보)
 
   memo: string | null
   is_active: boolean
@@ -623,6 +668,7 @@ export interface FinancialSnapshotInput {
   net_worth?: number
   savings?: number
   investments?: number
+  real_estate?: number
   real_assets?: number
   unsecured_debt?: number
   memo?: string | null
@@ -634,9 +680,9 @@ export interface FinancialSnapshotItem {
   category: SnapshotCategory
   item_type: string
   title: string
-  amount: number  // 만원
+  amount: number  // 원 (DB), 훅에서 만원으로 변환하여 클라이언트에 제공
   owner: SnapshotOwner
-  metadata: Record<string, unknown>
+  metadata: Record<string, unknown>  // 금액 필드도 원 단위
   sort_order: number
   created_at: string
 }
@@ -669,11 +715,11 @@ export interface PortfolioTransaction {
   ticker: string          // 종목코드 (005930.KS, AAPL, BTC-USD 등)
   name: string            // 종목명
   quantity: number        // 수량
-  price: number           // 매수/매도 단가
-  total_amount: number    // 총금액 (만원)
+  price: number           // 매수/매도 단가 (원)
+  total_amount: number    // 총금액 (원)
   currency: PortfolioCurrency
   exchange_rate: number   // 환율 (해외주식용)
-  fee: number             // 수수료 (만원)
+  fee: number             // 수수료 (원)
   trade_date: string      // 거래일 (YYYY-MM-DD)
   memo: string | null
   created_at: string
@@ -704,10 +750,10 @@ export interface PortfolioHolding {
   asset_type: PortfolioAssetType
   quantity: number          // 보유 수량
   avg_price: number         // 평균 매수가
-  total_invested: number    // 총 투자금액 (만원)
+  total_invested: number    // 총 투자금액 (원, 서비스에서 만원으로 변환)
   current_price?: number    // 현재가 (API에서)
-  current_value?: number    // 평가금액 (만원)
-  profit_loss?: number      // 손익 (만원)
+  current_value?: number    // 평가금액 (원, 서비스에서 만원으로 변환)
+  profit_loss?: number      // 손익 (원, 서비스에서 만원으로 변환)
   profit_rate?: number      // 수익률 (%)
   currency: PortfolioCurrency
 }
@@ -729,7 +775,7 @@ export interface Account {
   broker_name: string       // 증권사/은행명 (예: "키움증권", "국민은행")
   account_number: string | null  // 계좌번호 (마스킹)
   account_type: AccountType
-  current_balance: number | null  // 현재 잔액 (만원) - 입출금/예금 계좌용
+  current_balance: number | null  // 현재 잔액 (원, 서비스에서 만원으로 변환) - 입출금/예금 계좌용
   balance_updated_at: string | null  // 잔액 기록 시점 (checkpoint)
   is_default: boolean       // 기본 계좌 여부
   is_active: boolean
@@ -744,7 +790,7 @@ export interface Account {
   maturity_day: number | null   // 만기 일
   is_tax_free: boolean          // 비과세 여부
   currency: CurrencyType        // 통화
-  monthly_contribution: number | null  // 월 납입액 (적금용, 만원)
+  monthly_contribution: number | null  // 월 납입액 (적금용, 원, 서비스에서 만원으로 변환)
   created_at: string
   updated_at: string
 }

@@ -1,3 +1,12 @@
+/**
+ * 실물자산 서비스
+ *
+ * 금액 단위:
+ * - DB: 원 단위
+ * - 클라이언트: 만원 단위
+ * - 변환: 조회 시 원->만원, 저장 시 만원->원
+ */
+
 import { createClient } from '@/lib/supabase/client'
 import type {
   PhysicalAsset,
@@ -8,6 +17,10 @@ import type {
   DebtInput,
   DebtType,
 } from '@/types/tables'
+import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
+
+// 금액 필드 목록
+const PHYSICAL_ASSET_MONEY_FIELDS = ['current_value', 'purchase_price', 'loan_amount'] as const
 
 // ============================================
 // 실물자산 CRUD
@@ -23,7 +36,8 @@ export async function getPhysicalAssets(simulationId: string): Promise<PhysicalA
     .order('sort_order', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], PHYSICAL_ASSET_MONEY_FIELDS)
 }
 
 export async function getPhysicalAssetById(id: string): Promise<PhysicalAsset | null> {
@@ -38,47 +52,52 @@ export async function getPhysicalAssetById(id: string): Promise<PhysicalAsset | 
     if (error.code === 'PGRST116') return null
     throw error
   }
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, PHYSICAL_ASSET_MONEY_FIELDS)
 }
 
 export async function createPhysicalAsset(input: PhysicalAssetInput): Promise<PhysicalAsset> {
   const supabase = createClient()
 
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedInput = convertToWon(input, PHYSICAL_ASSET_MONEY_FIELDS)
+
   const { data, error } = await supabase
     .from('physical_assets')
     .insert({
-      simulation_id: input.simulation_id,
-      type: input.type,
-      title: input.title,
-      owner: input.owner || 'self',
-      current_value: input.current_value,
-      purchase_price: input.purchase_price,
-      purchase_year: input.purchase_year,
-      purchase_month: input.purchase_month,
-      annual_rate: input.annual_rate ?? 0,
-      has_loan: input.has_loan ?? false,
-      financing_type: input.financing_type,
-      loan_amount: input.loan_amount,
-      loan_rate: input.loan_rate,
-      loan_start_year: input.loan_start_year,
-      loan_start_month: input.loan_start_month,
-      loan_maturity_year: input.loan_maturity_year,
-      loan_maturity_month: input.loan_maturity_month,
-      loan_repayment_type: input.loan_repayment_type,
-      sell_year: input.sell_year,
-      sell_month: input.sell_month,
-      memo: input.memo,
-      sort_order: input.sort_order ?? 0,
+      simulation_id: convertedInput.simulation_id,
+      type: convertedInput.type,
+      title: convertedInput.title,
+      owner: convertedInput.owner || 'self',
+      current_value: convertedInput.current_value,
+      purchase_price: convertedInput.purchase_price,
+      purchase_year: convertedInput.purchase_year,
+      purchase_month: convertedInput.purchase_month,
+      annual_rate: convertedInput.annual_rate ?? 0,
+      has_loan: convertedInput.has_loan ?? false,
+      financing_type: convertedInput.financing_type,
+      loan_amount: convertedInput.loan_amount,
+      loan_rate: convertedInput.loan_rate,
+      loan_start_year: convertedInput.loan_start_year,
+      loan_start_month: convertedInput.loan_start_month,
+      loan_maturity_year: convertedInput.loan_maturity_year,
+      loan_maturity_month: convertedInput.loan_maturity_month,
+      loan_repayment_type: convertedInput.loan_repayment_type,
+      sell_year: convertedInput.sell_year,
+      sell_month: convertedInput.sell_month,
+      memo: convertedInput.memo,
+      sort_order: convertedInput.sort_order ?? 0,
     })
     .select()
     .single()
 
   if (error) throw error
 
-  // 연동 항목 생성
+  // 연동 항목 생성 (DB 원 단위 데이터로)
   await syncLinkedDebt(data)
 
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, PHYSICAL_ASSET_MONEY_FIELDS)
 }
 
 export async function updatePhysicalAsset(
@@ -87,10 +106,13 @@ export async function updatePhysicalAsset(
 ): Promise<PhysicalAsset> {
   const supabase = createClient()
 
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedInput = convertPartialToWon(input, PHYSICAL_ASSET_MONEY_FIELDS)
+
   const { data, error } = await supabase
     .from('physical_assets')
     .update({
-      ...input,
+      ...convertedInput,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -99,10 +121,11 @@ export async function updatePhysicalAsset(
 
   if (error) throw error
 
-  // 연동 항목 재동기화
+  // 연동 항목 재동기화 (DB 원 단위 데이터로)
   await syncLinkedDebt(data)
 
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, PHYSICAL_ASSET_MONEY_FIELDS)
 }
 
 export async function deletePhysicalAsset(id: string): Promise<void> {

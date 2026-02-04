@@ -1,4 +1,17 @@
+/**
+ * 가족 구성원 서비스
+ *
+ * 금액 단위:
+ * - DB: 원 단위
+ * - 클라이언트: 만원 단위
+ * - 변환: 조회 시 원->만원, 저장 시 만원->원
+ */
+
 import { createClient } from "@/lib/supabase/client";
+import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
+
+// 금액 필드 목록
+const FAMILY_MONEY_FIELDS = ['monthly_income'] as const
 
 export interface FamilyMember {
   id: string;
@@ -38,18 +51,25 @@ export async function getFamilyMembers(userId: string): Promise<FamilyMember[]> 
     return [];
   }
 
+  // DB(원) -> 클라이언트(만원) 변환
+  const converted = convertArrayFromWon(data || [], FAMILY_MONEY_FIELDS);
+
   // Sort order: self -> spouse -> child -> parent
   const order = ["self", "spouse", "child", "parent"];
-  return (data || []).sort((a, b) => {
+  return converted.sort((a, b) => {
     return order.indexOf(a.relationship) - order.indexOf(b.relationship);
   });
 }
 
 export async function createFamilyMember(input: FamilyMemberInput): Promise<FamilyMember | null> {
   const supabase = createClient();
+
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedInput = convertToWon(input, FAMILY_MONEY_FIELDS);
+
   const { data, error } = await supabase
     .from("family_members")
-    .insert(input)
+    .insert(convertedInput)
     .select()
     .single();
 
@@ -60,7 +80,8 @@ export async function createFamilyMember(input: FamilyMemberInput): Promise<Fami
     return null;
   }
 
-  return data;
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, FAMILY_MONEY_FIELDS);
 }
 
 export async function updateFamilyMember(
@@ -68,9 +89,13 @@ export async function updateFamilyMember(
   updates: Partial<FamilyMemberInput>
 ): Promise<FamilyMember | null> {
   const supabase = createClient();
+
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedUpdates = convertPartialToWon(updates, FAMILY_MONEY_FIELDS);
+
   const { data, error } = await supabase
     .from("family_members")
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update({ ...convertedUpdates, updated_at: new Date().toISOString() })
     .eq("id", id)
     .select()
     .single();
@@ -80,7 +105,8 @@ export async function updateFamilyMember(
     return null;
   }
 
-  return data;
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, FAMILY_MONEY_FIELDS);
 }
 
 export async function deleteFamilyMember(id: string): Promise<boolean> {

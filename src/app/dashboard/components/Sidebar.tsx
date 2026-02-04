@@ -44,7 +44,7 @@ const expertMenu = [
 const financeMenu = [
   { id: "household-budget", label: "가계부", icon: Receipt },
   { id: "savings-deposits", label: "정기 예금/적금", icon: PiggyBank },
-  { id: "portfolio", label: "포트폴리오", icon: LineChart },
+  { id: "portfolio", label: "투자 포트폴리오", icon: LineChart },
   { id: "current-asset", label: "현재 자산", icon: PieChart },
 ];
 
@@ -311,7 +311,7 @@ export function Sidebar({
 
       <div className={styles.footer}>
         {/* 담당 전문가 */}
-        <div className={styles.sectionLabel}>담당: 손균우 전문가</div>
+        <div className={`${styles.sectionLabel} ${styles.expert}`}>담당: 손균우 전문가</div>
         {expertMenu.map((item) => {
           const shortcutDisplay = getShortcutDisplay(item.id);
           return (

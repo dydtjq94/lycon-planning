@@ -56,7 +56,7 @@ const sectionTitles: Record<string, string> = {
   // 재무 현황
   "current-asset": "현재 자산",
   progress: "자산 추이",
-  portfolio: "포트폴리오",
+  portfolio: "투자 포트폴리오",
   "household-budget": "가계부",
   "checking-account": "입출금통장",
   "savings-deposits": "정기 예금/적금",
@@ -616,6 +616,13 @@ export function DashboardContent() {
               {sectionTitles[currentSection] || currentSection}
             </h1>
 
+            {/* 현재 자산 날짜 표시 */}
+            {currentSection === "current-asset" && (
+              <span className={styles.currentAssetDate}>
+                {new Date().getFullYear()}년 {new Date().getMonth() + 1}월 {new Date().getDate()}일
+              </span>
+            )}
+
             {/* 가계부 월 선택기 */}
             {currentSection === "household-budget" && (
               <div className={styles.budgetMonthSelector}>
@@ -725,7 +732,7 @@ export function DashboardContent() {
         </header>
 
         <div className={styles.content}>
-          <div className={styles.contentInner}>{renderContent()}</div>
+          <div key={currentSection} className={styles.contentInner}>{renderContent()}</div>
         </div>
       </main>
 

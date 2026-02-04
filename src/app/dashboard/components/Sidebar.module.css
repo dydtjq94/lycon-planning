@@ -297,6 +297,40 @@
   opacity: 1;
 }
 
+/* 담당 전문가 라벨 - 강조 스타일 */
+.sectionLabel.expert {
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.2) 0%, rgba(0, 122, 255, 0.1) 100%);
+  border: 1px solid rgba(0, 122, 255, 0.3);
+  border-radius: 8px;
+  margin: 8px 8px 12px 8px;
+  padding: 10px 12px;
+  height: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.sidebar:hover .sectionLabel.expert,
+.sidebar.expanded .sectionLabel.expert {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidebar[data-theme="light"] .sectionLabel.expert {
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.15) 0%, rgba(0, 122, 255, 0.08) 100%);
+  border: 1px solid rgba(0, 122, 255, 0.2);
+  color: #1d1d1f;
+}
+
+.sidebar[data-theme="blue"] .sectionLabel.expert {
+  background: linear-gradient(135deg, rgba(90, 200, 250, 0.2) 0%, rgba(90, 200, 250, 0.1) 100%);
+  border: 1px solid rgba(90, 200, 250, 0.3);
+  color: #ffffff;
+}
+
 /* 네비게이션 그룹 */
 .navGroup {
   display: flex;
@@ -440,6 +474,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  overflow: visible;
 }
 
 .footerItem {

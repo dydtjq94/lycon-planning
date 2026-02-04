@@ -437,6 +437,111 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
       .reduce((sum, tx) => sum + tx.amount, 0);
   }, [transactions]);
 
+  // 커스텀 툴팁 옵션 생성 함수
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const createChartOptions = (tooltipId: string, total: number, hasData: boolean): any => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        enabled: false,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        external: (context: any) => {
+          if (!hasData) return;
+
+          const { chart, tooltip } = context;
+
+          const chartBlock = chart.canvas.closest(`.${styles.summaryChartBlock}`) as HTMLElement;
+          if (!chartBlock) return;
+
+          let tooltipEl = chartBlock.querySelector(`#${tooltipId}`) as HTMLDivElement | null;
+
+          if (!tooltipEl) {
+            tooltipEl = document.createElement("div");
+            tooltipEl.id = tooltipId;
+            chartBlock.style.position = "relative";
+            chartBlock.appendChild(tooltipEl);
+          }
+
+          if (tooltip.opacity === 0) {
+            tooltipEl.style.opacity = "0";
+            tooltipEl.style.pointerEvents = "none";
+            return;
+          }
+
+          Object.assign(tooltipEl.style, {
+            position: "absolute",
+            pointerEvents: "none",
+            background: "rgba(255, 255, 255, 0.9)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            padding: "8px 12px",
+            fontSize: "13px",
+            whiteSpace: "nowrap",
+            transition: "opacity 0.15s ease",
+            zIndex: "1000",
+          });
+
+          let html = "";
+          if (tooltip.dataPoints && tooltip.dataPoints.length > 0) {
+            const point = tooltip.dataPoints[0];
+            const label = point.label;
+            const value = point.raw as number;
+            const percent = total > 0 ? ((value / total) * 100).toFixed(1) : "0";
+            const bgColor = Array.isArray(point.dataset.backgroundColor)
+              ? point.dataset.backgroundColor[point.dataIndex]
+              : point.dataset.backgroundColor;
+            html = `<div style="display:flex;align-items:center;gap:8px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:${bgColor};"></span>
+              <span style="color:#374151;font-weight:500;">${label}</span>
+              <span style="color:#1a1a1a;font-weight:600;">${formatWon(value)}</span>
+              <span style="color:#6b7280;font-size:12px;">(${percent}%)</span>
+            </div>`;
+          }
+
+          tooltipEl.innerHTML = html;
+          tooltipEl.style.opacity = "1";
+
+          const blockRect = chartBlock.getBoundingClientRect();
+          const tooltipWidth = tooltipEl.offsetWidth;
+          const tooltipHeight = tooltipEl.offsetHeight;
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const mouseEvent = (chart as any)._lastEvent?.native as MouseEvent | undefined;
+
+          let left: number;
+          let top: number;
+
+          if (mouseEvent) {
+            left = mouseEvent.clientX - blockRect.left + 15;
+            top = mouseEvent.clientY - blockRect.top - tooltipHeight - 10;
+          } else {
+            const canvasRect = chart.canvas.getBoundingClientRect();
+            left = (canvasRect.left - blockRect.left) + tooltip.caretX;
+            top = (canvasRect.top - blockRect.top) + tooltip.caretY - tooltipHeight - 10;
+          }
+
+          if (top < 10) {
+            top = (mouseEvent?.clientY ?? 0) - blockRect.top + 15;
+          }
+          if (left + tooltipWidth > blockRect.width - 10) {
+            left = (mouseEvent?.clientX ?? blockRect.width) - blockRect.left - tooltipWidth - 15;
+          }
+          if (left < 10) {
+            left = 10;
+          }
+
+          tooltipEl.style.left = left + "px";
+          tooltipEl.style.top = top + "px";
+        },
+      },
+    },
+    cutout: "80%",
+  });
+
   // 선택된 계좌 기준으로 필터링된 거래
   const filteredTransactions = useMemo(() => {
     if (selectedAccountIds.size === 0) {
@@ -822,24 +927,7 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
                       borderWidth: 0,
                     }],
                   }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: {
-                        enabled: incomeSummary.length > 0,
-                        callbacks: {
-                          label: (ctx) => {
-                            const value = ctx.raw as number;
-                            const percent = ((value / totalIncome) * 100).toFixed(1);
-                            return `${formatWon(value)} (${percent}%)`;
-                          },
-                        },
-                      },
-                    },
-                    cutout: "80%",
-                  }}
+                  options={createChartOptions("income-tooltip", totalIncome, incomeSummary.length > 0)}
                 />
               </div>
               <div className={styles.chartLegend}>
@@ -884,24 +972,7 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
                       borderWidth: 0,
                     }],
                   }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: {
-                        enabled: expenseSummary.length > 0,
-                        callbacks: {
-                          label: (ctx) => {
-                            const value = ctx.raw as number;
-                            const percent = ((value / totalExpense) * 100).toFixed(1);
-                            return `${formatWon(value)} (${percent}%)`;
-                          },
-                        },
-                      },
-                    },
-                    cutout: "80%",
-                  }}
+                  options={createChartOptions("expense-tooltip", totalExpense, expenseSummary.length > 0)}
                 />
               </div>
               <div className={styles.chartLegend}>
@@ -1011,6 +1082,7 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
                   transaction={tx}
                   accounts={accounts}
                   categories={incomeCategories}
+                  paymentMethods={paymentMethods}
                   onUpdate={(updates) => updateMutation.mutate({ id: tx.id, updates })}
                   onDelete={() => handleDelete(tx.id)}
                   showAccount={true}
@@ -1114,6 +1186,7 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
                   transaction={tx}
                   accounts={accounts}
                   categories={expenseCategories}
+                  paymentMethods={paymentMethods}
                   onUpdate={(updates) => updateMutation.mutate({ id: tx.id, updates })}
                   onDelete={() => handleDelete(tx.id)}
                   showAccount={true}
@@ -1235,6 +1308,7 @@ function TransactionRow({
   transaction,
   accounts,
   categories,
+  paymentMethods = [],
   onUpdate,
   onDelete,
   showAccount = false,
@@ -1242,6 +1316,7 @@ function TransactionRow({
   transaction: BudgetTransaction;
   accounts: Account[];
   categories: string[];
+  paymentMethods?: PaymentMethod[];
   onUpdate: (updates: Partial<BudgetTransaction>) => void;
   onDelete: () => void;
   showAccount?: boolean;
@@ -1251,18 +1326,40 @@ function TransactionRow({
   const [editAmount, setEditAmount] = useState(transaction.amount.toString());
   const [editTitle, setEditTitle] = useState(transaction.title);
   const [editCategory, setEditCategory] = useState(transaction.category);
+  // 결제수단: payment_method_id가 있으면 "payment:id", 없으면 "account:id"
+  const initialPaymentSource = transaction.payment_method_id
+    ? `payment:${transaction.payment_method_id}`
+    : `account:${transaction.account_id}`;
+  const [editPaymentSource, setEditPaymentSource] = useState(initialPaymentSource);
 
   const account = accounts.find((a) => a.id === transaction.account_id);
+  const paymentMethod = paymentMethods.find((pm) => pm.id === transaction.payment_method_id);
 
   const handleSave = () => {
     const amount = parseInt(editAmount, 10);
     if (!amount || amount <= 0 || !editTitle.trim()) return;
+
+    // 결제수단 파싱
+    let accountId = transaction.account_id;
+    let paymentMethodId: string | null = transaction.payment_method_id;
+
+    if (editPaymentSource.startsWith("payment:")) {
+      paymentMethodId = editPaymentSource.replace("payment:", "");
+      // 결제수단의 연결 계좌 찾기
+      const pm = paymentMethods.find((p) => p.id === paymentMethodId);
+      if (pm) accountId = pm.account_id;
+    } else if (editPaymentSource.startsWith("account:")) {
+      accountId = editPaymentSource.replace("account:", "");
+      paymentMethodId = null;
+    }
 
     onUpdate({
       day: editDay ? parseInt(editDay, 10) : null,
       amount,
       title: editTitle.trim(),
       category: editCategory,
+      account_id: accountId,
+      payment_method_id: paymentMethodId,
     });
     setIsEditing(false);
   };
@@ -1277,6 +1374,7 @@ function TransactionRow({
       setEditAmount(transaction.amount.toString());
       setEditTitle(transaction.title);
       setEditCategory(transaction.category);
+      setEditPaymentSource(initialPaymentSource);
     }
   };
 
@@ -1320,9 +1418,25 @@ function TransactionRow({
           ))}
         </select>
         {showAccount && (
-          <div className={styles.transactionAccountCol}>
-            {account?.name || "-"}
-          </div>
+          <select
+            className={styles.editAccountSelect}
+            value={editPaymentSource}
+            onChange={(e) => setEditPaymentSource(e.target.value)}
+            onKeyDown={handleKeyDown}
+          >
+            {paymentMethods.length > 0 && (
+              <optgroup label="카드/페이">
+                {paymentMethods.map((pm) => (
+                  <option key={pm.id} value={`payment:${pm.id}`}>{pm.name}</option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label="계좌이체">
+              {accounts.map((acc) => (
+                <option key={acc.id} value={`account:${acc.id}`}>{acc.name}</option>
+              ))}
+            </optgroup>
+          </select>
         )}
         <button className={styles.saveButton} onClick={handleSave}>
           <Check size={14} />
@@ -1330,6 +1444,9 @@ function TransactionRow({
       </div>
     );
   }
+
+  // 표시용 결제수단 이름
+  const displayPaymentSource = paymentMethod?.name || account?.name || "-";
 
   return (
     <div className={styles.transactionRow} onClick={() => setIsEditing(true)}>
@@ -1345,7 +1462,7 @@ function TransactionRow({
       <div className={styles.transactionCategory}>{transaction.category}</div>
       {showAccount && (
         <div className={styles.transactionAccountCol}>
-          {account?.name || "-"}
+          {displayPaymentSource}
         </div>
       )}
       <button className={styles.deleteButton} onClick={(e) => { e.stopPropagation(); onDelete(); }}>

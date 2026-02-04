@@ -63,6 +63,7 @@ interface SnapshotModalData {
   totalDebts: number;
   savings: number;
   investments: number;
+  realEstate: number;
   realAssets: number;
   unsecuredDebt: number;
 }
@@ -87,6 +88,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
     totalDebts: 0,
     savings: 0,
     investments: 0,
+    realEstate: 0,
     realAssets: 0,
     unsecuredDebt: 0,
   });
@@ -155,7 +157,15 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
         {
           data: metricData,
           borderColor: "#14b8a6",
-          backgroundColor: "rgba(20, 184, 166, 0.1)",
+          backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
+            const { chart } = context;
+            const { ctx, chartArea } = chart;
+            if (!chartArea) return "rgba(20, 184, 166, 0.1)";
+            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0, "rgba(20, 184, 166, 0.15)");
+            gradient.addColorStop(1, "rgba(20, 184, 166, 0)");
+            return gradient;
+          },
           fill: true,
           tension: 0.4,
           pointRadius: chartSnapshots.length > 20 ? 0 : 4,
@@ -174,9 +184,75 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
     plugins: {
       legend: { display: false },
       tooltip: {
-        callbacks: {
-          label: (context: { parsed: { y: number | null } }) =>
-            context.parsed.y !== null ? formatMoney(context.parsed.y) : "",
+        enabled: false,
+        external: (context: any) => {
+          const tooltipId = "asset-record-tooltip";
+          let tooltipEl = document.getElementById(tooltipId);
+
+          if (!tooltipEl) {
+            tooltipEl = document.createElement("div");
+            tooltipEl.id = tooltipId;
+            tooltipEl.style.cssText = `
+              position: fixed;
+              pointer-events: none;
+              background: rgba(255, 255, 255, 0.95);
+              backdrop-filter: blur(8px);
+              border-radius: 8px;
+              padding: 10px 14px;
+              font-size: 13px;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+              z-index: 9999;
+              transition: opacity 0.15s ease;
+              min-width: 140px;
+            `;
+            document.body.appendChild(tooltipEl);
+          }
+
+          const { tooltip } = context;
+
+          if (tooltip.opacity === 0) {
+            tooltipEl.style.opacity = "0";
+            return;
+          }
+
+          if (tooltip.dataPoints && tooltip.dataPoints.length > 0) {
+            const dataPoint = tooltip.dataPoints[0];
+            const value = dataPoint.parsed.y;
+            const dateLabel = dataPoint.label;
+            const metricLabel =
+              METRIC_OPTIONS.find((m) => m.id === selectedMetric)?.label ||
+              "순자산";
+
+            tooltipEl.innerHTML = `
+              <div style="margin-bottom: 6px; color: #666; font-size: 11px;">${dateLabel}</div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #14b8a6; flex-shrink: 0;"></span>
+                <span style="color: #333; font-weight: 500;">${metricLabel}</span>
+                <span style="color: #333; font-weight: 600; margin-left: auto;">${formatMoney(value)}</span>
+              </div>
+            `;
+          }
+
+          const chartRect = context.chart.canvas.getBoundingClientRect();
+          const tooltipWidth = tooltipEl.offsetWidth;
+          const tooltipHeight = tooltipEl.offsetHeight;
+
+          let left = chartRect.left + tooltip.caretX + 10;
+          let top = chartRect.top + tooltip.caretY - tooltipHeight / 2;
+
+          if (left + tooltipWidth > window.innerWidth - 10) {
+            left = chartRect.left + tooltip.caretX - tooltipWidth - 10;
+          }
+          if (top < 10) {
+            top = 10;
+          }
+          if (top + tooltipHeight > window.innerHeight - 10) {
+            top = window.innerHeight - tooltipHeight - 10;
+          }
+
+          tooltipEl.style.opacity = "1";
+          tooltipEl.style.left = `${left}px`;
+          tooltipEl.style.top = `${top}px`;
         },
       },
     },
@@ -230,6 +306,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
       totalDebts: 0,
       savings: 0,
       investments: 0,
+      realEstate: 0,
       realAssets: 0,
       unsecuredDebt: 0,
     });
@@ -246,6 +323,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
       totalDebts: record.total_debts,
       savings: record.savings,
       investments: record.investments,
+      realEstate: record.real_estate || 0,
       realAssets: record.real_assets,
       unsecuredDebt: record.unsecured_debt,
     });
@@ -267,6 +345,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
           total_debts: modalData.totalDebts,
           savings: modalData.savings,
           investments: modalData.investments,
+          real_estate: modalData.realEstate,
           real_assets: modalData.realAssets,
           unsecured_debt: modalData.unsecuredDebt,
         },
@@ -291,6 +370,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
             total_debts: modalData.totalDebts,
             savings: modalData.savings,
             investments: modalData.investments,
+            real_estate: modalData.realEstate,
             real_assets: modalData.realAssets,
             unsecured_debt: modalData.unsecuredDebt,
           },
@@ -304,6 +384,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
           total_debts: modalData.totalDebts,
           savings: modalData.savings,
           investments: modalData.investments,
+          real_estate: modalData.realEstate,
           real_assets: modalData.realAssets,
           unsecured_debt: modalData.unsecuredDebt,
         });
@@ -427,6 +508,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                 <th>총 부채</th>
                 <th>저축</th>
                 <th>투자</th>
+                <th>부동산</th>
                 <th>실물자산</th>
                 <th>무담보부채</th>
                 <th></th>
@@ -446,6 +528,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                     <td>{formatMoney(record.total_debts)}</td>
                     <td>{formatMoney(record.savings)}</td>
                     <td>{formatMoney(record.investments)}</td>
+                    <td>{formatMoney(record.real_estate || 0)}</td>
                     <td>{formatMoney(record.real_assets)}</td>
                     <td>{formatMoney(record.unsecured_debt)}</td>
                     <td>
@@ -484,7 +567,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} className={styles.emptyRow}>
+                  <td colSpan={10} className={styles.emptyRow}>
                     기록이 없습니다
                   </td>
                 </tr>
@@ -530,7 +613,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                       value={modalData.savings || ""}
                       onChange={(e) => {
                         const savings = parseInt(e.target.value) || 0;
-                        const totalAssets = savings + modalData.investments + modalData.realAssets;
+                        const totalAssets = savings + modalData.investments + modalData.realEstate + modalData.realAssets;
                         const netWorth = totalAssets - modalData.totalDebts;
                         setModalData({ ...modalData, savings, totalAssets, netWorth });
                       }}
@@ -547,7 +630,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                       value={modalData.investments || ""}
                       onChange={(e) => {
                         const investments = parseInt(e.target.value) || 0;
-                        const totalAssets = modalData.savings + investments + modalData.realAssets;
+                        const totalAssets = modalData.savings + investments + modalData.realEstate + modalData.realAssets;
                         const netWorth = totalAssets - modalData.totalDebts;
                         setModalData({ ...modalData, investments, totalAssets, netWorth });
                       }}
@@ -560,6 +643,23 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
 
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
+                  <label>부동산</label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      type="number"
+                      value={modalData.realEstate || ""}
+                      onChange={(e) => {
+                        const realEstate = parseInt(e.target.value) || 0;
+                        const totalAssets = modalData.savings + modalData.investments + realEstate + modalData.realAssets;
+                        const netWorth = totalAssets - modalData.totalDebts;
+                        setModalData({ ...modalData, realEstate, totalAssets, netWorth });
+                      }}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                    />
+                    <span>만원</span>
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
                   <label>실물자산</label>
                   <div className={styles.inputWrapper}>
                     <input
@@ -567,7 +667,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                       value={modalData.realAssets || ""}
                       onChange={(e) => {
                         const realAssets = parseInt(e.target.value) || 0;
-                        const totalAssets = modalData.savings + modalData.investments + realAssets;
+                        const totalAssets = modalData.savings + modalData.investments + modalData.realEstate + realAssets;
                         const netWorth = totalAssets - modalData.totalDebts;
                         setModalData({ ...modalData, realAssets, totalAssets, netWorth });
                       }}
@@ -576,6 +676,9 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                     <span>만원</span>
                   </div>
                 </div>
+              </div>
+
+              <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>부채</label>
                   <div className={styles.inputWrapper}>
@@ -592,6 +695,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                     <span>만원</span>
                   </div>
                 </div>
+                <div className={styles.formGroup}></div>
               </div>
 
               <div className={styles.formSummary}>

@@ -24,13 +24,13 @@ import {
   updateSnapshotItem,
   deleteSnapshot,
   deleteSnapshotItem,
-  recalculateSnapshotSummary,
 } from '@/lib/services/snapshotService'
-import type { FinancialSnapshotItemInput } from '@/types/tables'
+import type { FinancialSnapshotItemInput, FinancialSnapshotItem } from '@/types/tables'
 import { simulationService } from '@/lib/services/simulationService'
 import { createClient } from '@/lib/supabase/client'
 import { getStockData, getExchangeRate } from '@/lib/services/financeApiService'
-import type { PortfolioTransaction, PortfolioAssetType, PortfolioCurrency } from '@/types/tables'
+import type { PortfolioTransaction, PortfolioAssetType, PortfolioCurrency, FinancialSnapshot } from '@/types/tables'
+import { wonToManwon, manwonToWon } from '@/lib/utils'
 
 // Query Keys
 export const financialKeys = {
@@ -279,53 +279,163 @@ export const snapshotKeys = {
   items: (snapshotId: string) => [...snapshotKeys.all, 'items', snapshotId] as const,
 }
 
+// ============================================
+// 금액 단위 변환 헬퍼 (원 ↔ 만원)
+// DB는 원 단위, 클라이언트는 만원 단위 사용
+// ============================================
+
+// metadata 내 금액 필드 목록
+const MONEY_METADATA_FIELDS = [
+  'loan_amount', 'purchase_price', 'current_value',
+  'monthly_rent', 'maintenance_fee'
+]
+
+// metadata에서 금액 필드를 원 → 만원 변환
+function convertMetadataFromWon(metadata: Record<string, unknown> | null | undefined): Record<string, unknown> {
+  if (!metadata) return {}
+  const result = { ...metadata }
+  for (const field of MONEY_METADATA_FIELDS) {
+    if (typeof result[field] === 'number') {
+      result[field] = wonToManwon(result[field] as number)
+    }
+  }
+  return result
+}
+
+// metadata에서 금액 필드를 만원 → 원 변환
+function convertMetadataToWon(metadata: Record<string, unknown> | null | undefined): Record<string, unknown> {
+  if (!metadata) return {}
+  const result = { ...metadata }
+  for (const field of MONEY_METADATA_FIELDS) {
+    if (typeof result[field] === 'number') {
+      result[field] = manwonToWon(result[field] as number)
+    }
+  }
+  return result
+}
+
+// snapshot item을 원 → 만원 변환 (DB → 클라이언트)
+function convertSnapshotItemFromWon(item: FinancialSnapshotItem): FinancialSnapshotItem {
+  return {
+    ...item,
+    amount: wonToManwon(item.amount),
+    metadata: convertMetadataFromWon(item.metadata)
+  }
+}
+
+// snapshot 요약 필드를 원 → 만원 변환 (DB → 클라이언트)
+function convertSnapshotFromWon(snapshot: FinancialSnapshot): FinancialSnapshot {
+  return {
+    ...snapshot,
+    total_assets: wonToManwon(snapshot.total_assets || 0),
+    total_debts: wonToManwon(snapshot.total_debts || 0),
+    net_worth: wonToManwon(snapshot.net_worth || 0),
+    savings: wonToManwon(snapshot.savings || 0),
+    investments: wonToManwon(snapshot.investments || 0),
+    real_estate: wonToManwon(snapshot.real_estate || 0),
+    real_assets: wonToManwon(snapshot.real_assets || 0),
+    unsecured_debt: wonToManwon(snapshot.unsecured_debt || 0),
+  }
+}
+
 /**
  * 스냅샷 목록 로드 훅
+ * DB에서 원 단위로 저장된 값을 만원 단위로 변환하여 반환
  */
 export function useSnapshots(profileId: string, enabled: boolean = true) {
   return useQuery({
     queryKey: snapshotKeys.list(profileId),
-    queryFn: () => getSnapshots(profileId),
+    queryFn: async () => {
+      const snapshots = await getSnapshots(profileId)
+      return snapshots.map(convertSnapshotFromWon)
+    },
     enabled: enabled && !!profileId,
   })
 }
 
 /**
  * 오늘 날짜 스냅샷 로드 훅 (없으면 생성)
+ * DB에서 원 단위로 저장된 값을 만원 단위로 변환하여 반환
  */
 export function useTodaySnapshot(profileId: string, enabled: boolean = true) {
   return useQuery({
     queryKey: snapshotKeys.today(profileId),
-    queryFn: () => getOrCreateTodaySnapshot(profileId),
+    queryFn: async () => {
+      const snapshot = await getOrCreateTodaySnapshot(profileId)
+      return convertSnapshotFromWon(snapshot)
+    },
     enabled: enabled && !!profileId,
   })
 }
 
 /**
  * 스냅샷 항목 로드 훅
+ * DB에서 원 단위로 저장된 값을 만원 단위로 변환하여 반환
  */
 export function useSnapshotItems(snapshotId: string | undefined, enabled: boolean = true) {
   return useQuery({
     queryKey: snapshotKeys.items(snapshotId || ''),
-    queryFn: () => getSnapshotItems(snapshotId!),
+    queryFn: async () => {
+      const items = await getSnapshotItems(snapshotId!)
+      return items.map(convertSnapshotItemFromWon)
+    },
     enabled: enabled && !!snapshotId,
   })
 }
 
 /**
  * 스냅샷 아이템 생성 훅
+ * 클라이언트에서 만원 단위로 입력된 값을 원 단위로 변환하여 DB에 저장
  */
 export function useCreateSnapshotItem(profileId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (input: FinancialSnapshotItemInput) => {
-      const item = await createSnapshotItem(input)
-      // 요약 재계산
-      await recalculateSnapshotSummary(input.snapshot_id)
+      // 만원 → 원 변환하여 저장
+      const convertedInput: FinancialSnapshotItemInput = {
+        ...input,
+        amount: manwonToWon(input.amount || 0),
+        metadata: convertMetadataToWon(input.metadata)
+      }
+      const item = await createSnapshotItem(convertedInput)
+      // 요약 재계산은 프론트엔드에서 처리 (저축 연동 계좌, 포트폴리오 데이터 포함)
       return item
     },
-    onSuccess: (_, variables) => {
+    // Optimistic update: UI에 바로 표시 (만원 단위 유지)
+    onMutate: async (newItem) => {
+      await queryClient.cancelQueries({ queryKey: snapshotKeys.items(newItem.snapshot_id) })
+      const previousItems = queryClient.getQueryData<FinancialSnapshotItem[]>(snapshotKeys.items(newItem.snapshot_id))
+
+      // 임시 ID로 바로 추가 (UI는 만원 단위)
+      const optimisticItem: FinancialSnapshotItem = {
+        id: `temp-${Date.now()}`,
+        snapshot_id: newItem.snapshot_id,
+        category: newItem.category,
+        item_type: newItem.item_type,
+        title: newItem.title || '',
+        amount: newItem.amount || 0, // 만원 단위 유지
+        owner: newItem.owner || 'self',
+        metadata: newItem.metadata || {},
+        sort_order: (previousItems?.length || 0),
+        created_at: new Date().toISOString(),
+      }
+
+      queryClient.setQueryData<FinancialSnapshotItem[]>(
+        snapshotKeys.items(newItem.snapshot_id),
+        old => [...(old || []), optimisticItem]
+      )
+
+      return { previousItems }
+    },
+    onError: (_, variables, context) => {
+      // 에러 시 롤백
+      if (context?.previousItems) {
+        queryClient.setQueryData(snapshotKeys.items(variables.snapshot_id), context.previousItems)
+      }
+    },
+    onSettled: (_, __, variables) => {
+      // 완료 후 실제 데이터로 갱신
       queryClient.invalidateQueries({ queryKey: snapshotKeys.items(variables.snapshot_id) })
       queryClient.invalidateQueries({ queryKey: snapshotKeys.today(profileId) })
       queryClient.invalidateQueries({ queryKey: snapshotKeys.list(profileId) })
@@ -335,18 +445,48 @@ export function useCreateSnapshotItem(profileId: string) {
 
 /**
  * 스냅샷 아이템 수정 훅
+ * 클라이언트에서 만원 단위로 입력된 값을 원 단위로 변환하여 DB에 저장
  */
 export function useUpdateSnapshotItem(profileId: string, snapshotId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<FinancialSnapshotItemInput> }) => {
-      const item = await updateSnapshotItem(id, updates)
-      // 요약 재계산
-      await recalculateSnapshotSummary(snapshotId)
+      // 만원 → 원 변환하여 저장
+      const convertedUpdates: Partial<FinancialSnapshotItemInput> = { ...updates }
+      if (updates.amount !== undefined) {
+        convertedUpdates.amount = manwonToWon(updates.amount)
+      }
+      if (updates.metadata) {
+        convertedUpdates.metadata = convertMetadataToWon(updates.metadata)
+      }
+      const item = await updateSnapshotItem(id, convertedUpdates)
+      // 요약 재계산은 프론트엔드에서 처리 (저축 연동 계좌, 포트폴리오 데이터 포함)
       return item
     },
-    onSuccess: () => {
+    // Optimistic update: UI에 바로 반영 (만원 단위 유지)
+    onMutate: async ({ id, updates }) => {
+      await queryClient.cancelQueries({ queryKey: snapshotKeys.items(snapshotId) })
+      const previousItems = queryClient.getQueryData<FinancialSnapshotItem[]>(snapshotKeys.items(snapshotId))
+
+      // 바로 수정 반영 (UI는 만원 단위)
+      queryClient.setQueryData<FinancialSnapshotItem[]>(
+        snapshotKeys.items(snapshotId),
+        old => (old || []).map(item =>
+          item.id === id ? { ...item, ...updates } : item
+        )
+      )
+
+      return { previousItems }
+    },
+    onError: (_, __, context) => {
+      // 에러 시 롤백
+      if (context?.previousItems) {
+        queryClient.setQueryData(snapshotKeys.items(snapshotId), context.previousItems)
+      }
+    },
+    onSettled: () => {
+      // 완료 후 실제 데이터로 갱신
       queryClient.invalidateQueries({ queryKey: snapshotKeys.items(snapshotId) })
       queryClient.invalidateQueries({ queryKey: snapshotKeys.today(profileId) })
       queryClient.invalidateQueries({ queryKey: snapshotKeys.list(profileId) })
@@ -363,10 +503,29 @@ export function useDeleteSnapshotItem(profileId: string, snapshotId: string) {
   return useMutation({
     mutationFn: async (id: string) => {
       await deleteSnapshotItem(id)
-      // 요약 재계산
-      await recalculateSnapshotSummary(snapshotId)
+      // 요약 재계산은 프론트엔드에서 처리 (저축 연동 계좌, 포트폴리오 데이터 포함)
     },
-    onSuccess: () => {
+    // Optimistic update: UI에서 바로 제거
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: snapshotKeys.items(snapshotId) })
+      const previousItems = queryClient.getQueryData<FinancialSnapshotItem[]>(snapshotKeys.items(snapshotId))
+
+      // 바로 제거
+      queryClient.setQueryData<FinancialSnapshotItem[]>(
+        snapshotKeys.items(snapshotId),
+        old => (old || []).filter(item => item.id !== id)
+      )
+
+      return { previousItems }
+    },
+    onError: (_, __, context) => {
+      // 에러 시 롤백
+      if (context?.previousItems) {
+        queryClient.setQueryData(snapshotKeys.items(snapshotId), context.previousItems)
+      }
+    },
+    onSettled: () => {
+      // 완료 후 실제 데이터로 갱신
       queryClient.invalidateQueries({ queryKey: snapshotKeys.items(snapshotId) })
       queryClient.invalidateQueries({ queryKey: snapshotKeys.today(profileId) })
       queryClient.invalidateQueries({ queryKey: snapshotKeys.list(profileId) })
@@ -374,15 +533,33 @@ export function useDeleteSnapshotItem(profileId: string, snapshotId: string) {
   })
 }
 
+// 스냅샷 요약 필드를 만원 → 원 변환 (클라이언트 → DB)
+function convertSnapshotInputToWon(input: Partial<FinancialSnapshotInput>): Partial<FinancialSnapshotInput> {
+  const result = { ...input }
+  if (input.total_assets !== undefined) result.total_assets = manwonToWon(input.total_assets)
+  if (input.total_debts !== undefined) result.total_debts = manwonToWon(input.total_debts)
+  if (input.net_worth !== undefined) result.net_worth = manwonToWon(input.net_worth)
+  if (input.savings !== undefined) result.savings = manwonToWon(input.savings)
+  if (input.investments !== undefined) result.investments = manwonToWon(input.investments)
+  if (input.real_estate !== undefined) result.real_estate = manwonToWon(input.real_estate)
+  if (input.real_assets !== undefined) result.real_assets = manwonToWon(input.real_assets)
+  if (input.unsecured_debt !== undefined) result.unsecured_debt = manwonToWon(input.unsecured_debt)
+  return result
+}
+
 /**
  * 스냅샷 생성 훅
+ * 클라이언트에서 만원 단위로 입력된 값을 원 단위로 변환하여 DB에 저장
  */
 export function useCreateSnapshot(profileId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: Omit<FinancialSnapshotInput, 'profile_id'>) =>
-      createSnapshot({ ...input, profile_id: profileId }),
+    mutationFn: (input: Omit<FinancialSnapshotInput, 'profile_id'>) => {
+      // 만원 → 원 변환하여 저장
+      const convertedInput = convertSnapshotInputToWon(input)
+      return createSnapshot({ ...convertedInput, profile_id: profileId })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: snapshotKeys.list(profileId) })
     },
@@ -391,13 +568,17 @@ export function useCreateSnapshot(profileId: string) {
 
 /**
  * 스냅샷 수정 훅
+ * 클라이언트에서 만원 단위로 입력된 값을 원 단위로 변환하여 DB에 저장
  */
 export function useUpdateSnapshot(profileId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<FinancialSnapshotInput> }) =>
-      updateSnapshot(id, updates),
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<FinancialSnapshotInput> }) => {
+      // 만원 → 원 변환하여 저장
+      const convertedUpdates = convertSnapshotInputToWon(updates)
+      return updateSnapshot(id, convertedUpdates)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: snapshotKeys.list(profileId) })
     },

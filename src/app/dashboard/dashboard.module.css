@@ -29,6 +29,7 @@
 }
 
 .headerInner {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -122,6 +123,15 @@
   color: #1a1a1a;
   min-width: 100px;
   text-align: center;
+}
+
+.currentAssetDate {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
 }
 
 /* 계좌 관리 버튼 */
@@ -264,12 +274,12 @@
 
 @keyframes fadeIn {
   from {
-    opacity: 0.5;
-    transform: translateX(-4px);
+    opacity: 0;
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
@@ -335,6 +345,7 @@
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
+  animation: fadeIn 0.2s ease-out;
 }
 
 @media (min-width: 1400px) {

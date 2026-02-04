@@ -808,8 +808,8 @@ export function PortfolioTab({
       return;
     }
 
-    // 총액 계산 (만원 단위)
-    const totalAmount = Math.round((formData.quantity * formData.price) / 10000);
+    // 총액 계산 (원 단위로 저장)
+    const totalAmount = Math.round(formData.quantity * formData.price);
 
     // 해외주식/해외ETF면 USD, 아니면 KRW
     const isForeign = formData.asset_type === "foreign_stock" || formData.asset_type === "foreign_etf";
@@ -1535,11 +1535,14 @@ export function PortfolioTab({
                       </div>
                     </div>
                   </div>
-                  {/* 2행: 보유주식 + 손익 + 평균단가 */}
+                  {/* 2행: 보유주식 + 손익 + 스파크라인 */}
                   <div className={styles.holdingRow}>
                     <div className={styles.holdingQtyInfo}>
                       <span className={styles.metricLabel}>보유 주식수</span>
-                      <span className={styles.metricValueLeft}>{holding.quantity.toLocaleString()}주</span>
+                      <span className={styles.metricValueLeft}>
+                        {holding.quantity.toLocaleString()}주
+                        <span className={styles.avgPriceInline}>({Math.round(holding.avg_price).toLocaleString()}원)</span>
+                      </span>
                     </div>
                     <div className={styles.holdingMetricsRow}>
                       <div className={styles.holdingMetric}>
@@ -1547,15 +1550,15 @@ export function PortfolioTab({
                         {holdingPL !== null && !valueLoading ? (
                           <span className={`${styles.metricValue} ${holdingPL >= 0 ? styles.profitColor : styles.lossColor}`}>
                             {holdingPL >= 0 ? "+" : ""}{Math.round(holdingPL).toLocaleString()}원
-                            <span className={styles.plRateSmall}>({holdingPLRate !== null ? `${holdingPLRate >= 0 ? "+" : ""}${holdingPLRate.toFixed(1)}%` : ""})</span>
+                            <span className={styles.plRateSmall}> ({holdingPLRate !== null ? `${holdingPLRate >= 0 ? "+" : ""}${holdingPLRate.toFixed(1)}%` : ""})</span>
                           </span>
                         ) : (
                           <span className={styles.metricValue}>-</span>
                         )}
                       </div>
-                      <div className={styles.holdingMetric}>
-                        <span className={styles.metricLabel}>평균단가</span>
-                        <span className={styles.metricValue}>{Math.round(holding.avg_price).toLocaleString()}원</span>
+                      <div className={styles.holdingMetricChart}>
+                        <span className={styles.metricLabel}>주가 추이</span>
+                        <Sparkline priceData={priceCache?.priceDataMap.get(holding.ticker)} profitLoss={holdingPL} />
                       </div>
                     </div>
                   </div>
@@ -1681,7 +1684,15 @@ function SearchResultChart({ data, symbol }: { data: StockData[]; symbol: string
           label: "종가",
           data: data.map((d) => d.Close),
           borderColor: "#10b981",
-          backgroundColor: "rgba(16, 185, 129, 0.1)",
+          backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
+            const { chart } = context;
+            const { ctx, chartArea } = chart;
+            if (!chartArea) return "rgba(16, 185, 129, 0.1)";
+            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0, "rgba(16, 185, 129, 0.2)");
+            gradient.addColorStop(1, "rgba(16, 185, 129, 0)");
+            return gradient;
+          },
           fill: true,
           tension: 0.3,
           pointRadius: 0,
@@ -1757,6 +1768,92 @@ const PERIOD_OPTIONS: { value: ChartPeriod; label: string; days: number }[] = [
   { value: "ALL", label: "전체", days: 0 },
 ];
 
+// 스파크라인 미니 차트
+function Sparkline({
+  priceData,
+  profitLoss,
+  width = 80,
+  height = 32,
+}: {
+  priceData: Map<string, number> | undefined;
+  profitLoss?: number | null;
+  width?: number;
+  height?: number;
+}) {
+  const chartData = useMemo(() => {
+    if (!priceData || priceData.size === 0) return null;
+
+    // 최근 90일 데이터만 사용
+    const sortedDates = Array.from(priceData.keys()).sort();
+    const recentDates = sortedDates.slice(-90);
+    const prices = recentDates.map((d) => priceData.get(d) || 0);
+
+    if (prices.length < 2) return null;
+
+    return {
+      labels: recentDates,
+      prices,
+    };
+  }, [priceData]);
+
+  if (!chartData) {
+    return <div style={{ width, height, background: "#f5f5f5", borderRadius: 4 }} />;
+  }
+
+  const { labels, prices } = chartData;
+  // 손익 기준으로 색상 결정 (한국식: 수익=빨강, 손실=파랑)
+  const isProfit = profitLoss !== null && profitLoss !== undefined ? profitLoss >= 0 : true;
+  const lineColor = isProfit ? "rgba(239, 68, 68, 1)" : "rgba(59, 130, 246, 1)";
+  const gradientColor = isProfit ? "239, 68, 68" : "59, 130, 246";
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: any = {
+    labels,
+    datasets: [
+      {
+        data: prices,
+        borderColor: lineColor,
+        backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
+          const { chart } = context;
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return `rgba(${gradientColor}, 0.15)`;
+          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          gradient.addColorStop(0, `rgba(${gradientColor}, 0.25)`);
+          gradient.addColorStop(1, `rgba(${gradientColor}, 0)`);
+          return gradient;
+        },
+        fill: true,
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.3,
+      },
+    ],
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const options: any = {
+    responsive: false,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: false },
+    },
+    scales: {
+      x: { display: false },
+      y: { display: false },
+    },
+    elements: {
+      line: { borderCapStyle: "round" },
+    },
+  };
+
+  return (
+    <div style={{ width, height }}>
+      <Chart type="line" data={data} options={options} width={width} height={height} />
+    </div>
+  );
+}
+
 // 포트폴리오 가치 추이 차트
 function PortfolioValueChart({
   priceCache,
@@ -1771,6 +1868,37 @@ function PortfolioValueChart({
 }) {
   const [period, setPeriod] = useState<ChartPeriod>("3M");
   const loading = priceCacheLoading;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const chartRef = useRef<any>(null);
+
+  // 평가금액 그라데이션 함수 (공식 문서 방식)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getValueGradient = useCallback((ctx: CanvasRenderingContext2D, chartArea: any) => {
+    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+    gradient.addColorStop(0, "rgba(20, 184, 166, 0.15)");
+    gradient.addColorStop(1, "rgba(20, 184, 166, 0)");
+    return gradient;
+  }, []);
+
+  // 손익 양수(빨강) 그라데이션 - 위에서 아래로 투명
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getPLPosGradient = useCallback((ctx: CanvasRenderingContext2D, chartArea: any, scales: any) => {
+    const zeroY = scales?.y?.getPixelForValue(0) ?? chartArea.bottom;
+    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, zeroY);
+    gradient.addColorStop(0, "rgba(239, 68, 68, 0.2)");
+    gradient.addColorStop(1, "rgba(239, 68, 68, 0)");
+    return gradient;
+  }, []);
+
+  // 손익 음수(파랑) 그라데이션 - 0에서 아래로 색상
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getPLNegGradient = useCallback((ctx: CanvasRenderingContext2D, chartArea: any, scales: any) => {
+    const zeroY = scales?.y?.getPixelForValue(0) ?? chartArea.top;
+    const gradient = ctx.createLinearGradient(0, zeroY, 0, chartArea.bottom);
+    gradient.addColorStop(0, "rgba(59, 130, 246, 0)");
+    gradient.addColorStop(1, "rgba(59, 130, 246, 0.2)");
+    return gradient;
+  }, []);
 
   // 계좌 필터링된 거래 내역
   const filteredTx = useMemo(() => {
@@ -2031,15 +2159,16 @@ function PortfolioValueChart({
     const p1 = enhanced.pl[idx + 1];
     // 0 교차점(p0 === 0)에서 시작하는 세그먼트는 p1 기준으로 색상 결정
     if (p0 === 0 && p1 !== undefined) {
-      return p1 >= 0 ? "rgba(239, 68, 68, 0.3)" : "rgba(59, 130, 246, 0.3)";
+      return p1 >= 0 ? "rgba(239, 68, 68, 0.15)" : "rgba(59, 130, 246, 0.15)";
     }
-    return p0 >= 0 ? "rgba(239, 68, 68, 0.3)" : "rgba(59, 130, 246, 0.3)";
+    return p0 >= 0 ? "rgba(239, 68, 68, 0.15)" : "rgba(59, 130, 246, 0.15)";
   };
 
   // 거래가 있는 인덱스 목록 (세로 점선용)
   const txIndices = enhanced.txAtIndex
     .map((tx, i) => (tx && tx.length > 0 && !enhanced.isZeroCross[i] ? i : -1))
     .filter((i) => i >= 0);
+
 
   // 거래일 세로 점선 플러그인
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2060,8 +2189,8 @@ function PortfolioValueChart({
       ctx.lineWidth = 1;
 
       txIndices.forEach((idx: number) => {
-        // 카테고리 스케일의 실제 픽셀 위치 계산
-        const x = xScale.getPixelForDecimal(idx / (dataLength - 1));
+        // 카테고리 스케일의 실제 픽셀 위치 계산 (스케일 패딩 고려)
+        const x = xScale.getPixelForValue(idx);
         ctx.beginPath();
         ctx.moveTo(x, chartArea.top);
         ctx.lineTo(x, chartArea.bottom);
@@ -2077,37 +2206,33 @@ function PortfolioValueChart({
     labels: enhanced.labels,
     datasets: [
       {
-        type: "line" as const,
+        type: "bar" as const,
         label: "손익",
         data: enhanced.pl,
-        borderColor: "rgba(239, 68, 68, 1)",
-        backgroundColor: "rgba(239, 68, 68, 0.3)",
-        fill: {
-          target: "origin",
-        },
-        borderWidth: 2,
-        pointRadius: enhanced.isZeroCross.map((z) => (z ? 0 : 0)),
-        pointHoverRadius: enhanced.isZeroCross.map((z) => (z ? 0 : 4)),
-        tension: 0,
+        backgroundColor: enhanced.pl.map((v) => v >= 0 ? "rgba(239, 68, 68, 0.7)" : "rgba(59, 130, 246, 0.7)"),
+        hoverBackgroundColor: enhanced.pl.map((v) => v >= 0 ? "rgba(239, 68, 68, 0.9)" : "rgba(59, 130, 246, 0.9)"),
+        borderWidth: 0,
+        borderRadius: 2,
         yAxisID: "y",
         order: 2,
-        segment: {
-          borderColor: (ctx: { p0DataIndex: number }) => getPLSegmentColor(ctx.p0DataIndex),
-          backgroundColor: (ctx: { p0DataIndex: number }) => getPLSegmentBgColor(ctx.p0DataIndex),
-        },
       },
       {
         type: "line" as const,
         label: "평가금액",
         data: enhanced.value,
         borderColor: "rgba(20, 184, 166, 0.8)",
-        backgroundColor: "rgba(20, 184, 166, 0.05)",
+        backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
+          const { chart } = context;
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return "rgba(20, 184, 166, 0.05)";
+          return getValueGradient(ctx, chartArea);
+        },
         fill: true,
         borderWidth: 2,
         pointRadius: enhanced.isZeroCross.map((z) => (z ? 0 : 0)),
         pointHoverRadius: enhanced.isZeroCross.map((z) => (z ? 0 : 4)),
         pointBackgroundColor: "#14b8a6",
-        tension: 0,
+        tension: 0.3,
         yAxisID: "y1",
         order: 1,
       },
@@ -2161,7 +2286,7 @@ function PortfolioValueChart({
             borderRadius: "10px",
             padding: "14px 18px",
             fontSize: "13px",
-            minWidth: "180px",
+            whiteSpace: "nowrap",
             boxShadow: "0 4px 20px rgba(0, 0, 0, 0.12)",
             transition: "opacity 0.15s ease",
             zIndex: "100",
@@ -2191,18 +2316,12 @@ function PortfolioValueChart({
                 const color = value >= 0 ? "#ef4444" : "#3b82f6";
                 const sign = value >= 0 ? "+" : "";
                 html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;">
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <span style="width:10px;height:10px;background:${color};border-radius:2px;"></span>
-                    <span style="color:${color};font-weight:500;">손익</span>
-                  </div>
+                  <span style="color:#6b7280;font-weight:500;">손익</span>
                   <span style="color:${color};font-weight:500;">${sign}${Math.round(value).toLocaleString()}원</span>
                 </div>`;
               } else if (label === "평가금액") {
                 html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <span style="width:10px;height:10px;background:#14b8a6;border-radius:2px;"></span>
-                    <span style="color:#14b8a6;font-weight:500;">평가금액</span>
-                  </div>
+                  <span style="color:#6b7280;font-weight:500;">평가금액</span>
                   <span style="color:#14b8a6;font-weight:500;">${Math.round(value).toLocaleString()}원</span>
                 </div>`;
               }
@@ -2230,10 +2349,33 @@ function PortfolioValueChart({
           tooltipEl.innerHTML = html;
           tooltipEl.style.opacity = "1";
 
-          // 차트 컨테이너 기준 상대 위치
-          tooltipEl.style.left = tooltip.caretX + "px";
-          tooltipEl.style.top = tooltip.caretY - 10 + "px";
-          tooltipEl.style.transform = "translate(-50%, -100%)";
+          // 차트 컨테이너 기준 상대 위치 (오버플로우 방지)
+          const containerWidth = chartContainer.offsetWidth;
+          const tooltipWidth = tooltipEl.offsetWidth;
+          const tooltipHeight = tooltipEl.offsetHeight;
+
+          let left = tooltip.caretX;
+          let top = tooltip.caretY - 10;
+          let transformX = "-50%";
+          let transformY = "-100%";
+
+          // 오른쪽 오버플로우 체크
+          if (left + tooltipWidth / 2 > containerWidth) {
+            left = containerWidth - tooltipWidth / 2 - 10;
+          }
+          // 왼쪽 오버플로우 체크
+          if (left - tooltipWidth / 2 < 0) {
+            left = tooltipWidth / 2 + 10;
+          }
+          // 상단 오버플로우 체크
+          if (top - tooltipHeight < 0) {
+            top = tooltip.caretY + 10;
+            transformY = "0%";
+          }
+
+          tooltipEl.style.left = left + "px";
+          tooltipEl.style.top = top + "px";
+          tooltipEl.style.transform = `translate(${transformX}, ${transformY})`;
         },
       },
     },
@@ -2300,7 +2442,7 @@ function PortfolioValueChart({
         ))}
       </div>
       <div className={styles.chartInner}>
-        <Chart key={`${period}-${txIndices.join(",")}`} type="bar" data={data} options={options} plugins={[txVerticalLinePlugin]} />
+        <Chart ref={chartRef} key={`${period}-${txIndices.join(",")}`} type="bar" data={data} options={options} plugins={[txVerticalLinePlugin]} />
       </div>
       <div className={styles.chartLegend}>
         <div className={styles.legendItem}>
@@ -2309,8 +2451,8 @@ function PortfolioValueChart({
         </div>
         <div className={styles.legendItem}>
           <div className={styles.legendLines}>
-            <span className={styles.legendLine} style={{ background: "#ef4444" }}></span>
-            <span className={styles.legendLine} style={{ background: "#3b82f6" }}></span>
+            <span className={styles.legendBar} style={{ background: "#ef4444" }}></span>
+            <span className={styles.legendBar} style={{ background: "#3b82f6" }}></span>
           </div>
           <span className={styles.legendLabel}>손익</span>
         </div>

@@ -38,22 +38,27 @@ export function calculateAge(birthDate: Date | string | number, referenceDate: D
 
 // 금액 포맷팅 (만원 단위 입력, 억+만원 단위로 상세 표시)
 export function formatMoney(amount: number): string {
+  const isNegative = amount < 0
   const absAmount = Math.abs(amount)
+  const prefix = isNegative ? "-" : ""
+
   if (absAmount >= 10000) {
     const uk = Math.floor(absAmount / 10000)
     const man = Math.round(absAmount % 10000)
     if (man === 0) {
-      return `${uk.toLocaleString()}억원`
+      return `${prefix}${uk.toLocaleString()}억원`
     }
-    return `${uk.toLocaleString()}억 ${man.toLocaleString()}만원`
+    return `${prefix}${uk.toLocaleString()}억 ${man.toLocaleString()}만원`
   }
-  return `${absAmount.toLocaleString()}만원`
+  return `${prefix}${absAmount.toLocaleString()}만원`
 }
 
 // 금액 포맷팅 (원 단위 입력, 억+만+원 단위로 표시)
 // 예: 4723332 → "472만 3,332원", 2347245342 → "23억 4,724만 5,342원"
 export function formatWon(amount: number): string {
+  const isNegative = amount < 0
   const absAmount = Math.abs(amount)
+  const prefix = isNegative ? "-" : ""
 
   if (absAmount >= 100000000) {
     // 1억 이상: "23억 4,724만 5,342원"
@@ -65,7 +70,7 @@ export function formatWon(amount: number): string {
     let result = `${uk.toLocaleString()}억`
     if (man > 0) result += ` ${man.toLocaleString()}만`
     if (won > 0) result += ` ${won.toLocaleString()}`
-    return result + "원"
+    return prefix + result + "원"
   }
 
   if (absAmount >= 10000) {
@@ -74,13 +79,13 @@ export function formatWon(amount: number): string {
     const won = absAmount % 10000
 
     if (won === 0) {
-      return `${man.toLocaleString()}만원`
+      return `${prefix}${man.toLocaleString()}만원`
     }
-    return `${man.toLocaleString()}만 ${won.toLocaleString()}원`
+    return `${prefix}${man.toLocaleString()}만 ${won.toLocaleString()}원`
   }
 
   // 1만 미만: "3,332원"
-  return `${absAmount.toLocaleString()}원`
+  return `${prefix}${absAmount.toLocaleString()}원`
 }
 
 // 시나리오 모드에 따른 실제 적용 상승률 계산
@@ -131,6 +136,26 @@ export function getEffectiveRate(
     default:
       return baseRate
   }
+}
+
+// ============================================
+// 금액 단위 변환 함수 (만원 ↔ 원)
+// ============================================
+
+/**
+ * 만원 → 원 변환
+ * DB 저장 시 사용 (클라이언트에서 만원 입력 → DB에 원 저장)
+ */
+export function manwonToWon(manwon: number): number {
+  return Math.round(manwon * 10000)
+}
+
+/**
+ * 원 → 만원 변환
+ * DB 조회 시 사용 (DB에서 원 조회 → 클라이언트에 만원 표시)
+ */
+export function wonToManwon(won: number): number {
+  return won / 10000
 }
 
 // 타입별 기본 상승률 카테고리 반환

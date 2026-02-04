@@ -1,5 +1,18 @@
+/**
+ * 저축/투자 서비스
+ *
+ * 금액 단위:
+ * - DB: 원 단위
+ * - 클라이언트: 만원 단위
+ * - 변환: 조회 시 원->만원, 저장 시 만원->원
+ */
+
 import { createClient } from '@/lib/supabase/client'
 import type { Savings, SavingsInput, SavingsType, Owner } from '@/types/tables'
+import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
+
+// 금액 필드 목록
+const SAVINGS_MONEY_FIELDS = ['current_balance', 'monthly_contribution'] as const
 
 // ============================================
 // 저축/투자 CRUD
@@ -15,7 +28,8 @@ export async function getSavings(simulationId: string): Promise<Savings[]> {
     .order('sort_order', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], SAVINGS_MONEY_FIELDS)
 }
 
 export async function getSavingsById(id: string): Promise<Savings | null> {
@@ -30,38 +44,43 @@ export async function getSavingsById(id: string): Promise<Savings | null> {
     if (error.code === 'PGRST116') return null
     throw error
   }
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, SAVINGS_MONEY_FIELDS)
 }
 
 export async function createSavings(input: SavingsInput): Promise<Savings> {
   const supabase = createClient()
 
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedInput = convertToWon(input, SAVINGS_MONEY_FIELDS)
+
   const { data, error } = await supabase
     .from('savings')
     .insert({
-      simulation_id: input.simulation_id,
-      type: input.type,
-      title: input.title,
-      owner: input.owner || 'self',
-      current_balance: input.current_balance,
-      monthly_contribution: input.monthly_contribution,
-      contribution_start_year: input.contribution_start_year,
-      contribution_start_month: input.contribution_start_month,
-      contribution_end_year: input.contribution_end_year,
-      contribution_end_month: input.contribution_end_month,
-      is_contribution_fixed_to_retirement: input.is_contribution_fixed_to_retirement ?? false,
-      interest_rate: input.interest_rate,
-      expected_return: input.expected_return,
-      maturity_year: input.maturity_year,
-      maturity_month: input.maturity_month,
-      memo: input.memo,
-      sort_order: input.sort_order ?? 0,
+      simulation_id: convertedInput.simulation_id,
+      type: convertedInput.type,
+      title: convertedInput.title,
+      owner: convertedInput.owner || 'self',
+      current_balance: convertedInput.current_balance,
+      monthly_contribution: convertedInput.monthly_contribution,
+      contribution_start_year: convertedInput.contribution_start_year,
+      contribution_start_month: convertedInput.contribution_start_month,
+      contribution_end_year: convertedInput.contribution_end_year,
+      contribution_end_month: convertedInput.contribution_end_month,
+      is_contribution_fixed_to_retirement: convertedInput.is_contribution_fixed_to_retirement ?? false,
+      interest_rate: convertedInput.interest_rate,
+      expected_return: convertedInput.expected_return,
+      maturity_year: convertedInput.maturity_year,
+      maturity_month: convertedInput.maturity_month,
+      memo: convertedInput.memo,
+      sort_order: convertedInput.sort_order ?? 0,
     })
     .select()
     .single()
 
   if (error) throw error
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, SAVINGS_MONEY_FIELDS)
 }
 
 export async function updateSavings(
@@ -70,10 +89,13 @@ export async function updateSavings(
 ): Promise<Savings> {
   const supabase = createClient()
 
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedInput = convertPartialToWon(input, SAVINGS_MONEY_FIELDS)
+
   const { data, error } = await supabase
     .from('savings')
     .update({
-      ...input,
+      ...convertedInput,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -81,7 +103,8 @@ export async function updateSavings(
     .single()
 
   if (error) throw error
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, SAVINGS_MONEY_FIELDS)
 }
 
 export async function deleteSavings(id: string): Promise<void> {
@@ -111,7 +134,8 @@ export async function getSavingsAccounts(simulationId: string): Promise<Savings[
     .order('sort_order', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], SAVINGS_MONEY_FIELDS)
 }
 
 // 투자 계좌만 조회
@@ -126,7 +150,8 @@ export async function getInvestmentAccounts(simulationId: string): Promise<Savin
     .order('sort_order', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], SAVINGS_MONEY_FIELDS)
 }
 
 // ============================================

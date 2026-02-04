@@ -1,5 +1,15 @@
+/**
+ * 준비사항 데이터 서비스
+ *
+ * 금액 단위:
+ * - DB: 원 단위
+ * - 클라이언트: 만원 단위
+ * - 변환: loadPrepData에서 원->만원, saveXXXData에서 만원->원
+ */
+
 import { createClient } from "@/lib/supabase/client";
 import { simulationService } from "@/lib/services/simulationService";
+import { wonToManwon, manwonToWon } from "@/lib/utils";
 import type {
   PrepData,
   PrepCompleted,
@@ -102,19 +112,19 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
     ...prepCompleted,
   };
 
-  // 거주 부동산 데이터 변환
+  // 거주 부동산 데이터 변환 (DB 원 -> 클라이언트 만원)
   let housing: HousingData | null = null;
   if (housingResult.data) {
     const h = housingResult.data;
     housing = {
       housingType: h.housing_type as "자가" | "전세" | "월세" | "무상",
-      currentValue: h.current_value || undefined,
-      deposit: h.deposit || undefined,
-      monthlyRent: h.monthly_rent || undefined,
-      maintenanceFee: h.maintenance_fee || undefined,
+      currentValue: h.current_value ? wonToManwon(h.current_value) : undefined,
+      deposit: h.deposit ? wonToManwon(h.deposit) : undefined,
+      monthlyRent: h.monthly_rent ? wonToManwon(h.monthly_rent) : undefined,
+      maintenanceFee: h.maintenance_fee ? wonToManwon(h.maintenance_fee) : undefined,
       hasLoan: h.has_loan || false,
       loanType: h.housing_type === "자가" ? "mortgage" : "jeonse",
-      loanAmount: h.loan_amount || undefined,
+      loanAmount: h.loan_amount ? wonToManwon(h.loan_amount) : undefined,
       loanRate: h.loan_rate || undefined,
       loanRateType: h.loan_rate_type as "fixed" | "floating" | undefined,
       loanMaturityYear: h.loan_maturity_year || undefined,
@@ -125,7 +135,7 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
     };
   }
 
-  // 저축 계좌 데이터 변환
+  // 저축 계좌 데이터 변환 (DB 원 -> 클라이언트 만원)
   const savingsTypes = ["checking", "savings", "deposit"];
   const savings: FinancialAssetItem[] = (savingsResult.data || [])
     .filter((s: Record<string, unknown>) => savingsTypes.includes(s.type as string))
@@ -135,8 +145,8 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
       type: s.type as string,
       title: s.title as string,
       owner: s.owner as "self" | "spouse",
-      currentBalance: s.current_balance as number,
-      monthlyDeposit: s.monthly_contribution as number | undefined,
+      currentBalance: s.current_balance ? wonToManwon(s.current_balance as number) : 0,
+      monthlyDeposit: s.monthly_contribution ? wonToManwon(s.monthly_contribution as number) : undefined,
       maturityYear: s.maturity_year as number | undefined,
       maturityMonth: s.maturity_month as number | undefined,
       expectedReturn: s.expected_return as number | undefined,
@@ -164,7 +174,7 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
     goldData = data;
   }
 
-  // 투자 데이터 구성
+  // 투자 데이터 구성 (DB 원 -> 클라이언트 만원)
   let investment: InvestmentAccountData | null = null;
   if (securitiesData || cryptoData || goldData) {
     // memo에서 투자 유형 파싱
@@ -180,33 +190,33 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
 
     investment = {
       securities: {
-        balance: (securitiesData?.current_balance as number) || 0,
+        balance: securitiesData?.current_balance ? wonToManwon(securitiesData.current_balance as number) : 0,
         investmentTypes,
       },
     };
 
     if (cryptoData) {
       investment.crypto = {
-        balance: cryptoData.current_balance as number,
+        balance: cryptoData.current_balance ? wonToManwon(cryptoData.current_balance as number) : 0,
       };
     }
 
     if (goldData) {
       investment.gold = {
-        balance: goldData.current_value as number,
+        balance: goldData.current_value ? wonToManwon(goldData.current_value as number) : 0,
       };
     }
   }
 
-  // 부채 데이터 변환
+  // 부채 데이터 변환 (DB 원 -> 클라이언트 만원)
   const debt: DebtItem[] = (debtsResult.data || []).map((d: Record<string, unknown>) => ({
     id: d.id as string,
     type: d.type as string,
     title: d.title as string,
-    principal: d.principal as number,
-    currentBalance: d.current_balance as number,
+    principal: d.principal ? wonToManwon(d.principal as number) : 0,
+    currentBalance: d.current_balance ? wonToManwon(d.current_balance as number) : 0,
     interestRate: d.interest_rate as number,
-    monthlyPayment: d.monthly_payment as number | undefined,
+    monthlyPayment: d.monthly_payment ? wonToManwon(d.monthly_payment as number) : undefined,
   }));
 
   // 국민(공적)연금 데이터 로드
@@ -231,11 +241,12 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
         return (spousePension.memo as PublicPensionType) || "national";
       };
 
+      // DB 원 -> 클라이언트 만원
       nationalPension = {
         selfType: getSelfType(),
-        selfExpectedAmount: (selfPension?.expected_monthly_amount as number) || 0,
+        selfExpectedAmount: selfPension?.expected_monthly_amount ? wonToManwon(selfPension.expected_monthly_amount as number) : 0,
         spouseType: getSpouseType(),
-        spouseExpectedAmount: (spousePension?.expected_monthly_amount as number) || 0,
+        spouseExpectedAmount: spousePension?.expected_monthly_amount ? wonToManwon(spousePension.expected_monthly_amount as number) : 0,
       };
     }
   }
@@ -261,13 +272,14 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
         return (spouseRetirement.pension_type as string) === "dc" ? "dc" : "db";
       };
 
+      // DB 원 -> 클라이언트 만원
       retirementPension = {
         selfType: getSelfType(),
         selfYearsWorked: (selfRetirement?.years_of_service as number) || null,
-        selfBalance: (selfRetirement?.current_balance as number) || null,
+        selfBalance: selfRetirement?.current_balance ? wonToManwon(selfRetirement.current_balance as number) : null,
         spouseType: getSpouseType(),
         spouseYearsWorked: (spouseRetirement?.years_of_service as number) || null,
-        spouseBalance: (spouseRetirement?.current_balance as number) || null,
+        spouseBalance: spouseRetirement?.current_balance ? wonToManwon(spouseRetirement.current_balance as number) : null,
       };
     }
   }
@@ -280,16 +292,17 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
         .eq("simulation_id", simulation.id)
     : { data: [] };
 
+  // DB 원 -> 클라이언트 만원
   const personalPension: PersonalPensionItem[] = (personalPensionsData || []).map(
     (p: Record<string, unknown>) => ({
       type: p.pension_type as string,
       owner: p.owner as "self" | "spouse",
-      balance: (p.current_balance as number) || 0,
+      balance: p.current_balance ? wonToManwon(p.current_balance as number) : 0,
       monthlyDeposit: 0,
     })
   );
 
-  // 지출 데이터 파싱 (변동 생활비 카테고리별)
+  // 지출 데이터 파싱 (변동 생활비 카테고리별) - DB 원 -> 클라이언트 만원
   const expenseData = expensesResult.data || [];
   const livingExpenseDetails: {
     food?: number;
@@ -301,7 +314,7 @@ export async function loadPrepData(userId: string): Promise<PrepData> {
   for (const exp of expenseData) {
     const expRecord = exp as Record<string, unknown>;
     const type = expRecord.type as string;
-    const amount = expRecord.amount as number;
+    const amount = expRecord.amount ? wonToManwon(expRecord.amount as number) : 0;
 
     if (type === "food") livingExpenseDetails.food = amount;
     else if (type === "transport") livingExpenseDetails.transport = amount;
@@ -390,24 +403,24 @@ export async function saveHousingData(
     .eq("simulation_id", simulation.id)
     .eq("type", "residence");
 
-  // 거주 부동산 데이터 구성
+  // 거주 부동산 데이터 구성 (클라이언트 만원 -> DB 원)
   const realEstate: Record<string, unknown> = {
     simulation_id: simulation.id,
     type: "residence",
     title: "거주 부동산",
     owner: "self",
     housing_type: data.housingType,
-    current_value: data.housingType === "자가" ? (data.currentValue || 0) : 0,
-    deposit: data.deposit || 0,
-    monthly_rent: data.monthlyRent || 0,
-    maintenance_fee: data.maintenanceFee || 0,
+    current_value: data.housingType === "자가" ? manwonToWon(data.currentValue || 0) : 0,
+    deposit: manwonToWon(data.deposit || 0),
+    monthly_rent: manwonToWon(data.monthlyRent || 0),
+    maintenance_fee: manwonToWon(data.maintenanceFee || 0),
     has_loan: data.hasLoan,
     growth_rate: 3.0,
   };
 
-  // 대출 정보 추가
+  // 대출 정보 추가 (클라이언트 만원 -> DB 원)
   if (data.hasLoan) {
-    realEstate.loan_amount = data.loanAmount || 0;
+    realEstate.loan_amount = manwonToWon(data.loanAmount || 0);
     realEstate.loan_rate = data.loanRate || 0;
     realEstate.loan_rate_type = data.loanRateType || "fixed";
     realEstate.loan_maturity_year = data.loanMaturityYear || currentYear + 20;
@@ -473,14 +486,15 @@ export async function saveSavingsData(
     is_contribution_fixed_to_retirement: boolean;
   }> = [];
 
+  // 클라이언트 만원 -> DB 원
   for (const item of items) {
     savings.push({
       simulation_id: simulation.id,
       type: item.type,
       title: item.title || `${item.owner === "self" ? "본인" : "배우자"} ${item.type}`,
       owner: item.owner,
-      current_balance: item.currentBalance,
-      monthly_contribution: item.monthlyDeposit || 0,
+      current_balance: manwonToWon(item.currentBalance),
+      monthly_contribution: manwonToWon(item.monthlyDeposit || 0),
       expected_return: item.expectedReturn || null, // 적금/정기예금 금리
       maturity_year: item.maturityYear || null,
       maturity_month: item.maturityMonth || null,
@@ -550,14 +564,14 @@ export async function saveInvestmentData(
     memo: string | null;
   }> = [];
 
-  // 1. 증권 계좌 (type: 'other'로 저장, title로 구분)
+  // 1. 증권 계좌 (type: 'other'로 저장, title로 구분) - 클라이언트 만원 -> DB 원
   if (data.securities && data.securities.balance > 0) {
     savingsToInsert.push({
       simulation_id: simulation.id,
       type: "other",
       title: "증권 계좌",
       owner: "self",
-      current_balance: data.securities.balance,
+      current_balance: manwonToWon(data.securities.balance),
       expected_return: 7, // 기본 수익률
       memo: data.securities.investmentTypes.length > 0
         ? JSON.stringify({ investmentTypes: data.securities.investmentTypes })
@@ -565,14 +579,14 @@ export async function saveInvestmentData(
     });
   }
 
-  // 2. 코인 거래소
+  // 2. 코인 거래소 - 클라이언트 만원 -> DB 원
   if (data.crypto && data.crypto.balance > 0) {
     savingsToInsert.push({
       simulation_id: simulation.id,
       type: "crypto",
       title: "코인 거래소",
       owner: "self",
-      current_balance: data.crypto.balance,
+      current_balance: manwonToWon(data.crypto.balance),
       expected_return: 10, // 코인 기본 수익률 (높은 변동성)
       memo: null,
     });
@@ -584,14 +598,14 @@ export async function saveInvestmentData(
     if (error) throw error;
   }
 
-  // 3. 금 현물 (physical_assets 테이블)
+  // 3. 금 현물 (physical_assets 테이블) - 클라이언트 만원 -> DB 원
   if (data.gold && data.gold.balance > 0) {
     const { error } = await supabase.from("physical_assets").insert({
       simulation_id: simulation.id,
       type: "precious_metal",
       title: "금 현물",
       owner: "self",
-      current_value: data.gold.balance,
+      current_value: manwonToWon(data.gold.balance),
       annual_rate: 3, // 금 기본 상승률
     });
     if (error) throw error;
@@ -640,13 +654,14 @@ export async function saveDebtData(
     start_month: number;
   }> = [];
 
+  // 클라이언트 만원 -> DB 원
   for (const item of items) {
     debts.push({
       simulation_id: simulation.id,
       type: item.type,
       title: item.title,
-      principal: item.principal,
-      current_balance: item.currentBalance || item.principal,
+      principal: manwonToWon(item.principal),
+      current_balance: manwonToWon(item.currentBalance || item.principal),
       interest_rate: item.interestRate,
       repayment_type: "원리금균등",
       maturity_year: currentYear + 5,
@@ -705,14 +720,14 @@ export async function saveIncomeData(
     rate_category: string;
   }> = [];
 
-  // 본인 근로소득
+  // 본인 근로소득 - 클라이언트 만원 -> DB 원
   if (data.selfLaborIncome > 0) {
     incomes.push({
       simulation_id: simulation.id,
       type: "labor",
       title: "본인 급여",
       owner: "self",
-      amount: data.selfLaborIncome,
+      amount: manwonToWon(data.selfLaborIncome),
       frequency: data.selfLaborFrequency,
       start_year: currentYear,
       start_month: currentMonth,
@@ -722,14 +737,14 @@ export async function saveIncomeData(
     });
   }
 
-  // 배우자 근로소득
+  // 배우자 근로소득 - 클라이언트 만원 -> DB 원
   if (data.spouseLaborIncome > 0) {
     incomes.push({
       simulation_id: simulation.id,
       type: "labor",
       title: "배우자 급여",
       owner: "spouse",
-      amount: data.spouseLaborIncome,
+      amount: manwonToWon(data.spouseLaborIncome),
       frequency: data.spouseLaborFrequency,
       start_year: currentYear,
       start_month: currentMonth,
@@ -739,7 +754,7 @@ export async function saveIncomeData(
     });
   }
 
-  // 추가 소득
+  // 추가 소득 - 클라이언트 만원 -> DB 원
   for (const additional of data.additionalIncomes) {
     const typeLabels: Record<string, string> = {
       business: "사업소득",
@@ -752,7 +767,7 @@ export async function saveIncomeData(
       type: additional.type,
       title: `${ownerLabel} ${typeLabels[additional.type] || additional.type}`,
       owner: additional.owner,
-      amount: additional.amount,
+      amount: manwonToWon(additional.amount),
       frequency: additional.frequency,
       start_year: currentYear,
       start_month: currentMonth,
@@ -803,11 +818,12 @@ export async function saveNationalPensionData(
     memo: string | null;
   }> = [];
 
+  // 클라이언트 만원 -> DB 원
   if (data.selfExpectedAmount > 0) {
     pensions.push({
       simulation_id: simulation.id,
       owner: "self",
-      expected_monthly_amount: data.selfExpectedAmount,
+      expected_monthly_amount: manwonToWon(data.selfExpectedAmount),
       start_age: 65,
       memo: data.selfType !== "national" ? data.selfType : null,
     });
@@ -817,7 +833,7 @@ export async function saveNationalPensionData(
     pensions.push({
       simulation_id: simulation.id,
       owner: "spouse",
-      expected_monthly_amount: data.spouseExpectedAmount,
+      expected_monthly_amount: manwonToWon(data.spouseExpectedAmount),
       start_age: 65,
       memo: data.spouseType !== "national" ? data.spouseType : null,
     });
@@ -864,25 +880,25 @@ export async function saveRetirementPensionData(
     receive_type: string;
   }> = [];
 
-  // 본인
+  // 본인 - 클라이언트 만원 -> DB 원
   if (data.selfType !== "none") {
     pensions.push({
       simulation_id: simulation.id,
       pension_type: data.selfType, // db or dc
       owner: "self",
-      current_balance: data.selfType === "dc" ? data.selfBalance : null,
+      current_balance: data.selfType === "dc" && data.selfBalance ? manwonToWon(data.selfBalance) : null,
       years_of_service: data.selfType === "db" ? data.selfYearsWorked : null,
       receive_type: "lump_sum",
     });
   }
 
-  // 배우자
+  // 배우자 - 클라이언트 만원 -> DB 원
   if (data.spouseType !== "none") {
     pensions.push({
       simulation_id: simulation.id,
       pension_type: data.spouseType, // db or dc
       owner: "spouse",
-      current_balance: data.spouseType === "dc" ? data.spouseBalance : null,
+      current_balance: data.spouseType === "dc" && data.spouseBalance ? manwonToWon(data.spouseBalance) : null,
       years_of_service: data.spouseType === "db" ? data.spouseYearsWorked : null,
       receive_type: "lump_sum",
     });
@@ -932,13 +948,14 @@ export async function savePersonalPensionData(
     return_rate: number;
   }> = [];
 
+  // 클라이언트 만원 -> DB 원
   for (const item of items) {
     if (item.balance > 0) {
       pensions.push({
         simulation_id: simulation.id,
         pension_type: item.type, // irp, pension_savings_tax, pension_savings_invest, isa
         owner: item.owner,
-        current_balance: item.balance,
+        current_balance: manwonToWon(item.balance),
         monthly_contribution: 0,
         is_contribution_fixed_to_retirement: true,
         start_age: 55,
@@ -1009,6 +1026,7 @@ export async function saveExpenseData(
     leisure: "유흥/여가비",
   };
 
+  // 클라이언트 만원 -> DB 원
   if (data.livingExpenseDetails) {
     const details = data.livingExpenseDetails;
 
@@ -1017,7 +1035,7 @@ export async function saveExpenseData(
         simulation_id: simulation.id,
         type: "food",
         title: livingExpenseLabels.food,
-        amount: details.food,
+        amount: manwonToWon(details.food),
         frequency: "monthly",
         start_year: currentYear,
         start_month: currentMonth,
@@ -1032,7 +1050,7 @@ export async function saveExpenseData(
         simulation_id: simulation.id,
         type: "transport",
         title: livingExpenseLabels.transport,
-        amount: details.transport,
+        amount: manwonToWon(details.transport),
         frequency: "monthly",
         start_year: currentYear,
         start_month: currentMonth,
@@ -1047,7 +1065,7 @@ export async function saveExpenseData(
         simulation_id: simulation.id,
         type: "shopping",
         title: livingExpenseLabels.shopping,
-        amount: details.shopping,
+        amount: manwonToWon(details.shopping),
         frequency: "monthly",
         start_year: currentYear,
         start_month: currentMonth,
@@ -1062,7 +1080,7 @@ export async function saveExpenseData(
         simulation_id: simulation.id,
         type: "leisure",
         title: livingExpenseLabels.leisure,
-        amount: details.leisure,
+        amount: manwonToWon(details.leisure),
         frequency: "monthly",
         start_year: currentYear,
         start_month: currentMonth,

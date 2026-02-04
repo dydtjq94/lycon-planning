@@ -21,8 +21,8 @@
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 24px 32px;
+  justify-content: center;
+  padding: 16px 32px;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -67,7 +67,7 @@
   gap: 32px;
   padding: 40px 32px;
   border-bottom: 1px solid #e5e7eb;
-  overflow-x: auto;
+  overflow: visible;
 }
 
 .chartWrapper {
@@ -86,6 +86,7 @@
   gap: 48px;
   margin-left: 48px;
   flex-shrink: 0;
+  overflow: visible;
 }
 
 .chartCardSmall {
@@ -93,12 +94,14 @@
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
+  overflow: visible;
 }
 
 .chartBoxSmall {
   position: relative;
   width: 160px;
   height: 160px;
+  overflow: visible;
 }
 
 .chartCenter {
@@ -127,16 +130,16 @@
 }
 
 .chartLabelSmall {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   color: #9ca3af;
 }
 
 .chartAmountSmall {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: #1a1a1a;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 }
 
 /* 범례 섹션 */
@@ -300,6 +303,7 @@
   background: #ecfdf5;
   padding: 2px 6px;
   border-radius: 3px;
+  margin-left: 8px;
 }
 
 .sectionTotal {
@@ -369,6 +373,55 @@
   color: #9ca3af;
   font-size: 12px;
   font-weight: 400;
+}
+
+/* 대출/할부 배지 */
+.loanBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #fef3c7;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #92400e;
+  margin-top: 6px;
+}
+
+.loanBadge .loanIcon {
+  width: 14px;
+  height: 14px;
+  color: #d97706;
+}
+
+.loanAmount {
+  font-weight: 600;
+}
+
+.loanDetails {
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.installmentBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #fee2e2;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #991b1b;
+  margin-top: 6px;
+}
+
+.installmentBadge .loanIcon {
+  width: 14px;
+  height: 14px;
+  color: #dc2626;
 }
 
 /* 입력 필드 */
@@ -604,6 +657,63 @@
   color: #1a1a1a;
 }
 
+/* 금액 + 대출/할부 우측 표시 */
+.amountWithLoan {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.loanAmountRight {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+/* 확장 합계 섹션 (총액/대출/순자산) */
+.sectionFooterExpanded {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  margin-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footerRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.footerLoanLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.footerLoanValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.footerNetLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.footerNetValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
 /* 버튼 + 합계 한 줄 */
 .sectionFooterWithButtons {
   display: flex;
@@ -645,6 +755,241 @@
 .realEstateSection {
   display: block;
   width: 100%;
+}
+
+/* 거주용 편집 폼 */
+.residenceEditForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.editRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.editRowLabel {
+  font-size: 13px;
+  color: #6b7280;
+  min-width: 80px;
+  flex-shrink: 0;
+  padding-top: 8px;
+  white-space: nowrap;
+}
+
+.editField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.editInput {
+  width: 120px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  outline: none;
+  background: white;
+  text-align: right;
+}
+
+.editInput:focus {
+  border-color: #1a1a1a;
+}
+
+.editInput::-webkit-outer-spin-button,
+.editInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.editInputSmall {
+  width: 70px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  outline: none;
+  background: white;
+  text-align: center;
+}
+
+.editInputSmall:focus {
+  border-color: #1a1a1a;
+}
+
+.editInputSmall::-webkit-outer-spin-button,
+.editInputSmall::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.editUnit {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* 유형 선택 버튼 */
+.typeButtons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.typeBtn {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.typeBtn:hover {
+  border-color: #d1d5db;
+}
+
+.typeBtn.active {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  color: white;
+}
+
+/* 편집 구분선 */
+.editDivider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
+}
+
+/* 편집 액션 버튼 */
+.editActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 8px;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.saveBtn {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  background: #1a1a1a;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: #374151;
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 인라인 편집 폼 */
+.inlineEditForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+/* 선택 드롭다운 */
+.selectInput {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  outline: none;
+  background: white;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.selectInput:focus {
+  border-color: #1a1a1a;
+}
+
+/* 넓은 입력 */
+.editInputWide {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  outline: none;
+  background: white;
+}
+
+.editInputWide:focus {
+  border-color: #1a1a1a;
+}
+
+/* 삭제 버튼 텍스트 스타일 */
+.deleteBtnText {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ef4444;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.deleteBtnText:hover {
+  color: #dc2626;
+}
+
+/* 편집 액션 오른쪽 정렬 */
+.editActionsRight {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .realEstateGroup {
@@ -854,9 +1199,8 @@
 .profileContent {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 24px 16px;
+  gap: 0;
+  padding: 0;
 }
 
 .profileContent p {
@@ -866,6 +1210,8 @@
 }
 
 .profileLinkButton {
+  display: inline-flex;
+  align-items: center;
   padding: 8px 16px;
   background: none;
   border: 1px solid #e5e7eb;
@@ -879,6 +1225,372 @@
 .profileLinkButton:hover {
   border-color: #1a1a1a;
   color: #1a1a1a;
+}
+
+/* 프로필 정보 아이템 */
+.profileInfoItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.profileInfoItem:hover {
+  background-color: #f9fafb;
+}
+
+.profileInfoItem:last-child {
+  border-bottom: none;
+}
+
+.profileInfoChevron {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.profileInfoIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profileInfoIcon svg {
+  width: 20px;
+  height: 20px;
+  color: #6b7280;
+}
+
+.profileInfoContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.profileInfoLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.profileInfoValue {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* 자녀 목록 */
+.childrenList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.childItem {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* 프로필 편집 카드 */
+.profileEditCard {
+  background: #f9fafb;
+  border-bottom: 1px solid #f3f4f6;
+  padding: 16px 20px;
+}
+
+.profileEditHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.profileEditHeader span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.profileEditHeader button {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #6b7280;
+  border-radius: 4px;
+}
+
+.profileEditHeader button:hover {
+  color: #1a1a1a;
+  background: #e5e7eb;
+}
+
+.profileEditGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profileEditField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profileEditField label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.profileEditField input {
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  background: white;
+  outline: none;
+}
+
+.profileEditField input:focus {
+  border-color: #3b82f6;
+}
+
+.profileEditField input::-webkit-outer-spin-button,
+.profileEditField input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.profileEditField input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.profileEditActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.profileEditCancel {
+  padding: 8px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.profileEditCancel:hover {
+  background: #f3f4f6;
+}
+
+.profileEditSave {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #1a1a1a;
+  font-size: 13px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+}
+
+.profileEditSave:hover {
+  background: #292524;
+}
+
+/* 계획 단위 변경 모달 */
+.planningModeModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeInModal 0.15s ease;
+}
+
+.planningModeModalContent {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+.planningModeModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.planningModeModalHeader span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.planningModeModalHeader button {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #6b7280;
+  border-radius: 4px;
+}
+
+.planningModeModalHeader button:hover {
+  color: #1a1a1a;
+  background: #f3f4f6;
+}
+
+.planningModeOptions {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.planningModeOption {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+  text-align: left;
+  width: 100%;
+}
+
+.planningModeOption:hover {
+  background: #f9fafb;
+}
+
+.planningModeOption.active {
+  border-color: #1a1a1a;
+  background: #f9fafb;
+}
+
+.planningModeOptionIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.planningModeOption.active .planningModeOptionIcon {
+  background: #1a1a1a;
+  color: white;
+}
+
+.planningModeOptionIcon svg {
+  color: #6b7280;
+}
+
+.planningModeOption.active .planningModeOptionIcon svg {
+  color: white;
+}
+
+.planningModeOptionText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.planningModeOptionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.planningModeOptionDesc {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* 프로필 로딩 */
+.profileLoading {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.profileSkeletonItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.profileSkeletonIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.profileSkeletonText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profileSkeletonLine {
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.profileSkeletonLine.short {
+  width: 80px;
+}
+
+.profileSkeletonLine.long {
+  width: 140px;
+}
+
+/* 프로필 푸터 (설정 버튼) */
+.profileFooter {
+  padding: 16px 20px;
+  border-top: 1px solid #f3f4f6;
 }
 
 /* 계좌 유형 라벨 - 통장 이름 오른쪽에 작게 */
@@ -913,33 +1625,50 @@
   border-radius: 4px;
 }
 
-.skeletonDate {
-  width: 120px;
-  height: 20px;
-}
-
-.skeletonSaveBtn {
-  width: 130px;
-  height: 40px;
-  border-radius: 8px;
-}
-
 .skeletonChartMain {
-  width: 200px;
-  height: 200px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .skeletonChartSmall {
-  width: 160px;
-  height: 160px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.skeletonChartLabel {
+  width: 50px;
+  height: 14px;
+}
+
+.skeletonChartAmount {
+  width: 80px;
+  height: 22px;
+  margin-top: 4px;
+}
+
+.skeletonChartLabelSmall {
+  width: 60px;
+  height: 12px;
+}
+
+.skeletonChartAmountSmall {
+  width: 70px;
+  height: 16px;
+  margin-top: 2px;
 }
 
 .skeletonDot {
@@ -960,8 +1689,8 @@
 }
 
 .skeletonTab {
-  width: 60px;
-  height: 40px;
+  width: 70px;
+  height: 36px;
   border-radius: 8px;
 }
 
@@ -972,23 +1701,35 @@
 
 .skeletonTotal {
   width: 100px;
-  height: 24px;
+  height: 20px;
 }
 
-.skeletonTableHeader {
-  width: 50px;
-  height: 12px;
+.skeletonContentList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.skeletonContentItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.skeletonContentItem:last-child {
+  border-bottom: none;
 }
 
 .skeletonName {
-  width: 100px;
+  width: 120px;
   height: 16px;
 }
 
 .skeletonAmount {
   width: 80px;
   height: 16px;
-  margin-left: auto;
 }
 
 /* Progress Points 섹션 */
@@ -1594,4 +2335,410 @@
     width: 20px;
     height: 20px;
   }
+}
+
+/* 추가 모달 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeInModal 0.15s ease;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modalContent {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.modalCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.modalCloseBtn:hover {
+  background: #f3f4f6;
+  color: #1a1a1a;
+}
+
+.modalBody {
+  padding: 20px 24px 24px;
+}
+
+.modalGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.modalItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.modalItem:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.modalItemIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: white;
+}
+
+.modalItemLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+@media (max-width: 480px) {
+  .modalGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 아이템 카드 UI */
+.itemCard {
+  position: relative;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 20px;
+  padding-right: 64px;
+}
+
+.itemCard:last-child {
+  border-bottom: none;
+}
+
+.itemCardHeader {
+  margin-bottom: 12px;
+}
+
+.itemCardHeaderGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.itemCardHeaderSimple {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.itemCardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.itemCardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.itemCardDeleteBtn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #9ca3af;
+}
+
+.itemCardDeleteBtn:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.itemCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.itemCardField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.itemCardFieldLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.itemCardFieldInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  background: #f9fafb;
+  outline: none;
+}
+
+.itemCardFieldInput:focus {
+  border-color: #3b82f6;
+  background: white;
+}
+
+.itemCardFieldInput::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.itemCardFieldInput::-webkit-outer-spin-button,
+.itemCardFieldInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.itemCardFieldInput[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.itemCardFieldSelect {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  background: #f9fafb;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.itemCardFieldSelect:focus {
+  border-color: #3b82f6;
+  background-color: white;
+}
+
+.itemCardFieldStatic {
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.itemCardFieldUnit {
+  position: relative;
+}
+
+.itemCardFieldUnit .itemCardFieldInput {
+  padding-right: 40px;
+}
+
+.itemCardFieldUnitLabel {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.itemCardDivider {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: #f3f4f6;
+  margin: 4px 0;
+}
+
+.itemCardRow {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* 대출/할부 섹션 */
+.itemCardLoanSection {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.itemCardLoanHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.itemCardLoanToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+}
+
+.itemCardLoanToggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+}
+
+.itemCardLoanGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* 반응형 */
+@media (max-width: 640px) {
+  .itemCardGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .itemCardRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .itemCardLoanGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .itemCardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .itemCardRow {
+    grid-template-columns: 1fr;
+  }
+
+  .itemCardLoanGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 기타 투자 섹션 */
+.otherInvestmentSection {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.otherInvestmentHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.otherInvestmentTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.otherInvestmentDesc {
+  font-size: 12px;
+  color: #9ca3af;
 }

@@ -1,3 +1,12 @@
+/**
+ * 부채 서비스
+ *
+ * 금액 단위:
+ * - DB: 원 단위
+ * - 클라이언트: 만원 단위
+ * - 변환: 조회 시 원->만원, 저장 시 만원->원
+ */
+
 import { createClient } from '@/lib/supabase/client'
 import type {
   Debt,
@@ -8,6 +17,10 @@ import type {
   RateType,
 } from '@/types/tables'
 import { createExpense, deleteLinkedExpenses } from './expenseService'
+import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
+
+// 금액 필드 목록
+const DEBT_MONEY_FIELDS = ['principal', 'current_balance'] as const
 
 // ============================================
 // 부채 CRUD
@@ -23,7 +36,8 @@ export async function getDebts(simulationId: string): Promise<Debt[]> {
     .order('sort_order', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], DEBT_MONEY_FIELDS)
 }
 
 export async function getDebtById(id: string): Promise<Debt | null> {
@@ -38,33 +52,37 @@ export async function getDebtById(id: string): Promise<Debt | null> {
     if (error.code === 'PGRST116') return null
     throw error
   }
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, DEBT_MONEY_FIELDS)
 }
 
 export async function createDebt(input: DebtInput): Promise<Debt> {
   const supabase = createClient()
 
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedInput = convertToWon(input, DEBT_MONEY_FIELDS)
+
   const { data, error } = await supabase
     .from('debts')
     .insert({
-      simulation_id: input.simulation_id,
-      type: input.type,
-      title: input.title,
-      principal: input.principal,
-      current_balance: input.current_balance ?? input.principal,
-      interest_rate: input.interest_rate,
-      rate_type: input.rate_type || 'fixed',
-      spread: input.spread,
-      repayment_type: input.repayment_type,
-      grace_period_months: input.grace_period_months ?? 0,
-      start_year: input.start_year,
-      start_month: input.start_month,
-      maturity_year: input.maturity_year,
-      maturity_month: input.maturity_month,
-      source_type: input.source_type || null,
-      source_id: input.source_id || null,
-      memo: input.memo,
-      sort_order: input.sort_order ?? 0,
+      simulation_id: convertedInput.simulation_id,
+      type: convertedInput.type,
+      title: convertedInput.title,
+      principal: convertedInput.principal,
+      current_balance: convertedInput.current_balance ?? convertedInput.principal,
+      interest_rate: convertedInput.interest_rate,
+      rate_type: convertedInput.rate_type || 'fixed',
+      spread: convertedInput.spread,
+      repayment_type: convertedInput.repayment_type,
+      grace_period_months: convertedInput.grace_period_months ?? 0,
+      start_year: convertedInput.start_year,
+      start_month: convertedInput.start_month,
+      maturity_year: convertedInput.maturity_year,
+      maturity_month: convertedInput.maturity_month,
+      source_type: convertedInput.source_type || null,
+      source_id: convertedInput.source_id || null,
+      memo: convertedInput.memo,
+      sort_order: convertedInput.sort_order ?? 0,
     })
     .select()
     .single()
@@ -77,7 +95,8 @@ export async function createDebt(input: DebtInput): Promise<Debt> {
     await createLinkedExpensesForDebt(data)
   }
 
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, DEBT_MONEY_FIELDS)
 }
 
 export async function updateDebt(
@@ -86,10 +105,13 @@ export async function updateDebt(
 ): Promise<Debt> {
   const supabase = createClient()
 
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedInput = convertPartialToWon(input, DEBT_MONEY_FIELDS)
+
   const { data, error } = await supabase
     .from('debts')
     .update({
-      ...input,
+      ...convertedInput,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -104,7 +126,8 @@ export async function updateDebt(
     await createLinkedExpensesForDebt(data)
   }
 
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, DEBT_MONEY_FIELDS)
 }
 
 export async function deleteDebt(id: string): Promise<void> {
@@ -137,7 +160,8 @@ export async function getDirectDebts(simulationId: string): Promise<Debt[]> {
     .order('sort_order', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], DEBT_MONEY_FIELDS)
 }
 
 // 연동된 부채만 (부동산/실물자산에서 온 것)
@@ -152,7 +176,8 @@ export async function getLinkedDebts(simulationId: string): Promise<Debt[]> {
     .order('sort_order', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], DEBT_MONEY_FIELDS)
 }
 
 // 특정 소스에서 연동된 부채
@@ -169,7 +194,8 @@ export async function getDebtsBySource(
     .eq('is_active', true)
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], DEBT_MONEY_FIELDS)
 }
 
 // ============================================

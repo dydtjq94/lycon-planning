@@ -747,11 +747,13 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow: visible;
 }
 
 .chartInner {
   position: relative;
   height: 280px;
+  overflow: visible;
 }
 
 .periodSelector {
@@ -968,8 +970,8 @@
 
 .legendLines {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  gap: 3px;
 }
 
 .legendLine {
@@ -977,6 +979,13 @@
   width: 24px;
   height: 2px;
   border-radius: 1px;
+}
+
+.legendBar {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
 }
 
 .legendLabel {
@@ -1320,6 +1329,13 @@
   color: #1a1a1a;
 }
 
+.avgPriceInline {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin-left: 6px;
+}
+
 .assetTypeLabel {
   font-size: 11px;
   font-weight: 500;
@@ -1398,6 +1414,14 @@
   align-items: flex-end;
   gap: 4px;
   min-width: 100px;
+}
+
+.holdingMetricChart {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 80px;
 }
 
 .metricLabel {

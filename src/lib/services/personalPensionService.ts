@@ -1,11 +1,20 @@
 /**
  * 개인연금 서비스
  * personal_pensions 테이블 CRUD + 소득 연동
+ *
+ * 금액 단위:
+ * - DB: 원 단위
+ * - 클라이언트: 만원 단위
+ * - 변환: 조회 시 원->만원, 저장 시 만원->원
  */
 
 import { createClient } from '@/lib/supabase/client'
 import type { PersonalPension, PersonalPensionInput, Owner, PersonalPensionType } from '@/types/tables'
 import { createIncome, deleteLinkedIncomes } from './incomeService'
+import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
+
+// 금액 필드 목록
+const PERSONAL_PENSION_MONEY_FIELDS = ['current_balance', 'monthly_contribution'] as const
 
 // 개인연금 조회 (시뮬레이션별)
 export async function getPersonalPensions(simulationId: string): Promise<PersonalPension[]> {
@@ -20,7 +29,8 @@ export async function getPersonalPensions(simulationId: string): Promise<Persona
     .order('pension_type', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], PERSONAL_PENSION_MONEY_FIELDS)
 }
 
 // 개인연금 단건 조회
@@ -34,7 +44,8 @@ export async function getPersonalPension(id: string): Promise<PersonalPension | 
     .single()
 
   if (error) throw error
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return data ? convertFromWon(data, PERSONAL_PENSION_MONEY_FIELDS) : null
 }
 
 // 개인연금 생성 + 소득 연동
@@ -45,20 +56,24 @@ export async function createPersonalPension(
 ): Promise<PersonalPension> {
   const supabase = createClient()
 
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedInput = convertToWon(input, PERSONAL_PENSION_MONEY_FIELDS)
+
   const { data, error } = await supabase
     .from('personal_pensions')
-    .insert(input)
+    .insert(convertedInput)
     .select()
     .single()
 
   if (error) throw error
 
-  // 수령 정보가 있을 경우에만 소득 연동
+  // 수령 정보가 있을 경우에만 소득 연동 (DB 원 단위 데이터로)
   if (data.start_age && data.receiving_years) {
     await createLinkedIncome(data, birthYear, retirementAge)
   }
 
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, PERSONAL_PENSION_MONEY_FIELDS)
 }
 
 // 개인연금 수정 + 소득 연동 업데이트
@@ -70,9 +85,12 @@ export async function updatePersonalPension(
 ): Promise<PersonalPension> {
   const supabase = createClient()
 
+  // 클라이언트(만원) -> DB(원) 변환
+  const convertedUpdates = convertPartialToWon(updates, PERSONAL_PENSION_MONEY_FIELDS)
+
   const { data, error } = await supabase
     .from('personal_pensions')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update({ ...convertedUpdates, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single()
@@ -82,12 +100,13 @@ export async function updatePersonalPension(
   // 기존 연동 소득 삭제
   await deleteLinkedIncomes('personal_pension', id)
 
-  // 수령 정보가 있을 경우에만 소득 연동 재생성
+  // 수령 정보가 있을 경우에만 소득 연동 재생성 (DB 원 단위 데이터로)
   if (data.start_age && data.receiving_years) {
     await createLinkedIncome(data, birthYear, retirementAge)
   }
 
-  return data
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertFromWon(data, PERSONAL_PENSION_MONEY_FIELDS)
 }
 
 // 개인연금 삭제 + 연동 소득 삭제
@@ -218,7 +237,8 @@ export async function getPersonalPensionByOwnerAndType(
     .single()
 
   if (error && error.code !== 'PGRST116') throw error
-  return data || null
+  // DB(원) -> 클라이언트(만원) 변환
+  return data ? convertFromWon(data, PERSONAL_PENSION_MONEY_FIELDS) : null
 }
 
 // owner별 개인연금 목록 조회
@@ -237,7 +257,8 @@ export async function getPersonalPensionsByOwner(
     .order('pension_type', { ascending: true })
 
   if (error) throw error
-  return data || []
+  // DB(원) -> 클라이언트(만원) 변환
+  return convertArrayFromWon(data || [], PERSONAL_PENSION_MONEY_FIELDS)
 }
 
 // 개인연금 upsert (owner + type별로 하나만 존재)

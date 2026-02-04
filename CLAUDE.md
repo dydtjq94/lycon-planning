@@ -313,24 +313,40 @@ calculateAge(new Date(1994, 11, 15))  // Date 객체 → 만 나이
 calculateAge(1994)  // 출생년도만 있으면 1월 1일 기준으로 계산
 ```
 
-## 금액 단위 규칙
+## 금액 단위 규칙 (매우 중요!)
 
-- **데이터 저장은 항상 원 단위**: DB에 저장되는 모든 금액은 원(KRW) 단위
-- **사용자 입력도 원 단위**: 사용자가 입력하는 금액도 원 단위
-- **표시는 상황에 맞게**: 작은 금액은 원, 큰 금액은 만원/억원으로 자동 변환 표시
-- **전역 유틸리티 사용**: `formatWon` 함수를 `@/lib/utils`에서 import하여 사용
+### 핵심 원칙
+- **DB 저장은 항상 원 단위**: 모든 테이블의 금액 필드는 원(KRW) 단위
+- **클라이언트 입력/표시는 만원 단위**: 사용자가 보고 입력하는 금액은 만원 단위
+- **변환은 서비스 레이어에서**: 조회 시 원->만원, 저장 시 만원->원 변환
+
+### 변환 함수 (src/lib/utils.ts)
+- `manwonToWon(manwon)`: 만원 -> 원 (저장 시)
+- `wonToManwon(won)`: 원 -> 만원 (조회 시)
+
+### 표시 함수
+- `formatMoney(manwon)`: 만원 입력 -> "5억 3,000만원" 표시
+- `formatWon(won)`: 원 입력 -> "5억 3,000만원" 표시
+
+### 서비스 레이어 규칙
+- `getXXX()` 함수: DB에서 원 단위로 조회 -> 만원 단위로 변환 후 반환
+- `createXXX()`, `updateXXX()` 함수: 만원 단위로 입력 -> 원 단위로 변환 후 저장
 
 ```tsx
-import { formatWon } from '@/lib/utils'
+// 서비스 파일 예시
+import { wonToManwon, manwonToWon } from '@/lib/utils'
 
-// formatWon 사용 예시 (원 단위 입력)
-formatWon(50000000)     // "5,000만원"
-formatWon(100000000)    // "1억원"
-formatWon(647240000)    // "6억 4,724만원"
-formatWon(500000)       // "50만원"
+// 조회 시: DB(원) -> 클라이언트(만원)
+const income = await getIncome(id)
+// income.amount는 이미 만원 단위로 변환됨
 
-// 데이터 저장 예시
-const balance = 50000000  // 5천만원을 원 단위로 저장
+// 저장 시: 클라이언트(만원) -> DB(원)
+await createIncome({ amount: 500 })  // 500만원 입력 -> DB에 5000000원 저장
+
+// 포맷팅
+import { formatMoney } from '@/lib/utils'
+formatMoney(500)  // "500만원"
+formatMoney(53000)  // "5억 3,000만원"
 ```
 
 ## 시간 단위 규칙 (매우 중요!)
