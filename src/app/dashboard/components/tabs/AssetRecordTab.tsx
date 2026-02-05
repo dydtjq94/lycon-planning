@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { formatMoney } from "@/lib/utils";
 import { useSnapshots, useDeleteSnapshot, useCreateSnapshot, useUpdateSnapshot } from "@/hooks/useFinancialData";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import styles from "./AssetRecordTab.module.css";
 
 type ChartMetric = "net_worth" | "total_assets" | "total_debts";
@@ -69,6 +70,7 @@ interface SnapshotModalData {
 }
 
 export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
+  const { chartLineColors, chartScaleColors, toRgba } = useChartTheme();
   const { data: snapshots = [], isLoading } = useSnapshots(profileId);
   const deleteMutation = useDeleteSnapshot(profileId);
   const createMutation = useCreateSnapshot(profileId);
@@ -144,6 +146,15 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
 
   // 차트 데이터 (역순 - 오래된 순서대로)
   const chartSnapshots = [...filteredSnapshots].reverse();
+  // 데이터가 0을 교차하는지 확인
+  const hasNegative = useMemo(() => {
+    return chartSnapshots.some((s) => (s[selectedMetric] || 0) < 0);
+  }, [chartSnapshots, selectedMetric]);
+
+  const hasPositive = useMemo(() => {
+    return chartSnapshots.some((s) => (s[selectedMetric] || 0) > 0);
+  }, [chartSnapshots, selectedMetric]);
+
   const chartData = useMemo(() => {
     const labels = chartSnapshots.map((s) => {
       const date = new Date(s.recorded_at);
@@ -156,27 +167,56 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
       datasets: [
         {
           data: metricData,
-          borderColor: "#14b8a6",
-          backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
+          borderColor: chartLineColors.value,
+          backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number }; scales?: { y?: { getPixelForValue?: (val: number) => number } } } }) => {
             const { chart } = context;
-            const { ctx, chartArea } = chart;
-            if (!chartArea) return "rgba(20, 184, 166, 0.1)";
+            const { ctx, chartArea, scales } = chart;
+            if (!chartArea) return toRgba(chartLineColors.value, 0.1);
+
+            // 0을 교차하는 경우: 0선 위치 기준으로 그라데이션 생성
+            if (hasPositive && hasNegative && scales?.y?.getPixelForValue) {
+              const zeroY = scales.y.getPixelForValue(0);
+              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+
+              // 0선의 상대적 위치 계산 (0~1 사이)
+              const zeroRatio = (zeroY - chartArea.top) / (chartArea.bottom - chartArea.top);
+              const clampedRatio = Math.max(0.01, Math.min(0.99, zeroRatio));
+
+              // 양수 영역: 위에서 0선으로 색상 -> 투명
+              gradient.addColorStop(0, toRgba(chartLineColors.value, 0.2));
+              gradient.addColorStop(clampedRatio, toRgba(chartLineColors.value, 0));
+              // 음수 영역: 0선에서 아래로 투명 -> 색상
+              gradient.addColorStop(clampedRatio, toRgba(chartLineColors.value, 0));
+              gradient.addColorStop(1, toRgba(chartLineColors.value, 0.2));
+
+              return gradient;
+            }
+
+            // 모두 양수인 경우: 위에서 아래로 색상 -> 투명
+            if (!hasNegative) {
+              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+              gradient.addColorStop(0, toRgba(chartLineColors.value, 0.15));
+              gradient.addColorStop(1, toRgba(chartLineColors.value, 0));
+              return gradient;
+            }
+
+            // 모두 음수인 경우: 위에서 아래로 투명 -> 색상
             const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-            gradient.addColorStop(0, "rgba(20, 184, 166, 0.15)");
-            gradient.addColorStop(1, "rgba(20, 184, 166, 0)");
+            gradient.addColorStop(0, toRgba(chartLineColors.value, 0));
+            gradient.addColorStop(1, toRgba(chartLineColors.value, 0.15));
             return gradient;
           },
-          fill: true,
+          fill: "origin",
           tension: 0.4,
           pointRadius: chartSnapshots.length > 20 ? 0 : 4,
-          pointBackgroundColor: "#14b8a6",
+          pointBackgroundColor: chartLineColors.value,
           pointBorderColor: "#fff",
           pointBorderWidth: 2,
           pointHoverRadius: 6,
         },
       ],
     };
-  }, [chartSnapshots, selectedMetric]);
+  }, [chartSnapshots, selectedMetric, chartLineColors.value, toRgba, hasPositive, hasNegative]);
 
   const chartOptions = {
     responsive: true,
@@ -260,15 +300,15 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
       x: {
         grid: { display: false },
         ticks: {
-          color: "#9ca3af",
+          color: chartScaleColors.tickColor,
           font: { size: 11 },
           maxTicksLimit: 10,
         },
       },
       y: {
-        grid: { color: "#f3f4f6", drawBorder: false },
+        grid: { color: chartScaleColors.gridColor, drawBorder: false },
         ticks: {
-          color: "#9ca3af",
+          color: chartScaleColors.tickColor,
           font: { size: 11 },
           callback: (value: number | string) => formatMoney(Number(value)),
         },

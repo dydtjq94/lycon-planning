@@ -25,6 +25,7 @@ import {
   DEBT_CATEGORIES,
   CHART_COLORS,
 } from '@/lib/utils/tooltipCategories'
+import { useChartTheme } from '@/hooks/useChartTheme'
 import styles from './AssetStackChart.module.css'
 
 ChartJS.register(
@@ -95,6 +96,7 @@ export function AssetStackChart({
 }: AssetStackChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<ChartJS | null>(null)
+  const { chartScaleColors } = useChartTheme()
 
   const { snapshots } = simulationResult
 
@@ -288,7 +290,7 @@ export function AssetStackChart({
             stacked: true,
             min: -roundedMax,
             max: roundedMax,
-            grid: { color: '#e2e8f0' },
+            grid: { color: chartScaleColors.gridColor },
             ticks: {
               callback: (value) => {
                 const numValue = value as number
@@ -297,7 +299,7 @@ export function AssetStackChart({
                 return `${prefix}${formatChartValue(numValue)}`
               },
               font: { size: 11 },
-              color: '#64748b',
+              color: chartScaleColors.tickColor,
             },
             border: { display: false },
           },

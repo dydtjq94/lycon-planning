@@ -44,6 +44,7 @@ import {
   usePortfolioChartPriceData,
   type PortfolioPriceCache,
 } from "@/hooks/useFinancialData";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import type {
   PortfolioTransaction,
   PortfolioTransactionInput,
@@ -123,6 +124,7 @@ export function PortfolioTab({
   setSearchLoading,
   onSearchTrigger,
 }: PortfolioTabProps) {
+  const { chartLineColors, chartScaleColors, toRgba, isReady: isThemeReady } = useChartTheme();
   const [transactions, setTransactions] = useState<PortfolioTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -909,8 +911,8 @@ export function PortfolioTab({
     resetForm();
   };
 
-  // 거래 내역 로딩 중이거나 가격 데이터 로딩 중일 때 전체 스켈레톤 표시
-  if (loading || (transactions.length > 0 && priceCacheLoading)) {
+  // 거래 내역 로딩 중이거나 가격 데이터 로딩 중이거나 테마 로딩 중일 때 전체 스켈레톤 표시
+  if (loading || !isThemeReady || (transactions.length > 0 && priceCacheLoading)) {
     return (
       <div className={styles.container}>
         {/* 계좌 바 스켈레톤 */}
@@ -1092,7 +1094,7 @@ export function PortfolioTab({
 
             {/* 차트 */}
             <div className={styles.searchPanelChart}>
-              <SearchResultChart data={searchResult.data} symbol={searchResult.symbol} />
+              <SearchResultChart data={searchResult.data} symbol={searchResult.symbol} chartLineColors={chartLineColors} chartScaleColors={chartScaleColors} toRgba={toRgba} />
             </div>
 
             <button onClick={applySearchResult} className={styles.searchPanelAddBtn}>
@@ -1150,6 +1152,9 @@ export function PortfolioTab({
               priceCacheLoading={priceCacheLoading}
               transactions={transactions}
               filterAccountIds={selectedAccountIds}
+              chartLineColors={chartLineColors}
+              chartScaleColors={chartScaleColors}
+              toRgba={toRgba}
             />
           </div>
         </div>
@@ -1361,7 +1366,7 @@ export function PortfolioTab({
                           value={formData.price ? `${Math.round(formData.price).toLocaleString()}원` : ""}
                           readOnly
                           className={styles.input}
-                          style={{ background: "#f3f4f6" }}
+                          style={{ background: "var(--dashboard-hover-bg)" }}
                         />
                       </div>
 
@@ -1558,7 +1563,7 @@ export function PortfolioTab({
                       </div>
                       <div className={styles.holdingMetricChart}>
                         <span className={styles.metricLabel}>주가 추이</span>
-                        <Sparkline priceData={priceCache?.priceDataMap.get(holding.ticker)} profitLoss={holdingPL} />
+                        <Sparkline priceData={priceCache?.priceDataMap.get(holding.ticker)} profitLoss={holdingPL} chartLineColors={chartLineColors} toRgba={toRgba} />
                       </div>
                     </div>
                   </div>
@@ -1671,7 +1676,19 @@ function DataDateNotice({ dataDate }: { dataDate: string }) {
 }
 
 // 검색 결과 차트
-function SearchResultChart({ data, symbol }: { data: StockData[]; symbol: string }) {
+function SearchResultChart({
+  data,
+  symbol,
+  chartLineColors,
+  chartScaleColors,
+  toRgba,
+}: {
+  data: StockData[];
+  symbol: string;
+  chartLineColors: { price: string; value: string; profit: string; loss: string; buy: string; sell: string };
+  chartScaleColors: { gridColor: string; tickColor: string; textColor: string; textSecondary: string; tooltipBg: string; tooltipBorder: string; tooltipText: string; doughnutBorder: string; emptyState: string };
+  toRgba: (hex: string, alpha: number) => string;
+}) {
   const isKorean = symbol.endsWith(".KS") || symbol.endsWith(".KQ");
 
   const chartData = useMemo(() => {
@@ -1683,14 +1700,14 @@ function SearchResultChart({ data, symbol }: { data: StockData[]; symbol: string
         {
           label: "종가",
           data: data.map((d) => d.Close),
-          borderColor: "#10b981",
+          borderColor: chartLineColors.price,
           backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
             const { chart } = context;
             const { ctx, chartArea } = chart;
-            if (!chartArea) return "rgba(16, 185, 129, 0.1)";
+            if (!chartArea) return toRgba(chartLineColors.price, 0.1);
             const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-            gradient.addColorStop(0, "rgba(16, 185, 129, 0.2)");
-            gradient.addColorStop(1, "rgba(16, 185, 129, 0)");
+            gradient.addColorStop(0, toRgba(chartLineColors.price, 0.2));
+            gradient.addColorStop(1, toRgba(chartLineColors.price, 0));
             return gradient;
           },
           fill: true,
@@ -1700,11 +1717,12 @@ function SearchResultChart({ data, symbol }: { data: StockData[]; symbol: string
         },
       ],
     };
-  }, [data]);
+  }, [data, chartLineColors, toRgba]);
 
   const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: false as const,
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -1727,15 +1745,15 @@ function SearchResultChart({ data, symbol }: { data: StockData[]; symbol: string
         ticks: {
           maxTicksLimit: 5,
           font: { size: 11 },
-          color: "#9ca3af",
+          color: chartScaleColors.tickColor,
         },
       },
       y: {
         display: true,
-        grid: { color: "#f3f4f6" },
+        grid: { color: chartScaleColors.gridColor },
         ticks: {
           font: { size: 11 },
-          color: "#9ca3af",
+          color: chartScaleColors.tickColor,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           callback: (val: any) => {
             const num = typeof val === "number" ? val : parseFloat(val);
@@ -1750,7 +1768,7 @@ function SearchResultChart({ data, symbol }: { data: StockData[]; symbol: string
       intersect: false,
       mode: "index" as const,
     },
-  }), [isKorean]);
+  }), [isKorean, chartScaleColors]);
 
   if (!chartData) return null;
 
@@ -1774,12 +1792,17 @@ function Sparkline({
   profitLoss,
   width = 80,
   height = 32,
+  chartLineColors,
+  toRgba,
 }: {
   priceData: Map<string, number> | undefined;
   profitLoss?: number | null;
   width?: number;
   height?: number;
+  chartLineColors: { price: string; value: string; profit: string; loss: string; buy: string; sell: string };
+  toRgba: (hex: string, alpha: number) => string;
 }) {
+
   const chartData = useMemo(() => {
     if (!priceData || priceData.size === 0) return null;
 
@@ -1803,8 +1826,7 @@ function Sparkline({
   const { labels, prices } = chartData;
   // 손익 기준으로 색상 결정 (한국식: 수익=빨강, 손실=파랑)
   const isProfit = profitLoss !== null && profitLoss !== undefined ? profitLoss >= 0 : true;
-  const lineColor = isProfit ? "rgba(239, 68, 68, 1)" : "rgba(59, 130, 246, 1)";
-  const gradientColor = isProfit ? "239, 68, 68" : "59, 130, 246";
+  const lineColor = isProfit ? chartLineColors.profit : chartLineColors.loss;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data: any = {
@@ -1816,10 +1838,10 @@ function Sparkline({
         backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
           const { chart } = context;
           const { ctx, chartArea } = chart;
-          if (!chartArea) return `rgba(${gradientColor}, 0.15)`;
+          if (!chartArea) return toRgba(lineColor, 0.15);
           const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, `rgba(${gradientColor}, 0.25)`);
-          gradient.addColorStop(1, `rgba(${gradientColor}, 0)`);
+          gradient.addColorStop(0, toRgba(lineColor, 0.25));
+          gradient.addColorStop(1, toRgba(lineColor, 0));
           return gradient;
         },
         fill: true,
@@ -1834,6 +1856,7 @@ function Sparkline({
   const options: any = {
     responsive: false,
     maintainAspectRatio: false,
+    animation: false,
     plugins: {
       legend: { display: false },
       tooltip: { enabled: false },
@@ -1860,11 +1883,17 @@ function PortfolioValueChart({
   priceCacheLoading,
   transactions,
   filterAccountIds = [],
+  chartLineColors,
+  chartScaleColors,
+  toRgba,
 }: {
   priceCache: PortfolioPriceCache | undefined;
   priceCacheLoading: boolean;
   transactions: PortfolioTransaction[];
   filterAccountIds?: string[];
+  chartLineColors: { price: string; value: string; profit: string; loss: string; buy: string; sell: string };
+  chartScaleColors: { gridColor: string; tickColor: string; textColor: string; textSecondary: string; tooltipBg: string; tooltipBorder: string; tooltipText: string; doughnutBorder: string; emptyState: string };
+  toRgba: (hex: string, alpha: number) => string;
 }) {
   const [period, setPeriod] = useState<ChartPeriod>("3M");
   const loading = priceCacheLoading;
@@ -1875,30 +1904,30 @@ function PortfolioValueChart({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getValueGradient = useCallback((ctx: CanvasRenderingContext2D, chartArea: any) => {
     const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-    gradient.addColorStop(0, "rgba(20, 184, 166, 0.15)");
-    gradient.addColorStop(1, "rgba(20, 184, 166, 0)");
+    gradient.addColorStop(0, toRgba(chartLineColors.value, 0.15));
+    gradient.addColorStop(1, toRgba(chartLineColors.value, 0));
     return gradient;
-  }, []);
+  }, [chartLineColors.value, toRgba]);
 
   // 손익 양수(빨강) 그라데이션 - 위에서 아래로 투명
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getPLPosGradient = useCallback((ctx: CanvasRenderingContext2D, chartArea: any, scales: any) => {
     const zeroY = scales?.y?.getPixelForValue(0) ?? chartArea.bottom;
     const gradient = ctx.createLinearGradient(0, chartArea.top, 0, zeroY);
-    gradient.addColorStop(0, "rgba(239, 68, 68, 0.2)");
-    gradient.addColorStop(1, "rgba(239, 68, 68, 0)");
+    gradient.addColorStop(0, toRgba(chartLineColors.profit, 0.2));
+    gradient.addColorStop(1, toRgba(chartLineColors.profit, 0));
     return gradient;
-  }, []);
+  }, [chartLineColors.profit, toRgba]);
 
   // 손익 음수(파랑) 그라데이션 - 0에서 아래로 색상
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getPLNegGradient = useCallback((ctx: CanvasRenderingContext2D, chartArea: any, scales: any) => {
     const zeroY = scales?.y?.getPixelForValue(0) ?? chartArea.top;
     const gradient = ctx.createLinearGradient(0, zeroY, 0, chartArea.bottom);
-    gradient.addColorStop(0, "rgba(59, 130, 246, 0)");
-    gradient.addColorStop(1, "rgba(59, 130, 246, 0.2)");
+    gradient.addColorStop(0, toRgba(chartLineColors.loss, 0));
+    gradient.addColorStop(1, toRgba(chartLineColors.loss, 0.2));
     return gradient;
-  }, []);
+  }, [chartLineColors.loss, toRgba]);
 
   // 계좌 필터링된 거래 내역
   const filteredTx = useMemo(() => {
@@ -2150,18 +2179,18 @@ function PortfolioValueChart({
     const p1 = enhanced.pl[idx + 1];
     // 0 교차점(p0 === 0)에서 시작하는 세그먼트는 p1 기준으로 색상 결정
     if (p0 === 0 && p1 !== undefined) {
-      return p1 >= 0 ? "rgba(239, 68, 68, 1)" : "rgba(59, 130, 246, 1)";
+      return p1 >= 0 ? toRgba(chartLineColors.profit, 1) : toRgba(chartLineColors.loss, 1);
     }
-    return p0 >= 0 ? "rgba(239, 68, 68, 1)" : "rgba(59, 130, 246, 1)";
+    return p0 >= 0 ? toRgba(chartLineColors.profit, 1) : toRgba(chartLineColors.loss, 1);
   };
   const getPLSegmentBgColor = (idx: number) => {
     const p0 = enhanced.pl[idx];
     const p1 = enhanced.pl[idx + 1];
     // 0 교차점(p0 === 0)에서 시작하는 세그먼트는 p1 기준으로 색상 결정
     if (p0 === 0 && p1 !== undefined) {
-      return p1 >= 0 ? "rgba(239, 68, 68, 0.15)" : "rgba(59, 130, 246, 0.15)";
+      return p1 >= 0 ? toRgba(chartLineColors.profit, 0.15) : toRgba(chartLineColors.loss, 0.15);
     }
-    return p0 >= 0 ? "rgba(239, 68, 68, 0.15)" : "rgba(59, 130, 246, 0.15)";
+    return p0 >= 0 ? toRgba(chartLineColors.profit, 0.15) : toRgba(chartLineColors.loss, 0.15);
   };
 
   // 거래가 있는 인덱스 목록 (세로 점선용)
@@ -2209,8 +2238,8 @@ function PortfolioValueChart({
         type: "bar" as const,
         label: "손익",
         data: enhanced.pl,
-        backgroundColor: enhanced.pl.map((v) => v >= 0 ? "rgba(239, 68, 68, 0.7)" : "rgba(59, 130, 246, 0.7)"),
-        hoverBackgroundColor: enhanced.pl.map((v) => v >= 0 ? "rgba(239, 68, 68, 0.9)" : "rgba(59, 130, 246, 0.9)"),
+        backgroundColor: enhanced.pl.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.7) : toRgba(chartLineColors.loss, 0.7)),
+        hoverBackgroundColor: enhanced.pl.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.9) : toRgba(chartLineColors.loss, 0.9)),
         borderWidth: 0,
         borderRadius: 2,
         yAxisID: "y",
@@ -2220,18 +2249,18 @@ function PortfolioValueChart({
         type: "line" as const,
         label: "평가금액",
         data: enhanced.value,
-        borderColor: "rgba(20, 184, 166, 0.8)",
+        borderColor: toRgba(chartLineColors.value, 0.8),
         backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
           const { chart } = context;
           const { ctx, chartArea } = chart;
-          if (!chartArea) return "rgba(20, 184, 166, 0.05)";
+          if (!chartArea) return toRgba(chartLineColors.value, 0.05);
           return getValueGradient(ctx, chartArea);
         },
         fill: true,
         borderWidth: 2,
         pointRadius: enhanced.isZeroCross.map((z) => (z ? 0 : 0)),
         pointHoverRadius: enhanced.isZeroCross.map((z) => (z ? 0 : 4)),
-        pointBackgroundColor: "#14b8a6",
+        pointBackgroundColor: chartLineColors.value,
         tension: 0.3,
         yAxisID: "y1",
         order: 1,
@@ -2243,6 +2272,7 @@ function PortfolioValueChart({
   const options: any = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false,
     interaction: {
       mode: "index" as const,
       intersect: false,
@@ -2313,7 +2343,7 @@ function PortfolioValueChart({
               const value = point.raw;
 
               if (label === "손익") {
-                const color = value >= 0 ? "#ef4444" : "#3b82f6";
+                const color = value >= 0 ? chartLineColors.profit : chartLineColors.loss;
                 const sign = value >= 0 ? "+" : "";
                 html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;">
                   <span style="color:#6b7280;font-weight:500;">손익</span>
@@ -2322,7 +2352,7 @@ function PortfolioValueChart({
               } else if (label === "평가금액") {
                 html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
                   <span style="color:#6b7280;font-weight:500;">평가금액</span>
-                  <span style="color:#14b8a6;font-weight:500;">${Math.round(value).toLocaleString()}원</span>
+                  <span style="color:${chartLineColors.value};font-weight:500;">${Math.round(value).toLocaleString()}원</span>
                 </div>`;
               }
             });
@@ -2334,7 +2364,7 @@ function PortfolioValueChart({
               <div style="font-weight:600;color:#6b7280;font-size:11px;margin-bottom:6px;">거래 내역</div>`;
             currentTx.forEach((tx) => {
               const isBuy = tx.type === "buy";
-              const color = isBuy ? "#ef4444" : "#3b82f6";
+              const color = isBuy ? chartLineColors.buy : chartLineColors.sell;
               const typeLabel = isBuy ? "매수" : "매도";
               const amount = tx.quantity * tx.price;
               html += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:12px;">
@@ -2391,7 +2421,7 @@ function PortfolioValueChart({
         position: "left" as const,
         min: -maxAbsPL,
         max: maxAbsPL,
-        grid: { color: "#f3f4f6" },
+        grid: { color: chartScaleColors.gridColor },
         ticks: {
           callback: (value: unknown) => {
             const v = value as number;
@@ -2401,6 +2431,7 @@ function PortfolioValueChart({
             return `${Math.round(v / 1000)}K`;
           },
           font: { size: 10 },
+          color: chartScaleColors.tickColor,
         },
         title: {
           display: false,
@@ -2446,13 +2477,13 @@ function PortfolioValueChart({
       </div>
       <div className={styles.chartLegend}>
         <div className={styles.legendItem}>
-          <span className={styles.legendLine} style={{ background: "#14b8a6" }}></span>
+          <span className={styles.legendLine} style={{ background: chartLineColors.value }}></span>
           <span className={styles.legendLabel}>평가금액</span>
         </div>
         <div className={styles.legendItem}>
           <div className={styles.legendLines}>
-            <span className={styles.legendBar} style={{ background: "#ef4444" }}></span>
-            <span className={styles.legendBar} style={{ background: "#3b82f6" }}></span>
+            <span className={styles.legendBar} style={{ background: chartLineColors.profit }}></span>
+            <span className={styles.legendBar} style={{ background: chartLineColors.loss }}></span>
           </div>
           <span className={styles.legendLabel}>손익</span>
         </div>

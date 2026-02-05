@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
-type ThemeId = "dark" | "darker" | "light" | "blue";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   ChevronDown,
   ChevronRight,
@@ -78,26 +77,9 @@ export function Sidebar({
   const [isScenarioOpen, setIsScenarioOpen] = useState(true);
   const [isPinned, setIsPinned] = useState(true);
   const [isCtrlPressed, setIsCtrlPressed] = useState(false);
-  const [theme, setTheme] = useState<ThemeId>("darker");
 
-  // 테마 로드 및 이벤트 리스너
-  useEffect(() => {
-    const loadTheme = () => {
-      const saved = localStorage.getItem("user-theme") as ThemeId | null;
-      if (saved) setTheme(saved);
-    };
-
-    loadTheme();
-
-    const handleThemeChange = (e: CustomEvent<ThemeId>) => {
-      setTheme(e.detail);
-    };
-
-    window.addEventListener("user-theme-change", handleThemeChange as EventListener);
-    return () => {
-      window.removeEventListener("user-theme-change", handleThemeChange as EventListener);
-    };
-  }, []);
+  // ThemeContext에서 테마 상태 가져오기
+  const { resolvedColorMode, accentColor } = useTheme();
 
   // 키보드 단축키 처리
   useEffect(() => {
@@ -167,7 +149,8 @@ export function Sidebar({
       className={`${styles.sidebar} ${
         isExpanded || isPinned ? styles.expanded : ""
       }`}
-      data-theme={theme}
+      data-color-mode={resolvedColorMode}
+      data-accent={accentColor}
       onMouseEnter={() => onExpandChange(true)}
       onMouseLeave={handleMouseLeave}
     >

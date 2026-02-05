@@ -27,6 +27,7 @@ import type {
   DashboardExpenseFrequency,
   GlobalSettings,
 } from "@/types";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import type { Expense } from "@/types/tables";
 import type { SimulationResult } from "@/lib/services/simulationEngine";
 import {
@@ -87,6 +88,7 @@ export function ExpenseTab({
   globalSettings,
   simulationResult,
 }: ExpenseTabProps) {
+  const { chartScaleColors } = useChartTheme();
   const currentYear = new Date().getFullYear();
 
   // 현재 나이 계산
@@ -694,9 +696,10 @@ export function ExpenseTab({
       },
       y: {
         stacked: true,
-        grid: { color: "#f0f0f0" },
+        grid: { color: chartScaleColors.gridColor },
         ticks: {
           font: { size: 11 },
+          color: chartScaleColors.tickColor,
           callback: (value: number | string) => {
             const num = typeof value === "number" ? value : parseFloat(value);
             if (num >= 10000) {

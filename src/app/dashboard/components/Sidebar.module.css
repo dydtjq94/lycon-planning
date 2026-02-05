@@ -1,60 +1,245 @@
-/* 테마 변수 - 기본값 (dark) */
+/* 사이드바 기본 스타일 - 다크모드 기본 (슬랙 스타일) */
 .sidebar {
-  --sidebar-bg: #1a1a1a;
-  --sidebar-border: #2a2a2a;
+  --sidebar-accent: #007aff;
+  --sidebar-bg: #1e2126;
+  --sidebar-border: #35373b;
   --sidebar-item-bg: transparent;
-  --sidebar-item-bg-hover: #2a2a2a;
-  --sidebar-item-bg-active: #2a2a2a;
-  --sidebar-text: #aaaaaa;
+  --sidebar-item-bg-hover: #2c2f33;
+  --sidebar-item-bg-active: #35383d;
+  --sidebar-text: #d1d2d3;
   --sidebar-text-hover: #ffffff;
   --sidebar-text-active: #ffffff;
-  --sidebar-text-muted: #666666;
-  --sidebar-accent: #007aff;
+  --sidebar-text-muted: #9a9b9e;
 }
 
-/* 다크 고대비 테마 */
-.sidebar[data-theme="darker"] {
-  --sidebar-bg: #0f0f0f;
-  --sidebar-border: #1f1f1f;
-  --sidebar-item-bg: transparent;
-  --sidebar-item-bg-hover: #1f1f1f;
-  --sidebar-item-bg-active: #252525;
-  --sidebar-text: #cccccc;
-  --sidebar-text-hover: #ffffff;
-  --sidebar-text-active: #ffffff;
-  --sidebar-text-muted: #888888;
+/* ========================================
+   다크모드 + 액센트 색상 조합
+   ======================================== */
+
+/* 다크 + 블루 (슬랙 스타일) */
+.sidebar[data-color-mode="dark"][data-accent="blue"] {
   --sidebar-accent: #007aff;
+  --sidebar-bg: #1a2333;
+  --sidebar-header-bg: #1e2838;
+  --sidebar-border: #2a3a52;
+  --sidebar-item-bg-hover: #253045;
+  --sidebar-item-bg-active: #2d3a55;
 }
 
-/* 라이트 테마 */
-.sidebar[data-theme="light"] {
-  --sidebar-bg: #f5f5f7;
+/* 다크 + 퍼플 (슬랙 스타일) */
+.sidebar[data-color-mode="dark"][data-accent="purple"] {
+  --sidebar-accent: #a855f7;
+  --sidebar-bg: #251f38;
+  --sidebar-header-bg: #2a243e;
+  --sidebar-border: #3a3058;
+  --sidebar-item-bg-hover: #302848;
+  --sidebar-item-bg-active: #3a3058;
+}
+
+/* 다크 + 그린 (슬랙 스타일) */
+.sidebar[data-color-mode="dark"][data-accent="green"] {
+  --sidebar-accent: #22c55e;
+  --sidebar-bg: #1a2a22;
+  --sidebar-header-bg: #1e3028;
+  --sidebar-border: #2a4038;
+  --sidebar-item-bg-hover: #253830;
+  --sidebar-item-bg-active: #2d4238;
+}
+
+/* 다크 + 로즈 (슬랙 스타일) */
+.sidebar[data-color-mode="dark"][data-accent="rose"] {
+  --sidebar-accent: #f43f5e;
+  --sidebar-bg: #2a1a20;
+  --sidebar-header-bg: #301e25;
+  --sidebar-border: #452a35;
+  --sidebar-item-bg-hover: #38252c;
+  --sidebar-item-bg-active: #452d38;
+}
+
+/* 다크 + 오렌지 (슬랙 스타일) */
+.sidebar[data-color-mode="dark"][data-accent="orange"] {
+  --sidebar-accent: #f97316;
+  --sidebar-bg: #2a2218;
+  --sidebar-header-bg: #30281c;
+  --sidebar-border: #453828;
+  --sidebar-item-bg-hover: #383020;
+  --sidebar-item-bg-active: #453a28;
+}
+
+/* 다크 + 블랙 (슬랙 스타일) */
+.sidebar[data-color-mode="dark"][data-accent="black"] {
+  --sidebar-accent: #525252;
+  --sidebar-bg: #1e2126;
+  --sidebar-header-bg: #23262b;
+  --sidebar-border: #35373b;
+  --sidebar-item-bg-hover: #2c2f33;
+  --sidebar-item-bg-active: #35383d;
+}
+
+/* 다크 + 틸 (슬랙 스타일) */
+.sidebar[data-color-mode="dark"][data-accent="teal"] {
+  --sidebar-accent: #14b8a6;
+  --sidebar-bg: #1a2a28;
+  --sidebar-header-bg: #1e302e;
+  --sidebar-border: #2a4540;
+  --sidebar-item-bg-hover: #253a38;
+  --sidebar-item-bg-active: #2d4542;
+}
+
+/* 다크 + 인디고 (슬랙 스타일) */
+.sidebar[data-color-mode="dark"][data-accent="indigo"] {
+  --sidebar-accent: #6366f1;
+  --sidebar-bg: #1f1f38;
+  --sidebar-header-bg: #24243e;
+  --sidebar-border: #303050;
+  --sidebar-item-bg-hover: #282845;
+  --sidebar-item-bg-active: #303050;
+}
+
+/* 다크 + 앰버 (슬랙 스타일) */
+.sidebar[data-color-mode="dark"][data-accent="amber"] {
+  --sidebar-accent: #f59e0b;
+  --sidebar-bg: #2a2518;
+  --sidebar-header-bg: #302a1c;
+  --sidebar-border: #454028;
+  --sidebar-item-bg-hover: #383520;
+  --sidebar-item-bg-active: #454028;
+}
+
+/* ========================================
+   라이트모드 + 액센트 색상 조합
+   ======================================== */
+
+/* 라이트 + 블루 */
+.sidebar[data-color-mode="light"][data-accent="blue"] {
+  --sidebar-accent: #007aff;
+  --sidebar-bg: #f0f7ff;
+  --sidebar-header-bg: #f8fafc;
+  --sidebar-border: #e2eef9;
+  --sidebar-item-bg-hover: #e5f1ff;
+  --sidebar-item-bg-active: #dbe9f8;
+  --sidebar-text: #3a5570;
+  --sidebar-text-hover: #1a3a5c;
+  --sidebar-text-active: #1a3a5c;
+  --sidebar-text-muted: #6b8db0;
+}
+
+/* 라이트 + 퍼플 */
+.sidebar[data-color-mode="light"][data-accent="purple"] {
+  --sidebar-accent: #a855f7;
+  --sidebar-bg: #f8f5ff;
+  --sidebar-header-bg: #f8fafc;
+  --sidebar-border: #e8e0f5;
+  --sidebar-item-bg-hover: #f0e8ff;
+  --sidebar-item-bg-active: #e5daf5;
+  --sidebar-text: #5a4070;
+  --sidebar-text-hover: #3d2660;
+  --sidebar-text-active: #3d2660;
+  --sidebar-text-muted: #9078a8;
+}
+
+/* 라이트 + 그린 */
+.sidebar[data-color-mode="light"][data-accent="green"] {
+  --sidebar-accent: #16a34a;
+  --sidebar-bg: #f0fdf5;
+  --sidebar-header-bg: #f8fafc;
+  --sidebar-border: #d5f5e3;
+  --sidebar-item-bg-hover: #e0f8eb;
+  --sidebar-item-bg-active: #d0f0de;
+  --sidebar-text: #2d5a45;
+  --sidebar-text-hover: #1a4731;
+  --sidebar-text-active: #1a4731;
+  --sidebar-text-muted: #4d9066;
+}
+
+/* 라이트 + 로즈 */
+.sidebar[data-color-mode="light"][data-accent="rose"] {
+  --sidebar-accent: #e11d48;
+  --sidebar-bg: #fff5f6;
+  --sidebar-header-bg: #f8fafc;
+  --sidebar-border: #fde0e4;
+  --sidebar-item-bg-hover: #ffe8ec;
+  --sidebar-item-bg-active: #fdd8de;
+  --sidebar-text: #703040;
+  --sidebar-text-hover: #5c1f2e;
+  --sidebar-text-active: #5c1f2e;
+  --sidebar-text-muted: #b0606e;
+}
+
+/* 라이트 + 오렌지 */
+.sidebar[data-color-mode="light"][data-accent="orange"] {
+  --sidebar-accent: #ea580c;
+  --sidebar-bg: #fffaf5;
+  --sidebar-header-bg: #f8fafc;
+  --sidebar-border: #ffe5d0;
+  --sidebar-item-bg-hover: #fff0e0;
+  --sidebar-item-bg-active: #ffe0c8;
+  --sidebar-text: #804020;
+  --sidebar-text-hover: #6b3518;
+  --sidebar-text-active: #6b3518;
+  --sidebar-text-muted: #c07040;
+}
+
+/* 라이트 + 블랙 */
+.sidebar[data-color-mode="light"][data-accent="black"] {
+  --sidebar-accent: #525252;
+  --sidebar-bg: #f7f7f7;
+  --sidebar-header-bg: #f8fafc;
   --sidebar-border: #e5e5e5;
-  --sidebar-item-bg: transparent;
-  --sidebar-item-bg-hover: #e8e8ea;
-  --sidebar-item-bg-active: #ffffff;
-  --sidebar-text: #6e6e73;
-  --sidebar-text-hover: #1d1d1f;
-  --sidebar-text-active: #1d1d1f;
-  --sidebar-text-muted: #a1a1a6;
-  --sidebar-accent: #007aff;
+  --sidebar-item-bg-hover: #eeeeee;
+  --sidebar-item-bg-active: #e0e0e0;
+  --sidebar-text: #404040;
+  --sidebar-text-hover: #262626;
+  --sidebar-text-active: #262626;
+  --sidebar-text-muted: #737373;
 }
 
-/* 네이비 테마 */
-.sidebar[data-theme="blue"] {
-  --sidebar-bg: #1e2a3a;
-  --sidebar-border: #2a3a4d;
-  --sidebar-item-bg: transparent;
-  --sidebar-item-bg-hover: #2a3a4d;
-  --sidebar-item-bg-active: #354861;
-  --sidebar-text: #9cb3c9;
-  --sidebar-text-hover: #ffffff;
-  --sidebar-text-active: #ffffff;
-  --sidebar-text-muted: #6b8299;
-  --sidebar-accent: #5ac8fa;
+/* 라이트 + 틸 */
+.sidebar[data-color-mode="light"][data-accent="teal"] {
+  --sidebar-accent: #14b8a6;
+  --sidebar-bg: #f0fdfa;
+  --sidebar-header-bg: #f8fafc;
+  --sidebar-border: #d5f5f0;
+  --sidebar-item-bg-hover: #e0f8f5;
+  --sidebar-item-bg-active: #d0f0eb;
+  --sidebar-text: #2d5a52;
+  --sidebar-text-hover: #1a4038;
+  --sidebar-text-active: #1a4038;
+  --sidebar-text-muted: #4d9088;
 }
 
-/* 다크 사이드바 - 아이콘 위치 고정 */
+/* 라이트 + 인디고 */
+.sidebar[data-color-mode="light"][data-accent="indigo"] {
+  --sidebar-accent: #6366f1;
+  --sidebar-bg: #f0f2ff;
+  --sidebar-header-bg: #f8fafc;
+  --sidebar-border: #e0e4f8;
+  --sidebar-item-bg-hover: #e8ebff;
+  --sidebar-item-bg-active: #dde0f5;
+  --sidebar-text: #3a4070;
+  --sidebar-text-hover: #262a58;
+  --sidebar-text-active: #262a58;
+  --sidebar-text-muted: #6b78a8;
+}
+
+/* 라이트 + 앰버 */
+.sidebar[data-color-mode="light"][data-accent="amber"] {
+  --sidebar-accent: #f59e0b;
+  --sidebar-bg: #fffcf0;
+  --sidebar-header-bg: #f8fafc;
+  --sidebar-border: #fef0c8;
+  --sidebar-item-bg-hover: #fff5d8;
+  --sidebar-item-bg-active: #fee8b0;
+  --sidebar-text: #705020;
+  --sidebar-text-hover: #5a4018;
+  --sidebar-text-active: #5a4018;
+  --sidebar-text-muted: #a08040;
+}
+
+/* ========================================
+   사이드바 레이아웃
+   ======================================== */
+
 .sidebar {
   width: 56px;
   height: 100vh;
@@ -72,14 +257,14 @@
   width: 220px;
 }
 
-/* 로고 행 */
+/* 로고 행 - 메인 헤더와 동일한 높이 */
 .logoRow {
   position: relative;
   display: flex;
   align-items: center;
   width: 100%;
   height: 48px;
-  border-bottom: 1px solid var(--sidebar-border);
+  /* border-bottom 제거 - 메인 헤더와 연결 */
 }
 
 /* 로고 아이템 */
@@ -299,15 +484,15 @@
 
 /* 담당 전문가 라벨 - 강조 스타일 */
 .sectionLabel.expert {
-  background: linear-gradient(135deg, rgba(0, 122, 255, 0.2) 0%, rgba(0, 122, 255, 0.1) 100%);
-  border: 1px solid rgba(0, 122, 255, 0.3);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--sidebar-accent) 20%, transparent) 0%, color-mix(in srgb, var(--sidebar-accent) 10%, transparent) 100%);
+  border: 1px solid color-mix(in srgb, var(--sidebar-accent) 30%, transparent);
   border-radius: 8px;
   margin: 8px 8px 12px 8px;
   padding: 10px 12px;
   height: auto;
   font-size: 12px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--sidebar-text-active);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -317,18 +502,6 @@
 .sidebar.expanded .sectionLabel.expert {
   opacity: 1;
   visibility: visible;
-}
-
-.sidebar[data-theme="light"] .sectionLabel.expert {
-  background: linear-gradient(135deg, rgba(0, 122, 255, 0.15) 0%, rgba(0, 122, 255, 0.08) 100%);
-  border: 1px solid rgba(0, 122, 255, 0.2);
-  color: #1d1d1f;
-}
-
-.sidebar[data-theme="blue"] .sectionLabel.expert {
-  background: linear-gradient(135deg, rgba(90, 200, 250, 0.2) 0%, rgba(90, 200, 250, 0.1) 100%);
-  border: 1px solid rgba(90, 200, 250, 0.3);
-  color: #ffffff;
 }
 
 /* 네비게이션 그룹 */

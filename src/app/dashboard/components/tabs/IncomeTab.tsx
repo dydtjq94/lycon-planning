@@ -30,6 +30,7 @@ import {
   INCOME_TYPE_DEFAULTS,
   getSourceLabel,
 } from "@/lib/services/incomeService";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import styles from "./IncomeTab.module.css";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -69,6 +70,7 @@ export function IncomeTab({
   globalSettings,
   simulationResult,
 }: IncomeTabProps) {
+  const { chartScaleColors } = useChartTheme();
   const currentYear = new Date().getFullYear();
 
   // React Query로 소득 데이터 로드 (캐시에서 즉시 가져옴)
@@ -614,9 +616,10 @@ export function IncomeTab({
       },
       y: {
         stacked: true,
-        grid: { color: "#f0f0f0" },
+        grid: { color: chartScaleColors.gridColor },
         ticks: {
           font: { size: 11 },
+          color: chartScaleColors.tickColor,
           callback: (value: number | string) => {
             const num = typeof value === "number" ? value : parseFloat(value);
             if (num >= 10000) {

@@ -1,15 +1,15 @@
 .container {
   display: flex;
   height: calc(100vh - 120px);
-  background-color: white;
+  background-color: var(--dashboard-bg);
   overflow: hidden;
 }
 
 /* ========== 대화 목록 (왼쪽) ========== */
 .conversationList {
   width: 280px;
-  background-color: white;
-  border-right: 1px solid #f0f0f0;
+  background-color: var(--dashboard-bg);
+  border-right: 1px solid var(--dashboard-border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -23,7 +23,7 @@
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .listContent {
@@ -45,11 +45,11 @@
 }
 
 .conversationItem:hover {
-  background-color: #fafafa;
+  background-color: var(--dashboard-hover-bg);
 }
 
 .conversationItem.selected {
-  background-color: #f5f5f4;
+  background-color: var(--dashboard-border-light);
 }
 
 .conversationAvatar {
@@ -57,8 +57,8 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background-color: #1a1a1a;
-  color: white;
+  background-color: var(--dashboard-text);
+  color: var(--dashboard-bg);
   font-size: 16px;
   font-weight: 600;
   display: flex;
@@ -74,7 +74,7 @@
   width: 12px;
   height: 12px;
   background-color: #22c55e;
-  border: 2px solid white;
+  border: 2px solid var(--dashboard-bg);
   border-radius: 50%;
 }
 
@@ -93,12 +93,12 @@
 .conversationName {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .conversationTime {
   font-size: 12px;
-  color: #a8a29e;
+  color: var(--dashboard-text-muted);
   flex-shrink: 0;
 }
 
@@ -110,7 +110,7 @@
 
 .conversationTitle {
   font-size: 13px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -121,7 +121,7 @@
   height: 18px;
   padding: 0 6px;
   background-color: #ef4444;
-  color: white;
+  color: var(--dashboard-bg);
   font-size: 11px;
   font-weight: 700;
   border-radius: 9px;
@@ -136,7 +136,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: #fafafa;
+  background-color: var(--dashboard-bg-secondary);
   min-width: 0;
 }
 
@@ -145,8 +145,8 @@
   align-items: center;
   gap: 12px;
   padding: 16px 24px;
-  background-color: white;
-  border-bottom: 1px solid #f0f0f0;
+  background-color: var(--dashboard-bg);
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .backButton {
@@ -157,23 +157,23 @@
   height: 36px;
   border: none;
   background: none;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   border-radius: 8px;
   margin-left: -8px;
 }
 
 .backButton:hover {
-  background-color: #f5f5f4;
-  color: #1a1a1a;
+  background-color: var(--dashboard-hover-bg);
+  color: var(--dashboard-text);
 }
 
 .chatHeaderAvatar {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background-color: #1a1a1a;
-  color: white;
+  background-color: var(--dashboard-text);
+  color: var(--dashboard-bg);
   font-size: 14px;
   font-weight: 600;
   display: flex;
@@ -190,14 +190,14 @@
   display: block;
   font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin-bottom: 2px;
 }
 
 .chatHeaderTitle {
   display: block;
   font-size: 13px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
 }
 
 /* ========== 메시지 영역 ========== */
@@ -225,8 +225,8 @@
 
 .dateDivider span {
   font-size: 12px;
-  color: #9ca3af;
-  background: #e5e7eb;
+  color: var(--dashboard-text-muted);
+  background: var(--dashboard-border);
   padding: 4px 12px;
   border-radius: 12px;
 }
@@ -262,8 +262,8 @@
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  background-color: #1a1a1a;
-  color: white;
+  background-color: var(--dashboard-text);
+  color: var(--dashboard-bg);
   font-size: 12px;
   font-weight: 600;
   display: flex;
@@ -294,7 +294,7 @@
 
 .senderName {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   margin-bottom: 4px;
   margin-left: 4px;
 }
@@ -318,14 +318,14 @@
 }
 
 .expertBubble {
-  background-color: white;
+  background-color: var(--dashboard-card-bg);
   border-radius: 18px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .userBubble {
-  background-color: #1a1a1a;
-  color: white;
+  background-color: var(--dashboard-text);
+  color: var(--dashboard-bg);
   border-radius: 18px;
 }
 
@@ -348,7 +348,7 @@
 
 .messageTime {
   font-size: 11px;
-  color: #a8a29e;
+  color: var(--dashboard-text-muted);
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -385,8 +385,8 @@
 /* ========== 입력 영역 ========== */
 .inputArea {
   padding: 16px 24px;
-  background-color: white;
-  border-top: 1px solid #f0f0f0;
+  background-color: var(--dashboard-bg);
+  border-top: 1px solid var(--dashboard-border);
 }
 
 .inputWrapper {
@@ -399,7 +399,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background-color: #f5f5f4;
+  background-color: var(--dashboard-input-bg);
   border-radius: 12px;
   padding: 10px 14px;
 }
@@ -412,14 +412,14 @@
   height: 32px;
   background: none;
   border: none;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   border-radius: 8px;
   flex-shrink: 0;
 }
 
 .attachButton:hover {
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .hiddenInput {
@@ -434,12 +434,12 @@
   line-height: 1.5;
   resize: none;
   max-height: 120px;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   min-height: 24px;
 }
 
 .input::placeholder {
-  color: #a8a29e;
+  color: var(--dashboard-text-muted);
 }
 
 .input:disabled {
@@ -455,8 +455,8 @@
   padding: 8px 16px;
   border-radius: 8px;
   border: none;
-  background-color: #e5e5e5;
-  color: #9ca3af;
+  background-color: var(--dashboard-border);
+  color: var(--dashboard-text-muted);
   font-size: 14px;
   font-weight: 600;
   cursor: not-allowed;
@@ -465,13 +465,14 @@
 }
 
 .sendButtonActive {
-  background-color: #1a1a1a;
-  color: white;
+  background-color: var(--dashboard-text);
+  color: var(--dashboard-bg);
   cursor: pointer;
 }
 
 .sendButtonActive:hover {
-  background-color: #292524;
+  background-color: var(--dashboard-text);
+  opacity: 0.9;
 }
 
 /* 이미지 프리뷰 */
@@ -516,7 +517,7 @@
   justify-content: center;
   height: 100%;
   font-size: 14px;
-  color: #a8a29e;
+  color: var(--dashboard-text-muted);
 }
 
 .emptyMessages {
@@ -525,7 +526,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   gap: 4px;
   padding: 40px 20px;
 }
@@ -556,7 +557,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -565,7 +566,7 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   flex-shrink: 0;
@@ -575,7 +576,7 @@
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   flex-shrink: 0;
@@ -592,7 +593,7 @@
   width: 80px;
   height: 14px;
   border-radius: 4px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -601,7 +602,7 @@
   width: 100px;
   height: 12px;
   border-radius: 4px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -616,7 +617,7 @@
   width: 200px;
   height: 48px;
   border-radius: 4px 18px 18px 18px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -625,7 +626,7 @@
   width: 280px;
   height: 72px;
   border-radius: 4px 18px 18px 18px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -643,13 +644,13 @@
 
 .messagesArea::-webkit-scrollbar-thumb,
 .listContent::-webkit-scrollbar-thumb {
-  background-color: #e7e5e4;
+  background-color: var(--dashboard-border);
   border-radius: 3px;
 }
 
 .messagesArea::-webkit-scrollbar-thumb:hover,
 .listContent::-webkit-scrollbar-thumb:hover {
-  background-color: #d6d3d1;
+  background-color: var(--dashboard-border-light);
 }
 
 /* ========== 메시지 애니메이션 ========== */

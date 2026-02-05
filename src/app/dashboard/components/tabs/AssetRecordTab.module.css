@@ -11,7 +11,7 @@
   align-items: center;
   justify-content: center;
   height: 300px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   font-size: 14px;
 }
 
@@ -43,13 +43,13 @@
   border: none;
   font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: color 0.15s;
 }
 
 .metricButton:hover {
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .metricDropdown {
@@ -57,7 +57,7 @@
   top: 100%;
   left: 0;
   margin-top: 8px;
-  background: white;
+  background: var(--dashboard-card-bg);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   min-width: 140px;
@@ -74,24 +74,24 @@
   text-align: left;
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--dashboard-text);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .metricOption:hover {
-  background: #f3f4f6;
+  background: var(--dashboard-hover-bg);
 }
 
 .metricOption.active {
-  background: #f3f4f6;
+  background: var(--dashboard-hover-bg);
   font-weight: 600;
 }
 
 .mainValue {
   font-size: 36px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   letter-spacing: -1px;
 }
 
@@ -104,17 +104,17 @@
 }
 
 .changeInfo.positive {
-  color: #ef4444;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .changeInfo.negative {
-  color: #3b82f6;
+  color: var(--chart-loss-color, #3b82f6);
 }
 
 .changeLabel {
   font-size: 11px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   letter-spacing: 0.3px;
   margin-right: 4px;
 }
@@ -135,13 +135,13 @@
 .sideLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .sideValue {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .statItem {
@@ -154,14 +154,14 @@
 .statLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   letter-spacing: 0.5px;
 }
 
 .statValue {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 /* 차트 섹션 */
@@ -173,7 +173,7 @@
 
 .chartContainer {
   height: 280px;
-  background: white;
+  background: var(--dashboard-bg);
 }
 
 .emptyChart {
@@ -181,7 +181,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   font-size: 14px;
 }
 
@@ -198,18 +198,18 @@
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .timeFilterBtn:hover {
-  background: #f3f4f6;
+  background: var(--dashboard-hover-bg);
 }
 
 .timeFilterBtn.active {
-  background: #1a1a1a;
-  color: white;
+  background: var(--dashboard-text);
+  color: var(--dashboard-bg);
 }
 
 /* 테이블 섹션 */
@@ -234,7 +234,7 @@
 .tableTitle h2 {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
@@ -247,18 +247,18 @@
   background: none;
   border: none;
   border-radius: 6px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
 }
 
 .menuButton:hover {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-secondary);
 }
 
 .tableDesc {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   margin: 0;
 }
 
@@ -276,30 +276,30 @@
   text-align: left;
   padding: 12px 16px;
   font-weight: 500;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
+  color: var(--dashboard-text-secondary);
+  border-bottom: 1px solid var(--dashboard-border);
   white-space: nowrap;
 }
 
 .table td {
   padding: 16px;
-  color: #374151;
-  border-bottom: 1px solid #f3f4f6;
+  color: var(--dashboard-text);
+  border-bottom: 1px solid var(--dashboard-border-light);
   white-space: nowrap;
 }
 
 .table tbody tr:hover {
-  background: #fafafa;
+  background: var(--dashboard-hover-bg);
 }
 
 .dateCell {
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .netWorthCell {
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .rowMenuBtn {
@@ -311,13 +311,13 @@
   background: none;
   border: none;
   border-radius: 6px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
 }
 
 .rowMenuBtn:hover {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-secondary);
 }
 
 .menuContainer {
@@ -329,8 +329,8 @@
   top: 100%;
   right: 0;
   margin-top: 4px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   min-width: 100px;
@@ -346,18 +346,18 @@
   background: none;
   border: none;
   font-size: 13px;
-  color: #374151;
+  color: var(--dashboard-text);
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .dropdownItem:hover {
-  background: #f9fafb;
+  background: var(--dashboard-hover-bg);
 }
 
 .emptyRow {
   text-align: center;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   padding: 40px 16px;
 }
 
@@ -375,18 +375,18 @@
   gap: 6px;
   padding: 8px 16px;
   background: none;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--dashboard-text);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .addButton:hover {
-  border-color: #9ca3af;
-  background: #f9fafb;
+  border-color: var(--dashboard-text-muted);
+  background: var(--dashboard-hover-bg);
 }
 
 .pagination {
@@ -397,7 +397,7 @@
 
 .pageInfo {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .pageBtn {
@@ -407,18 +407,18 @@
   width: 32px;
   height: 32px;
   background: none;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .pageBtn:hover:not(:disabled) {
-  background: #f9fafb;
+  background: var(--dashboard-hover-bg);
 }
 
 .pageBtn:disabled {
-  color: #d1d5db;
+  color: var(--dashboard-text-muted);
   cursor: not-allowed;
 }
 
@@ -443,7 +443,7 @@
 }
 
 .modal {
-  background: white;
+  background: var(--dashboard-card-bg);
   border-radius: 16px;
   width: 100%;
   max-width: 520px;
@@ -468,13 +468,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .modalHeader h2 {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
@@ -487,12 +487,12 @@
   background: none;
   border: none;
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .modalClose:hover {
-  background: #f3f4f6;
+  background: var(--dashboard-hover-bg);
 }
 
 .modalBody {
@@ -511,7 +511,7 @@
 .formGroup label {
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: var(--dashboard-text);
 }
 
 .formRow {
@@ -525,16 +525,18 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-input-border);
   border-radius: 8px;
-  color: #6b7280;
+  background: var(--dashboard-input-bg);
+  color: var(--dashboard-text-secondary);
 }
 
 .dateInputWrapper input {
   flex: 1;
   border: none;
+  background: transparent;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   outline: none;
 }
 
@@ -543,15 +545,17 @@
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-input-border);
   border-radius: 8px;
+  background: var(--dashboard-input-bg);
 }
 
 .inputWrapper input {
   flex: 1;
   border: none;
+  background: transparent;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   text-align: right;
   outline: none;
   width: 100%;
@@ -565,7 +569,7 @@
 
 .inputWrapper span {
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   flex-shrink: 0;
 }
 
@@ -578,7 +582,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
   border-radius: 10px;
   margin-top: 4px;
 }
@@ -592,13 +596,13 @@
 .summaryRow span:first-child {
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .formSummary .summaryValue {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .modalFooter {
@@ -606,22 +610,22 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 24px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--dashboard-border-light);
 }
 
 .cancelBtn {
   padding: 10px 20px;
   background: none;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .cancelBtn:hover {
-  border-color: #9ca3af;
+  border-color: var(--dashboard-text-muted);
 }
 
 .saveBtn {

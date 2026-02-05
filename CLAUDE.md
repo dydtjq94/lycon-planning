@@ -132,14 +132,117 @@ profit: "#ef4444"   /* 수익 = 빨강 */
 loss: "#3b82f6"     /* 손실 = 파랑 */
 ```
 
+## 테마 시스템 (다크모드/라이트모드)
+
+### 핵심 구조
+- **ThemeContext**: `src/contexts/ThemeContext.tsx` - 전역 테마 상태 관리
+- **useChartTheme**: `src/hooks/useChartTheme.ts` - 차트 전용 색상 훅
+- **CSS 변수**: `globals.css`의 `:root`와 `.dark` 클래스
+
+### 색상 모드
+- **light**: 라이트 모드
+- **dark**: 다크 모드 (슬랙 스타일 부드러운 다크 `#1a1d21`)
+- **system**: OS 설정 따라가기
+
+### 액센트 색상 (9가지)
+`blue` | `purple` | `green` | `rose` | `orange` | `black` | `teal` | `indigo` | `amber`
+
+### CSS 변수 사용 (필수!)
+**하드코딩 금지** - 반드시 CSS 변수 사용:
+
+```css
+/* 배경 */
+background-color: var(--dashboard-bg);
+background: var(--dashboard-card-bg);
+background: var(--dashboard-hover-bg);
+
+/* 텍스트 */
+color: var(--dashboard-text);
+color: var(--dashboard-text-secondary);
+color: var(--dashboard-text-muted);
+
+/* 테두리 */
+border-color: var(--dashboard-border);
+
+/* 입력 필드 */
+background-color: var(--dashboard-input-bg);
+border: 1px solid var(--dashboard-input-border);
+
+/* 사이드바/헤더 (액센트 색상 적용) */
+background-color: var(--sidebar-bg);
+color: var(--sidebar-text);
+
+/* 스켈레톤 */
+background: var(--skeleton-base);
+```
+
+### 차트 다크모드 (useChartTheme 필수!)
+차트에서 하드코딩된 색상 사용 금지. 반드시 `useChartTheme` 훅 사용:
+
+```tsx
+import { useChartTheme } from "@/hooks/useChartTheme";
+
+function MyChart() {
+  const { chartScaleColors, chartLineColors, toRgba } = useChartTheme();
+
+  const options = {
+    scales: {
+      x: {
+        grid: { color: chartScaleColors.gridColor },  // NOT "#f3f4f6"
+        ticks: { color: chartScaleColors.tickColor }, // NOT "#9ca3af"
+      },
+      y: {
+        grid: { color: chartScaleColors.gridColor },
+        ticks: { color: chartScaleColors.tickColor },
+      },
+    },
+  };
+
+  // 도넛 차트
+  const doughnutData = {
+    datasets: [{
+      borderColor: chartScaleColors.doughnutBorder,  // NOT "#ffffff"
+      backgroundColor: hasData ? colors : [chartScaleColors.emptyState],
+    }],
+  };
+}
+```
+
+### chartScaleColors 속성
+| 속성 | 용도 | 라이트 | 다크 |
+|------|------|--------|------|
+| `gridColor` | 차트 그리드 선 | `#f5f5f4` | `#35373b` |
+| `tickColor` | 축 레이블 | `#a8a29e` | `#9a9b9e` |
+| `textColor` | 차트 내 텍스트 | `#1d1d1f` | `#e8e8e8` |
+| `doughnutBorder` | 도넛 차트 테두리 | `#ffffff` | `#1a1d21` |
+| `emptyState` | 데이터 없음 상태 | `#e5e7eb` | `#35373b` |
+| `tooltipBg` | 툴팁 배경 | `rgba(255,255,255,0.95)` | `rgba(34,37,41,0.95)` |
+
+### 0을 교차하는 차트 그라데이션
+값이 양수/음수를 넘나드는 차트는 0선 기준 그라데이션 적용:
+
+```tsx
+// 0선 위치 기반 그라데이션
+if (hasPositive && hasNegative && scales?.y?.getPixelForValue) {
+  const zeroY = scales.y.getPixelForValue(0);
+  const zeroRatio = (zeroY - chartArea.top) / (chartArea.bottom - chartArea.top);
+
+  gradient.addColorStop(0, toRgba(color, 0.2));           // 양수 영역 시작
+  gradient.addColorStop(zeroRatio, toRgba(color, 0));     // 0선에서 투명
+  gradient.addColorStop(zeroRatio, toRgba(color, 0));     // 0선에서 투명
+  gradient.addColorStop(1, toRgba(color, 0.2));           // 음수 영역 끝
+}
+```
+
 ## 스켈레톤 로딩 애니메이션
 
 - **방향 통일**: 모든 shimmer 애니메이션은 왼쪽 → 오른쪽으로 이동
 - **px 단위 사용**: 퍼센트(%) 대신 픽셀(px) 단위 사용
 - **속도**: 1.5s infinite
+- **다크모드 지원**: CSS 변수 사용 필수
 
 ```css
-/* 스켈레톤 shimmer 애니메이션 (복사해서 사용) */
+/* 스켈레톤 shimmer 애니메이션 (다크모드 지원) */
 @keyframes shimmer {
   0% {
     background-position: -200px 0;
@@ -150,10 +253,18 @@ loss: "#3b82f6"     /* 손실 = 파랑 */
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
+
+/* 하드코딩 금지! 아래처럼 사용하지 말 것 */
+/* background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); */
 ```
 
 ## 컴포넌트 분리

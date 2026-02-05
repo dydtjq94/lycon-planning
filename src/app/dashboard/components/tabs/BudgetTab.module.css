@@ -33,36 +33,36 @@
 }
 
 .accountItem .accountItemName {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .accountItem .accountItemBalance {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .accountItem .accountItemChange {
-  color: #d1d5db;
+  color: var(--dashboard-border);
 }
 
 .accountItem:hover .accountItemName,
 .accountItem:hover .accountItemBalance {
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .accountItemSelected .accountItemName {
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .accountItemSelected .accountItemBalance {
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .accountItemSelected .accountItemChange.positive {
-  color: #ef4444;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .accountItemSelected .accountItemChange.negative {
-  color: #3b82f6;
+  color: var(--chart-loss-color, #3b82f6);
 }
 
 .accountItemName {
@@ -90,27 +90,27 @@
 }
 
 .accountItemChange.positive {
-  color: #d1d5db;
+  color: var(--dashboard-border);
 }
 
 .accountItemChange.negative {
-  color: #d1d5db;
+  color: var(--dashboard-border);
 }
 
 .accountItemChange.zero {
-  color: #d1d5db;
+  color: var(--dashboard-border);
 }
 
 .accountDivider {
   width: 1px;
   height: 32px;
-  background: #e5e7eb;
+  background: var(--dashboard-border);
   flex-shrink: 0;
 }
 
 .noAccountsText {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   padding: 8px 0;
 }
 
@@ -124,7 +124,7 @@
 .accountTotalLabel {
   font-size: 11px;
   font-weight: 400;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .accountTotalValues {
@@ -136,7 +136,7 @@
 .accountTotalValue {
   font-size: 15px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .accountTotalChange {
@@ -145,15 +145,15 @@
 }
 
 .accountTotalChange.positive {
-  color: #ef4444;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .accountTotalChange.negative {
-  color: #3b82f6;
+  color: var(--chart-loss-color, #3b82f6);
 }
 
 .accountTotalChange.zero {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 /* 수입/지출 요약 헤더 */
@@ -162,7 +162,7 @@
   justify-content: space-between;
   align-items: flex-start;
   padding: 16px 0;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .summaryCharts {
@@ -180,7 +180,7 @@
 }
 
 .summaryChartBlock:first-child {
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
 }
 
 .summaryLeft {
@@ -211,7 +211,7 @@
 .barLabel {
   font-size: 11px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   width: 28px;
   flex-shrink: 0;
 }
@@ -219,7 +219,7 @@
 .barTrack {
   flex: 1;
   height: 8px;
-  background: #f3f4f6;
+  background: var(--dashboard-border-light);
   border-radius: 4px;
   display: flex;
   overflow: hidden;
@@ -254,23 +254,23 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
-  background: white;
-  color: #6b7280;
+  background: var(--dashboard-bg);
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .monthButton:hover {
-  background: #f3f4f6;
-  color: #1a1a1a;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text);
 }
 
 .monthLabelSmall {
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   min-width: 100px;
   text-align: center;
 }
@@ -289,9 +289,9 @@
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--dashboard-bg);
+  color: var(--dashboard-text);
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
@@ -301,8 +301,8 @@
 }
 
 .confirmButton:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: var(--dashboard-bg-secondary);
+  border-color: var(--dashboard-text-muted);
 }
 
 .sideMetric {
@@ -314,21 +314,21 @@
 .sideLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .sideValue {
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .incomeValue {
-  color: #22c55e;
+  color: var(--chart-line-color, #10b981);
 }
 
 .expenseValue {
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .addButton {
@@ -370,13 +370,13 @@
 }
 
 .incomeColumn {
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
 }
 
 .columnLabel {
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   margin-bottom: 12px;
 }
 
@@ -390,14 +390,14 @@
 .columnTitle {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
 .columnTotal {
   font-size: 18px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .addInlineButton {
@@ -405,28 +405,28 @@
   align-items: center;
   justify-content: center;
   padding: 12px;
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
+  background: var(--dashboard-bg-secondary);
+  border: 1px dashed var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
   margin-bottom: 16px;
 }
 
 .addInlineButton:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-  color: #1a1a1a;
+  background: var(--dashboard-hover-bg);
+  border-color: var(--dashboard-text-muted);
+  color: var(--dashboard-text);
 }
 
 /* 테이블 헤더 */
 .tableHeader {
   display: flex;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-bottom: 1px solid var(--dashboard-border);
+  background: var(--dashboard-bg-secondary);
 }
 
 .headerDay {
@@ -434,8 +434,8 @@
   padding: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
-  border-right: 1px solid #e5e7eb;
+  color: var(--dashboard-text-secondary);
+  border-right: 1px solid var(--dashboard-border);
 }
 
 .headerAmount {
@@ -443,8 +443,8 @@
   padding: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
-  border-right: 1px solid #e5e7eb;
+  color: var(--dashboard-text-secondary);
+  border-right: 1px solid var(--dashboard-border);
 }
 
 .headerTitle {
@@ -453,8 +453,8 @@
   padding: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
-  border-right: 1px solid #e5e7eb;
+  color: var(--dashboard-text-secondary);
+  border-right: 1px solid var(--dashboard-border);
 }
 
 .headerCategory {
@@ -462,8 +462,8 @@
   padding: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
-  border-right: 1px solid #e5e7eb;
+  color: var(--dashboard-text-secondary);
+  border-right: 1px solid var(--dashboard-border);
 }
 
 .headerAccount {
@@ -472,8 +472,8 @@
   padding: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
-  border-right: 1px solid #e5e7eb;
+  color: var(--dashboard-text-secondary);
+  border-right: 1px solid var(--dashboard-border);
 }
 
 .headerAction {
@@ -484,35 +484,35 @@
 /* 인라인 입력 행 - 엑셀 스타일 */
 .inlineInputRow {
   display: flex;
-  border-bottom: 2px solid #1a1a1a;
+  border-bottom: 2px solid var(--dashboard-text);
 }
 
 .inlineDayInput {
   width: 48px;
   padding: 8px;
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: transparent;
 }
 
 .inlineDayInput:focus {
   outline: none;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
 }
 
 .inlineAmountInput {
   width: 100px;
   padding: 8px;
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: transparent;
 }
 
 .inlineAmountInput:focus {
   outline: none;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
 }
 
 .inlineTitleInput {
@@ -520,21 +520,21 @@
   min-width: 80px;
   padding: 8px;
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: transparent;
 }
 
 .inlineTitleInput:focus {
   outline: none;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
 }
 
 .inlineCategorySelect {
   width: 90px;
   padding: 8px;
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: transparent;
   cursor: pointer;
@@ -542,7 +542,7 @@
 
 .inlineCategorySelect:focus {
   outline: none;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
 }
 
 .inlineAccountSelect {
@@ -550,7 +550,7 @@
   min-width: 80px;
   padding: 8px;
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: transparent;
   cursor: pointer;
@@ -558,7 +558,7 @@
 
 .inlineAccountSelect:focus {
   outline: none;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
 }
 
 .inlineAddBtn {
@@ -568,17 +568,17 @@
   background: transparent;
   border: none;
   font-size: 16px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
 }
 
 .inlineAddBtn:hover:not(:disabled) {
-  color: #1a1a1a;
-  background: #f3f4f6;
+  color: var(--dashboard-text);
+  background: var(--dashboard-hover-bg);
 }
 
 .inlineAddBtn:disabled {
-  color: #d1d5db;
+  color: var(--dashboard-border);
   cursor: not-allowed;
 }
 
@@ -599,8 +599,8 @@
 }
 
 .summaryCard {
-  background: #fff;
-  border: 1px solid #e7e5e4;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   padding: 16px;
 }
@@ -608,7 +608,7 @@
 .summaryTitle {
   font-size: 14px;
   font-weight: 500;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   margin: 0 0 8px 0;
 }
 
@@ -622,7 +622,7 @@
 .summaryTotalIncome {
   font-size: 24px;
   font-weight: 700;
-  color: #22c55e;
+  color: var(--chart-line-color, #10b981);
   margin-bottom: 16px;
 }
 
@@ -640,17 +640,17 @@
 }
 
 .categoryName {
-  color: #57534e;
+  color: var(--dashboard-text-secondary);
 }
 
 .categoryAmount {
-  color: #292524;
+  color: var(--dashboard-text);
   font-weight: 500;
 }
 
 .emptyText {
   font-size: 13px;
-  color: #a8a29e;
+  color: var(--dashboard-text-muted);
   text-align: center;
   padding: 8px 0;
 }
@@ -690,34 +690,34 @@
 
 .legendLabel {
   font-size: 13px;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   flex: 1;
 }
 
 .legendValue {
   font-size: 13px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .legendPercent {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   width: 40px;
   text-align: right;
 }
 
 .emptyLegend {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .balanceCard {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fafaf9;
-  border: 1px solid #e7e5e4;
+  background: var(--dashboard-bg-secondary);
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   padding: 16px;
 }
@@ -725,13 +725,13 @@
 .balanceLabel {
   font-size: 14px;
   font-weight: 500;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
 }
 
 .balancePositive {
   font-size: 20px;
   font-weight: 700;
-  color: #22c55e;
+  color: var(--chart-line-color, #10b981);
 }
 
 .balanceNegative {
@@ -742,8 +742,8 @@
 
 /* 오른쪽: 거래 목록 섹션 */
 .transactionSection {
-  background: #fff;
-  border: 1px solid #e7e5e4;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   padding: 16px;
   display: flex;
@@ -754,7 +754,7 @@
 .sectionTitle {
   font-size: 14px;
   font-weight: 500;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   margin: 0 0 16px 0;
 }
 
@@ -764,33 +764,33 @@
   display: flex;
   flex-direction: column;
   margin-top: 16px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--dashboard-border);
 }
 
 /* 엑셀 스타일 거래 행 */
 .transactionRow {
   display: flex;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .transactionRow:hover {
-  background: #f9fafb;
+  background: var(--dashboard-hover-bg);
 }
 
 .transactionDate {
   width: 48px;
   padding: 8px;
   font-size: 13px;
-  color: #6b7280;
-  border-right: 1px solid #e5e7eb;
+  color: var(--dashboard-text-secondary);
+  border-right: 1px solid var(--dashboard-border);
 }
 
 .transactionCategory {
   width: 90px;
   padding: 8px;
   font-size: 13px;
-  color: #6b7280;
-  border-right: 1px solid #e5e7eb;
+  color: var(--dashboard-text-secondary);
+  border-right: 1px solid var(--dashboard-border);
 }
 
 .transactionAccountCol {
@@ -798,8 +798,8 @@
   min-width: 80px;
   padding: 8px;
   font-size: 12px;
-  color: #9ca3af;
-  border-right: 1px solid #e5e7eb;
+  color: var(--dashboard-text-muted);
+  border-right: 1px solid var(--dashboard-border);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -810,8 +810,8 @@
   min-width: 80px;
   padding: 8px;
   font-size: 13px;
-  color: #1a1a1a;
-  border-right: 1px solid #e5e7eb;
+  color: var(--dashboard-text);
+  border-right: 1px solid var(--dashboard-border);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -823,8 +823,8 @@
   padding: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #1a1a1a;
-  border-right: 1px solid #e5e7eb;
+  color: var(--dashboard-text);
+  border-right: 1px solid var(--dashboard-border);
 }
 
 .deleteButton,
@@ -837,7 +837,7 @@
   padding: 8px;
   border: none;
   background: transparent;
-  color: #d1d5db;
+  color: var(--dashboard-border);
   cursor: pointer;
 }
 
@@ -856,7 +856,7 @@
   width: 48px;
   padding: 8px;
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: #fffbeb;
 }
@@ -865,7 +865,7 @@
   width: 100px;
   padding: 8px;
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: #fffbeb;
 }
@@ -875,7 +875,7 @@
   min-width: 80px;
   padding: 8px;
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: #fffbeb;
 }
@@ -884,7 +884,7 @@
   width: 90px;
   padding: 8px;
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: #fffbeb;
   cursor: pointer;
@@ -895,7 +895,7 @@
   min-width: 80px;
   padding: 8px;
   border: none;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--dashboard-border);
   font-size: 12px;
   background: #fffbeb;
   cursor: pointer;
@@ -924,7 +924,7 @@
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
 }
 
 .emptyState {
@@ -934,21 +934,21 @@
   justify-content: center;
   height: 200px;
   gap: 16px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
 }
 
 .addFirstButton {
   padding: 8px 16px;
-  background: #f5f5f4;
-  border: 1px solid #e7e5e4;
+  background: var(--dashboard-border-light);
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
-  color: #57534e;
+  color: var(--dashboard-text-secondary);
   font-size: 14px;
   cursor: pointer;
 }
 
 .addFirstButton:hover {
-  background: #e7e5e4;
+  background: var(--dashboard-border);
 }
 
 /* 모달 */
@@ -966,7 +966,7 @@
 }
 
 .modal {
-  background: white;
+  background: var(--dashboard-bg);
   border-radius: 16px;
   width: 100%;
   max-width: 640px;
@@ -981,13 +981,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .modalHeader h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
@@ -999,13 +999,13 @@
   height: 32px;
   border: none;
   background: none;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   border-radius: 6px;
 }
 
 .closeButton:hover {
-  background: #f5f5f4;
+  background: var(--dashboard-border-light);
 }
 
 .modalCloseBtn {
@@ -1017,12 +1017,12 @@
   background: none;
   border: none;
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .modalCloseBtn:hover {
-  background: #f3f4f6;
+  background: var(--dashboard-hover-bg);
 }
 
 .modalContent {
@@ -1044,17 +1044,17 @@
 .typeButton {
   flex: 1;
   padding: 10px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
-  background: #fff;
-  color: #78716c;
+  background: var(--dashboard-bg);
+  color: var(--dashboard-text-secondary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
 }
 
 .typeButton:hover {
-  background: #fafaf9;
+  background: var(--dashboard-bg-secondary);
 }
 
 .typeButtonActive {
@@ -1065,8 +1065,8 @@
 
 .typeButtonActiveIncome {
   background: #f0fdf4;
-  border-color: #22c55e;
-  color: #22c55e;
+  border-color: var(--chart-line-color, #10b981);
+  color: var(--chart-line-color, #10b981);
 }
 
 .formRow {
@@ -1079,37 +1079,37 @@
 .formLabel {
   font-size: 13px;
   font-weight: 500;
-  color: #57534e;
+  color: var(--dashboard-text-secondary);
 }
 
 .input {
   padding: 10px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-input-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #1a1a1a;
-  background: #f9fafb;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
 }
 
 .input:focus {
   outline: none;
   border-color: #007aff;
-  background: white;
+  background: var(--dashboard-bg);
 }
 
 .select {
   padding: 10px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-input-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #1a1a1a;
-  background: #f9fafb;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
 }
 
 .select:focus {
   outline: none;
   border-color: #007aff;
-  background: white;
+  background: var(--dashboard-bg);
 }
 
 /* 숫자 입력 스핀 버튼 제거 */
@@ -1127,26 +1127,26 @@
 
 .monthDisplay {
   font-size: 14px;
-  color: #292524;
+  color: var(--dashboard-text);
   padding: 10px 12px;
-  background: #fafaf9;
-  border: 1px solid #e7e5e4;
+  background: var(--dashboard-bg-secondary);
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
 }
 
 .dayInput {
   width: 60px;
   padding: 10px 12px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 14px;
-  color: #292524;
+  color: var(--dashboard-text);
   text-align: center;
 }
 
 .dayInput:focus {
   outline: none;
-  border-color: #a8a29e;
+  border-color: var(--dashboard-text-muted);
 }
 
 /* 숫자 입력 스핀 버튼 제거 */
@@ -1158,12 +1158,12 @@
 
 .unitText {
   font-size: 14px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
 }
 
 .optionalText {
   font-size: 12px;
-  color: #a8a29e;
+  color: var(--dashboard-text-muted);
 }
 
 .amountInputGroup {
@@ -1175,16 +1175,16 @@
 .amountInput {
   flex: 1;
   padding: 10px 12px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 14px;
-  color: #292524;
+  color: var(--dashboard-text);
   text-align: right;
 }
 
 .amountInput:focus {
   outline: none;
-  border-color: #a8a29e;
+  border-color: var(--dashboard-text-muted);
 }
 
 .amountInput::-webkit-outer-spin-button,
@@ -1202,17 +1202,17 @@
 .cancelButton {
   flex: 1;
   padding: 12px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
-  background: #fff;
-  color: #57534e;
+  background: var(--dashboard-bg);
+  color: var(--dashboard-text-secondary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
 }
 
 .cancelButton:hover {
-  background: #fafaf9;
+  background: var(--dashboard-bg-secondary);
 }
 
 .submitButton {
@@ -1220,15 +1220,16 @@
   padding: 12px;
   border: none;
   border-radius: 6px;
-  background: #292524;
-  color: #fff;
+  background: var(--dashboard-text);
+  color: var(--dashboard-bg);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
 }
 
 .submitButton:hover {
-  background: #1c1917;
+  background: var(--dashboard-text);
+  opacity: 0.9;
 }
 
 .submitButton:disabled {
@@ -1242,7 +1243,7 @@
   align-items: center;
   gap: 8px;
   padding: 16px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
   flex-wrap: wrap;
 }
 
@@ -1251,35 +1252,35 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: #f3f4f6;
+  background: var(--dashboard-hover-bg);
   border: none;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .accountTab:hover {
-  background: #e5e7eb;
-  color: #1a1a1a;
+  background: var(--dashboard-border);
+  color: var(--dashboard-text);
 }
 
 .accountTabActive {
-  background: #1a1a1a;
-  color: white;
+  background: var(--dashboard-text);
+  color: var(--dashboard-bg);
 }
 
 .accountTabActive:hover {
-  background: #1a1a1a;
-  color: white;
+  background: var(--dashboard-text);
+  color: var(--dashboard-bg);
 }
 
 .defaultDot {
   width: 6px;
   height: 6px;
-  background: #22c55e;
+  background: var(--chart-line-color, #10b981);
   border-radius: 50%;
   margin-right: 6px;
 }
@@ -1300,22 +1301,22 @@
   width: 32px;
   height: 32px;
   background: none;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .accountSettingsBtn:hover {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-secondary);
 }
 
 /* 계좌 관리 모달 */
 .accountForm {
   padding: 20px;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
   border-radius: 12px;
   margin-bottom: 24px;
 }
@@ -1323,7 +1324,7 @@
 .accountForm h4 {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0 0 16px 0;
 }
 
@@ -1347,7 +1348,7 @@
 .accountFormGroup label {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .checkboxLabel {
@@ -1356,7 +1357,7 @@
   gap: 8px;
   padding-top: 24px;
   font-size: 13px;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   cursor: pointer;
 }
 
@@ -1384,16 +1385,16 @@
 
 .cancelBtn {
   padding: 10px 20px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
-  background: white;
-  color: #6b7280;
+  background: var(--dashboard-bg);
+  color: var(--dashboard-text-secondary);
   font-size: 14px;
   cursor: pointer;
 }
 
 .cancelBtn:hover {
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
 }
 
 .submitBtn {
@@ -1414,7 +1415,7 @@
 .accountList h4 {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0 0 12px 0;
 }
 
@@ -1423,8 +1424,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--dashboard-bg);
+  border: 1px solid var(--dashboard-border);
   border-radius: 10px;
   margin-bottom: 8px;
 }
@@ -1445,12 +1446,12 @@
   gap: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .accountListItemMeta {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .accountListItemActions {
@@ -1467,20 +1468,20 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .actionBtn:hover {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-secondary);
 }
 
 .emptyState {
   padding: 40px 24px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   font-size: 14px;
 }
 
@@ -1491,19 +1492,19 @@
   justify-content: center;
   height: 200px;
   gap: 16px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 /* 거래 행에 계좌 표시 */
 .transactionAccount {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   margin-left: 6px;
 }
 
 /* 월마감 모달 */
 .confirmModal {
-  background: white;
+  background: var(--dashboard-bg);
   border-radius: 16px;
   width: 100%;
   max-width: 480px;
@@ -1516,7 +1517,7 @@
 
 .confirmDescription {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   margin: 0 0 16px 0;
   line-height: 1.5;
 }
@@ -1526,7 +1527,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
   border-radius: 10px;
   margin-bottom: 20px;
 }
@@ -1535,7 +1536,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .confirmRowTotal {
@@ -1543,9 +1544,9 @@
   justify-content: space-between;
   font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   padding-top: 12px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--dashboard-border);
 }
 
 .confirmInputGroup {
@@ -1556,14 +1557,14 @@
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: var(--dashboard-text);
   margin-bottom: 8px;
 }
 
 .confirmInput {
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 16px;
   box-sizing: border-box;
@@ -1571,13 +1572,13 @@
 
 .confirmInput:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .confirmHint {
   display: block;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   margin-top: 6px;
 }
 
@@ -1601,7 +1602,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .confirmAccountItem:last-child {
@@ -1623,14 +1624,14 @@
 .confirmAccountName {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .confirmAccountSummary {
   display: flex;
   gap: 12px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .confirmAccountSummary span {
@@ -1647,24 +1648,24 @@
 
 .confirmAccountInput label {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .confirmAccountInput input {
   width: 140px;
   padding: 8px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
   text-align: right;
-  background: #f9fafb;
+  background: var(--dashboard-input-bg);
 }
 
 .confirmAccountInput input:focus {
   outline: none;
-  border-color: #6b7280;
-  background: white;
+  border-color: var(--dashboard-text-secondary);
+  background: var(--dashboard-bg);
 }
 
 .confirmAccountInput input::-webkit-outer-spin-button,
@@ -1677,11 +1678,11 @@
   display: flex;
   justify-content: space-between;
   padding: 16px 0;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--dashboard-border);
   margin-bottom: 20px;
   font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .confirmAccountRight {
@@ -1693,7 +1694,7 @@
 
 .confirmExpectedBalance {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   margin-top: 4px;
 }
 
@@ -1706,17 +1707,17 @@
 }
 
 .confirmDifference.positive {
-  color: #ef4444;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .confirmDifference.negative {
-  color: #3b82f6;
+  color: var(--chart-loss-color, #3b82f6);
 }
 
 .confirmDifferenceLabel {
   font-size: 11px;
   font-weight: 400;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 /* 연결된 결제수단 표시 */
@@ -1729,10 +1730,10 @@
 
 .linkedPaymentBadge {
   padding: 2px 8px;
-  background: #f3f4f6;
+  background: var(--dashboard-hover-bg);
   border-radius: 4px;
   font-size: 11px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 /* 스켈레톤 shimmer 애니메이션 */
@@ -1746,7 +1747,7 @@
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;

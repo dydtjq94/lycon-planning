@@ -1,5 +1,5 @@
 .panel {
-  background: #f8fafc;
+  background: var(--dashboard-bg-secondary);
   border-radius: 12px;
   padding: 20px;
 }
@@ -14,13 +14,13 @@
 .title {
   font-size: 16px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
 .subtitle {
   font-size: 13px;
-  color: #64748b;
+  color: var(--dashboard-text-secondary);
   margin: 4px 0 0 0;
 }
 
@@ -32,14 +32,14 @@
   height: 28px;
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   border-radius: 4px;
 }
 
 .closeBtn:hover {
-  background: #e2e8f0;
-  color: #64748b;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-secondary);
 }
 
 /* 요약 */
@@ -49,7 +49,7 @@
   gap: 12px;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .summaryItem {
@@ -60,13 +60,13 @@
 
 .summaryLabel {
   font-size: 11px;
-  color: #64748b;
+  color: var(--dashboard-text-secondary);
 }
 
 .summaryValue {
   font-size: 15px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--dashboard-text);
 }
 
 .summaryValue.income {
@@ -91,14 +91,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 12px;
-  background: white;
+  background: var(--dashboard-card-bg);
   border-radius: 8px;
   margin-top: 4px;
 }
 
 .savingsRateLabel {
   font-size: 13px;
-  color: #64748b;
+  color: var(--dashboard-text-secondary);
 }
 
 .savingsRateValue {
@@ -126,7 +126,7 @@
 .sectionTitle {
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--dashboard-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 0 0 8px 0;
@@ -144,31 +144,31 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: white;
+  background: var(--dashboard-card-bg);
   border-radius: 6px;
 }
 
 .breakdownLabel {
   font-size: 13px;
-  color: #475569;
+  color: var(--dashboard-text-secondary);
 }
 
 .breakdownValue {
   font-size: 13px;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--dashboard-text);
 }
 
 /* 흐름 시각화 */
 .flowVisualization {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--dashboard-border);
 }
 
 .flowBar {
   height: 8px;
-  background: #e2e8f0;
+  background: var(--dashboard-border);
   border-radius: 4px;
   margin-bottom: 6px;
   overflow: hidden;
@@ -194,5 +194,5 @@
 
 .flowLabel {
   font-size: 11px;
-  color: #64748b;
+  color: var(--dashboard-text-secondary);
 }

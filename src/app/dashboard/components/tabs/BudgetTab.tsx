@@ -15,6 +15,7 @@ import {
   useUpdateTransaction,
   useDeleteTransaction,
 } from "@/hooks/useBudget";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import type { BudgetTransaction, TransactionType } from "@/lib/services/budgetService";
 import type { Account, AccountType, AccountInput, PaymentMethod, PaymentMethodType, PaymentMethodInput } from "@/types/tables";
 import { formatWon } from "@/lib/utils";
@@ -82,6 +83,7 @@ const CARD_COMPANY_OPTIONS = [
 
 export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth }: BudgetTabProps) {
   const supabase = createClient();
+  const { colors: chartColors } = useChartTheme();
   const [showForm, setShowForm] = useState(false);
   const [formType, setFormType] = useState<TransactionType>("expense");
 
@@ -916,8 +918,9 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
                     labels: incomeSummary.map((item) => item.category),
                     datasets: [{
                       data: incomeSummary.map((item) => item.total),
-                      backgroundColor: ["#22c55e", "#16a34a", "#15803d", "#166534", "#14532d"],
-                      borderWidth: 0,
+                      backgroundColor: chartColors.slice(0, incomeSummary.length),
+                      borderWidth: 2,
+                      borderColor: "#ffffff",
                     }],
                   } : {
                     labels: ["없음"],
@@ -932,11 +935,10 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
               </div>
               <div className={styles.chartLegend}>
                 {incomeSummary.length > 0 ? incomeSummary.map((item, idx) => {
-                  const colors = ["#22c55e", "#16a34a", "#15803d", "#166534", "#14532d"];
                   const percent = ((item.total / totalIncome) * 100).toFixed(1);
                   return (
                     <div key={item.category} className={styles.legendItem}>
-                      <span className={styles.legendDot} style={{ backgroundColor: colors[idx % colors.length] }} />
+                      <span className={styles.legendDot} style={{ backgroundColor: chartColors[idx % chartColors.length] }} />
                       <span className={styles.legendLabel}>{item.category}</span>
                       <span className={styles.legendValue}>{formatWon(item.total)}</span>
                       <span className={styles.legendPercent}>{percent}%</span>
@@ -961,8 +963,9 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
                     labels: expenseSummary.map((item) => item.category),
                     datasets: [{
                       data: expenseSummary.map((item) => item.total),
-                      backgroundColor: ["#3b82f6", "#8b5cf6", "#ec4899", "#f97316", "#eab308", "#14b8a6", "#6366f1", "#f43f5e"],
-                      borderWidth: 0,
+                      backgroundColor: chartColors.slice(0, expenseSummary.length),
+                      borderWidth: 2,
+                      borderColor: "#ffffff",
                     }],
                   } : {
                     labels: ["없음"],
@@ -977,11 +980,10 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
               </div>
               <div className={styles.chartLegend}>
                 {expenseSummary.length > 0 ? expenseSummary.map((item, idx) => {
-                  const colors = ["#3b82f6", "#8b5cf6", "#ec4899", "#f97316", "#eab308", "#14b8a6", "#6366f1", "#f43f5e"];
                   const percent = ((item.total / totalExpense) * 100).toFixed(1);
                   return (
                     <div key={item.category} className={styles.legendItem}>
-                      <span className={styles.legendDot} style={{ backgroundColor: colors[idx % colors.length] }} />
+                      <span className={styles.legendDot} style={{ backgroundColor: chartColors[idx % chartColors.length] }} />
                       <span className={styles.legendLabel}>{item.category}</span>
                       <span className={styles.legendValue}>{formatWon(item.total)}</span>
                       <span className={styles.legendPercent}>{percent}%</span>

@@ -12,6 +12,7 @@ import {
 import annotationPlugin from 'chartjs-plugin-annotation'
 import type { SimulationResult, YearlySnapshot } from '@/lib/services/simulationEngine'
 import { groupIncomeItems, groupExpenseItems } from '@/lib/utils/tooltipCategories'
+import { useChartTheme } from '@/hooks/useChartTheme'
 import styles from './CashFlowChart.module.css'
 
 ChartJS.register(
@@ -46,27 +47,29 @@ function formatMoney(amount: number): string {
 }
 
 // 커스텀 툴팁 생성
-function getOrCreateTooltip(chart: ChartJS): HTMLDivElement {
+function getOrCreateTooltip(chart: ChartJS, isDark: boolean): HTMLDivElement {
   let tooltipEl = chart.canvas.parentNode?.querySelector('div.chart-tooltip') as HTMLDivElement | null
   if (!tooltipEl) {
     tooltipEl = document.createElement('div')
     tooltipEl.className = 'chart-tooltip'
-    tooltipEl.style.cssText = `
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-radius: 12px;
-      border: 1px solid rgba(0, 0, 0, 0.06);
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
-      pointer-events: none;
-      position: absolute;
-      transition: all 0.15s ease;
-      padding: 14px 18px;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      white-space: nowrap;
-      z-index: 100;
-      min-width: 200px;
-    `
+  }
+  tooltipEl.style.cssText = `
+    background: ${isDark ? 'rgba(39, 39, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)'};
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 12px;
+    border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)'};
+    box-shadow: 0 4px 24px ${isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.12)'};
+    pointer-events: none;
+    position: absolute;
+    transition: all 0.15s ease;
+    padding: 14px 18px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    white-space: nowrap;
+    z-index: 100;
+    min-width: 200px;
+  `
+  if (!chart.canvas.parentNode?.querySelector('div.chart-tooltip')) {
     chart.canvas.parentNode?.appendChild(tooltipEl)
   }
   return tooltipEl
@@ -79,6 +82,7 @@ export function CashFlowChart({
   onYearClick,
   selectedYear,
 }: CashFlowChartProps) {
+  const { chartLineColors, chartScaleColors, isDark, toRgba } = useChartTheme()
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<ChartJS | null>(null)
 
@@ -96,7 +100,7 @@ export function CashFlowChart({
     }
   }) => {
     const { chart, tooltip } = context
-    const tooltipEl = getOrCreateTooltip(chart)
+    const tooltipEl = getOrCreateTooltip(chart, isDark)
 
     if (tooltip.opacity === 0) {
       tooltipEl.style.opacity = '0'
@@ -118,6 +122,10 @@ export function CashFlowChart({
     const totalIncome = incomeGroups.reduce((sum, g) => sum + g.total, 0)
     const totalExpense = expenseGroups.reduce((sum, g) => sum + g.total, 0)
 
+    const textColor = isDark ? '#ffffff' : '#1d1d1f'
+    const textSecondary = isDark ? '#a1a1aa' : '#86868b'
+    const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+
     const incomeHtml = incomeGroups.length > 0 ? `
       <div style="margin-bottom: 12px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -128,11 +136,11 @@ export function CashFlowChart({
           <div style="margin-bottom: 6px;">
             <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
               <span style="width: 8px; height: 8px; border-radius: 2px; background: ${group.category.color};"></span>
-              <span style="font-size: 11px; color: #86868b;">${group.category.label}</span>
+              <span style="font-size: 11px; color: ${textSecondary};">${group.category.label}</span>
             </div>
             ${group.items.map(item => `
               <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 1px; padding-left: 14px;">
-                <span style="font-size: 12px; color: #1d1d1f;">${item.title}</span>
+                <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
                 <span style="font-size: 12px; color: ${group.category.color};">${formatMoney(item.amount)}</span>
               </div>
             `).join('')}
@@ -151,11 +159,11 @@ export function CashFlowChart({
           <div style="margin-bottom: 6px;">
             <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
               <span style="width: 8px; height: 8px; border-radius: 2px; background: ${group.category.color};"></span>
-              <span style="font-size: 11px; color: #86868b;">${group.category.label}</span>
+              <span style="font-size: 11px; color: ${textSecondary};">${group.category.label}</span>
             </div>
             ${group.items.map(item => `
               <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 1px; padding-left: 14px;">
-                <span style="font-size: 12px; color: #1d1d1f;">${item.title}</span>
+                <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
                 <span style="font-size: 12px; color: ${group.category.color};">${formatMoney(item.amount)}</span>
               </div>
             `).join('')}
@@ -169,13 +177,13 @@ export function CashFlowChart({
     const netColor = netCashFlow >= 0 ? '#10b981' : '#ef4444'
 
     tooltipEl.innerHTML = `
-      <div style="font-size: 16px; font-weight: 700; color: #1d1d1f; margin-bottom: 2px;">${snapshot.year}년</div>
-      <div style="font-size: 12px; color: #86868b; margin-bottom: 12px;">${snapshot.age}세</div>
+      <div style="font-size: 16px; font-weight: 700; color: ${textColor}; margin-bottom: 2px;">${snapshot.year}년</div>
+      <div style="font-size: 12px; color: ${textSecondary}; margin-bottom: 12px;">${snapshot.age}세</div>
       ${incomeHtml}
       ${expenseHtml}
-      <div style="border-top: 1px solid rgba(0,0,0,0.08); margin-top: 8px; padding-top: 8px;">
+      <div style="border-top: 1px solid ${borderColor}; margin-top: 8px; padding-top: 8px;">
         <div style="display: flex; justify-content: space-between; gap: 16px;">
-          <span style="font-size: 14px; color: #86868b;">순현금흐름</span>
+          <span style="font-size: 14px; color: ${textSecondary};">순현금흐름</span>
           <span style="font-size: 14px; font-weight: 700; color: ${netColor};">${netPrefix}${formatMoney(netCashFlow)}</span>
         </div>
       </div>
@@ -196,7 +204,7 @@ export function CashFlowChart({
     tooltipEl.style.left = `${leftPos}px`
     tooltipEl.style.top = `${Math.max(10, tooltip.caretY - 60)}px`
     tooltipEl.style.transform = 'translate(-50%, 0)'
-  }, [snapshots])
+  }, [snapshots, isDark])
 
   useEffect(() => {
     if (!chartRef.current || snapshots.length === 0) return
@@ -232,7 +240,7 @@ export function CashFlowChart({
             label: '소득',
             data: incomeData,
             backgroundColor: snapshots.map(s =>
-              selectedYear === s.year ? 'rgba(16, 185, 129, 1)' : 'rgba(16, 185, 129, 0.7)'
+              selectedYear === s.year ? toRgba(chartLineColors.value, 1) : toRgba(chartLineColors.value, 0.7)
             ),
             borderRadius: 2,
             barPercentage: 0.7,
@@ -242,7 +250,7 @@ export function CashFlowChart({
             label: '지출',
             data: expenseData,
             backgroundColor: snapshots.map(s =>
-              selectedYear === s.year ? 'rgba(239, 68, 68, 1)' : 'rgba(239, 68, 68, 0.7)'
+              selectedYear === s.year ? toRgba(chartLineColors.profit, 1) : toRgba(chartLineColors.profit, 0.7)
             ),
             borderRadius: 2,
             barPercentage: 0.7,
@@ -315,7 +323,7 @@ export function CashFlowChart({
             grid: { display: false },
             ticks: {
               font: { size: 10 },
-              color: '#94a3b8',
+              color: chartScaleColors.tickColor,
               maxRotation: 0,
               callback: function(value, index) {
                 const year = labels[index]
@@ -332,11 +340,11 @@ export function CashFlowChart({
             min: -roundedMax,
             max: roundedMax,
             grid: {
-              color: 'rgba(226, 232, 240, 0.5)',
+              color: chartScaleColors.gridColor,
             },
             ticks: {
               font: { size: 10 },
-              color: '#94a3b8',
+              color: chartScaleColors.tickColor,
               callback: function(value) {
                 const numValue = Number(value)
                 if (numValue === 0) return '0'
@@ -354,7 +362,7 @@ export function CashFlowChart({
         chartInstance.current.destroy()
       }
     }
-  }, [snapshots, retirementYear, selectedYear, onYearClick, currentYear, externalTooltipHandler])
+  }, [snapshots, retirementYear, selectedYear, onYearClick, currentYear, externalTooltipHandler, chartScaleColors, chartLineColors, toRgba])
 
   if (snapshots.length === 0) {
     return (

@@ -13,7 +13,7 @@
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   font-size: 14px;
 }
 
@@ -23,14 +23,14 @@
   align-items: center;
   justify-content: center;
   padding: 16px 32px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 /* 날짜 라벨 */
 .dateLabel {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 /* 저장 버튼 */
@@ -39,12 +39,12 @@
   align-items: center;
   gap: 6px;
   padding: 10px 20px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--dashboard-bg);
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
@@ -66,7 +66,7 @@
   justify-content: center;
   gap: 32px;
   padding: 40px 32px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
   overflow: visible;
 }
 
@@ -119,26 +119,26 @@
 .chartLabel {
   font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .chartAmount {
   font-size: 22px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   letter-spacing: -0.5px;
 }
 
 .chartLabelSmall {
   font-size: 11px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .chartAmountSmall {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   letter-spacing: -0.3px;
 }
 
@@ -171,26 +171,26 @@
 .legendLabel {
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   min-width: 70px;
 }
 
 .legendValue {
   font-size: 16px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   min-width: 100px;
 }
 
 .legendPercent {
   font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .legendDivider {
   height: 1px;
-  background: #e5e7eb;
+  background: var(--dashboard-border);
   margin: 4px 0;
 }
 
@@ -200,8 +200,8 @@
   justify-content: center;
   gap: 32px;
   padding: 24px 32px;
-  border-bottom: 1px solid #e5e7eb;
-  background: white;
+  border-bottom: 1px solid var(--dashboard-border);
+  background: var(--dashboard-bg);
 }
 
 .tabButton {
@@ -223,33 +223,33 @@
 .tabAmount {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   letter-spacing: -0.5px;
 }
 
 .tabButton:not(.active) .tabAmount {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .tabLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .tabButton.active .tabLabel {
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 /* 프로필 탭 아이콘 */
 .tabIcon {
   width: 24px;
   height: 24px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .tabButton.active .tabIcon {
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 /* 콘텐츠 섹션 */
@@ -289,7 +289,7 @@
 .sectionTitle {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
@@ -309,7 +309,7 @@
 .sectionTotal {
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 /* 테이블 */
@@ -329,17 +329,17 @@
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .table td {
   padding: 12px 16px;
   font-size: 14px;
-  color: #1a1a1a;
-  border-bottom: 1px solid #f3f4f6;
+  color: var(--dashboard-text);
+  border-bottom: 1px solid var(--dashboard-border-light);
   vertical-align: top;
 }
 
@@ -364,13 +364,13 @@
 }
 
 .accountName {
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   font-size: 14px;
   font-weight: 600;
 }
 
 .brokerName {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   font-size: 12px;
   font-weight: 400;
 }
@@ -427,11 +427,11 @@
 /* 입력 필드 */
 .selectInput {
   padding: 8px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #1a1a1a;
-  background: white;
+  color: var(--dashboard-text);
+  background: var(--dashboard-bg);
   cursor: pointer;
   min-width: 120px;
   transition: border-color 0.15s;
@@ -439,27 +439,27 @@
 
 .selectInput:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .textInput {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #1a1a1a;
-  background: white;
+  color: var(--dashboard-text);
+  background: var(--dashboard-bg);
   transition: border-color 0.15s;
 }
 
 .textInput:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .textInput::placeholder {
-  color: #d1d5db;
+  color: var(--dashboard-text-muted);
 }
 
 .amountInputWrapper {
@@ -471,19 +471,19 @@
 .amountInput {
   width: 100px;
   padding: 8px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   text-align: right;
-  background: white;
+  background: var(--dashboard-bg);
   transition: border-color 0.15s;
 }
 
 .amountInput:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .amountInput::-webkit-outer-spin-button,
@@ -494,7 +494,7 @@
 
 .unit {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   white-space: nowrap;
 }
 
@@ -507,7 +507,7 @@
   height: 32px;
   border: none;
   background: none;
-  color: #d1d5db;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.15s;
@@ -525,19 +525,19 @@
   gap: 8px;
   width: 100%;
   padding: 12px;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--dashboard-text-muted);
   border-radius: 8px;
   background: none;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .addButton:hover {
-  border-color: #1a1a1a;
-  color: #1a1a1a;
+  border-color: var(--dashboard-text);
+  color: var(--dashboard-text);
 }
 
 /* 빈 상태 */
@@ -548,14 +548,14 @@
   justify-content: center;
   gap: 16px;
   padding: 48px;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
   border-radius: 12px;
-  border: 1px dashed #e5e7eb;
+  border: 1px dashed var(--dashboard-border);
 }
 
 .emptyState p {
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   margin: 0;
 }
 
@@ -564,18 +564,18 @@
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: #1a1a1a;
+  background: var(--dashboard-text);
   border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: white;
+  color: var(--dashboard-bg);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .addButtonEmpty:hover {
-  background: #374151;
+  background: var(--dashboard-text-secondary);
 }
 
 /* 투자 섹션 */
@@ -604,18 +604,18 @@
   justify-content: center;
   padding: 12px;
   background: none;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .linkButton:hover {
-  border-color: #1a1a1a;
-  color: #1a1a1a;
+  border-color: var(--dashboard-text);
+  color: var(--dashboard-text);
 }
 
 .linkButtonGroup {
@@ -642,19 +642,19 @@
   gap: 8px;
   padding: 12px 16px;
   margin-top: 8px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--dashboard-border);
 }
 
 .footerTotalLabel {
   font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .footerTotalValue {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 /* 금액 + 대출/할부 우측 표시 */
@@ -669,7 +669,7 @@
 .loanAmountRight {
   font-size: 12px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   white-space: nowrap;
 }
 
@@ -680,7 +680,7 @@
   gap: 4px;
   padding: 12px 16px;
   margin-top: 8px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--dashboard-border);
 }
 
 .footerRow {
@@ -693,25 +693,25 @@
 .footerLoanLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .footerLoanValue {
   font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .footerNetLabel {
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .footerNetValue {
   font-size: 14px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 /* 버튼 + 합계 한 줄 */
@@ -721,7 +721,7 @@
   justify-content: space-between;
   padding: 12px 0;
   margin-top: 8px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--dashboard-border);
 }
 
 .footerButtons {
@@ -732,17 +732,17 @@
 .footerLinkButton {
   padding: 6px 12px;
   background: none;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .footerLinkButton:hover {
   border-color: #9ca3af;
-  color: #374151;
+  color: var(--dashboard-text-secondary);
 }
 
 .footerTotalGroup {
@@ -763,7 +763,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 20px 16px;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
   border-radius: 8px;
   margin-bottom: 16px;
 }
@@ -776,7 +776,7 @@
 
 .editRowLabel {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   min-width: 80px;
   flex-shrink: 0;
   padding-top: 8px;
@@ -795,16 +795,16 @@
   padding: 8px 12px;
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
-  border: 1px solid #e5e7eb;
+  color: var(--dashboard-text);
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   outline: none;
-  background: white;
+  background: var(--dashboard-bg);
   text-align: right;
 }
 
 .editInput:focus {
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .editInput::-webkit-outer-spin-button,
@@ -818,16 +818,16 @@
   padding: 8px 12px;
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
-  border: 1px solid #e5e7eb;
+  color: var(--dashboard-text);
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   outline: none;
-  background: white;
+  background: var(--dashboard-bg);
   text-align: center;
 }
 
 .editInputSmall:focus {
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .editInputSmall::-webkit-outer-spin-button,
@@ -838,7 +838,7 @@
 
 .editUnit {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 /* 유형 선택 버튼 */
@@ -852,27 +852,27 @@
   padding: 8px 14px;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
-  background: white;
-  border: 1px solid #e5e7eb;
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-bg);
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .typeBtn:hover {
-  border-color: #d1d5db;
+  border-color: var(--dashboard-text-muted);
 }
 
 .typeBtn.active {
-  background: #1a1a1a;
-  border-color: #1a1a1a;
-  color: white;
+  background: var(--dashboard-text);
+  border-color: var(--dashboard-text);
+  color: var(--dashboard-bg);
 }
 
 /* 편집 구분선 */
 .editDivider {
   height: 1px;
-  background: #e5e7eb;
+  background: var(--dashboard-border);
   margin: 8px 0;
 }
 
@@ -883,7 +883,7 @@
   align-items: center;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--dashboard-border);
   margin-top: 8px;
 }
 
@@ -891,31 +891,31 @@
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
-  background: white;
-  border: 1px solid #e5e7eb;
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-bg);
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .cancelBtn:hover {
-  border-color: #d1d5db;
-  color: #374151;
+  border-color: var(--dashboard-text-muted);
+  color: var(--dashboard-text-secondary);
 }
 
 .saveBtn {
   padding: 8px 20px;
   font-size: 14px;
   font-weight: 500;
-  color: white;
-  background: #1a1a1a;
+  color: var(--dashboard-bg);
+  background: var(--dashboard-text);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .saveBtn:hover:not(:disabled) {
-  background: #374151;
+  background: var(--dashboard-text-secondary);
 }
 
 .saveBtn:disabled {
@@ -929,7 +929,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: #fafafa;
+  background: var(--dashboard-bg-secondary);
   border-radius: 8px;
   margin: 8px 0;
 }
@@ -939,17 +939,17 @@
   padding: 8px 12px;
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
-  border: 1px solid #e5e7eb;
+  color: var(--dashboard-text);
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   outline: none;
-  background: white;
+  background: var(--dashboard-bg);
   cursor: pointer;
   min-width: 120px;
 }
 
 .selectInput:focus {
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 /* 넓은 입력 */
@@ -959,15 +959,15 @@
   padding: 8px 12px;
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
-  border: 1px solid #e5e7eb;
+  color: var(--dashboard-text);
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   outline: none;
-  background: white;
+  background: var(--dashboard-bg);
 }
 
 .editInputWide:focus {
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 /* 삭제 버튼 텍스트 스타일 */
@@ -1003,20 +1003,20 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .realEstateGroupTitle {
   font-size: 12px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .realEstateGroupDesc {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .realEstateList {
@@ -1029,7 +1029,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .realEstateInfo {
@@ -1042,38 +1042,38 @@
 
 .selectInputSmall {
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 13px;
-  color: #1a1a1a;
-  background: white;
+  color: var(--dashboard-text);
+  background: var(--dashboard-bg);
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .selectInputSmall:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .textInputInline {
   flex: 1;
   min-width: 100px;
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 13px;
-  color: #1a1a1a;
-  background: white;
+  color: var(--dashboard-text);
+  background: var(--dashboard-bg);
 }
 
 .textInputInline:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .textInputInline::placeholder {
-  color: #d1d5db;
+  color: var(--dashboard-text-muted);
 }
 
 .realEstateAmountGroup {
@@ -1093,25 +1093,25 @@
 .fieldGroup label {
   font-size: 12px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   white-space: nowrap;
 }
 
 .fieldGroupInput {
   width: 90px;
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   text-align: right;
-  background: white;
+  background: var(--dashboard-bg);
 }
 
 .fieldGroupInput:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .fieldGroupInput::-webkit-outer-spin-button,
@@ -1130,13 +1130,13 @@
   border: none;
   font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   box-sizing: border-box;
 }
 
 .addButtonSmall:hover {
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 /* 심플 섹션 (실물자산, 부채, 프로필) */
@@ -1150,20 +1150,20 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .simpleSectionTitle {
   font-size: 12px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .simpleSectionDesc {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .simpleList {
@@ -1176,7 +1176,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .simpleRowInfo {
@@ -1205,7 +1205,7 @@
 
 .profileContent p {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   margin: 0;
 }
 
@@ -1214,17 +1214,17 @@
   align-items: center;
   padding: 8px 16px;
   background: none;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .profileLinkButton:hover {
-  border-color: #1a1a1a;
-  color: #1a1a1a;
+  border-color: var(--dashboard-text);
+  color: var(--dashboard-text);
 }
 
 /* 프로필 정보 아이템 */
@@ -1233,7 +1233,7 @@
   align-items: center;
   gap: 14px;
   padding: 16px 20px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
   background: none;
   border-left: none;
   border-right: none;
@@ -1245,7 +1245,7 @@
 }
 
 .profileInfoItem:hover {
-  background-color: #f9fafb;
+  background-color: var(--dashboard-hover-bg);
 }
 
 .profileInfoItem:last-child {
@@ -1253,7 +1253,7 @@
 }
 
 .profileInfoChevron {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   flex-shrink: 0;
 }
 
@@ -1261,7 +1261,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: #f3f4f6;
+  background: var(--dashboard-border-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1271,7 +1271,7 @@
 .profileInfoIcon svg {
   width: 20px;
   height: 20px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .profileInfoContent {
@@ -1285,12 +1285,12 @@
 .profileInfoLabel {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .profileInfoValue {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 /* 자녀 목록 */
@@ -1302,13 +1302,13 @@
 
 .childItem {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 /* 프로필 편집 카드 */
 .profileEditCard {
-  background: #f9fafb;
-  border-bottom: 1px solid #f3f4f6;
+  background: var(--dashboard-bg-secondary);
+  border-bottom: 1px solid var(--dashboard-border-light);
   padding: 16px 20px;
 }
 
@@ -1322,7 +1322,7 @@
 .profileEditHeader span {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .profileEditHeader button {
@@ -1330,13 +1330,13 @@
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   border-radius: 4px;
 }
 
 .profileEditHeader button:hover {
-  color: #1a1a1a;
-  background: #e5e7eb;
+  color: var(--dashboard-text);
+  background: var(--dashboard-border);
 }
 
 .profileEditGrid {
@@ -1354,17 +1354,17 @@
 .profileEditField label {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .profileEditField input {
   padding: 10px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
-  background: white;
+  color: var(--dashboard-text);
+  background: var(--dashboard-bg);
   outline: none;
 }
 
@@ -1391,32 +1391,32 @@
 
 .profileEditCancel {
   padding: 8px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
-  background: white;
+  background: var(--dashboard-bg);
   font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .profileEditCancel:hover {
-  background: #f3f4f6;
+  background: var(--dashboard-border-light);
 }
 
 .profileEditSave {
   padding: 8px 16px;
   border: none;
   border-radius: 8px;
-  background: #1a1a1a;
+  background: var(--dashboard-text);
   font-size: 13px;
   font-weight: 500;
-  color: white;
+  color: var(--dashboard-bg);
   cursor: pointer;
 }
 
 .profileEditSave:hover {
-  background: #292524;
+  background: var(--dashboard-text-secondary);
 }
 
 /* 계획 단위 변경 모달 */
@@ -1435,7 +1435,7 @@
 }
 
 .planningModeModalContent {
-  background: white;
+  background: var(--dashboard-bg);
   border-radius: 16px;
   width: 90%;
   max-width: 400px;
@@ -1447,13 +1447,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .planningModeModalHeader span {
   font-size: 16px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .planningModeModalHeader button {
@@ -1461,13 +1461,13 @@
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   border-radius: 4px;
 }
 
 .planningModeModalHeader button:hover {
-  color: #1a1a1a;
-  background: #f3f4f6;
+  color: var(--dashboard-text);
+  background: var(--dashboard-border-light);
 }
 
 .planningModeOptions {
@@ -1484,7 +1484,7 @@
   padding: 16px;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
-  background: white;
+  background: var(--dashboard-bg);
   cursor: pointer;
   transition: border-color 0.15s, background-color 0.15s;
   text-align: left;
@@ -1492,19 +1492,19 @@
 }
 
 .planningModeOption:hover {
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
 }
 
 .planningModeOption.active {
-  border-color: #1a1a1a;
-  background: #f9fafb;
+  border-color: var(--dashboard-text);
+  background: var(--dashboard-bg-secondary);
 }
 
 .planningModeOptionIcon {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: #f3f4f6;
+  background: var(--dashboard-border-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1512,16 +1512,16 @@
 }
 
 .planningModeOption.active .planningModeOptionIcon {
-  background: #1a1a1a;
-  color: white;
+  background: var(--dashboard-text);
+  color: var(--dashboard-bg);
 }
 
 .planningModeOptionIcon svg {
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .planningModeOption.active .planningModeOptionIcon svg {
-  color: white;
+  color: var(--dashboard-bg);
 }
 
 .planningModeOptionText {
@@ -1533,12 +1533,12 @@
 .planningModeOptionTitle {
   font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .planningModeOptionDesc {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 /* 프로필 로딩 */
@@ -1553,14 +1553,14 @@
   align-items: center;
   gap: 14px;
   padding: 16px 20px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .profileSkeletonIcon {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -1574,7 +1574,7 @@
 .profileSkeletonLine {
   height: 14px;
   border-radius: 4px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -1590,14 +1590,14 @@
 /* 프로필 푸터 (설정 버튼) */
 .profileFooter {
   padding: 16px 20px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--dashboard-border-light);
 }
 
 /* 계좌 유형 라벨 - 통장 이름 오른쪽에 작게 */
 .accountTypeLabel {
   font-size: 11px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   margin-left: 6px;
 }
 
@@ -1619,7 +1619,7 @@
 
 .skeleton {
   display: inline-block;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
@@ -1629,7 +1629,7 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   position: absolute;
@@ -1641,7 +1641,7 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   position: absolute;
@@ -1715,7 +1715,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .skeletonContentItem:last-child {
@@ -1735,7 +1735,7 @@
 /* Progress Points 섹션 */
 .progressSection {
   padding: 24px 32px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--dashboard-border);
 }
 
 .progressHeader {
@@ -1754,14 +1754,14 @@
 .progressTitle {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
 .periodLabel {
   font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .periodFilters {
@@ -1771,25 +1771,25 @@
 
 .periodButton {
   padding: 6px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
-  background: white;
+  background: var(--dashboard-bg);
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .periodButton:hover {
-  border-color: #d1d5db;
-  color: #374151;
+  border-color: var(--dashboard-text-muted);
+  color: var(--dashboard-text-secondary);
 }
 
 .periodButton.active {
-  background: #1a1a1a;
-  border-color: #1a1a1a;
-  color: white;
+  background: var(--dashboard-text);
+  border-color: var(--dashboard-text);
+  color: var(--dashboard-bg);
 }
 
 .growthDisplay {
@@ -1805,11 +1805,11 @@
 }
 
 .growthValue.positive {
-  color: #ef4444;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .growthValue.negative {
-  color: #3b82f6;
+  color: var(--chart-loss-color, #3b82f6);
 }
 
 .growthPercent {
@@ -1820,12 +1820,12 @@
 }
 
 .growthPercent.positive {
-  color: #ef4444;
+  color: var(--chart-profit-color, #ef4444);
   background: #fef2f2;
 }
 
 .growthPercent.negative {
-  color: #3b82f6;
+  color: var(--chart-loss-color, #3b82f6);
   background: #eff6ff;
 }
 
@@ -1839,14 +1839,14 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
   border-radius: 12px;
-  border: 1px dashed #e5e7eb;
+  border: 1px dashed var(--dashboard-border);
 }
 
 .emptyChart p {
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   margin: 0;
 }
 
@@ -1865,17 +1865,17 @@
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .snapshotTable td {
   padding: 12px 16px;
   font-size: 14px;
-  color: #1a1a1a;
-  border-bottom: 1px solid #f3f4f6;
+  color: var(--dashboard-text);
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .snapshotAmountHeader {
@@ -1918,16 +1918,16 @@
 }
 
 .editSnapshotBtn {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .editSnapshotBtn:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--dashboard-border-light);
+  color: var(--dashboard-text-secondary);
 }
 
 .deleteSnapshotBtn {
-  color: #d1d5db;
+  color: var(--dashboard-text-muted);
 }
 
 .deleteSnapshotBtn:hover {
@@ -1942,19 +1942,19 @@
   gap: 8px;
   width: 100%;
   padding: 12px;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--dashboard-text-muted);
   border-radius: 8px;
   background: none;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .addSnapshotBtn:hover {
-  border-color: #1a1a1a;
-  color: #1a1a1a;
+  border-color: var(--dashboard-text);
+  color: var(--dashboard-text);
 }
 
 /* 스냅샷 모달 */
@@ -1972,7 +1972,7 @@
 }
 
 .modal {
-  background: white;
+  background: var(--dashboard-bg);
   border-radius: 12px;
   width: 100%;
   max-width: 400px;
@@ -1984,13 +1984,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .modalHeader h3 {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
@@ -2002,15 +2002,15 @@
   height: 32px;
   border: none;
   background: none;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.15s;
 }
 
 .modalCloseBtn:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--dashboard-border-light);
+  color: var(--dashboard-text-secondary);
 }
 
 .modalBody {
@@ -2029,21 +2029,21 @@
 .modalField label {
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--dashboard-text-secondary);
 }
 
 .modalInput {
   padding: 12px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   transition: border-color 0.15s;
 }
 
 .modalInput:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .modalInput::-webkit-outer-spin-button,
@@ -2057,40 +2057,40 @@
   justify-content: flex-end;
   gap: 8px;
   padding: 16px 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--dashboard-border);
 }
 
 .modalCancelBtn {
   padding: 10px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
-  background: white;
+  background: var(--dashboard-bg);
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .modalCancelBtn:hover {
-  border-color: #d1d5db;
-  color: #374151;
+  border-color: var(--dashboard-text-muted);
+  color: var(--dashboard-text-secondary);
 }
 
 .modalSaveBtn {
   padding: 10px 20px;
   border: none;
   border-radius: 8px;
-  background: #1a1a1a;
+  background: var(--dashboard-text);
   font-size: 14px;
   font-weight: 500;
-  color: white;
+  color: var(--dashboard-bg);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .modalSaveBtn:hover:not(:disabled) {
-  background: #374151;
+  background: var(--dashboard-text-secondary);
 }
 
 .modalSaveBtn:disabled {
@@ -2362,7 +2362,7 @@
 }
 
 .modalContent {
-  background: white;
+  background: var(--dashboard-bg);
   border-radius: 16px;
   width: 90%;
   max-width: 480px;
@@ -2388,13 +2388,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .modalTitle {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .modalCloseBtn {
@@ -2407,12 +2407,12 @@
   background: none;
   border-radius: 8px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .modalCloseBtn:hover {
-  background: #f3f4f6;
-  color: #1a1a1a;
+  background: var(--dashboard-border-light);
+  color: var(--dashboard-text);
 }
 
 .modalBody {
@@ -2430,15 +2430,15 @@
   align-items: center;
   gap: 14px;
   padding: 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 12px;
-  background: white;
+  background: var(--dashboard-bg);
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .modalItem:hover {
-  border-color: #d1d5db;
+  border-color: var(--dashboard-text-muted);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -2456,7 +2456,7 @@
 .modalItemLabel {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--dashboard-text-secondary);
 }
 
 @media (max-width: 480px) {
@@ -2468,8 +2468,8 @@
 /* 아이템 카드 UI */
 .itemCard {
   position: relative;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--dashboard-bg);
+  border-bottom: 1px solid var(--dashboard-border);
   padding: 20px;
   padding-right: 64px;
 }
@@ -2498,7 +2498,7 @@
 .itemCardTitle {
   font-size: 16px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .itemCardTitleRow {
@@ -2520,7 +2520,7 @@
   background: none;
   border-radius: 6px;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .itemCardDeleteBtn:hover {
@@ -2543,7 +2543,7 @@
 .itemCardFieldLabel {
   font-size: 11px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -2551,22 +2551,22 @@
 .itemCardFieldInput {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
-  background: #f9fafb;
+  color: var(--dashboard-text);
+  background: var(--dashboard-bg-secondary);
   outline: none;
 }
 
 .itemCardFieldInput:focus {
   border-color: #3b82f6;
-  background: white;
+  background: var(--dashboard-bg);
 }
 
 .itemCardFieldInput::placeholder {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   font-weight: 400;
 }
 
@@ -2583,12 +2583,12 @@
 .itemCardFieldSelect {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
-  background: #f9fafb;
+  color: var(--dashboard-text);
+  background: var(--dashboard-bg-secondary);
   outline: none;
   cursor: pointer;
   appearance: none;
@@ -2609,8 +2609,8 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
-  background: #f9fafb;
+  color: var(--dashboard-text);
+  background: var(--dashboard-bg-secondary);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2630,14 +2630,14 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 13px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   pointer-events: none;
 }
 
 .itemCardDivider {
   grid-column: 1 / -1;
   height: 1px;
-  background: #f3f4f6;
+  background: var(--dashboard-border-light);
   margin: 4px 0;
 }
 
@@ -2653,7 +2653,7 @@
   grid-column: 1 / -1;
   margin-top: 8px;
   padding-top: 16px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--dashboard-border-light);
 }
 
 .itemCardLoanHeader {
@@ -2669,7 +2669,7 @@
   gap: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
@@ -2719,7 +2719,6 @@
   display: block;
   width: 100%;
   margin-top: 16px;
-  border-top: 1px solid #e5e7eb;
 }
 
 .otherInvestmentHeader {
@@ -2727,18 +2726,18 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .otherInvestmentTitle {
   font-size: 12px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .otherInvestmentDesc {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }

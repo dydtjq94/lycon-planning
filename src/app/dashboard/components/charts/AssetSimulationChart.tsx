@@ -14,6 +14,7 @@ import {
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
 import type { OnboardingData, SimulationSettings } from '@/types'
+import { useChartTheme } from '@/hooks/useChartTheme'
 import styles from './Charts.module.css'
 
 ChartJS.register(
@@ -71,6 +72,7 @@ function calculateNetWorth(data: OnboardingData): number {
 }
 
 export function AssetSimulationChart({ data, settings }: AssetSimulationChartProps) {
+  const { chartLineColors, chartScaleColors, toRgba } = useChartTheme()
   const currentAge = calculateAge(data.birth_date)
   const retirementAge = data.target_retirement_age || 60
   const lifeExpectancy = settings.lifeExpectancy
@@ -118,13 +120,13 @@ export function AssetSimulationChart({ data, settings }: AssetSimulationChartPro
       {
         label: '순자산',
         data: assetData,
-        borderColor: '#007aff',
-        backgroundColor: 'rgba(0, 122, 255, 0.1)',
+        borderColor: chartLineColors.value,
+        backgroundColor: toRgba(chartLineColors.value, 0.1),
         fill: true,
         tension: 0.3,
         pointRadius: 0,
         pointHoverRadius: 6,
-        pointHoverBackgroundColor: '#007aff',
+        pointHoverBackgroundColor: chartLineColors.value,
         pointHoverBorderColor: 'white',
         pointHoverBorderWidth: 2,
       },
@@ -143,10 +145,10 @@ export function AssetSimulationChart({ data, settings }: AssetSimulationChartPro
         display: false,
       },
       tooltip: {
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        titleColor: '#1d1d1f',
-        bodyColor: '#1d1d1f',
-        borderColor: 'rgba(0, 0, 0, 0.1)',
+        backgroundColor: chartScaleColors.tooltipBg,
+        titleColor: chartScaleColors.tooltipText,
+        bodyColor: chartScaleColors.tooltipText,
+        borderColor: chartScaleColors.tooltipBorder,
         borderWidth: 1,
         padding: 12,
         boxPadding: 6,
@@ -168,15 +170,15 @@ export function AssetSimulationChart({ data, settings }: AssetSimulationChartPro
         },
         ticks: {
           maxTicksLimit: 10,
-          color: '#a8a29e',
+          color: chartScaleColors.tickColor,
         },
       },
       y: {
         grid: {
-          color: '#f5f5f4',
+          color: chartScaleColors.gridColor,
         },
         ticks: {
-          color: '#a8a29e',
+          color: chartScaleColors.tickColor,
           callback: (value: number | string) => {
             const numValue = typeof value === 'string' ? parseFloat(value) : value
             if (numValue >= 10000) {
@@ -197,7 +199,7 @@ export function AssetSimulationChart({ data, settings }: AssetSimulationChartPro
       <h3 className={styles.chartTitle}>자산 시뮬레이션</h3>
       <div className={styles.chartLegend}>
         <span className={styles.legendItem}>
-          <span className={styles.legendDot} style={{ backgroundColor: '#007aff' }} />
+          <span className={styles.legendDot} style={{ backgroundColor: chartLineColors.value }} />
           순자산 추이
         </span>
         <span className={styles.legendRetirement}>

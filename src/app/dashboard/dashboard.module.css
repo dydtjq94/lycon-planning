@@ -4,7 +4,7 @@
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: #ffffff;
+  background-color: var(--dashboard-bg);
 }
 
 /* 메인 영역 */
@@ -12,20 +12,19 @@
   flex: 1;
   min-width: 0; /* flexbox 자식이 shrink 되도록 */
   height: 100vh;
-  background-color: #ffffff;
+  background-color: var(--dashboard-bg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 헤더 - Main 안에 포함 */
+/* 헤더 - 사이드바와 동일한 스타일 */
 .header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: white;
-  border-bottom: 1px solid #e7e5e4;
+  background-color: var(--sidebar-bg);
 }
 
 .headerInner {
@@ -52,9 +51,8 @@
 .pageTitle {
   font-size: 15px;
   font-weight: 600;
-  color: #292524;
+  color: var(--sidebar-text);
   margin: 0;
-  animation: fadeIn 0.5s ease-out;
 }
 
 /* 헤더 액션 버튼 */
@@ -72,19 +70,19 @@
   height: 32px;
   border: none;
   background: none;
-  color: #78716c;
+  color: var(--sidebar-text-muted);
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
 }
 
 .headerActionBtn:hover {
-  background-color: #f5f5f4;
-  color: #292524;
+  background-color: color-mix(in srgb, var(--sidebar-bg) 80%, black 20%);
+  color: var(--sidebar-text);
 }
 
 .headerActionBtn.active {
-  background-color: #292524;
+  background-color: var(--accent-primary, #007aff);
   color: white;
 }
 
@@ -104,23 +102,23 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent);
   border-radius: 6px;
-  background: white;
-  color: #6b7280;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-primary) 15%, transparent) 0%, color-mix(in srgb, var(--accent-primary) 8%, transparent) 100%);
+  color: var(--sidebar-text);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .budgetMonthBtn:hover {
-  background: #f3f4f6;
-  color: #1a1a1a;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-primary) 25%, transparent) 0%, color-mix(in srgb, var(--accent-primary) 15%, transparent) 100%);
+  border-color: color-mix(in srgb, var(--accent-primary) 50%, transparent);
 }
 
 .budgetMonthLabel {
   font-size: 14px;
-  font-weight: 500;
-  color: #1a1a1a;
+  font-weight: 600;
+  color: var(--sidebar-text);
   min-width: 100px;
   text-align: center;
 }
@@ -131,29 +129,28 @@
   transform: translateX(-50%);
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--sidebar-text-muted);
 }
 
-/* 계좌 관리 버튼 */
+/* 계좌 관리 버튼 - 담당 전문가 라벨과 동일한 스타일 */
 .accountManageBtn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  background: white;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-primary) 20%, transparent) 0%, color-mix(in srgb, var(--accent-primary) 10%, transparent) 100%);
+  color: var(--sidebar-text);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  border-radius: 8px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .accountManageBtn:hover {
-  background: #f9fafb;
-  color: #1a1a1a;
-  border-color: #d1d5db;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-primary) 30%, transparent) 0%, color-mix(in srgb, var(--accent-primary) 20%, transparent) 100%);
+  border-color: color-mix(in srgb, var(--accent-primary) 50%, transparent);
 }
 
 /* 헤더 검색 (포트폴리오 탭) */
@@ -174,11 +171,13 @@
   width: 400px;
   height: 36px;
   padding: 0 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 14px;
   outline: none;
   transition: border-color 0.15s;
+  background-color: var(--dashboard-input-bg);
+  color: var(--dashboard-text);
 }
 
 .headerSearchInput:focus {
@@ -186,7 +185,7 @@
 }
 
 .headerSearchInput::placeholder {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .headerSuggestions {
@@ -195,10 +194,10 @@
   right: 0;
   min-width: 400px;
   margin-top: 4px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--dashboard-shadow);
   max-height: 300px;
   overflow-y: auto;
   z-index: 1000;
@@ -215,16 +214,17 @@
   text-align: left;
   cursor: pointer;
   transition: background-color 0.1s;
+  color: var(--dashboard-text);
 }
 
 .headerSuggestionItem:hover {
-  background-color: #f5f5f4;
+  background-color: var(--dashboard-hover-bg);
 }
 
 .suggestionName {
   flex: 1;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .suggestionTicker {
@@ -236,7 +236,7 @@
 
 .suggestionMarket {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   min-width: 40px;
 }
 
@@ -317,18 +317,18 @@
 .scheduleValue {
   font-size: 13px;
   font-weight: 600;
-  color: #292524;
+  color: var(--dashboard-text);
 }
 
 .scheduleLabel {
   font-size: 13px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
 }
 
 .scheduleDivider {
   width: 1px;
   height: 14px;
-  background-color: #d6d3d1;
+  background-color: var(--dashboard-border);
 }
 
 /* 콘텐츠 */
@@ -345,7 +345,6 @@
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  animation: fadeIn 0.2s ease-out;
 }
 
 @media (min-width: 1400px) {
@@ -368,25 +367,25 @@
   border-radius: 0;
   padding: 20px;
   border: none;
-  border-bottom: 1px solid #e7e5e4;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .metricLabel {
   font-size: 13px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   margin: 0 0 8px 0;
 }
 
 .metricValue {
   font-size: 24px;
   font-weight: 700;
-  color: #292524;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
 .metricSub {
   font-size: 12px;
-  color: #a8a29e;
+  color: var(--dashboard-text-muted);
   margin: 4px 0 0 0;
 }
 
@@ -426,7 +425,7 @@
 
 .heroLabel {
   font-size: 15px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   margin: 0 0 16px 0;
 }
 
@@ -441,7 +440,7 @@
 .heroNumber {
   font-size: 72px;
   font-weight: 700;
-  color: #292524;
+  color: var(--dashboard-text);
   line-height: 1;
   letter-spacing: -2px;
 }
@@ -449,7 +448,7 @@
 .heroUnit {
   font-size: 24px;
   font-weight: 600;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
 }
 
 .heroCompare {
@@ -461,7 +460,7 @@
 
 .heroRatio {
   font-size: 16px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
 }
 
 .heroStatus {
@@ -496,7 +495,7 @@
   background-color: transparent;
   border-radius: 0;
   margin-bottom: 0;
-  border-bottom: 1px solid #e7e5e4;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .compareItem {
@@ -506,18 +505,18 @@
 .compareLabel {
   display: block;
   font-size: 13px;
-  color: #a8a29e;
+  color: var(--dashboard-text-muted);
   margin-bottom: 4px;
 }
 
 .compareValue {
   font-size: 20px;
   font-weight: 700;
-  color: #292524;
+  color: var(--dashboard-text);
 }
 
 .compareArrow {
-  color: #d6d3d1;
+  color: var(--dashboard-border);
 }
 
 /* 수입 구성 */
@@ -526,13 +525,13 @@
   border-radius: 0;
   padding: 24px 0;
   margin-bottom: 0;
-  border-bottom: 1px solid #e7e5e4;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .sectionTitle {
   font-size: 15px;
   font-weight: 600;
-  color: #292524;
+  color: var(--dashboard-text);
   margin: 0 0 20px 0;
 }
 
@@ -551,7 +550,7 @@
 
 .breakdownBar {
   height: 8px;
-  background-color: #f5f5f4;
+  background-color: var(--dashboard-hover-bg);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -564,14 +563,14 @@
 
 .breakdownLabel {
   font-size: 14px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   min-width: 70px;
 }
 
 .breakdownValue {
   font-size: 14px;
   font-weight: 600;
-  color: #292524;
+  color: var(--dashboard-text);
   min-width: 60px;
   text-align: right;
 }
@@ -582,7 +581,7 @@
   border-radius: 0;
   padding: 24px 0;
   margin-bottom: 0;
-  border-bottom: 1px solid #e7e5e4;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .scenarioList {
@@ -596,13 +595,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background-color: #fafaf9;
+  background-color: var(--dashboard-bg-secondary);
   border-radius: 12px;
 }
 
 .scenarioAction {
   font-size: 14px;
-  color: #57534e;
+  color: var(--dashboard-text-secondary);
 }
 
 .scenarioResult {
@@ -614,7 +613,7 @@
 .scenarioAmount {
   font-size: 18px;
   font-weight: 700;
-  color: #292524;
+  color: var(--dashboard-text);
 }
 
 .scenarioDiff {
@@ -634,7 +633,7 @@
   display: flex;
   justify-content: space-between;
   padding: 12px 0;
-  border-bottom: 1px solid #f5f5f4;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .summaryRow:last-child {
@@ -643,13 +642,13 @@
 
 .summaryLabel {
   font-size: 14px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
 }
 
 .summaryValue {
   font-size: 14px;
   font-weight: 600;
-  color: #292524;
+  color: var(--dashboard-text);
 }
 
 /* 설정 패널 */
@@ -658,7 +657,7 @@
   border-radius: 0;
   margin-bottom: 0;
   overflow: hidden;
-  border-bottom: 1px solid #e7e5e4;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .settingsToggle {
@@ -671,17 +670,17 @@
   background: none;
   font-size: 14px;
   font-weight: 500;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .settingsToggle:hover {
-  color: #292524;
+  color: var(--dashboard-text);
 }
 
 .settingsContent {
   padding: 0 20px 20px;
-  border-top: 1px solid #f5f5f4;
+  border-top: 1px solid var(--dashboard-border-light);
 }
 
 .settingsRow {
@@ -689,7 +688,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 0;
-  border-bottom: 1px solid #f5f5f4;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .settingsRow:last-of-type {
@@ -698,7 +697,7 @@
 
 .settingsLabel {
   font-size: 14px;
-  color: #57534e;
+  color: var(--dashboard-text-secondary);
 }
 
 .settingsInputGroup {
@@ -710,24 +709,24 @@
 .settingsInput {
   width: 70px;
   padding: 8px 12px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #292524;
+  color: var(--dashboard-text);
   text-align: right;
-  background-color: #fafaf9;
+  background-color: var(--dashboard-bg-secondary);
 }
 
 .settingsInput:focus {
   outline: none;
   border-color: #007aff;
-  background-color: white;
+  background-color: var(--dashboard-input-bg);
 }
 
 .settingsUnit {
   font-size: 14px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   min-width: 20px;
 }
 
@@ -737,7 +736,7 @@
   padding: 12px;
   border: none;
   border-radius: 10px;
-  background-color: #292524;
+  background-color: var(--accent-primary, #007aff);
   color: white;
   font-size: 14px;
   font-weight: 600;
@@ -746,11 +745,11 @@
 }
 
 .settingsSaveButton:hover {
-  background-color: #44403c;
+  background-color: var(--accent-primary-hover, #0066d6);
 }
 
 .settingsSaveButton:disabled {
-  background-color: #a8a29e;
+  background-color: var(--dashboard-text-muted);
   cursor: not-allowed;
 }
 
@@ -767,7 +766,7 @@
   border-radius: 0;
   padding: 24px 0;
   border: none;
-  border-right: 1px solid #e7e5e4;
+  border-right: 1px solid var(--dashboard-border);
   height: fit-content;
 }
 
@@ -780,7 +779,7 @@
 .tabInputTitle {
   font-size: 15px;
   font-weight: 600;
-  color: #292524;
+  color: var(--dashboard-text);
   margin: 0 0 20px 0;
 }
 
@@ -791,7 +790,7 @@
 .inputLabel {
   display: block;
   font-size: 13px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   margin-bottom: 8px;
 }
 
@@ -804,22 +803,22 @@
 .inputField {
   flex: 1;
   padding: 10px 12px;
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #292524;
-  background-color: #fafaf9;
+  color: var(--dashboard-text);
+  background-color: var(--dashboard-bg-secondary);
 }
 
 .inputField:focus {
   outline: none;
   border-color: #007aff;
-  background-color: white;
+  background-color: var(--dashboard-input-bg);
 }
 
 .inputUnit {
   font-size: 13px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   min-width: 30px;
 }
 
@@ -828,13 +827,13 @@
   border-radius: 0;
   padding: 24px 0;
   border: none;
-  border-bottom: 1px solid #e7e5e4;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .chartTitle {
   font-size: 14px;
   font-weight: 600;
-  color: #292524;
+  color: var(--dashboard-text);
   margin: 0 0 16px 0;
 }
 
@@ -846,7 +845,7 @@
   display: flex;
   justify-content: space-between;
   padding: 12px 0;
-  border-bottom: 1px solid #f5f5f4;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .statRow:last-child {
@@ -855,13 +854,13 @@
 
 .statLabel {
   font-size: 13px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
 }
 
 .statValue {
   font-size: 14px;
   font-weight: 600;
-  color: #292524;
+  color: var(--dashboard-text);
 }
 
 .gaugeContainer {
@@ -874,12 +873,12 @@
 .gaugeValue {
   font-size: 36px;
   font-weight: 700;
-  color: #292524;
+  color: var(--dashboard-text);
 }
 
 .gaugeLabel {
   font-size: 13px;
-  color: #78716c;
+  color: var(--dashboard-text-secondary);
   margin-top: 4px;
 }
 

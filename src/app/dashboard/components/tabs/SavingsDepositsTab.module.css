@@ -28,23 +28,23 @@
 }
 
 .accountItem .accountItemName {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .accountItem .accountItemBalance {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .accountItemSelected .accountItemName {
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .accountItemSelected .accountItemBalance {
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .accountItemSelected .accountItemChange.positive {
-  color: #059669;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .accountItemName {
@@ -75,13 +75,13 @@
 .accountDivider {
   width: 1px;
   height: 32px;
-  background: #e5e7eb;
+  background: var(--dashboard-border);
   flex-shrink: 0;
 }
 
 .noAccountsText {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   padding: 8px 0;
 }
 
@@ -92,7 +92,7 @@
   align-items: flex-start;
   gap: 40px;
   padding: 32px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .mainMetric {
@@ -104,13 +104,13 @@
 .metricLabel {
   font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .mainValue {
   font-size: 36px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   letter-spacing: -1px;
 }
 
@@ -123,7 +123,7 @@
 }
 
 .changeInfo.positive {
-  color: #059669;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .sideMetrics {
@@ -141,13 +141,13 @@
 .sideLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .sideValue {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 /* 보유 목록 섹션 */
@@ -165,7 +165,7 @@
 .holdingsSectionTitle {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
@@ -187,12 +187,12 @@
   flex-direction: column;
   gap: 12px;
   padding: 20px 16px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
   position: relative;
 }
 
 .holdingItem:nth-child(odd) {
-  border-right: 1px solid #f3f4f6;
+  border-right: 1px solid var(--dashboard-border-light);
 }
 
 @media (max-width: 1200px) {
@@ -208,7 +208,7 @@
   gap: 0;
   overflow-y: auto;
   padding-right: 40px;
-  background: #fff;
+  background: var(--dashboard-bg);
 }
 
 /* 로딩 상태 */
@@ -234,7 +234,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 20px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
   position: relative;
 }
 
@@ -261,7 +261,7 @@
   flex-wrap: wrap;
   gap: 16px 24px;
   padding: 12px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 /* 계산된 필드 행 (검정색) */
@@ -282,19 +282,19 @@
 .fieldLabel {
   font-size: 10px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .fieldValueInput {
   font-size: 13px;
   font-weight: 600;
-  color: #2563eb;
+  color: var(--dashboard-text);
 }
 
 .fieldValueCalc {
   font-size: 13px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .fieldValueCalc.highlight {
@@ -358,12 +358,12 @@
 .holdingName {
   font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .holdingBroker {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .holdingSubInfo {
@@ -381,7 +381,7 @@
 
 .contributionLabel {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .holdingMetricsRow {
@@ -400,17 +400,17 @@
 .metricLabel {
   font-size: 11px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .metricValue {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .interestColor {
-  color: #059669;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .holdingActions {
@@ -466,7 +466,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 24px 0;
-  border-bottom: 1px solid #e8e8ed;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .editRow {
@@ -495,9 +495,9 @@
   padding: 8px 0;
   font-size: 16px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-input-border);
   outline: none;
   background: transparent;
   text-align: right;
@@ -518,9 +518,9 @@
   padding: 8px 0;
   font-size: 16px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-input-border);
   outline: none;
   background: transparent;
   text-align: center;
@@ -546,9 +546,9 @@
   padding: 8px 0;
   font-size: 16px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-input-border);
   outline: none;
   background: transparent;
 }
@@ -561,8 +561,8 @@
   padding: 8px 12px;
   font-size: 14px;
   font-weight: 500;
-  color: #1d1d1f;
-  background: #f5f5f7;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
   border: none;
   border-radius: 6px;
   outline: none;
@@ -570,7 +570,7 @@
 }
 
 .editSelect:focus {
-  background: #e8e8ed;
+  background: var(--dashboard-hover-bg);
 }
 
 /* 유형 선택 버튼 */
@@ -584,20 +584,20 @@
   padding: 6px 12px;
   font-size: 13px;
   font-weight: 400;
-  color: #1d1d1f;
-  background: #f5f5f7;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .typeBtn:hover {
-  background: #e8e8ed;
+  background: var(--dashboard-hover-bg);
 }
 
 .typeBtn.active {
-  background: #1d1d1f;
-  color: #fff;
+  background: var(--dashboard-text);
+  color: var(--dashboard-bg);
 }
 
 /* 편집 액션 */
@@ -662,13 +662,13 @@
   flex-direction: column;
   gap: 12px;
   overflow-y: auto;
-  background: #f5f5f7;
+  background: var(--dashboard-bg-secondary);
   padding: 12px 12px 240px 12px;
   margin: -24px -24px -24px 0;
 }
 
 .summaryCard {
-  background: #fff;
+  background: var(--dashboard-card-bg);
   padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
@@ -711,7 +711,7 @@
 .subValue {
   font-size: 16px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
 }
 
 .interestValue {
@@ -723,7 +723,7 @@
   gap: 24px;
   padding-top: 16px;
   margin-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--dashboard-border-light);
 }
 
 .breakdownItem {
@@ -734,13 +734,13 @@
 
 .breakdownLabel {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .breakdownValue {
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 /* 빈 상태 */
@@ -751,8 +751,8 @@
   justify-content: center;
   padding: 60px 24px;
   text-align: center;
-  color: #c7c7cc;
-  background: #fff;
+  color: var(--dashboard-text-muted);
+  background: var(--dashboard-card-bg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -779,7 +779,7 @@
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;

@@ -462,6 +462,7 @@ export function DashboardContent() {
             globalSettings={globalSettings}
             unreadMessageCount={unreadMessageCount}
             onNavigate={handleSectionChange}
+            profileId={profile.id}
           />
         );
       // 담당자 관련

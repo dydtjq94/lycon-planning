@@ -3,67 +3,85 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { LogOut, User, Bell, Shield, HelpCircle, ChevronRight, Check } from "lucide-react";
+import { LogOut, User, Bell, Shield, HelpCircle, ChevronRight, Check, Sun, Moon, Monitor } from "lucide-react";
+import { useTheme, type ColorMode, type AccentColor } from "@/contexts/ThemeContext";
 import styles from "./SettingsTab.module.css";
+type ChartThemeId = "default" | "pastel" | "mono" | "vivid" | "ocean" | "sunset" | "forest" | "neon" | "retro" | "candy";
 
-type ThemeId = "dark" | "darker" | "light" | "blue";
-
-interface Theme {
-  id: ThemeId;
+interface AccentColorOption {
+  id: AccentColor;
   name: string;
-  description: string;
-  preview: {
-    bg: string;
-    itemBg: string;
-    text: string;
-    textMuted: string;
-  };
+  color: string;
 }
 
-const themes: Theme[] = [
+interface ChartTheme {
+  id: ChartThemeId;
+  name: string;
+  colors: string[];
+}
+
+const accentColors: AccentColorOption[] = [
+  { id: "blue", name: "블루", color: "#007aff" },
+  { id: "purple", name: "퍼플", color: "#a855f7" },
+  { id: "green", name: "그린", color: "#22c55e" },
+  { id: "teal", name: "틸", color: "#14b8a6" },
+  { id: "indigo", name: "인디고", color: "#6366f1" },
+  { id: "rose", name: "로즈", color: "#f43f5e" },
+  { id: "orange", name: "오렌지", color: "#f97316" },
+  { id: "amber", name: "앰버", color: "#f59e0b" },
+  { id: "black", name: "블랙", color: "#525252" },
+];
+
+const chartThemes: ChartTheme[] = [
   {
-    id: "darker",
-    name: "다크 (기본)",
-    description: "선명한 텍스트",
-    preview: {
-      bg: "#0f0f0f",
-      itemBg: "#1f1f1f",
-      text: "#ffffff",
-      textMuted: "#cccccc",
-    },
+    id: "default",
+    name: "기본",
+    colors: ["#3b82f6", "#22c55e", "#8b5cf6", "#f59e0b", "#ef4444"],
   },
   {
-    id: "dark",
-    name: "다크 (소프트)",
-    description: "부드러운 대비",
-    preview: {
-      bg: "#1a1a1a",
-      itemBg: "#2a2a2a",
-      text: "#ffffff",
-      textMuted: "#aaaaaa",
-    },
+    id: "pastel",
+    name: "파스텔",
+    colors: ["#93c5fd", "#86efac", "#c4b5fd", "#fcd34d", "#fca5a5"],
   },
   {
-    id: "light",
-    name: "라이트",
-    description: "밝은 배경",
-    preview: {
-      bg: "#f5f5f7",
-      itemBg: "#ffffff",
-      text: "#1d1d1f",
-      textMuted: "#6e6e73",
-    },
+    id: "mono",
+    name: "모노톤",
+    colors: ["#1f2937", "#374151", "#6b7280", "#9ca3af", "#d1d5db"],
   },
   {
-    id: "blue",
-    name: "네이비",
-    description: "네이비 블루",
-    preview: {
-      bg: "#1e2a3a",
-      itemBg: "#2a3a4d",
-      text: "#ffffff",
-      textMuted: "#9cb3c9",
-    },
+    id: "vivid",
+    name: "비비드",
+    colors: ["#2563eb", "#16a34a", "#9333ea", "#ea580c", "#dc2626"],
+  },
+  {
+    id: "ocean",
+    name: "오션",
+    colors: ["#0ea5e9", "#06b6d4", "#0891b2", "#0284c7", "#38bdf8"],
+  },
+  {
+    id: "sunset",
+    name: "선셋",
+    colors: ["#f97316", "#f59e0b", "#ec4899", "#ef4444", "#fb923c"],
+  },
+  {
+    id: "forest",
+    name: "포레스트",
+    colors: ["#22c55e", "#16a34a", "#84cc16", "#65a30d", "#4ade80"],
+  },
+  {
+    id: "neon",
+    name: "네온",
+    colors: ["#a855f7", "#06b6d4", "#f43f5e", "#22d3ee", "#d946ef"],
+  },
+  {
+    id: "retro",
+    name: "레트로",
+    colors: ["#d97706", "#b45309", "#a16207", "#92400e", "#ca8a04"],
+  },
+  {
+    id: "candy",
+    name: "캔디",
+    colors: ["#ec4899", "#f472b6", "#a855f7", "#c084fc", "#f9a8d4"],
   },
 ];
 
@@ -73,19 +91,29 @@ interface SettingsTabProps {
 
 export function SettingsTab({ profileName }: SettingsTabProps) {
   const router = useRouter();
-  const [currentTheme, setCurrentTheme] = useState<ThemeId>("darker");
+  const { colorMode, accentColor, setColorMode, setAccentColor } = useTheme();
+  const [currentChartTheme, setCurrentChartTheme] = useState<ChartThemeId>("default");
 
   useEffect(() => {
-    const saved = localStorage.getItem("user-theme") as ThemeId | null;
-    if (saved && themes.some((t) => t.id === saved)) {
-      setCurrentTheme(saved);
+    // 차트 테마 로드
+    const savedChart = localStorage.getItem("chart-theme") as ChartThemeId | null;
+    if (savedChart && chartThemes.some((t) => t.id === savedChart)) {
+      setCurrentChartTheme(savedChart);
     }
   }, []);
 
-  const handleThemeChange = (themeId: ThemeId) => {
-    setCurrentTheme(themeId);
-    localStorage.setItem("user-theme", themeId);
-    window.dispatchEvent(new CustomEvent("user-theme-change", { detail: themeId }));
+  const handleColorModeChange = (mode: ColorMode) => {
+    setColorMode(mode);
+  };
+
+  const handleAccentColorChange = (accent: AccentColor) => {
+    setAccentColor(accent);
+  };
+
+  const handleChartThemeChange = (themeId: ChartThemeId) => {
+    setCurrentChartTheme(themeId);
+    localStorage.setItem("chart-theme", themeId);
+    window.dispatchEvent(new CustomEvent("chart-theme-change", { detail: themeId }));
   };
 
   const handleLogout = async () => {
@@ -113,48 +141,81 @@ export function SettingsTab({ profileName }: SettingsTabProps) {
           </div>
         </section>
 
-        {/* 테마 설정 */}
+        {/* 색상 모드 */}
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>사이드바 테마</h2>
-          <div className={styles.themeGrid}>
-            {themes.map((theme) => (
+          <h2 className={styles.sectionTitle}>색상 모드</h2>
+          <div className={styles.colorModeContainer}>
+            <button
+              className={`${styles.colorModeBtn} ${colorMode === "light" ? styles.colorModeBtnActive : ""}`}
+              onClick={() => handleColorModeChange("light")}
+            >
+              <Sun size={18} />
+              <span>라이트</span>
+            </button>
+            <button
+              className={`${styles.colorModeBtn} ${colorMode === "dark" ? styles.colorModeBtnActive : ""}`}
+              onClick={() => handleColorModeChange("dark")}
+            >
+              <Moon size={18} />
+              <span>다크</span>
+            </button>
+            <button
+              className={`${styles.colorModeBtn} ${colorMode === "system" ? styles.colorModeBtnActive : ""}`}
+              onClick={() => handleColorModeChange("system")}
+            >
+              <Monitor size={18} />
+              <span>시스템</span>
+            </button>
+          </div>
+        </section>
+
+        {/* 액센트 색상 */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>액센트 색상</h2>
+          <div className={styles.accentGrid}>
+            {accentColors.map((color) => (
               <button
-                key={theme.id}
-                className={`${styles.themeCard} ${currentTheme === theme.id ? styles.themeCardActive : ""}`}
-                onClick={() => handleThemeChange(theme.id)}
+                key={color.id}
+                className={`${styles.accentCard} ${accentColor === color.id ? styles.accentCardActive : ""}`}
+                onClick={() => handleAccentColorChange(color.id)}
+                style={{ "--accent-preview": color.color } as React.CSSProperties}
               >
                 <div
-                  className={styles.themePreview}
-                  style={{ backgroundColor: theme.preview.bg }}
-                >
-                  <div
-                    className={styles.previewItem}
-                    style={{ backgroundColor: theme.preview.itemBg }}
-                  >
-                    <div
-                      className={styles.previewDot}
-                      style={{ backgroundColor: theme.preview.text }}
-                    />
-                    <div
-                      className={styles.previewLine}
-                      style={{ backgroundColor: theme.preview.text }}
-                    />
+                  className={styles.accentDot}
+                  style={{ backgroundColor: color.color }}
+                />
+                <span className={styles.accentName}>{color.name}</span>
+                {accentColor === color.id && (
+                  <div className={styles.checkMark} style={{ backgroundColor: color.color }}>
+                    <Check size={12} />
                   </div>
-                  <div className={styles.previewItem}>
+                )}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* 차트 색상 설정 */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>차트 색상</h2>
+          <div className={styles.chartThemeGrid}>
+            {chartThemes.map((theme) => (
+              <button
+                key={theme.id}
+                className={`${styles.chartThemeCard} ${currentChartTheme === theme.id ? styles.chartThemeCardActive : ""}`}
+                onClick={() => handleChartThemeChange(theme.id)}
+              >
+                <div className={styles.chartColorPreview}>
+                  {theme.colors.map((color, idx) => (
                     <div
-                      className={styles.previewDot}
-                      style={{ backgroundColor: theme.preview.textMuted }}
+                      key={idx}
+                      className={styles.chartColorDot}
+                      style={{ backgroundColor: color }}
                     />
-                    <div
-                      className={styles.previewLine}
-                      style={{ backgroundColor: theme.preview.textMuted }}
-                    />
-                  </div>
+                  ))}
                 </div>
-                <div className={styles.themeInfo}>
-                  <span className={styles.themeName}>{theme.name}</span>
-                </div>
-                {currentTheme === theme.id && (
+                <span className={styles.chartThemeName}>{theme.name}</span>
+                {currentChartTheme === theme.id && (
                   <div className={styles.checkMark}>
                     <Check size={14} />
                   </div>

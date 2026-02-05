@@ -13,7 +13,7 @@
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   font-size: 14px;
 }
 
@@ -40,24 +40,24 @@
 }
 
 .accountItem .accountItemName {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .accountItem .accountItemBalance {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .accountItem:hover .accountItemName,
 .accountItem:hover .accountItemBalance {
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .accountItemSelected .accountItemName {
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .accountItemSelected .accountItemBalance {
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .accountItemName {
@@ -82,35 +82,35 @@
   font-size: 11px;
   font-weight: 500;
   transition: color 0.15s;
-  color: #d1d5db;
+  color: var(--dashboard-text-muted);
 }
 
 .accountItemChange.positive {
-  color: #d1d5db;
+  color: var(--dashboard-text-muted);
 }
 
 .accountItemChange.negative {
-  color: #d1d5db;
+  color: var(--dashboard-text-muted);
 }
 
 .accountItemSelected .accountItemChange.positive {
-  color: #ef4444;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .accountItemSelected .accountItemChange.negative {
-  color: #3b82f6;
+  color: var(--chart-loss-color, #3b82f6);
 }
 
 .accountDivider {
   width: 1px;
   height: 32px;
-  background: #e5e7eb;
+  background: var(--dashboard-border);
   flex-shrink: 0;
 }
 
 .noAccountsText {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   padding: 8px 0;
 }
 
@@ -138,7 +138,7 @@
 }
 
 .modal {
-  background: white;
+  background: var(--dashboard-card-bg);
   border-radius: 16px;
   width: 100%;
   max-width: 640px;
@@ -153,13 +153,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .modalHeader h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
@@ -172,12 +172,12 @@
   background: none;
   border: none;
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .modalCloseBtn:hover {
-  background: #f3f4f6;
+  background: var(--dashboard-hover-bg);
 }
 
 .modalContent {
@@ -188,7 +188,7 @@
 /* 계좌 폼 */
 .accountForm {
   padding: 20px;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
   border-radius: 12px;
   margin-bottom: 24px;
 }
@@ -196,7 +196,7 @@
 .accountForm h4 {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0 0 16px 0;
 }
 
@@ -220,7 +220,7 @@
 .accountFormGroup label {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .checkboxLabel {
@@ -229,7 +229,7 @@
   gap: 8px;
   padding-top: 24px;
   font-size: 13px;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   cursor: pointer;
 }
 
@@ -250,7 +250,7 @@
 .accountList h4 {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0 0 12px 0;
 }
 
@@ -258,7 +258,7 @@
 /* 티커 검색 */
 .searchSection {
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .searchBar {
@@ -274,21 +274,21 @@
 .searchInput {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-input-border);
   border-radius: 10px;
   font-size: 14px;
-  color: #1a1a1a;
-  background: #f9fafb;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
 }
 
 .searchInput:focus {
   outline: none;
   border-color: #007aff;
-  background: white;
+  background: var(--dashboard-card-bg);
 }
 
 .searchInput::placeholder {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 /* 자동완성 드롭다운 */
@@ -298,8 +298,8 @@
   left: 0;
   right: 0;
   margin-top: 4px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   max-height: 320px;
@@ -315,7 +315,7 @@
   padding: 10px 14px;
   background: none;
   border: none;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
   cursor: pointer;
   text-align: left;
 }
@@ -325,28 +325,28 @@
 }
 
 .suggestionItem:hover {
-  background: #f9fafb;
+  background: var(--dashboard-hover-bg);
 }
 
 .suggestionName {
   flex: 1;
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .suggestionTicker {
   font-size: 12px;
   font-family: monospace;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .suggestionMarket {
   font-size: 11px;
   padding: 2px 6px;
-  background: #f3f4f6;
+  background: var(--dashboard-border-light);
   border-radius: 4px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .searchButton {
@@ -422,14 +422,14 @@
 .searchResultSymbol {
   font-size: 16px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   font-family: monospace;
 }
 
 .searchResultPrice {
   font-size: 20px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .searchResultChange {
@@ -441,11 +441,11 @@
 }
 
 .searchResultChange.positive {
-  color: #ef4444;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .searchResultChange.negative {
-  color: #3b82f6;
+  color: var(--chart-loss-color, #3b82f6);
 }
 
 .dataDateNotice {
@@ -454,7 +454,7 @@
   background: rgba(255, 255, 255, 0.6);
   border-radius: 6px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .dataDateWarning {
@@ -495,15 +495,15 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
-  background: white;
-  color: #6b7280;
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .closeBtn:hover {
-  background: #f9fafb;
+  background: var(--dashboard-hover-bg);
 }
 
 /* 검색 결과 슬라이드 패널 */
@@ -538,7 +538,7 @@
   right: 0;
   width: 520px;
   height: 100%;
-  background: white;
+  background: var(--dashboard-card-bg);
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
@@ -564,7 +564,7 @@
   justify-content: space-between;
   align-items: flex-start;
   padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .searchPanelTitle {
@@ -577,19 +577,19 @@
 .searchPanelName {
   font-size: 20px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .searchPanelSymbol {
   font-size: 14px;
   font-family: monospace;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .searchPanelPrice {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   display: flex;
   align-items: baseline;
   gap: 12px;
@@ -601,11 +601,11 @@
 }
 
 .searchPanelChange.positive {
-  color: #ef4444;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .searchPanelChange.negative {
-  color: #3b82f6;
+  color: var(--chart-loss-color, #3b82f6);
 }
 
 .searchPanelCloseBtn {
@@ -617,13 +617,13 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .searchPanelCloseBtn:hover {
-  background: #f5f5f4;
+  background: var(--dashboard-hover-bg);
 }
 
 .searchPanelChart {
@@ -656,7 +656,7 @@
   align-items: flex-start;
   gap: 40px;
   padding: 32px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .mainMetric {
@@ -668,13 +668,13 @@
 .metricLabel {
   font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .mainValue {
   font-size: 36px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   letter-spacing: -1px;
 }
 
@@ -687,17 +687,17 @@
 }
 
 .changeInfo.positive {
-  color: #ef4444;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .changeInfo.negative {
-  color: #3b82f6;
+  color: var(--chart-loss-color, #3b82f6);
 }
 
 .changeLabel {
   font-size: 11px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   letter-spacing: 0.3px;
   margin-right: 4px;
 }
@@ -717,21 +717,21 @@
 .sideLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .sideValue {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .profit {
-  color: #ef4444;
+  color: var(--chart-profit-color, #ef4444);
 }
 
 .loss {
-  color: #3b82f6;
+  color: var(--chart-loss-color, #3b82f6);
 }
 
 /* 차트 섹션 */
@@ -740,7 +740,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 32px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .chartContainer {
@@ -769,23 +769,23 @@
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .periodBtn:hover {
-  background: #f3f4f6;
+  background: var(--dashboard-hover-bg);
 }
 
 .periodBtnActive {
-  background: #1a1a1a;
-  color: white;
+  background: var(--dashboard-text);
+  color: var(--dashboard-bg);
 }
 
 .periodBtnActive:hover {
-  background: #1a1a1a;
-  color: white;
+  background: var(--dashboard-text);
+  color: var(--dashboard-bg);
 }
 
 /* 스켈레톤 shimmer 애니메이션 */
@@ -799,7 +799,7 @@
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
@@ -809,7 +809,7 @@
 .skeletonMainValue {
   width: 200px;
   height: 40px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 6px;
@@ -819,7 +819,7 @@
 .skeletonSideValue {
   width: 120px;
   height: 32px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
@@ -829,7 +829,7 @@
 .skeletonChangeInfo {
   width: 180px;
   height: 18px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
@@ -853,7 +853,7 @@
 .chartSkeletonPeriodBtn {
   width: 60px;
   height: 32px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 6px;
@@ -861,7 +861,7 @@
 
 .chartSkeletonArea {
   height: 280px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 8px;
@@ -876,7 +876,7 @@
 .chartSkeletonLegendItem {
   width: 80px;
   height: 16px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
@@ -950,7 +950,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   font-size: 13px;
 }
 
@@ -991,7 +991,7 @@
 .legendLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .legendDots {
@@ -1037,13 +1037,13 @@
 /* 폼 섹션 */
 .formSection {
   padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .formTitle {
   font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0 0 20px 0;
 }
 
@@ -1068,24 +1068,24 @@
 .formGroup label {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .input,
 .select {
   padding: 10px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-input-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #1a1a1a;
-  background: #f9fafb;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
 }
 
 .input:focus,
 .select:focus {
   outline: none;
   border-color: #007aff;
-  background: white;
+  background: var(--dashboard-card-bg);
 }
 
 /* 숫자 입력 스핀 버튼 제거 */
@@ -1104,11 +1104,11 @@
 
 .dateInput {
   padding: 10px 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-input-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #1a1a1a;
-  background: #f9fafb;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
   text-align: center;
 }
 
@@ -1124,11 +1124,11 @@
 .dateInput:focus {
   outline: none;
   border-color: #007aff;
-  background: white;
+  background: var(--dashboard-card-bg);
 }
 
 .dateSeparator {
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   font-size: 14px;
 }
 
@@ -1141,10 +1141,10 @@
 .toggleBtn {
   flex: 1;
   padding: 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
-  background: white;
-  color: #6b7280;
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text-secondary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -1153,14 +1153,14 @@
 
 .toggleBtn.active {
   background: #fef2f2;
-  border-color: #ef4444;
-  color: #dc2626;
+  border-color: var(--chart-buy-color, #ef4444);
+  color: var(--chart-buy-color, #ef4444);
 }
 
 .toggleBtn.activeSell {
   background: #eff6ff;
-  border-color: #3b82f6;
-  color: #2563eb;
+  border-color: var(--chart-sell-color, #3b82f6);
+  color: var(--chart-sell-color, #3b82f6);
 }
 
 /* 총액 미리보기 */
@@ -1175,7 +1175,7 @@
 
 .usdAmount {
   font-weight: 400;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 /* 폼 액션 */
@@ -1188,16 +1188,16 @@
 
 .cancelBtn {
   padding: 10px 20px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
-  background: white;
-  color: #6b7280;
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text-secondary);
   font-size: 14px;
   cursor: pointer;
 }
 
 .cancelBtn:hover {
-  background: #f9fafb;
+  background: var(--dashboard-hover-bg);
 }
 
 .submitBtn {
@@ -1218,7 +1218,7 @@
 /* 보유 종목 섹션 */
 .holdingsSection {
   padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .holdingsSectionHeader {
@@ -1231,7 +1231,7 @@
 .holdingsSectionTitle {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
@@ -1247,25 +1247,25 @@
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .holdingSortBtn:hover {
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .holdingSortActive {
-  background: #f3f4f6;
-  color: #1a1a1a;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text);
 }
 
 /* 빈 상태 */
 .emptyState {
   padding: 40px 24px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   font-size: 14px;
 }
 
@@ -1287,11 +1287,11 @@
   flex-direction: column;
   gap: 12px;
   padding: 20px 16px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .holdingItem:nth-child(odd) {
-  border-right: 1px solid #f3f4f6;
+  border-right: 1px solid var(--dashboard-border-light);
 }
 
 @media (max-width: 1200px) {
@@ -1326,13 +1326,13 @@
 .metricValueLeft {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .avgPriceInline {
   font-size: 12px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   margin-left: 6px;
 }
 
@@ -1386,13 +1386,13 @@
 .holdingTicker {
   font-size: 11px;
   font-weight: 400;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .holdingName {
   font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 /* 오른쪽: 금액 정보 */
@@ -1427,21 +1427,21 @@
 .metricLabel {
   font-size: 11px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .metricValue {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .profitColor {
-  color: #ef4444 !important;
+  color: var(--chart-profit-color, #ef4444) !important;
 }
 
 .lossColor {
-  color: #3b82f6 !important;
+  color: var(--chart-loss-color, #3b82f6) !important;
 }
 
 .plRateSmall {
@@ -1452,7 +1452,7 @@
 
 /* 기존 섹션 (거래 내역용) */
 .section {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .sectionHeader {
@@ -1468,13 +1468,13 @@
 }
 
 .sectionHeader:hover {
-  background: #f9fafb;
+  background: var(--dashboard-hover-bg);
 }
 
 .sectionTitle {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
   flex: 1;
 }
@@ -1547,7 +1547,7 @@
 
 /* 거래 내역 */
 .transactionsList {
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--dashboard-border-light);
 }
 
 .transactionCard {
@@ -1555,7 +1555,7 @@
   align-items: center;
   gap: 16px;
   padding: 12px 24px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
 }
 
 .transactionCard:last-child {
@@ -1578,12 +1578,12 @@
 
 .txType.buy {
   background: #fef2f2;
-  color: #dc2626;
+  color: var(--chart-buy-color, #ef4444);
 }
 
 .txType.sell {
   background: #eff6ff;
-  color: #2563eb;
+  color: var(--chart-sell-color, #3b82f6);
 }
 
 .txInfo {
@@ -1595,7 +1595,7 @@
 .txName {
   font-size: 13px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .txMeta {
@@ -1606,16 +1606,16 @@
 
 .txTicker {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   font-family: monospace;
 }
 
 .txAccount {
   font-size: 10px;
   padding: 2px 6px;
-  background: #f3f4f6;
+  background: var(--dashboard-border-light);
   border-radius: 4px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .txCenter {
@@ -1628,12 +1628,12 @@
 .txQty {
   font-size: 13px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .txPrice {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .txRight {
@@ -1647,12 +1647,12 @@
 .txTotal {
   font-size: 13px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .txDate {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .txActions {
@@ -1669,14 +1669,14 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .actionBtn:hover {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-secondary);
 }
 
 /* 반응형 */
@@ -1687,7 +1687,7 @@
 
   .summaryCard {
     border-right: none;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--dashboard-border);
   }
 
   .summaryCard:last-child {

@@ -20,16 +20,16 @@
 .sectionTitle {
   font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   margin: 0;
   padding: 0 4px;
 }
 
 .menuList {
-  background: white;
+  background: var(--dashboard-card-bg);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--dashboard-shadow-sm);
 }
 
 .menuItem {
@@ -40,11 +40,11 @@
   padding: 16px;
   background: none;
   border: none;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--dashboard-border-light);
   text-align: left;
   cursor: pointer;
   transition: background 0.15s;
-  color: #374151;
+  color: var(--dashboard-text-secondary);
 }
 
 .menuItem:last-child {
@@ -52,7 +52,7 @@
 }
 
 .menuItem:hover {
-  background: #f9fafb;
+  background: var(--dashboard-hover-bg);
 }
 
 .menuInfo {
@@ -65,16 +65,16 @@
 .menuLabel {
   font-size: 15px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .menuValue {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
 }
 
 .chevron {
-  color: #d1d5db;
+  color: var(--dashboard-text-muted);
 }
 
 .logoutButton {
@@ -97,7 +97,83 @@
   background: #fef2f2;
 }
 
-/* 테마 그리드 */
+/* 색상 모드 토글 */
+.colorModeContainer {
+  display: flex;
+  gap: 12px;
+}
+
+.colorModeBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: var(--dashboard-card-bg);
+  border: 2px solid var(--dashboard-border);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.colorModeBtn:hover {
+  border-color: #007aff;
+  color: var(--dashboard-text-secondary);
+}
+
+.colorModeBtnActive {
+  border-color: #007aff;
+  background: rgba(0, 122, 255, 0.08);
+  color: #007aff;
+}
+
+/* 액센트 색상 그리드 */
+.accentGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.accentCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border: 2px solid var(--dashboard-border);
+  background: var(--dashboard-card-bg);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.accentCard:hover {
+  border-color: var(--accent-preview, #007aff);
+}
+
+.accentCardActive {
+  border-color: var(--accent-preview, #007aff);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-preview, #007aff) 15%, transparent);
+}
+
+.accentDot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.accentName {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+}
+
+/* 테마 그리드 - 제거됨 (더 이상 사용 안함) */
 .themeGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -108,8 +184,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  border: 2px solid #e5e5e5;
-  background: white;
+  border: 2px solid var(--dashboard-border);
+  background: var(--dashboard-card-bg);
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
   overflow: hidden;
@@ -157,13 +233,13 @@
 
 .themeInfo {
   padding: 8px;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--dashboard-border);
 }
 
 .themeName {
   font-size: 12px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
 }
 
 .checkMark {
@@ -178,4 +254,51 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 차트 테마 그리드 */
+.chartThemeGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.chartThemeCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 2px solid var(--dashboard-border);
+  background: var(--dashboard-card-bg);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.chartThemeCard:hover {
+  border-color: #007aff;
+}
+
+.chartThemeCardActive {
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+.chartColorPreview {
+  display: flex;
+  gap: 4px;
+}
+
+.chartColorDot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.chartThemeName {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text);
 }

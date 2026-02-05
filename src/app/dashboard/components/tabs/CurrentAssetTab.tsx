@@ -20,6 +20,7 @@ import {
   usePortfolioTransactions,
   usePortfolioChartPriceData,
 } from "@/hooks/useFinancialData";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import type { FinancialSnapshotItem, FinancialSnapshotItemInput, PortfolioAccount, Account, Profile, FamilyMember } from "@/types/tables";
 import { formatMoney, formatWon, calculateAge } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -507,7 +508,7 @@ function OtherInvestmentCard({ item, isCouple, onUpdate, onDelete }: OtherInvest
 
         <div className={styles.itemCardField}>
           <span className={styles.itemCardFieldLabel}>평가금액</span>
-          <div className={styles.itemCardFieldWithUnit}>
+          <div className={styles.itemCardFieldUnit}>
             <input
               type="number"
               className={styles.itemCardFieldInput}
@@ -1803,6 +1804,7 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
 export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps) {
   const [activeTab, setActiveTab] = useState<TabType>("savings");
   const supabase = createClient();
+  const { categoryColors, categoryShades, chartScaleColors } = useChartTheme();
 
   // 스냅샷 데이터 (항상 오늘)
   const { data: todaySnapshot, isLoading: isSnapshotLoading } = useTodaySnapshot(profileId);
@@ -2461,9 +2463,10 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
         ? [totals.savings || 0.01, totals.investment || 0.01, totals.realEstate || 0.01, totals.realAsset || 0.01, totals.debt || 0.01]
         : [1],
       backgroundColor: hasData
-        ? ["#3b82f6", "#22c55e", "#8b5cf6", "#f59e0b", "#94a3b8"]
-        : ["#e5e7eb"],
-      borderWidth: 0,
+        ? [categoryColors.savings, categoryColors.investment, categoryColors.realEstate, categoryColors.realAsset, categoryColors.debt]
+        : [chartScaleColors.emptyState],
+      borderWidth: 3,
+      borderColor: chartScaleColors.doughnutBorder,
     }],
   };
 
@@ -2480,7 +2483,6 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
   }, [items]);
 
   const realEstateChartData = useMemo(() => {
-    const colors = ["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"];
     const hasRealEstate = totals.realEstate > 0;
     const entries = Array.from(realEstateBreakdown.entries()).filter(([, amount]) => amount > 0);
 
@@ -2488,11 +2490,11 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       labels: hasRealEstate ? entries.map(([type]) => ITEM_TYPES.realEstate.find(t => t.value === type)?.label || type) : ["데이터 없음"],
       datasets: [{
         data: hasRealEstate ? entries.map(([, amount]) => amount) : [1],
-        backgroundColor: hasRealEstate ? colors.slice(0, entries.length) : ["#e5e7eb"],
+        backgroundColor: hasRealEstate ? categoryShades.realEstate.slice(0, entries.length) : [chartScaleColors.emptyState],
         borderWidth: 0,
       }],
     };
-  }, [realEstateBreakdown, totals.realEstate]);
+  }, [realEstateBreakdown, totals.realEstate, categoryShades.realEstate]);
 
   // 실물자산 유형별 데이터 (부동산 제외)
   const realAssetBreakdown = useMemo(() => {
@@ -2507,7 +2509,6 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
   }, [items]);
 
   const realAssetChartData = useMemo(() => {
-    const colors = ["#f59e0b", "#fb923c", "#fbbf24", "#fcd34d"];
     const hasRealAsset = totals.realAsset > 0;
     const entries = Array.from(realAssetBreakdown.entries()).filter(([, amount]) => amount > 0);
 
@@ -2515,11 +2516,11 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       labels: hasRealAsset ? entries.map(([type]) => ITEM_TYPES.realAsset.find(t => t.value === type)?.label || type) : ["데이터 없음"],
       datasets: [{
         data: hasRealAsset ? entries.map(([, amount]) => amount) : [1],
-        backgroundColor: hasRealAsset ? colors.slice(0, entries.length) : ["#e5e7eb"],
+        backgroundColor: hasRealAsset ? categoryShades.realAsset.slice(0, entries.length) : [chartScaleColors.emptyState],
         borderWidth: 0,
       }],
     };
-  }, [realAssetBreakdown, totals.realAsset]);
+  }, [realAssetBreakdown, totals.realAsset, categoryShades.realAsset]);
 
   // 부채 유형별 데이터
   const debtBreakdown = useMemo(() => {
@@ -2534,7 +2535,6 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
   }, [items]);
 
   const debtChartData = useMemo(() => {
-    const colors = ["#94a3b8", "#a1a1aa", "#9ca3af", "#6b7280", "#71717a", "#78716c", "#64748b", "#52525b"];
     const hasDebt = totals.debt > 0;
     const entries = Array.from(debtBreakdown.entries()).filter(([, amount]) => amount > 0);
 
@@ -2542,17 +2542,16 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       labels: hasDebt ? entries.map(([type]) => ITEM_TYPES.debt.find(t => t.value === type)?.label || type) : ["데이터 없음"],
       datasets: [{
         data: hasDebt ? entries.map(([, amount]) => amount) : [1],
-        backgroundColor: hasDebt ? colors.slice(0, entries.length) : ["#e5e7eb"],
-        borderWidth: 0,
+        backgroundColor: hasDebt ? categoryShades.debt.slice(0, entries.length) : [chartScaleColors.emptyState],
+        borderWidth: 2,
+        borderColor: chartScaleColors.doughnutBorder,
       }],
     };
-  }, [debtBreakdown, totals.debt]);
+  }, [debtBreakdown, totals.debt, categoryShades.debt]);
 
   // 현금성 자산 차트 (저축 계좌들 + 투자 계좌들 세부)
   const cashAssetChartData = useMemo(() => {
     const cashItems: { label: string; value: number; color: string }[] = [];
-    const blueColors = ["#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe"];
-    const greenColors = ["#22c55e", "#4ade80", "#86efac", "#bbf7d0"];
 
     // 저축 계좌들
     savingsAccountValues.forEach((acc, idx) => {
@@ -2560,7 +2559,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
         cashItems.push({
           label: acc.name,
           value: Math.round(acc.value / 10000), // 원 -> 만원
-          color: blueColors[idx % blueColors.length],
+          color: categoryShades.savings[idx % categoryShades.savings.length],
         });
       }
     });
@@ -2571,7 +2570,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
         cashItems.push({
           label: data.accountName,
           value: Math.round(data.value / 10000), // 원 -> 만원
-          color: greenColors[idx % greenColors.length],
+          color: categoryShades.investment[idx % categoryShades.investment.length],
         });
       }
     });
@@ -2583,18 +2582,17 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       labels: hasData ? cashItems.map(i => i.label) : ["데이터 없음"],
       datasets: [{
         data: hasData ? cashItems.map(i => i.value) : [1],
-        backgroundColor: hasData ? cashItems.map(i => i.color) : ["#e5e7eb"],
-        borderWidth: 0,
+        backgroundColor: hasData ? cashItems.map(i => i.color) : [chartScaleColors.emptyState],
+        borderWidth: 2,
+        borderColor: chartScaleColors.doughnutBorder,
       }],
       total,
     };
-  }, [savingsAccountValues, accountValues, totals.savings, totals.investment]);
+  }, [savingsAccountValues, accountValues, totals.savings, totals.investment, categoryShades.savings, categoryShades.investment, chartScaleColors]);
 
   // 실물 자산 차트 (부동산 + 실물자산 세부 항목)
   const realAssetTotalChartData = useMemo(() => {
     const realItems: { label: string; value: number; color: string }[] = [];
-    const purpleColors = ["#8b5cf6", "#a78bfa", "#c4b5fd"];
-    const orangeColors = ["#f59e0b", "#fbbf24", "#fcd34d"];
 
     // 부동산 항목들
     items
@@ -2611,7 +2609,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
           realItems.push({
             label,
             value: netValue,
-            color: purpleColors[idx % purpleColors.length],
+            color: categoryShades.realEstate[idx % categoryShades.realEstate.length],
           });
         }
       });
@@ -2628,7 +2626,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
           realItems.push({
             label,
             value: netValue,
-            color: orangeColors[idx % orangeColors.length],
+            color: categoryShades.realAsset[idx % categoryShades.realAsset.length],
           });
         }
       });
@@ -2640,17 +2638,17 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       labels: hasData ? realItems.map(i => i.label) : ["데이터 없음"],
       datasets: [{
         data: hasData ? realItems.map(i => i.value) : [1],
-        backgroundColor: hasData ? realItems.map(i => i.color) : ["#e5e7eb"],
-        borderWidth: 0,
+        backgroundColor: hasData ? realItems.map(i => i.color) : [chartScaleColors.emptyState],
+        borderWidth: 2,
+        borderColor: chartScaleColors.doughnutBorder,
       }],
       total,
     };
-  }, [items, totals.realEstate, totals.realAsset]);
+  }, [items, totals.realEstate, totals.realAsset, categoryShades.realEstate, categoryShades.realAsset, chartScaleColors]);
 
   // 총 부채 차트 (모든 부채 세부 항목)
   const totalDebtChartData = useMemo(() => {
     const debtItems: { label: string; value: number; color: string }[] = [];
-    const grayColors = ["#64748b", "#94a3b8", "#cbd5e1", "#475569", "#6b7280", "#9ca3af"];
 
     // 모든 부채 항목
     items
@@ -2661,7 +2659,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
           debtItems.push({
             label,
             value: item.amount,
-            color: grayColors[idx % grayColors.length],
+            color: categoryShades.debt[idx % categoryShades.debt.length],
           });
         }
       });
@@ -2673,12 +2671,13 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       labels: hasData ? debtItems.map(i => i.label) : ["데이터 없음"],
       datasets: [{
         data: hasData ? debtItems.map(i => i.value) : [1],
-        backgroundColor: hasData ? debtItems.map(i => i.color) : ["#e5e7eb"],
-        borderWidth: 0,
+        backgroundColor: hasData ? debtItems.map(i => i.color) : [chartScaleColors.emptyState],
+        borderWidth: 2,
+        borderColor: chartScaleColors.doughnutBorder,
       }],
       total,
     };
-  }, [items, totals.debt, totals.realEstateLoan, totals.realAssetInstallment]);
+  }, [items, totals.debt, totals.realEstateLoan, totals.realAssetInstallment, categoryShades.debt, chartScaleColors]);
 
   // 서브 차트용 옵션 (커스텀 툴팁)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -3165,13 +3164,30 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     setEditingDebtId(id);
   };
 
+  // 기타 투자 추가
+  const handleAddOtherInvestment = async (itemType: string) => {
+    if (!currentSnapshot) return;
+
+    const typeConfig = ITEM_TYPES.investment.find(t => t.value === itemType);
+    await createMutation.mutateAsync({
+      snapshot_id: currentSnapshot.id,
+      category: "asset",
+      item_type: itemType,
+      title: typeConfig?.label || "",
+      amount: 0,
+      owner: "self",
+    });
+  };
+
   // 모달에서 항목 선택 시
   const handleModalSelect = async (itemType: string) => {
     if (!addModalCategory) return;
 
     setAddModalCategory(null); // 모달 먼저 닫기
 
-    if (addModalCategory === "realEstate") {
+    if (addModalCategory === "investment") {
+      await handleAddOtherInvestment(itemType);
+    } else if (addModalCategory === "realEstate") {
       await handleAddInvestmentRealEstate(itemType);
     } else if (addModalCategory === "realAsset") {
       await handleAddRealAsset(itemType);

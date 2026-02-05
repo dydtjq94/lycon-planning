@@ -168,16 +168,42 @@ export async function getTodaySnapshot(profileId: string): Promise<FinancialSnap
   return data?.[0] || null
 }
 
-// 오늘 날짜 스냅샷 가져오기 (없으면 생성)
+// 오늘 날짜 스냅샷 가져오기 (없으면 생성 + 이전 스냅샷 items 복사)
 export async function getOrCreateTodaySnapshot(profileId: string): Promise<FinancialSnapshot> {
   const existing = await getTodaySnapshot(profileId)
   if (existing) return existing
 
-  // 없으면 새로 생성
-  return createSnapshot({
+  // 가장 최근 스냅샷 조회 (오늘 이전)
+  const latestSnapshot = await getLatestSnapshot(profileId)
+
+  // 새 스냅샷 생성
+  const newSnapshot = await createSnapshot({
     profile_id: profileId,
-    snapshot_type: 'followup',
+    snapshot_type: latestSnapshot ? 'followup' : 'initial',
   })
+
+  // 이전 스냅샷이 있으면 items 복사
+  if (latestSnapshot) {
+    const previousItems = await getSnapshotItems(latestSnapshot.id)
+
+    if (previousItems.length > 0) {
+      // 새 스냅샷에 복사할 items 생성 (id 제외, snapshot_id 변경)
+      const itemsToCopy: FinancialSnapshotItemInput[] = previousItems.map(item => ({
+        snapshot_id: newSnapshot.id,
+        category: item.category,
+        item_type: item.item_type,
+        title: item.title,
+        amount: item.amount,
+        owner: item.owner,
+        metadata: item.metadata,
+        sort_order: item.sort_order,
+      }))
+
+      await createSnapshotItems(itemsToCopy)
+    }
+  }
+
+  return newSnapshot
 }
 
 // 오늘 날짜 스냅샷 업데이트 (없으면 생성 후 업데이트)
