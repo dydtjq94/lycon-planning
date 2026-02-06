@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { Search, RefreshCw, ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import { AccountManagementModal } from "./components/AccountManagementModal";
 import { useFinancialContext } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
   useSimulations,
+  useCreateSimulation,
+  useDeleteSimulation,
+  useUpdateSimulation,
   useTodaySnapshot,
   useSnapshots,
 } from "@/hooks/useFinancialData";
@@ -18,6 +22,7 @@ import type {
 import type { SimulationResult } from "@/lib/services/simulationEngine";
 import { runSimulationFromItems } from "@/lib/services/simulationEngine";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
+import { copySnapshotToSimulation } from "@/lib/services/snapshotToSimulation";
 import { calculateEndYear } from "@/lib/utils/chartDataTransformer";
 import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_SETTINGS } from "@/types";
 import { Sidebar } from "./components";
@@ -61,7 +66,7 @@ const sectionTitles: Record<string, string> = {
   "checking-account": "입출금통장",
   "savings-deposits": "정기 예금/적금",
   // 시뮬레이션
-  scenario: "시뮬레이션",
+  simulation: "시뮬레이션",
   // 설정
   settings: "설정",
 };
@@ -69,6 +74,9 @@ const sectionTitles: Record<string, string> = {
 const validSections = Object.keys(sectionTitles);
 
 export function DashboardContent() {
+  // URL pathname
+  const pathname = usePathname();
+
   // Context에서 데이터 가져오기
   const {
     simulation,
@@ -78,10 +86,81 @@ export function DashboardContent() {
     globalSettings,
   } = useFinancialContext();
 
+  // 상태 (URL에서 초기화는 useEffect에서 처리)
   const [currentSection, setCurrentSection] = useState<string>("dashboard");
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false); // 기본값: 닫혀있음
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [selectedSimulationId, setSelectedSimulationId] = useState<string>(simulation.id);
+  const [isEditingSimTitle, setIsEditingSimTitle] = useState(false);
+  const [editSimTitle, setEditSimTitle] = useState("");
+
+  // URL 업데이트 함수 (pushState 직접 사용으로 즉시 반응)
+  const updateUrl = useCallback((section: string, simId: string) => {
+    const params = new URLSearchParams();
+    if (section !== "dashboard") {
+      params.set("section", section);
+    }
+    // 시뮬레이션 섹션에서는 항상 sim 파라미터 포함
+    if (section === "simulation" && simId) {
+      params.set("sim", simId);
+    }
+    const queryString = params.toString();
+    const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
+    window.history.pushState(null, "", newUrl);
+  }, [pathname]);
+
+  // 섹션 변경 핸들러
+  const handleSectionChange = useCallback((section: string) => {
+    setCurrentSection(section);
+    // simulation 섹션은 handleSimulationChange에서 URL 관리
+    if (section !== "simulation") {
+      updateUrl(section, selectedSimulationId);
+    }
+  }, [selectedSimulationId, updateUrl]);
+
+  // 시뮬레이션 변경 핸들러 (섹션도 함께 변경)
+  const handleSimulationChange = useCallback((simId: string) => {
+    setSelectedSimulationId(simId);
+    setCurrentSection("simulation");
+    updateUrl("simulation", simId);
+  }, [updateUrl]);
+
+  // 초기 로드 시 URL에서 상태 동기화 (마운트 시 1회만 실행)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const simFromUrl = params.get("sim");
+    const sectionFromUrl = params.get("section");
+
+    console.log("[DashboardContent] Initial URL sync:", { simFromUrl, sectionFromUrl });
+
+    if (sectionFromUrl && validSections.includes(sectionFromUrl)) {
+      setCurrentSection(sectionFromUrl);
+    }
+    // URL에 sim 파라미터가 있으면 그것 사용
+    if (simFromUrl) {
+      setSelectedSimulationId(simFromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 브라우저 뒤로가기/앞으로가기 처리
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const newSection = params.get("section");
+      const newSimId = params.get("sim");
+
+      if (newSection && validSections.includes(newSection)) {
+        setCurrentSection(newSection);
+      } else {
+        setCurrentSection("dashboard");
+      }
+
+      setSelectedSimulationId(newSimId || simulation.id);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [simulation.id]);
 
   // 포트폴리오 검색 상태 (헤더에서 입력, PortfolioTab에서 처리)
   const [portfolioSearchQuery, setPortfolioSearchQuery] = useState("");
@@ -171,6 +250,56 @@ export function DashboardContent() {
 
   // 시뮬레이션(시나리오) 목록 조회
   const { data: simulations = [] } = useSimulations();
+  const createSimulation = useCreateSimulation();
+  const updateSimulation = useUpdateSimulation();
+
+  // 선택된 시뮬레이션 계산
+  const selectedSim = simulations.find(s => s.id === selectedSimulationId) || simulations[0];
+
+  // 시뮬레이션 추가 핸들러
+  const handleAddSimulation = useCallback(async () => {
+    const title = prompt("새 시뮬레이션 이름을 입력하세요:", "새 시뮬레이션");
+    if (title && title.trim()) {
+      createSimulation.mutate(
+        { title: title.trim() },
+        {
+          onSuccess: async (newSim) => {
+            // 스냅샷 데이터를 시뮬레이션에 복사
+            try {
+              const result = await copySnapshotToSimulation(profile.id, newSim.id);
+              if (result.success) {
+                console.log("[handleAddSimulation] Copied snapshot data:", result.copiedItems);
+              } else if (result.errors.length > 0) {
+                console.warn("[handleAddSimulation] Copy errors:", result.errors);
+              }
+            } catch (error) {
+              console.error("[handleAddSimulation] Failed to copy snapshot:", error);
+            }
+
+            setSelectedSimulationId(newSim.id);
+            setCurrentSection("simulation");
+          },
+        }
+      );
+    }
+  }, [createSimulation, profile.id]);
+
+  // 시뮬레이션 삭제
+  const deleteSimulation = useDeleteSimulation();
+
+  const handleDeleteSimulation = useCallback((simulationId: string) => {
+    deleteSimulation.mutate(simulationId, {
+      onSuccess: () => {
+        // 삭제된 시뮬레이션이 현재 선택된 것이었다면 기본 시뮬레이션으로 변경
+        if (selectedSimulationId === simulationId) {
+          const defaultSim = simulations.find(s => s.is_default);
+          if (defaultSim) {
+            setSelectedSimulationId(defaultSim.id);
+          }
+        }
+      },
+    });
+  }, [deleteSimulation, selectedSimulationId, simulations]);
 
   // 스냅샷 데이터 Prefetch (CurrentAssetTab, AssetRecordTab에서 사용)
   // 탭 전환 시 즉시 로드되도록 미리 캐싱
@@ -242,27 +371,6 @@ export function DashboardContent() {
     },
     []
   );
-
-  // URL 해시에서 섹션 읽기
-  const getHashSection = useCallback(() => {
-    if (typeof window === "undefined") return "dashboard";
-    const hash = window.location.hash.slice(1);
-    return validSections.includes(hash) ? hash : "dashboard";
-  }, []);
-
-  // 초기 로드 시 해시에서 섹션 설정
-  useEffect(() => {
-    setCurrentSection(getHashSection());
-  }, [getHashSection]);
-
-  // 브라우저 뒤로가기/앞으로가기 처리
-  useEffect(() => {
-    const handleHashChange = () => {
-      setCurrentSection(getHashSection());
-    };
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, [getHashSection]);
 
   // 연금 자산 → 연금 소득 동기화 (온보딩 후 첫 로드 시)
   const pensionSyncRef = useRef<boolean>(false);
@@ -443,12 +551,6 @@ export function DashboardContent() {
     syncPensionToIncome();
   }, [items, isLoading, profile, familyMembers, globalSettings, addItem]);
 
-  // 섹션 변경 시 URL 해시 업데이트
-  const handleSectionChange = useCallback((section: string) => {
-    setCurrentSection(section);
-    window.history.pushState(null, "", `#${section}`);
-  }, []);
-
   const renderContent = () => {
     switch (currentSection) {
       // 대시보드
@@ -499,9 +601,8 @@ export function DashboardContent() {
       // 설정
       case "settings":
         return <SettingsTab profileName={profile.name || ""} />;
-      // 시나리오
-      case "scenario": {
-        const selectedSim = simulations.find(s => s.id === selectedSimulationId) || simulations[0];
+      // 시뮬레이션
+      case "simulation": {
         return (
           <ScenarioTab
             simulation={selectedSim || simulation}
@@ -602,20 +703,56 @@ export function DashboardContent() {
       <Sidebar
         currentSection={currentSection}
         onSectionChange={handleSectionChange}
-        isExpanded={isSidebarExpanded}
-        onExpandChange={setIsSidebarExpanded}
         unreadMessageCount={unreadMessageCount}
         simulations={simulations}
         currentSimulationId={selectedSimulationId}
-        onSimulationChange={setSelectedSimulationId}
+        onSimulationChange={handleSimulationChange}
+        onAddSimulation={handleAddSimulation}
+        onDeleteSimulation={handleDeleteSimulation}
       />
 
       <main className={styles.main}>
         <header className={styles.header}>
           <div className={styles.headerInner}>
-            <h1 key={currentSection} className={styles.pageTitle}>
-              {sectionTitles[currentSection] || currentSection}
-            </h1>
+            {currentSection === "simulation" && selectedSim ? (
+              isEditingSimTitle ? (
+                <input
+                  className={styles.pageTitleInput}
+                  value={editSimTitle}
+                  onChange={(e) => setEditSimTitle(e.target.value)}
+                  onBlur={() => {
+                    if (editSimTitle.trim() && editSimTitle.trim() !== selectedSim.title) {
+                      updateSimulation.mutate({ id: selectedSim.id, updates: { title: editSimTitle.trim() } });
+                    }
+                    setIsEditingSimTitle(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      (e.target as HTMLInputElement).blur();
+                    }
+                    if (e.key === "Escape") {
+                      setIsEditingSimTitle(false);
+                    }
+                  }}
+                  autoFocus
+                />
+              ) : (
+                <h1
+                  className={styles.pageTitle}
+                  onDoubleClick={() => {
+                    setEditSimTitle(selectedSim.title);
+                    setIsEditingSimTitle(true);
+                  }}
+                  style={{ cursor: "default" }}
+                >
+                  {selectedSim.title}
+                </h1>
+              )
+            ) : (
+              <h1 key={currentSection} className={styles.pageTitle}>
+                {sectionTitles[currentSection] || currentSection}
+              </h1>
+            )}
 
             {/* 현재 자산 날짜 표시 */}
             {currentSection === "current-asset" && (
@@ -732,8 +869,8 @@ export function DashboardContent() {
           </div>
         </header>
 
-        <div className={styles.content}>
-          <div key={currentSection} className={styles.contentInner}>{renderContent()}</div>
+        <div className={`${styles.content} ${currentSection === "simulation" ? styles.noPadding : ""}`}>
+          <div key={currentSection} className={`${styles.contentInner} ${currentSection === "simulation" ? styles.fullWidth : ""}`}>{renderContent()}</div>
         </div>
       </main>
 

@@ -10,6 +10,7 @@ import {
 } from "chart.js";
 import { SankeyController, Flow } from "chartjs-chart-sankey";
 import type { SimulationResult } from "@/lib/services/simulationEngine";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import styles from "./Charts.module.css";
 
 ChartJS.register(
@@ -131,37 +132,38 @@ function getExpenseCategory(type: string, title: string): string {
   return "생활비";
 }
 
-// 카테고리별 색상
-const CATEGORY_COLORS: Record<string, string> = {
-  // 소득 (녹색/청록)
-  근로소득: "#059669",
-  사업소득: "#0891b2",
-  연금소득: "#16a34a",
-  임대소득: "#0d9488",
-  금융소득: "#0284c7",
-  기타소득: "#64748b",
-
-  // 중간 노드
-  "총 유입": "#475569",
-
-  // 지출 (빨강/주황)
-  생활비: "#ef4444",
-  주거비: "#f97316",
-  의료비: "#dc2626",
-  부채상환: "#d97706",
-  기타지출: "#78716c",
-
-  // 저축
-  잉여현금: "#10b981",
-  "저축/투자": "#10b981",
-};
-
 export function SankeyChart({
   simulationResult,
   selectedYear,
 }: SankeyChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<ChartJS | null>(null);
+  const { chartScaleColors, isDark, categoryColors, categoryShades, chartLineColors } = useChartTheme();
+
+  // 동적 카테고리 색상 (테마 기반)
+  const CATEGORY_COLORS: Record<string, string> = useMemo(() => ({
+    // 소득 (투자/저축 색상 계열)
+    근로소득: categoryShades.investment[0],
+    사업소득: categoryShades.investment[1],
+    연금소득: categoryShades.investment[2],
+    임대소득: categoryShades.savings[1],
+    금융소득: categoryShades.savings[2],
+    기타소득: categoryColors.debt,
+
+    // 중간 노드
+    "총 유입": isDark ? "#64748b" : "#475569",
+
+    // 지출 (손실 색상 계열 - 빨강)
+    생활비: chartLineColors.profit,
+    주거비: categoryShades.realAsset[0],
+    의료비: categoryShades.realAsset[1],
+    부채상환: categoryShades.realAsset[2],
+    기타지출: categoryColors.debt,
+
+    // 저축 (저축 색상)
+    잉여현금: categoryColors.savings,
+    "저축/투자": categoryColors.savings,
+  }), [categoryColors, categoryShades, chartLineColors, isDark]);
 
   const snapshot = useMemo(() => {
     return simulationResult.snapshots.find((s) => s.year === selectedYear);
@@ -350,7 +352,7 @@ export function SankeyChart({
       nodeCount,
       columnMap,
     };
-  }, [snapshot]);
+  }, [snapshot, CATEGORY_COLORS]);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -430,10 +432,10 @@ export function SankeyChart({
             display: false,
           },
           tooltip: {
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
-            titleColor: "#1e293b",
-            bodyColor: "#475569",
-            borderColor: "rgba(0, 0, 0, 0.1)",
+            backgroundColor: chartScaleColors.tooltipBg,
+            titleColor: chartScaleColors.tooltipText,
+            bodyColor: chartScaleColors.textSecondary,
+            borderColor: chartScaleColors.tooltipBorder,
             borderWidth: 1,
             padding: 12,
             boxPadding: 6,
@@ -472,7 +474,7 @@ export function SankeyChart({
         chartInstance.current.destroy();
       }
     };
-  }, [flows, labels, colorMap, priority, totalIncome, nodeCount, columnMap]);
+  }, [flows, labels, colorMap, priority, totalIncome, nodeCount, columnMap, chartScaleColors, CATEGORY_COLORS]);
 
   if (totalIncome === 0) {
     return (

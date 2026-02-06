@@ -85,9 +85,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     // 액센트 색상 CSS 변수 업데이트
     const accentValues = accentColorValues[accent];
+    root.style.setProperty("--accent-color", accentValues.primary);
     root.style.setProperty("--accent-primary", accentValues.primary);
     root.style.setProperty("--accent-primary-hover", accentValues.primaryHover);
     root.style.setProperty("--accent-primary-light", accentValues.primaryLight);
+    root.style.setProperty("--accent-color-light", accentValues.primaryLight);
 
     // 사이드바/헤더 색상 CSS 변수 업데이트
     const sidebarVals = sidebarColors[resolved][accent];

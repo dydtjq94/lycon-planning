@@ -39,7 +39,7 @@ export function calculateAge(birthDate: Date | string | number, referenceDate: D
 // 금액 포맷팅 (만원 단위 입력, 억+만원 단위로 상세 표시)
 export function formatMoney(amount: number): string {
   const isNegative = amount < 0
-  const absAmount = Math.abs(amount)
+  const absAmount = Math.round(Math.abs(amount)) // 소수점 반올림
   const prefix = isNegative ? "-" : ""
 
   if (absAmount >= 10000) {

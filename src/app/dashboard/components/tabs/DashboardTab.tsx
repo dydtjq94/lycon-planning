@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { Building2, Landmark, PiggyBank, TrendingUp, CreditCard, Wallet, Plus } from "lucide-react";
+import { getLogoPath, getLogoTypeFromAccountType } from "@/lib/logoUtils";
 import type { Account } from "@/types/tables";
 import styles from "./DashboardTab.module.css";
 
@@ -154,25 +156,38 @@ export function DashboardTab({
 
         <div className={styles.accountList}>
           {investmentAccounts.length > 0 ? (
-            investmentAccounts.map(account => (
-              <div key={account.id} className={styles.accountItem}>
-                <div
-                  className={styles.accountIcon}
-                  style={{ backgroundColor: ACCOUNT_TYPE_COLORS[account.account_type || "general"] }}
-                >
-                  {ACCOUNT_TYPE_ICONS[account.account_type || "general"]}
-                </div>
-                <div className={styles.accountInfo}>
-                  <span className={styles.accountName}>{account.name}</span>
-                  <span className={styles.accountMeta}>
-                    {account.broker_name}
-                    <span className={styles.accountTypeBadge}>
-                      {ACCOUNT_TYPE_LABELS[account.account_type || "general"]}
+            investmentAccounts.map(account => {
+              const logoPath = getLogoPath(account.broker_name, "securities");
+              return (
+                <div key={account.id} className={styles.accountItem}>
+                  {logoPath ? (
+                    <Image
+                      src={logoPath}
+                      alt={account.broker_name || ""}
+                      width={32}
+                      height={32}
+                      className={styles.accountLogo}
+                    />
+                  ) : (
+                    <div
+                      className={styles.accountIcon}
+                      style={{ backgroundColor: ACCOUNT_TYPE_COLORS[account.account_type || "general"] }}
+                    >
+                      {ACCOUNT_TYPE_ICONS[account.account_type || "general"]}
+                    </div>
+                  )}
+                  <div className={styles.accountInfo}>
+                    <span className={styles.accountName}>{account.name}</span>
+                    <span className={styles.accountMeta}>
+                      {account.broker_name}
+                      <span className={styles.accountTypeBadge}>
+                        {ACCOUNT_TYPE_LABELS[account.account_type || "general"]}
+                      </span>
                     </span>
-                  </span>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className={styles.emptyState}>등록된 계좌가 없습니다</div>
           )}
@@ -198,15 +213,26 @@ export function DashboardTab({
           {bankAccounts.length > 0 ? (
             bankAccounts.map(account => {
               const linkedPayments = getLinkedPayments(account.id);
+              const logoPath = getLogoPath(account.broker_name, "bank");
               return (
                 <div key={account.id} className={styles.accountWithPayments}>
                   <div className={styles.accountItem}>
-                    <div
-                      className={styles.accountIcon}
-                      style={{ backgroundColor: ACCOUNT_TYPE_COLORS[account.account_type || "checking"] }}
-                    >
-                      {ACCOUNT_TYPE_ICONS[account.account_type || "checking"]}
-                    </div>
+                    {logoPath ? (
+                      <Image
+                        src={logoPath}
+                        alt={account.broker_name || ""}
+                        width={32}
+                        height={32}
+                        className={styles.accountLogo}
+                      />
+                    ) : (
+                      <div
+                        className={styles.accountIcon}
+                        style={{ backgroundColor: ACCOUNT_TYPE_COLORS[account.account_type || "checking"] }}
+                      >
+                        {ACCOUNT_TYPE_ICONS[account.account_type || "checking"]}
+                      </div>
+                    )}
                     <div className={styles.accountInfo}>
                       <span className={styles.accountName}>{account.name}</span>
                       <span className={styles.accountMeta}>
@@ -221,23 +247,36 @@ export function DashboardTab({
                   {/* 연결된 카드/페이 */}
                   {linkedPayments.length > 0 && (
                     <div className={styles.linkedPayments}>
-                      {linkedPayments.map(pm => (
-                        <div key={pm.id} className={styles.linkedPaymentItem}>
-                          <div className={styles.linkedLine} />
-                          <div
-                            className={styles.paymentIcon}
-                            style={{ backgroundColor: pm.type === "pay" ? "#f59e0b" : "#6366f1" }}
-                          >
-                            {pm.type === "pay" ? <Wallet size={12} /> : <CreditCard size={12} />}
+                      {linkedPayments.map(pm => {
+                        const cardLogoPath = pm.type !== "pay" ? getLogoPath(pm.card_company, "card") : null;
+                        return (
+                          <div key={pm.id} className={styles.linkedPaymentItem}>
+                            <div className={styles.linkedLine} />
+                            {cardLogoPath ? (
+                              <Image
+                                src={cardLogoPath}
+                                alt={pm.card_company || ""}
+                                width={20}
+                                height={20}
+                                className={styles.paymentLogo}
+                              />
+                            ) : (
+                              <div
+                                className={styles.paymentIcon}
+                                style={{ backgroundColor: pm.type === "pay" ? "#f59e0b" : "#6366f1" }}
+                              >
+                                {pm.type === "pay" ? <Wallet size={12} /> : <CreditCard size={12} />}
+                              </div>
+                            )}
+                            <span className={styles.paymentName}>{pm.name}</span>
+                            {pm.type !== "pay" && (
+                              <span className={styles.paymentTypeBadge}>
+                                {pm.type === "credit_card" ? "신용" : "체크"}
+                              </span>
+                            )}
                           </div>
-                          <span className={styles.paymentName}>{pm.name}</span>
-                          {pm.type !== "pay" && (
-                            <span className={styles.paymentTypeBadge}>
-                              {pm.type === "credit_card" ? "신용" : "체크"}
-                            </span>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -266,25 +305,38 @@ export function DashboardTab({
           </div>
 
           <div className={styles.accountList}>
-            {unlinkedPayments.map(pm => (
-              <div key={pm.id} className={styles.accountItem}>
-                <div
-                  className={styles.paymentIconLarge}
-                  style={{ backgroundColor: pm.type === "pay" ? "#f59e0b" : "#6366f1" }}
-                >
-                  {pm.type === "pay" ? <Wallet size={16} /> : <CreditCard size={16} />}
-                </div>
-                <div className={styles.accountInfo}>
-                  <span className={styles.accountName}>{pm.name}</span>
-                  <span className={styles.accountMeta}>
-                    {pm.card_company || ""}
-                    <span className={styles.paymentTypeBadge}>
-                      {pm.type === "pay" ? "페이" : pm.type === "credit_card" ? "신용" : "체크"}
+            {unlinkedPayments.map(pm => {
+              const cardLogoPath = pm.type !== "pay" ? getLogoPath(pm.card_company, "card") : null;
+              return (
+                <div key={pm.id} className={styles.accountItem}>
+                  {cardLogoPath ? (
+                    <Image
+                      src={cardLogoPath}
+                      alt={pm.card_company || ""}
+                      width={32}
+                      height={32}
+                      className={styles.accountLogo}
+                    />
+                  ) : (
+                    <div
+                      className={styles.paymentIconLarge}
+                      style={{ backgroundColor: pm.type === "pay" ? "#f59e0b" : "#6366f1" }}
+                    >
+                      {pm.type === "pay" ? <Wallet size={16} /> : <CreditCard size={16} />}
+                    </div>
+                  )}
+                  <div className={styles.accountInfo}>
+                    <span className={styles.accountName}>{pm.name}</span>
+                    <span className={styles.accountMeta}>
+                      {pm.card_company || ""}
+                      <span className={styles.paymentTypeBadge}>
+                        {pm.type === "pay" ? "페이" : pm.type === "credit_card" ? "신용" : "체크"}
+                      </span>
                     </span>
-                  </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

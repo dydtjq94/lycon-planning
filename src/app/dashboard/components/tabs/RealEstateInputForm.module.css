@@ -41,7 +41,7 @@
 .missionLabel {
   font-size: 12px;
   font-weight: 600;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   margin: 0 0 4px 0;
 }
 
@@ -99,17 +99,18 @@
   align-items: center;
   gap: 6px;
   padding: 10px 18px;
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   color: white;
   border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: filter 0.15s;
 }
 
 .addButton:hover {
-  background-color: #0066d6;
+  filter: brightness(0.9);
 }
 
 .noPropertyButton {
@@ -183,7 +184,7 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   color: white;
   display: flex;
   align-items: center;
@@ -274,7 +275,7 @@
 
 .textInput:focus {
   background: #fff;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   outline: none;
 }
 
@@ -300,7 +301,7 @@
 
 .numberInput:focus {
   background: #fff;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   outline: none;
 }
 
@@ -323,7 +324,7 @@
 .formatted {
   display: block;
   font-size: 12px;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   margin-top: 4px;
 }
 
@@ -355,7 +356,7 @@
 }
 
 .optionButton.selected {
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   color: #fff;
 }
 
@@ -375,7 +376,7 @@
 }
 
 .optionButtonSmall.selected {
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   color: #fff;
 }
 
@@ -396,7 +397,7 @@
 }
 
 .toggleButton.active {
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   color: white;
 }
 
@@ -437,7 +438,7 @@
 
 .yearInput:focus {
   background: #fff;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   outline: none;
 }
 
@@ -453,7 +454,7 @@
 
 .monthInput:focus {
   background: #fff;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   outline: none;
 }
 
@@ -488,8 +489,8 @@
 }
 
 .addMoreButton:hover {
-  border-color: #007aff;
-  color: #007aff;
+  border-color: var(--accent-color, #007aff);
+  color: var(--accent-color, #007aff);
 }
 
 /* 푸터 */
@@ -509,17 +510,18 @@
 .submitButton {
   flex: 1;
   padding: 14px 24px;
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   color: white;
   border: none;
   border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+  transition: filter 0.15s;
 }
 
 .submitButton:hover {
-  background-color: #0066d6;
+  filter: brightness(0.9);
 }
 
 .submitButton:disabled {

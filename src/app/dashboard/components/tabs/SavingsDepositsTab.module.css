@@ -441,7 +441,7 @@
 }
 
 .editBtn:hover {
-  color: #007aff;
+  color: var(--accent-color, #007aff);
 }
 
 .deleteBtn {
@@ -504,7 +504,7 @@
 }
 
 .editInput:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editInput::-webkit-outer-spin-button,
@@ -527,7 +527,7 @@
 }
 
 .editInputSmall:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editInputSmall::-webkit-outer-spin-button,
@@ -554,7 +554,7 @@
 }
 
 .editInputWide:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editSelect {
@@ -627,14 +627,14 @@
   font-size: 14px;
   font-weight: 500;
   color: #fff;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .saveBtn:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* 추가 버튼 */
@@ -645,7 +645,7 @@
   padding: 16px 0;
   font-size: 14px;
   font-weight: 400;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -653,7 +653,7 @@
 }
 
 .addBtn:hover {
-  color: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* ========== 오른쪽: 요약 패널 ========== */
@@ -688,7 +688,7 @@
 .totalValue {
   font-size: 36px;
   font-weight: 700;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   letter-spacing: -1px;
 }
 

@@ -195,6 +195,12 @@ export function PersonalPensionSection({
             <span className={styles.itemAmount}>
               {pensionSavings?.current_balance ? formatMoney(pensionSavings.current_balance) : '0'}
             </span>
+            {pensionSavings?.title && (
+              <span className={styles.itemName}>
+                {pensionSavings.title}
+                {pensionSavings.broker_name && <span className={styles.brokerName}>{pensionSavings.broker_name}</span>}
+              </span>
+            )}
             {(pensionSavings?.current_balance || pensionSavings?.monthly_contribution) ? (
               <span className={styles.itemMeta}>
                 {pensionSavings?.monthly_contribution ? `월 ${formatMoney(pensionSavings.monthly_contribution)} 납입 | ` : ''}
@@ -298,6 +304,12 @@ export function PersonalPensionSection({
             <span className={styles.itemAmount}>
               {irp?.current_balance ? formatMoney(irp.current_balance) : '0'}
             </span>
+            {irp?.title && (
+              <span className={styles.itemName}>
+                {irp.title}
+                {irp.broker_name && <span className={styles.brokerName}>{irp.broker_name}</span>}
+              </span>
+            )}
             {(irp?.current_balance || irp?.monthly_contribution) ? (
               <span className={styles.itemMeta}>
                 {irp?.monthly_contribution ? `월 ${formatMoney(irp.monthly_contribution)} 납입 | ` : ''}

@@ -95,6 +95,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
     unsecuredDebt: 0,
   });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -104,6 +105,13 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsMetricDropdownOpen(false);
+      }
+      // 행 메뉴 외부 클릭 감지
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node)
+      ) {
+        setOpenMenuId(null);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -572,7 +580,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                     <td>{formatMoney(record.real_assets)}</td>
                     <td>{formatMoney(record.unsecured_debt)}</td>
                     <td>
-                      <div className={styles.menuContainer}>
+                      <div className={styles.menuContainer} ref={openMenuId === record.id ? menuRef : null}>
                         <button
                           className={styles.rowMenuBtn}
                           onClick={() =>
@@ -724,11 +732,12 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                   <div className={styles.inputWrapper}>
                     <input
                       type="number"
-                      value={modalData.totalDebts || ""}
+                      value={modalData.unsecuredDebt || ""}
                       onChange={(e) => {
-                        const totalDebts = parseInt(e.target.value) || 0;
+                        const unsecuredDebt = parseInt(e.target.value) || 0;
+                        const totalDebts = unsecuredDebt;
                         const netWorth = modalData.totalAssets - totalDebts;
-                        setModalData({ ...modalData, totalDebts, netWorth });
+                        setModalData({ ...modalData, unsecuredDebt, totalDebts, netWorth });
                       }}
                       onWheel={(e) => (e.target as HTMLElement).blur()}
                     />

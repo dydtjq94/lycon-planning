@@ -8,7 +8,6 @@ import {
   Settings,
   PieChart,
   Receipt,
-  Pin,
   MessageCircle,
   CalendarCheck,
   LayoutDashboard,
@@ -18,6 +17,7 @@ import {
   Target,
   LineChart,
   PiggyBank,
+  X,
 } from "lucide-react";
 import type { Simulation } from "@/types";
 import styles from "./Sidebar.module.css";
@@ -25,12 +25,12 @@ import styles from "./Sidebar.module.css";
 interface SidebarProps {
   currentSection: string;
   onSectionChange: (section: string) => void;
-  isExpanded: boolean;
-  onExpandChange: (expanded: boolean) => void;
   unreadMessageCount?: number;
   simulations?: Simulation[];
   currentSimulationId?: string;
   onSimulationChange?: (simulationId: string) => void;
+  onAddSimulation?: () => void;
+  onDeleteSimulation?: (simulationId: string) => void;
 }
 
 // 담당자 관련
@@ -67,15 +67,14 @@ const shortcutTabs: { key: string; id: string; display: string }[] = [
 export function Sidebar({
   currentSection,
   onSectionChange,
-  isExpanded,
-  onExpandChange,
   unreadMessageCount = 0,
   simulations = [],
   currentSimulationId,
   onSimulationChange,
+  onAddSimulation,
+  onDeleteSimulation,
 }: SidebarProps) {
   const [isScenarioOpen, setIsScenarioOpen] = useState(true);
-  const [isPinned, setIsPinned] = useState(true);
   const [isCtrlPressed, setIsCtrlPressed] = useState(false);
 
   // ThemeContext에서 테마 상태 가져오기
@@ -118,57 +117,33 @@ export function Sidebar({
     };
   }, [onSectionChange]);
 
-  const handleMouseLeave = () => {
-    if (!isPinned) {
-      onExpandChange(false);
-    }
-  };
-
-  const handlePin = () => {
-    setIsPinned(!isPinned);
-    if (!isPinned) {
-      onExpandChange(true);
-    }
-  };
-
   const getShortcutDisplay = (sectionId: string): string | null => {
     const shortcut = shortcutTabs.find(s => s.id === sectionId);
     return shortcut ? shortcut.display : null;
   };
 
   const handleScenarioClick = (simulationId: string) => {
+    // handleSimulationChange가 섹션 변경도 함께 처리함
     onSimulationChange?.(simulationId);
-    onSectionChange("scenario");
   };
 
-  // 시나리오 섹션이 활성화되어 있는지
-  const isScenarioActive = currentSection === "scenario";
+  // 시뮬레이션 섹션이 활성화되어 있는지
+  const isScenarioActive = currentSection === "simulation";
 
   return (
     <aside
-      className={`${styles.sidebar} ${
-        isExpanded || isPinned ? styles.expanded : ""
-      }`}
+      className={`${styles.sidebar} ${styles.expanded}`}
       data-color-mode={resolvedColorMode}
       data-accent={accentColor}
-      onMouseEnter={() => onExpandChange(true)}
-      onMouseLeave={handleMouseLeave}
     >
       <nav className={styles.nav}>
         <div className={styles.navSection}>
-          {/* 로고 + 고정 버튼 */}
+          {/* 로고 */}
           <div className={styles.logoRow}>
             <div className={styles.logoItem}>
               <span className={styles.logoLetter}>L</span>
               <span className={styles.logoText}>ycon</span>
             </div>
-            <button
-              className={`${styles.pinButton} ${isPinned ? styles.pinned : ""}`}
-              onClick={handlePin}
-              title={isPinned ? "고정 해제" : "사이드바 고정"}
-            >
-              <Pin size={14} fill={isPinned ? "currentColor" : "none"} />
-            </button>
           </div>
 
           {/* 대시보드 */}
@@ -266,7 +241,7 @@ export function Sidebar({
             {isScenarioOpen && (
               <div className={styles.submenu}>
                 {simulations.map((sim) => (
-                  <button
+                  <div
                     key={sim.id}
                     className={`${styles.submenuItem} ${
                       isScenarioActive && currentSimulationId === sim.id ? styles.active : ""
@@ -278,11 +253,29 @@ export function Sidebar({
                       <Target size={16} />
                     </div>
                     <span className={styles.navLabel}>{sim.title}</span>
-                  </button>
+                    {!sim.is_default && onDeleteSimulation && (
+                      <button
+                        className={styles.deleteSimBtn}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`"${sim.title}" 시뮬레이션을 삭제하시겠습니까?`)) {
+                            onDeleteSimulation(sim.id);
+                          }
+                        }}
+                        title="삭제"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
                 ))}
 
                 {/* 시뮬레이션 추가 버튼 */}
-                <button className={styles.addScenarioBtn} title="시뮬레이션 추가">
+                <button
+                  className={styles.addScenarioBtn}
+                  title="시뮬레이션 추가"
+                  onClick={onAddSimulation}
+                >
                   <Plus size={14} />
                   <span>시뮬레이션 추가</span>
                 </button>

@@ -10,8 +10,10 @@ import type {
   RealEstateData,
   SimulationSettings,
   GlobalSettings,
+  InvestmentAssumptions,
+  CashFlowPriority,
 } from '@/types'
-import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
+import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_INVESTMENT_ASSUMPTIONS } from '@/types'
 import { migrateOnboardingToFinancialItems, isItemActiveAt } from './dataMigration'
 
 // 프로필 정보 (시뮬레이션용)
@@ -85,6 +87,7 @@ export interface SimulationResult {
     peakNetWorthYear: number
     yearsToFI: number | null  // 경제적 자유 달성 연도 (null = 미달성)
     fiTarget: number          // FI 목표 (연간 지출 x 25)
+    bankruptcyYear: number | null  // 파산 연도 (금융자산 < 0, null = 파산 안함)
   }
 }
 
@@ -438,6 +441,9 @@ export function runSimulation(
   const fiTarget = annualExpense * 25
   const fiSnapshot = snapshots.find(s => s.netWorth >= fiTarget)
 
+  // 파산 감지 (금융자산 < 0인 첫 연도)
+  const bankruptcySnapshot = snapshots.find(s => s.financialAssets < 0)
+
   return {
     startYear: currentYear,
     endYear,
@@ -450,6 +456,7 @@ export function runSimulation(
       peakNetWorthYear: peakSnapshot.year,
       yearsToFI: fiSnapshot ? fiSnapshot.year - currentYear : null,
       fiTarget,
+      bankruptcyYear: bankruptcySnapshot ? bankruptcySnapshot.year : null,
     },
   }
 }
@@ -458,12 +465,20 @@ export function runSimulation(
  * FinancialItem[]에서 직접 시뮬레이션 실행
  * - 데이터 변환 없이 바로 사용
  * - 대시보드에서 사용
+ * @param items 재무 항목 배열
+ * @param profile 프로필 정보 (생년, 은퇴 나이 등)
+ * @param globalSettings 글로벌 설정
+ * @param yearsToSimulate 시뮬레이션 기간 (년)
+ * @param assumptions Investment Assumptions (있으면 globalSettings보다 우선)
+ * @param priorities Cash Flow Priorities (잉여금 배분 규칙)
  */
 export function runSimulationFromItems(
   items: FinancialItem[],
   profile: SimulationProfile,
   globalSettings: GlobalSettings,
-  yearsToSimulate: number = 50
+  yearsToSimulate: number = 50,
+  assumptions?: InvestmentAssumptions,
+  priorities?: CashFlowPriority[]
 ): SimulationResult {
   const currentYear = new Date().getFullYear()
   const { birthYear, retirementAge, spouseBirthYear } = profile
@@ -479,22 +494,43 @@ export function runSimulationFromItems(
   // 글로벌 설정
   const gs = globalSettings || DEFAULT_GLOBAL_SETTINGS
 
-  // 설정값 (GlobalSettings + 시나리오 모드 적용)
-  const investmentReturn = getEffectiveRate(
-    gs.investmentReturnRate ?? DEFAULT_RATES.investmentReturn,
-    'investment',
-    gs.scenarioMode,
-    gs
-  ) / 100
-  const inflationRate = getEffectiveRate(
-    gs.inflationRate ?? DEFAULT_RATES.expenseGrowth,
-    'inflation',
-    gs.scenarioMode,
-    gs
-  ) / 100
+  // Investment Assumptions (있으면 우선 적용)
+  const rates = assumptions?.rates
+
+  // 설정값 (InvestmentAssumptions > GlobalSettings > 기본값)
+  const investmentReturn = rates?.investment !== undefined
+    ? rates.investment / 100
+    : getEffectiveRate(
+        gs.investmentReturnRate ?? DEFAULT_RATES.investmentReturn,
+        'investment',
+        gs.scenarioMode,
+        gs
+      ) / 100
+
+  const inflationRate = rates?.inflation !== undefined
+    ? rates.inflation / 100
+    : getEffectiveRate(
+        gs.inflationRate ?? DEFAULT_RATES.expenseGrowth,
+        'inflation',
+        gs.scenarioMode,
+        gs
+      ) / 100
+
+  // 저축 수익률 (예금/적금용)
+  const savingsReturn = rates?.savings !== undefined
+    ? rates.savings / 100
+    : (gs.savingsGrowthRate ?? DEFAULT_RATES.depositRate ?? 3.0) / 100
+
+  // 연금 수익률
+  const pensionReturn = rates?.pension !== undefined
+    ? rates.pension / 100
+    : investmentReturn // 기본적으로 투자 수익률 사용
+
   // incomeGrowthRate, realEstateGrowthRate는 항목별로 적용하므로 여기서는 기본값만 저장
   const incomeGrowthRate = (gs.incomeGrowthRate ?? DEFAULT_RATES.incomeGrowth) / 100
-  const realEstateGrowthRate = (gs.realEstateGrowthRate ?? DEFAULT_RATES.realEstateGrowth) / 100
+  const realEstateGrowthRate = rates?.realEstate !== undefined
+    ? rates.realEstate / 100
+    : (gs.realEstateGrowthRate ?? DEFAULT_RATES.realEstateGrowth) / 100
 
   const snapshots: YearlySnapshot[] = []
 
@@ -639,11 +675,78 @@ export function runSimulationFromItems(
     const totalDebts = debtBreakdown.reduce((sum, d) => sum + d.amount, 0)
 
     // 금융자산 성장 (투자수익률 반영)
-    accumulatedSavings = accumulatedSavings * (1 + investmentReturn) + Math.max(0, netCashFlow)
+    accumulatedSavings = accumulatedSavings * (1 + investmentReturn)
 
-    // 연금자산 성장
+    // 잉여금 배분 (Cash Flow Priorities 적용)
+    if (netCashFlow > 0) {
+      let remainingSurplus = netCashFlow
+      let pensionAllocation = 0
+      let debtAllocation = 0
+
+      if (priorities && priorities.length > 0) {
+        // 우선순위 순으로 정렬
+        const sortedPriorities = [...priorities].sort((a, b) => a.priority - b.priority)
+
+        for (const rule of sortedPriorities) {
+          if (remainingSurplus <= 0) break
+
+          let allocation = 0
+
+          switch (rule.strategy) {
+            case 'maintain': {
+              // 목표 잔액에 도달할 때까지만 할당
+              let currentBalance = 0
+              const targetBalance = rule.targetAmount || 0
+
+              if (rule.targetType === 'pension') {
+                currentBalance = accumulatedPension + pensionAllocation
+              } else if (rule.targetType === 'savings' || rule.targetType === 'investment') {
+                currentBalance = accumulatedSavings
+              }
+              // debt의 maintain은 의미 없음 (목표 부채 유지?)
+
+              const needed = Math.max(0, targetBalance - currentBalance)
+              allocation = Math.min(remainingSurplus, needed)
+              break
+            }
+            case 'maximize': {
+              // 연간 최대 한도까지 할당
+              allocation = Math.min(remainingSurplus, rule.maxAmount || remainingSurplus)
+              break
+            }
+            case 'remainder': {
+              // 남은 잉여금 전액 할당
+              allocation = remainingSurplus
+              break
+            }
+          }
+
+          // 대상별 배분 추적
+          if (rule.targetType === 'pension') {
+            pensionAllocation += allocation
+          } else if (rule.targetType === 'debt') {
+            debtAllocation += allocation
+            // 부채 추가 상환: 현재 모델에서는 부채 잔액 계산이 별도 로직으로 되어 있어
+            // 추가 상환 효과 반영은 추후 구현 필요
+          }
+          // savings, investment는 기본적으로 accumulatedSavings로 합산됨
+
+          remainingSurplus -= allocation
+        }
+      }
+
+      // 배분 결과 적용
+      // - 연금 배분액은 accumulatedPension에 추가
+      // - 부채 상환액은 잉여금에서 차감 (현재 모델에서는 부채 잔액에 직접 반영 안됨)
+      // - 나머지(savings, investment, 미배분)는 모두 금융자산으로
+      const financialAllocation = netCashFlow - pensionAllocation - debtAllocation
+      accumulatedSavings += financialAllocation
+      accumulatedPension += pensionAllocation
+    }
+
+    // 연금자산 성장 (pensionReturn 적용)
     if (year < retirementYear) {
-      accumulatedPension = accumulatedPension * (1 + investmentReturn)
+      accumulatedPension = accumulatedPension * (1 + pensionReturn)
     } else {
       // 은퇴 후 연금 인출
       const pensionItems = items.filter(i => i.category === 'pension')
@@ -657,7 +760,7 @@ export function runSimulationFromItems(
       const pensionWithdrawal = calculateAnnualPensionWithdrawal(
         accumulatedPension,
         avgReceivingYears,
-        investmentReturn * 100
+        pensionReturn * 100
       )
       accumulatedPension = Math.max(0, accumulatedPension - pensionWithdrawal)
     }
@@ -810,6 +913,9 @@ export function runSimulationFromItems(
   const fiTarget = annualExpense * 25
   const fiSnapshot = snapshots.find(s => s.netWorth >= fiTarget)
 
+  // 파산 감지 (금융자산 < 0인 첫 연도)
+  const bankruptcySnapshot = snapshots.find(s => s.financialAssets < 0)
+
   return {
     startYear: currentYear,
     endYear,
@@ -822,6 +928,7 @@ export function runSimulationFromItems(
       peakNetWorthYear: peakSnapshot.year,
       yearsToFI: fiSnapshot ? fiSnapshot.year - currentYear : null,
       fiTarget,
+      bankruptcyYear: bankruptcySnapshot ? bankruptcySnapshot.year : null,
     },
   }
 }

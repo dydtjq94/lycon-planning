@@ -1,24 +1,16 @@
 .container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-  height: 100%;
-}
-
-/* 왼쪽: 입력 패널 */
-.inputPanel {
   display: flex;
   flex-direction: column;
   gap: 0;
+  height: 100%;
   overflow-y: auto;
-  padding-right: 40px;
-  background: #fff;
+  background: var(--dashboard-card-bg);
 }
 
 /* 부동산 섹션 */
 .assetSection {
   padding: 24px 0;
-  border-bottom: 1px solid #e8e8ed;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .assetSection:last-of-type {
@@ -35,18 +27,18 @@
 .sectionTitle {
   font-size: 15px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
 }
 
 .sectionTotal {
   font-size: 14px;
   font-weight: 500;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
 }
 
 .sectionDesc {
   font-size: 13px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   margin: 0 0 16px 0;
 }
 
@@ -63,7 +55,7 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: 16px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .assetItem:last-of-type {
@@ -81,24 +73,24 @@
 .itemLabel {
   font-size: 13px;
   font-weight: 500;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
 }
 
 .itemAmount {
   font-size: 17px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
 }
 
 .itemName {
   font-size: 14px;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   margin-top: 2px;
 }
 
 .itemMeta {
   font-size: 13px;
-  color: #a1a1a6;
+  color: var(--dashboard-text-secondary);
   margin-top: 2px;
 }
 
@@ -130,12 +122,12 @@
   height: 32px;
   background: transparent;
   border: none;
-  color: #c7c7cc;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .editBtn:hover {
-  color: #007aff;
+  color: var(--accent-color, #007aff);
 }
 
 .deleteBtn {
@@ -146,7 +138,7 @@
   height: 32px;
   background: transparent;
   border: none;
-  color: #c7c7cc;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
@@ -160,7 +152,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 20px 0;
-  border-bottom: 1px solid #e8e8ed;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .editRow {
@@ -171,7 +163,7 @@
 
 .editRowLabel {
   font-size: 13px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   min-width: 60px;
   flex-shrink: 0;
   padding-top: 8px;
@@ -190,16 +182,16 @@
   padding: 8px 0;
   font-size: 16px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
   background: transparent;
   text-align: right;
 }
 
 .editInput:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editInput::-webkit-outer-spin-button,
@@ -213,16 +205,16 @@
   padding: 8px 0;
   font-size: 16px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
   background: transparent;
   text-align: center;
 }
 
 .editInputSmall:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editInputSmall::-webkit-outer-spin-button,
@@ -233,7 +225,7 @@
 
 .editUnit {
   font-size: 14px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
 }
 
 .editInputWide {
@@ -241,15 +233,15 @@
   padding: 8px 0;
   font-size: 16px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
   background: transparent;
 }
 
 .editInputWide:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 /* 유형 선택 버튼 */
@@ -263,26 +255,26 @@
   padding: 6px 12px;
   font-size: 13px;
   font-weight: 400;
-  color: #1d1d1f;
-  background: #f5f5f7;
+  color: var(--dashboard-text);
+  background: var(--dashboard-bg);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .typeBtn:hover {
-  background: #e8e8ed;
+  background: var(--dashboard-active-bg);
 }
 
 .typeBtn.active {
-  background: #1d1d1f;
-  color: #fff;
+  background: var(--dashboard-text);
+  color: var(--dashboard-bg);
 }
 
 /* 편집 구분선 */
 .editDivider {
   height: 1px;
-  background: #e8e8ed;
+  background: var(--dashboard-border);
   margin: 8px 0;
 }
 
@@ -298,14 +290,14 @@
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 400;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   background: transparent;
   border: none;
   cursor: pointer;
 }
 
 .cancelBtn:hover {
-  color: #1d1d1f;
+  color: var(--dashboard-text);
 }
 
 .saveBtn {
@@ -313,14 +305,14 @@
   font-size: 14px;
   font-weight: 500;
   color: #fff;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .saveBtn:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* 추가 버튼 */
@@ -331,7 +323,7 @@
   padding: 12px 0;
   font-size: 14px;
   font-weight: 400;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -339,421 +331,25 @@
 }
 
 .addBtn:hover {
-  color: #0066d6;
+  filter: brightness(0.85);
 }
 
 /* 안내 텍스트 */
 .infoText {
   font-size: 13px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   margin: 24px 0 0;
   padding-top: 24px;
-  border-top: 1px solid #e8e8ed;
+  border-top: 1px solid var(--dashboard-border);
   line-height: 1.6;
 }
 
-/* ========== 오른쪽: 인사이트 패널 ========== */
-.insightPanel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  overflow-y: auto;
-  background: #f5f5f7;
-  padding: 12px 12px 240px 12px;
-  margin: -24px -24px -24px 0;
-}
-
-.summaryCard {
-  background: #fff;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.totalAssets {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 16px;
-}
-
-.totalLabel {
-  font-size: 13px;
-  color: #86868b;
-}
-
-.totalValue {
-  font-size: 36px;
-  font-weight: 700;
-  color: #007aff;
-  letter-spacing: -1px;
-}
-
-.subValues {
-  display: flex;
-  gap: 24px;
-}
-
-.subValueItem {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.subLabel {
-  font-size: 12px;
-  color: #86868b;
-}
-
-.subValue {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
-}
-
-/* 대출 요약 */
-.loanSummary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
-}
-
-.loanLabel {
-  font-size: 13px;
-  color: #86868b;
-}
-
-.loanValue {
-  font-size: 15px;
-  font-weight: 600;
-  color: #ff3b30;
-}
-
-/* 임대 수익 요약 */
-.rentSummary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
-}
-
-.rentLabel {
-  font-size: 13px;
-  color: #86868b;
-}
-
-.rentValue {
-  font-size: 15px;
-  font-weight: 600;
-  color: #34c759;
-}
-
-/* 현황 카드 */
-.countCard {
-  background: #fff;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.countList {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.countRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.countLabel {
-  font-size: 14px;
-  color: #86868b;
-}
-
-.countValue {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
-}
-
-/* 차트 카드 */
-.chartCard {
-  background: #fff;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.cardTitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin: 0 0 16px 0;
-}
-
-.chartWrapper {
-  height: 180px;
-  margin-bottom: 16px;
-}
-
-/* 범례 */
-.legendList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legendDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.legendLabel {
-  font-size: 13px;
-  color: #1d1d1f;
-  flex: 1;
-}
-
-.legendValue {
-  font-size: 13px;
-  font-weight: 500;
-  color: #1d1d1f;
-}
-
-/* 자산 분해 */
-.assetBreakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px 0;
-  border-top: 1px solid #f0f0f0;
-}
-
-.breakdownRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.breakdownLabel {
-  font-size: 13px;
-  color: #86868b;
-}
-
-.breakdownValue {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
-}
-
-.breakdownValueNegative {
-  font-size: 15px;
-  font-weight: 600;
-  color: #ff3b30;
-}
-
-/* 순자산 음수 */
-.negative {
-  color: #ff3b30;
-}
-
-/* 핵심 지표 카드 */
-.metricsCard {
-  background: #fff;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.metricsList {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.metricItem {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.metricHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.metricLabel {
-  font-size: 13px;
-  color: #86868b;
-}
-
-.metricValue {
-  font-size: 17px;
-  font-weight: 600;
-  color: #1d1d1f;
-}
-
-.metricValue.positive {
-  color: #34c759;
-}
-
-.metricValue.caution {
-  color: #ff9500;
-}
-
-.metricValue.warning {
-  color: #ff3b30;
-}
-
-.metricBar {
-  height: 6px;
-  background: #f0f0f0;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.metricFill {
-  height: 100%;
-  background: #34c759;
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.metricFill.caution {
-  background: #ff9500;
-}
-
-.metricFill.warning {
-  background: #ff3b30;
-}
-
-.metricHint {
-  font-size: 12px;
-  color: #a1a1a6;
-}
-
-/* 인사이트 카드 */
-.insightCard {
-  background: #fff;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.insightList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.insightList li {
-  font-size: 13px;
-  line-height: 1.5;
-  padding-left: 12px;
-  position: relative;
-}
-
-.insightList li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 6px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-}
-
-.insightPositive {
-  color: #34c759;
-}
-
-.insightPositive::before {
-  background: #34c759;
-}
-
-.insightWarning {
-  color: #ff9500;
-}
-
-.insightWarning::before {
-  background: #ff9500;
-}
-
-.insightNeutral {
-  color: #86868b;
-}
-
-.insightNeutral::before {
-  background: #86868b;
-}
-
-/* 빈 상태 */
-.emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 24px;
-  text-align: center;
-  color: #c7c7cc;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.emptyState svg {
-  margin-bottom: 16px;
-  opacity: 0.4;
-}
-
-.emptyState p {
-  font-size: 14px;
-  color: #86868b;
-  margin: 0;
-  line-height: 1.5;
-}
-
 /* 반응형 */
-@media (max-width: 1024px) {
-  .container {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-
-  .inputPanel {
-    padding-right: 0;
-    padding-bottom: 32px;
-  }
-
-  .insightPanel {
-    margin: 0;
-    padding: 24px 20px 48px;
-  }
-}
-
 @media (max-width: 600px) {
   .editField {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
-  }
-
-  .totalValue {
-    font-size: 28px;
   }
 }
 
@@ -762,6 +358,6 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   font-size: 14px;
 }

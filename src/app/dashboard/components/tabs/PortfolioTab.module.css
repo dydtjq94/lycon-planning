@@ -236,7 +236,7 @@
 .checkboxLabel input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #007aff;
+  accent-color: var(--accent-color, #007aff);
 }
 
 .accountFormActions {
@@ -283,7 +283,7 @@
 
 .searchInput:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   background: var(--dashboard-card-bg);
 }
 
@@ -357,14 +357,14 @@
   height: 48px;
   border: none;
   border-radius: 10px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: white;
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .searchButton:hover:not(:disabled) {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 .searchButton:disabled {
@@ -477,7 +477,7 @@
   padding: 10px 16px;
   border: none;
   border-radius: 8px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: white;
   font-size: 14px;
   font-weight: 500;
@@ -486,7 +486,7 @@
 }
 
 .applyBtn:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 .closeBtn {
@@ -637,7 +637,7 @@
   padding: 16px;
   border: none;
   border-radius: 12px;
-  background: #3b82f6;
+  background: var(--accent-color, #007aff);
   color: white;
   font-size: 16px;
   font-weight: 600;
@@ -646,7 +646,70 @@
 }
 
 .searchPanelAddBtn:hover {
-  background: #2563eb;
+  filter: brightness(0.9);
+}
+
+/* 보유 종목 상세 패널 */
+.holdingPanelMeta {
+  margin-top: 4px;
+}
+
+.holdingPanelInfo {
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.holdingPanelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.holdingPanelLabel {
+  font-size: 14px;
+  color: var(--dashboard-text-secondary);
+}
+
+.holdingPanelValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+}
+
+.holdingPanelChart {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.chartDateLabel {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+  align-self: flex-end;
+}
+
+.sellBtn {
+  margin: 24px;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  background: #3b82f6;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.sellBtn:hover {
+  filter: brightness(0.9);
 }
 
 /* 상단 요약 헤더 - AssetRecordTab 스타일 */
@@ -1020,7 +1083,7 @@
   gap: 8px;
   margin: 16px 24px;
   padding: 12px 20px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: white;
   border: none;
   border-radius: 10px;
@@ -1031,7 +1094,7 @@
 }
 
 .addButton:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* 폼 섹션 */
@@ -1084,7 +1147,7 @@
 .input:focus,
 .select:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   background: var(--dashboard-card-bg);
 }
 
@@ -1093,6 +1156,26 @@
 .input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* 매도 수량 초과 에러 */
+.inputError {
+  border-color: #ef4444;
+}
+
+.inputError:focus {
+  border-color: #ef4444;
+}
+
+.holdingHint {
+  font-weight: 400;
+  color: var(--dashboard-text-muted);
+}
+
+.errorHint {
+  font-size: 11px;
+  color: #ef4444;
+  margin-top: 2px;
 }
 
 /* 날짜 입력 그룹 */
@@ -1123,7 +1206,7 @@
 
 .dateInput:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   background: var(--dashboard-card-bg);
 }
 
@@ -1204,7 +1287,7 @@
   padding: 10px 24px;
   border: none;
   border-radius: 8px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: white;
   font-size: 14px;
   font-weight: 600;
@@ -1212,7 +1295,7 @@
 }
 
 .submitBtn:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* 보유 종목 섹션 */
@@ -1486,7 +1569,7 @@
   min-width: 22px;
   height: 22px;
   padding: 0 7px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border-radius: 11px;
   font-size: 11px;
   font-weight: 600;

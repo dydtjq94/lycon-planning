@@ -48,7 +48,7 @@
 
 .progressFill {
   height: 100%;
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   border-radius: 4px;
   transition: width 0.4s ease;
 }
@@ -209,8 +209,8 @@
 
 .planBadge {
   padding: 4px 10px;
-  background-color: rgba(0, 122, 255, 0.1);
-  color: #007aff;
+  background-color: color-mix(in srgb, var(--accent-color, #007aff) 10%, transparent);
+  color: var(--accent-color, #007aff);
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;

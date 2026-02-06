@@ -121,7 +121,7 @@
 }
 
 .editBtn:hover {
-  color: #007aff;
+  color: var(--accent-color, #007aff);
 }
 
 .deleteBtn:hover {
@@ -135,14 +135,15 @@
   padding: 12px 0;
   font-size: 14px;
   font-weight: 400;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   background: transparent;
   border: none;
   cursor: pointer;
+  transition: filter 0.15s;
 }
 
 .addBtn:hover {
-  color: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* 요약 카드 */

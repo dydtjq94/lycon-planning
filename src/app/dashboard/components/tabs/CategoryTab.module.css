@@ -87,7 +87,7 @@
 
 .input:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   background-color: white;
 }
 
@@ -105,7 +105,7 @@
 
 .inputSmall:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   background-color: white;
 }
 

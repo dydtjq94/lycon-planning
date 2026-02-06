@@ -4,12 +4,24 @@
   gap: 16px;
 }
 
+/* 범례 행 (범례 + 헤더 액션) */
+.legendRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
 /* 범례 */
 .legend {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  padding: 0 4px;
+}
+
+/* 헤더 액션 (우측) */
+.headerAction {
+  flex-shrink: 0;
 }
 
 .legendItem {

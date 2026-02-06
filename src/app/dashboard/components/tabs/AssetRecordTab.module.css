@@ -574,7 +574,7 @@
 }
 
 .inputWrapper:focus-within {
-  border-color: #14b8a6;
+  border-color: var(--accent-color, #007aff);
 }
 
 .formSummary {
@@ -630,17 +630,18 @@
 
 .saveBtn {
   padding: 10px 24px;
-  background: #14b8a6;
+  background: var(--accent-color, #007aff);
   border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   color: white;
   cursor: pointer;
+  transition: filter 0.15s;
 }
 
 .saveBtn:hover {
-  background: #0d9488;
+  filter: brightness(0.9);
 }
 
 /* 반응형 */

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { FinancialProvider, type ProfileBasics, type FamilyMember } from "@/contexts/FinancialContext";
 import type { Simulation } from "@/types";
 import { DashboardContent } from "./DashboardContent";
+import { copySnapshotToSimulation } from "@/lib/services/snapshotToSimulation";
 
 
 interface DashboardData {
@@ -63,7 +64,8 @@ export default function DashboardPage() {
           .from("simulations")
           .insert({
             profile_id: user.id,
-            name: "기본 시뮬레이션",
+            title: "은퇴",
+            is_default: true,
           })
           .select()
           .single();
@@ -74,6 +76,14 @@ export default function DashboardPage() {
           return;
         }
         simulation = newSimulation;
+
+        // 스냅샷 데이터를 시뮬레이션에 복사
+        try {
+          const result = await copySnapshotToSimulation(user.id, simulation.id);
+          console.log("[DashboardPage] Copied snapshot data:", result);
+        } catch (error) {
+          console.error("[DashboardPage] Failed to copy snapshot:", error);
+        }
       }
 
       setData({

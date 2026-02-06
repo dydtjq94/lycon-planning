@@ -80,13 +80,13 @@
   font-size: 15px;
   font-weight: 600;
   color: #fff;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: filter 0.15s;
 }
 
 .confirmButton:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }

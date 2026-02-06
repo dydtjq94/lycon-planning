@@ -221,6 +221,7 @@ export function CashFlowOverviewTab({
           peakNetWorthYear: currentYear,
           yearsToFI: null,
           fiTarget: 0,
+          bankruptcyYear: null,
         },
       }
     }

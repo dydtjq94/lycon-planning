@@ -41,7 +41,7 @@
 .missionLabel {
   font-size: 12px;
   font-weight: 600;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   margin-bottom: 4px;
 }
 
@@ -95,7 +95,7 @@
 }
 
 .optionBtn.selected {
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: #fff;
 }
 
@@ -118,13 +118,13 @@
 }
 
 .tagBtn:hover {
-  border-color: #007aff;
-  color: #007aff;
+  border-color: var(--accent-color, #007aff);
+  color: var(--accent-color, #007aff);
 }
 
 .tagBtn.selected {
-  background: #007aff;
-  border-color: #007aff;
+  background: var(--accent-color, #007aff);
+  border-color: var(--accent-color, #007aff);
   color: #fff;
 }
 
@@ -148,7 +148,7 @@
 
 .numberInput:focus {
   background: #fff;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   outline: none;
 }
 
@@ -197,14 +197,15 @@
   font-size: 15px;
   font-weight: 600;
   color: #fff;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border: none;
   border-radius: 10px;
   cursor: pointer;
+  transition: filter 0.15s ease;
 }
 
 .completeBtn:hover:not(:disabled) {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 .completeBtn:disabled {

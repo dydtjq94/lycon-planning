@@ -171,12 +171,25 @@ export function PortfolioTab({
   const [isApiHealthy, setIsApiHealthy] = useState<boolean | null>(null);
   const [isSearchPanelClosing, setIsSearchPanelClosing] = useState(false);
 
+  // 보유 종목 상세 패널
+  const [selectedHolding, setSelectedHolding] = useState<PortfolioHolding | null>(null);
+  const [isHoldingPanelClosing, setIsHoldingPanelClosing] = useState(false);
+
   // 패널 닫기 (애니메이션 포함)
   const closeSearchPanel = useCallback(() => {
     setIsSearchPanelClosing(true);
     setTimeout(() => {
       setSearchResult(null);
       setIsSearchPanelClosing(false);
+    }, 250);
+  }, []);
+
+  // 보유 종목 패널 닫기
+  const closeHoldingPanel = useCallback(() => {
+    setIsHoldingPanelClosing(true);
+    setTimeout(() => {
+      setSelectedHolding(null);
+      setIsHoldingPanelClosing(false);
     }, 250);
   }, []);
 
@@ -538,7 +551,12 @@ export function PortfolioTab({
   const holdings = useMemo<PortfolioHolding[]>(() => {
     const holdingsMap = new Map<string, PortfolioHolding>();
 
-    filteredTransactions.forEach((tx) => {
+    // 날짜순 정렬 (오래된 것부터 처리해야 매도가 정확히 계산됨)
+    const sortedTransactions = [...filteredTransactions].sort(
+      (a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime()
+    );
+
+    sortedTransactions.forEach((tx) => {
       const key = tx.ticker;
       const existing = holdingsMap.get(key);
 
@@ -581,6 +599,66 @@ export function PortfolioTab({
   const totalInvested = useMemo(() => {
     return holdings.reduce((sum, h) => sum + h.total_invested, 0);
   }, [holdings]);
+
+  // 종목별 계좌 ID 맵 (매도 시 계좌 자동 선택용)
+  const tickerAccountMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    filteredTransactions.forEach((tx) => {
+      if (tx.type === "buy" && tx.account_id) {
+        const existing = map.get(tx.ticker);
+        if (existing) {
+          existing.add(tx.account_id);
+        } else {
+          map.set(tx.ticker, new Set([tx.account_id]));
+        }
+      }
+    });
+    return map;
+  }, [filteredTransactions]);
+
+  // 매도 폼 열기
+  const openSellForm = useCallback((holding: PortfolioHolding) => {
+    closeHoldingPanel();
+    setTimeout(() => {
+      // 해당 종목이 속한 계좌 확인
+      const accountIds = tickerAccountMap.get(holding.ticker);
+      const autoAccountId = accountIds && accountIds.size === 1
+        ? Array.from(accountIds)[0]
+        : null;
+
+      // 해외주식인 경우 환율과 달러 단가 계산
+      const isForeign = holding.asset_type === "foreign_stock" || holding.asset_type === "foreign_etf";
+      let exchangeRate = 1450; // 기본값
+
+      if (isForeign && priceCache?.exchangeRateMap.size) {
+        const sortedFxDates = Array.from(priceCache.exchangeRateMap.keys()).sort();
+        const latestFxDate = sortedFxDates[sortedFxDates.length - 1];
+        exchangeRate = priceCache.exchangeRateMap.get(latestFxDate) || 1450;
+      }
+
+      const usdPrice = isForeign ? (holding.avg_price / exchangeRate).toFixed(2) : "";
+      setUsdPriceInput(usdPrice);
+
+      // 오늘 날짜 (YYYY-MM-DD)
+      const today = new Date().toISOString().split("T")[0];
+
+      setFormData({
+        type: "sell",
+        ticker: holding.ticker,
+        name: holding.name,
+        asset_type: holding.asset_type,
+        currency: holding.currency,
+        quantity: holding.quantity,
+        price: Math.round(holding.avg_price),
+        exchange_rate: isForeign ? exchangeRate : undefined,
+        fee: 0,
+        account_id: autoAccountId,
+        trade_date: today,
+      });
+      setShowAddForm(true);
+      setEditingId(null);
+    }, 300);
+  }, [closeHoldingPanel, tickerAccountMap, priceCache]);
 
   // 종목별 최신 거래일 맵
   const latestTradeDateMap = useMemo(() => {
@@ -665,7 +743,9 @@ export function PortfolioTab({
 
     // 계좌별 보유량 계산
     accounts.forEach((account) => {
-      const accountTxs = transactions.filter((tx) => tx.account_id === account.id);
+      const accountTxs = transactions
+        .filter((tx) => tx.account_id === account.id)
+        .sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
       const holdingsMap = new Map<string, { quantity: number; currency: string; asset_type: string }>();
 
       accountTxs.forEach((tx) => {
@@ -719,7 +799,9 @@ export function PortfolioTab({
     const invested = new Map<string, number>();
 
     accounts.forEach((account) => {
-      const accountTxs = transactions.filter((tx) => tx.account_id === account.id);
+      const accountTxs = transactions
+        .filter((tx) => tx.account_id === account.id)
+        .sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
       const holdingsMap = new Map<string, { quantity: number; totalInvested: number; avgPrice: number }>();
 
       accountTxs.forEach((tx) => {
@@ -801,6 +883,18 @@ export function PortfolioTab({
     });
   }, [holdings, holdingSort, holdingValues, latestTradeDateMap]);
 
+  // 매도 시 보유 수량 검증용
+  const sellHoldingQuantity = useMemo(() => {
+    if (formData.type !== "sell" || !formData.ticker) return null;
+    const holding = holdings.find((h) => h.ticker === formData.ticker);
+    return holding?.quantity || 0;
+  }, [formData.type, formData.ticker, holdings]);
+
+  const isSellQuantityExceeded = formData.type === "sell" &&
+    sellHoldingQuantity !== null &&
+    formData.quantity !== undefined &&
+    formData.quantity > sellHoldingQuantity;
+
   // 폼 제출
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -808,6 +902,16 @@ export function PortfolioTab({
     if (!formData.ticker || !formData.name || !formData.quantity || !formData.price || !formData.trade_date) {
       alert("필수 항목을 입력해주세요.");
       return;
+    }
+
+    // 매도 시 보유 수량 초과 검증
+    if (formData.type === "sell") {
+      const holding = holdings.find((h) => h.ticker === formData.ticker);
+      const currentQuantity = holding?.quantity || 0;
+      if (formData.quantity > currentQuantity) {
+        alert(`보유 수량(${currentQuantity}주)보다 많이 매도할 수 없습니다.`);
+        return;
+      }
     }
 
     // 총액 계산 (원 단위로 저장)
@@ -1104,6 +1208,106 @@ export function PortfolioTab({
         </div>
       )}
 
+      {/* 보유 종목 상세 패널 */}
+      {selectedHolding && (
+        <div
+          className={`${styles.searchPanelOverlay} ${isHoldingPanelClosing ? styles.closing : ""}`}
+          onClick={closeHoldingPanel}
+        >
+          <div
+            className={`${styles.searchPanel} ${isHoldingPanelClosing ? styles.closing : ""}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.searchPanelHeader}>
+              <div>
+                <div className={styles.searchPanelTitle}>
+                  <span className={styles.searchPanelName}>{selectedHolding.name}</span>
+                  <span className={styles.searchPanelSymbol}>{selectedHolding.ticker}</span>
+                </div>
+                <div className={styles.holdingPanelMeta}>
+                  <span className={`${styles.assetTypeLabel} ${styles[selectedHolding.asset_type]}`}>
+                    {ASSET_TYPE_LABELS[selectedHolding.asset_type]}
+                  </span>
+                </div>
+              </div>
+              <button onClick={closeHoldingPanel} className={styles.searchPanelCloseBtn}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* 보유 정보 */}
+            <div className={styles.holdingPanelInfo}>
+              <div className={styles.holdingPanelRow}>
+                <span className={styles.holdingPanelLabel}>보유 수량</span>
+                <span className={styles.holdingPanelValue}>{selectedHolding.quantity.toLocaleString()}주</span>
+              </div>
+              <div className={styles.holdingPanelRow}>
+                <span className={styles.holdingPanelLabel}>평균 단가</span>
+                <span className={styles.holdingPanelValue}>{Math.round(selectedHolding.avg_price).toLocaleString()}원</span>
+              </div>
+              <div className={styles.holdingPanelRow}>
+                <span className={styles.holdingPanelLabel}>투자 금액</span>
+                <span className={styles.holdingPanelValue}>{Math.round(selectedHolding.total_invested).toLocaleString()}원</span>
+              </div>
+              {(() => {
+                const holdingData = holdingValues.get(selectedHolding.ticker);
+                const currentVal = holdingData?.value ?? null;
+                const holdingPL = currentVal !== null ? currentVal - selectedHolding.total_invested : null;
+                const holdingPLRate = currentVal !== null && selectedHolding.total_invested > 0
+                  ? ((currentVal - selectedHolding.total_invested) / selectedHolding.total_invested) * 100
+                  : null;
+                return (
+                  <>
+                    <div className={styles.holdingPanelRow}>
+                      <span className={styles.holdingPanelLabel}>평가 금액</span>
+                      <span className={styles.holdingPanelValue}>
+                        {currentVal !== null ? `${Math.round(currentVal).toLocaleString()}원` : "-"}
+                      </span>
+                    </div>
+                    <div className={styles.holdingPanelRow}>
+                      <span className={styles.holdingPanelLabel}>손익</span>
+                      <span className={`${styles.holdingPanelValue} ${holdingPL !== null ? (holdingPL >= 0 ? styles.profitColor : styles.lossColor) : ""}`}>
+                        {holdingPL !== null
+                          ? `${holdingPL >= 0 ? "+" : ""}${Math.round(holdingPL).toLocaleString()}원 (${holdingPLRate !== null ? `${holdingPLRate >= 0 ? "+" : ""}${holdingPLRate.toFixed(1)}%` : ""})`
+                          : "-"}
+                      </span>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* 차트 */}
+            <div className={styles.holdingPanelChart}>
+              {(() => {
+                const tickerPrices = priceCache?.priceDataMap.get(selectedHolding.ticker);
+                const sortedDates = tickerPrices ? Array.from(tickerPrices.keys()).sort() : [];
+                const latestDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : null;
+                return latestDate ? (
+                  <span className={styles.chartDateLabel}>{latestDate} 기준</span>
+                ) : null;
+              })()}
+              <Sparkline
+                priceData={priceCache?.priceDataMap.get(selectedHolding.ticker)}
+                profitLoss={(() => {
+                  const holdingData = holdingValues.get(selectedHolding.ticker);
+                  const currentVal = holdingData?.value ?? null;
+                  return currentVal !== null ? currentVal - selectedHolding.total_invested : null;
+                })()}
+                chartLineColors={chartLineColors}
+                toRgba={toRgba}
+                width={472}
+                height={80}
+              />
+            </div>
+
+            <button onClick={() => openSellForm(selectedHolding)} className={styles.sellBtn}>
+              매도하기
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 계좌 관리 모달 */}
       {/* 상단 요약 - AssetRecordTab 스타일 */}
       <div className={styles.summaryHeader}>
@@ -1308,15 +1512,23 @@ export function PortfolioTab({
                   <>
                     <div className={styles.formRow}>
                       <div className={styles.formGroup}>
-                        <label>수량</label>
+                        <label>
+                          수량
+                          {formData.type === "sell" && sellHoldingQuantity !== null && (
+                            <span className={styles.holdingHint}> (보유: {sellHoldingQuantity})</span>
+                          )}
+                        </label>
                         <input
                           type="number"
                           placeholder="10"
                           value={formData.quantity ?? ""}
                           onChange={(e) => setFormData({ ...formData, quantity: e.target.value ? parseFloat(e.target.value) : undefined })}
                           onWheel={(e) => (e.target as HTMLElement).blur()}
-                          className={styles.input}
+                          className={`${styles.input} ${isSellQuantityExceeded ? styles.inputError : ""}`}
                         />
+                        {isSellQuantityExceeded && (
+                          <span className={styles.errorHint}>보유 수량 초과</span>
+                        )}
                       </div>
 
                       <div className={styles.formGroup}>
@@ -1399,15 +1611,23 @@ export function PortfolioTab({
                     {/* 국내주식/암호화폐: 원화 단가 */}
                     <div className={styles.formRow}>
                       <div className={styles.formGroup}>
-                        <label>수량</label>
+                        <label>
+                          수량
+                          {formData.type === "sell" && sellHoldingQuantity !== null && (
+                            <span className={styles.holdingHint}> (보유: {sellHoldingQuantity})</span>
+                          )}
+                        </label>
                         <input
                           type="number"
                           placeholder="10"
                           value={formData.quantity ?? ""}
                           onChange={(e) => setFormData({ ...formData, quantity: e.target.value ? parseFloat(e.target.value) : undefined })}
                           onWheel={(e) => (e.target as HTMLElement).blur()}
-                          className={styles.input}
+                          className={`${styles.input} ${isSellQuantityExceeded ? styles.inputError : ""}`}
                         />
+                        {isSellQuantityExceeded && (
+                          <span className={styles.errorHint}>보유 수량 초과</span>
+                        )}
                       </div>
 
                       <div className={styles.formGroup}>
@@ -1515,7 +1735,12 @@ export function PortfolioTab({
                 : null;
 
               return (
-                <div key={holding.ticker} className={styles.holdingItem}>
+                <div
+                  key={holding.ticker}
+                  className={styles.holdingItem}
+                  onClick={() => setSelectedHolding(holding)}
+                  style={{ cursor: "pointer" }}
+                >
                   {/* 1행: 종목명 + 평가금액 + 투자금액 */}
                   <div className={styles.holdingRow}>
                     <div className={styles.holdingStockInfo}>
@@ -2114,57 +2339,13 @@ function PortfolioValueChart({
   }
 
   // 각 시점의 누적 손익 계산 (평가금액 - 투자금액)
-  const rawPL = chartData.value.map((v, i) => v - chartData.invested[i]);
+  const plData = chartData.value.map((v, i) => v - chartData.invested[i]);
 
-  // 0을 교차하는 지점에 데이터 포인트 삽입 + 거래 내역 추적
-  const insertZeroCrossings = (
-    labels: string[],
-    plData: number[],
-    valueData: number[],
-    txByDate: Map<string, PortfolioTransaction[]>
-  ) => {
-    const newLabels: string[] = [];
-    const newPL: number[] = [];
-    const newValue: number[] = [];
-    const isZeroCross: boolean[] = [];
-    const txAtIndex: (PortfolioTransaction[] | null)[] = [];
-
-    for (let i = 0; i < labels.length; i++) {
-      newLabels.push(labels[i]);
-      newPL.push(plData[i]);
-      newValue.push(valueData[i]);
-      isZeroCross.push(false);
-      txAtIndex.push(txByDate.get(labels[i]) || null);
-
-      // 다음 포인트와 0 교차 여부 확인
-      if (i < labels.length - 1) {
-        const pl1 = plData[i];
-        const pl2 = plData[i + 1];
-
-        // 부호가 바뀌는지 확인 (0 교차)
-        if ((pl1 > 0 && pl2 < 0) || (pl1 < 0 && pl2 > 0)) {
-          // 교차점 계산 (선형 보간)
-          const t = Math.abs(pl1) / (Math.abs(pl1) + Math.abs(pl2));
-
-          // 교차점의 value 계산
-          const crossValue = valueData[i] + t * (valueData[i + 1] - valueData[i]);
-
-          newLabels.push("");
-          newPL.push(0);
-          newValue.push(crossValue);
-          isZeroCross.push(true);
-          txAtIndex.push(null);
-        }
-      }
-    }
-
-    return { labels: newLabels, pl: newPL, value: newValue, isZeroCross, txAtIndex };
-  };
-
-  const enhanced = insertZeroCrossings(chartData.labels, rawPL, chartData.value, transactionsByDate);
+  // 날짜별 거래 내역 (세로선 마커용)
+  const txAtIndex = chartData.labels.map((label) => transactionsByDate.get(label) || null);
 
   // Y축 대칭을 위한 최대 절대값 계산
-  const maxAbsPL = Math.max(...enhanced.pl.map((v) => Math.abs(v)));
+  const maxAbsPL = Math.max(...plData.map((v) => Math.abs(v)));
 
   // 현재 기준 수익률 계산
   const latestValue = chartData.value[chartData.value.length - 1];
@@ -2173,29 +2354,9 @@ function PortfolioValueChart({
   const profitRate = ((totalPL / latestInvested) * 100).toFixed(1);
   const profitSign = totalPL >= 0 ? "+" : "";
 
-  // 손익 구간별 색상 (세그먼트는 p0 → p1, 0 교차점에서는 p1 기준으로 색상 결정)
-  const getPLSegmentColor = (idx: number) => {
-    const p0 = enhanced.pl[idx];
-    const p1 = enhanced.pl[idx + 1];
-    // 0 교차점(p0 === 0)에서 시작하는 세그먼트는 p1 기준으로 색상 결정
-    if (p0 === 0 && p1 !== undefined) {
-      return p1 >= 0 ? toRgba(chartLineColors.profit, 1) : toRgba(chartLineColors.loss, 1);
-    }
-    return p0 >= 0 ? toRgba(chartLineColors.profit, 1) : toRgba(chartLineColors.loss, 1);
-  };
-  const getPLSegmentBgColor = (idx: number) => {
-    const p0 = enhanced.pl[idx];
-    const p1 = enhanced.pl[idx + 1];
-    // 0 교차점(p0 === 0)에서 시작하는 세그먼트는 p1 기준으로 색상 결정
-    if (p0 === 0 && p1 !== undefined) {
-      return p1 >= 0 ? toRgba(chartLineColors.profit, 0.15) : toRgba(chartLineColors.loss, 0.15);
-    }
-    return p0 >= 0 ? toRgba(chartLineColors.profit, 0.15) : toRgba(chartLineColors.loss, 0.15);
-  };
-
   // 거래가 있는 인덱스 목록 (세로 점선용)
-  const txIndices = enhanced.txAtIndex
-    .map((tx, i) => (tx && tx.length > 0 && !enhanced.isZeroCross[i] ? i : -1))
+  const txIndices = txAtIndex
+    .map((tx, i) => (tx && tx.length > 0 ? i : -1))
     .filter((i) => i >= 0);
 
 
@@ -2209,7 +2370,7 @@ function PortfolioValueChart({
       if (!chartArea || !scales?.x) return;
 
       const xScale = scales.x;
-      const dataLength = enhanced.labels.length;
+      const dataLength = chartData.labels.length;
       if (dataLength <= 1) return;
 
       ctx.save();
@@ -2232,14 +2393,14 @@ function PortfolioValueChart({
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data: any = {
-    labels: enhanced.labels,
+    labels: chartData.labels,
     datasets: [
       {
         type: "bar" as const,
         label: "손익",
-        data: enhanced.pl,
-        backgroundColor: enhanced.pl.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.7) : toRgba(chartLineColors.loss, 0.7)),
-        hoverBackgroundColor: enhanced.pl.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.9) : toRgba(chartLineColors.loss, 0.9)),
+        data: plData,
+        backgroundColor: plData.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.7) : toRgba(chartLineColors.loss, 0.7)),
+        hoverBackgroundColor: plData.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.9) : toRgba(chartLineColors.loss, 0.9)),
         borderWidth: 0,
         borderRadius: 2,
         yAxisID: "y",
@@ -2248,7 +2409,7 @@ function PortfolioValueChart({
       {
         type: "line" as const,
         label: "평가금액",
-        data: enhanced.value,
+        data: chartData.value,
         borderColor: toRgba(chartLineColors.value, 0.8),
         backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
           const { chart } = context;
@@ -2258,8 +2419,8 @@ function PortfolioValueChart({
         },
         fill: true,
         borderWidth: 2,
-        pointRadius: enhanced.isZeroCross.map((z) => (z ? 0 : 0)),
-        pointHoverRadius: enhanced.isZeroCross.map((z) => (z ? 0 : 4)),
+        pointRadius: 0,
+        pointHoverRadius: 4,
         pointBackgroundColor: chartLineColors.value,
         tension: 0.3,
         yAxisID: "y1",
@@ -2332,8 +2493,8 @@ function PortfolioValueChart({
           let currentTx: PortfolioTransaction[] | null = null;
           if (tooltip.dataPoints && tooltip.dataPoints.length > 0) {
             const idx = (tooltip.dataPoints[0] as { dataIndex?: number }).dataIndex;
-            if (idx !== undefined && enhanced.txAtIndex[idx]) {
-              currentTx = enhanced.txAtIndex[idx];
+            if (idx !== undefined && txAtIndex[idx]) {
+              currentTx = txAtIndex[idx];
             }
           }
 

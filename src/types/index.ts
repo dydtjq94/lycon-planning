@@ -540,7 +540,58 @@ export interface ChartData {
 // 새로운 시뮬레이션 기반 데이터 구조
 // ============================================
 
+// ============================================
+// Investment Assumptions (투자 가정)
+// ============================================
+
+export type InvestmentAssumptionsMode = 'fixed' | 'historical' | 'advanced'
+
+export interface InvestmentRates {
+  savings: number       // 예금/적금 이율 (%)
+  investment: number    // 투자 수익률 (%)
+  pension: number       // 연금 수익률 (%)
+  realEstate: number    // 부동산 상승률 (%)
+  inflation: number     // 물가상승률 (%)
+}
+
+export interface InvestmentAssumptions {
+  mode: InvestmentAssumptionsMode
+  rates: InvestmentRates
+}
+
+export const DEFAULT_INVESTMENT_ASSUMPTIONS: InvestmentAssumptions = {
+  mode: 'fixed',
+  rates: {
+    savings: 3.0,
+    investment: 7.0,
+    pension: 5.0,
+    realEstate: 3.0,
+    inflation: 2.5,
+  },
+}
+
+// ============================================
+// Cash Flow Priorities (현금흐름 우선순위)
+// ============================================
+
+export type CashFlowTargetType = 'savings' | 'investment' | 'pension' | 'debt'
+export type CashFlowStrategy = 'maintain' | 'maximize' | 'remainder'
+
+export interface CashFlowPriority {
+  id: string
+  targetType: CashFlowTargetType     // 대상 자산 유형
+  targetId?: string                   // 특정 항목 지정 (없으면 유형 전체)
+  targetName?: string                 // UI 표시용 이름
+  strategy: CashFlowStrategy
+  targetAmount?: number               // maintain: 목표 잔액 (만원)
+  maxAmount?: number                  // maximize: 연간 최대 한도 (만원)
+  priority: number                    // 낮을수록 먼저 적용 (1, 2, 3...)
+}
+
+// ============================================
 // 시뮬레이션 (시나리오)
+// ============================================
+
 export interface Simulation {
   id: string
   profile_id: string
@@ -548,6 +599,9 @@ export interface Simulation {
   description?: string
   is_default: boolean
   sort_order: number
+  // 새 필드
+  investment_assumptions?: InvestmentAssumptions
+  cash_flow_priorities?: CashFlowPriority[]
   created_at: string
   updated_at: string
 }
@@ -757,6 +811,9 @@ export interface SimulationInput {
   description?: string
   is_default?: boolean
   sort_order?: number
+  // 새 필드
+  investment_assumptions?: InvestmentAssumptions
+  cash_flow_priorities?: CashFlowPriority[]
 }
 
 // ============================================

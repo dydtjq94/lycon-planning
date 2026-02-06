@@ -1,6 +1,6 @@
 /* 사이드바 기본 스타일 - 다크모드 기본 (슬랙 스타일) */
 .sidebar {
-  --sidebar-accent: #007aff;
+  --sidebar-accent: var(--accent-color, #007aff);
   --sidebar-bg: #1e2126;
   --sidebar-border: #35373b;
   --sidebar-item-bg: transparent;
@@ -18,7 +18,7 @@
 
 /* 다크 + 블루 (슬랙 스타일) */
 .sidebar[data-color-mode="dark"][data-accent="blue"] {
-  --sidebar-accent: #007aff;
+  --sidebar-accent: var(--accent-color, #007aff);
   --sidebar-bg: #1a2333;
   --sidebar-header-bg: #1e2838;
   --sidebar-border: #2a3a52;
@@ -28,7 +28,7 @@
 
 /* 다크 + 퍼플 (슬랙 스타일) */
 .sidebar[data-color-mode="dark"][data-accent="purple"] {
-  --sidebar-accent: #a855f7;
+  --sidebar-accent: var(--accent-color, #a855f7);
   --sidebar-bg: #251f38;
   --sidebar-header-bg: #2a243e;
   --sidebar-border: #3a3058;
@@ -38,7 +38,7 @@
 
 /* 다크 + 그린 (슬랙 스타일) */
 .sidebar[data-color-mode="dark"][data-accent="green"] {
-  --sidebar-accent: #22c55e;
+  --sidebar-accent: var(--accent-color, #22c55e);
   --sidebar-bg: #1a2a22;
   --sidebar-header-bg: #1e3028;
   --sidebar-border: #2a4038;
@@ -48,7 +48,7 @@
 
 /* 다크 + 로즈 (슬랙 스타일) */
 .sidebar[data-color-mode="dark"][data-accent="rose"] {
-  --sidebar-accent: #f43f5e;
+  --sidebar-accent: var(--accent-color, #f43f5e);
   --sidebar-bg: #2a1a20;
   --sidebar-header-bg: #301e25;
   --sidebar-border: #452a35;
@@ -58,7 +58,7 @@
 
 /* 다크 + 오렌지 (슬랙 스타일) */
 .sidebar[data-color-mode="dark"][data-accent="orange"] {
-  --sidebar-accent: #f97316;
+  --sidebar-accent: var(--accent-color, #f97316);
   --sidebar-bg: #2a2218;
   --sidebar-header-bg: #30281c;
   --sidebar-border: #453828;
@@ -68,7 +68,7 @@
 
 /* 다크 + 블랙 (슬랙 스타일) */
 .sidebar[data-color-mode="dark"][data-accent="black"] {
-  --sidebar-accent: #525252;
+  --sidebar-accent: var(--accent-color, #525252);
   --sidebar-bg: #1e2126;
   --sidebar-header-bg: #23262b;
   --sidebar-border: #35373b;
@@ -78,7 +78,7 @@
 
 /* 다크 + 틸 (슬랙 스타일) */
 .sidebar[data-color-mode="dark"][data-accent="teal"] {
-  --sidebar-accent: #14b8a6;
+  --sidebar-accent: var(--accent-color, #14b8a6);
   --sidebar-bg: #1a2a28;
   --sidebar-header-bg: #1e302e;
   --sidebar-border: #2a4540;
@@ -88,7 +88,7 @@
 
 /* 다크 + 인디고 (슬랙 스타일) */
 .sidebar[data-color-mode="dark"][data-accent="indigo"] {
-  --sidebar-accent: #6366f1;
+  --sidebar-accent: var(--accent-color, #6366f1);
   --sidebar-bg: #1f1f38;
   --sidebar-header-bg: #24243e;
   --sidebar-border: #303050;
@@ -98,7 +98,7 @@
 
 /* 다크 + 앰버 (슬랙 스타일) */
 .sidebar[data-color-mode="dark"][data-accent="amber"] {
-  --sidebar-accent: #f59e0b;
+  --sidebar-accent: var(--accent-color, #f59e0b);
   --sidebar-bg: #2a2518;
   --sidebar-header-bg: #302a1c;
   --sidebar-border: #454028;
@@ -112,7 +112,7 @@
 
 /* 라이트 + 블루 */
 .sidebar[data-color-mode="light"][data-accent="blue"] {
-  --sidebar-accent: #007aff;
+  --sidebar-accent: var(--accent-color, #007aff);
   --sidebar-bg: #f0f7ff;
   --sidebar-header-bg: #f8fafc;
   --sidebar-border: #e2eef9;
@@ -126,7 +126,7 @@
 
 /* 라이트 + 퍼플 */
 .sidebar[data-color-mode="light"][data-accent="purple"] {
-  --sidebar-accent: #a855f7;
+  --sidebar-accent: var(--accent-color, #a855f7);
   --sidebar-bg: #f8f5ff;
   --sidebar-header-bg: #f8fafc;
   --sidebar-border: #e8e0f5;
@@ -140,7 +140,7 @@
 
 /* 라이트 + 그린 */
 .sidebar[data-color-mode="light"][data-accent="green"] {
-  --sidebar-accent: #16a34a;
+  --sidebar-accent: var(--accent-color, #16a34a);
   --sidebar-bg: #f0fdf5;
   --sidebar-header-bg: #f8fafc;
   --sidebar-border: #d5f5e3;
@@ -154,7 +154,7 @@
 
 /* 라이트 + 로즈 */
 .sidebar[data-color-mode="light"][data-accent="rose"] {
-  --sidebar-accent: #e11d48;
+  --sidebar-accent: var(--accent-color, #e11d48);
   --sidebar-bg: #fff5f6;
   --sidebar-header-bg: #f8fafc;
   --sidebar-border: #fde0e4;
@@ -168,7 +168,7 @@
 
 /* 라이트 + 오렌지 */
 .sidebar[data-color-mode="light"][data-accent="orange"] {
-  --sidebar-accent: #ea580c;
+  --sidebar-accent: var(--accent-color, #ea580c);
   --sidebar-bg: #fffaf5;
   --sidebar-header-bg: #f8fafc;
   --sidebar-border: #ffe5d0;
@@ -182,7 +182,7 @@
 
 /* 라이트 + 블랙 */
 .sidebar[data-color-mode="light"][data-accent="black"] {
-  --sidebar-accent: #525252;
+  --sidebar-accent: var(--accent-color, #525252);
   --sidebar-bg: #f7f7f7;
   --sidebar-header-bg: #f8fafc;
   --sidebar-border: #e5e5e5;
@@ -196,7 +196,7 @@
 
 /* 라이트 + 틸 */
 .sidebar[data-color-mode="light"][data-accent="teal"] {
-  --sidebar-accent: #14b8a6;
+  --sidebar-accent: var(--accent-color, #14b8a6);
   --sidebar-bg: #f0fdfa;
   --sidebar-header-bg: #f8fafc;
   --sidebar-border: #d5f5f0;
@@ -210,7 +210,7 @@
 
 /* 라이트 + 인디고 */
 .sidebar[data-color-mode="light"][data-accent="indigo"] {
-  --sidebar-accent: #6366f1;
+  --sidebar-accent: var(--accent-color, #6366f1);
   --sidebar-bg: #f0f2ff;
   --sidebar-header-bg: #f8fafc;
   --sidebar-border: #e0e4f8;
@@ -224,7 +224,7 @@
 
 /* 라이트 + 앰버 */
 .sidebar[data-color-mode="light"][data-accent="amber"] {
-  --sidebar-accent: #f59e0b;
+  --sidebar-accent: var(--accent-color, #f59e0b);
   --sidebar-bg: #fffcf0;
   --sidebar-header-bg: #f8fafc;
   --sidebar-border: #fef0c8;
@@ -298,42 +298,6 @@
 .sidebar:hover .logoText,
 .sidebar.expanded .logoText {
   opacity: 1;
-}
-
-/* 핀 버튼 */
-.pinButton {
-  position: absolute;
-  right: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: none;
-  color: var(--sidebar-text-muted);
-  cursor: pointer;
-  border-radius: 6px;
-  opacity: 0;
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s, color 0.15s;
-}
-
-.sidebar:hover .pinButton,
-.sidebar.expanded .pinButton {
-  opacity: 1;
-}
-
-.pinButton:hover {
-  background-color: var(--sidebar-item-bg-hover);
-  color: var(--sidebar-text);
-}
-
-.pinButton.pinned {
-  color: var(--sidebar-text-active);
-}
-
-.pinButton.pinned:hover {
-  color: var(--sidebar-text-active);
 }
 
 /* 네비게이션 */
@@ -482,17 +446,16 @@
   opacity: 1;
 }
 
-/* 담당 전문가 라벨 - 강조 스타일 */
+/* 담당 전문가 라벨 - 심플 스타일 */
 .sectionLabel.expert {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--sidebar-accent) 20%, transparent) 0%, color-mix(in srgb, var(--sidebar-accent) 10%, transparent) 100%);
-  border: 1px solid color-mix(in srgb, var(--sidebar-accent) 30%, transparent);
-  border-radius: 8px;
+  background: none;
+  border: none;
   margin: 8px 8px 12px 8px;
   padding: 10px 12px;
   height: auto;
   font-size: 12px;
   font-weight: 600;
-  color: var(--sidebar-text-active);
+  color: var(--sidebar-accent);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -559,6 +522,35 @@
 .submenuItem.active {
   background-color: var(--sidebar-item-bg-active);
   color: var(--sidebar-text-active);
+}
+
+/* 시뮬레이션 삭제 버튼 */
+.deleteSimBtn {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.15s;
+}
+
+.submenuItem {
+  position: relative;
+}
+
+.submenuItem:hover .deleteSimBtn {
+  opacity: 1;
+}
+
+.deleteSimBtn:hover {
+  color: #ff4d4f;
 }
 
 /* 중첩 서브메뉴 (나의 재무) */

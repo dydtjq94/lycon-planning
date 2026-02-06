@@ -1,14 +1,15 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 40px;
+  padding: 24px;
+  overflow-y: auto;
 }
 
 /* 차트 섹션 */
 .chartSection {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
 }
 
 .chartHeader {
@@ -21,14 +22,14 @@
 .chartTitle {
   font-size: 18px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
 .chartSubtitle {
   font-size: 13px;
-  color: #64748b;
-  margin-top: 4px;
+  color: var(--dashboard-text-secondary);
+  margin: 4px 0 0 0;
 }
 
 .chartContent {
@@ -39,6 +40,7 @@
 .chartArea {
   flex: 1;
   min-width: 0;
+  height: 400px;
 }
 
 .detailPanel {
@@ -63,12 +65,12 @@
 .yearValue {
   font-size: 18px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--dashboard-text);
 }
 
 .ageValue {
   font-size: 14px;
-  color: #64748b;
+  color: var(--dashboard-text-secondary);
 }
 
 .sliderContainer {
@@ -79,7 +81,7 @@
 
 .sliderLabel {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--dashboard-text-secondary);
   min-width: 40px;
 }
 
@@ -91,7 +93,7 @@
   position: relative;
   width: 200px;
   height: 6px;
-  background: #e2e8f0;
+  background: var(--dashboard-border);
   border-radius: 3px;
 }
 
@@ -100,7 +102,7 @@
   top: 0;
   left: 0;
   height: 100%;
-  background: linear-gradient(90deg, #007aff, #5856d6);
+  background: linear-gradient(90deg, var(--accent-color, #007aff), #5856d6);
   border-radius: 3px;
   pointer-events: none;
 }
@@ -124,8 +126,8 @@
   appearance: none;
   width: 16px;
   height: 16px;
-  background: white;
-  border: 2px solid #007aff;
+  background: var(--dashboard-card-bg);
+  border: 2px solid var(--accent-color, #007aff);
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
@@ -140,8 +142,8 @@
 .sliderInput::-moz-range-thumb {
   width: 16px;
   height: 16px;
-  background: white;
-  border: 2px solid #007aff;
+  background: var(--dashboard-card-bg);
+  border: 2px solid var(--accent-color, #007aff);
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
@@ -157,7 +159,7 @@
 
 .surplusLabel {
   font-size: 12px;
-  color: #64748b;
+  color: var(--dashboard-text-secondary);
 }
 
 .surplusValue {
@@ -188,8 +190,8 @@
   gap: 12px;
   padding: 8px 12px;
   font-size: 12px;
-  color: #64748b;
-  border-bottom: 1px solid #e2e8f0;
+  color: var(--dashboard-text-secondary);
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .rulesHeaderItem {
@@ -213,18 +215,18 @@
   gap: 12px;
   align-items: center;
   padding: 12px;
-  background: #f8fafc;
+  background: var(--dashboard-hover-bg);
   border-radius: 8px;
   transition: background 0.15s, opacity 0.15s;
 }
 
 .ruleItem:hover {
-  background: #f1f5f9;
+  background: var(--dashboard-active-bg);
 }
 
 .ruleItem.dragging {
   opacity: 0.5;
-  background: #e2e8f0;
+  background: var(--dashboard-border);
 }
 
 .ruleItem.disabled {
@@ -232,15 +234,15 @@
 }
 
 .ruleItem.remainderRule {
-  background: #f1f5f9;
-  border: 1px dashed #cbd5e1;
+  background: var(--dashboard-active-bg);
+  border: 1px dashed var(--dashboard-border);
 }
 
 .ruleHandle {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--dashboard-text-secondary);
   cursor: grab;
 }
 
@@ -254,7 +256,7 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: white;
   border-radius: 50%;
   font-size: 12px;
@@ -278,7 +280,7 @@
 .ruleName {
   font-size: 14px;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--dashboard-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -286,7 +288,7 @@
 
 .ruleLimit {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--dashboard-text-secondary);
   flex-shrink: 0;
 }
 
@@ -300,21 +302,22 @@
 .amountInput {
   width: 80px;
   padding: 6px 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   font-size: 14px;
   text-align: right;
-  background: white;
+  background: var(--dashboard-input-bg);
+  color: var(--dashboard-text);
 }
 
 .amountInput:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
 }
 
 .amountInput:disabled {
-  background: #f1f5f9;
-  color: #94a3b8;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-secondary);
 }
 
 /* 숫자 입력 스핀 버튼 제거 */
@@ -326,13 +329,13 @@
 
 .amountUnit {
   font-size: 12px;
-  color: #64748b;
+  color: var(--dashboard-text-secondary);
   white-space: nowrap;
 }
 
 .remainderText {
   font-size: 14px;
-  color: #64748b;
+  color: var(--dashboard-text-secondary);
   font-style: italic;
 }
 
@@ -353,11 +356,11 @@
 
 .toggleBtn {
   padding: 4px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--dashboard-border);
   border-radius: 4px;
-  background: white;
+  background: var(--dashboard-card-bg);
   font-size: 12px;
-  color: #64748b;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -374,7 +377,7 @@
   flex-direction: column;
   gap: 12px;
   padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--dashboard-border);
 }
 
 .summaryBar {
@@ -382,7 +385,7 @@
   height: 24px;
   border-radius: 4px;
   overflow: hidden;
-  background: #f1f5f9;
+  background: var(--dashboard-hover-bg);
 }
 
 .summarySegment {
@@ -411,20 +414,20 @@
 }
 
 .legendName {
-  color: #64748b;
+  color: var(--dashboard-text-secondary);
 }
 
 .legendValue {
   font-weight: 500;
-  color: #1e293b;
+  color: var(--dashboard-text);
 }
 
 .warningMessage {
   padding: 16px;
-  background: #fef3c7;
+  background: rgba(251, 191, 36, 0.2);
   border-radius: 8px;
   font-size: 14px;
-  color: #92400e;
+  color: #f59e0b;
   text-align: center;
 }
 
@@ -465,6 +468,7 @@
     grid-template-columns: 24px 32px 1fr;
     grid-template-rows: auto auto;
     gap: 8px 12px;
+    position: relative;
   }
 
   .ruleInfo {
@@ -490,10 +494,6 @@
     right: 12px;
     top: 12px;
   }
-
-  .ruleItem {
-    position: relative;
-  }
 }
 
 /* 로딩 상태 */
@@ -503,6 +503,6 @@
   justify-content: center;
   height: 100%;
   min-height: 400px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   font-size: 14px;
 }

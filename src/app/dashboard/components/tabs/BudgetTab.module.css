@@ -278,8 +278,8 @@
 .confirmedBadge {
   font-size: 10px;
   font-weight: 600;
-  color: #059669;
-  background: #d1fae5;
+  color: var(--chart-line-color, #10b981);
+  background: color-mix(in srgb, var(--chart-line-color, #10b981) 15%, transparent);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -336,18 +336,18 @@
   align-items: center;
   gap: 6px;
   padding: 10px 20px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: white;
   border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: all 0.15s;
 }
 
 .addButton:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* 콘텐츠 레이아웃: 1:1 두 컬럼 */
@@ -494,6 +494,7 @@
   border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: transparent;
+  color: var(--dashboard-text);
 }
 
 .inlineDayInput:focus {
@@ -508,6 +509,7 @@
   border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: transparent;
+  color: var(--dashboard-text);
 }
 
 .inlineAmountInput:focus {
@@ -523,6 +525,7 @@
   border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: transparent;
+  color: var(--dashboard-text);
 }
 
 .inlineTitleInput:focus {
@@ -537,7 +540,9 @@
   border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: transparent;
+  color: var(--dashboard-text);
   cursor: pointer;
+  color-scheme: light dark;
 }
 
 .inlineCategorySelect:focus {
@@ -553,7 +558,9 @@
   border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
   background: transparent;
+  color: var(--dashboard-text);
   cursor: pointer;
+  color-scheme: light dark;
 }
 
 .inlineAccountSelect:focus {
@@ -1093,7 +1100,7 @@
 
 .input:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   background: var(--dashboard-bg);
 }
 
@@ -1108,7 +1115,7 @@
 
 .select:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   background: var(--dashboard-bg);
 }
 
@@ -1364,7 +1371,7 @@
 .checkboxLabel input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #007aff;
+  accent-color: var(--accent-color, #007aff);
 }
 
 .defaultBadge {
@@ -1401,15 +1408,16 @@
   padding: 10px 24px;
   border: none;
   border-radius: 8px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: white;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.15s;
 }
 
 .submitBtn:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 .accountList h4 {

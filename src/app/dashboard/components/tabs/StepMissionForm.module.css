@@ -41,7 +41,7 @@
 .missionLabel {
   font-size: 12px;
   font-weight: 600;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   margin: 0 0 4px 0;
 }
 
@@ -67,11 +67,11 @@
 .activeDot {
   width: 20px;
   border-radius: 4px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
 }
 
 .completedDot {
-  background: #007aff;
+  background: var(--accent-color, #007aff);
 }
 
 /* 폼 */
@@ -118,7 +118,7 @@
 }
 
 .optionBtn.selected {
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: #fff;
 }
 
@@ -154,7 +154,7 @@
 
 .numberInput:focus {
   background: #fff;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   outline: none;
 }
 
@@ -209,14 +209,15 @@
   font-size: 15px;
   font-weight: 600;
   color: #fff;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border: none;
   border-radius: 10px;
   cursor: pointer;
+  transition: filter 0.15s ease;
 }
 
 .nextBtn:hover:not(:disabled) {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 .nextBtn:disabled {

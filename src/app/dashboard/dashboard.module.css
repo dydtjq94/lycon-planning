@@ -40,19 +40,26 @@
   box-sizing: border-box;
 }
 
-@media (min-width: 1400px) {
-  .headerInner {
-    width: 80%;
-    max-width: 1400px;
-    padding: 0 24px;
-  }
-}
 
 .pageTitle {
   font-size: 15px;
   font-weight: 600;
   color: var(--sidebar-text);
   margin: 0;
+}
+
+.pageTitleInput {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sidebar-text);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--sidebar-text-muted);
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  min-width: 100px;
 }
 
 /* 헤더 액션 버튼 */
@@ -82,7 +89,7 @@
 }
 
 .headerActionBtn.active {
-  background-color: var(--accent-primary, #007aff);
+  background-color: var(--accent-primary, var(--accent-color, #007aff));
   color: white;
 }
 
@@ -181,7 +188,7 @@
 }
 
 .headerSearchInput:focus {
-  border-color: #3b82f6;
+  border-color: var(--accent-color, #007aff);
 }
 
 .headerSearchInput::placeholder {
@@ -247,15 +254,15 @@
   width: 36px;
   height: 36px;
   border: none;
-  background-color: #3b82f6;
+  background-color: var(--accent-color, #007aff);
   color: white;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: filter 0.15s;
 }
 
 .headerSearchBtn:hover {
-  background-color: #2563eb;
+  filter: brightness(0.9);
 }
 
 .headerSearchBtn:disabled {
@@ -294,7 +301,7 @@
   display: inline-flex;
   align-items: center;
   padding: 6px 14px;
-  background: linear-gradient(135deg, #007aff 0%, #0055d4 100%);
+  background: var(--accent-color, var(--accent-color, #007aff));
   color: white;
   font-size: 12px;
   font-weight: 600;
@@ -352,6 +359,27 @@
     width: 80%;
     max-width: 1400px;
   }
+
+  .contentInner.fullWidth {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* 시뮬레이션 탭 전체 너비 */
+.fullWidth {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100%;
+}
+
+/* 패딩 없음 (시뮬레이션 탭) */
+.noPadding {
+  padding: 0 !important;
+}
+
+.noPadding .contentInner {
+  height: 100%;
 }
 
 /* 핵심 지표 카드 */
@@ -720,7 +748,7 @@
 
 .settingsInput:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   background-color: var(--dashboard-input-bg);
 }
 
@@ -736,7 +764,7 @@
   padding: 12px;
   border: none;
   border-radius: 10px;
-  background-color: var(--accent-primary, #007aff);
+  background-color: var(--accent-primary, var(--accent-color, #007aff));
   color: white;
   font-size: 14px;
   font-weight: 600;
@@ -745,7 +773,7 @@
 }
 
 .settingsSaveButton:hover {
-  background-color: var(--accent-primary-hover, #0066d6);
+  filter: brightness(0.9);
 }
 
 .settingsSaveButton:disabled {
@@ -812,7 +840,7 @@
 
 .inputField:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   background-color: var(--dashboard-input-bg);
 }
 

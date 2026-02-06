@@ -29,7 +29,7 @@
 
 .progressFill {
   height: 100%;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -74,13 +74,13 @@
 }
 
 .optionButton:hover {
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
 }
 
 .optionButton.selected {
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   background: #f0f7ff;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   font-weight: 500;
 }
 
@@ -102,8 +102,8 @@
 }
 
 .optionButton.selected .checkbox {
-  background: #007aff;
-  border-color: #007aff;
+  background: var(--accent-color, #007aff);
+  border-color: var(--accent-color, #007aff);
 }
 
 .checkmark {
@@ -136,7 +136,7 @@
 }
 
 .numberInput:focus {
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
 }
 
 .numberInput::placeholder {
@@ -187,15 +187,15 @@
   font-size: 15px;
   font-weight: 600;
   color: #fff;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: filter 0.15s ease;
 }
 
 .nextButton:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 .nextButton:disabled {

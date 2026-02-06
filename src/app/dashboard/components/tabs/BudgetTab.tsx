@@ -83,7 +83,7 @@ const CARD_COMPANY_OPTIONS = [
 
 export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth }: BudgetTabProps) {
   const supabase = createClient();
-  const { colors: chartColors } = useChartTheme();
+  const { colors: chartColors, chartScaleColors } = useChartTheme();
   const [showForm, setShowForm] = useState(false);
   const [formType, setFormType] = useState<TransactionType>("expense");
 
@@ -920,13 +920,13 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
                       data: incomeSummary.map((item) => item.total),
                       backgroundColor: chartColors.slice(0, incomeSummary.length),
                       borderWidth: 2,
-                      borderColor: "#ffffff",
+                      borderColor: chartScaleColors.doughnutBorder,
                     }],
                   } : {
                     labels: ["없음"],
                     datasets: [{
                       data: [1],
-                      backgroundColor: ["#e5e7eb"],
+                      backgroundColor: [chartScaleColors.emptyState],
                       borderWidth: 0,
                     }],
                   }}
@@ -965,13 +965,13 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
                       data: expenseSummary.map((item) => item.total),
                       backgroundColor: chartColors.slice(0, expenseSummary.length),
                       borderWidth: 2,
-                      borderColor: "#ffffff",
+                      borderColor: chartScaleColors.doughnutBorder,
                     }],
                   } : {
                     labels: ["없음"],
                     datasets: [{
                       data: [1],
-                      backgroundColor: ["#e5e7eb"],
+                      backgroundColor: [chartScaleColors.emptyState],
                       borderWidth: 0,
                     }],
                   }}

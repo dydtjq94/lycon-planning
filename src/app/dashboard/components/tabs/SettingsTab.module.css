@@ -121,14 +121,14 @@
 }
 
 .colorModeBtn:hover {
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   color: var(--dashboard-text-secondary);
 }
 
 .colorModeBtnActive {
-  border-color: #007aff;
-  background: rgba(0, 122, 255, 0.08);
-  color: #007aff;
+  border-color: var(--accent-color, #007aff);
+  background: color-mix(in srgb, var(--accent-color, #007aff) 8%, transparent);
+  color: var(--accent-color, #007aff);
 }
 
 /* 액센트 색상 그리드 */
@@ -193,12 +193,12 @@
 }
 
 .themeCard:hover {
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
 }
 
 .themeCardActive {
-  border-color: #007aff;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+  border-color: var(--accent-color, #007aff);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color, #007aff) 15%, transparent);
 }
 
 .themePreview {
@@ -248,7 +248,7 @@
   right: 6px;
   width: 20px;
   height: 20px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: white;
   border-radius: 50%;
   display: flex;
@@ -278,12 +278,12 @@
 }
 
 .chartThemeCard:hover {
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
 }
 
 .chartThemeCardActive {
-  border-color: #007aff;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+  border-color: var(--accent-color, #007aff);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color, #007aff) 15%, transparent);
 }
 
 .chartColorPreview {

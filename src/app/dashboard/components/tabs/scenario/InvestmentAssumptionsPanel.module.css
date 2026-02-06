@@ -1,0 +1,182 @@
+.panel {
+  width: 100%;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--dashboard-text);
+  transition: background 0.15s;
+}
+
+.header:hover {
+  background: var(--dashboard-hover-bg);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerTitle {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.modeBadge {
+  padding: 2px 8px;
+  background: var(--accent-color-light, #e5f1ff);
+  color: var(--accent-color, #007aff);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.content {
+  padding: 16px;
+  border-top: 1px solid var(--dashboard-border);
+}
+
+.description {
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.rateList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rateItem {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  background: var(--dashboard-bg-secondary);
+  border-radius: 8px;
+}
+
+.rateHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.rateIcon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dashboard-card-bg);
+  border-radius: 8px;
+  color: var(--dashboard-text-secondary);
+  flex-shrink: 0;
+}
+
+.rateInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rateLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text);
+}
+
+.rateDesc {
+  font-size: 11px;
+  color: var(--dashboard-text-secondary);
+  line-height: 1.4;
+}
+
+.rateInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.rateInput {
+  width: 70px;
+  padding: 8px 10px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 6px;
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.rateInput:focus {
+  border-color: var(--accent-color, #007aff);
+}
+
+.rateInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.rateInput::-webkit-outer-spin-button,
+.rateInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.rateUnit {
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+  font-weight: 500;
+}
+
+.footer {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--dashboard-border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.resetButton {
+  padding: 8px 14px;
+  background: none;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.resetButton:hover {
+  border-color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text);
+}
+
+.resetButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

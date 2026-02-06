@@ -1,91 +1,256 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  height: 100%;
+  min-height: 0;
 }
 
 /* 차트 섹션 */
 .chartSection {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
 }
 
+/* 차트 헤더 */
 .chartHeader {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--dashboard-border);
+  flex-shrink: 0;
+}
+
+.chartTitleArea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .chartTitle {
   font-size: 18px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
-.chartSubtitle {
-  font-size: 14px;
-  color: #64748b;
-  margin-top: 4px;
+/* 연도 선택기 (우측 상단) */
+.yearSelector {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.headerInfo {
+.yearDisplay {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  color: #64748b;
+  padding: 8px 12px;
+  background: var(--dashboard-hover-bg);
+  border-radius: 8px;
+  color: var(--dashboard-text);
 }
 
-.infoItem {
-  color: #64748b;
+.yearValue {
+  font-size: 16px;
+  font-weight: 600;
 }
 
-.infoDivider {
-  color: #cbd5e1;
+.ageDisplay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--dashboard-text-secondary);
 }
 
+.spouseAge {
+  padding-left: 8px;
+  border-left: 1px solid var(--dashboard-border);
+}
+
+/* 차트 컨텐츠 */
 .chartContent {
   display: flex;
-  gap: 24px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .chartArea {
   flex: 1;
   min-width: 0;
+  padding: 24px;
+  overflow: hidden;
 }
 
+/* 상세 패널 (우측) */
 .detailPanel {
-  width: 320px;
+  width: 280px;
+  border-left: 1px solid var(--dashboard-border);
+  background: var(--dashboard-bg);
+  display: flex;
+  flex-direction: column;
   flex-shrink: 0;
+  overflow-y: auto;
 }
 
-/* 반응형 */
-@media (max-width: 1024px) {
-  .chartHeader {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .chartContent {
-    flex-direction: column;
-  }
-
-  .detailPanel {
-    width: 100%;
-  }
+/* 연도 슬라이더 */
+.sliderSection {
+  padding: 20px;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
-@media (max-width: 640px) {
-  .chartSection {
-    padding: 16px;
-  }
+.yearSlider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--dashboard-border);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
 
-  .headerInfo {
-    flex-wrap: wrap;
-  }
+.yearSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--accent-color, #007aff);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s;
+}
+
+.yearSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.yearSlider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--accent-color, #007aff);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.sliderLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--dashboard-text-secondary);
+}
+
+/* 상세 정보 */
+.detailContent {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detailLabel {
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+}
+
+.detailValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+}
+
+.positive {
+  color: #10b981;
+}
+
+.negative {
+  color: #ef4444;
+}
+
+.divider {
+  height: 1px;
+  background: var(--dashboard-border);
+  margin: 8px 0;
+}
+
+/* 기간 선택기 (차트 헤더 우측) */
+.timeRangeSelector {
+  position: relative;
+}
+
+.timeRangeButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--dashboard-card-bg);
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  transition: color 0.15s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.timeRangeButton:hover {
+  color: var(--dashboard-text);
+}
+
+.timeRangeButton svg {
+  opacity: 0.6;
+}
+
+.timeRangeMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  min-width: 140px;
+  z-index: 100;
+}
+
+.timeRangeOption {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  color: var(--dashboard-text);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.timeRangeOption:hover {
+  background: var(--dashboard-hover-bg);
+}
+
+.timeRangeOption.active {
+  color: var(--accent-color, #007aff);
+  font-weight: 500;
 }
 
 /* 로딩 상태 */
@@ -95,6 +260,96 @@
   justify-content: center;
   height: 100%;
   min-height: 400px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   font-size: 14px;
+}
+
+/* 파산 경고 */
+.bankruptcyWarning {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.warningIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* 반응형 */
+@media (max-width: 1024px) {
+  .chartContent {
+    flex-direction: column;
+  }
+
+  .detailPanel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--dashboard-border);
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .sliderSection {
+    width: 100%;
+    border-bottom: none;
+    border-right: 1px solid var(--dashboard-border);
+    padding: 16px;
+  }
+
+  .detailContent {
+    flex: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .detailRow {
+    width: calc(50% - 8px);
+  }
+
+  .divider {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .chartHeader {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .yearSelector {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .chartArea {
+    padding: 16px;
+  }
+
+  .detailContent {
+    flex-direction: column;
+  }
+
+  .detailRow {
+    width: 100%;
+  }
 }

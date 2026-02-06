@@ -341,7 +341,7 @@
 }
 
 .progressCount strong {
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   font-weight: 600;
 }
 
@@ -437,7 +437,7 @@
 .detailLabel {
   font-size: 12px;
   font-weight: 600;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -539,18 +539,18 @@
   height: 48px;
   padding: 0 24px;
   margin-top: 24px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: white;
   border: none;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, filter 0.15s;
 }
 
 .startButton:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* 모든 미션 완료 */
@@ -603,7 +603,7 @@
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
-  background: linear-gradient(135deg, #007aff 0%, #0066d6 100%);
+  background: var(--accent-color, #007aff);
   color: white;
   font-size: 12px;
   font-weight: 600;
@@ -670,8 +670,8 @@
 }
 
 .expertBadge:hover {
-  border-color: #007aff;
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.1);
+  border-color: var(--accent-color, #007aff);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent-color, #007aff) 10%, transparent);
 }
 
 .expertBadgeAvatar {
@@ -776,7 +776,7 @@
 /* 강조된 미션 카드 */
 .currentMissionCard {
   padding: 28px;
-  background: linear-gradient(135deg, #007aff 0%, #0066d6 100%);
+  background: var(--accent-color, #007aff);
   border-radius: 16px;
   cursor: pointer;
   animation: rollUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -831,7 +831,7 @@
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
 }
 
 /* 다음 할 일 */
@@ -1142,8 +1142,8 @@
 }
 
 .missionEditButton:hover {
-  border-color: #007aff;
-  color: #007aff;
+  border-color: var(--accent-color, #007aff);
+  color: var(--accent-color, #007aff);
 }
 
 .missionTime {
@@ -1169,7 +1169,7 @@
 }
 
 .missionNumber {
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   margin-right: 6px;
 }
 
@@ -1184,18 +1184,18 @@
   display: inline-flex;
   align-items: center;
   padding: 12px 24px;
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   color: white;
   border: none;
   border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color 0.15s, filter 0.15s;
 }
 
 .currentMissionButton:hover {
-  background-color: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* 대기 중 미션 */
@@ -1285,7 +1285,7 @@
 .allCompleteCard {
   text-align: center;
   padding: 40px 24px;
-  background: linear-gradient(135deg, #007aff 0%, #0066d6 100%);
+  background: var(--accent-color, #007aff);
   border-radius: 16px;
   color: white;
 }
@@ -1335,8 +1335,8 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 600;
-  color: #007aff;
-  background-color: #e6f2ff;
+  color: var(--accent-color, #007aff);
+  background-color: color-mix(in srgb, var(--accent-color, #007aff) 10%, transparent);
   padding: 4px 8px;
   border-radius: 4px;
   margin-bottom: 8px;
@@ -1396,7 +1396,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   color: white;
   border: none;
   border-radius: 10px;
@@ -1404,11 +1404,11 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color 0.15s, filter 0.15s;
 }
 
 .completeButton:hover {
-  background-color: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* 재무 입력 가이드 */
@@ -1435,7 +1435,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   color: white;
   border: none;
   border-radius: 10px;
@@ -1443,11 +1443,11 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color 0.15s, filter 0.15s;
 }
 
 .goToTabButton:hover {
-  background-color: #0066d6;
+  filter: brightness(0.9);
 }
 
 .skipButton {
@@ -1528,7 +1528,7 @@
   border: none;
   font-size: 14px;
   font-weight: 500;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   cursor: pointer;
   padding: 8px 12px;
   margin: -8px -12px;
@@ -1537,7 +1537,7 @@
 }
 
 .backButton:hover {
-  background-color: #f0f9ff;
+  background-color: color-mix(in srgb, var(--accent-color, #007aff) 8%, transparent);
 }
 
 .missionProgress {
@@ -1563,8 +1563,8 @@
   display: inline-block;
   font-size: 12px;
   font-weight: 600;
-  color: #007aff;
-  background-color: #e6f2ff;
+  color: var(--accent-color, #007aff);
+  background-color: color-mix(in srgb, var(--accent-color, #007aff) 10%, transparent);
   padding: 4px 10px;
   border-radius: 4px;
   margin-bottom: 12px;
@@ -1632,7 +1632,7 @@
 .financeInfoCard h3 {
   font-size: 14px;
   font-weight: 600;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   margin: 0 0 8px 0;
 }
 
@@ -1654,7 +1654,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   color: white;
   border: none;
   border-radius: 12px;
@@ -1662,11 +1662,11 @@
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color 0.15s, filter 0.15s;
 }
 
 .primaryButton:hover {
-  background-color: #0066d6;
+  filter: brightness(0.9);
 }
 
 .secondaryButton {
@@ -1682,8 +1682,8 @@
 }
 
 .secondaryButton:hover {
-  border-color: #007aff;
-  color: #007aff;
+  border-color: var(--accent-color, #007aff);
+  color: var(--accent-color, #007aff);
 }
 
 /* 미션 상세 팁 */
@@ -1804,14 +1804,14 @@
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 500;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .messageButton:hover {
-  background-color: #f0f9ff;
-  border-color: #007aff;
+  background-color: color-mix(in srgb, var(--accent-color, #007aff) 8%, transparent);
+  border-color: var(--accent-color, #007aff);
 }
 
 /* 전문가 조언 말풍선 */
@@ -2024,7 +2024,7 @@
 
 .profileTitle {
   font-size: 14px;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   font-weight: 500;
 }
 
@@ -2084,7 +2084,7 @@
 }
 
 .sectionHeader svg {
-  color: #007aff;
+  color: var(--accent-color, #007aff);
 }
 
 /* 자격증 */
@@ -2099,14 +2099,14 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background-color: #f0f9ff;
+  background-color: color-mix(in srgb, var(--accent-color, #007aff) 8%, transparent);
   border-radius: 8px;
   font-size: 13px;
-  color: #0369a1;
+  color: var(--accent-color, #007aff);
 }
 
 .credentialItem svg {
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   flex-shrink: 0;
 }
 
@@ -2167,8 +2167,8 @@
 
 .specialtyTag {
   padding: 6px 12px;
-  background-color: #e6f2ff;
-  color: #007aff;
+  background-color: color-mix(in srgb, var(--accent-color, #007aff) 10%, transparent);
+  color: var(--accent-color, #007aff);
   font-size: 12px;
   font-weight: 500;
   border-radius: 16px;
@@ -2192,18 +2192,18 @@
   gap: 8px;
   width: 100%;
   padding: 14px;
-  background-color: #007aff;
+  background-color: var(--accent-color, #007aff);
   color: white;
   border: none;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color 0.15s, filter 0.15s;
 }
 
 .profileMessageButton:hover {
-  background-color: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* 프로필 패널 반응형 */
@@ -2253,6 +2253,6 @@
 }
 
 .surveyBackButton:hover {
-  border-color: #007aff;
-  color: #007aff;
+  border-color: var(--accent-color, #007aff);
+  color: var(--accent-color, #007aff);
 }

@@ -861,10 +861,7 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
 
   return (
     <div className={styles.container}>
-      {/* 왼쪽: 부동산 입력 */}
-      <div className={styles.inputPanel}>
-
-        {/* ========== 거주용 부동산 ========== */}
+      {/* ========== 거주용 부동산 ========== */}
         <section className={styles.assetSection}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionTitle}>거주용 부동산</span>
@@ -1009,15 +1006,9 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
           </div>
         </section>
 
-        <p className={styles.infoText}>
-          부동산 대출은 부채 탭에, 임대 수익은 소득 탭에 자동 연동됩니다.
-        </p>
-      </div>
-
-      {/* 오른쪽: 인사이트 */}
-      <div className={styles.insightPanel}>
-        {/* TODO: 인사이트 내용 추가 예정 */}
-      </div>
+      <p className={styles.infoText}>
+        부동산 대출은 부채 탭에, 임대 수익은 소득 탭에 자동 연동됩니다.
+      </p>
     </div>
   )
 }

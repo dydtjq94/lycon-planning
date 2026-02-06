@@ -1486,48 +1486,40 @@ export function IncomeTab({
 
   return (
     <div className={styles.container}>
-      {/* 왼쪽: 소득 입력 */}
-      <div className={styles.inputPanel}>
-        {renderSection("근로 소득", "labor", laborItems, "본인/배우자")}
-        {renderSection("사업 소득", "business", businessItems, "본인/배우자")}
-        {renderSection(
-          "정기적 소득",
-          "regular",
-          regularItems,
-          "항목명",
-          "연금외 정기지급금, 아르바이트, 용돈 등"
-        )}
-        {renderSection(
-          "일시적 소득",
-          "onetime",
-          onetimeItems,
-          "항목명",
-          "상여금, 보너스, 증여, 상속, 퇴직금 등"
-        )}
-        {renderSection(
-          "임대 소득",
-          "rental",
-          rentalItems,
-          "항목명",
-          "부동산 탭에서 등록한 임대 부동산의 소득이 표시됩니다"
-        )}
-        {renderSection(
-          "연금 소득",
-          "pension",
-          pensionItems,
-          "항목명",
-          "연금 탭에서 등록한 연금 소득이 표시됩니다"
-        )}
+      {renderSection("근로 소득", "labor", laborItems, "본인/배우자")}
+      {renderSection("사업 소득", "business", businessItems, "본인/배우자")}
+      {renderSection(
+        "정기적 소득",
+        "regular",
+        regularItems,
+        "항목명",
+        "연금외 정기지급금, 아르바이트, 용돈 등"
+      )}
+      {renderSection(
+        "일시적 소득",
+        "onetime",
+        onetimeItems,
+        "항목명",
+        "상여금, 보너스, 증여, 상속, 퇴직금 등"
+      )}
+      {renderSection(
+        "임대 소득",
+        "rental",
+        rentalItems,
+        "항목명",
+        "부동산 탭에서 등록한 임대 부동산의 소득이 표시됩니다"
+      )}
+      {renderSection(
+        "연금 소득",
+        "pension",
+        pensionItems,
+        "항목명",
+        "연금 탭에서 등록한 연금 소득이 표시됩니다"
+      )}
 
-        <p className={styles.infoText}>
-          배당, 이자 소득은 저축/투자 계좌에 자동으로 추가됩니다.
-        </p>
-      </div>
-
-      {/* 오른쪽: 인사이트 */}
-      <div className={styles.insightPanel}>
-        {/* TODO: 인사이트 내용 추가 예정 */}
-      </div>
+      <p className={styles.infoText}>
+        배당, 이자 소득은 저축/투자 계좌에 자동으로 추가됩니다.
+      </p>
     </div>
   );
 }

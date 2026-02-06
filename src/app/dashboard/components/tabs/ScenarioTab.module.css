@@ -1,41 +1,129 @@
+/* ScenarioTab - Full Screen Layout */
+
 .container {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  background: var(--dashboard-bg);
 }
 
-.header {
-  padding: 24px 32px 0;
-}
+/* ============================================
+   Top Tabs (시뮬레이션 / 현금흐름 / 설정)
+   ============================================ */
 
-.title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 4px;
-}
-
-.description {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0;
-}
-
-/* 탭 네비게이션 */
-.tabNav {
+.topTabs {
   display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--dashboard-border);
+  background: var(--dashboard-bg);
+  flex-shrink: 0;
+}
+
+.topTab {
+  position: relative;
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.topTab:hover {
+  color: var(--dashboard-text);
+}
+
+.topTab.active {
+  color: var(--dashboard-text);
+}
+
+.topTab.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 20px;
+  right: 20px;
+  height: 2px;
+  background: var(--dashboard-text);
+}
+
+/* ============================================
+   Main Area
+   ============================================ */
+
+.mainArea {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chartArea {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* ============================================
+   Category Slide Panel (overlay from left)
+   ============================================ */
+
+.categoryPanel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 480px;
+  max-width: 100%;
+  background: var(--dashboard-bg);
+  border-right: 1px solid var(--dashboard-border);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.categoryPanelOpen {
+  transform: translateX(0);
+}
+
+.categoryPanelContent {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* ============================================
+   Category Tabs (Below Top Tabs)
+   ============================================ */
+
+.categoryTabs {
+  display: flex;
+  align-items: center;
   gap: 4px;
-  padding: 16px 32px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--dashboard-border);
+  background: var(--dashboard-bg);
   overflow-x: auto;
   flex-shrink: 0;
 }
 
-.tabNav::-webkit-scrollbar {
+.categoryTabs::-webkit-scrollbar {
   display: none;
 }
 
-.tabButton {
+.categoryTab {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -45,24 +133,158 @@
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s, color 0.15s;
   white-space: nowrap;
 }
 
-.tabButton:hover {
-  background: #f3f4f6;
-  color: #374151;
+.categoryTab:hover {
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text);
 }
 
-.tabButton.active {
-  background: #1a1a1a;
-  color: white;
+.categoryTab.active {
+  background: var(--dashboard-hover-bg);
+  color: var(--accent-color, #007aff);
 }
 
-/* 탭 컨텐츠 */
-.tabContent {
+/* ============================================
+   Category Content Area
+   ============================================ */
+
+.categoryContent {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  background: var(--dashboard-bg);
+}
+
+/* ============================================
+   Settings Content
+   ============================================ */
+
+.settingsContent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  width: 100%;
+  max-width: 800px;
+}
+
+/* ============================================
+   Settings Card (Used by panels)
+   ============================================ */
+
+.settingsCard {
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.settingsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.settingsRow:last-child {
+  border-bottom: none;
+}
+
+.settingsLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settingsLabelTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--dashboard-text);
+}
+
+.settingsLabelDesc {
+  font-size: 12px;
+  color: var(--dashboard-text-secondary);
+}
+
+.settingsInput {
+  width: 100px;
+  padding: 8px 12px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 6px;
+  background: var(--dashboard-input-bg);
+  color: var(--dashboard-text);
+  font-size: 14px;
+  text-align: right;
+  outline: none;
+}
+
+.settingsInput:focus {
+  border-color: var(--accent-color, #007aff);
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.settingsInput::-webkit-outer-spin-button,
+.settingsInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.settingsUnit {
+  margin-left: 6px;
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
+  color: var(--dashboard-text-secondary);
+  text-align: center;
+}
+
+.emptyState p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 768px) {
+  .topTabs {
+    padding: 0 16px;
+  }
+
+  .topTab {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .categoryTabs {
+    padding: 8px 16px;
+  }
+
+  .settingsContent {
+    padding: 16px;
+  }
+
+  .categoryPanel {
+    width: 100%;
+  }
 }

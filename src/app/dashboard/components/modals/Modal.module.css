@@ -175,7 +175,7 @@
 
 .rateInput input:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
 }
 
@@ -206,7 +206,7 @@
 .rateValue {
   font-size: 15px;
   font-weight: 600;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   min-height: 30px;
   display: flex;
   align-items: center;
@@ -277,7 +277,7 @@
   font-size: 14px;
   font-weight: 500;
   color: #fff;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -285,7 +285,7 @@
 }
 
 .applyBtn:hover {
-  background: #0062cc;
+  filter: brightness(0.9);
 }
 
 /* ========== 가족 모달 ========== */
@@ -353,7 +353,7 @@
 
 .formInput:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
 }
 
 .formInputSmall {
@@ -368,7 +368,7 @@
 
 .formInputSmall:focus {
   outline: none;
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
 }
 
 .formInputSmall::-webkit-outer-spin-button,
@@ -398,7 +398,7 @@
 .ageDisplay {
   font-size: 14px;
   font-weight: 500;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   white-space: nowrap;
 }
 
@@ -507,7 +507,7 @@
   padding: 12px;
   font-size: 14px;
   font-weight: 500;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   background: #f5f5f7;
   border: none;
   cursor: pointer;

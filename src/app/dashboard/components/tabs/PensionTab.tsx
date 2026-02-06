@@ -116,122 +116,112 @@ export function PensionTab({
 
   return (
     <div className={styles.container}>
-      {/* 왼쪽: 연금 입력 */}
-      <div className={styles.inputPanel}>
+      {/* ========== 국민연금 ========== */}
+      <section className={styles.pensionSection}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.sectionTitle}>국민연금</span>
+        </div>
+        <p className={styles.sectionDesc}>
+          국민연금공단 예상연금 조회 서비스에서 확인한 금액을 입력하세요.
+        </p>
 
-        {/* ========== 국민연금 ========== */}
-        <section className={styles.pensionSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>국민연금</span>
-          </div>
-          <p className={styles.sectionDesc}>
-            국민연금공단 예상연금 조회 서비스에서 확인한 금액을 입력하세요.
-          </p>
-
-          <div className={styles.itemList}>
-            <NationalPensionSection
-              pension={selfNationalPension}
-              simulationId={simulationId}
-              owner="self"
-              ownerLabel="본인"
-              birthYear={birthYear}
-              onSave={loadPensions}
-            />
-            {isMarried && (
-              <NationalPensionSection
-                pension={dbSpouseNationalPension}
-                simulationId={simulationId}
-                owner="spouse"
-                ownerLabel="배우자"
-                birthYear={effectiveSpouseBirthYear}
-                onSave={loadPensions}
-              />
-            )}
-          </div>
-        </section>
-
-        {/* ========== 퇴직연금 ========== */}
-        <section className={styles.pensionSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>퇴직연금/퇴직금</span>
-          </div>
-          <p className={styles.sectionDesc}>
-            유형을 선택하면 퇴직 시 예상 수령액을 자동으로 계산합니다.
-          </p>
-
-          <div className={styles.itemList}>
-            <RetirementPensionSection
-              pension={selfRetirementPension}
-              simulationId={simulationId}
-              owner="self"
-              ownerLabel="본인"
-              projection={null}
-              monthlyIncome={0}
-              yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
-              birthYear={birthYear}
-              retirementAge={retirementAge}
-              onSave={loadPensions}
-            />
-            {isMarried && (
-              <RetirementPensionSection
-                pension={spouseRetirementPension}
-                simulationId={simulationId}
-                owner="spouse"
-                ownerLabel="배우자"
-                projection={null}
-                monthlyIncome={0}
-                yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
-                birthYear={effectiveSpouseBirthYear}
-                retirementAge={retirementAge}
-                onSave={loadPensions}
-              />
-            )}
-          </div>
-        </section>
-
-        {/* ========== 개인연금 ========== */}
-        <section className={styles.pensionSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>개인연금</span>
-          </div>
-          <p className={styles.sectionDesc}>
-            현재 잔액, 월 납입액, 수령 계획을 입력하세요. (56세 이상부터 수령 가능)
-          </p>
-
-          <PersonalPensionSection
-            pensions={selfPersonalPensions}
+        <div className={styles.itemList}>
+          <NationalPensionSection
+            pension={selfNationalPension}
             simulationId={simulationId}
             owner="self"
             ownerLabel="본인"
             birthYear={birthYear}
+            onSave={loadPensions}
+          />
+          {isMarried && (
+            <NationalPensionSection
+              pension={dbSpouseNationalPension}
+              simulationId={simulationId}
+              owner="spouse"
+              ownerLabel="배우자"
+              birthYear={effectiveSpouseBirthYear}
+              onSave={loadPensions}
+            />
+          )}
+        </div>
+      </section>
+
+      {/* ========== 퇴직연금 ========== */}
+      <section className={styles.pensionSection}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.sectionTitle}>퇴직연금/퇴직금</span>
+        </div>
+        <p className={styles.sectionDesc}>
+          유형을 선택하면 퇴직 시 예상 수령액을 자동으로 계산합니다.
+        </p>
+
+        <div className={styles.itemList}>
+          <RetirementPensionSection
+            pension={selfRetirementPension}
+            simulationId={simulationId}
+            owner="self"
+            ownerLabel="본인"
+            projection={null}
+            monthlyIncome={0}
+            yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
+            birthYear={birthYear}
             retirementAge={retirementAge}
             onSave={loadPensions}
           />
-
           {isMarried && (
-            <>
-              <div className={styles.sectionHeader} style={{ marginTop: 24 }}>
-                <span className={styles.sectionTitle}>배우자 개인연금</span>
-              </div>
-              <PersonalPensionSection
-                pensions={spousePersonalPensions}
-                simulationId={simulationId}
-                owner="spouse"
-                ownerLabel="배우자"
-                birthYear={effectiveSpouseBirthYear}
-                retirementAge={retirementAge}
-                onSave={loadPensions}
-              />
-            </>
+            <RetirementPensionSection
+              pension={spouseRetirementPension}
+              simulationId={simulationId}
+              owner="spouse"
+              ownerLabel="배우자"
+              projection={null}
+              monthlyIncome={0}
+              yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
+              birthYear={effectiveSpouseBirthYear}
+              retirementAge={retirementAge}
+              onSave={loadPensions}
+            />
           )}
-        </section>
+        </div>
+      </section>
 
-      </div>
+      {/* ========== 개인연금 ========== */}
+      <section className={styles.pensionSection}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.sectionTitle}>개인연금</span>
+        </div>
+        <p className={styles.sectionDesc}>
+          현재 잔액, 월 납입액, 수령 계획을 입력하세요. (56세 이상부터 수령 가능)
+        </p>
 
-      {/* 오른쪽: 인사이트 */}
-      <div className={styles.insightPanel}>
-        {/* TODO: 인사이트 내용 추가 예정 */}
-      </div>
+        <PersonalPensionSection
+          pensions={selfPersonalPensions}
+          simulationId={simulationId}
+          owner="self"
+          ownerLabel="본인"
+          birthYear={birthYear}
+          retirementAge={retirementAge}
+          onSave={loadPensions}
+        />
+
+        {isMarried && (
+          <>
+            <div className={styles.sectionHeader} style={{ marginTop: 24 }}>
+              <span className={styles.sectionTitle}>배우자 개인연금</span>
+            </div>
+            <PersonalPensionSection
+              pensions={spousePersonalPensions}
+              simulationId={simulationId}
+              owner="spouse"
+              ownerLabel="배우자"
+              birthYear={effectiveSpouseBirthYear}
+              retirementAge={retirementAge}
+              onSave={loadPensions}
+            />
+          </>
+        )}
+      </section>
     </div>
   )
 }

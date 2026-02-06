@@ -864,9 +864,9 @@
 }
 
 .typeBtn.active {
-  background: var(--dashboard-text);
-  border-color: var(--dashboard-text);
-  color: var(--dashboard-bg);
+  background: var(--dashboard-card-bg);
+  border-color: var(--accent-primary, #007aff);
+  color: var(--accent-primary, #007aff);
 }
 
 /* 편집 구분선 */
@@ -1369,7 +1369,7 @@
 }
 
 .profileEditField input:focus {
-  border-color: #3b82f6;
+  border-color: var(--accent-color, #007aff);
 }
 
 .profileEditField input::-webkit-outer-spin-button,
@@ -2561,7 +2561,7 @@
 }
 
 .itemCardFieldInput:focus {
-  border-color: #3b82f6;
+  border-color: var(--accent-color, #007aff);
   background: var(--dashboard-bg);
 }
 
@@ -2599,8 +2599,8 @@
 }
 
 .itemCardFieldSelect:focus {
-  border-color: #3b82f6;
-  background-color: white;
+  border-color: var(--accent-primary, #007aff);
+  background-color: var(--dashboard-input-bg);
 }
 
 .itemCardFieldStatic {
@@ -2676,7 +2676,7 @@
 .itemCardLoanToggle input {
   width: 16px;
   height: 16px;
-  accent-color: #3b82f6;
+  accent-color: var(--accent-color, #007aff);
 }
 
 .itemCardLoanGrid {

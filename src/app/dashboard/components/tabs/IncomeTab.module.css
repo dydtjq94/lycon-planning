@@ -1,24 +1,12 @@
 .container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-  height: 100%;
-}
-
-/* 왼쪽: 입력 패널 */
-.inputPanel {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  overflow-y: auto;
-  padding-right: 40px;
-  background: #fff;
 }
 
 /* 소득 섹션 */
 .incomeSection {
   padding: 24px 0;
-  border-bottom: 1px solid #e8e8ed;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .incomeSection:last-of-type {
@@ -35,7 +23,7 @@
 .sectionTitle {
   font-size: 15px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
 }
 
 .sectionTotal {
@@ -46,7 +34,7 @@
 
 .sectionDesc {
   font-size: 13px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   margin: 0 0 8px 0;
 }
 
@@ -63,7 +51,7 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: 16px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .incomeItem:last-of-type {
@@ -81,7 +69,7 @@
 .itemLabel {
   font-size: 13px;
   font-weight: 500;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -99,12 +87,12 @@
 .itemAmount {
   font-size: 17px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
 }
 
 .itemMeta {
   font-size: 13px;
-  color: #a1a1a6;
+  color: var(--dashboard-text-secondary);
   margin-top: 2px;
 }
 
@@ -125,12 +113,12 @@
   height: 32px;
   background: transparent;
   border: none;
-  color: #c7c7cc;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .editBtn:hover {
-  color: #007aff;
+  color: var(--accent-color, #007aff);
 }
 
 .deleteBtn:hover {
@@ -143,11 +131,11 @@
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  background: #f5f5f7;
+  background: var(--dashboard-bg);
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   flex-shrink: 0;
 }
 
@@ -161,7 +149,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 20px 0;
-  border-bottom: 1px solid #e8e8ed;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .editRow {
@@ -173,7 +161,7 @@
 .editLabel {
   font-size: 15px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   min-width: 50px;
   padding-top: 8px;
 }
@@ -182,21 +170,21 @@
   width: 120px;
   font-size: 15px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   padding: 6px 0;
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
   background: transparent;
 }
 
 .editLabelInput:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editRowLabel {
   font-size: 13px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   width: 40px;
   flex-shrink: 0;
   padding-top: 8px;
@@ -214,16 +202,16 @@
   padding: 8px 0;
   font-size: 16px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
   background: transparent;
   text-align: right;
 }
 
 .editInput:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editInput::-webkit-outer-spin-button,
@@ -234,23 +222,23 @@
 
 .editUnit {
   font-size: 14px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
 }
 
 .editYearInput {
   width: 60px;
   padding: 6px 0;
   font-size: 14px;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
   background: transparent;
   text-align: center;
 }
 
 .editYearInput:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editYearInput::-webkit-outer-spin-button,
@@ -263,16 +251,16 @@
   width: 40px;
   padding: 6px 0;
   font-size: 14px;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
   background: transparent;
   text-align: center;
 }
 
 .editMonthInput:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editMonthInput::-webkit-outer-spin-button,
@@ -283,7 +271,7 @@
 
 .editSeparator {
   font-size: 14px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
 }
 
 /* 종료 타입 버튼 */
@@ -296,20 +284,20 @@
   padding: 6px 12px;
   font-size: 13px;
   font-weight: 400;
-  color: #1d1d1f;
-  background: #f5f5f7;
+  color: var(--dashboard-text);
+  background: var(--dashboard-bg);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .endTypeBtn:hover {
-  background: #e8e8ed;
+  background: var(--dashboard-hover-bg);
 }
 
 .endTypeBtn.active {
-  background: #1d1d1f;
-  color: #fff;
+  background: var(--dashboard-text);
+  color: var(--dashboard-card-bg);
 }
 
 /* 상승률 버튼 */
@@ -324,20 +312,20 @@
   padding: 6px 12px;
   font-size: 13px;
   font-weight: 400;
-  color: #1d1d1f;
-  background: #f5f5f7;
+  color: var(--dashboard-text);
+  background: var(--dashboard-bg);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .rateBtn:hover {
-  background: #e8e8ed;
+  background: var(--dashboard-hover-bg);
 }
 
 .rateBtn.active {
-  background: #1d1d1f;
-  color: #fff;
+  background: var(--dashboard-text);
+  color: var(--dashboard-card-bg);
 }
 
 .customRateGroup {
@@ -348,15 +336,15 @@
 
 .customRateLabel {
   font-size: 13px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
 }
 
 .customRateInput {
   width: 50px;
   padding: 6px 8px;
   font-size: 13px;
-  color: #1d1d1f;
-  border: 1px solid #d2d2d7;
+  color: var(--dashboard-text);
+  border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   outline: none;
   background: transparent;
@@ -364,12 +352,12 @@
 }
 
 .customRateInput:focus {
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
 }
 
 .customRateInput.active {
-  border-color: #1d1d1f;
-  background: #f5f5f7;
+  border-color: var(--dashboard-text);
+  background: var(--dashboard-bg);
 }
 
 .customRateInput::-webkit-outer-spin-button,
@@ -380,7 +368,7 @@
 
 .rateUnit {
   font-size: 13px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
 }
 
 /* 편집 액션 */
@@ -395,14 +383,14 @@
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 400;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   background: transparent;
   border: none;
   cursor: pointer;
 }
 
 .cancelBtn:hover {
-  color: #1d1d1f;
+  color: var(--dashboard-text);
 }
 
 .saveBtn {
@@ -410,14 +398,14 @@
   font-size: 14px;
   font-weight: 500;
   color: #fff;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .saveBtn:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 /* ========== 추가 폼 ========== */
@@ -428,7 +416,7 @@
   padding: 12px 0;
   font-size: 14px;
   font-weight: 400;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -436,7 +424,7 @@
 }
 
 .addBtn:hover {
-  color: #0066d6;
+  filter: brightness(0.85);
 }
 
 /* 주체 선택 버튼 */
@@ -449,20 +437,20 @@
   padding: 6px 14px;
   font-size: 13px;
   font-weight: 500;
-  color: #86868b;
-  background: #f5f5f7;
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-bg);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .ownerBtn:hover {
-  color: #1d1d1f;
+  color: var(--dashboard-text);
 }
 
 .ownerBtn.active {
-  background: #1d1d1f;
-  color: #fff;
+  background: var(--dashboard-text);
+  color: var(--dashboard-card-bg);
 }
 
 .inlineAddForm {
@@ -485,19 +473,19 @@
   max-width: 160px;
   padding: 8px 0;
   font-size: 15px;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
   background: transparent;
 }
 
 .inlineLabelInput:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .inlineLabelInput::placeholder {
-  color: #a1a1a6;
+  color: var(--dashboard-text-secondary);
 }
 
 .inlineAmountGroup {
@@ -511,16 +499,16 @@
   padding: 8px 0;
   font-size: 15px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--dashboard-text);
   border: none;
-  border-bottom: 1px solid #d2d2d7;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
   background: transparent;
   text-align: right;
 }
 
 .inlineAmountInput:focus {
-  border-bottom-color: #007aff;
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .inlineAmountInput::-webkit-outer-spin-button,
@@ -531,7 +519,7 @@
 
 .inlineUnit {
   font-size: 14px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
 }
 
 .inlineDateGroup {
@@ -542,7 +530,7 @@
 
 .frequencyButtons {
   display: flex;
-  background: #f5f5f7;
+  background: var(--dashboard-bg);
   border-radius: 6px;
   padding: 2px;
   margin-left: 8px;
@@ -552,7 +540,7 @@
   padding: 6px 12px;
   font-size: 13px;
   font-weight: 500;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   background: transparent;
   border: none;
   border-radius: 4px;
@@ -561,12 +549,12 @@
 }
 
 .freqBtn:hover {
-  color: #1d1d1f;
+  color: var(--dashboard-text);
 }
 
 .freqBtn.active {
-  background: #fff;
-  color: #1d1d1f;
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -580,16 +568,16 @@
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 400;
-  color: #86868b;
-  background: #f5f5f7;
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-bg);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .inlineCancelBtn:hover {
-  background: #e8e8ed;
-  color: #1d1d1f;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text);
 }
 
 .inlineAddBtn {
@@ -597,33 +585,33 @@
   font-size: 14px;
   font-weight: 500;
   color: #fff;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .inlineAddBtn:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 .inlineAddBtn:disabled {
-  background: #c7c7cc;
+  background: var(--dashboard-text-secondary);
   cursor: not-allowed;
 }
 
 /* 안내 텍스트 */
 .infoText {
   font-size: 13px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   margin: 24px 0 0;
   padding-top: 24px;
-  border-top: 1px solid #e8e8ed;
+  border-top: 1px solid var(--dashboard-border);
   line-height: 1.6;
 }
 
 .infoLink {
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   text-decoration: none;
 }
 
@@ -639,178 +627,14 @@
   margin-top: 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #007aff;
-  background: #f5f5f7;
+  color: var(--accent-color, #007aff);
+  background: var(--dashboard-bg);
   border-radius: 8px;
   text-decoration: none;
 }
 
 .realEstateLink:hover {
-  background: #e8e8ed;
-}
-
-/* ========== 오른쪽: 인사이트 패널 ========== */
-.insightPanel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  overflow-y: auto;
-  background: #f5f5f7;
-  padding: 12px 12px 240px 12px;
-  margin: -24px -24px -24px 0;
-}
-
-.summaryCard {
-  background: #fff;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.totalIncome {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 16px;
-}
-
-.totalLabel {
-  font-size: 13px;
-  color: #86868b;
-}
-
-.totalValue {
-  font-size: 36px;
-  font-weight: 700;
-  color: #34c759;
-  letter-spacing: -1px;
-}
-
-.subValues {
-  display: flex;
-  gap: 24px;
-}
-
-.subValueItem {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.subLabel {
-  font-size: 12px;
-  color: #86868b;
-}
-
-.subValue {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
-}
-
-.summaryNote {
-  font-size: 12px;
-  color: #a1a1a6;
-  margin: 16px 0 0;
-}
-
-/* 은퇴 정보 */
-.retirementInfo {
-  display: flex;
-  gap: 24px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f5;
-}
-
-.retirementItem {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.retirementLabel {
-  font-size: 12px;
-  color: #86868b;
-}
-
-.retirementValue {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1d1d1f;
-}
-
-/* 소득 구성 */
-.breakdownCard {
-  background: #fff;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.cardTitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin: 0 0 16px 0;
-}
-
-.breakdownList {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.breakdownItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.breakdownInfo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.breakdownDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.breakdownLabel {
-  font-size: 14px;
-  color: #1d1d1f;
-}
-
-.breakdownValues {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.breakdownAmount {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1d1d1f;
-}
-
-.breakdownPercent {
-  font-size: 13px;
-  color: #86868b;
-  min-width: 36px;
-  text-align: right;
-}
-
-/* 차트 */
-.chartCard {
-  background: #fff;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.chartWrapper {
-  position: relative;
-  height: 240px;
+  background: var(--dashboard-hover-bg);
 }
 
 /* 빈 상태 */
@@ -821,8 +645,8 @@
   justify-content: center;
   padding: 60px 24px;
   text-align: center;
-  color: #c7c7cc;
-  background: #fff;
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-card-bg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -833,29 +657,12 @@
 
 .emptyState p {
   font-size: 14px;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   margin: 0;
   line-height: 1.5;
 }
 
 /* 반응형 */
-@media (max-width: 1024px) {
-  .container {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-
-  .inputPanel {
-    padding-right: 0;
-    padding-bottom: 32px;
-  }
-
-  .insightPanel {
-    margin: 0;
-    padding: 24px 20px 48px;
-  }
-}
-
 @media (max-width: 600px) {
   .editField {
     flex-direction: column;
@@ -889,6 +696,6 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #86868b;
+  color: var(--dashboard-text-secondary);
   font-size: 14px;
 }

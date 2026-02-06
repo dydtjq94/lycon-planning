@@ -43,7 +43,7 @@
 .missionNumber {
   font-size: 12px;
   font-weight: 600;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   display: block;
   margin-bottom: 4px;
 }
@@ -106,7 +106,7 @@
 
 .totalValue {
   font-weight: 600;
-  color: #007aff;
+  color: var(--accent-color, #007aff);
 }
 
 /* 항목 행 */
@@ -139,13 +139,13 @@
 }
 
 .typeBtn:hover {
-  border-color: #007aff;
-  color: #007aff;
+  border-color: var(--accent-color, #007aff);
+  color: var(--accent-color, #007aff);
 }
 
 .typeBtn.selected {
-  background: #007aff;
-  border-color: #007aff;
+  background: var(--accent-color, #007aff);
+  border-color: var(--accent-color, #007aff);
   color: #fff;
 }
 
@@ -182,7 +182,7 @@
 }
 
 .ownerBtn.selected {
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: #fff;
 }
 
@@ -204,7 +204,7 @@
 }
 
 .input:focus {
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   outline: none;
 }
 
@@ -219,7 +219,7 @@
 }
 
 .inputSmall:focus {
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
   outline: none;
 }
 
@@ -275,8 +275,8 @@
 }
 
 .addButton:hover {
-  border-color: #007aff;
-  color: #007aff;
+  border-color: var(--accent-color, #007aff);
+  color: var(--accent-color, #007aff);
 }
 
 /* 푸터 */
@@ -306,18 +306,18 @@
 .submitButton {
   flex: 1;
   padding: 14px 24px;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   color: #fff;
   border: none;
   border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: filter 0.15s;
 }
 
 .submitButton:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }
 
 .submitButton:disabled {

@@ -159,11 +159,11 @@ export async function getInvestmentAccounts(simulationId: string): Promise<Savin
 // ============================================
 
 // UI 타입 분류
-export type UISavingsType = 'checking' | 'savings' | 'deposit'
+export type UISavingsType = 'checking' | 'savings' | 'deposit' | 'housing'
 export type UIInvestmentType = 'domestic_stock' | 'foreign_stock' | 'fund' | 'bond' | 'crypto' | 'other'
 
 export function isSavingsType(type: SavingsType): type is UISavingsType {
-  return ['checking', 'savings', 'deposit'].includes(type)
+  return ['checking', 'savings', 'deposit', 'housing'].includes(type)
 }
 
 export function isInvestmentType(type: SavingsType): type is UIInvestmentType {
@@ -175,6 +175,7 @@ export const SAVINGS_TYPE_LABELS: Record<UISavingsType, string> = {
   checking: '입출금통장',
   savings: '적금',
   deposit: '정기예금',
+  housing: '주택청약',
 }
 
 export const INVESTMENT_TYPE_LABELS: Record<UIInvestmentType, string> = {

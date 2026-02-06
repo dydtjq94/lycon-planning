@@ -246,6 +246,8 @@ export interface PersonalPension {
   simulation_id: string
   owner: Owner
   pension_type: PersonalPensionType
+  title: string | null
+  broker_name: string | null
   current_balance: number  // 원 (서비스에서 만원으로 변환)
   monthly_contribution: number | null
   contribution_end_year: number | null
@@ -267,6 +269,8 @@ export interface PersonalPensionInput {
   simulation_id: string
   owner?: Owner
   pension_type: PersonalPensionType
+  title?: string | null
+  broker_name?: string | null
   current_balance: number
   monthly_contribution?: number | null
   contribution_end_year?: number | null
@@ -450,7 +454,7 @@ export interface PhysicalAssetInput {
 // 저축/투자 (savings)
 // ============================================
 
-export type SavingsType = 'checking' | 'savings' | 'deposit' | 'domestic_stock' | 'foreign_stock' | 'fund' | 'bond' | 'crypto' | 'other'
+export type SavingsType = 'checking' | 'savings' | 'deposit' | 'housing' | 'domestic_stock' | 'foreign_stock' | 'fund' | 'bond' | 'crypto' | 'other'
 
 export type CurrencyType = 'KRW' | 'USD' | 'EUR' | 'JPY'
 
@@ -459,6 +463,7 @@ export interface Savings {
   simulation_id: string
   type: SavingsType
   title: string
+  broker_name: string | null
   owner: Owner
   current_balance: number  // 원 (서비스에서 만원으로 변환)
   monthly_contribution: number | null
@@ -484,6 +489,7 @@ export interface SavingsInput {
   simulation_id: string
   type: SavingsType
   title: string
+  broker_name?: string | null
   owner?: Owner
   current_balance: number
   monthly_contribution?: number | null

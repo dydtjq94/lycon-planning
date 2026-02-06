@@ -1523,264 +1523,252 @@ export function ExpenseTab({
 
   return (
     <div className={styles.container}>
-      {/* 왼쪽: 지출 입력 */}
-      <div className={styles.inputPanel}>
-        {renderSection(
-          "고정비",
-          "fixed",
-          fixedItems,
-          "보험료, 통신비, 구독료 등 매월 고정적으로 나가는 지출",
-        )}
-        {renderSection(
-          "변동비",
-          "variable",
-          variableItems,
-          "식비, 교통비, 여가비 등 매월 변동되는 지출",
-        )}
-        {renderSection(
-          "일회성 지출",
-          "onetime",
-          onetimeItems,
-          "여행, 결혼, 차량구입, 이사 등 특정 시점의 큰 지출",
-        )}
-        {/* 의료비 섹션 (토글 가능) */}
-        <div className={styles.expenseSection}>
-          <div
-            className={styles.sectionHeader}
-            style={{ cursor: "pointer" }}
-            onClick={() => setMedicalExpanded(!medicalExpanded)}
-          >
-            <div className={styles.sectionTitleGroup}>
-              <span className={styles.sectionTitle}>의료비</span>
-              <button
-                className={styles.infoBtn}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMedicalInfo(!showMedicalInfo);
-                }}
-                title="의료비 안내"
-              >
-                <Info size={14} />
-              </button>
-            </div>
-            <div className={styles.sectionToggle}>
-              {medicalExpanded ? (
-                <ChevronUp size={18} />
-              ) : (
-                <ChevronDown size={18} />
-              )}
-            </div>
+      {renderSection(
+        "고정비",
+        "fixed",
+        fixedItems,
+        "보험료, 통신비, 구독료 등 매월 고정적으로 나가는 지출",
+      )}
+      {renderSection(
+        "변동비",
+        "variable",
+        variableItems,
+        "식비, 교통비, 여가비 등 매월 변동되는 지출",
+      )}
+      {renderSection(
+        "일회성 지출",
+        "onetime",
+        onetimeItems,
+        "여행, 결혼, 차량구입, 이사 등 특정 시점의 큰 지출",
+      )}
+      <div className={styles.expenseSection}>
+        <div
+          className={styles.sectionHeader}
+          style={{ cursor: "pointer" }}
+          onClick={() => setMedicalExpanded(!medicalExpanded)}
+        >
+          <div className={styles.sectionTitleGroup}>
+            <span className={styles.sectionTitle}>의료비</span>
+            <button
+              className={styles.infoBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMedicalInfo(!showMedicalInfo);
+              }}
+              title="의료비 안내"
+            >
+              <Info size={14} />
+            </button>
           </div>
-
-          {showMedicalInfo && (
-            <div className={styles.medicalInfoBox}>
-              <p className={styles.medicalInfoText}>{MEDICAL_EXPENSE_INFO}</p>
-              <button
-                className={styles.medicalInfoClose}
-                onClick={() => setShowMedicalInfo(false)}
-              >
-                닫기
-              </button>
-            </div>
-          )}
-
-          {medicalExpanded && (
-            <div className={styles.sectionContent}>
-              {medicalItems.length === 0 ? (
-                <div className={styles.emptyMedical}>
-                  <p className={styles.emptyMedicalText}>
-                    나이대별 의료비를 자동으로 생성할 수 있습니다.
-                  </p>
-                  <button
-                    className={styles.generateMedicalBtn}
-                    onClick={generateMedicalExpenses}
-                  >
-                    나이대별 의료비 자동 생성
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {medicalItems.map((item) => {
-                    if (editingId === item.id && editForm) {
-                      // 편집 모드 - renderSection과 동일한 로직 사용
-                      return (
-                        <div key={item.id} className={styles.expenseItem}>
-                          <div className={styles.editMode}>
-                            <div className={styles.editRow}>
-                              <span className={styles.editRowLabel}>
-                                항목명
-                              </span>
-                              <input
-                                type="text"
-                                className={styles.editLabelInput}
-                                value={editForm.label}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    label: e.target.value,
-                                  })
-                                }
-                              />
-                            </div>
-                            <div className={styles.editRow}>
-                              <span className={styles.editRowLabel}>금액</span>
-                              <div className={styles.editField}>
-                                <input
-                                  type="number"
-                                  className={styles.editAmountInput}
-                                  value={editForm.amount}
-                                  onChange={(e) =>
-                                    setEditForm({
-                                      ...editForm,
-                                      amount: parseInt(e.target.value) || 0,
-                                    })
-                                  }
-                                  onWheel={(e) =>
-                                    (e.target as HTMLElement).blur()
-                                  }
-                                />
-                                <span className={styles.editUnit}>만원</span>
-                                <select
-                                  className={styles.editSelect}
-                                  value={editForm.frequency}
-                                  onChange={(e) =>
-                                    setEditForm({
-                                      ...editForm,
-                                      frequency: e.target
-                                        .value as ExpenseFrequency,
-                                    })
-                                  }
-                                >
-                                  <option value="monthly">월</option>
-                                  <option value="yearly">년</option>
-                                </select>
-                              </div>
-                            </div>
-                            <div className={styles.editActions}>
-                              <button
-                                className={styles.saveBtn}
-                                onClick={saveEdit}
-                              >
-                                저장
-                              </button>
-                              <button
-                                className={styles.cancelBtn}
-                                onClick={() => setEditingId(null)}
-                              >
-                                취소
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    // 읽기 모드
-                    return (
-                      <div key={item.id} className={styles.expenseItem}>
-                        <div className={styles.itemMain}>
-                          <span className={styles.itemLabel}>{item.label}</span>
-                          <span className={styles.itemAmount}>
-                            {formatMoney(item.amount)}
-                            <span className={styles.itemFrequency}>
-                              /{item.frequency === "monthly" ? "월" : "년"}
-                            </span>
-                          </span>
-                          <span className={styles.itemMeta}>
-                            {`${item.startYear}년 ~ ${item.endYear}년 | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
-                          </span>
-                        </div>
-                        <div className={styles.itemActions}>
-                          <button
-                            className={styles.editBtn}
-                            onClick={() => startEdit(item)}
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            className={styles.deleteBtn}
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  <div className={styles.medicalActions}>
-                    <button
-                      className={styles.regenerateMedicalBtn}
-                      onClick={generateMedicalExpenses}
-                    >
-                      나이대별 의료비 다시 생성
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {!medicalExpanded && medicalItems.length > 0 && (
-            <div className={styles.collapsedSummary}>
-              {medicalItems.length}개 항목 (현재 적용:{" "}
-              {currentMedicalItems.length}개), 월{" "}
-              {formatMoney(
-                currentMedicalItems.reduce(
-                  (sum, i) =>
-                    sum + (i.frequency === "yearly" ? i.amount / 12 : i.amount),
-                  0,
-                ),
-              )}
-            </div>
-          )}
-        </div>
-        {renderSection(
-          "주거비",
-          "housing",
-          housingItems,
-          "부동산 탭에서 등록한 월세, 관리비가 표시됩니다",
-        )}
-        {/* 이자 비용 섹션 - simulationResult에서 가져옴 (Single Source of Truth) */}
-        <div className={styles.expenseSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>이자/원금 상환</span>
-          </div>
-          <p className={styles.sectionDesc}>
-            부채 탭에서 등록한 대출 상환금이 표시됩니다
-          </p>
-
-          <div className={styles.itemList}>
-            {interestItems.map((item) => (
-              <div key={item.id} className={styles.expenseItem}>
-                <div className={styles.itemMain}>
-                  <span className={styles.itemLabel}>{item.label}</span>
-                  <span className={styles.itemAmount}>
-                    {formatMoney(item.amount)}/월
-                  </span>
-                  <span className={styles.itemMeta}>
-                    연간 {formatMoney(item.amount * 12)}
-                  </span>
-                </div>
-                <div className={styles.linkedBadge}>
-                  <CreditCard size={12} />
-                  <span>부채 연동</span>
-                </div>
-              </div>
-            ))}
-
-            {interestItems.length === 0 && (
-              <p className={styles.emptyText}>
-                부채 탭에서 대출을 등록하면 월 상환금이 표시됩니다
-              </p>
+          <div className={styles.sectionToggle}>
+            {medicalExpanded ? (
+              <ChevronUp size={18} />
+            ) : (
+              <ChevronDown size={18} />
             )}
           </div>
         </div>
-      </div>
 
-      {/* 오른쪽: 인사이트 */}
-      <div className={styles.insightPanel}>
-        {/* TODO: 인사이트 내용 추가 예정 */}
+        {showMedicalInfo && (
+          <div className={styles.medicalInfoBox}>
+            <p className={styles.medicalInfoText}>{MEDICAL_EXPENSE_INFO}</p>
+            <button
+              className={styles.medicalInfoClose}
+              onClick={() => setShowMedicalInfo(false)}
+            >
+              닫기
+            </button>
+          </div>
+        )}
+
+        {medicalExpanded && (
+          <div className={styles.sectionContent}>
+            {medicalItems.length === 0 ? (
+              <div className={styles.emptyMedical}>
+                <p className={styles.emptyMedicalText}>
+                  나이대별 의료비를 자동으로 생성할 수 있습니다.
+                </p>
+                <button
+                  className={styles.generateMedicalBtn}
+                  onClick={generateMedicalExpenses}
+                >
+                  나이대별 의료비 자동 생성
+                </button>
+              </div>
+            ) : (
+              <>
+                {medicalItems.map((item) => {
+                  if (editingId === item.id && editForm) {
+                    return (
+                      <div key={item.id} className={styles.expenseItem}>
+                        <div className={styles.editMode}>
+                          <div className={styles.editRow}>
+                            <span className={styles.editRowLabel}>
+                              항목명
+                            </span>
+                            <input
+                              type="text"
+                              className={styles.editLabelInput}
+                              value={editForm.label}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  label: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className={styles.editRow}>
+                            <span className={styles.editRowLabel}>금액</span>
+                            <div className={styles.editField}>
+                              <input
+                                type="number"
+                                className={styles.editAmountInput}
+                                value={editForm.amount}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    amount: parseInt(e.target.value) || 0,
+                                  })
+                                }
+                                onWheel={(e) =>
+                                  (e.target as HTMLElement).blur()
+                                }
+                              />
+                              <span className={styles.editUnit}>만원</span>
+                              <select
+                                className={styles.editSelect}
+                                value={editForm.frequency}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    frequency: e.target
+                                      .value as ExpenseFrequency,
+                                  })
+                                }
+                              >
+                                <option value="monthly">월</option>
+                                <option value="yearly">년</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className={styles.editActions}>
+                            <button
+                              className={styles.saveBtn}
+                              onClick={saveEdit}
+                            >
+                              저장
+                            </button>
+                            <button
+                              className={styles.cancelBtn}
+                              onClick={() => setEditingId(null)}
+                            >
+                              취소
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={item.id} className={styles.expenseItem}>
+                      <div className={styles.itemMain}>
+                        <span className={styles.itemLabel}>{item.label}</span>
+                        <span className={styles.itemAmount}>
+                          {formatMoney(item.amount)}
+                          <span className={styles.itemFrequency}>
+                            /{item.frequency === "monthly" ? "월" : "년"}
+                          </span>
+                        </span>
+                        <span className={styles.itemMeta}>
+                          {`${item.startYear}년 ~ ${item.endYear}년 | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
+                        </span>
+                      </div>
+                      <div className={styles.itemActions}>
+                        <button
+                          className={styles.editBtn}
+                          onClick={() => startEdit(item)}
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className={styles.medicalActions}>
+                  <button
+                    className={styles.regenerateMedicalBtn}
+                    onClick={generateMedicalExpenses}
+                  >
+                    나이대별 의료비 다시 생성
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {!medicalExpanded && medicalItems.length > 0 && (
+          <div className={styles.collapsedSummary}>
+            {medicalItems.length}개 항목 (현재 적용:{" "}
+            {currentMedicalItems.length}개), 월{" "}
+            {formatMoney(
+              currentMedicalItems.reduce(
+                (sum, i) =>
+                  sum + (i.frequency === "yearly" ? i.amount / 12 : i.amount),
+                0,
+              ),
+            )}
+          </div>
+        )}
+      </div>
+      {renderSection(
+        "주거비",
+        "housing",
+        housingItems,
+        "부동산 탭에서 등록한 월세, 관리비가 표시됩니다",
+      )}
+      <div className={styles.expenseSection}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.sectionTitle}>이자/원금 상환</span>
+        </div>
+        <p className={styles.sectionDesc}>
+          부채 탭에서 등록한 대출 상환금이 표시됩니다
+        </p>
+
+        <div className={styles.itemList}>
+          {interestItems.map((item) => (
+            <div key={item.id} className={styles.expenseItem}>
+              <div className={styles.itemMain}>
+                <span className={styles.itemLabel}>{item.label}</span>
+                <span className={styles.itemAmount}>
+                  {formatMoney(item.amount)}/월
+                </span>
+                <span className={styles.itemMeta}>
+                  연간 {formatMoney(item.amount * 12)}
+                </span>
+              </div>
+              <div className={styles.linkedBadge}>
+                <CreditCard size={12} />
+                <span>부채 연동</span>
+              </div>
+            </div>
+          ))}
+
+          {interestItems.length === 0 && (
+            <p className={styles.emptyText}>
+              부채 탭에서 대출을 등록하면 월 상환금이 표시됩니다
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

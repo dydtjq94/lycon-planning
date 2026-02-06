@@ -31,8 +31,8 @@
 }
 
 .trigger.open {
-  border-color: #007aff;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  border-color: var(--accent-color, #007aff);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color, #007aff) 10%, transparent);
 }
 
 .triggerText {
@@ -113,7 +113,7 @@
 }
 
 .option.selected {
-  background: rgba(0, 122, 255, 0.08);
+  background: color-mix(in srgb, var(--accent-color, #007aff) 8%, transparent);
 }
 
 .optionContent {
@@ -129,7 +129,7 @@
 }
 
 .option.selected .optionLabel {
-  color: #007aff;
+  color: var(--accent-color, #007aff);
 }
 
 .optionDesc {
@@ -138,7 +138,7 @@
 }
 
 .checkIcon {
-  color: #007aff;
+  color: var(--accent-color, #007aff);
   flex-shrink: 0;
 }
 
@@ -163,7 +163,7 @@
 }
 
 .customInput:focus {
-  border-color: #007aff;
+  border-color: var(--accent-color, #007aff);
 }
 
 .customUnit {
@@ -176,13 +176,13 @@
   font-size: 14px;
   font-weight: 600;
   color: #fff;
-  background: #007aff;
+  background: var(--accent-color, #007aff);
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: filter 0.15s;
 }
 
 .customSubmit:hover {
-  background: #0066d6;
+  filter: brightness(0.9);
 }

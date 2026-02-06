@@ -116,9 +116,10 @@ export function SavingsTab({
         durationMonths: '12',
         isTaxFree: 'false',
         currency: 'KRW',
+        owner: 'self',
       })
     } else {
-      setEditValues({ type: 'domestic_stock', name: '', balance: '', expectedReturn: '' })
+      setEditValues({ type: 'domestic_stock', name: '', balance: '', expectedReturn: '', owner: 'self' })
     }
   }
 
@@ -146,6 +147,7 @@ export function SavingsTab({
         maturityMonth: account.maturity_month?.toString() || '',
         isTaxFree: account.is_tax_free ? 'true' : 'false',
         currency: account.currency || 'KRW',
+        owner: account.owner || 'self',
       })
     } else {
       setEditValues({
@@ -153,6 +155,7 @@ export function SavingsTab({
         name: account.title,
         balance: account.current_balance.toString(),
         expectedReturn: account.expected_return?.toString() || '',
+        owner: account.owner || 'self',
       })
     }
   }
@@ -183,6 +186,7 @@ export function SavingsTab({
         simulation_id: simulationId,
         type: editValues.type as UISavingsType,
         title: editValues.name,
+        owner: (editValues.owner || 'self') as Owner,
         current_balance: parseFloat(editValues.balance),
         interest_rate: editValues.interestRate ? parseFloat(editValues.interestRate) : null,
         contribution_start_year: editValues.startYear ? parseInt(editValues.startYear) : null,
@@ -214,6 +218,7 @@ export function SavingsTab({
         simulation_id: simulationId,
         type: editValues.type as UIInvestmentType,
         title: editValues.name,
+        owner: (editValues.owner || 'self') as Owner,
         current_balance: parseFloat(editValues.balance),
         expected_return: editValues.expectedReturn ? parseFloat(editValues.expectedReturn) : null,
       }
@@ -363,9 +368,6 @@ export function SavingsTab({
 
   return (
     <div className={styles.container}>
-      {/* 왼쪽: 계좌 입력 */}
-      <div className={styles.inputPanel}>
-
         {/* ========== 저축 계좌 ========== */}
         <section className={styles.assetSection}>
           <div className={styles.sectionHeader}>
@@ -421,6 +423,27 @@ export function SavingsTab({
                       <span className={styles.editUnit}>만원</span>
                     </div>
                   </div>
+                  {isMarried && (
+                    <div className={styles.editRow}>
+                      <span className={styles.editRowLabel}>소유자</span>
+                      <div className={styles.typeButtons}>
+                        <button
+                          type="button"
+                          className={`${styles.typeBtn} ${editValues.owner === 'self' ? styles.active : ''}`}
+                          onClick={() => setEditValues({ ...editValues, owner: 'self' })}
+                        >
+                          본인
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.typeBtn} ${editValues.owner === 'spouse' ? styles.active : ''}`}
+                          onClick={() => setEditValues({ ...editValues, owner: 'spouse' })}
+                        >
+                          배우자
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {(editValues.type === 'savings' || editValues.type === 'deposit') && (
                     <>
                       <div className={styles.editRow}>
@@ -541,7 +564,11 @@ export function SavingsTab({
                   <div className={styles.itemMain}>
                     <span className={styles.itemLabel}>{SAVINGS_TYPE_LABELS[account.type as UISavingsType] || account.type}</span>
                     <span className={styles.itemAmount}>{formatMoney(account.current_balance)}</span>
-                    <span className={styles.itemName}>{account.title}</span>
+                    <span className={styles.itemName}>
+                      {account.title}
+                      {account.broker_name && <span className={styles.brokerTag}>{account.broker_name}</span>}
+                      {account.owner === 'spouse' && <span className={styles.ownerBadge}>배우자</span>}
+                    </span>
                     {account.interest_rate && (
                       <span className={styles.itemMeta}>
                         금리 {account.interest_rate}%
@@ -615,6 +642,27 @@ export function SavingsTab({
                     <span className={styles.editUnit}>만원</span>
                   </div>
                 </div>
+                {isMarried && (
+                  <div className={styles.editRow}>
+                    <span className={styles.editRowLabel}>소유자</span>
+                    <div className={styles.typeButtons}>
+                      <button
+                        type="button"
+                        className={`${styles.typeBtn} ${editValues.owner === 'self' ? styles.active : ''}`}
+                        onClick={() => setEditValues({ ...editValues, owner: 'self' })}
+                      >
+                        본인
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.typeBtn} ${editValues.owner === 'spouse' ? styles.active : ''}`}
+                        onClick={() => setEditValues({ ...editValues, owner: 'spouse' })}
+                      >
+                        배우자
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {(editValues.type === 'savings' || editValues.type === 'deposit') && (
                   <>
                     <div className={styles.editRow}>
@@ -793,6 +841,27 @@ export function SavingsTab({
                       <span className={styles.editUnit}>만원</span>
                     </div>
                   </div>
+                  {isMarried && (
+                    <div className={styles.editRow}>
+                      <span className={styles.editRowLabel}>소유자</span>
+                      <div className={styles.typeButtons}>
+                        <button
+                          type="button"
+                          className={`${styles.typeBtn} ${editValues.owner === 'self' ? styles.active : ''}`}
+                          onClick={() => setEditValues({ ...editValues, owner: 'self' })}
+                        >
+                          본인
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.typeBtn} ${editValues.owner === 'spouse' ? styles.active : ''}`}
+                          onClick={() => setEditValues({ ...editValues, owner: 'spouse' })}
+                        >
+                          배우자
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className={styles.editRow}>
                     <span className={styles.editRowLabel}>수익률</span>
                     <div className={styles.editField}>
@@ -818,7 +887,11 @@ export function SavingsTab({
                   <div className={styles.itemMain}>
                     <span className={styles.itemLabel}>{INVESTMENT_TYPE_LABELS[account.type as UIInvestmentType] || account.type}</span>
                     <span className={styles.itemAmount}>{formatMoney(account.current_balance)}</span>
-                    <span className={styles.itemName}>{account.title}</span>
+                    <span className={styles.itemName}>
+                      {account.title}
+                      {account.broker_name && <span className={styles.brokerTag}>{account.broker_name}</span>}
+                      {account.owner === 'spouse' && <span className={styles.ownerBadge}>배우자</span>}
+                    </span>
                     {account.expected_return && (
                       <span className={styles.itemMeta}>예상 수익률 {account.expected_return}%</span>
                     )}
@@ -886,6 +959,27 @@ export function SavingsTab({
                     <span className={styles.editUnit}>만원</span>
                   </div>
                 </div>
+                {isMarried && (
+                  <div className={styles.editRow}>
+                    <span className={styles.editRowLabel}>소유자</span>
+                    <div className={styles.typeButtons}>
+                      <button
+                        type="button"
+                        className={`${styles.typeBtn} ${editValues.owner === 'self' ? styles.active : ''}`}
+                        onClick={() => setEditValues({ ...editValues, owner: 'self' })}
+                      >
+                        본인
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.typeBtn} ${editValues.owner === 'spouse' ? styles.active : ''}`}
+                        onClick={() => setEditValues({ ...editValues, owner: 'spouse' })}
+                      >
+                        배우자
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className={styles.editRow}>
                   <span className={styles.editRowLabel}>수익률</span>
                   <div className={styles.editField}>
@@ -1021,6 +1115,12 @@ export function SavingsTab({
                   <span className={styles.itemAmount}>
                     {selfIsa?.current_balance ? formatMoney(selfIsa.current_balance) : '0'}
                   </span>
+                  {selfIsa?.title && (
+                    <span className={styles.itemName}>
+                      {selfIsa.title}
+                      {selfIsa.broker_name && <span className={styles.brokerTag}>{selfIsa.broker_name}</span>}
+                    </span>
+                  )}
                   {selfIsa?.current_balance ? (
                     <span className={styles.itemMeta}>
                       {selfIsa.monthly_contribution ? `월 ${formatMoney(selfIsa.monthly_contribution)} 납입 | ` : ''}
@@ -1135,6 +1235,12 @@ export function SavingsTab({
                     <span className={styles.itemAmount}>
                       {spouseIsa?.current_balance ? formatMoney(spouseIsa.current_balance) : '0'}
                     </span>
+                    {spouseIsa?.title && (
+                      <span className={styles.itemName}>
+                        {spouseIsa.title}
+                        {spouseIsa.broker_name && <span className={styles.brokerTag}>{spouseIsa.broker_name}</span>}
+                      </span>
+                    )}
                     {spouseIsa?.current_balance ? (
                       <span className={styles.itemMeta}>
                         {spouseIsa.monthly_contribution ? `월 ${formatMoney(spouseIsa.monthly_contribution)} 납입 | ` : ''}
@@ -1157,12 +1263,6 @@ export function SavingsTab({
         <p className={styles.infoText}>
           연금저축, IRP는 연금 탭에서 관리됩니다.
         </p>
-      </div>
-
-      {/* 오른쪽: 인사이트 */}
-      <div className={styles.insightPanel}>
-        {/* TODO: 인사이트 내용 추가 예정 */}
-      </div>
     </div>
   )
 }

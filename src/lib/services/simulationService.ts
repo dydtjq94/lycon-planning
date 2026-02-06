@@ -1,5 +1,32 @@
 import { createClient } from '@/lib/supabase/client'
 import type { Simulation, SimulationInput } from '@/types'
+import type { AccountType, SavingsType } from '@/types/tables'
+
+// 은행 계좌 타입
+const BANK_ACCOUNT_TYPES: AccountType[] = ['checking', 'savings', 'deposit', 'free_savings', 'housing']
+
+// 일반 투자 계좌 타입 (절세계좌 제외)
+const INVESTMENT_ACCOUNT_TYPES: AccountType[] = ['general']
+
+// 절세 계좌 타입 (personal_pensions에만 저장)
+const PENSION_ACCOUNT_TYPES: AccountType[] = ['pension_savings', 'irp', 'isa']
+
+// AccountType → SavingsType 매핑 (절세계좌 제외)
+const ACCOUNT_TO_SAVINGS_TYPE: Partial<Record<AccountType, SavingsType>> = {
+  checking: 'checking',
+  savings: 'savings',
+  deposit: 'deposit',
+  free_savings: 'savings',
+  housing: 'housing',
+  general: 'domestic_stock',
+}
+
+// AccountType → PersonalPensionType 매핑
+const ACCOUNT_TO_PENSION_TYPE: Partial<Record<AccountType, string>> = {
+  pension_savings: 'pension_savings',
+  irp: 'irp',
+  isa: 'isa',
+}
 
 /**
  * 시뮬레이션 서비스
@@ -56,13 +83,21 @@ export const simulationService = {
   },
 
   // 시뮬레이션 생성
-  async create(input: SimulationInput): Promise<Simulation> {
+  async create(input: Omit<SimulationInput, 'profile_id'> & { profile_id?: string }): Promise<Simulation> {
     const supabase = createClient()
+
+    // profile_id가 없으면 현재 사용자 ID 사용
+    let profileId = input.profile_id
+    if (!profileId) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+      profileId = user.id
+    }
 
     const { data, error } = await supabase
       .from('simulations')
       .insert({
-        profile_id: input.profile_id,
+        profile_id: profileId,
         title: input.title,
         description: input.description,
         is_default: input.is_default ?? false,
@@ -72,7 +107,136 @@ export const simulationService = {
       .single()
 
     if (error) throw error
+
+    // 시뮬레이션 생성 후 현재 계좌 데이터 복사
+    await this.copyAccountsToSimulation(data.id, profileId)
+
     return data
+  },
+
+  /**
+   * 현재 계좌 데이터를 시뮬레이션에 복사
+   * - 은행/일반투자 계좌 → savings 테이블
+   * - 절세계좌 (ISA/연금저축/IRP) → personal_pensions 테이블만 (중복 없음)
+   */
+  async copyAccountsToSimulation(simulationId: string, profileId: string): Promise<void> {
+    const supabase = createClient()
+
+    // 1. 기존 데이터 삭제
+    await Promise.all([
+      supabase.from('savings').delete().eq('simulation_id', simulationId),
+      supabase.from('personal_pensions').delete().eq('simulation_id', simulationId),
+    ])
+
+    // 2. 현재 활성 계좌 가져오기
+    const { data: accounts, error: accountsError } = await supabase
+      .from('accounts')
+      .select('*')
+      .eq('profile_id', profileId)
+      .eq('is_active', true)
+
+    if (accountsError || !accounts?.length) return
+
+    // 3. 투자 평가액 계산 (포트폴리오 거래 기반)
+    const { data: snapshots } = await supabase
+      .from('financial_snapshots')
+      .select('investments')
+      .eq('profile_id', profileId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    const totalInvestments = snapshots?.[0]?.investments || 0
+
+    const { data: transactions } = await supabase
+      .from('portfolio_transactions')
+      .select('account_id, type, total_amount')
+      .eq('profile_id', profileId)
+
+    // 계좌별 순 투자금액 → 비율 기반 평가액 배분
+    const investmentByAccount: Record<string, number> = {}
+    transactions?.forEach(tx => {
+      if (!tx.account_id) return
+      const amount = tx.type === 'buy' ? tx.total_amount : -tx.total_amount
+      investmentByAccount[tx.account_id] = (investmentByAccount[tx.account_id] || 0) + amount
+    })
+
+    const allInvestmentAccounts = accounts.filter(acc =>
+      [...INVESTMENT_ACCOUNT_TYPES, ...PENSION_ACCOUNT_TYPES].includes(acc.account_type as AccountType)
+    )
+    const totalNetInvested = Object.values(investmentByAccount).reduce((sum, val) => sum + Math.max(0, val), 0)
+
+    const getInvestmentValue = (accountId: string): number => {
+      if (totalNetInvested <= 0 || totalInvestments <= 0) {
+        return allInvestmentAccounts.length > 0
+          ? Math.round(totalInvestments / allInvestmentAccounts.length)
+          : 0
+      }
+      const netInvested = Math.max(0, investmentByAccount[accountId] || 0)
+      return Math.round(totalInvestments * (netInvested / totalNetInvested))
+    }
+
+    // 4. 은행 + 일반투자 계좌 → savings 테이블
+    const bankAccounts = accounts.filter(acc => BANK_ACCOUNT_TYPES.includes(acc.account_type as AccountType))
+    const investmentAccounts = accounts.filter(acc => INVESTMENT_ACCOUNT_TYPES.includes(acc.account_type as AccountType))
+
+    const savingsData = [
+      ...bankAccounts.map((acc, idx) => ({
+        simulation_id: simulationId,
+        type: ACCOUNT_TO_SAVINGS_TYPE[acc.account_type as AccountType] || 'other',
+        title: acc.name,
+        broker_name: acc.broker_name || null,
+        owner: 'self' as const,
+        current_balance: acc.current_balance || 0,
+        interest_rate: acc.interest_rate ? Number(acc.interest_rate) : null,
+        maturity_year: acc.maturity_year || null,
+        maturity_month: acc.maturity_month || null,
+        is_tax_free: acc.is_tax_free || false,
+        monthly_contribution: acc.monthly_contribution || null,
+        sort_order: idx,
+      })),
+      ...investmentAccounts.map((acc, idx) => ({
+        simulation_id: simulationId,
+        type: ACCOUNT_TO_SAVINGS_TYPE[acc.account_type as AccountType] || 'other',
+        title: acc.name,
+        broker_name: acc.broker_name || null,
+        owner: 'self' as const,
+        current_balance: getInvestmentValue(acc.id),
+        expected_return: null,
+        is_tax_free: acc.is_tax_free || false,
+        sort_order: bankAccounts.length + idx,
+      })),
+    ]
+
+    if (savingsData.length > 0) {
+      const { error } = await supabase.from('savings').insert(savingsData)
+      if (error) console.error('Failed to copy savings:', error)
+    }
+
+    // 5. 절세 계좌 → personal_pensions 테이블만
+    const pensionAccounts = accounts.filter(acc => PENSION_ACCOUNT_TYPES.includes(acc.account_type as AccountType))
+
+    if (pensionAccounts.length > 0) {
+      const pensionData = pensionAccounts.map(acc => ({
+        simulation_id: simulationId,
+        owner: 'self' as const,
+        pension_type: ACCOUNT_TO_PENSION_TYPE[acc.account_type as AccountType]!,
+        title: acc.name,
+        broker_name: acc.broker_name || null,
+        current_balance: getInvestmentValue(acc.id),
+        monthly_contribution: acc.monthly_contribution || null,
+        is_contribution_fixed_to_retirement: true,
+        start_age: 55,
+        receiving_years: 20,
+        return_rate: 5.0,
+        isa_maturity_year: acc.account_type === 'isa' ? acc.maturity_year : null,
+        isa_maturity_month: acc.account_type === 'isa' ? acc.maturity_month : null,
+        isa_maturity_strategy: acc.account_type === 'isa' ? 'pension_savings' : null,
+      }))
+
+      const { error } = await supabase.from('personal_pensions').insert(pensionData)
+      if (error) console.error('Failed to copy personal_pensions:', error)
+    }
   },
 
   // 시뮬레이션 업데이트

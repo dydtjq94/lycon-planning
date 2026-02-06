@@ -514,96 +514,87 @@ export function AssetTab({ simulationId }: AssetTabProps) {
 
   return (
     <div className={styles.container}>
-      {/* 왼쪽: 자산 입력 */}
-      <div className={styles.inputPanel}>
-
-        {/* ========== 자동차 ========== */}
-        <section className={styles.assetSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>자동차</span>
-          </div>
-          <p className={styles.sectionDesc}>
-            보유 중인 자동차. 대출/할부가 있으면 부채에 자동 연동됩니다.
-          </p>
-
-          <div className={styles.itemList}>
-            {carAssets.map(asset => (
-              editingAsset?.type === 'car' && editingAsset.id === asset.id
-                ? <div key={asset.id}>{renderEditForm('car')}</div>
-                : renderAssetItem(asset)
-            ))}
-
-            {editingAsset?.type === 'car' && editingAsset.id === null ? (
-              renderEditForm('car')
-            ) : (
-              <button className={styles.addBtn} onClick={() => startAddAsset('car')}>
-                + 자동차 추가
-              </button>
-            )}
-          </div>
-        </section>
-
-        {/* ========== 귀금속/금 ========== */}
-        <section className={styles.assetSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>귀금속/금</span>
-          </div>
-          <p className={styles.sectionDesc}>
-            금, 은, 다이아몬드 등 귀금속. 장기적으로 가치가 상승하는 실물 자산.
-          </p>
-
-          <div className={styles.itemList}>
-            {preciousMetalAssets.map(asset => (
-              editingAsset?.type === 'precious_metal' && editingAsset.id === asset.id
-                ? <div key={asset.id}>{renderEditForm('precious_metal')}</div>
-                : renderAssetItem(asset)
-            ))}
-
-            {editingAsset?.type === 'precious_metal' && editingAsset.id === null ? (
-              renderEditForm('precious_metal')
-            ) : (
-              <button className={styles.addBtn} onClick={() => startAddAsset('precious_metal')}>
-                + 귀금속 추가
-              </button>
-            )}
-          </div>
-        </section>
-
-        {/* ========== 기타 자산 ========== */}
-        <section className={styles.assetSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>기타 자산</span>
-          </div>
-          <p className={styles.sectionDesc}>
-            미술품, 수집품, 고가 장비 등 기타 실물 자산.
-          </p>
-
-          <div className={styles.itemList}>
-            {customAssets.map(asset => (
-              editingAsset?.type === 'custom' && editingAsset.id === asset.id
-                ? <div key={asset.id}>{renderEditForm('custom')}</div>
-                : renderAssetItem(asset)
-            ))}
-
-            {editingAsset?.type === 'custom' && editingAsset.id === null ? (
-              renderEditForm('custom')
-            ) : (
-              <button className={styles.addBtn} onClick={() => startAddAsset('custom')}>
-                + 기타 자산 추가
-              </button>
-            )}
-          </div>
-        </section>
-
-        <p className={styles.infoText}>
-          자동차 대출/할부는 부채 탭에서 확인할 수 있습니다.
+      {/* ========== 자동차 ========== */}
+      <section className={styles.assetSection}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.sectionTitle}>자동차</span>
+        </div>
+        <p className={styles.sectionDesc}>
+          보유 중인 자동차. 대출/할부가 있으면 부채에 자동 연동됩니다.
         </p>
-      </div>
 
-      {/* 오른쪽: 인사이트 */}
-      <div className={styles.insightPanel}>
-        {/* TODO: 인사이트 내용 추가 예정 */}
-      </div>
+        <div className={styles.itemList}>
+          {carAssets.map(asset => (
+            editingAsset?.type === 'car' && editingAsset.id === asset.id
+              ? <div key={asset.id}>{renderEditForm('car')}</div>
+              : renderAssetItem(asset)
+          ))}
+
+          {editingAsset?.type === 'car' && editingAsset.id === null ? (
+            renderEditForm('car')
+          ) : (
+            <button className={styles.addBtn} onClick={() => startAddAsset('car')}>
+              + 자동차 추가
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* ========== 귀금속/금 ========== */}
+      <section className={styles.assetSection}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.sectionTitle}>귀금속/금</span>
+        </div>
+        <p className={styles.sectionDesc}>
+          금, 은, 다이아몬드 등 귀금속. 장기적으로 가치가 상승하는 실물 자산.
+        </p>
+
+        <div className={styles.itemList}>
+          {preciousMetalAssets.map(asset => (
+            editingAsset?.type === 'precious_metal' && editingAsset.id === asset.id
+              ? <div key={asset.id}>{renderEditForm('precious_metal')}</div>
+              : renderAssetItem(asset)
+          ))}
+
+          {editingAsset?.type === 'precious_metal' && editingAsset.id === null ? (
+            renderEditForm('precious_metal')
+          ) : (
+            <button className={styles.addBtn} onClick={() => startAddAsset('precious_metal')}>
+              + 귀금속 추가
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* ========== 기타 자산 ========== */}
+      <section className={styles.assetSection}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.sectionTitle}>기타 자산</span>
+        </div>
+        <p className={styles.sectionDesc}>
+          미술품, 수집품, 고가 장비 등 기타 실물 자산.
+        </p>
+
+        <div className={styles.itemList}>
+          {customAssets.map(asset => (
+            editingAsset?.type === 'custom' && editingAsset.id === asset.id
+              ? <div key={asset.id}>{renderEditForm('custom')}</div>
+              : renderAssetItem(asset)
+          ))}
+
+          {editingAsset?.type === 'custom' && editingAsset.id === null ? (
+            renderEditForm('custom')
+          ) : (
+            <button className={styles.addBtn} onClick={() => startAddAsset('custom')}>
+              + 기타 자산 추가
+            </button>
+          )}
+        </div>
+      </section>
+
+      <p className={styles.infoText}>
+        자동차 대출/할부는 부채 탭에서 확인할 수 있습니다.
+      </p>
     </div>
   )
 }

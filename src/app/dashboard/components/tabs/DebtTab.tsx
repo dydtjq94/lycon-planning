@@ -551,66 +551,58 @@ export function DebtTab({ simulationId }: DebtTabProps) {
 
   return (
     <div className={styles.container}>
-      {/* 왼쪽: 부채 입력 */}
-      <div className={styles.inputPanel}>
-        {renderSection(
-          '주택담보대출',
-          'housing',
-          categorizedDebts.housing,
-          '거주 부동산',
-          '주택담보대출은 부동산 탭에서 추가하세요',
-          false,
-          { href: '#realEstate', text: '부동산 탭에서 주택담보대출 관리하기' }
-        )}
+      {renderSection(
+        '주택담보대출',
+        'housing',
+        categorizedDebts.housing,
+        '거주 부동산',
+        '주택담보대출은 부동산 탭에서 추가하세요',
+        false,
+        { href: '#realEstate', text: '부동산 탭에서 주택담보대출 관리하기' }
+      )}
 
-        {renderSection(
-          '부동산 투자 대출',
-          'realEstate',
-          categorizedDebts.realEstate,
-          '투자 부동산',
-          '투자용 부동산 대출은 부동산 탭에서 추가하세요',
-          false,
-          { href: '#realEstate', text: '부동산 탭에서 투자용 대출 관리하기' }
-        )}
+      {renderSection(
+        '부동산 투자 대출',
+        'realEstate',
+        categorizedDebts.realEstate,
+        '투자 부동산',
+        '투자용 부동산 대출은 부동산 탭에서 추가하세요',
+        false,
+        { href: '#realEstate', text: '부동산 탭에서 투자용 대출 관리하기' }
+      )}
 
-        {renderSection(
-          '자동차/실물자산 대출',
-          'physicalAsset',
-          categorizedDebts.physicalAsset,
-          '실물 자산',
-          '자동차 대출은 실물 자산 탭에서 추가하세요',
-          false,
-          { href: '#asset', text: '실물 자산 탭에서 자동차 대출 관리하기' }
-        )}
+      {renderSection(
+        '자동차/실물자산 대출',
+        'physicalAsset',
+        categorizedDebts.physicalAsset,
+        '실물 자산',
+        '자동차 대출은 실물 자산 탭에서 추가하세요',
+        false,
+        { href: '#asset', text: '실물 자산 탭에서 자동차 대출 관리하기' }
+      )}
 
-        {renderSection(
-          '신용대출',
-          'credit',
-          categorizedDebts.credit,
-          undefined,
-          undefined,
-          true
-        )}
+      {renderSection(
+        '신용대출',
+        'credit',
+        categorizedDebts.credit,
+        undefined,
+        undefined,
+        true
+      )}
 
-        {renderSection(
-          '기타 부채',
-          'other',
-          categorizedDebts.other,
-          undefined,
-          undefined,
-          true
-        )}
+      {renderSection(
+        '기타 부채',
+        'other',
+        categorizedDebts.other,
+        undefined,
+        undefined,
+        true
+      )}
 
-        <p className={styles.infoText}>
-          담보대출(주택, 부동산, 자동차)은 해당 자산 탭에서 관리됩니다.
-          상환방식과 금리는 여기서 수정할 수 있습니다.
-        </p>
-      </div>
-
-      {/* 오른쪽: 인사이트 */}
-      <div className={styles.insightPanel}>
-        {/* TODO: 인사이트 내용 추가 예정 */}
-      </div>
+      <p className={styles.infoText}>
+        담보대출(주택, 부동산, 자동차)은 해당 자산 탭에서 관리됩니다.
+        상환방식과 금리는 여기서 수정할 수 있습니다.
+      </p>
     </div>
   )
 }

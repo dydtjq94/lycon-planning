@@ -619,6 +619,55 @@ export function useSimulations(enabled: boolean = true) {
   })
 }
 
+/**
+ * 시뮬레이션 생성 훅
+ */
+export function useCreateSimulation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { title: string; description?: string }) =>
+      simulationService.create({
+        title: input.title,
+        description: input.description,
+      }),
+    onSuccess: async () => {
+      // 시뮬레이션 목록 새로고침 (refetch 완료까지 대기)
+      await queryClient.refetchQueries({ queryKey: simulationKeys.list() })
+    },
+  })
+}
+
+/**
+ * 시뮬레이션 삭제 훅
+ */
+export function useDeleteSimulation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (simulationId: string) => simulationService.delete(simulationId),
+    onSuccess: async () => {
+      // 시뮬레이션 목록 새로고침 (refetch 완료까지 대기)
+      await queryClient.refetchQueries({ queryKey: simulationKeys.list() })
+    },
+  })
+}
+
+/**
+ * 시뮬레이션 업데이트 훅
+ */
+export function useUpdateSimulation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<{ title: string; description?: string }> }) =>
+      simulationService.update(id, updates),
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: simulationKeys.list() })
+    },
+  })
+}
+
 // ============================================
 // 포트폴리오 (Portfolio) 훅
 // ============================================
