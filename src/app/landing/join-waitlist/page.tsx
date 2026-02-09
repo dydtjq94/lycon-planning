@@ -112,7 +112,7 @@ export default function JoinWaitlistPage() {
               </div>
               <h1 className={styles.successTitle}>신청이 완료되었습니다</h1>
               <p className={styles.successDesc}>
-                손균우 은퇴 설계 전문가가
+                Lycon 은퇴 설계 전문가가
                 <br />
                 빠른 시일 내에 연락드리겠습니다.
               </p>
@@ -128,14 +128,17 @@ export default function JoinWaitlistPage() {
               <h1 className={styles.title}>무료 은퇴 검진 신청</h1>
               {waitlistCount !== null && (
                 <p className={styles.desc}>
-                  지금 신청하시면 손균우 은퇴 설계 전문가가{" "}
+                  지금 신청하시면 Lycon 은퇴 설계 전문가가
+                  <br />
                   <strong className={styles.countHighlight}>{waitlistCount + 1}번째</strong>로
                   연락드립니다.
                 </p>
               )}
               {waitlistCount === null && (
                 <p className={styles.desc}>
-                  지금 신청하시면 손균우 은퇴 설계 전문가가 연락드립니다.
+                  지금 신청하시면 Lycon 은퇴 설계 전문가가
+                  <br />
+                  연락드립니다.
                 </p>
               )}
 
