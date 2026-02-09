@@ -557,8 +557,8 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                 <th>저축</th>
                 <th>투자</th>
                 <th>부동산</th>
-                <th>실물자산</th>
-                <th>무담보부채</th>
+                <th>실물 자산</th>
+                <th>금융 부채</th>
                 <th></th>
               </tr>
             </thead>
@@ -708,7 +708,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                   </div>
                 </div>
                 <div className={styles.formGroup}>
-                  <label>실물자산</label>
+                  <label>실물 자산</label>
                   <div className={styles.inputWrapper}>
                     <input
                       type="number"

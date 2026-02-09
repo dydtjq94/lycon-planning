@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
-  Search, RefreshCw, ChevronLeft, ChevronRight, Settings,
+  Search, RefreshCw, ChevronLeft, ChevronRight, Settings, Tags,
   Landmark, Home, Briefcase, GraduationCap, Plane, Heart,
   TrendingUp, Wallet, PiggyBank, Shield, Target, Umbrella,
   Baby, Car, Gem, Building2, Palmtree, Rocket, Star, Coffee,
   type LucideIcon,
 } from "lucide-react";
 import { AccountManagementModal } from "./components/AccountManagementModal";
+import { CategoryManagementModal } from "./components/CategoryManagementModal";
 import { useFinancialContext } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
@@ -204,14 +205,25 @@ export function DashboardContent() {
   const [portfolioSearchLoading, setPortfolioSearchLoading] = useState(false);
   const portfolioSearchTriggerRef = useRef<(() => void) | null>(null);
 
-  // 가계부 년/월 상태
+  // 가계부 주간 상태
   const today = new Date();
-  const [budgetYear, setBudgetYear] = useState(today.getFullYear());
-  const [budgetMonth, setBudgetMonth] = useState(today.getMonth() + 1);
+  // 월요일 구하기 (0=일요일이므로 조정 필요)
+  const getMonday = (date: Date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // 일요일이면 이전 주 월요일
+    d.setDate(diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+  const [budgetWeekStart, setBudgetWeekStart] = useState(() => getMonday(today));
 
   // 계좌 관리 모달
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "securities">("checking");
+
+  // 카테고리 관리 모달
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   // 종목 자동완성
   interface StockItem {
@@ -640,7 +652,7 @@ export function DashboardContent() {
           />
         );
       case "household-budget":
-        return <BudgetTab profileId={profile.id} year={budgetYear} month={budgetMonth} />;
+        return <BudgetTab profileId={profile.id} weekStart={budgetWeekStart} />;
       case "checking-account":
         return <CheckingAccountTab profileId={profile.id} />;
       case "savings-deposits":
@@ -843,33 +855,31 @@ export function DashboardContent() {
               </span>
             )}
 
-            {/* 가계부 월 선택기 */}
+            {/* 가계부 주간 선택기 */}
             {currentSection === "household-budget" && (
               <div className={styles.budgetMonthSelector}>
                 <button
                   onClick={() => {
-                    if (budgetMonth === 1) {
-                      setBudgetYear((y) => y - 1);
-                      setBudgetMonth(12);
-                    } else {
-                      setBudgetMonth((m) => m - 1);
-                    }
+                    const newDate = new Date(budgetWeekStart);
+                    newDate.setDate(newDate.getDate() - 7);
+                    setBudgetWeekStart(newDate);
                   }}
                   className={styles.budgetMonthBtn}
                 >
                   <ChevronLeft size={16} />
                 </button>
                 <span className={styles.budgetMonthLabel}>
-                  {budgetYear}년 {budgetMonth}월
+                  {budgetWeekStart.getMonth() + 1}.{budgetWeekStart.getDate()} - {(() => {
+                    const endDate = new Date(budgetWeekStart);
+                    endDate.setDate(endDate.getDate() + 6);
+                    return `${endDate.getMonth() + 1}.${endDate.getDate()}`;
+                  })()}
                 </span>
                 <button
                   onClick={() => {
-                    if (budgetMonth === 12) {
-                      setBudgetYear((y) => y + 1);
-                      setBudgetMonth(1);
-                    } else {
-                      setBudgetMonth((m) => m + 1);
-                    }
+                    const newDate = new Date(budgetWeekStart);
+                    newDate.setDate(newDate.getDate() + 7);
+                    setBudgetWeekStart(newDate);
                   }}
                   className={styles.budgetMonthBtn}
                 >
@@ -878,21 +888,35 @@ export function DashboardContent() {
               </div>
             )}
 
-            {/* 계좌 관리 버튼 (가계부, 정기예금/적금, 포트폴리오) */}
+            {/* 관리 버튼들 (가계부, 정기예금/적금, 포트폴리오) */}
             {["household-budget", "savings-deposits", "portfolio"].includes(currentSection) && (
-              <button
-                className={styles.accountManageBtn}
-                onClick={() => {
-                  // 섹션에 따라 적절한 탭 열기
-                  if (currentSection === "household-budget") setAccountModalTab("checking");
-                  else if (currentSection === "savings-deposits") setAccountModalTab("savings");
-                  else if (currentSection === "portfolio") setAccountModalTab("securities");
-                  setShowAccountModal(true);
-                }}
-              >
-                <Settings size={14} />
-                계좌 관리
-              </button>
+              <div className={styles.headerBtnGroup}>
+                {/* 카테고리 관리 버튼 (가계부만) */}
+                {currentSection === "household-budget" && (
+                  <button
+                    className={styles.accountManageBtn}
+                    onClick={() => setShowCategoryModal(true)}
+                  >
+                    <Tags size={14} />
+                    카테고리 관리
+                  </button>
+                )}
+
+                {/* 계좌 관리 버튼 */}
+                <button
+                  className={styles.accountManageBtn}
+                  onClick={() => {
+                    // 섹션에 따라 적절한 탭 열기
+                    if (currentSection === "household-budget") setAccountModalTab("checking");
+                    else if (currentSection === "savings-deposits") setAccountModalTab("savings");
+                    else if (currentSection === "portfolio") setAccountModalTab("securities");
+                    setShowAccountModal(true);
+                  }}
+                >
+                  <Settings size={14} />
+                  계좌 관리
+                </button>
+              </div>
             )}
 
             {/* 포트폴리오 검색 (포트폴리오 탭에서만 표시) */}
@@ -962,6 +986,14 @@ export function DashboardContent() {
           profileId={profile.id}
           onClose={() => setShowAccountModal(false)}
           initialTab={accountModalTab}
+        />
+      )}
+
+      {/* 카테고리 관리 모달 */}
+      {showCategoryModal && (
+        <CategoryManagementModal
+          profileId={profile.id}
+          onClose={() => setShowCategoryModal(false)}
         />
       )}
     </div>

@@ -156,6 +156,108 @@
   color: var(--dashboard-text-muted);
 }
 
+/* 주간 달력 */
+.weekCalendar {
+  display: flex;
+  gap: 0;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.weekDay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 8px 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 0;
+}
+
+.weekDay:hover {
+  background: var(--dashboard-hover-bg);
+}
+
+.weekDayToday {
+  background: var(--dashboard-bg-secondary);
+}
+
+.weekDayToday .weekDayNum {
+  background: var(--accent-primary, #007aff);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.weekDaySelected {
+  background: color-mix(in srgb, var(--accent-primary, #007aff) 10%, transparent);
+}
+
+.weekDayHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.weekDayName {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+  font-weight: 400;
+}
+
+.weekDayNum {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+}
+
+.weekDayTotals {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  min-height: 24px;
+  margin-top: 2px;
+}
+
+.weekDayIncome {
+  font-size: 10px;
+  color: var(--chart-line-color);
+  font-weight: 500;
+}
+
+.weekDayExpense {
+  font-size: 10px;
+  color: var(--dashboard-text-secondary);
+  font-weight: 500;
+}
+
+.weekDayNet {
+  font-size: 10px;
+  color: var(--chart-profit-color);
+  font-weight: 600;
+  padding-top: 2px;
+  border-top: 1px solid var(--dashboard-border-light);
+  margin-top: 2px;
+}
+
+.weekDayNetNegative {
+  font-size: 10px;
+  color: var(--chart-loss-color);
+  font-weight: 600;
+  padding-top: 2px;
+  border-top: 1px solid var(--dashboard-border-light);
+  margin-top: 2px;
+}
+
 /* 수입/지출 요약 헤더 */
 .summaryHeader {
   display: flex;

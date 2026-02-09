@@ -41,7 +41,7 @@ const TABS: { id: TabType; label: string; color: string }[] = [
   { id: "investment", label: "투자", color: "#22c55e" },
   { id: "realEstate", label: "부동산", color: "#8b5cf6" },
   { id: "realAsset", label: "실물 자산", color: "#f59e0b" },
-  { id: "debt", label: "무담보 부채", color: "#94a3b8" },
+  { id: "debt", label: "금융 부채", color: "#94a3b8" },
   { id: "profile", label: "프로필", color: "#6b7280" },
 ];
 
@@ -98,7 +98,7 @@ interface InvestmentRealEstateData {
   loanRepaymentType: RepaymentType | null;
 }
 
-// 실물자산 편집 데이터
+// 실물 자산 편집 데이터
 interface RealAssetData {
   id: string;
   itemType: string;
@@ -113,7 +113,7 @@ interface RealAssetData {
   loanRepaymentType: RepaymentType | null; // 상환방식
 }
 
-// 무담보 부채 편집 데이터
+// 금융 부채 편집 데이터
 interface DebtData {
   id: string;
   itemType: string;
@@ -207,7 +207,7 @@ const MODAL_ITEMS: Record<ModalCategory, { title: string; color: string; items: 
     ],
   },
   debt: {
-    title: "무담보 부채",
+    title: "금융 부채",
     color: "#94a3b8",
     items: [
       { value: "credit", label: "신용대출", icon: <Wallet size={20} /> },
@@ -218,7 +218,7 @@ const MODAL_ITEMS: Record<ModalCategory, { title: string; color: string; items: 
   },
 };
 
-// 무담보 부채 카드 컴포넌트
+// 금융 부채 카드 컴포넌트
 interface DebtCardProps {
   item: FinancialSnapshotItem;
   currentYear: number;
@@ -531,7 +531,7 @@ function OtherInvestmentCard({ item, isCouple, onUpdate, onDelete }: OtherInvest
   );
 }
 
-// 실물자산 카드 컴포넌트
+// 실물 자산 카드 컴포넌트
 interface RealAssetCardProps {
   item: FinancialSnapshotItem;
   isCouple: boolean;
@@ -1818,11 +1818,11 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
   const [editingInvestmentId, setEditingInvestmentId] = useState<string | null>(null);
   const [editInvestment, setEditInvestment] = useState<Partial<InvestmentRealEstateData>>({});
 
-  // 실물자산 편집 상태
+  // 실물 자산 편집 상태
   const [editingRealAssetId, setEditingRealAssetId] = useState<string | null>(null);
   const [editRealAsset, setEditRealAsset] = useState<Partial<RealAssetData>>({});
 
-  // 무담보 부채 편집 상태
+  // 금융 부채 편집 상태
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
   const [editDebt, setEditDebt] = useState<Partial<DebtData>>({});
 
@@ -2364,7 +2364,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     const realEstateLoan = residenceLoan + investmentRealEstateLoan;
     const realEstate = realEstateGross - realEstateLoan; // 순자산
 
-    // 실물자산: 자동차, 귀금속, 미술품 등
+    // 실물 자산: 자동차, 귀금속, 미술품 등
     const realAssetItems = items.filter(i => i.category === "asset" && ["car", "precious_metal", "art", "other"].includes(i.item_type));
 
     const realAssetGross = realAssetItems.reduce((sum, i) => sum + i.amount, 0);
@@ -2374,7 +2374,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     }, 0);
     const realAsset = realAssetGross - realAssetInstallment; // 순자산
 
-    // 무담보부채: 담보대출/할부 제외 (자산에 연결된 부채 제외)
+    // 금융 부채: 담보대출/할부 제외 (자산에 연결된 부채 제외)
     const debt = items
       .filter(i => i.category === "debt")
       .filter(i => {
@@ -2459,11 +2459,11 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
 
     let filtered = items.filter(i => i.category === category && allTypes.includes(i.item_type));
 
-    // 부채 탭에서는 자산에 연결된 부채 제외 (무담보 부채만 표시)
+    // 부채 탭에서는 자산에 연결된 부채 제외 (금융 부채만 표시)
     if (activeTab === "debt") {
       filtered = filtered.filter(i => {
         const meta = i.metadata as Record<string, unknown>;
-        return !meta?.source; // source가 없는 것만 (무담보 부채)
+        return !meta?.source; // source가 없는 것만 (금융 부채)
       });
     }
 
@@ -2473,7 +2473,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
   // 차트 데이터 - 순자산 (메인) - 부채 포함
   const hasData = totals.savings > 0 || totals.investment > 0 || totals.realEstate > 0 || totals.realAsset > 0 || totals.debt > 0;
   const chartData = {
-    labels: hasData ? ["저축", "투자", "부동산", "실물자산", "무담보부채"] : ["데이터 없음"],
+    labels: hasData ? ["저축", "투자", "부동산", "실물 자산", "금융 부채"] : ["데이터 없음"],
     datasets: [{
       data: hasData
         ? [totals.savings || 0.01, totals.investment || 0.01, totals.realEstate || 0.01, totals.realAsset || 0.01, totals.debt || 0.01]
@@ -2512,7 +2512,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     };
   }, [realEstateBreakdown, totals.realEstate, categoryShades.realEstate]);
 
-  // 실물자산 유형별 데이터 (부동산 제외)
+  // 실물 자산 유형별 데이터 (부동산 제외)
   const realAssetBreakdown = useMemo(() => {
     const breakdown = new Map<string, number>();
     items
@@ -2565,7 +2565,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     };
   }, [debtBreakdown, totals.debt, categoryShades.debt]);
 
-  // 현금성 자산 차트 (저축 계좌들 + 투자 계좌들 세부)
+  // 금융 자산 차트 (저축 계좌들 + 투자 계좌들 세부)
   const cashAssetChartData = useMemo(() => {
     const cashItems: { label: string; value: number; color: string }[] = [];
 
@@ -2606,7 +2606,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     };
   }, [savingsAccountValues, accountValues, totals.savings, totals.investment, categoryShades.savings, categoryShades.investment, chartScaleColors]);
 
-  // 실물 자산 차트 (부동산 + 실물자산 세부 항목)
+  // 실물 자산 차트 (부동산 + 실물 자산 세부 항목)
   const realAssetTotalChartData = useMemo(() => {
     const realItems: { label: string; value: number; color: string }[] = [];
 
@@ -2630,7 +2630,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
         }
       });
 
-    // 실물자산 항목들
+    // 실물 자산 항목들
     items
       .filter(i => i.category === "asset" && ["car", "precious_metal", "art", "other"].includes(i.item_type))
       .forEach((item, idx) => {
@@ -3005,7 +3005,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     setEditInvestment({});
   };
 
-  // 실물자산 추가 - DB에 바로 저장
+  // 실물 자산 추가 - DB에 바로 저장
   const handleAddRealAsset = async (itemType: string) => {
     if (!currentSnapshot) return;
     if (createMutation.isPending) return;
@@ -3025,7 +3025,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     }
   };
 
-  // 실물자산 편집 시작
+  // 실물 자산 편집 시작
   const startEditRealAsset = (id: string) => {
     const item = items.find(i => i.id === id);
     if (!item) return;
@@ -3047,7 +3047,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     setEditingRealAssetId(id);
   };
 
-  // 실물자산 저장
+  // 실물 자산 저장
   const saveRealAsset = () => {
     if (!currentSnapshot || !editingRealAssetId) return;
 
@@ -3071,7 +3071,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       loan_repayment_type: editData.hasLoan ? editData.loanRepaymentType : null,
     };
 
-    // 실물자산 항목 업데이트 (백그라운드)
+    // 실물 자산 항목 업데이트 (백그라운드)
     updateMutation.mutate({
       id: itemId,
       updates: {
@@ -3101,7 +3101,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
         updateMutation.mutate({
           id: existingDebt.id,
           updates: {
-            title: `${editData.title || '실물자산'} 담보대출`,
+            title: `${editData.title || '실물 자산'} 담보대출`,
             amount: editData.loanAmount,
             metadata: debtMetadata,
           },
@@ -3111,7 +3111,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
           snapshot_id: currentSnapshot.id,
           category: "debt",
           item_type: "mortgage",
-          title: `${editData.title || '실물자산'} 담보대출`,
+          title: `${editData.title || '실물 자산'} 담보대출`,
           amount: editData.loanAmount,
           owner: "self",
           metadata: debtMetadata,
@@ -3135,13 +3135,13 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     }, 1000);
   };
 
-  // 실물자산 편집 취소
+  // 실물 자산 편집 취소
   const cancelEditRealAsset = () => {
     setEditingRealAssetId(null);
     setEditRealAsset({});
   };
 
-  // 무담보 부채 추가 - DB에 바로 저장
+  // 금융 부채 추가 - DB에 바로 저장
   const handleAddDebt = async (itemType: string) => {
     if (!currentSnapshot) return;
     if (createMutation.isPending) return;
@@ -3161,7 +3161,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     }
   };
 
-  // 무담보 부채 편집 시작
+  // 금융 부채 편집 시작
   const startEditDebt = (id: string) => {
     const item = items.find(i => i.id === id);
     if (!item) return;
@@ -3212,7 +3212,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     }
   };
 
-  // 무담보 부채 저장
+  // 금융 부채 저장
   const saveDebt = () => {
     if (!currentSnapshot || !editingDebtId) return;
 
@@ -3251,7 +3251,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     }, 1000);
   };
 
-  // 무담보 부채 편집 취소
+  // 금융 부채 편집 취소
   const cancelEditDebt = () => {
     setEditingDebtId(null);
     setEditDebt({});
@@ -3527,7 +3527,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
             <div className={styles.chartBoxSmall}>
               <Doughnut data={cashAssetChartData} options={cashChartOptions} />
               <div className={styles.chartCenter}>
-                <span className={styles.chartLabelSmall}>현금성 자산</span>
+                <span className={styles.chartLabelSmall}>금융 자산</span>
                 <span className={styles.chartAmountSmall}>{formatMoney(cashAssetChartData.total)}</span>
               </div>
             </div>
@@ -4124,7 +4124,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
             </div>
           </div>
         ) : activeTab === "realAsset" ? (
-          /* 실물자산 탭 - 카드 UI */
+          /* 실물 자산 탭 - 카드 UI */
           <div className={styles.simpleSection}>
             <div className={styles.simpleSectionHeader}>
               <span className={styles.simpleSectionTitle}>실물 자산</span>
@@ -4170,10 +4170,10 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
             )}
           </div>
         ) : activeTab === "debt" ? (
-          /* 무담보 부채 탭 */
+          /* 금융 부채 탭 */
           <div className={styles.simpleSection}>
             <div className={styles.simpleSectionHeader}>
-              <span className={styles.simpleSectionTitle}>무담보 부채</span>
+              <span className={styles.simpleSectionTitle}>금융 부채</span>
               <span className={styles.simpleSectionDesc}>신용대출, 카드론 등 담보 없는 부채</span>
             </div>
 
@@ -4191,7 +4191,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
             <div style={{ padding: '16px 20px' }}>
               <button className={styles.addButtonSmall} onClick={() => setAddModalCategory("debt")}>
                 <Plus size={14} />
-                무담보 부채 추가
+                금융 부채 추가
               </button>
             </div>
 

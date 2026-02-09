@@ -210,6 +210,13 @@
   color: var(--sidebar-text-muted);
 }
 
+/* 헤더 버튼 그룹 */
+.headerBtnGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* 계좌 관리 버튼 - 담당 전문가 라벨과 동일한 스타일 */
 .accountManageBtn {
   display: flex;

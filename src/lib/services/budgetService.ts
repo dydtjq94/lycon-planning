@@ -104,6 +104,55 @@ export async function createBudgetCategory(
   return data
 }
 
+// 카테고리 수정
+export async function updateBudgetCategory(
+  categoryId: string,
+  name: string
+): Promise<BudgetCategory> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('budget_categories')
+    .update({ name })
+    .eq('id', categoryId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// 카테고리 삭제
+export async function deleteBudgetCategory(categoryId: string): Promise<void> {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('budget_categories')
+    .delete()
+    .eq('id', categoryId)
+
+  if (error) throw error
+}
+
+// 카테고리 순서 변경
+export async function reorderBudgetCategories(
+  categoryIds: string[]
+): Promise<void> {
+  const supabase = createClient()
+
+  // 각 카테고리의 sort_order를 순서대로 업데이트
+  const updates = categoryIds.map((id, index) =>
+    supabase
+      .from('budget_categories')
+      .update({ sort_order: index })
+      .eq('id', id)
+  )
+
+  const results = await Promise.all(updates)
+  const errors = results.filter((r) => r.error)
+  if (errors.length > 0) throw errors[0].error
+}
+
 // ============================================
 // 거래 관련
 // ============================================

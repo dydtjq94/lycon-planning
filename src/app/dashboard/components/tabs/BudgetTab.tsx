@@ -23,9 +23,11 @@ import styles from "./BudgetTab.module.css";
 
 interface BudgetTabProps {
   profileId: string;
-  year: number;
-  month: number;
+  weekStart: Date;
 }
+
+// 요일 이름
+const DAY_NAMES = ["월", "화", "수", "목", "금", "토", "일"];
 
 // 은행 목록
 const BANK_OPTIONS = [
@@ -81,11 +83,35 @@ const CARD_COMPANY_OPTIONS = [
   "기타",
 ];
 
-export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth }: BudgetTabProps) {
+export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
   const supabase = createClient();
   const { colors: chartColors, chartScaleColors } = useChartTheme();
   const [showForm, setShowForm] = useState(false);
   const [formType, setFormType] = useState<TransactionType>("expense");
+  const [selectedDay, setSelectedDay] = useState<number | null>(null); // null = 전체 보기
+
+  // 주간 날짜 계산
+  const weekDays = useMemo(() => {
+    const days: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }, [weekStart]);
+
+  // 오늘 날짜
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // 데이터 조회용 년/월 (주간이 걸친 월들 모두 가져오기)
+  const selectedYear = weekStart.getFullYear();
+  const selectedMonth = weekStart.getMonth() + 1;
+  const weekEndDate = new Date(weekStart);
+  weekEndDate.setDate(weekEndDate.getDate() + 6);
+  const endYear = weekEndDate.getFullYear();
+  const endMonth = weekEndDate.getMonth() + 1;
 
   // 인라인 입력 상태
   const [incomeInput, setIncomeInput] = useState({ day: "", amount: "", title: "", category: "", accountId: "" });
@@ -132,6 +158,8 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   // 모든 계좌 잔액 (계좌별)
   const [confirmBalances, setConfirmBalances] = useState<Record<string, string>>({});
+  // 잔액 계산용 거래 (balance_updated_at 이후 모든 거래)
+  const [balanceTransactions, setBalanceTransactions] = useState<BudgetTransaction[]>([]);
 
   // 은행 계좌 로드
   useEffect(() => {
@@ -159,6 +187,57 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
 
     loadMonthlyBalances();
   }, [accounts]);
+
+  // 잔액 계산용 거래 로드 (balance_updated_at 이후 모든 거래)
+  useEffect(() => {
+    const loadBalanceTransactions = async () => {
+      if (accounts.length === 0) {
+        setBalanceTransactions([]);
+        return;
+      }
+
+      // 가장 오래된 balance_updated_at 찾기
+      const balanceDates = accounts
+        .filter((a) => a.balance_updated_at)
+        .map((a) => new Date(a.balance_updated_at!));
+
+      if (balanceDates.length === 0) {
+        // balance_updated_at이 없으면 모든 거래 가져오기
+        const { data, error } = await supabase
+          .from("budget_transactions")
+          .select("*")
+          .eq("profile_id", profileId)
+          .order("year", { ascending: true })
+          .order("month", { ascending: true })
+          .order("day", { ascending: true });
+
+        if (!error && data) {
+          setBalanceTransactions(data);
+        }
+        return;
+      }
+
+      const oldestDate = new Date(Math.min(...balanceDates.map(d => d.getTime())));
+      const oldestYear = oldestDate.getFullYear();
+      const oldestMonth = oldestDate.getMonth() + 1;
+
+      // 해당 월 이후 모든 거래 가져오기
+      const { data, error } = await supabase
+        .from("budget_transactions")
+        .select("*")
+        .eq("profile_id", profileId)
+        .or(`year.gt.${oldestYear},and(year.eq.${oldestYear},month.gte.${oldestMonth})`)
+        .order("year", { ascending: true })
+        .order("month", { ascending: true })
+        .order("day", { ascending: true });
+
+      if (!error && data) {
+        setBalanceTransactions(data);
+      }
+    };
+
+    loadBalanceTransactions();
+  }, [accounts, profileId]);
 
   const loadAccounts = async () => {
     setAccountsLoading(true);
@@ -385,13 +464,69 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
     setEditingPaymentMethodId(null);
   };
 
-  // 데이터 조회
+  // 데이터 조회 (두 달에 걸칠 수 있으므로 둘 다 조회)
   const { data: categories = [] } = useBudgetCategories(profileId);
-  const { data: transactions = [], isLoading } = useBudgetTransactions(
+  const { data: transactions1 = [], isLoading: isLoading1 } = useBudgetTransactions(
     profileId,
     selectedYear,
     selectedMonth
   );
+  const { data: transactions2 = [], isLoading: isLoading2 } = useBudgetTransactions(
+    profileId,
+    endYear,
+    endMonth
+  );
+  const isLoading = isLoading1 || isLoading2;
+
+  // 두 달 데이터 합치고 중복 제거
+  const allTransactions = useMemo(() => {
+    const merged = [...transactions1, ...transactions2];
+    const seen = new Set<string>();
+    return merged.filter((tx) => {
+      if (seen.has(tx.id)) return false;
+      seen.add(tx.id);
+      return true;
+    });
+  }, [transactions1, transactions2]);
+
+  // 주간 내 거래만 필터
+  const weekTransactions = useMemo(() => {
+    return allTransactions.filter((tx) => {
+      const txDate = new Date(tx.year, tx.month - 1, tx.day || 1);
+      txDate.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      return txDate >= weekStart && txDate <= weekEnd;
+    });
+  }, [allTransactions, weekStart]);
+
+  // 선택된 날짜 기준 거래 (selectedDay가 null이면 전체)
+  const transactions = useMemo(() => {
+    if (selectedDay === null) return weekTransactions;
+    return weekTransactions.filter((tx) => tx.day === selectedDay);
+  }, [weekTransactions, selectedDay]);
+
+  // 일별 수입/지출 합계
+  const dailyTotals = useMemo(() => {
+    const totals = new Map<number, { income: number; expense: number }>();
+    weekDays.forEach((d) => {
+      totals.set(d.getDate(), { income: 0, expense: 0 });
+    });
+    weekTransactions.forEach((tx) => {
+      const day = tx.day;
+      if (day && totals.has(day)) {
+        const current = totals.get(day)!;
+        if (tx.type === "income") {
+          current.income += tx.amount;
+        } else {
+          current.expense += tx.amount;
+        }
+      }
+    });
+    return totals;
+  }, [weekTransactions, weekDays]);
+
   const { data: expenseSummary = [] } = useMonthlySummary(
     profileId,
     selectedYear,
@@ -745,43 +880,45 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
   }, [accounts]);
 
   // 계좌별 수입/지출 및 예상 잔액 계산
+  // balance_updated_at 이후의 거래만 계산하여 current_balance에 더함
   const accountBalanceInfo = useMemo(() => {
     const info: Record<string, { income: number; expense: number; prevBalance: number | null; expectedBalance: number }> = {};
 
     accounts.forEach((account) => {
-      // 해당 계좌의 수입/지출 계산
-      const accountIncome = transactions
-        .filter((tx) => tx.type === "income" && tx.account_id === account.id)
+      const balanceDate = account.balance_updated_at ? new Date(account.balance_updated_at) : null;
+
+      // 해당 계좌의 수입/지출 계산 (balance_updated_at 이후 거래만, balanceTransactions 사용)
+      const accountIncome = balanceTransactions
+        .filter((tx) => {
+          if (tx.type !== "income" || tx.account_id !== account.id) return false;
+          if (!balanceDate) return true; // 날짜 없으면 모든 거래 포함
+          const txDate = new Date(tx.year, tx.month - 1, tx.day ?? 1);
+          return txDate > balanceDate;
+        })
         .reduce((sum, tx) => sum + tx.amount, 0);
-      const accountExpense = transactions
-        .filter((tx) => tx.type === "expense" && tx.account_id === account.id)
+      const accountExpense = balanceTransactions
+        .filter((tx) => {
+          if (tx.type !== "expense" || tx.account_id !== account.id) return false;
+          if (!balanceDate) return true;
+          const txDate = new Date(tx.year, tx.month - 1, tx.day ?? 1);
+          return txDate > balanceDate;
+        })
         .reduce((sum, tx) => sum + tx.amount, 0);
 
-      // 전월 확정 잔액 찾기
-      let prevYear = selectedYear;
-      let prevMonth = selectedMonth - 1;
-      if (prevMonth === 0) {
-        prevYear -= 1;
-        prevMonth = 12;
-      }
-      const prevBalance = monthlyBalances.find(
-        (b) => b.account_id === account.id && b.year === prevYear && b.month === prevMonth
-      );
-
-      // 시작 잔액: 전월 확정 잔액 또는 계좌 초기 잔액
-      const startBalance = prevBalance?.confirmed_balance ?? (account.current_balance || 0);
+      // 시작 잔액: current_balance (잔액 기록 시점의 금액)
+      const startBalance = account.current_balance || 0;
       const expectedBalance = startBalance + accountIncome - accountExpense;
 
       info[account.id] = {
         income: accountIncome,
         expense: accountExpense,
-        prevBalance: prevBalance?.confirmed_balance ?? null,
+        prevBalance: startBalance,
         expectedBalance,
       };
     });
 
     return info;
-  }, [accounts, transactions, monthlyBalances, selectedYear, selectedMonth]);
+  }, [accounts, balanceTransactions]);
 
   // 로딩 중일 때 스켈레톤 표시
   if (accountsLoading || isLoading) {
@@ -902,7 +1039,43 @@ export function BudgetTab({ profileId, year: selectedYear, month: selectedMonth 
         </button>
       </div>
 
-      {/* 수입/지출 요약 + 월 선택 */}
+      {/* 주간 달력 */}
+      <div className={styles.weekCalendar}>
+        {weekDays.map((day, idx) => {
+          const dayNum = day.getDate();
+          const isToday = day.getTime() === today.getTime();
+          const isSelected = selectedDay === dayNum;
+          const totals = dailyTotals.get(dayNum) || { income: 0, expense: 0 };
+          const net = totals.income - totals.expense;
+          return (
+            <button
+              key={idx}
+              className={`${styles.weekDay} ${isToday ? styles.weekDayToday : ""} ${isSelected ? styles.weekDaySelected : ""}`}
+              onClick={() => setSelectedDay(isSelected ? null : dayNum)}
+            >
+              <span className={styles.weekDayHeader}>
+                <span className={styles.weekDayName}>{DAY_NAMES[idx]}</span>
+                <span className={`${styles.weekDayNum} ${isToday ? styles.weekDayNumToday : ""}`}>{dayNum}</span>
+              </span>
+              <div className={styles.weekDayTotals}>
+                {totals.income > 0 && (
+                  <span className={styles.weekDayIncome}>+{formatWon(totals.income)}</span>
+                )}
+                {totals.expense > 0 && (
+                  <span className={styles.weekDayExpense}>-{formatWon(totals.expense)}</span>
+                )}
+                {(totals.income > 0 || totals.expense > 0) && (
+                  <span className={net >= 0 ? styles.weekDayNet : styles.weekDayNetNegative}>
+                    {net >= 0 ? "+" : ""}{formatWon(net)}
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 수입/지출 요약 */}
       <div className={styles.summaryHeader}>
         <div className={styles.summaryCharts}>
           {/* 수입 차트 */}
