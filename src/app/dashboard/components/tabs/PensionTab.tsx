@@ -15,6 +15,7 @@ import {
   usePersonalPensions,
   useInvalidateByCategory,
 } from '@/hooks/useFinancialData'
+import { TabSkeleton } from './shared/TabSkeleton'
 import styles from './PensionTab.module.css'
 
 interface PensionTabProps {
@@ -109,7 +110,7 @@ export function PensionTab({
   if (isLoading && hasNoData) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+        <TabSkeleton sections={3} itemsPerSection={2} />
       </div>
     )
   }

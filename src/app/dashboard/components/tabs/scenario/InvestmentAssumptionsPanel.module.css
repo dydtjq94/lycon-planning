@@ -1,9 +1,7 @@
 .panel {
   width: 100%;
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 12px;
-  overflow: hidden;
+  padding-top: 24px;
+  border-top: 1px solid var(--dashboard-border);
 }
 
 .header {
@@ -11,16 +9,12 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 14px 16px;
+  padding: 0;
+  padding-bottom: 16px;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--dashboard-text);
-  transition: background 0.15s;
-}
-
-.header:hover {
-  background: var(--dashboard-hover-bg);
 }
 
 .headerLeft {
@@ -30,7 +24,7 @@
 }
 
 .headerTitle {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -44,48 +38,46 @@
 }
 
 .content {
-  padding: 16px;
-  border-top: 1px solid var(--dashboard-border);
+  padding: 0;
 }
 
 .description {
   font-size: 13px;
   color: var(--dashboard-text-secondary);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   line-height: 1.5;
 }
 
 .rateList {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
 }
 
 .rateItem {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px;
-  background: var(--dashboard-bg-secondary);
-  border-radius: 8px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.rateItem:last-child {
+  border-bottom: none;
 }
 
 .rateHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   flex: 1;
 }
 
 .rateIcon {
-  width: 36px;
-  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--dashboard-card-bg);
-  border-radius: 8px;
   color: var(--dashboard-text-secondary);
   flex-shrink: 0;
 }
@@ -97,13 +89,13 @@
 }
 
 .rateLabel {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--dashboard-text);
 }
 
 .rateDesc {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--dashboard-text-secondary);
   line-height: 1.4;
 }
@@ -117,12 +109,12 @@
 
 .rateInput {
   width: 70px;
-  padding: 8px 10px;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
-  background: var(--dashboard-card-bg);
+  padding: 6px 0;
+  border: none;
+  border-bottom: 1px solid var(--dashboard-border);
+  background: transparent;
   color: var(--dashboard-text);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   text-align: right;
   outline: none;
@@ -130,7 +122,7 @@
 }
 
 .rateInput:focus {
-  border-color: var(--accent-color, #007aff);
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .rateInput:disabled {
@@ -138,7 +130,7 @@
   cursor: not-allowed;
 }
 
-/* 숫자 입력 스핀 버튼 제거 */
+/* spin button removal */
 .rateInput::-webkit-outer-spin-button,
 .rateInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -146,37 +138,157 @@
 }
 
 .rateUnit {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--dashboard-text-secondary);
   font-weight: 500;
 }
 
 .footer {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--dashboard-border);
+  margin-top: 16px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .resetButton {
-  padding: 8px 14px;
+  padding: 0;
   background: none;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
+  border: none;
+  font-size: 13px;
+  font-weight: 400;
   color: var(--dashboard-text-secondary);
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: color 0.15s;
 }
 
 .resetButton:hover {
-  border-color: var(--dashboard-text-secondary);
   color: var(--dashboard-text);
 }
 
 .resetButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Skeleton animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--dashboard-hover-bg) 25%, var(--dashboard-border) 50%, var(--dashboard-hover-bg) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeletonHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+}
+
+.skeletonHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skeletonIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.skeletonTitle {
+  width: 60px;
+  height: 18px;
+}
+
+.skeletonBadge {
+  width: 70px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+.skeletonChevron {
+  width: 18px;
+  height: 18px;
+}
+
+.skeletonContent {
+  padding: 0;
+}
+
+.skeletonDesc {
+  width: 100%;
+  height: 36px;
+  margin-bottom: 16px;
+}
+
+.skeletonRateList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.skeletonRateItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.skeletonRateItem:last-child {
+  border-bottom: none;
+}
+
+.skeletonRateHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.skeletonRateIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.skeletonRateInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skeletonRateLabel {
+  width: 90px;
+  height: 16px;
+}
+
+.skeletonRateDesc {
+  width: 180px;
+  height: 14px;
+}
+
+.skeletonRateInput {
+  width: 70px;
+  height: 28px;
+}
+
+.skeletonFooter {
+  margin-top: 16px;
+}
+
+.skeletonResetBtn {
+  width: 100px;
+  height: 16px;
 }

@@ -71,6 +71,15 @@ export interface YearlySnapshot {
   assetBreakdown: { title: string; amount: number }[]
   debtBreakdown: { title: string; amount: number }[]
   pensionBreakdown: { title: string; amount: number }[]
+
+  // V2 옵셔널 필드 (하위 호환)
+  cashBalance?: number
+  physicalAssetValue?: number
+  taxPaid?: number
+  savingsBreakdown?: { id: string; title: string; balance: number; type: string }[]
+  realEstateBreakdown?: { id: string; title: string; value: number; isSold: boolean }[]
+  physicalAssetBreakdown?: { id: string; title: string; value: number }[]
+  events?: string[]
 }
 
 export interface SimulationResult {

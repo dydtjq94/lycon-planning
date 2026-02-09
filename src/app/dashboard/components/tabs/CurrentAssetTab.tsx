@@ -135,7 +135,6 @@ const ITEM_TYPES: Record<TabType, { value: string; label: string }[]> = {
   ],
   investment: [
     { value: "gold", label: "실물 금" },
-    { value: "retirement_fund", label: "퇴직연금 투자" },
     { value: "fund", label: "펀드" },
     { value: "bond", label: "채권" },
     { value: "crypto", label: "암호화폐" },
@@ -179,7 +178,6 @@ const MODAL_ITEMS: Record<ModalCategory, { title: string; color: string; items: 
     color: "#22c55e",
     items: [
       { value: "gold", label: "실물 금", icon: <Coins size={20} /> },
-      { value: "retirement_fund", label: "퇴직연금 투자", icon: <Briefcase size={20} /> },
       { value: "fund", label: "펀드", icon: <TrendingUp size={20} /> },
       { value: "bond", label: "채권", icon: <Landmark size={20} /> },
       { value: "crypto", label: "암호화폐", icon: <CircleDollarSign size={20} /> },
@@ -2200,9 +2198,12 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
   const isInvestmentDataReady = !isTransactionsLoading && !isPriceLoading && !isAccountsLoading;
   const isSavingsDataReady = !isSavingsAccountsLoading;
 
+  // 증권 계좌 타입 목록
+  const SECURITIES_ACCOUNT_TYPES = ["general", "isa", "pension_savings", "irp", "dc"];
+
   // 증권 계좌별 평가금액 계산 (현재가 기준)
   const accountValues = useMemo(() => {
-    const values = new Map<string, { broker: string; accountName: string; value: number; invested: number }>();
+    const values = new Map<string, { broker: string; accountName: string; value: number; invested: number; accountType: string }>();
 
     // 계좌별 보유량 계산
     const holdingsMap = new Map<string, Map<string, { qty: number; invested: number; currency: string }>>();
@@ -2233,6 +2234,19 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       const latestFxDate = sortedFxDates[sortedFxDates.length - 1];
       latestExchangeRate = priceCache.exchangeRateMap.get(latestFxDate) || 1400;
     }
+
+    // 모든 증권 계좌를 먼저 추가 (거래 없어도 표시)
+    accounts
+      .filter(acc => SECURITIES_ACCOUNT_TYPES.includes(acc.account_type))
+      .forEach(account => {
+        values.set(account.id, {
+          broker: account.broker_name || "기타",
+          accountName: account.name || "계좌",
+          value: 0,
+          invested: 0,
+          accountType: account.account_type,
+        });
+      });
 
     // 계좌별 평가금액 계산
     holdingsMap.forEach((holdings, accountId) => {
@@ -2271,6 +2285,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       const account = accounts.find(a => a.id === accountId);
       const broker = account?.broker_name || "기타";
       const accountName = account?.name || "계좌";
+      const accountType = account?.account_type || "general";
 
       if (totalInvested > 0 || totalValue > 0) {
         values.set(accountId, {
@@ -2278,6 +2293,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
           accountName,
           value: totalValue || totalInvested,
           invested: totalInvested,
+          accountType,
         });
       }
     });
@@ -2285,7 +2301,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     return values;
   }, [portfolioTransactions, accounts, priceCache]);
 
-  // 기타 투자 항목 (실물 금, 퇴직연금 투자 등)
+  // 기타 투자 항목 (실물 금, 채권 등)
   const otherInvestmentItems = useMemo(() => {
     const investmentTypes = ITEM_TYPES.investment.map(t => t.value);
     return items.filter(i => i.category === "asset" && investmentTypes.includes(i.item_type));
@@ -3654,22 +3670,31 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
                     </tr>
                   </thead>
                   <tbody>
-                    {Array.from(accountValues.entries()).map(([id, data]) => (
-                      <tr key={id}>
-                        <td>
-                          <div className={styles.accountCell}>
-                            <div className={styles.accountNameRow}>
-                              <span className={styles.accountName}>{data.accountName}</span>
-                              <span className={styles.accountTypeLabel}>증권</span>
+                    {Array.from(accountValues.entries()).map(([id, data]) => {
+                      const accountTypeLabel = {
+                        general: "증권",
+                        isa: "ISA",
+                        pension_savings: "연금저축",
+                        irp: "IRP",
+                        dc: "DC형 퇴직연금",
+                      }[data.accountType] || "증권";
+                      return (
+                        <tr key={id}>
+                          <td>
+                            <div className={styles.accountCell}>
+                              <div className={styles.accountNameRow}>
+                                <span className={styles.accountName}>{data.accountName}</span>
+                                <span className={styles.accountTypeLabel}>{accountTypeLabel}</span>
+                              </div>
+                              <span className={styles.brokerName}>{data.broker}</span>
                             </div>
-                            <span className={styles.brokerName}>{data.broker}</span>
-                          </div>
-                        </td>
-                        <td className={styles.amountCell}>
-                          {formatWon(Math.round(data.value))}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className={styles.amountCell}>
+                            {formatWon(Math.round(data.value))}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -3679,7 +3704,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
             <div className={styles.otherInvestmentSection}>
               <div className={styles.otherInvestmentHeader}>
                 <span className={styles.otherInvestmentTitle}>투자</span>
-                <span className={styles.otherInvestmentDesc}>실물 금, 퇴직연금 투자 등</span>
+                <span className={styles.otherInvestmentDesc}>실물 금, 채권 등</span>
               </div>
 
               {otherInvestmentItems.length > 0 && (

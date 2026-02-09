@@ -112,6 +112,7 @@ const ACCOUNT_TYPE_OPTIONS = [
   { value: "isa", label: "ISA", category: "investment" },
   { value: "pension_savings", label: "연금저축", category: "investment" },
   { value: "irp", label: "IRP", category: "investment" },
+  { value: "dc", label: "DC형 퇴직연금", category: "investment" },
   { value: "checking", label: "입출금", category: "bank" },
   { value: "savings", label: "적금", category: "bank" },
   { value: "deposit", label: "정기예금", category: "bank" },
@@ -257,7 +258,7 @@ export function PortfolioTab({
       .select("*")
       .eq("profile_id", profileId)
       .eq("is_active", true)
-      .in("account_type", ["general", "isa", "pension_savings", "irp"]) // 증권 계좌만
+      .in("account_type", ["general", "isa", "pension_savings", "irp", "dc"]) // 증권 계좌만
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: true });
 
@@ -2137,7 +2138,7 @@ function PortfolioValueChart({
   // 손익 양수(빨강) 그라데이션 - 위에서 아래로 투명
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getPLPosGradient = useCallback((ctx: CanvasRenderingContext2D, chartArea: any, scales: any) => {
-    const zeroY = scales?.y?.getPixelForValue(0) ?? chartArea.bottom;
+    const zeroY = scales?.y1?.getPixelForValue(0) ?? chartArea.bottom;
     const gradient = ctx.createLinearGradient(0, chartArea.top, 0, zeroY);
     gradient.addColorStop(0, toRgba(chartLineColors.profit, 0.2));
     gradient.addColorStop(1, toRgba(chartLineColors.profit, 0));
@@ -2147,7 +2148,7 @@ function PortfolioValueChart({
   // 손익 음수(파랑) 그라데이션 - 0에서 아래로 색상
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getPLNegGradient = useCallback((ctx: CanvasRenderingContext2D, chartArea: any, scales: any) => {
-    const zeroY = scales?.y?.getPixelForValue(0) ?? chartArea.top;
+    const zeroY = scales?.y1?.getPixelForValue(0) ?? chartArea.top;
     const gradient = ctx.createLinearGradient(0, zeroY, 0, chartArea.bottom);
     gradient.addColorStop(0, toRgba(chartLineColors.loss, 0));
     gradient.addColorStop(1, toRgba(chartLineColors.loss, 0.2));
@@ -2403,7 +2404,7 @@ function PortfolioValueChart({
         hoverBackgroundColor: plData.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.9) : toRgba(chartLineColors.loss, 0.9)),
         borderWidth: 0,
         borderRadius: 2,
-        yAxisID: "y",
+        yAxisID: "y1",
         order: 2,
       },
       {
@@ -2423,7 +2424,7 @@ function PortfolioValueChart({
         pointHoverRadius: 4,
         pointBackgroundColor: chartLineColors.value,
         tension: 0.3,
-        yAxisID: "y1",
+        yAxisID: "y",
         order: 1,
       },
     ],
@@ -2580,16 +2581,14 @@ function PortfolioValueChart({
         type: "linear" as const,
         display: true,
         position: "left" as const,
-        min: -maxAbsPL,
-        max: maxAbsPL,
         grid: { color: chartScaleColors.gridColor },
         ticks: {
           callback: (value: unknown) => {
             const v = value as number;
-            if (Math.abs(v) >= 1000000) {
-              return `${(v / 1000000).toFixed(1)}M`;
+            if (v >= 100000000) {
+              return `${(v / 100000000).toFixed(1)}억`;
             }
-            return `${Math.round(v / 1000)}K`;
+            return `${Math.round(v / 10000).toLocaleString()}만`;
           },
           font: { size: 10 },
           color: chartScaleColors.tickColor,
@@ -2602,14 +2601,16 @@ function PortfolioValueChart({
         type: "linear" as const,
         display: true,
         position: "right" as const,
+        min: -maxAbsPL,
+        max: maxAbsPL,
         grid: { drawOnChartArea: false },
         ticks: {
           callback: (value: unknown) => {
             const v = value as number;
-            if (v >= 1000000) {
-              return `${(v / 1000000).toFixed(0)}M`;
+            if (Math.abs(v) >= 100000000) {
+              return `${(v / 100000000).toFixed(1)}억`;
             }
-            return `${Math.round(v / 1000)}K`;
+            return `${Math.round(v / 10000).toLocaleString()}만`;
           },
           font: { size: 10 },
         },

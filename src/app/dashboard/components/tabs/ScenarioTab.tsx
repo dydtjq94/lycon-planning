@@ -9,6 +9,8 @@ import {
   Receipt,
   LineChart,
   Landmark,
+  Building2,
+  ListOrdered,
 } from "lucide-react";
 import type { Simulation, GlobalSettings, InvestmentAssumptions, CashFlowPriority } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationEngine";
@@ -44,13 +46,13 @@ interface ScenarioTabProps {
 
 // Top level tabs
 const TOP_TABS = [
-  { id: "plan", label: "순자산" },
-  { id: "cashflow", label: "현금흐름" },
-  { id: "settings", label: "설정" },
+  { id: "plan", label: "순자산 규모" },
+  { id: "cashflow", label: "가계 현금흐름" },
 ] as const;
 
 // Category tabs
 const CATEGORY_TABS = [
+  { id: "accounts", label: "계좌", icon: Building2 },
   { id: "income", label: "소득", icon: Banknote },
   { id: "expense", label: "지출", icon: Receipt },
   { id: "savings", label: "저축/투자", icon: LineChart },
@@ -58,6 +60,7 @@ const CATEGORY_TABS = [
   { id: "asset", label: "실물자산", icon: Car },
   { id: "debt", label: "부채", icon: CreditCard },
   { id: "pension", label: "연금", icon: Landmark },
+  { id: "cashflowPriorities", label: "현금흐름 우선순위", icon: ListOrdered },
 ] as const;
 
 // 기본 Investment Assumptions
@@ -87,7 +90,7 @@ export function ScenarioTab({
   cashFlowPriorities: propPriorities,
   onCashFlowPrioritiesChange,
 }: ScenarioTabProps) {
-  const [activeTopTab, setActiveTopTab] = useState<"plan" | "cashflow" | "settings">("plan");
+  const [activeTopTab, setActiveTopTab] = useState<"plan" | "cashflow">("plan");
   const [activeCategoryTab, setActiveCategoryTab] = useState<string | null>(null);
 
   // ESC 키로 패널 닫기
@@ -156,26 +159,6 @@ export function ScenarioTab({
       );
     }
 
-    if (activeTopTab === "settings") {
-      return (
-        <div className={styles.settingsContent}>
-          <AccountsSummaryPanel
-            simulationId={simulationId}
-            profileId={profile.id}
-            isMarried={isMarried}
-          />
-          <InvestmentAssumptionsPanel
-            assumptions={assumptions}
-            onChange={handleAssumptionsChange}
-          />
-          <CashFlowPrioritiesPanel
-            priorities={priorities}
-            onChange={handlePrioritiesChange}
-          />
-        </div>
-      );
-    }
-
     return null;
   };
 
@@ -184,6 +167,20 @@ export function ScenarioTab({
     if (!activeCategoryTab) return null;
 
     switch (activeCategoryTab) {
+      case "accounts":
+        return (
+          <>
+            <AccountsSummaryPanel
+              simulationId={simulationId}
+              profileId={profile.id}
+              isMarried={isMarried}
+            />
+            <InvestmentAssumptionsPanel
+              assumptions={assumptions}
+              onChange={handleAssumptionsChange}
+            />
+          </>
+        );
       case "income":
         return globalSettings ? (
           <IncomeTab
@@ -236,6 +233,13 @@ export function ScenarioTab({
             globalSettings={globalSettings ?? undefined}
           />
         );
+      case "cashflowPriorities":
+        return (
+          <CashFlowPrioritiesPanel
+            priorities={priorities}
+            onChange={handlePrioritiesChange}
+          />
+        );
       default:
         return null;
     }
@@ -277,12 +281,15 @@ export function ScenarioTab({
 
       {/* Main area: Chart always visible, category panel overlays */}
       <div className={styles.mainArea}>
-        <div
-          className={styles.chartArea}
-          onClick={activeCategoryTab ? () => setActiveCategoryTab(null) : undefined}
-        >
+        <div className={styles.chartArea}>
           {renderMainContent()}
         </div>
+
+        {/* Overlay */}
+        <div
+          className={`${styles.chartOverlay} ${activeCategoryTab ? styles.chartOverlayVisible : ""}`}
+          onClick={() => setActiveCategoryTab(null)}
+        />
 
         {/* Category slide panel */}
         <div className={`${styles.categoryPanel} ${activeCategoryTab ? styles.categoryPanelOpen : ""}`}>

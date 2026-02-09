@@ -62,6 +62,77 @@
   min-width: 100px;
 }
 
+/* 시뮬레이션 타이틀 + 아이콘 그룹 */
+.simTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.simIconWrapper {
+  position: relative;
+}
+
+.simIconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: var(--sidebar-text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.simIconBtn:hover {
+  color: var(--sidebar-text);
+  background-color: color-mix(in srgb, var(--sidebar-bg) 80%, black 20%);
+}
+
+.iconPicker {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 8px;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 200;
+  width: 200px;
+}
+
+.iconPickerItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  color: var(--dashboard-text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.iconPickerItem:hover {
+  color: var(--dashboard-text);
+  background-color: var(--dashboard-hover-bg);
+}
+
+.iconPickerItemActive {
+  color: var(--accent-color, #007aff);
+  background-color: var(--dashboard-hover-bg);
+}
+
 /* 헤더 액션 버튼 */
 .headerActions {
   display: flex;

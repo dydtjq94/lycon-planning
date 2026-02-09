@@ -770,9 +770,9 @@ export interface PortfolioHolding {
 // ============================================
 
 // 계좌 유형
-// - 증권: general(일반), isa(ISA), pension_savings(연금저축), irp(IRP)
+// - 증권: general(일반), isa(ISA), pension_savings(연금저축), irp(IRP), dc(DC형 퇴직연금)
 // - 은행: checking(입출금), savings(정기적금), deposit(정기예금), free_savings(자유적금), housing(청약)
-export type AccountType = 'general' | 'isa' | 'pension_savings' | 'irp' | 'checking' | 'savings' | 'deposit' | 'free_savings' | 'housing'
+export type AccountType = 'general' | 'isa' | 'pension_savings' | 'irp' | 'dc' | 'checking' | 'savings' | 'deposit' | 'free_savings' | 'housing'
 
 export interface Account {
   id: string

@@ -1,8 +1,5 @@
 .panel {
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 12px;
-  overflow: hidden;
+  width: 100%;
 }
 
 .header {
@@ -10,15 +7,11 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 16px 20px;
+  padding: 0;
+  padding-bottom: 16px;
   background: none;
   border: none;
   cursor: pointer;
-  transition: background 0.15s;
-}
-
-.header:hover {
-  background: var(--dashboard-hover-bg);
 }
 
 .headerLeft {
@@ -52,42 +45,162 @@
 }
 
 .content {
-  padding: 0 20px 20px;
+  padding: 0;
 }
 
 .description {
   font-size: 13px;
   color: var(--dashboard-text-secondary);
-  margin: 0 0 16px 0;
+  margin: 0 0 8px 0;
   line-height: 1.5;
 }
 
 .loading {
-  padding: 20px;
-  text-align: center;
-  color: var(--dashboard-text-secondary);
-  font-size: 14px;
+  padding: 0;
+}
+
+/* Skeleton animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--dashboard-hover-bg) 25%, var(--dashboard-border) 50%, var(--dashboard-hover-bg) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeletonHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+}
+
+.skeletonHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skeletonIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+.skeletonTitle {
+  width: 40px;
+  height: 18px;
+}
+
+.skeletonCount {
+  width: 30px;
+  height: 16px;
+}
+
+.skeletonAmount {
+  width: 80px;
+  height: 18px;
+}
+
+.skeletonGroup {
+  padding-top: 8px;
+}
+
+.skeletonGroupHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.skeletonGroupIcon {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.skeletonGroupLabel {
+  width: 40px;
+  height: 14px;
+}
+
+.skeletonGroupTotal {
+  margin-left: auto;
+  width: 70px;
+  height: 14px;
+}
+
+.skeletonItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.skeletonItem:last-child {
+  border-bottom: none;
+}
+
+.skeletonItemLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skeletonItemName {
+  width: 100px;
+  height: 16px;
+}
+
+.skeletonItemType {
+  width: 60px;
+  height: 12px;
+}
+
+.skeletonItemRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.skeletonItemRate {
+  width: 30px;
+  height: 12px;
+}
+
+.skeletonItemBalance {
+  width: 70px;
+  height: 16px;
 }
 
 .emptyState {
-  padding: 24px;
+  padding: 24px 0;
   text-align: center;
   color: var(--dashboard-text-secondary);
   font-size: 14px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 8px;
 }
 
 .accountList {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
 }
 
 .accountGroup {
   display: flex;
   flex-direction: column;
   gap: 0;
+  padding-top: 8px;
 }
 
 .groupHeader {
@@ -98,7 +211,6 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--dashboard-text-secondary);
-  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .groupTotal {
@@ -177,25 +289,21 @@
 }
 
 .syncButton {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 6px;
   margin-top: 16px;
-  padding: 12px 20px;
-  width: 100%;
-  background: var(--accent-color, #007aff);
+  padding: 0;
+  background: none;
   border: none;
-  border-radius: 8px;
-  color: white;
+  color: var(--accent-color, #007aff);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   cursor: pointer;
-  transition: opacity 0.15s;
 }
 
 .syncButton:hover {
-  opacity: 0.9;
+  filter: brightness(0.85);
 }
 
 .syncButton:disabled {
@@ -204,25 +312,20 @@
 }
 
 .resyncButton {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 16px;
-  padding: 10px 16px;
-  width: 100%;
+  gap: 4px;
+  padding: 12px 0;
   background: none;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
-  color: var(--dashboard-text-secondary);
-  font-size: 13px;
+  border: none;
+  color: var(--accent-color, #007aff);
+  font-size: 14px;
+  font-weight: 400;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
 }
 
 .resyncButton:hover {
-  background: var(--dashboard-hover-bg);
-  color: var(--dashboard-text);
+  filter: brightness(0.85);
 }
 
 .resyncButton:disabled {

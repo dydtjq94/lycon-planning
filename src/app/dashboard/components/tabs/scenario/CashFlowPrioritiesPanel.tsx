@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   List,
   Plus,
@@ -57,6 +57,14 @@ export function CashFlowPrioritiesPanel({
   const [isExpanded, setIsExpanded] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // 첫 로드 후 isInitialLoad를 false로 설정
+  useEffect(() => {
+    if (isInitialLoad && !isLoading) {
+      setIsInitialLoad(false);
+    }
+  }, [isLoading, isInitialLoad]);
 
   // 새 규칙 추가
   const handleAddRule = useCallback(() => {
@@ -145,6 +153,42 @@ export function CashFlowPrioritiesPanel({
   const getStrategyLabel = (strategy: CashFlowStrategy) => {
     return STRATEGIES.find((s) => s.value === strategy)?.label || strategy;
   };
+
+  // 초기 로딩 스켈레톤
+  if (isLoading && isInitialLoad) {
+    return (
+      <div className={styles.panel}>
+        <div className={styles.skeletonHeader}>
+          <div className={styles.skeletonHeaderLeft}>
+            <div className={`${styles.skeleton} ${styles.skeletonIcon}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonTitle}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonCount}`} />
+          </div>
+          <div className={`${styles.skeleton} ${styles.skeletonChevron}`} />
+        </div>
+        <div className={styles.skeletonContent}>
+          <div className={`${styles.skeleton} ${styles.skeletonDesc}`} />
+          <div className={styles.skeletonRuleList}>
+            {[1, 2].map((i) => (
+              <div key={i} className={styles.skeletonRuleItem}>
+                <div className={`${styles.skeleton} ${styles.skeletonDragHandle}`} />
+                <div className={`${styles.skeleton} ${styles.skeletonPriorityBadge}`} />
+                <div className={styles.skeletonRuleContent}>
+                  <div className={`${styles.skeleton} ${styles.skeletonRuleIcon}`} />
+                  <div className={styles.skeletonRuleInfo}>
+                    <div className={`${styles.skeleton} ${styles.skeletonRuleTarget}`} />
+                    <div className={`${styles.skeleton} ${styles.skeletonRuleStrategy}`} />
+                  </div>
+                </div>
+                <div className={`${styles.skeleton} ${styles.skeletonDeleteBtn}`} />
+              </div>
+            ))}
+          </div>
+          <div className={`${styles.skeleton} ${styles.skeletonAddBtn}`} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.panel}>

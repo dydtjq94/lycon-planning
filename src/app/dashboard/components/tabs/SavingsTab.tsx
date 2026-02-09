@@ -25,6 +25,7 @@ import {
 import {
   upsertPersonalPension,
 } from '@/lib/services/personalPensionService'
+import { TabSkeleton } from './shared/TabSkeleton'
 import styles from './SavingsTab.module.css'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
@@ -361,7 +362,7 @@ export function SavingsTab({
   if (isLoading && hasNoData) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+        <TabSkeleton sections={2} itemsPerSection={2} />
       </div>
     )
   }

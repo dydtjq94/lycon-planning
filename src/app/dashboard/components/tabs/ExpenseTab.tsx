@@ -50,6 +50,7 @@ import {
   uiTypeToDBType,
   type UIExpenseType,
 } from "@/lib/services/expenseService";
+import { TabSkeleton } from "./shared/TabSkeleton";
 import styles from "./ExpenseTab.module.css";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -1512,11 +1513,11 @@ export function ExpenseTab({
     </div>
   );
 
-  // 캐시된 데이터가 없고 로딩 중일 때만 로딩 표시
+  // 캐시된 데이터가 없고 로딩 중일 때만 스켈레톤 표시
   if (isLoading && dbExpenses.length === 0) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+        <TabSkeleton sections={2} itemsPerSection={3} />
       </div>
     );
   }

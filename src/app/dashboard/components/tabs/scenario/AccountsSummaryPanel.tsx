@@ -1,11 +1,12 @@
 "use client";
 
-import { PiggyBank, TrendingUp, Shield, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { PiggyBank, TrendingUp, Shield, Briefcase, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { useState, useMemo } from "react";
 import type { Savings } from "@/types/tables";
 import { formatMoney } from "@/lib/utils";
-import { useSavingsData, usePersonalPensions } from "@/hooks/useFinancialData";
+import { useSavingsData, usePersonalPensions, useRetirementPensions, usePortfolioTransactions } from "@/hooks/useFinancialData";
 import { simulationService } from "@/lib/services/simulationService";
+import { createClient } from "@/lib/supabase/client";
 import {
   SAVINGS_TYPE_LABELS,
   INVESTMENT_TYPE_LABELS,
@@ -18,6 +19,11 @@ const PENSION_TYPE_LABELS: Record<string, string> = {
   pension_savings: '연금저축',
   irp: 'IRP',
   isa: 'ISA',
+};
+
+const RETIREMENT_PENSION_TYPE_LABELS: Record<string, string> = {
+  dc: 'DC형 퇴직연금',
+  db: 'DB형 퇴직연금',
 };
 
 interface AccountsSummaryPanelProps {
@@ -40,6 +46,23 @@ export function AccountsSummaryPanel({
   const [isSyncing, setIsSyncing] = useState(false);
   const { data: allSavings = [], isLoading, refetch } = useSavingsData(simulationId);
   const { data: personalPensions = [], isLoading: pensionsLoading, refetch: refetchPensions } = usePersonalPensions(simulationId);
+  const { data: retirementPensions = [], isLoading: retirementLoading, refetch: refetchRetirement } = useRetirementPensions(simulationId);
+  const { data: portfolioTransactions = [] } = usePortfolioTransactions(profileId);
+
+  // 포트폴리오 거래에서 계좌별 순 투자금액 계산
+  const portfolioAccountValues = useMemo(() => {
+    const values = new Map<string, number>();
+    portfolioTransactions.forEach((tx) => {
+      if (!tx.account_id) return;
+      const amount = tx.type === 'buy' ? tx.total_amount : -tx.total_amount;
+      values.set(tx.account_id, (values.get(tx.account_id) || 0) + amount);
+    });
+    // 음수 값은 0으로 처리 (전량 매도한 경우)
+    values.forEach((val, key) => {
+      if (val < 0) values.set(key, 0);
+    });
+    return values;
+  }, [portfolioTransactions]);
 
   // 저축 계좌와 투자 계좌 분리
   const savingsAccounts = allSavings.filter((s) =>
@@ -53,8 +76,9 @@ export function AccountsSummaryPanel({
   const savingsTotal = savingsAccounts.reduce((sum, acc) => sum + acc.current_balance, 0);
   const investmentTotal = investmentAccounts.reduce((sum, acc) => sum + acc.current_balance, 0);
   const pensionTotal = personalPensions.reduce((sum, p) => sum + (p.current_balance || 0), 0);
-  const totalAssets = savingsTotal + investmentTotal + pensionTotal;
-  const totalCount = allSavings.length + personalPensions.length;
+  const retirementTotal = retirementPensions.reduce((sum, p) => sum + (p.current_balance || 0), 0);
+  const totalAssets = savingsTotal + investmentTotal + pensionTotal + retirementTotal;
+  const totalCount = allSavings.length + personalPensions.length + retirementPensions.length;
 
   const getTypeLabel = (account: Savings) => {
     if (SAVINGS_TYPES.includes(account.type)) {
@@ -75,8 +99,9 @@ export function AccountsSummaryPanel({
   const handleSync = async () => {
     setIsSyncing(true);
     try {
-      await simulationService.copyAccountsToSimulation(simulationId, profileId);
-      await Promise.all([refetch(), refetchPensions()]);
+      // 포트폴리오 거래 기반 계좌별 투자금액을 전달
+      await simulationService.copyAccountsToSimulation(simulationId, profileId, portfolioAccountValues);
+      await Promise.all([refetch(), refetchPensions(), refetchRetirement()]);
     } catch (error) {
       console.error("Failed to sync accounts:", error);
     } finally {
@@ -84,16 +109,59 @@ export function AccountsSummaryPanel({
     }
   };
 
-  if (isLoading || pensionsLoading) {
+  if (isLoading || pensionsLoading || retirementLoading) {
     return (
       <div className={styles.panel}>
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <PiggyBank size={20} />
-            <span className={styles.title}>계좌</span>
+        <div className={styles.skeletonHeader}>
+          <div className={styles.skeletonHeaderLeft}>
+            <div className={`${styles.skeleton} ${styles.skeletonIcon}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonTitle}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonCount}`} />
+          </div>
+          <div className={`${styles.skeleton} ${styles.skeletonAmount}`} />
+        </div>
+        <div className={styles.loading}>
+          {/* 저축 그룹 스켈레톤 */}
+          <div className={styles.skeletonGroup}>
+            <div className={styles.skeletonGroupHeader}>
+              <div className={`${styles.skeleton} ${styles.skeletonGroupIcon}`} />
+              <div className={`${styles.skeleton} ${styles.skeletonGroupLabel}`} />
+              <div className={`${styles.skeleton} ${styles.skeletonGroupTotal}`} />
+            </div>
+            {[1, 2].map((i) => (
+              <div key={i} className={styles.skeletonItem}>
+                <div className={styles.skeletonItemLeft}>
+                  <div className={`${styles.skeleton} ${styles.skeletonItemName}`} />
+                  <div className={`${styles.skeleton} ${styles.skeletonItemType}`} />
+                </div>
+                <div className={styles.skeletonItemRight}>
+                  <div className={`${styles.skeleton} ${styles.skeletonItemRate}`} />
+                  <div className={`${styles.skeleton} ${styles.skeletonItemBalance}`} />
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* 투자 그룹 스켈레톤 */}
+          <div className={styles.skeletonGroup}>
+            <div className={styles.skeletonGroupHeader}>
+              <div className={`${styles.skeleton} ${styles.skeletonGroupIcon}`} />
+              <div className={`${styles.skeleton} ${styles.skeletonGroupLabel}`} />
+              <div className={`${styles.skeleton} ${styles.skeletonGroupTotal}`} />
+            </div>
+            {[1, 2].map((i) => (
+              <div key={i} className={styles.skeletonItem}>
+                <div className={styles.skeletonItemLeft}>
+                  <div className={`${styles.skeleton} ${styles.skeletonItemName}`} />
+                  <div className={`${styles.skeleton} ${styles.skeletonItemType}`} />
+                </div>
+                <div className={styles.skeletonItemRight}>
+                  <div className={`${styles.skeleton} ${styles.skeletonItemRate}`} />
+                  <div className={`${styles.skeleton} ${styles.skeletonItemBalance}`} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-        <div className={styles.loading}>불러오는 중...</div>
       </div>
     );
   }
@@ -216,6 +284,33 @@ export function AccountsSummaryPanel({
                       </div>
                       <div className={styles.accountMeta}>
                         <span className={styles.accountRate}>-</span>
+                        <span className={styles.accountBalance}>{formatMoney(pension.current_balance || 0)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 퇴직연금 (DC형) */}
+              {retirementPensions.length > 0 && (
+                <div className={styles.accountGroup}>
+                  <div className={styles.groupHeader}>
+                    <Briefcase size={16} />
+                    <span>퇴직연금</span>
+                    <span className={styles.groupTotal}>{formatMoney(retirementTotal)}</span>
+                  </div>
+                  {retirementPensions.map((pension) => (
+                    <div key={pension.id} className={styles.accountItem}>
+                      <div className={styles.accountMain}>
+                        <span className={styles.accountName}>
+                          {RETIREMENT_PENSION_TYPE_LABELS[pension.pension_type] || pension.pension_type}
+                        </span>
+                        <span className={styles.accountType}>
+                          {pension.receive_type === 'annuity' ? '연금 수령' : '일시금 수령'}
+                        </span>
+                      </div>
+                      <div className={styles.accountMeta}>
+                        <span className={styles.accountRate}>{pension.return_rate}%</span>
                         <span className={styles.accountBalance}>{formatMoney(pension.current_balance || 0)}</span>
                       </div>
                     </div>

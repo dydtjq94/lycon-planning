@@ -18,9 +18,26 @@ import {
   LineChart,
   PiggyBank,
   X,
+  Landmark, Home, Briefcase, GraduationCap, Plane, Heart,
+  Wallet, Shield, Umbrella, Baby, Car, Gem, Building2,
+  Palmtree, Rocket, Star, Coffee,
+  type LucideIcon,
 } from "lucide-react";
 import type { Simulation } from "@/types";
 import styles from "./Sidebar.module.css";
+
+const SIM_ICON_MAP: Record<string, LucideIcon> = {
+  landmark: Landmark, home: Home, briefcase: Briefcase,
+  "graduation-cap": GraduationCap, plane: Plane, heart: Heart,
+  baby: Baby, "trending-up": TrendingUp, wallet: Wallet,
+  "piggy-bank": PiggyBank, target: Target, umbrella: Umbrella,
+  car: Car, gem: Gem, building: Building2, palmtree: Palmtree,
+  rocket: Rocket, star: Star, coffee: Coffee, shield: Shield,
+};
+
+function getSimIcon(iconId?: string): LucideIcon {
+  return (iconId && SIM_ICON_MAP[iconId]) || Star;
+}
 
 interface SidebarProps {
   currentSection: string;
@@ -250,10 +267,10 @@ export function Sidebar({
                     title={sim.title}
                   >
                     <div className={styles.iconWrapper}>
-                      <Target size={16} />
+                      {(() => { const Icon = getSimIcon(sim.icon); return <Icon size={16} />; })()}
                     </div>
                     <span className={styles.navLabel}>{sim.title}</span>
-                    {!sim.is_default && onDeleteSimulation && (
+                    {onDeleteSimulation && (
                       <button
                         className={styles.deleteSimBtn}
                         onClick={(e) => {

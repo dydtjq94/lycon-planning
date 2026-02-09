@@ -31,6 +31,7 @@ import {
   getSourceLabel,
 } from "@/lib/services/incomeService";
 import { useChartTheme } from "@/hooks/useChartTheme";
+import { TabSkeleton } from "./shared/TabSkeleton";
 import styles from "./IncomeTab.module.css";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -1475,11 +1476,11 @@ export function IncomeTab({
     </div>
   );
 
-  // 캐시된 데이터가 없고 로딩 중일 때만 로딩 표시
+  // 캐시된 데이터가 없고 로딩 중일 때만 스켈레톤 표시
   if (isLoading && dbIncomes.length === 0) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+        <TabSkeleton sections={2} itemsPerSection={3} />
       </div>
     );
   }

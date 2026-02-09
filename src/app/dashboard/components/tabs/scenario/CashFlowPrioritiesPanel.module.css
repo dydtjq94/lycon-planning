@@ -1,9 +1,5 @@
 .panel {
   width: 100%;
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 12px;
-  overflow: hidden;
 }
 
 .header {
@@ -11,16 +7,12 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 14px 16px;
+  padding: 0;
+  padding-bottom: 16px;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--dashboard-text);
-  transition: background 0.15s;
-}
-
-.header:hover {
-  background: var(--dashboard-hover-bg);
 }
 
 .headerLeft {
@@ -30,22 +22,17 @@
 }
 
 .headerTitle {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
 }
 
 .countBadge {
-  padding: 2px 8px;
-  background: var(--dashboard-bg-secondary);
+  font-size: 12px;
   color: var(--dashboard-text-secondary);
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
 }
 
 .content {
-  padding: 16px;
-  border-top: 1px solid var(--dashboard-border);
+  padding: 0;
 }
 
 .description {
@@ -56,7 +43,7 @@
 }
 
 .emptyState {
-  padding: 32px 16px;
+  padding: 32px 0;
   text-align: center;
   color: var(--dashboard-text-secondary);
   font-size: 13px;
@@ -80,7 +67,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: var(--dashboard-bg-secondary);
+  background: var(--dashboard-hover-bg);
   border-radius: 8px;
   transition: opacity 0.15s, transform 0.15s;
 }
@@ -131,7 +118,7 @@
 }
 
 .ruleDisplay:hover {
-  background: var(--dashboard-hover-bg);
+  background: var(--dashboard-bg);
 }
 
 .ruleIcon {
@@ -163,7 +150,7 @@
   color: var(--dashboard-text-secondary);
 }
 
-/* 편집 폼 */
+/* Edit form */
 .editForm {
   display: flex;
   flex-direction: column;
@@ -223,7 +210,7 @@
   border-color: var(--accent-color, #007aff);
 }
 
-/* 숫자 입력 스핀 버튼 제거 */
+/* spin button removal */
 .inputWithUnit input::-webkit-outer-spin-button,
 .inputWithUnit input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -260,11 +247,10 @@
   border-radius: 4px;
   color: var(--dashboard-text-muted);
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition: color 0.15s;
 }
 
 .deleteButton:hover {
-  background: #fee2e2;
   color: #ef4444;
 }
 
@@ -274,28 +260,153 @@
 }
 
 .addButton {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  padding: 10px;
+  gap: 4px;
+  padding: 12px 0;
   background: none;
-  border: 1px dashed var(--dashboard-border);
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
+  border: none;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--accent-color, #007aff);
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
 }
 
 .addButton:hover {
-  border-color: var(--accent-color, #007aff);
-  color: var(--accent-color, #007aff);
+  filter: brightness(0.85);
 }
 
 .addButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Skeleton animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--dashboard-hover-bg) 25%, var(--dashboard-border) 50%, var(--dashboard-hover-bg) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeletonHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+}
+
+.skeletonHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skeletonIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.skeletonTitle {
+  width: 110px;
+  height: 18px;
+}
+
+.skeletonCount {
+  width: 50px;
+  height: 14px;
+}
+
+.skeletonChevron {
+  width: 18px;
+  height: 18px;
+}
+
+.skeletonContent {
+  padding: 0;
+}
+
+.skeletonDesc {
+  width: 100%;
+  height: 36px;
+  margin-bottom: 16px;
+}
+
+.skeletonRuleList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.skeletonRuleItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--dashboard-hover-bg);
+  border-radius: 8px;
+}
+
+.skeletonDragHandle {
+  width: 16px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.skeletonPriorityBadge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.skeletonRuleContent {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skeletonRuleIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.skeletonRuleInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skeletonRuleTarget {
+  width: 60px;
+  height: 14px;
+}
+
+.skeletonRuleStrategy {
+  width: 100px;
+  height: 12px;
+}
+
+.skeletonDeleteBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+}
+
+.skeletonAddBtn {
+  width: 80px;
+  height: 20px;
+  margin-top: 4px;
 }

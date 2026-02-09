@@ -64,6 +64,7 @@ const SECURITIES_ACCOUNT_TYPE_OPTIONS = [
   { value: "isa", label: "ISA" },
   { value: "pension_savings", label: "연금저축" },
   { value: "irp", label: "IRP" },
+  { value: "dc", label: "DC형 퇴직연금" },
 ] as const;
 
 // 결제수단 유형
@@ -120,7 +121,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
     if (!error && data) {
       setCheckingAccounts(data.filter(a => a.account_type === "checking"));
       setSavingsAccounts(data.filter(a => ["savings", "deposit", "free_savings", "housing"].includes(a.account_type || "")));
-      setSecuritiesAccounts(data.filter(a => ["general", "isa", "pension_savings", "irp"].includes(a.account_type || "")));
+      setSecuritiesAccounts(data.filter(a => ["general", "isa", "pension_savings", "irp", "dc"].includes(a.account_type || "")));
     }
   };
 
@@ -323,7 +324,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
     switch (tab) {
       case "checking": return ["checking"];
       case "savings": return ["savings", "deposit", "free_savings", "housing"];
-      case "securities": return ["general", "isa", "pension_savings", "irp"];
+      case "securities": return ["general", "isa", "pension_savings", "irp", "dc"];
     }
   };
 

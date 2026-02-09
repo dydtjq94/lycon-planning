@@ -597,6 +597,7 @@ export interface Simulation {
   profile_id: string
   title: string
   description?: string
+  icon?: string
   is_default: boolean
   sort_order: number
   // 새 필드
@@ -809,6 +810,7 @@ export interface SimulationInput {
   profile_id: string
   title: string
   description?: string
+  icon?: string
   is_default?: boolean
   sort_order?: number
   // 새 필드

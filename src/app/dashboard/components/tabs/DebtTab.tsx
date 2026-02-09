@@ -17,6 +17,7 @@ import {
   getDefaultMaturity,
   type UIDebtCategory,
 } from '@/lib/services/debtService'
+import { TabSkeleton } from './shared/TabSkeleton'
 import styles from './DebtTab.module.css'
 
 interface DebtTabProps {
@@ -544,7 +545,7 @@ export function DebtTab({ simulationId }: DebtTabProps) {
   if (isLoading && debts.length === 0) {
     return (
       <div className={styles.container}>
-        <div className={styles.loadingState}>데이터를 불러오는 중...</div>
+        <TabSkeleton sections={2} itemsPerSection={2} />
       </div>
     )
   }

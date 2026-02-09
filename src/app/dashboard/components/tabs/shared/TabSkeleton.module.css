@@ -1,0 +1,89 @@
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.section:last-child {
+  border-bottom: none;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.bone {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.sectionTitle {
+  width: 80px;
+  height: 16px;
+}
+
+.sectionTotal {
+  width: 60px;
+  height: 14px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.itemLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.itemLabel {
+  width: 60px;
+  height: 12px;
+}
+
+.itemAmount {
+  width: 100px;
+  height: 18px;
+}
+
+.itemMeta {
+  width: 120px;
+  height: 12px;
+}
+
+.itemRight {
+  width: 40px;
+  height: 14px;
+}

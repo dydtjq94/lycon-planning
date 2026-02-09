@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { Search, RefreshCw, ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import {
+  Search, RefreshCw, ChevronLeft, ChevronRight, Settings,
+  Landmark, Home, Briefcase, GraduationCap, Plane, Heart,
+  TrendingUp, Wallet, PiggyBank, Shield, Target, Umbrella,
+  Baby, Car, Gem, Building2, Palmtree, Rocket, Star, Coffee,
+  type LucideIcon,
+} from "lucide-react";
 import { AccountManagementModal } from "./components/AccountManagementModal";
 import { useFinancialContext } from "@/contexts/FinancialContext";
 import {
@@ -73,6 +79,35 @@ const sectionTitles: Record<string, string> = {
 
 const validSections = Object.keys(sectionTitles);
 
+// 시뮬레이션 아이콘 프리셋
+const SIMULATION_ICONS: { id: string; icon: LucideIcon; label: string }[] = [
+  { id: "landmark", icon: Landmark, label: "은퇴" },
+  { id: "home", icon: Home, label: "내 집" },
+  { id: "briefcase", icon: Briefcase, label: "커리어" },
+  { id: "graduation-cap", icon: GraduationCap, label: "교육" },
+  { id: "plane", icon: Plane, label: "여행" },
+  { id: "heart", icon: Heart, label: "결혼" },
+  { id: "baby", icon: Baby, label: "육아" },
+  { id: "trending-up", icon: TrendingUp, label: "투자" },
+  { id: "wallet", icon: Wallet, label: "자산" },
+  { id: "piggy-bank", icon: PiggyBank, label: "저축" },
+  { id: "target", icon: Target, label: "목표" },
+  { id: "umbrella", icon: Umbrella, label: "안전" },
+  { id: "car", icon: Car, label: "자동차" },
+  { id: "gem", icon: Gem, label: "럭셔리" },
+  { id: "building", icon: Building2, label: "부동산" },
+  { id: "palmtree", icon: Palmtree, label: "휴식" },
+  { id: "rocket", icon: Rocket, label: "도전" },
+  { id: "star", icon: Star, label: "기본" },
+  { id: "coffee", icon: Coffee, label: "일상" },
+  { id: "shield", icon: Shield, label: "보장" },
+];
+
+function getSimulationIcon(iconId?: string): LucideIcon {
+  const found = SIMULATION_ICONS.find(i => i.id === iconId);
+  return found?.icon || Star;
+}
+
 export function DashboardContent() {
   // URL pathname
   const pathname = usePathname();
@@ -92,6 +127,8 @@ export function DashboardContent() {
   const [selectedSimulationId, setSelectedSimulationId] = useState<string>(simulation.id);
   const [isEditingSimTitle, setIsEditingSimTitle] = useState(false);
   const [editSimTitle, setEditSimTitle] = useState("");
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const iconPickerRef = useRef<HTMLDivElement>(null);
 
   // URL 업데이트 함수 (pushState 직접 사용으로 즉시 반응)
   const updateUrl = useCallback((section: string, simId: string) => {
@@ -213,6 +250,13 @@ export function DashboardContent() {
       ) {
         setShowSuggestions(false);
       }
+      // 아이콘 피커 외부 클릭
+      if (
+        iconPickerRef.current &&
+        !iconPickerRef.current.contains(e.target as Node)
+      ) {
+        setShowIconPicker(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -290,11 +334,14 @@ export function DashboardContent() {
   const handleDeleteSimulation = useCallback((simulationId: string) => {
     deleteSimulation.mutate(simulationId, {
       onSuccess: () => {
-        // 삭제된 시뮬레이션이 현재 선택된 것이었다면 기본 시뮬레이션으로 변경
+        // 삭제된 시뮬레이션이 현재 선택된 것이었다면
         if (selectedSimulationId === simulationId) {
-          const defaultSim = simulations.find(s => s.is_default);
-          if (defaultSim) {
+          const remaining = simulations.filter(s => s.id !== simulationId);
+          if (remaining.length > 0) {
+            const defaultSim = remaining.find(s => s.is_default) || remaining[0];
             setSelectedSimulationId(defaultSim.id);
+          } else {
+            setSelectedSimulationId(null as unknown as string);
           }
         }
       },
@@ -715,39 +762,74 @@ export function DashboardContent() {
         <header className={styles.header}>
           <div className={styles.headerInner}>
             {currentSection === "simulation" && selectedSim ? (
-              isEditingSimTitle ? (
-                <input
-                  className={styles.pageTitleInput}
-                  value={editSimTitle}
-                  onChange={(e) => setEditSimTitle(e.target.value)}
-                  onBlur={() => {
-                    if (editSimTitle.trim() && editSimTitle.trim() !== selectedSim.title) {
-                      updateSimulation.mutate({ id: selectedSim.id, updates: { title: editSimTitle.trim() } });
-                    }
-                    setIsEditingSimTitle(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      (e.target as HTMLInputElement).blur();
-                    }
-                    if (e.key === "Escape") {
+              <div className={styles.simTitleGroup}>
+                <div className={styles.simIconWrapper} ref={iconPickerRef}>
+                  <button
+                    className={styles.simIconBtn}
+                    onClick={() => setShowIconPicker(!showIconPicker)}
+                    type="button"
+                  >
+                    {(() => {
+                      const SimIcon = getSimulationIcon(selectedSim.icon);
+                      return <SimIcon size={16} />;
+                    })()}
+                  </button>
+                  {showIconPicker && (
+                    <div className={styles.iconPicker}>
+                      {SIMULATION_ICONS.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.id}
+                            className={`${styles.iconPickerItem} ${selectedSim.icon === item.id ? styles.iconPickerItemActive : ""}`}
+                            onClick={() => {
+                              updateSimulation.mutate({ id: selectedSim.id, updates: { icon: item.id } });
+                              setShowIconPicker(false);
+                            }}
+                            title={item.label}
+                            type="button"
+                          >
+                            <Icon size={18} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                {isEditingSimTitle ? (
+                  <input
+                    className={styles.pageTitleInput}
+                    value={editSimTitle}
+                    onChange={(e) => setEditSimTitle(e.target.value)}
+                    onBlur={() => {
+                      if (editSimTitle.trim() && editSimTitle.trim() !== selectedSim.title) {
+                        updateSimulation.mutate({ id: selectedSim.id, updates: { title: editSimTitle.trim() } });
+                      }
                       setIsEditingSimTitle(false);
-                    }
-                  }}
-                  autoFocus
-                />
-              ) : (
-                <h1
-                  className={styles.pageTitle}
-                  onDoubleClick={() => {
-                    setEditSimTitle(selectedSim.title);
-                    setIsEditingSimTitle(true);
-                  }}
-                  style={{ cursor: "default" }}
-                >
-                  {selectedSim.title}
-                </h1>
-              )
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        (e.target as HTMLInputElement).blur();
+                      }
+                      if (e.key === "Escape") {
+                        setIsEditingSimTitle(false);
+                      }
+                    }}
+                    autoFocus
+                  />
+                ) : (
+                  <h1
+                    className={styles.pageTitle}
+                    onDoubleClick={() => {
+                      setEditSimTitle(selectedSim.title);
+                      setIsEditingSimTitle(true);
+                    }}
+                    style={{ cursor: "default" }}
+                  >
+                    {selectedSim.title}
+                  </h1>
+                )}
+              </div>
             ) : (
               <h1 key={currentSection} className={styles.pageTitle}>
                 {sectionTitles[currentSection] || currentSection}

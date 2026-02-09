@@ -19,8 +19,16 @@ import type {
 } from "@/types";
 import { DEFAULT_GLOBAL_SETTINGS } from "@/types";
 import type { SimulationResult, SimulationProfile } from "@/lib/services/simulationEngine";
-import { runSimulationFromItems } from "@/lib/services/simulationEngine";
-import { loadFinancialItemsFromDB } from "@/lib/services/dbToFinancialItems";
+import { runSimulationV2 } from "@/lib/services/simulationEngineV2";
+import { getIncomes } from "@/lib/services/incomeService";
+import { getExpenses } from "@/lib/services/expenseService";
+import { getSavings } from "@/lib/services/savingsService";
+import { getDebts } from "@/lib/services/debtService";
+import { getNationalPensions } from "@/lib/services/nationalPensionService";
+import { getRetirementPensions } from "@/lib/services/retirementPensionService";
+import { getPersonalPensions } from "@/lib/services/personalPensionService";
+import { getRealEstates } from "@/lib/services/realEstateService";
+import { getPhysicalAssets } from "@/lib/services/physicalAssetService";
 
 // ============================================
 // Context 타입
@@ -140,8 +148,28 @@ export function SimulationProvider({
     setIsCalculating(true);
 
     try {
-      // DB에서 재무 데이터 로드
-      const items = await loadFinancialItemsFromDB(currentSimulation.id, profile);
+      // DB에서 재무 데이터 직접 로드 (V2: dbToFinancialItems 우회)
+      const [
+        incomes,
+        expenses,
+        savings,
+        debts,
+        nationalPensions,
+        retirementPensions,
+        personalPensions,
+        realEstates,
+        physicalAssets,
+      ] = await Promise.all([
+        getIncomes(currentSimulation.id),
+        getExpenses(currentSimulation.id),
+        getSavings(currentSimulation.id),
+        getDebts(currentSimulation.id),
+        getNationalPensions(currentSimulation.id),
+        getRetirementPensions(currentSimulation.id),
+        getPersonalPensions(currentSimulation.id),
+        getRealEstates(currentSimulation.id),
+        getPhysicalAssets(currentSimulation.id),
+      ]);
 
       // 요청이 취소되었는지 확인
       if (requestId !== calculationRequestRef.current) {
@@ -149,13 +177,24 @@ export function SimulationProvider({
         return;
       }
 
-      // 시뮬레이션 실행 (Investment Assumptions 전달)
-      const simulationResult = runSimulationFromItems(
-        items,
+      // V2 시뮬레이션 실행 (DB 타입 직접 사용)
+      const simulationResult = runSimulationV2(
+        {
+          incomes,
+          expenses,
+          savings,
+          debts,
+          nationalPensions,
+          retirementPensions,
+          personalPensions,
+          realEstates,
+          physicalAssets,
+        },
         profile,
         globalSettings,
         50, // 50년 시뮬레이션
-        investmentAssumptions // Investment Assumptions 전달
+        investmentAssumptions,
+        cashFlowPriorities
       );
 
       // 요청이 취소되었는지 확인
@@ -165,7 +204,7 @@ export function SimulationProvider({
 
       setResult(simulationResult);
       setLastCalculatedAt(new Date());
-      console.log("[SimulationContext] Calculation complete", {
+      console.log("[SimulationContext] V2 Calculation complete", {
         years: simulationResult.snapshots.length,
         startYear: simulationResult.startYear,
         endYear: simulationResult.endYear,
@@ -180,7 +219,7 @@ export function SimulationProvider({
         setIsCalculating(false);
       }
     }
-  }, [currentSimulation, profile, globalSettings, investmentAssumptions]);
+  }, [currentSimulation, profile, globalSettings, investmentAssumptions, cashFlowPriorities]);
 
   // Debounced 재계산 트리거
   const triggerRecalculation = useCallback(() => {

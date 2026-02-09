@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Settings, TrendingUp, Landmark, Home, Percent, ChevronDown, ChevronUp } from "lucide-react";
 import type { InvestmentAssumptions, InvestmentRates } from "@/types";
 import styles from "./InvestmentAssumptionsPanel.module.css";
@@ -80,6 +80,14 @@ export function InvestmentAssumptionsPanel({
   isLoading = false,
 }: InvestmentAssumptionsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // 첫 로드 후 isInitialLoad를 false로 설정
+  useEffect(() => {
+    if (isInitialLoad && !isLoading) {
+      setIsInitialLoad(false);
+    }
+  }, [isLoading, isInitialLoad]);
 
   const handleRateChange = useCallback(
     (key: keyof InvestmentRates, value: number) => {
@@ -106,6 +114,42 @@ export function InvestmentAssumptionsPanel({
       },
     });
   }, [onChange]);
+
+  // 초기 로딩 스켈레톤
+  if (isLoading && isInitialLoad) {
+    return (
+      <div className={styles.panel}>
+        <div className={styles.skeletonHeader}>
+          <div className={styles.skeletonHeaderLeft}>
+            <div className={`${styles.skeleton} ${styles.skeletonIcon}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonTitle}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonBadge}`} />
+          </div>
+          <div className={`${styles.skeleton} ${styles.skeletonChevron}`} />
+        </div>
+        <div className={styles.skeletonContent}>
+          <div className={`${styles.skeleton} ${styles.skeletonDesc}`} />
+          <div className={styles.skeletonRateList}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className={styles.skeletonRateItem}>
+                <div className={styles.skeletonRateHeader}>
+                  <div className={`${styles.skeleton} ${styles.skeletonRateIcon}`} />
+                  <div className={styles.skeletonRateInfo}>
+                    <div className={`${styles.skeleton} ${styles.skeletonRateLabel}`} />
+                    <div className={`${styles.skeleton} ${styles.skeletonRateDesc}`} />
+                  </div>
+                </div>
+                <div className={`${styles.skeleton} ${styles.skeletonRateInput}`} />
+              </div>
+            ))}
+          </div>
+          <div className={styles.skeletonFooter}>
+            <div className={`${styles.skeleton} ${styles.skeletonResetBtn}`} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.panel}>
