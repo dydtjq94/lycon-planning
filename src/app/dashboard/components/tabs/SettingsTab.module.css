@@ -149,35 +149,44 @@
   color: var(--accent-color, #007aff);
 }
 
-/* 액센트 색상 - 5x2 그리드 */
-.accentRow {
+/* 액센트 색상 - 5x2 카드 그리드 (차트 색상과 동일 패턴) */
+.accentGrid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-  justify-items: center;
+  gap: 10px;
 }
 
-.accentCircle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 3px solid transparent;
-  cursor: pointer;
+.accentCard {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  color: white;
-  transition: transform 0.15s, border-color 0.15s;
-  padding: 0;
+  gap: 8px;
+  padding: 14px 8px;
+  border: 2px solid var(--dashboard-border);
+  border-radius: 12px;
+  background: var(--dashboard-card-bg);
+  cursor: pointer;
+  transition: border-color 0.15s;
 }
 
-.accentCircle:hover {
-  transform: scale(1.12);
+.accentCard:hover {
+  border-color: var(--accent-color, #007aff);
 }
 
-.accentCircleActive {
-  border-color: var(--dashboard-text);
-  box-shadow: 0 0 0 2px var(--dashboard-card-bg), 0 0 0 4px var(--dashboard-text);
+.accentCardActive {
+  border-color: var(--accent-color, #007aff);
+}
+
+.accentDot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.accentName {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
 }
 
 /* 차트 색상 - 리스트형 (겹치는 동그라미) */

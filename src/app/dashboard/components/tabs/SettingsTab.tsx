@@ -223,16 +223,18 @@ export function SettingsTab({ profileName }: SettingsTabProps) {
           {/* 액센트 색상 */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>액센트 색상</h2>
-            <div className={styles.accentRow}>
+            <div className={styles.accentGrid}>
               {accentColors.map((color) => (
                 <button
                   key={color.id}
-                  className={`${styles.accentCircle} ${accentColor === color.id ? styles.accentCircleActive : ""}`}
+                  className={`${styles.accentCard} ${accentColor === color.id ? styles.accentCardActive : ""}`}
                   onClick={() => handleAccentColorChange(color.id)}
-                  style={{ backgroundColor: color.color }}
-                  title={color.name}
                 >
-                  {accentColor === color.id && <Check size={14} />}
+                  <div
+                    className={styles.accentDot}
+                    style={{ backgroundColor: color.color }}
+                  />
+                  <span className={styles.accentName}>{color.name}</span>
                 </button>
               ))}
             </div>

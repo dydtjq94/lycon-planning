@@ -209,6 +209,8 @@ export interface RetirementPension {
   simulation_id: string
   owner: Owner
   pension_type: RetirementPensionType
+  title: string | null  // DC 계좌 이름
+  broker_name: string | null  // DC 증권사
   current_balance: number | null  // DC, IRP
   years_of_service: number | null  // DB, 퇴직금
   receive_type: ReceiveType
@@ -225,6 +227,8 @@ export interface RetirementPensionInput {
   simulation_id: string
   owner?: Owner
   pension_type: RetirementPensionType
+  title?: string | null
+  broker_name?: string | null
   current_balance?: number | null
   years_of_service?: number | null
   receive_type: ReceiveType

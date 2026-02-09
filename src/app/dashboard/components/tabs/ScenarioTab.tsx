@@ -11,6 +11,7 @@ import {
   Landmark,
   Building2,
   ListOrdered,
+  Settings,
 } from "lucide-react";
 import type { Simulation, GlobalSettings, InvestmentAssumptions, CashFlowPriority } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationEngine";
@@ -60,6 +61,7 @@ const CATEGORY_TABS = [
   { id: "asset", label: "실물자산", icon: Car },
   { id: "debt", label: "부채", icon: CreditCard },
   { id: "pension", label: "연금", icon: Landmark },
+  { id: "investmentAssumptions", label: "투자 가정", icon: Settings },
   { id: "cashflowPriorities", label: "현금 흐름 우선순위", icon: ListOrdered },
 ] as const;
 
@@ -169,17 +171,18 @@ export function ScenarioTab({
     switch (activeCategoryTab) {
       case "accounts":
         return (
-          <>
-            <AccountsSummaryPanel
-              simulationId={simulationId}
-              profileId={profile.id}
-              isMarried={isMarried}
-            />
-            <InvestmentAssumptionsPanel
-              assumptions={assumptions}
-              onChange={handleAssumptionsChange}
-            />
-          </>
+          <AccountsSummaryPanel
+            simulationId={simulationId}
+            profileId={profile.id}
+            isMarried={isMarried}
+          />
+        );
+      case "investmentAssumptions":
+        return (
+          <InvestmentAssumptionsPanel
+            assumptions={assumptions}
+            onChange={handleAssumptionsChange}
+          />
         );
       case "income":
         return globalSettings ? (

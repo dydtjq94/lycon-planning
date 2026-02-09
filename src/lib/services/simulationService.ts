@@ -119,14 +119,14 @@ export const simulationService = {
 
   /**
    * 현재 계좌 데이터를 시뮬레이션에 복사
-   * - 은행/일반투자 계좌 → savings 테이블
-   * - 절세계좌 (ISA/연금저축/IRP) → personal_pensions 테이블만 (중복 없음)
-   * @param accountValues 계좌별 현재 평가액 (optional, 전달되면 해당 값 사용)
+   * accounts 테이블의 current_balance를 그대로 사용 (이미 원 단위)
+   * @param accountValues Map이 전달되면 해당 값을 우선 사용
    */
   async copyAccountsToSimulation(
     simulationId: string,
     profileId: string,
-    accountValues?: Map<string, number>
+    investmentAccountValues?: Map<string, number>,
+    savingsAccountValues?: Map<string, number>
   ): Promise<void> {
     const supabase = createClient()
 
@@ -144,53 +144,22 @@ export const simulationService = {
       .eq('profile_id', profileId)
       .eq('is_active', true)
 
-    if (accountsError || !accounts?.length) return
-
-    // 3. 투자 평가액 계산 (포트폴리오 거래 기반)
-    const { data: snapshots } = await supabase
-      .from('financial_snapshots')
-      .select('investments')
-      .eq('profile_id', profileId)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-    const totalInvestments = snapshots?.[0]?.investments || 0
-
-    const { data: transactions } = await supabase
-      .from('portfolio_transactions')
-      .select('account_id, type, total_amount')
-      .eq('profile_id', profileId)
-
-    // 계좌별 순 투자금액 → 비율 기반 평가액 배분
-    const investmentByAccount: Record<string, number> = {}
-    transactions?.forEach(tx => {
-      if (!tx.account_id) return
-      const amount = tx.type === 'buy' ? tx.total_amount : -tx.total_amount
-      investmentByAccount[tx.account_id] = (investmentByAccount[tx.account_id] || 0) + amount
-    })
-
-    const allInvestmentAccounts = accounts.filter(acc =>
-      [...INVESTMENT_ACCOUNT_TYPES, ...PENSION_ACCOUNT_TYPES, ...RETIREMENT_PENSION_TYPES].includes(acc.account_type as AccountType)
-    )
-    const totalNetInvested = Object.values(investmentByAccount).reduce((sum, val) => sum + Math.max(0, val), 0)
-
-    const getInvestmentValue = (accountId: string): number => {
-      // accountValues가 전달되면 해당 값 사용 (포트폴리오 실시간 평가액)
-      if (accountValues?.has(accountId)) {
-        return accountValues.get(accountId)!
-      }
-      // fallback: financial_snapshots 기반 계산
-      if (totalNetInvested <= 0 || totalInvestments <= 0) {
-        return allInvestmentAccounts.length > 0
-          ? Math.round(totalInvestments / allInvestmentAccounts.length)
-          : 0
-      }
-      const netInvested = Math.max(0, investmentByAccount[accountId] || 0)
-      return Math.round(totalInvestments * (netInvested / totalNetInvested))
+    if (accountsError || !accounts?.length) {
+      return
     }
 
-    // 4. 은행 + 일반투자 계좌 → savings 테이블
+    // 계좌 잔액 가져오기 (Map 값 우선, 없으면 accounts.current_balance 사용)
+    const getBalance = (accountId: string, defaultBalance: number, isInvestment: boolean): number => {
+      if (isInvestment && investmentAccountValues?.has(accountId)) {
+        return investmentAccountValues.get(accountId)!
+      }
+      if (!isInvestment && savingsAccountValues?.has(accountId)) {
+        return savingsAccountValues.get(accountId)!
+      }
+      return defaultBalance || 0
+    }
+
+    // 3. 은행 + 일반투자 계좌 → savings 테이블
     const bankAccounts = accounts.filter(acc => BANK_ACCOUNT_TYPES.includes(acc.account_type as AccountType))
     const investmentAccounts = accounts.filter(acc => INVESTMENT_ACCOUNT_TYPES.includes(acc.account_type as AccountType))
 
@@ -201,12 +170,13 @@ export const simulationService = {
         title: acc.name,
         broker_name: acc.broker_name || null,
         owner: 'self' as const,
-        current_balance: acc.current_balance || 0,
+        current_balance: getBalance(acc.id, acc.current_balance, false),
         interest_rate: acc.interest_rate ? Number(acc.interest_rate) : null,
         maturity_year: acc.maturity_year || null,
         maturity_month: acc.maturity_month || null,
         is_tax_free: acc.is_tax_free || false,
         monthly_contribution: acc.monthly_contribution || null,
+        expected_return: null,
         sort_order: idx,
       })),
       ...investmentAccounts.map((acc, idx) => ({
@@ -215,19 +185,22 @@ export const simulationService = {
         title: acc.name,
         broker_name: acc.broker_name || null,
         owner: 'self' as const,
-        current_balance: getInvestmentValue(acc.id),
-        expected_return: null,
+        current_balance: getBalance(acc.id, acc.current_balance, true),
+        interest_rate: null,
+        maturity_year: null,
+        maturity_month: null,
         is_tax_free: acc.is_tax_free || false,
+        monthly_contribution: null,
+        expected_return: null,
         sort_order: bankAccounts.length + idx,
       })),
     ]
 
     if (savingsData.length > 0) {
-      const { error } = await supabase.from('savings').insert(savingsData)
-      if (error) console.error('Failed to copy savings:', error)
+      await supabase.from('savings').insert(savingsData)
     }
 
-    // 5. 절세 계좌 → personal_pensions 테이블만
+    // 4. 절세 계좌 → personal_pensions 테이블
     const pensionAccounts = accounts.filter(acc => PENSION_ACCOUNT_TYPES.includes(acc.account_type as AccountType))
 
     if (pensionAccounts.length > 0) {
@@ -237,7 +210,7 @@ export const simulationService = {
         pension_type: ACCOUNT_TO_PENSION_TYPE[acc.account_type as AccountType]!,
         title: acc.name,
         broker_name: acc.broker_name || null,
-        current_balance: getInvestmentValue(acc.id),
+        current_balance: getBalance(acc.id, acc.current_balance, true),
         monthly_contribution: acc.monthly_contribution || null,
         is_contribution_fixed_to_retirement: true,
         start_age: 55,
@@ -248,11 +221,10 @@ export const simulationService = {
         isa_maturity_strategy: acc.account_type === 'isa' ? 'pension_savings' : null,
       }))
 
-      const { error } = await supabase.from('personal_pensions').insert(pensionData)
-      if (error) console.error('Failed to copy personal_pensions:', error)
+      await supabase.from('personal_pensions').insert(pensionData)
     }
 
-    // 6. DC형 퇴직연금 → retirement_pensions 테이블
+    // 5. DC형 퇴직연금 → retirement_pensions 테이블
     const dcAccounts = accounts.filter(acc => RETIREMENT_PENSION_TYPES.includes(acc.account_type as AccountType))
 
     if (dcAccounts.length > 0) {
@@ -260,15 +232,16 @@ export const simulationService = {
         simulation_id: simulationId,
         owner: 'self' as const,
         pension_type: 'dc' as const,
-        current_balance: getInvestmentValue(acc.id),
+        title: acc.name,
+        broker_name: acc.broker_name || null,
+        current_balance: getBalance(acc.id, acc.current_balance, true),
         receive_type: 'annuity' as const,
         start_age: 55,
         receiving_years: 20,
         return_rate: 5.0,
       }))
 
-      const { error } = await supabase.from('retirement_pensions').insert(retirementPensionData)
-      if (error) console.error('Failed to copy retirement_pensions:', error)
+      await supabase.from('retirement_pensions').insert(retirementPensionData)
     }
   },
 

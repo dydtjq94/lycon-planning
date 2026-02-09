@@ -1,19 +1,73 @@
 "use client";
 
-import { PiggyBank, TrendingUp, Shield, Briefcase, ChevronDown, ChevronUp, RefreshCw, Building2 } from "lucide-react";
-import { useState, useMemo } from "react";
-import type { Savings } from "@/types/tables";
-import { formatMoney } from "@/lib/utils";
-import { useSavingsData, usePersonalPensions, useRetirementPensions, usePortfolioTransactions } from "@/hooks/useFinancialData";
+import { PiggyBank, TrendingUp, Shield, Briefcase, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { formatWon } from "@/lib/utils";
 import { simulationService } from "@/lib/services/simulationService";
 import { createClient } from "@/lib/supabase/client";
-import {
-  SAVINGS_TYPE_LABELS,
-  INVESTMENT_TYPE_LABELS,
-  type UISavingsType,
-  type UIInvestmentType,
-} from "@/lib/services/savingsService";
+import { usePortfolioTransactions, usePortfolioChartPriceData } from "@/hooks/useFinancialData";
 import styles from "./AccountsSummaryPanel.module.css";
+
+// 은행/증권사 로고 매핑
+const BROKER_LOGO_MAP: Record<string, string> = {
+  // 은행
+  "카카오뱅크": "/logos/banks/kakaobank.png",
+  "토스뱅크": "/logos/banks/tossbank.png",
+  "케이뱅크": "/logos/banks/kbank.png",
+  "국민은행": "/logos/banks/kookmin.png",
+  "KB국민은행": "/logos/banks/kookmin.png",
+  "신한은행": "/logos/banks/shinhan.png",
+  "하나은행": "/logos/banks/hana.png",
+  "우리은행": "/logos/banks/woori.png",
+  "NH농협은행": "/logos/banks/nh.png",
+  "농협은행": "/logos/banks/nh.png",
+  "IBK기업은행": "/logos/banks/ibk.png",
+  "기업은행": "/logos/banks/ibk.png",
+  "SC제일은행": "/logos/banks/sc.png",
+  "씨티은행": "/logos/banks/citi.png",
+  "KDB산업은행": "/logos/banks/kdb.png",
+  "산업은행": "/logos/banks/kdb.png",
+  "수협은행": "/logos/banks/suhyup.png",
+  "대구은행": "/logos/banks/daegu.png",
+  "부산은행": "/logos/banks/busan.png",
+  "경남은행": "/logos/banks/kyongnam.png",
+  "광주은행": "/logos/banks/gwangju.png",
+  "전북은행": "/logos/banks/jeonbuk.png",
+  "제주은행": "/logos/banks/jeju.png",
+  "우체국": "/logos/banks/epost.png",
+  "새마을금고": "/logos/banks/saemaul.png",
+  "신협": "/logos/banks/shinhyup.png",
+  "SBI저축은행": "/logos/banks/sbi.png",
+  "아이엠뱅크": "/logos/banks/im.png",
+  // 증권사
+  "토스증권": "/logos/securities/toss.png",
+  "삼성증권": "/logos/securities/samsung.png",
+  "미래에셋증권": "/logos/securities/mirae.png",
+  "KB증권": "/logos/securities/kb.png",
+  "NH투자증권": "/logos/securities/nh.png",
+  "한국투자증권": "/logos/securities/korea.png",
+  "신한투자증권": "/logos/securities/shinhan.png",
+  "하나증권": "/logos/securities/hana.png",
+  "키움증권": "/logos/securities/kiwoom.png",
+  "대신증권": "/logos/securities/daishin.png",
+  "메리츠증권": "/logos/securities/meritz.png",
+  "한화투자증권": "/logos/securities/hanwha.png",
+  "유안타증권": "/logos/securities/yuanta.png",
+  "유진투자증권": "/logos/securities/eugene.png",
+  "이베스트투자증권": "/logos/securities/ebest.png",
+  "DB금융투자": "/logos/securities/db.png",
+  "교보증권": "/logos/securities/kyobo.png",
+  "신영증권": "/logos/securities/shinyoung.png",
+  "SK증권": "/logos/securities/sk.png",
+  "부국증권": "/logos/securities/bookook.png",
+  "케이프투자증권": "/logos/securities/cape.png",
+  "카카오페이증권": "/logos/securities/kakaopay.png",
+};
+
+function getBrokerLogo(brokerName: string | null): string | null {
+  if (!brokerName) return null;
+  return BROKER_LOGO_MAP[brokerName] || null;
+}
 
 const PENSION_TYPE_LABELS: Record<string, string> = {
   pension_savings: '연금저축',
@@ -34,8 +88,40 @@ interface AccountsSummaryPanelProps {
 
 // 저축 계좌 타입
 const SAVINGS_TYPES = ["checking", "savings", "deposit", "housing"];
-// 투자 계좌 타입 (절세계좌 제외 - personal_pensions에서 별도 관리)
+// 투자 계좌 타입
 const INVESTMENT_TYPES = ["domestic_stock", "foreign_stock", "fund", "bond", "crypto", "other"];
+
+// 계좌 타입 라벨
+const ACCOUNT_TYPE_LABELS: Record<string, string> = {
+  checking: "입출금통장",
+  savings: "적금",
+  deposit: "예금",
+  housing: "주택청약",
+  domestic_stock: "증권계좌",
+  foreign_stock: "해외주식",
+  fund: "펀드",
+  bond: "채권",
+  crypto: "암호화폐",
+  other: "기타",
+};
+
+// Raw 원 단위 데이터 타입
+interface RawAccountData {
+  id: string;
+  type: string;
+  title: string;
+  owner: string;
+  current_balance: number; // 원 단위
+  broker_name: string | null;
+}
+
+interface RawPensionData {
+  id: string;
+  pension_type: string;
+  title: string | null;
+  current_balance: number | null; // 원 단위
+  broker_name: string | null;
+}
 
 export function AccountsSummaryPanel({
   simulationId,
@@ -44,64 +130,185 @@ export function AccountsSummaryPanel({
 }: AccountsSummaryPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const { data: allSavings = [], isLoading, refetch } = useSavingsData(simulationId);
-  const { data: personalPensions = [], isLoading: pensionsLoading, refetch: refetchPensions } = usePersonalPensions(simulationId);
-  const { data: retirementPensions = [], isLoading: retirementLoading, refetch: refetchRetirement } = useRetirementPensions(simulationId);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 원 단위 raw 데이터 상태
+  const [savingsAccounts, setSavingsAccounts] = useState<RawAccountData[]>([]);
+  const [investmentAccounts, setInvestmentAccounts] = useState<RawAccountData[]>([]);
+  const [personalPensions, setPersonalPensions] = useState<RawPensionData[]>([]);
+  const [retirementPensions, setRetirementPensions] = useState<RawPensionData[]>([]);
+
+  const supabase = createClient();
+
+  // 포트폴리오 거래 내역 및 가격 데이터 (캐시됨)
   const { data: portfolioTransactions = [] } = usePortfolioTransactions(profileId);
-
-  // 포트폴리오 거래에서 계좌별 순 투자금액 계산
-  const portfolioAccountValues = useMemo(() => {
-    const values = new Map<string, number>();
-    portfolioTransactions.forEach((tx) => {
-      if (!tx.account_id) return;
-      const amount = tx.type === 'buy' ? tx.total_amount : -tx.total_amount;
-      values.set(tx.account_id, (values.get(tx.account_id) || 0) + amount);
-    });
-    // 음수 값은 0으로 처리 (전량 매도한 경우)
-    values.forEach((val, key) => {
-      if (val < 0) values.set(key, 0);
-    });
-    return values;
-  }, [portfolioTransactions]);
-
-  // 저축 계좌와 투자 계좌 분리
-  const savingsAccounts = allSavings.filter((s) =>
-    SAVINGS_TYPES.includes(s.type)
-  );
-  const investmentAccounts = allSavings.filter((s) =>
-    INVESTMENT_TYPES.includes(s.type)
+  const { data: priceCache, refetch: refetchPrices } = usePortfolioChartPriceData(
+    profileId,
+    portfolioTransactions,
+    portfolioTransactions.length > 0
   );
 
-  // 합계 계산
-  const savingsTotal = savingsAccounts.reduce((sum, acc) => sum + acc.current_balance, 0);
-  const investmentTotal = investmentAccounts.reduce((sum, acc) => sum + acc.current_balance, 0);
-  const pensionTotal = personalPensions.reduce((sum, p) => sum + (p.current_balance || 0), 0);
-  const retirementTotal = retirementPensions.reduce((sum, p) => sum + (p.current_balance || 0), 0);
-  const totalAssets = savingsTotal + investmentTotal + pensionTotal + retirementTotal;
-  const totalCount = allSavings.length + personalPensions.length + retirementPensions.length;
+  // 원 단위 데이터 직접 로드
+  const loadRawData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [savingsRes, personalRes, retirementRes] = await Promise.all([
+        supabase
+          .from("savings")
+          .select("id, type, title, owner, current_balance, broker_name")
+          .eq("simulation_id", simulationId)
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true }),
+        supabase
+          .from("personal_pensions")
+          .select("id, pension_type, title, current_balance, broker_name")
+          .eq("simulation_id", simulationId)
+          .eq("is_active", true),
+        supabase
+          .from("retirement_pensions")
+          .select("id, pension_type, title, current_balance, broker_name")
+          .eq("simulation_id", simulationId)
+          .eq("is_active", true),
+      ]);
 
-  const getTypeLabel = (account: Savings) => {
-    if (SAVINGS_TYPES.includes(account.type)) {
-      return SAVINGS_TYPE_LABELS[account.type as UISavingsType];
+      const allSavings = (savingsRes.data || []) as RawAccountData[];
+      setSavingsAccounts(allSavings.filter((s) => SAVINGS_TYPES.includes(s.type)));
+      setInvestmentAccounts(allSavings.filter((s) => INVESTMENT_TYPES.includes(s.type)));
+      setPersonalPensions((personalRes.data || []) as RawPensionData[]);
+      setRetirementPensions((retirementRes.data || []) as RawPensionData[]);
+    } finally {
+      setIsLoading(false);
     }
-    return INVESTMENT_TYPE_LABELS[account.type as UIInvestmentType];
-  };
+  }, [simulationId, supabase]);
 
-  const getRate = (account: Savings) => {
-    if (account.interest_rate) return `${account.interest_rate}%`;
-    if (account.expected_return) return `${account.expected_return}%`;
-    return "-";
-  };
+  useEffect(() => {
+    loadRawData();
+  }, [loadRawData]);
 
-  // 이미 만원 단위로 변환되어 있음 (getSavings에서 convertArrayFromWon 적용됨)
+  // 합계 계산 (원 단위)
+  const totalAssets = savingsAccounts.reduce((sum, acc) => sum + acc.current_balance, 0)
+    + investmentAccounts.reduce((sum, acc) => sum + acc.current_balance, 0)
+    + personalPensions.reduce((sum, p) => sum + (p.current_balance || 0), 0)
+    + retirementPensions.reduce((sum, p) => sum + (p.current_balance || 0), 0);
+  const totalCount = savingsAccounts.length + investmentAccounts.length + personalPensions.length + retirementPensions.length;
+
+  // 계좌별 투자 평가액 계산 (PortfolioTab과 동일한 로직)
+  const calculateInvestmentAccountValues = useCallback(() => {
+    const values = new Map<string, number>();
+    if (!priceCache || portfolioTransactions.length === 0) return values;
+
+    const { priceDataMap, exchangeRateMap } = priceCache;
+
+    // 가장 최근 환율
+    let latestExchangeRate = 1400;
+    if (exchangeRateMap.size > 0) {
+      const sortedFxDates = Array.from(exchangeRateMap.keys()).sort();
+      const latestFxDate = sortedFxDates[sortedFxDates.length - 1];
+      latestExchangeRate = exchangeRateMap.get(latestFxDate) || 1400;
+    }
+
+    // 계좌별 보유량 계산
+    const accountHoldingsMap = new Map<string, Map<string, { qty: number; currency: string; assetType: string }>>();
+
+    portfolioTransactions.forEach((tx) => {
+      const accountId = tx.account_id || "unknown";
+      if (!accountHoldingsMap.has(accountId)) {
+        accountHoldingsMap.set(accountId, new Map());
+      }
+      const holdings = accountHoldingsMap.get(accountId)!;
+      const existing = holdings.get(tx.ticker);
+
+      if (!existing) {
+        if (tx.type === "buy") {
+          holdings.set(tx.ticker, { qty: tx.quantity, currency: tx.currency, assetType: tx.asset_type });
+        }
+      } else {
+        if (tx.type === "buy") {
+          existing.qty += tx.quantity;
+        } else {
+          existing.qty -= tx.quantity;
+        }
+      }
+    });
+
+    // 계좌별 평가액 계산
+    accountHoldingsMap.forEach((holdings, accountId) => {
+      let accountValue = 0;
+      holdings.forEach((h, ticker) => {
+        if (h.qty > 0) {
+          const tickerPrices = priceDataMap.get(ticker);
+          let latestPrice = 0;
+          if (tickerPrices && tickerPrices.size > 0) {
+            const sortedDates = Array.from(tickerPrices.keys()).sort();
+            const latestDate = sortedDates[sortedDates.length - 1];
+            latestPrice = tickerPrices.get(latestDate) || 0;
+          }
+          if (latestPrice > 0) {
+            const isForeign = h.assetType === "foreign_stock" || h.assetType === "foreign_etf";
+            const holdingValue = isForeign && h.currency === "USD"
+              ? h.qty * latestPrice * latestExchangeRate
+              : h.qty * latestPrice;
+            accountValue += holdingValue;
+          }
+        }
+      });
+      values.set(accountId, Math.round(accountValue));
+    });
+
+    return values;
+  }, [priceCache, portfolioTransactions]);
 
   // 현재 자산 동기화
   const handleSync = async () => {
     setIsSyncing(true);
     try {
-      // 포트폴리오 거래 기반 계좌별 투자금액을 전달
-      await simulationService.copyAccountsToSimulation(simulationId, profileId, portfolioAccountValues);
-      await Promise.all([refetch(), refetchPensions(), refetchRetirement()]);
+      // 가격 데이터 새로고침
+      await refetchPrices();
+
+      // 1. 저축 계좌 잔액 계산 (가계부 반영)
+      const savingsAccountBalances = new Map<string, number>();
+      const { data: checkingAccounts } = await supabase
+        .from("accounts")
+        .select("id, current_balance")
+        .eq("profile_id", profileId)
+        .eq("is_active", true)
+        .in("account_type", ["checking", "savings", "deposit", "free_savings", "housing"]);
+
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().getMonth() + 1;
+      const { data: budgetTx } = await supabase
+        .from("budget_transactions")
+        .select("account_id, type, amount")
+        .eq("profile_id", profileId)
+        .eq("year", currentYear)
+        .eq("month", currentMonth);
+
+      const txSummary: Record<string, { income: number; expense: number }> = {};
+      budgetTx?.forEach(tx => {
+        if (!tx.account_id) return;
+        if (!txSummary[tx.account_id]) {
+          txSummary[tx.account_id] = { income: 0, expense: 0 };
+        }
+        if (tx.type === "income") {
+          txSummary[tx.account_id].income += tx.amount;
+        } else if (tx.type === "expense") {
+          txSummary[tx.account_id].expense += tx.amount;
+        }
+      });
+
+      checkingAccounts?.forEach(acc => {
+        const summary = txSummary[acc.id] || { income: 0, expense: 0 };
+        // accounts.current_balance는 원 단위, budget_transactions.amount는 만원 단위
+        const expectedBalance = (acc.current_balance || 0) + (summary.income - summary.expense) * 10000;
+        savingsAccountBalances.set(acc.id, Math.round(expectedBalance));
+      });
+
+      // 2. 투자 계좌 평가액 (캐시된 가격 데이터 사용)
+      const investmentAccountValues = calculateInvestmentAccountValues();
+
+      // 3. 시뮬레이션에 복사
+      await simulationService.copyAccountsToSimulation(simulationId, profileId, investmentAccountValues, savingsAccountBalances);
+      await loadRawData();
     } catch (error) {
       console.error("Failed to sync accounts:", error);
     } finally {
@@ -109,7 +316,7 @@ export function AccountsSummaryPanel({
     }
   };
 
-  if (isLoading || pensionsLoading || retirementLoading) {
+  if (isLoading) {
     return (
       <div className={styles.panel}>
         <div className={styles.skeletonHeader}>
@@ -121,7 +328,6 @@ export function AccountsSummaryPanel({
           <div className={`${styles.skeleton} ${styles.skeletonAmount}`} />
         </div>
         <div className={styles.loading}>
-          {/* 저축 그룹 스켈레톤 */}
           <div className={styles.skeletonGroup}>
             <div className={styles.skeletonGroupHeader}>
               <div className={`${styles.skeleton} ${styles.skeletonGroupIcon}`} />
@@ -132,30 +338,8 @@ export function AccountsSummaryPanel({
               <div key={i} className={styles.skeletonItem}>
                 <div className={styles.skeletonItemLeft}>
                   <div className={`${styles.skeleton} ${styles.skeletonItemName}`} />
-                  <div className={`${styles.skeleton} ${styles.skeletonItemType}`} />
                 </div>
                 <div className={styles.skeletonItemRight}>
-                  <div className={`${styles.skeleton} ${styles.skeletonItemRate}`} />
-                  <div className={`${styles.skeleton} ${styles.skeletonItemBalance}`} />
-                </div>
-              </div>
-            ))}
-          </div>
-          {/* 투자 그룹 스켈레톤 */}
-          <div className={styles.skeletonGroup}>
-            <div className={styles.skeletonGroupHeader}>
-              <div className={`${styles.skeleton} ${styles.skeletonGroupIcon}`} />
-              <div className={`${styles.skeleton} ${styles.skeletonGroupLabel}`} />
-              <div className={`${styles.skeleton} ${styles.skeletonGroupTotal}`} />
-            </div>
-            {[1, 2].map((i) => (
-              <div key={i} className={styles.skeletonItem}>
-                <div className={styles.skeletonItemLeft}>
-                  <div className={`${styles.skeleton} ${styles.skeletonItemName}`} />
-                  <div className={`${styles.skeleton} ${styles.skeletonItemType}`} />
-                </div>
-                <div className={styles.skeletonItemRight}>
-                  <div className={`${styles.skeleton} ${styles.skeletonItemRate}`} />
                   <div className={`${styles.skeleton} ${styles.skeletonItemBalance}`} />
                 </div>
               </div>
@@ -168,40 +352,35 @@ export function AccountsSummaryPanel({
 
   return (
     <div className={styles.panel}>
-      <button
-        className={styles.header}
-        onClick={() => setIsExpanded(!isExpanded)}
-        type="button"
-      >
-        <div className={styles.headerLeft}>
-          <Building2 size={20} />
+      <div className={styles.header}>
+        <button
+          className={styles.headerToggle}
+          onClick={() => setIsExpanded(!isExpanded)}
+          type="button"
+        >
           <span className={styles.title}>계좌</span>
           <span className={styles.count}>{totalCount}개</span>
-        </div>
+          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
         <div className={styles.headerRight}>
-          <span className={styles.totalAmount}>{formatMoney(totalAssets)}</span>
-          {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          <button
+            className={styles.syncIconButton}
+            onClick={(e) => { e.stopPropagation(); handleSync(); }}
+            disabled={isSyncing}
+            type="button"
+            title="현재 자산으로 업데이트"
+          >
+            <RefreshCw size={16} className={isSyncing ? styles.spinning : ""} />
+          </button>
+          <span className={styles.totalAmount}>{formatWon(totalAssets)}</span>
         </div>
-      </button>
+      </div>
 
       {isExpanded && (
         <div className={styles.content}>
-          <p className={styles.description}>
-            시뮬레이션 생성 시점의 계좌 스냅샷입니다. 모든 계좌는 하나의 현금 풀로 통합되어 계산됩니다.
-          </p>
-
           {totalCount === 0 ? (
             <div className={styles.emptyState}>
               <p>등록된 계좌가 없습니다.</p>
-              <button
-                className={styles.syncButton}
-                onClick={handleSync}
-                disabled={isSyncing}
-                type="button"
-              >
-                <RefreshCw size={16} className={isSyncing ? styles.spinning : ""} />
-                {isSyncing ? "동기화 중..." : "현재 자산에서 동기화"}
-              </button>
             </div>
           ) : (
             <div className={styles.accountList}>
@@ -209,27 +388,35 @@ export function AccountsSummaryPanel({
               {savingsAccounts.length > 0 && (
                 <div className={styles.accountGroup}>
                   <div className={styles.groupHeader}>
-                    <PiggyBank size={16} />
+                    <PiggyBank size={14} />
                     <span>저축</span>
-                    <span className={styles.groupTotal}>{formatMoney(savingsTotal)}</span>
                   </div>
-                  {savingsAccounts.map((account) => (
-                    <div key={account.id} className={styles.accountItem}>
-                      <div className={styles.accountMain}>
-                        <span className={styles.accountName}>
-                          {account.title}
-                          {isMarried && account.owner === "spouse" && (
-                            <span className={styles.ownerBadge}>배우자</span>
+                  {savingsAccounts.map((account) => {
+                    const logo = getBrokerLogo(account.broker_name);
+                    return (
+                      <div key={account.id} className={styles.accountItem}>
+                        <div className={styles.accountMain}>
+                          {logo ? (
+                            <img src={logo} alt="" className={styles.brokerLogo} />
+                          ) : (
+                            <div className={styles.brokerLogoPlaceholder}>
+                              {(account.broker_name || account.title || "?").charAt(0)}
+                            </div>
                           )}
-                        </span>
-                        <span className={styles.accountType}>{getTypeLabel(account)}</span>
+                          <div className={styles.accountInfo}>
+                            <span className={styles.accountName}>
+                              {account.title}
+                              {isMarried && account.owner === "spouse" && (
+                                <span className={styles.ownerBadge}>배우자</span>
+                              )}
+                            </span>
+                            <span className={styles.accountType}>{ACCOUNT_TYPE_LABELS[account.type] || account.type}</span>
+                          </div>
+                        </div>
+                        <span className={styles.accountBalance}>{formatWon(account.current_balance)}</span>
                       </div>
-                      <div className={styles.accountMeta}>
-                        <span className={styles.accountRate}>{getRate(account)}</span>
-                        <span className={styles.accountBalance}>{formatMoney(account.current_balance)}</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -237,27 +424,35 @@ export function AccountsSummaryPanel({
               {investmentAccounts.length > 0 && (
                 <div className={styles.accountGroup}>
                   <div className={styles.groupHeader}>
-                    <TrendingUp size={16} />
+                    <TrendingUp size={14} />
                     <span>투자</span>
-                    <span className={styles.groupTotal}>{formatMoney(investmentTotal)}</span>
                   </div>
-                  {investmentAccounts.map((account) => (
-                    <div key={account.id} className={styles.accountItem}>
-                      <div className={styles.accountMain}>
-                        <span className={styles.accountName}>
-                          {account.title}
-                          {isMarried && account.owner === "spouse" && (
-                            <span className={styles.ownerBadge}>배우자</span>
+                  {investmentAccounts.map((account) => {
+                    const logo = getBrokerLogo(account.broker_name);
+                    return (
+                      <div key={account.id} className={styles.accountItem}>
+                        <div className={styles.accountMain}>
+                          {logo ? (
+                            <img src={logo} alt="" className={styles.brokerLogo} />
+                          ) : (
+                            <div className={styles.brokerLogoPlaceholder}>
+                              {(account.broker_name || account.title || "?").charAt(0)}
+                            </div>
                           )}
-                        </span>
-                        <span className={styles.accountType}>{getTypeLabel(account)}</span>
+                          <div className={styles.accountInfo}>
+                            <span className={styles.accountName}>
+                              {account.title}
+                              {isMarried && account.owner === "spouse" && (
+                                <span className={styles.ownerBadge}>배우자</span>
+                              )}
+                            </span>
+                            <span className={styles.accountType}>{ACCOUNT_TYPE_LABELS[account.type] || account.type}</span>
+                          </div>
+                        </div>
+                        <span className={styles.accountBalance}>{formatWon(account.current_balance)}</span>
                       </div>
-                      <div className={styles.accountMeta}>
-                        <span className={styles.accountRate}>{getRate(account)}</span>
-                        <span className={styles.accountBalance}>{formatMoney(account.current_balance)}</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -265,29 +460,32 @@ export function AccountsSummaryPanel({
               {personalPensions.length > 0 && (
                 <div className={styles.accountGroup}>
                   <div className={styles.groupHeader}>
-                    <Shield size={16} />
+                    <Shield size={14} />
                     <span>절세계좌</span>
-                    <span className={styles.groupTotal}>{formatMoney(pensionTotal)}</span>
                   </div>
-                  {personalPensions.map((pension) => (
-                    <div key={pension.id} className={styles.accountItem}>
-                      <div className={styles.accountMain}>
-                        <span className={styles.accountName}>
-                          {pension.title || PENSION_TYPE_LABELS[pension.pension_type] || pension.pension_type}
-                          {pension.broker_name && (
-                            <span className={styles.brokerBadge}>{pension.broker_name}</span>
+                  {personalPensions.map((pension) => {
+                    const logo = getBrokerLogo(pension.broker_name || null);
+                    return (
+                      <div key={pension.id} className={styles.accountItem}>
+                        <div className={styles.accountMain}>
+                          {logo ? (
+                            <img src={logo} alt="" className={styles.brokerLogo} />
+                          ) : (
+                            <div className={styles.brokerLogoPlaceholder}>
+                              {(pension.broker_name || pension.title || "?").charAt(0)}
+                            </div>
                           )}
-                        </span>
-                        <span className={styles.accountType}>
-                          {PENSION_TYPE_LABELS[pension.pension_type] || pension.pension_type}
-                        </span>
+                          <div className={styles.accountInfo}>
+                            <span className={styles.accountName}>
+                              {pension.title || PENSION_TYPE_LABELS[pension.pension_type] || pension.pension_type}
+                            </span>
+                            <span className={styles.accountType}>{PENSION_TYPE_LABELS[pension.pension_type] || pension.pension_type}</span>
+                          </div>
+                        </div>
+                        <span className={styles.accountBalance}>{formatWon(pension.current_balance || 0)}</span>
                       </div>
-                      <div className={styles.accountMeta}>
-                        <span className={styles.accountRate}>-</span>
-                        <span className={styles.accountBalance}>{formatMoney(pension.current_balance || 0)}</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -295,39 +493,34 @@ export function AccountsSummaryPanel({
               {retirementPensions.length > 0 && (
                 <div className={styles.accountGroup}>
                   <div className={styles.groupHeader}>
-                    <Briefcase size={16} />
+                    <Briefcase size={14} />
                     <span>퇴직연금</span>
-                    <span className={styles.groupTotal}>{formatMoney(retirementTotal)}</span>
                   </div>
-                  {retirementPensions.map((pension) => (
-                    <div key={pension.id} className={styles.accountItem}>
-                      <div className={styles.accountMain}>
-                        <span className={styles.accountName}>
-                          {RETIREMENT_PENSION_TYPE_LABELS[pension.pension_type] || pension.pension_type}
-                        </span>
-                        <span className={styles.accountType}>
-                          {pension.receive_type === 'annuity' ? '연금 수령' : '일시금 수령'}
-                        </span>
+                  {retirementPensions.map((pension) => {
+                    const logo = getBrokerLogo(pension.broker_name || null);
+                    return (
+                      <div key={pension.id} className={styles.accountItem}>
+                        <div className={styles.accountMain}>
+                          {logo ? (
+                            <img src={logo} alt="" className={styles.brokerLogo} />
+                          ) : (
+                            <div className={styles.brokerLogoPlaceholder}>
+                              <Briefcase size={12} />
+                            </div>
+                          )}
+                          <div className={styles.accountInfo}>
+                            <span className={styles.accountName}>
+                              {pension.title || RETIREMENT_PENSION_TYPE_LABELS[pension.pension_type] || pension.pension_type}
+                            </span>
+                            <span className={styles.accountType}>{RETIREMENT_PENSION_TYPE_LABELS[pension.pension_type] || pension.pension_type}</span>
+                          </div>
+                        </div>
+                        <span className={styles.accountBalance}>{formatWon(pension.current_balance || 0)}</span>
                       </div>
-                      <div className={styles.accountMeta}>
-                        <span className={styles.accountRate}>{pension.return_rate}%</span>
-                        <span className={styles.accountBalance}>{formatMoney(pension.current_balance || 0)}</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
-
-              {/* 재동기화 버튼 */}
-              <button
-                className={styles.resyncButton}
-                onClick={handleSync}
-                disabled={isSyncing}
-                type="button"
-              >
-                <RefreshCw size={14} className={isSyncing ? styles.spinning : ""} />
-                {isSyncing ? "동기화 중..." : "현재 자산으로 업데이트"}
-              </button>
             </div>
           )}
         </div>
