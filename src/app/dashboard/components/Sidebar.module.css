@@ -106,6 +106,16 @@
   --sidebar-item-bg-active: #454028;
 }
 
+/* 다크 + 시안 (슬랙 스타일) */
+.sidebar[data-color-mode="dark"][data-accent="cyan"] {
+  --sidebar-accent: var(--accent-color, #06b6d4);
+  --sidebar-bg: #1a2a2e;
+  --sidebar-header-bg: #1e3035;
+  --sidebar-border: #2a4548;
+  --sidebar-item-bg-hover: #253a3e;
+  --sidebar-item-bg-active: #2d4548;
+}
+
 /* ========================================
    라이트모드 + 액센트 색상 조합
    ======================================== */
@@ -234,6 +244,20 @@
   --sidebar-text-hover: #5a4018;
   --sidebar-text-active: #5a4018;
   --sidebar-text-muted: #a08040;
+}
+
+/* 라이트 + 시안 */
+.sidebar[data-color-mode="light"][data-accent="cyan"] {
+  --sidebar-accent: var(--accent-color, #06b6d4);
+  --sidebar-bg: #f0fdff;
+  --sidebar-header-bg: #f8fafc;
+  --sidebar-border: #d5f5fa;
+  --sidebar-item-bg-hover: #e0f8fc;
+  --sidebar-item-bg-active: #d0f0f5;
+  --sidebar-text: #2d5560;
+  --sidebar-text-hover: #1a4048;
+  --sidebar-text-active: #1a4048;
+  --sidebar-text-muted: #4d8a95;
 }
 
 /* ========================================

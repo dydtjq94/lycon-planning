@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 
 export type ColorMode = "light" | "dark" | "system";
-export type AccentColor = "blue" | "purple" | "green" | "rose" | "orange" | "black" | "teal" | "indigo" | "amber";
+export type AccentColor = "blue" | "purple" | "green" | "rose" | "orange" | "black" | "teal" | "indigo" | "amber" | "cyan";
 
 interface ThemeContextType {
   colorMode: ColorMode;
@@ -25,6 +25,7 @@ const accentColorValues: Record<AccentColor, { primary: string; primaryHover: st
   teal: { primary: "#14b8a6", primaryHover: "#0d9488", primaryLight: "#f0fdfa" },
   indigo: { primary: "#6366f1", primaryHover: "#4f46e5", primaryLight: "#eef2ff" },
   amber: { primary: "#f59e0b", primaryHover: "#d97706", primaryLight: "#fffbeb" },
+  cyan: { primary: "#06b6d4", primaryHover: "#0891b2", primaryLight: "#ecfeff" },
 };
 
 // 사이드바/헤더 배경 색상 (색상모드 + 액센트별)
@@ -39,6 +40,7 @@ const sidebarColors: Record<"light" | "dark", Record<AccentColor, { bg: string; 
     teal: { bg: "#f0fdfa", border: "#d5f5f0", text: "#2d5a52", textMuted: "#4d9088" },
     indigo: { bg: "#f0f2ff", border: "#e0e4f8", text: "#3a4070", textMuted: "#6b78a8" },
     amber: { bg: "#fffcf0", border: "#fef0c8", text: "#705020", textMuted: "#a08040" },
+    cyan: { bg: "#f0fdff", border: "#d5f5fa", text: "#2d5560", textMuted: "#4d8a95" },
   },
   dark: {
     blue: { bg: "#1a2333", border: "#2a3a52", text: "#e8e8e8", textMuted: "#9a9b9e" },
@@ -50,6 +52,7 @@ const sidebarColors: Record<"light" | "dark", Record<AccentColor, { bg: string; 
     teal: { bg: "#1a2a28", border: "#2a4540", text: "#e8e8e8", textMuted: "#9a9b9e" },
     indigo: { bg: "#1f1f38", border: "#303050", text: "#e8e8e8", textMuted: "#9a9b9e" },
     amber: { bg: "#2a2518", border: "#454028", text: "#e8e8e8", textMuted: "#9a9b9e" },
+    cyan: { bg: "#1a2a2e", border: "#2a4548", text: "#e8e8e8", textMuted: "#9a9b9e" },
   },
 };
 
@@ -130,7 +133,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
 
     const mode = savedMode || "dark";
-    const accent = savedAccent || "blue";
+    const accent = (savedAccent && savedAccent in accentColorValues) ? savedAccent : "blue";
 
     setColorModeState(mode);
     setAccentColorState(accent);

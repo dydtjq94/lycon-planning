@@ -209,13 +209,6 @@ export function CashFlowChart({
   useEffect(() => {
     if (!chartRef.current || snapshots.length === 0) return
 
-    if (chartInstance.current) {
-      chartInstance.current.destroy()
-    }
-
-    const ctx = chartRef.current.getContext('2d')
-    if (!ctx) return
-
     // 연도 레이블
     const labels = snapshots.map(s => s.year)
     // 소득은 양수, 지출은 음수로 변환
@@ -230,6 +223,48 @@ export function CashFlowChart({
     const maxExpense = Math.max(...snapshots.map(s => s.totalExpense))
     const maxAbsValue = Math.max(maxIncome, maxExpense)
     const roundedMax = Math.ceil(maxAbsValue / 1000) * 1000
+
+    // 차트가 이미 있으면 데이터/옵션만 업데이트 (애니메이션 없이)
+    if (chartInstance.current) {
+      const chart = chartInstance.current
+      chart.data.labels = labels
+      chart.data.datasets[0].data = incomeData
+      chart.data.datasets[0].backgroundColor = snapshots.map(s =>
+        selectedYear === s.year ? toRgba(chartLineColors.value, 1) : toRgba(chartLineColors.value, 0.7)
+      )
+      chart.data.datasets[1].data = expenseData
+      chart.data.datasets[1].backgroundColor = snapshots.map(s =>
+        selectedYear === s.year ? toRgba(chartLineColors.profit, 1) : toRgba(chartLineColors.profit, 0.7)
+      )
+
+      // 스케일 색상 업데이트
+      if (chart.options.scales?.x?.ticks) chart.options.scales.x.ticks.color = chartScaleColors.tickColor
+      if (chart.options.scales?.y?.ticks) chart.options.scales.y.ticks.color = chartScaleColors.tickColor
+      if (chart.options.scales?.y?.grid) (chart.options.scales.y.grid as any).color = chartScaleColors.gridColor
+      if (chart.options.scales?.y) {
+        chart.options.scales.y.min = -roundedMax
+        chart.options.scales.y.max = roundedMax
+      }
+
+      // annotation 업데이트
+      const annotations = (chart.options.plugins?.annotation as any)?.annotations
+      if (annotations?.retirementLine) {
+        annotations.retirementLine.xMin = retirementIndex
+        annotations.retirementLine.xMax = retirementIndex
+      }
+
+      // tooltip 핸들러 업데이트
+      if (chart.options.plugins?.tooltip) {
+        (chart.options.plugins.tooltip as any).external = externalTooltipHandler
+      }
+
+      chart.update('none')
+      return
+    }
+
+    // 최초 생성 (애니메이션 포함)
+    const ctx = chartRef.current.getContext('2d')
+    if (!ctx) return
 
     chartInstance.current = new ChartJS(ctx, {
       type: 'bar',
@@ -356,13 +391,17 @@ export function CashFlowChart({
         },
       },
     })
+  }, [snapshots, retirementYear, selectedYear, onYearClick, currentYear, externalTooltipHandler, chartScaleColors, chartLineColors, toRgba])
 
+  // 컴포넌트 언마운트 시에만 차트 파괴
+  useEffect(() => {
     return () => {
       if (chartInstance.current) {
         chartInstance.current.destroy()
+        chartInstance.current = null
       }
     }
-  }, [snapshots, retirementYear, selectedYear, onYearClick, currentYear, externalTooltipHandler, chartScaleColors, chartLineColors, toRgba])
+  }, [])
 
   if (snapshots.length === 0) {
     return (

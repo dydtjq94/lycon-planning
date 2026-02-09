@@ -1,0 +1,252 @@
+.main {
+  min-height: 100vh;
+  padding: 88px 24px 40px;
+  background: #ffffff;
+}
+
+.container {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Form Card - 전체화면 느낌 */
+.formCard {
+  padding: 0;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: left;
+  margin: 0 0 8px;
+  letter-spacing: -0.03em;
+}
+
+.desc {
+  font-size: 15px;
+  color: #737373;
+  text-align: left;
+  margin: 0 0 32px;
+  line-height: 1.6;
+}
+
+/* Count Highlight */
+.countHighlight {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.input {
+  width: 100%;
+  padding: 16px 0;
+  font-size: 24px;
+  font-weight: 500;
+  color: #1a1a1a;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #e5e5e5;
+  border-radius: 0;
+  outline: none;
+  transition: border-color 0.15s ease;
+  letter-spacing: 0.02em;
+  box-sizing: border-box;
+}
+
+.input::placeholder {
+  color: #d4d4d4;
+  font-weight: 400;
+}
+
+.input:focus {
+  border-bottom-color: #2563eb;
+}
+
+.error {
+  font-size: 13px;
+  color: #ef4444;
+  margin: 0;
+}
+
+/* Submit Button */
+.submitButton {
+  width: 100%;
+  padding: 16px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #2563eb;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  margin-top: 8px;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.submitButton:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+.privacy {
+  font-size: 12px;
+  color: #a3a3a3;
+  text-align: center;
+  margin: 20px 0 0;
+  line-height: 1.5;
+}
+
+/* Success */
+.successCard {
+  padding: 0;
+  text-align: center;
+  padding-top: 80px;
+}
+
+.successIcon {
+  margin-bottom: 24px;
+}
+
+.successTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 12px;
+  letter-spacing: -0.03em;
+}
+
+.successDesc {
+  font-size: 15px;
+  color: #737373;
+  margin: 0 0 32px;
+  line-height: 1.6;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  font-size: 15px;
+  border-radius: 9999px;
+  text-decoration: none;
+}
+
+/* Skeleton */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.skeletonTitle,
+.skeletonDesc,
+.skeletonLabel,
+.skeletonInput,
+.skeletonButton {
+  background: linear-gradient(90deg, #f5f5f5 25%, #ebebeb 50%, #f5f5f5 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.skeletonTitle {
+  height: 30px;
+  width: 200px;
+  margin-bottom: 12px;
+}
+
+.skeletonDesc {
+  height: 18px;
+  width: 100%;
+  margin-bottom: 40px;
+}
+
+.skeletonLabel {
+  height: 16px;
+  width: 120px;
+  margin-bottom: 12px;
+}
+
+.skeletonInput {
+  height: 52px;
+  width: 100%;
+  margin-bottom: 32px;
+}
+
+.skeletonButton {
+  height: 52px;
+  width: 100%;
+  border-radius: 12px;
+}
+
+/* 데스크탑에서만 카드 형태로 */
+@media (min-width: 768px) {
+  .main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fafafa;
+  }
+
+  .container {
+    max-width: 480px;
+  }
+
+  .formCard,
+  .successCard {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 48px 40px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+  }
+
+  .successCard {
+    padding-top: 48px;
+  }
+
+  .title,
+  .desc {
+    text-align: center;
+  }
+
+  .input {
+    font-size: 20px;
+    padding: 14px 16px;
+    background: #fafafa;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 12px;
+  }
+
+  .input:focus {
+    border-color: #2563eb;
+    background: #ffffff;
+  }
+}

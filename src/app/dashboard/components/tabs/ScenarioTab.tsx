@@ -47,7 +47,7 @@ interface ScenarioTabProps {
 // Top level tabs
 const TOP_TABS = [
   { id: "plan", label: "순자산 규모" },
-  { id: "cashflow", label: "가계 현금흐름" },
+  { id: "cashflow", label: "가계 현금 흐름" },
 ] as const;
 
 // Category tabs
@@ -60,7 +60,7 @@ const CATEGORY_TABS = [
   { id: "asset", label: "실물자산", icon: Car },
   { id: "debt", label: "부채", icon: CreditCard },
   { id: "pension", label: "연금", icon: Landmark },
-  { id: "cashflowPriorities", label: "현금흐름 우선순위", icon: ListOrdered },
+  { id: "cashflowPriorities", label: "현금 흐름 우선순위", icon: ListOrdered },
 ] as const;
 
 // 기본 Investment Assumptions

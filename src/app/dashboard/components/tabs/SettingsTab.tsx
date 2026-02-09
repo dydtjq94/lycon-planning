@@ -30,6 +30,7 @@ const accentColors: AccentColorOption[] = [
   { id: "orange", name: "오렌지", color: "#f97316" },
   { id: "amber", name: "앰버", color: "#f59e0b" },
   { id: "black", name: "블랙", color: "#525252" },
+  { id: "cyan", name: "시안", color: "#06b6d4" },
 ];
 
 const chartThemes: ChartTheme[] = [
@@ -126,149 +127,142 @@ export function SettingsTab({ profileName }: SettingsTabProps) {
   return (
     <div className={styles.container}>
       <div className={styles.content}>
-        {/* 프로필 섹션 */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>프로필</h2>
-          <div className={styles.menuList}>
-            <button className={styles.menuItem}>
-              <User size={20} />
-              <div className={styles.menuInfo}>
-                <span className={styles.menuLabel}>내 정보</span>
-                <span className={styles.menuValue}>{profileName || "이름 없음"}</span>
-              </div>
-              <ChevronRight size={16} className={styles.chevron} />
-            </button>
-          </div>
-        </section>
-
-        {/* 색상 모드 */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>색상 모드</h2>
-          <div className={styles.colorModeContainer}>
-            <button
-              className={`${styles.colorModeBtn} ${colorMode === "light" ? styles.colorModeBtnActive : ""}`}
-              onClick={() => handleColorModeChange("light")}
-            >
-              <Sun size={18} />
-              <span>라이트</span>
-            </button>
-            <button
-              className={`${styles.colorModeBtn} ${colorMode === "dark" ? styles.colorModeBtnActive : ""}`}
-              onClick={() => handleColorModeChange("dark")}
-            >
-              <Moon size={18} />
-              <span>다크</span>
-            </button>
-            <button
-              className={`${styles.colorModeBtn} ${colorMode === "system" ? styles.colorModeBtnActive : ""}`}
-              onClick={() => handleColorModeChange("system")}
-            >
-              <Monitor size={18} />
-              <span>시스템</span>
-            </button>
-          </div>
-        </section>
-
-        {/* 액센트 색상 */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>액센트 색상</h2>
-          <div className={styles.accentGrid}>
-            {accentColors.map((color) => (
-              <button
-                key={color.id}
-                className={`${styles.accentCard} ${accentColor === color.id ? styles.accentCardActive : ""}`}
-                onClick={() => handleAccentColorChange(color.id)}
-                style={{ "--accent-preview": color.color } as React.CSSProperties}
-              >
-                <div
-                  className={styles.accentDot}
-                  style={{ backgroundColor: color.color }}
-                />
-                <span className={styles.accentName}>{color.name}</span>
-                {accentColor === color.id && (
-                  <div className={styles.checkMark} style={{ backgroundColor: color.color }}>
-                    <Check size={12} />
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* 차트 색상 설정 */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>차트 색상</h2>
-          <div className={styles.chartThemeGrid}>
-            {chartThemes.map((theme) => (
-              <button
-                key={theme.id}
-                className={`${styles.chartThemeCard} ${currentChartTheme === theme.id ? styles.chartThemeCardActive : ""}`}
-                onClick={() => handleChartThemeChange(theme.id)}
-              >
-                <div className={styles.chartColorPreview}>
-                  {theme.colors.map((color, idx) => (
-                    <div
-                      key={idx}
-                      className={styles.chartColorDot}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
+        {/* Left Column */}
+        <div className={styles.leftColumn}>
+          {/* 프로필 섹션 */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>프로필</h2>
+            <div className={styles.menuList}>
+              <button className={styles.menuItem}>
+                <User size={20} />
+                <div className={styles.menuInfo}>
+                  <span className={styles.menuLabel}>내 정보</span>
+                  <span className={styles.menuValue}>{profileName || "이름 없음"}</span>
                 </div>
-                <span className={styles.chartThemeName}>{theme.name}</span>
-                {currentChartTheme === theme.id && (
-                  <div className={styles.checkMark}>
-                    <Check size={14} />
-                  </div>
-                )}
+                <ChevronRight size={16} className={styles.chevron} />
               </button>
-            ))}
-          </div>
-        </section>
+            </div>
+          </section>
 
-        {/* 앱 설정 섹션 */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>앱 설정</h2>
-          <div className={styles.menuList}>
-            <button className={styles.menuItem}>
-              <Bell size={20} />
-              <div className={styles.menuInfo}>
-                <span className={styles.menuLabel}>알림</span>
-              </div>
-              <ChevronRight size={16} className={styles.chevron} />
-            </button>
-            <button className={styles.menuItem}>
-              <Shield size={20} />
-              <div className={styles.menuInfo}>
-                <span className={styles.menuLabel}>보안</span>
-              </div>
-              <ChevronRight size={16} className={styles.chevron} />
-            </button>
-          </div>
-        </section>
+          {/* 앱 설정 섹션 */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>앱 설정</h2>
+            <div className={styles.menuList}>
+              <button className={styles.menuItem}>
+                <Bell size={20} />
+                <div className={styles.menuInfo}>
+                  <span className={styles.menuLabel}>알림</span>
+                </div>
+                <ChevronRight size={16} className={styles.chevron} />
+              </button>
+              <button className={styles.menuItem}>
+                <Shield size={20} />
+                <div className={styles.menuInfo}>
+                  <span className={styles.menuLabel}>보안</span>
+                </div>
+                <ChevronRight size={16} className={styles.chevron} />
+              </button>
+            </div>
+          </section>
 
-        {/* 지원 섹션 */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>지원</h2>
-          <div className={styles.menuList}>
-            <button className={styles.menuItem}>
-              <HelpCircle size={20} />
-              <div className={styles.menuInfo}>
-                <span className={styles.menuLabel}>도움말</span>
-              </div>
-              <ChevronRight size={16} className={styles.chevron} />
-            </button>
-          </div>
-        </section>
+          {/* 지원 섹션 */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>지원</h2>
+            <div className={styles.menuList}>
+              <button className={styles.menuItem}>
+                <HelpCircle size={20} />
+                <div className={styles.menuInfo}>
+                  <span className={styles.menuLabel}>도움말</span>
+                </div>
+                <ChevronRight size={16} className={styles.chevron} />
+              </button>
+            </div>
+          </section>
 
-        {/* 로그아웃 */}
-        <section className={styles.section}>
-          <div className={styles.menuList}>
-            <button className={styles.logoutButton} onClick={handleLogout}>
-              <LogOut size={20} />
-              <span>로그아웃</span>
-            </button>
-          </div>
-        </section>
+          {/* 로그아웃 */}
+          <section className={styles.section}>
+            <div className={styles.menuList}>
+              <button className={styles.logoutButton} onClick={handleLogout}>
+                <LogOut size={20} />
+                <span>로그아웃</span>
+              </button>
+            </div>
+          </section>
+        </div>
+
+        {/* Right Column */}
+        <div className={styles.rightColumn}>
+          {/* 색상 모드 */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>색상 모드</h2>
+            <div className={styles.colorModeContainer}>
+              <button
+                className={`${styles.colorModeBtn} ${colorMode === "light" ? styles.colorModeBtnActive : ""}`}
+                onClick={() => handleColorModeChange("light")}
+              >
+                <Sun size={18} />
+                <span>라이트</span>
+              </button>
+              <button
+                className={`${styles.colorModeBtn} ${colorMode === "dark" ? styles.colorModeBtnActive : ""}`}
+                onClick={() => handleColorModeChange("dark")}
+              >
+                <Moon size={18} />
+                <span>다크</span>
+              </button>
+              <button
+                className={`${styles.colorModeBtn} ${colorMode === "system" ? styles.colorModeBtnActive : ""}`}
+                onClick={() => handleColorModeChange("system")}
+              >
+                <Monitor size={18} />
+                <span>시스템</span>
+              </button>
+            </div>
+          </section>
+
+          {/* 액센트 색상 */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>액센트 색상</h2>
+            <div className={styles.accentRow}>
+              {accentColors.map((color) => (
+                <button
+                  key={color.id}
+                  className={`${styles.accentCircle} ${accentColor === color.id ? styles.accentCircleActive : ""}`}
+                  onClick={() => handleAccentColorChange(color.id)}
+                  style={{ backgroundColor: color.color }}
+                  title={color.name}
+                >
+                  {accentColor === color.id && <Check size={14} />}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* 차트 색상 설정 */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>차트 색상</h2>
+            <div className={styles.chartList}>
+              {chartThemes.map((theme) => (
+                <button
+                  key={theme.id}
+                  className={`${styles.chartRow} ${currentChartTheme === theme.id ? styles.chartRowActive : ""}`}
+                  onClick={() => handleChartThemeChange(theme.id)}
+                >
+                  <div className={styles.chartDots}>
+                    {theme.colors.map((color, idx) => (
+                      <div
+                        key={idx}
+                        className={styles.chartDot}
+                        style={{ backgroundColor: color, zIndex: theme.colors.length - idx }}
+                      />
+                    ))}
+                  </div>
+                  <span className={styles.chartThemeName}>{theme.name}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

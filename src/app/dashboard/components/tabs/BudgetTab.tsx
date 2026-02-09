@@ -10,7 +10,6 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 import {
   useBudgetCategories,
   useBudgetTransactions,
-  useMonthlySummary,
   useCreateTransaction,
   useUpdateTransaction,
   useDeleteTransaction,
@@ -88,7 +87,6 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
   const { colors: chartColors, chartScaleColors } = useChartTheme();
   const [showForm, setShowForm] = useState(false);
   const [formType, setFormType] = useState<TransactionType>("expense");
-  const [selectedDay, setSelectedDay] = useState<number | null>(null); // null = 전체 보기
 
   // 주간 날짜 계산
   const weekDays = useMemo(() => {
@@ -126,13 +124,14 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
   const [selectedAccountIds, setSelectedAccountIds] = useState<Set<string>>(new Set()); // 필터용 선택된 계좌들
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
-  const [accountFormData, setAccountFormData] = useState<Partial<AccountInput>>({
+  const [accountFormData, setAccountFormData] = useState<Partial<AccountInput> & { balance_date?: string }>({
     broker_name: "",
     name: "",
     account_number: "",
     account_type: "checking",
     current_balance: 0,
     is_default: false,
+    balance_date: new Date().toISOString().split("T")[0], // 오늘 날짜 기본값
   });
 
   // 결제수단 (카드/페이) 상태
@@ -160,6 +159,10 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
   const [confirmBalances, setConfirmBalances] = useState<Record<string, string>>({});
   // 잔액 계산용 거래 (balance_updated_at 이후 모든 거래)
   const [balanceTransactions, setBalanceTransactions] = useState<BudgetTransaction[]>([]);
+  // 잔액 거래 로딩 상태
+  const [balanceTxLoading, setBalanceTxLoading] = useState(true);
+  // 잔액 거래 갱신 트리거
+  const [balanceTxVersion, setBalanceTxVersion] = useState(0);
 
   // 은행 계좌 로드
   useEffect(() => {
@@ -193,8 +196,11 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     const loadBalanceTransactions = async () => {
       if (accounts.length === 0) {
         setBalanceTransactions([]);
+        setBalanceTxLoading(false);
         return;
       }
+
+      setBalanceTxLoading(true);
 
       // 가장 오래된 balance_updated_at 찾기
       const balanceDates = accounts
@@ -214,6 +220,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
         if (!error && data) {
           setBalanceTransactions(data);
         }
+        setBalanceTxLoading(false);
         return;
       }
 
@@ -234,10 +241,11 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       if (!error && data) {
         setBalanceTransactions(data);
       }
+      setBalanceTxLoading(false);
     };
 
     loadBalanceTransactions();
-  }, [accounts, profileId]);
+  }, [accounts, profileId, balanceTxVersion]);
 
   const loadAccounts = async () => {
     setAccountsLoading(true);
@@ -298,9 +306,10 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       is_default: accountFormData.is_default || false,
     };
 
-    // 잔액이 변경되면 checkpoint 타임스탬프 업데이트
-    if (balanceChanged) {
-      payload.balance_updated_at = new Date().toISOString();
+    // 잔액 기준일 설정 (폼에서 선택한 날짜 사용)
+    if (balanceChanged && accountFormData.balance_date) {
+      // 선택한 날짜의 자정(00:00:00)으로 설정
+      payload.balance_updated_at = new Date(accountFormData.balance_date + "T00:00:00").toISOString();
     }
 
     // 기본 계좌로 설정 시 기존 은행 계좌 중 기본 계좌 해제
@@ -344,6 +353,9 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       account_type: account.account_type || "checking",
       current_balance: account.current_balance || 0,
       is_default: account.is_default || false,
+      balance_date: account.balance_updated_at
+        ? new Date(account.balance_updated_at).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0],
     });
     setEditingAccountId(account.id);
   };
@@ -375,6 +387,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       account_type: "checking",
       current_balance: 0,
       is_default: false,
+      balance_date: new Date().toISOString().split("T")[0],
     });
     setEditingAccountId(null);
   };
@@ -501,11 +514,8 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     });
   }, [allTransactions, weekStart]);
 
-  // 선택된 날짜 기준 거래 (selectedDay가 null이면 전체)
-  const transactions = useMemo(() => {
-    if (selectedDay === null) return weekTransactions;
-    return weekTransactions.filter((tx) => tx.day === selectedDay);
-  }, [weekTransactions, selectedDay]);
+  // 주간 거래 (항상 전체 주간 표시)
+  const transactions = weekTransactions;
 
   // 일별 수입/지출 합계
   const dailyTotals = useMemo(() => {
@@ -527,18 +537,32 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     return totals;
   }, [weekTransactions, weekDays]);
 
-  const { data: expenseSummary = [] } = useMonthlySummary(
-    profileId,
-    selectedYear,
-    selectedMonth,
-    "expense"
-  );
-  const { data: incomeSummary = [] } = useMonthlySummary(
-    profileId,
-    selectedYear,
-    selectedMonth,
-    "income"
-  );
+  // 주간 카테고리별 요약 계산
+  const expenseSummary = useMemo(() => {
+    const categoryTotals = new Map<string, number>();
+    weekTransactions
+      .filter((tx) => tx.type === "expense")
+      .forEach((tx) => {
+        const current = categoryTotals.get(tx.category) || 0;
+        categoryTotals.set(tx.category, current + tx.amount);
+      });
+    return Array.from(categoryTotals.entries())
+      .map(([category, total]) => ({ category, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [weekTransactions]);
+
+  const incomeSummary = useMemo(() => {
+    const categoryTotals = new Map<string, number>();
+    weekTransactions
+      .filter((tx) => tx.type === "income")
+      .forEach((tx) => {
+        const current = categoryTotals.get(tx.category) || 0;
+        categoryTotals.set(tx.category, current + tx.amount);
+      });
+    return Array.from(categoryTotals.entries())
+      .map(([category, total]) => ({ category, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [weekTransactions]);
 
   // Mutations
   const createMutation = useCreateTransaction(profileId, selectedYear, selectedMonth);
@@ -787,6 +811,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       {
         onSuccess: () => {
           setShowForm(false);
+          setBalanceTxVersion((v) => v + 1);
         },
       }
     );
@@ -795,8 +820,24 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
   // 거래 삭제
   const handleDelete = (id: string) => {
     if (confirm("이 거래를 삭제하시겠습니까?")) {
-      deleteMutation.mutate(id);
+      deleteMutation.mutate(id, {
+        onSuccess: () => {
+          setBalanceTxVersion((v) => v + 1);
+        },
+      });
     }
+  };
+
+  // 거래 수정
+  const handleUpdate = (id: string, updates: Partial<BudgetTransaction>) => {
+    updateMutation.mutate(
+      { id, updates },
+      {
+        onSuccess: () => {
+          setBalanceTxVersion((v) => v + 1);
+        },
+      }
+    );
   };
 
   // 인라인 입력으로 거래 추가
@@ -866,6 +907,9 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
         payment_method_id: paymentMethodId,
       },
       {
+        onSuccess: () => {
+          setBalanceTxVersion((v) => v + 1);
+        },
         onSettled: () => {
           // 제출 완료 후 잠금 해제
           isSubmittingRef.current = false;
@@ -885,7 +929,12 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     const info: Record<string, { income: number; expense: number; prevBalance: number | null; expectedBalance: number }> = {};
 
     accounts.forEach((account) => {
-      const balanceDate = account.balance_updated_at ? new Date(account.balance_updated_at) : null;
+      // 날짜만 비교하기 위해 시간을 00:00:00으로 설정
+      let balanceDate: Date | null = null;
+      if (account.balance_updated_at) {
+        balanceDate = new Date(account.balance_updated_at);
+        balanceDate.setHours(0, 0, 0, 0);
+      }
 
       // 해당 계좌의 수입/지출 계산 (balance_updated_at 이후 거래만, balanceTransactions 사용)
       const accountIncome = balanceTransactions
@@ -893,7 +942,8 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
           if (tx.type !== "income" || tx.account_id !== account.id) return false;
           if (!balanceDate) return true; // 날짜 없으면 모든 거래 포함
           const txDate = new Date(tx.year, tx.month - 1, tx.day ?? 1);
-          return txDate > balanceDate;
+          txDate.setHours(0, 0, 0, 0);
+          return txDate >= balanceDate; // 같은 날짜 포함
         })
         .reduce((sum, tx) => sum + tx.amount, 0);
       const accountExpense = balanceTransactions
@@ -901,7 +951,8 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
           if (tx.type !== "expense" || tx.account_id !== account.id) return false;
           if (!balanceDate) return true;
           const txDate = new Date(tx.year, tx.month - 1, tx.day ?? 1);
-          return txDate > balanceDate;
+          txDate.setHours(0, 0, 0, 0);
+          return txDate >= balanceDate; // 같은 날짜 포함
         })
         .reduce((sum, tx) => sum + tx.amount, 0);
 
@@ -920,8 +971,24 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     return info;
   }, [accounts, balanceTransactions]);
 
+  // 전체 누적 잔액 (모든 계좌의 expectedBalance 합계)
+  const totalExpectedBalance = useMemo(() => {
+    return accounts.reduce((sum, acc) => {
+      const info = accountBalanceInfo[acc.id];
+      return sum + (info?.expectedBalance ?? (acc.current_balance || 0));
+    }, 0);
+  }, [accounts, accountBalanceInfo]);
+
+  // 전체 누적 변동액 (모든 계좌의 income - expense 합계)
+  const totalBalanceChange = useMemo(() => {
+    return accounts.reduce((sum, acc) => {
+      const info = accountBalanceInfo[acc.id];
+      return sum + ((info?.income ?? 0) - (info?.expense ?? 0));
+    }, 0);
+  }, [accounts, accountBalanceInfo]);
+
   // 로딩 중일 때 스켈레톤 표시
-  if (accountsLoading || isLoading) {
+  if (accountsLoading || isLoading || balanceTxLoading) {
     return (
       <div className={styles.container}>
         {/* 계좌 바 스켈레톤 */}
@@ -997,10 +1064,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
         >
           <span className={styles.accountItemName}>전체</span>
           <div className={styles.accountItemValues}>
-            <span className={styles.accountItemBalance}>{formatWon(totalAccountBalance + totalIncome - totalExpense)}</span>
-            <span className={`${styles.accountItemChange} ${(totalIncome - totalExpense) >= 0 ? styles.positive : styles.negative}`}>
-              {(totalIncome - totalExpense) >= 0 ? "+" : "-"}{formatWon(Math.abs(totalIncome - totalExpense))}
-            </span>
+            <span className={styles.accountItemBalance}>{formatWon(totalExpectedBalance)}</span>
           </div>
         </button>
         <div className={styles.accountDivider} />
@@ -1022,9 +1086,6 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
                 <span className={styles.accountItemName}>{account.name}</span>
                 <div className={styles.accountItemValues}>
                   <span className={styles.accountItemBalance}>{formatWon(currentBalance)}</span>
-                  <span className={`${styles.accountItemChange} ${change >= 0 ? styles.positive : styles.negative}`}>
-                    {change >= 0 ? "+" : "-"}{formatWon(Math.abs(change))}
-                  </span>
                 </div>
               </button>
             );
@@ -1044,14 +1105,12 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
         {weekDays.map((day, idx) => {
           const dayNum = day.getDate();
           const isToday = day.getTime() === today.getTime();
-          const isSelected = selectedDay === dayNum;
           const totals = dailyTotals.get(dayNum) || { income: 0, expense: 0 };
           const net = totals.income - totals.expense;
           return (
-            <button
+            <div
               key={idx}
-              className={`${styles.weekDay} ${isToday ? styles.weekDayToday : ""} ${isSelected ? styles.weekDaySelected : ""}`}
-              onClick={() => setSelectedDay(isSelected ? null : dayNum)}
+              className={`${styles.weekDay} ${isToday ? styles.weekDayToday : ""}`}
             >
               <span className={styles.weekDayHeader}>
                 <span className={styles.weekDayName}>{DAY_NAMES[idx]}</span>
@@ -1070,7 +1129,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
                   </span>
                 )}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -1258,7 +1317,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
                   accounts={accounts}
                   categories={incomeCategories}
                   paymentMethods={paymentMethods}
-                  onUpdate={(updates) => updateMutation.mutate({ id: tx.id, updates })}
+                  onUpdate={(updates) => handleUpdate(tx.id, updates)}
                   onDelete={() => handleDelete(tx.id)}
                   showAccount={true}
                 />
@@ -1362,7 +1421,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
                   accounts={accounts}
                   categories={expenseCategories}
                   paymentMethods={paymentMethods}
-                  onUpdate={(updates) => updateMutation.mutate({ id: tx.id, updates })}
+                  onUpdate={(updates) => handleUpdate(tx.id, updates)}
                   onDelete={() => handleDelete(tx.id)}
                   showAccount={true}
                 />

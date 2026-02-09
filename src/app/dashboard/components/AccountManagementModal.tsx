@@ -5,8 +5,8 @@ import { X, Edit2, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Account, AccountType, AccountInput, PaymentMethod, PaymentMethodType, PaymentMethodInput } from "@/types/tables";
 
-// 폼 데이터 타입 (duration_months 추가)
-type AccountFormData = Partial<AccountInput> & { duration_months?: number };
+// 폼 데이터 타입 (duration_months, balance_date 추가)
+type AccountFormData = Partial<AccountInput> & { duration_months?: number; balance_date?: string };
 import { formatWon } from "@/lib/utils";
 import styles from "./AccountManagementModal.module.css";
 
@@ -196,11 +196,20 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
         .eq("is_default", true);
     }
 
+    // 잔액 기준일 설정 (입출금 계좌만)
+    if (activeTab === "checking" && accountFormData.balance_date) {
+      payload.balance_updated_at = new Date(accountFormData.balance_date + "T00:00:00").toISOString();
+    } else if (activeTab !== "checking") {
+      // 다른 유형은 가입일 기준
+      if (accountFormData.start_year && accountFormData.start_month) {
+        const day = accountFormData.start_day || 1;
+        payload.balance_updated_at = new Date(accountFormData.start_year, accountFormData.start_month - 1, day).toISOString();
+      }
+    }
+
     if (editingAccountId) {
-      payload.balance_updated_at = new Date().toISOString();
       await supabase.from("accounts").update(payload).eq("id", editingAccountId);
     } else {
-      payload.balance_updated_at = new Date().toISOString();
       await supabase.from("accounts").insert(payload);
     }
 
@@ -232,6 +241,9 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
       monthly_contribution: account.monthly_contribution || undefined,
       is_tax_free: account.is_tax_free || false,
       duration_months: durationMonths,
+      balance_date: account.balance_updated_at
+        ? new Date(account.balance_updated_at).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0],
     });
     setEditingAccountId(account.id);
   };
@@ -258,6 +270,8 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
       start_day: activeTab === "savings" ? now.getDate() : undefined,
       duration_months: activeTab === "savings" ? 12 : undefined,
       is_tax_free: false,
+      // 입출금 계좌 잔액 기준일 (오늘)
+      balance_date: now.toISOString().split("T")[0],
     });
     setEditingAccountId(null);
   };
@@ -458,6 +472,15 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                     value={accountFormData.current_balance || ""}
                     onChange={(e) => setAccountFormData({ ...accountFormData, current_balance: parseInt(e.target.value) || 0 })}
                     onWheel={(e) => (e.target as HTMLElement).blur()}
+                    className={styles.input}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>잔액 기준일</label>
+                  <input
+                    type="date"
+                    value={accountFormData.balance_date || ""}
+                    onChange={(e) => setAccountFormData({ ...accountFormData, balance_date: e.target.value })}
                     className={styles.input}
                   />
                 </div>

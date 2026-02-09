@@ -85,6 +85,73 @@ export async function sendBookingConfirmedNotification(
   }
 }
 
+// 웨이트리스트 신청 알림
+interface WaitlistNotificationData {
+  phone: string;
+}
+
+export async function sendWaitlistNotification(
+  data: WaitlistNotificationData,
+): Promise<void> {
+  if (!SLACK_BOOKING_WEBHOOK_URL) {
+    console.warn("SLACK_BOOKING_WEBHOOK_URL not configured");
+    return;
+  }
+
+  const { phone } = data;
+
+  // 전화번호 포맷팅
+  let formattedPhone = phone;
+  if (phone.length === 11) {
+    formattedPhone = `${phone.slice(0, 3)}-${phone.slice(3, 7)}-${phone.slice(7)}`;
+  }
+
+  const now = new Date();
+  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+  const formattedDate = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}(${weekdays[now.getDay()]}) ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+  const message = {
+    blocks: [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: "랜딩페이지 검진 신청",
+        },
+      },
+      {
+        type: "section",
+        fields: [
+          {
+            type: "mrkdwn",
+            text: `*연락처*\n${formattedPhone}`,
+          },
+          {
+            type: "mrkdwn",
+            text: `*신청 시각*\n${formattedDate}`,
+          },
+        ],
+      },
+    ],
+  };
+
+  try {
+    const response = await fetch(SLACK_BOOKING_WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    });
+
+    if (!response.ok) {
+      console.error("Slack waitlist notification failed:", response.status);
+    }
+  } catch (error) {
+    console.error("Slack waitlist notification error:", error);
+  }
+}
+
 // 새 메시지 알림
 interface MessageNotificationData {
   userId: string;

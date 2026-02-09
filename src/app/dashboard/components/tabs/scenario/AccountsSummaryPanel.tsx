@@ -1,6 +1,6 @@
 "use client";
 
-import { PiggyBank, TrendingUp, Shield, Briefcase, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { PiggyBank, TrendingUp, Shield, Briefcase, ChevronDown, ChevronUp, RefreshCw, Building2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { Savings } from "@/types/tables";
 import { formatMoney } from "@/lib/utils";
@@ -174,7 +174,7 @@ export function AccountsSummaryPanel({
         type="button"
       >
         <div className={styles.headerLeft}>
-          <PiggyBank size={20} />
+          <Building2 size={20} />
           <span className={styles.title}>계좌</span>
           <span className={styles.count}>{totalCount}개</span>
         </div>
