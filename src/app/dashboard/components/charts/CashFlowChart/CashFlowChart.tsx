@@ -229,11 +229,11 @@ export function CashFlowChart({
       const chart = chartInstance.current
       chart.data.labels = labels
       chart.data.datasets[0].data = incomeData
-      chart.data.datasets[0].backgroundColor = snapshots.map(s =>
+      ;(chart.data.datasets[0] as any).backgroundColor = snapshots.map(s =>
         selectedYear === s.year ? toRgba(chartLineColors.value, 1) : toRgba(chartLineColors.value, 0.7)
       )
       chart.data.datasets[1].data = expenseData
-      chart.data.datasets[1].backgroundColor = snapshots.map(s =>
+      ;(chart.data.datasets[1] as any).backgroundColor = snapshots.map(s =>
         selectedYear === s.year ? toRgba(chartLineColors.profit, 1) : toRgba(chartLineColors.profit, 0.7)
       )
 
