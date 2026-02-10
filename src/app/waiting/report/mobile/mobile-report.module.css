@@ -3138,7 +3138,7 @@
 /* Settings Bar Wrapper - sticky 담당 */
 .settingsBarWrapper {
   position: sticky;
-  top: 115px; /* header 69px + tabNav 46px */
+  top: 114px; /* header 69px + tabNav ~45px */
   z-index: 90;
   overflow: hidden;
   display: grid;
