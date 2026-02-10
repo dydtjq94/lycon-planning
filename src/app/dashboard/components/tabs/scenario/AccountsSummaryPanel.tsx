@@ -7,68 +7,8 @@ import { simulationService } from "@/lib/services/simulationService";
 import { createClient } from "@/lib/supabase/client";
 import { usePortfolioTransactions, usePortfolioChartPriceData } from "@/hooks/useFinancialData";
 import { calculatePortfolioAccountValues, calculateAccountTransactionSummary, calculateExpectedBalance } from "@/lib/utils/accountValueCalculator";
+import { BrokerLogo } from "../shared/BrokerLogo";
 import styles from "./AccountsSummaryPanel.module.css";
-
-// 은행/증권사 로고 매핑
-const BROKER_LOGO_MAP: Record<string, string> = {
-  // 은행
-  "카카오뱅크": "/logos/banks/kakaobank.png",
-  "토스뱅크": "/logos/banks/tossbank.png",
-  "케이뱅크": "/logos/banks/kbank.png",
-  "국민은행": "/logos/banks/kookmin.png",
-  "KB국민은행": "/logos/banks/kookmin.png",
-  "신한은행": "/logos/banks/shinhan.png",
-  "하나은행": "/logos/banks/hana.png",
-  "우리은행": "/logos/banks/woori.png",
-  "NH농협은행": "/logos/banks/nh.png",
-  "농협은행": "/logos/banks/nh.png",
-  "IBK기업은행": "/logos/banks/ibk.png",
-  "기업은행": "/logos/banks/ibk.png",
-  "SC제일은행": "/logos/banks/sc.png",
-  "씨티은행": "/logos/banks/citi.png",
-  "KDB산업은행": "/logos/banks/kdb.png",
-  "산업은행": "/logos/banks/kdb.png",
-  "수협은행": "/logos/banks/suhyup.png",
-  "대구은행": "/logos/banks/daegu.png",
-  "부산은행": "/logos/banks/busan.png",
-  "경남은행": "/logos/banks/kyongnam.png",
-  "광주은행": "/logos/banks/gwangju.png",
-  "전북은행": "/logos/banks/jeonbuk.png",
-  "제주은행": "/logos/banks/jeju.png",
-  "우체국": "/logos/banks/epost.png",
-  "새마을금고": "/logos/banks/saemaul.png",
-  "신협": "/logos/banks/shinhyup.png",
-  "SBI저축은행": "/logos/banks/sbi.png",
-  "아이엠뱅크": "/logos/banks/im.png",
-  // 증권사
-  "토스증권": "/logos/securities/toss.png",
-  "삼성증권": "/logos/securities/samsung.png",
-  "미래에셋증권": "/logos/securities/mirae.png",
-  "KB증권": "/logos/securities/kb.png",
-  "NH투자증권": "/logos/securities/nh.png",
-  "한국투자증권": "/logos/securities/korea.png",
-  "신한투자증권": "/logos/securities/shinhan.png",
-  "하나증권": "/logos/securities/hana.png",
-  "키움증권": "/logos/securities/kiwoom.png",
-  "대신증권": "/logos/securities/daishin.png",
-  "메리츠증권": "/logos/securities/meritz.png",
-  "한화투자증권": "/logos/securities/hanwha.png",
-  "유안타증권": "/logos/securities/yuanta.png",
-  "유진투자증권": "/logos/securities/eugene.png",
-  "이베스트투자증권": "/logos/securities/ebest.png",
-  "DB금융투자": "/logos/securities/db.png",
-  "교보증권": "/logos/securities/kyobo.png",
-  "신영증권": "/logos/securities/shinyoung.png",
-  "SK증권": "/logos/securities/sk.png",
-  "부국증권": "/logos/securities/bookook.png",
-  "케이프투자증권": "/logos/securities/cape.png",
-  "카카오페이증권": "/logos/securities/kakaopay.png",
-};
-
-function getBrokerLogo(brokerName: string | null): string | null {
-  if (!brokerName) return null;
-  return BROKER_LOGO_MAP[brokerName] || null;
-}
 
 const PENSION_TYPE_LABELS: Record<string, string> = {
   pension_savings: '연금저축',
@@ -354,18 +294,10 @@ export function AccountsSummaryPanel({
                     <PiggyBank size={14} />
                     <span>저축</span>
                   </div>
-                  {savingsAccounts.map((account) => {
-                    const logo = getBrokerLogo(account.broker_name);
-                    return (
+                  {savingsAccounts.map((account) => (
                       <div key={account.id} className={styles.accountItem}>
                         <div className={styles.accountMain}>
-                          {logo ? (
-                            <img src={logo} alt="" className={styles.brokerLogo} />
-                          ) : (
-                            <div className={styles.brokerLogoPlaceholder}>
-                              {(account.broker_name || account.title || "?").charAt(0)}
-                            </div>
-                          )}
+                          <BrokerLogo brokerName={account.broker_name} fallback={account.title || "?"} />
                           <div className={styles.accountInfo}>
                             <span className={styles.accountName}>
                               {account.title}
@@ -378,8 +310,7 @@ export function AccountsSummaryPanel({
                         </div>
                         <span className={styles.accountBalance}>{formatWon(account.current_balance)}</span>
                       </div>
-                    );
-                  })}
+                    ))}
                 </div>
               )}
 
@@ -390,18 +321,10 @@ export function AccountsSummaryPanel({
                     <TrendingUp size={14} />
                     <span>투자</span>
                   </div>
-                  {investmentAccounts.map((account) => {
-                    const logo = getBrokerLogo(account.broker_name);
-                    return (
+                  {investmentAccounts.map((account) => (
                       <div key={account.id} className={styles.accountItem}>
                         <div className={styles.accountMain}>
-                          {logo ? (
-                            <img src={logo} alt="" className={styles.brokerLogo} />
-                          ) : (
-                            <div className={styles.brokerLogoPlaceholder}>
-                              {(account.broker_name || account.title || "?").charAt(0)}
-                            </div>
-                          )}
+                          <BrokerLogo brokerName={account.broker_name} fallback={account.title || "?"} />
                           <div className={styles.accountInfo}>
                             <span className={styles.accountName}>
                               {account.title}
@@ -414,8 +337,7 @@ export function AccountsSummaryPanel({
                         </div>
                         <span className={styles.accountBalance}>{formatWon(account.current_balance)}</span>
                       </div>
-                    );
-                  })}
+                    ))}
                 </div>
               )}
 
@@ -426,18 +348,10 @@ export function AccountsSummaryPanel({
                     <Shield size={14} />
                     <span>절세계좌</span>
                   </div>
-                  {personalPensions.map((pension) => {
-                    const logo = getBrokerLogo(pension.broker_name || null);
-                    return (
+                  {personalPensions.map((pension) => (
                       <div key={pension.id} className={styles.accountItem}>
                         <div className={styles.accountMain}>
-                          {logo ? (
-                            <img src={logo} alt="" className={styles.brokerLogo} />
-                          ) : (
-                            <div className={styles.brokerLogoPlaceholder}>
-                              {(pension.broker_name || pension.title || "?").charAt(0)}
-                            </div>
-                          )}
+                          <BrokerLogo brokerName={pension.broker_name} fallback={pension.title || "?"} />
                           <div className={styles.accountInfo}>
                             <span className={styles.accountName}>
                               {pension.title || PENSION_TYPE_LABELS[pension.pension_type] || pension.pension_type}
@@ -447,8 +361,7 @@ export function AccountsSummaryPanel({
                         </div>
                         <span className={styles.accountBalance}>{formatWon(pension.current_balance || 0)}</span>
                       </div>
-                    );
-                  })}
+                    ))}
                 </div>
               )}
 
@@ -459,18 +372,10 @@ export function AccountsSummaryPanel({
                     <Briefcase size={14} />
                     <span>퇴직연금</span>
                   </div>
-                  {retirementPensions.map((pension) => {
-                    const logo = getBrokerLogo(pension.broker_name || null);
-                    return (
+                  {retirementPensions.map((pension) => (
                       <div key={pension.id} className={styles.accountItem}>
                         <div className={styles.accountMain}>
-                          {logo ? (
-                            <img src={logo} alt="" className={styles.brokerLogo} />
-                          ) : (
-                            <div className={styles.brokerLogoPlaceholder}>
-                              <Briefcase size={12} />
-                            </div>
-                          )}
+                          <BrokerLogo brokerName={pension.broker_name} fallbackIcon={<Briefcase size={12} />} />
                           <div className={styles.accountInfo}>
                             <span className={styles.accountName}>
                               {pension.title || RETIREMENT_PENSION_TYPE_LABELS[pension.pension_type] || pension.pension_type}
@@ -480,8 +385,7 @@ export function AccountsSummaryPanel({
                         </div>
                         <span className={styles.accountBalance}>{formatWon(pension.current_balance || 0)}</span>
                       </div>
-                    );
-                  })}
+                    ))}
                 </div>
               )}
             </div>

@@ -18,32 +18,7 @@ interface AccountManagementModalProps {
   initialTab?: TabType;
 }
 
-// 은행 목록 (가나다순 + ABC순)
-const BANK_OPTIONS = [
-  // 가나다순
-  "경남은행", "광주은행", "국민은행", "기업은행", "대구은행",
-  "부산은행", "산업은행", "새마을금고", "수협은행", "신한은행",
-  "신협", "우리은행", "우체국", "전북은행", "제주은행",
-  "카카오뱅크", "케이뱅크", "토스뱅크", "하나은행",
-  // ABC순
-  "BNP파리바은행", "HSBC", "IM뱅크", "NH농협은행", "SC제일은행",
-  "SBI저축은행", "뱅크오브아메리카", "시티은행", "JP모간체이스", "도이치은행",
-  // 기타
-  "기타",
-];
-
-// 증권사 목록 (가나다순 + ABC순)
-const SECURITIES_OPTIONS = [
-  // 가나다순
-  "교보증권", "대신증권", "메리츠증권", "미래에셋증권", "부국증권",
-  "삼성증권", "신영증권", "신한투자증권", "유안타증권", "유진투자증권",
-  "이베스트증권", "카카오페이증권", "케이프투자증권", "키움증권",
-  "토스증권", "하나증권", "한국투자증권", "한화투자증권",
-  // ABC순
-  "DB금융투자", "KB증권", "NH투자증권", "SK증권",
-  // 기타
-  "기타",
-];
+import { BANK_OPTIONS, SECURITIES_OPTIONS, CARD_COMPANY_OPTIONS } from '@/lib/constants/financial'
 
 // 은행 계좌 유형
 const BANK_ACCOUNT_TYPE_OPTIONS = [
@@ -74,18 +49,6 @@ const PAYMENT_METHOD_TYPE_OPTIONS = [
   { value: "pay", label: "페이" },
 ] as const;
 
-// 카드사 목록 (카드사 + 페이)
-const CARD_COMPANY_OPTIONS = [
-  // 카드사 (가나다순)
-  "롯데카드", "삼성카드", "신한카드", "우리카드", "카카오뱅크카드", "케이뱅크카드",
-  "토스뱅크카드", "하나카드", "현대카드",
-  "아멕스", "BC카드", "KB국민카드", "NH농협카드",
-  // 페이 서비스 (가나다순)
-  "네이버페이", "삼성페이", "애플페이", "제로페이", "카카오페이", "토스페이",
-  "페이코", "SSG페이", "L.Pay", "쿠페이",
-  // 기타
-  "기타",
-];
 
 export function AccountManagementModal({ profileId, onClose, initialTab = "checking" }: AccountManagementModalProps) {
   const supabase = createClient();

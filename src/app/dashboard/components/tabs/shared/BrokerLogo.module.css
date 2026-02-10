@@ -1,0 +1,36 @@
+.logo {
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.placeholder {
+  background: var(--dashboard-hover-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--dashboard-text-secondary);
+  flex-shrink: 0;
+}
+
+/* sm: 20px (AccountsSummaryPanel) */
+.sm .logo,
+.sm .placeholder {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+.sm .placeholder {
+  font-size: 10px;
+}
+
+/* md: 24px (CurrentAssetTab) */
+.md .logo,
+.md .placeholder {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+}
+.md .placeholder {
+  font-size: 11px;
+}

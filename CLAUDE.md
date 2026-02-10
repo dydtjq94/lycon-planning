@@ -216,7 +216,25 @@ function MyChart() {
 | `textColor` | 차트 내 텍스트 | `#1d1d1f` | `#e8e8e8` |
 | `doughnutBorder` | 도넛 차트 테두리 | `#ffffff` | `#1a1d21` |
 | `emptyState` | 데이터 없음 상태 | `#e5e7eb` | `#35373b` |
-| `tooltipBg` | 툴팁 배경 | `rgba(255,255,255,0.95)` | `rgba(34,37,41,0.95)` |
+| `tooltipBg` | 툴팁 배경 | `rgba(255,255,255,0.5)` | `rgba(34,37,41,0.5)` |
+
+### 차트 툴팁 글래스모피즘 (Glassmorphism) 규칙
+
+모든 차트 툴팁은 동일한 글래스모피즘 스타일을 적용:
+
+- **배경 투명도**: `0.5` (라이트/다크 모두)
+- **블러**: `blur(6px)` 고정
+- **다른 값 사용 금지**: 투명도와 블러 값을 임의로 변경하지 말 것
+
+```tsx
+// 커스텀 외부 툴팁 (chartTooltip.ts 유틸리티 사용 시)
+background: isDark ? 'rgba(34, 37, 41, 0.5)' : 'rgba(255, 255, 255, 0.5)'
+backdropFilter: 'blur(6px)'
+WebkitBackdropFilter: 'blur(6px)'
+
+// Chart.js 기본 툴팁 (useChartTheme의 tooltipBg 사용 시)
+backgroundColor: chartScaleColors.tooltipBg  // 이미 0.5 적용됨
+```
 
 ### 0을 교차하는 차트 그라데이션
 값이 양수/음수를 넘나드는 차트는 0선 기준 그라데이션 적용:

@@ -60,6 +60,7 @@ export async function createSavings(input: SavingsInput): Promise<Savings> {
       simulation_id: convertedInput.simulation_id,
       type: convertedInput.type,
       title: convertedInput.title,
+      broker_name: convertedInput.broker_name,
       owner: convertedInput.owner || 'self',
       current_balance: convertedInput.current_balance,
       monthly_contribution: convertedInput.monthly_contribution,

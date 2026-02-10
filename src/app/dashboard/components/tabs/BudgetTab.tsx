@@ -638,9 +638,9 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
           Object.assign(tooltipEl.style, {
             position: "absolute",
             pointerEvents: "none",
-            background: "rgba(255, 255, 255, 0.9)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            background: "rgba(255, 255, 255, 0.5)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
             borderRadius: "8px",
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
             padding: "8px 12px",

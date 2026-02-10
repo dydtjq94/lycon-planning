@@ -195,7 +195,7 @@ export function useChartTheme() {
     tickColor: isDark ? "#9a9b9e" : "#a8a29e",
     textColor: isDark ? "#e8e8e8" : "#1d1d1f",
     textSecondary: isDark ? "#9a9b9e" : "#6b7280",
-    tooltipBg: isDark ? "rgba(34, 37, 41, 0.95)" : "rgba(255, 255, 255, 0.95)",
+    tooltipBg: isDark ? "rgba(34, 37, 41, 0.5)" : "rgba(255, 255, 255, 0.5)",
     tooltipBorder: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
     tooltipText: isDark ? "#e8e8e8" : "#1d1d1f",
     // 도넛 차트용 색상

@@ -382,11 +382,11 @@ export const simulationService = {
   ): Promise<void> {
     const supabase = createClient()
 
-    // 1. 기존 데이터 삭제
+    // 1. 동기화된 계좌만 삭제 (수동 추가 계좌는 유지)
     await Promise.all([
-      supabase.from('savings').delete().eq('simulation_id', simulationId),
-      supabase.from('personal_pensions').delete().eq('simulation_id', simulationId),
-      supabase.from('retirement_pensions').delete().eq('simulation_id', simulationId),
+      supabase.from('savings').delete().eq('simulation_id', simulationId).not('source_account_id', 'is', null),
+      supabase.from('personal_pensions').delete().eq('simulation_id', simulationId).not('source_account_id', 'is', null),
+      supabase.from('retirement_pensions').delete().eq('simulation_id', simulationId).not('source_account_id', 'is', null),
     ])
 
     // 2. 현재 활성 계좌 가져오기
@@ -418,6 +418,7 @@ export const simulationService = {
     const savingsData = [
       ...bankAccounts.map((acc, idx) => ({
         simulation_id: simulationId,
+        source_account_id: acc.id,
         type: ACCOUNT_TO_SAVINGS_TYPE[acc.account_type as AccountType] || 'other',
         title: acc.name,
         broker_name: acc.broker_name || null,
@@ -433,6 +434,7 @@ export const simulationService = {
       })),
       ...investmentAccounts.map((acc, idx) => ({
         simulation_id: simulationId,
+        source_account_id: acc.id,
         type: ACCOUNT_TO_SAVINGS_TYPE[acc.account_type as AccountType] || 'other',
         title: acc.name,
         broker_name: acc.broker_name || null,
@@ -463,6 +465,7 @@ export const simulationService = {
     if (pensionAccounts.length > 0) {
       const pensionData = pensionAccounts.map(acc => ({
         simulation_id: simulationId,
+        source_account_id: acc.id,
         owner: 'self' as const,
         pension_type: ACCOUNT_TO_PENSION_TYPE[acc.account_type as AccountType]!,
         title: acc.name,
@@ -487,6 +490,7 @@ export const simulationService = {
     if (dcAccounts.length > 0) {
       const retirementPensionData = dcAccounts.map(acc => ({
         simulation_id: simulationId,
+        source_account_id: acc.id,
         owner: 'self' as const,
         pension_type: 'dc' as const,
         title: acc.name,

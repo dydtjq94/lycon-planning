@@ -26,70 +26,10 @@ import { formatMoney, formatWon, calculateAge } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { getTermDepositAccounts, getBudgetTransactions } from "@/lib/services/budgetService";
 import { calculatePortfolioAccountValuesDetailed, calculateAccountBalances, calculateTermDepositValue } from "@/lib/utils/accountValueCalculator";
+import { BrokerLogo } from "./shared/BrokerLogo";
 import styles from "./CurrentAssetTab.module.css";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
-
-// 은행/증권사 로고 매핑
-const BROKER_LOGO_MAP: Record<string, string> = {
-  // 은행
-  "카카오뱅크": "/logos/banks/kakaobank.png",
-  "토스뱅크": "/logos/banks/tossbank.png",
-  "케이뱅크": "/logos/banks/kbank.png",
-  "국민은행": "/logos/banks/kookmin.png",
-  "KB국민은행": "/logos/banks/kookmin.png",
-  "신한은행": "/logos/banks/shinhan.png",
-  "하나은행": "/logos/banks/hana.png",
-  "우리은행": "/logos/banks/woori.png",
-  "NH농협은행": "/logos/banks/nh.png",
-  "농협은행": "/logos/banks/nh.png",
-  "IBK기업은행": "/logos/banks/ibk.png",
-  "기업은행": "/logos/banks/ibk.png",
-  "SC제일은행": "/logos/banks/sc.png",
-  "씨티은행": "/logos/banks/citi.png",
-  "KDB산업은행": "/logos/banks/kdb.png",
-  "산업은행": "/logos/banks/kdb.png",
-  "수협은행": "/logos/banks/suhyup.png",
-  "대구은행": "/logos/banks/daegu.png",
-  "부산은행": "/logos/banks/busan.png",
-  "경남은행": "/logos/banks/kyongnam.png",
-  "광주은행": "/logos/banks/gwangju.png",
-  "전북은행": "/logos/banks/jeonbuk.png",
-  "제주은행": "/logos/banks/jeju.png",
-  "우체국": "/logos/banks/epost.png",
-  "새마을금고": "/logos/banks/saemaul.png",
-  "신협": "/logos/banks/shinhyup.png",
-  "SBI저축은행": "/logos/banks/sbi.png",
-  "아이엠뱅크": "/logos/banks/im.png",
-  // 증권사
-  "토스증권": "/logos/securities/toss.png",
-  "삼성증권": "/logos/securities/samsung.png",
-  "미래에셋증권": "/logos/securities/mirae.png",
-  "KB증권": "/logos/securities/kb.png",
-  "NH투자증권": "/logos/securities/nh.png",
-  "한국투자증권": "/logos/securities/korea.png",
-  "신한투자증권": "/logos/securities/shinhan.png",
-  "하나증권": "/logos/securities/hana.png",
-  "키움증권": "/logos/securities/kiwoom.png",
-  "대신증권": "/logos/securities/daishin.png",
-  "메리츠증권": "/logos/securities/meritz.png",
-  "한화투자증권": "/logos/securities/hanwha.png",
-  "유안타증권": "/logos/securities/yuanta.png",
-  "유진투자증권": "/logos/securities/eugene.png",
-  "이베스트투자증권": "/logos/securities/ebest.png",
-  "DB금융투자": "/logos/securities/db.png",
-  "교보증권": "/logos/securities/kyobo.png",
-  "신영증권": "/logos/securities/shinyoung.png",
-  "SK증권": "/logos/securities/sk.png",
-  "부국증권": "/logos/securities/bookook.png",
-  "케이프투자증권": "/logos/securities/cape.png",
-  "카카오페이증권": "/logos/securities/kakaopay.png",
-};
-
-function getBrokerLogo(brokerName: string | null): string | null {
-  if (!brokerName) return null;
-  return BROKER_LOGO_MAP[brokerName] || null;
-}
 
 interface CurrentAssetTabProps {
   profileId: string;
@@ -2660,9 +2600,9 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
           Object.assign(tooltipEl.style, {
             position: "absolute",
             pointerEvents: "none",
-            background: "rgba(255, 255, 255, 0.85)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            background: "rgba(255, 255, 255, 0.5)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
             border: "1px solid rgba(255, 255, 255, 0.5)",
             borderRadius: "10px",
             padding: "12px 16px",
@@ -3534,18 +3474,11 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
                   </thead>
                   <tbody>
                     {savingsAccountValues.map(data => {
-                      const logo = getBrokerLogo(data.broker);
                       return (
                         <tr key={data.id}>
                           <td>
                             <div className={styles.accountCellWithLogo}>
-                              {logo ? (
-                                <img src={logo} alt="" className={styles.brokerLogo} />
-                              ) : (
-                                <div className={styles.brokerLogoPlaceholder}>
-                                  {(data.broker || data.name || "?").charAt(0)}
-                                </div>
-                              )}
+                              <BrokerLogo brokerName={data.broker} fallback={data.name || "?"} size="md" />
                               <div className={styles.accountInfo}>
                                 <span className={styles.accountName}>{data.name}</span>
                                 <span className={styles.accountTypeLabel}>
@@ -3611,7 +3544,6 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
                   </thead>
                   <tbody>
                     {Array.from(accountValues.entries()).map(([id, data]) => {
-                      const logo = getBrokerLogo(data.broker);
                       const accountTypeLabel = {
                         general: "증권계좌",
                         isa: "ISA",
@@ -3623,13 +3555,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
                         <tr key={id}>
                           <td>
                             <div className={styles.accountCellWithLogo}>
-                              {logo ? (
-                                <img src={logo} alt="" className={styles.brokerLogo} />
-                              ) : (
-                                <div className={styles.brokerLogoPlaceholder}>
-                                  {(data.broker || data.accountName || "?").charAt(0)}
-                                </div>
-                              )}
+                              <BrokerLogo brokerName={data.broker} fallback={data.accountName || "?"} size="md" />
                               <div className={styles.accountInfo}>
                                 <span className={styles.accountName}>{data.accountName}</span>
                                 <span className={styles.accountTypeLabel}>{accountTypeLabel}</span>

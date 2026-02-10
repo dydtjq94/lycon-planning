@@ -18,9 +18,9 @@ export function getOrCreateTooltip(isDark: boolean): HTMLDivElement {
   Object.assign(el.style, {
     position: 'fixed',
     pointerEvents: 'none',
-    background: isDark ? 'rgba(34, 37, 41, 0.65)' : 'rgba(255, 255, 255, 0.65)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
+    background: isDark ? 'rgba(34, 37, 41, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+    backdropFilter: 'blur(6px)',
+    WebkitBackdropFilter: 'blur(6px)',
     borderRadius: '14px',
     border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)'}`,
     boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.5)' : '0 8px 32px rgba(0, 0, 0, 0.12)',

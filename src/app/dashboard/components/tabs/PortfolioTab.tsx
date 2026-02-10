@@ -2409,9 +2409,9 @@ function PortfolioValueChart({
           Object.assign(tooltipEl.style, {
             position: "absolute",
             pointerEvents: "none",
-            background: "rgba(255, 255, 255, 0.7)",
-            backdropFilter: "blur(4px)",
-            WebkitBackdropFilter: "blur(4px)",
+            background: "rgba(255, 255, 255, 0.5)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
             border: "1px solid rgba(255, 255, 255, 0.4)",
             borderRadius: "10px",
             padding: "14px 18px",

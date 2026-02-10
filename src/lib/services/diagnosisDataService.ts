@@ -1136,15 +1136,14 @@ export function calculateAllDiagnosisMetrics(
 // 자녀 교육비 연도별 비용 (만원, 2025년 기준)
 // 일반 경로 vs 프리미엄 경로
 const EDUCATION_COST_BY_STAGE = {
-  // 일반 경로
-  infant: { normal: 360, premium: 600 },        // 영아 (0-2세): 어린이집 월 30만 vs 프리미엄 50만
-  toddler: { normal: 480, premium: 720 },       // 유아 (3세): 어린이집 월 40만 vs 60만
-  preschool: { normal: 600, premium: 2400 },    // 유치원 (4-6세): 일반 월 50만 vs 영어유치원 월 200만
-  elementary: { normal: 480, premium: 1200 },   // 초등학교 (7-12세): 학원 월 40만 vs 영어+수학 월 100만
-  middle: { normal: 720, premium: 1440 },       // 중학교 (13-15세): 월 60만 vs 120만
-  high: { normal: 1200, premium: 2400 },        // 고등학교 (16-18세): 월 100만 vs 200만 (대입 집중)
-  university: { normal: 2400, premium: 6000 },  // 대학교 (19-22세): 국내 vs 유학
-  wedding: { normal: 15000, premium: 25000 },   // 결혼자금: 1.5억 vs 2.5억
+  infant: { normal: 150, premium: 1000 },       // 영아 (0-2세): 어린이집 150만/년 vs 1,000만/년
+  toddler: { normal: 200, premium: 1200 },      // 유아 (3세): 어린이집 200만/년 vs 1,200만/년
+  preschool: { normal: 450, premium: 1800 },    // 유치원 (4-6세): 450만/년 vs 1,800만/년
+  elementary: { normal: 1000, premium: 2500 },   // 초등학교 (7-12세): 1,000만/년 vs 2,500만/년
+  middle: { normal: 1500, premium: 4000 },       // 중학교 (13-15세): 1,500만/년 vs 4,000만/년
+  high: { normal: 2000, premium: 5000 },         // 고등학교 (16-18세): 2,000만/년 vs 5,000만/년
+  university: { normal: 3000, premium: 7000 },   // 대학교 (19-22세): 3,000만/년 vs 7,000만/년
+  wedding: { normal: 10000, premium: 50000 },    // 결혼자금: 1억 vs 5억
 };
 
 // 교육 단계 라벨
@@ -1306,11 +1305,11 @@ export function calculateMedicalCosts(
 ): MedicalCostResult {
   // 연령대별 연간 의료비 (만원, 현재 기준)
   const medicalCostByAge = [
-    { minAge: 0, maxAge: 59, baseCost: 100 },
-    { minAge: 60, maxAge: 69, baseCost: 200 },
-    { minAge: 70, maxAge: 79, baseCost: 400 },
-    { minAge: 80, maxAge: 89, baseCost: 800 },
-    { minAge: 90, maxAge: 100, baseCost: 1200 }, // 간병비 포함
+    { minAge: 0, maxAge: 59, baseCost: 60 },
+    { minAge: 60, maxAge: 69, baseCost: 180 },
+    { minAge: 70, maxAge: 79, baseCost: 350 },
+    { minAge: 80, maxAge: 89, baseCost: 780 },
+    { minAge: 90, maxAge: 100, baseCost: 950 },
   ];
 
   const calculateForPerson = (personAge: number): MedicalCostBreakdown[] => {
@@ -1424,7 +1423,7 @@ export function calculateConsumerGoodsCosts(
     {
       level: "검소",
       description: "필요한 것만, 오래 사용",
-      annualCost: 300,  // 연 300만원
+      annualCost: 500,  // 연 500만원
       breakdown: {
         car: "소형차 10년 사용, 중고차 활용",
         appliances: "가전 고장 시에만 교체",
@@ -1433,7 +1432,7 @@ export function calculateConsumerGoodsCosts(
     {
       level: "보통",
       description: "적당한 소비, 7년 주기 교체",
-      annualCost: 600,  // 연 600만원
+      annualCost: 1100,  // 연 1,100만원
       breakdown: {
         car: "중형차 7년 사용",
         appliances: "가전/가구 주기적 교체",
@@ -1442,7 +1441,7 @@ export function calculateConsumerGoodsCosts(
     {
       level: "여유",
       description: "좋은 것 선호, 5년 주기 교체",
-      annualCost: 1200, // 연 1200만원
+      annualCost: 3000, // 연 3,000만원
       breakdown: {
         car: "수입차/대형차 5년 사용",
         appliances: "고급 가전, 인테리어 투자",
