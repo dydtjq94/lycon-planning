@@ -32,6 +32,18 @@
   font-weight: 500;
 }
 
+.sectionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-bg);
+  border-radius: 6px;
+}
+
 .sectionDesc {
   font-size: 13px;
   color: var(--dashboard-text-secondary);

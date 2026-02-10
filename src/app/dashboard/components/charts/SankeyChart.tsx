@@ -151,7 +151,7 @@ export function SankeyChart({
     기타소득: categoryColors.debt,
 
     // 중간 노드
-    "총 유입": isDark ? "#64748b" : "#475569",
+    "총 유입": chartLineColors.price,
 
     // 지출 (손실 색상 계열 - 빨강)
     생활비: chartLineColors.profit,

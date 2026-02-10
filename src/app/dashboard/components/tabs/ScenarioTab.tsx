@@ -9,7 +9,7 @@ import {
   Receipt,
   LineChart,
   Landmark,
-  Building2,
+  Wallet,
   ListOrdered,
   Settings,
 } from "lucide-react";
@@ -55,14 +55,14 @@ const TOP_TABS = [
 
 // Category tabs
 const CATEGORY_TABS = [
-  { id: "accounts", label: "계좌", icon: Building2 },
+  { id: "accounts", label: "계좌", icon: Wallet },
   { id: "income", label: "소득", icon: Banknote },
   { id: "expense", label: "지출", icon: Receipt },
   { id: "savings", label: "저축/투자", icon: LineChart },
+  { id: "pension", label: "연금", icon: Landmark },
   { id: "realEstate", label: "부동산", icon: Home },
   { id: "asset", label: "실물자산", icon: Car },
   { id: "debt", label: "부채", icon: CreditCard },
-  { id: "pension", label: "연금", icon: Landmark },
   { id: "investmentAssumptions", label: "투자 가정", icon: Settings },
   { id: "cashflowPriorities", label: "현금 흐름 우선순위", icon: ListOrdered },
 ] as const;
@@ -98,6 +98,11 @@ export function ScenarioTab({
 }: ScenarioTabProps) {
   const [activeTopTab, setActiveTopTab] = useState<"plan" | "cashflow">("plan");
   const [activeCategoryTab, setActiveCategoryTab] = useState<string | null>(null);
+
+  // Shared state for time range and selected year
+  type TimeRange = 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full'
+  const [sharedTimeRange, setSharedTimeRange] = useState<TimeRange>('full')
+  const [sharedSelectedYear, setSharedSelectedYear] = useState<number>(new Date().getFullYear())
 
   // ESC 키로 패널 닫기
   useEffect(() => {
@@ -150,6 +155,10 @@ export function ScenarioTab({
           retirementAge={profile.target_retirement_age}
           globalSettings={globalSettings ?? undefined}
           isInitializing={isInitializing}
+          timeRange={sharedTimeRange}
+          onTimeRangeChange={setSharedTimeRange}
+          selectedYear={sharedSelectedYear}
+          onSelectedYearChange={setSharedSelectedYear}
         />
       );
     }
@@ -163,6 +172,10 @@ export function ScenarioTab({
           isInitializing={isInitializing}
           retirementAge={profile.target_retirement_age}
           globalSettings={globalSettings ?? undefined}
+          timeRange={sharedTimeRange}
+          onTimeRangeChange={setSharedTimeRange}
+          selectedYear={sharedSelectedYear}
+          onSelectedYearChange={setSharedSelectedYear}
         />
       );
     }

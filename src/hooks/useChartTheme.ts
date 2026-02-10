@@ -99,25 +99,15 @@ function getResolvedColorMode(): ColorMode {
 }
 
 export function useChartTheme() {
-  const [themeId, setThemeId] = useState<ChartThemeId>("default");
-  const [colorMode, setColorMode] = useState<ColorMode>("dark");
-  const [isReady, setIsReady] = useState(false);
+  const [themeId, setThemeId] = useState<ChartThemeId>(() => {
+    if (typeof window === "undefined") return "default";
+    const saved = localStorage.getItem("chart-theme") as ChartThemeId | null;
+    return (saved && saved in chartThemes) ? saved : "default";
+  });
+  const [colorMode, setColorMode] = useState<ColorMode>(() => getResolvedColorMode());
+  const [isReady, setIsReady] = useState(true);
 
   useEffect(() => {
-    // 초기 로드
-    const saved = localStorage.getItem("chart-theme") as ChartThemeId | null;
-    if (saved && saved in chartThemes) {
-      setThemeId(saved);
-    }
-
-    // 색상 모드 로드
-    setColorMode(getResolvedColorMode());
-
-    // CSS 변수가 완전히 적용될 때까지 약간의 딜레이
-    const timer = setTimeout(() => {
-      setIsReady(true);
-    }, 100);
-
     // 차트 테마 변경 이벤트 리스너
     const handleChartThemeChange = (e: CustomEvent<ChartThemeId>) => {
       if (e.detail in chartThemes) {
@@ -148,7 +138,6 @@ export function useChartTheme() {
     mediaQuery.addEventListener("change", handleSystemChange);
 
     return () => {
-      clearTimeout(timer);
       window.removeEventListener("chart-theme-change", handleChartThemeChange as EventListener);
       window.removeEventListener("theme-change", handleThemeChange as EventListener);
       mediaQuery.removeEventListener("change", handleSystemChange);
@@ -179,7 +168,8 @@ export function useChartTheme() {
     loss: plColors.loss,     // 손실 (파랑)
     buy: plColors.profit,    // 매수 (빨강)
     sell: plColors.loss,     // 매도 (파랑)
-  }), [lineColor, plColors]);
+    expense: colors[3],      // 비용/적자 (Sankey 비용 색상과 통일)
+  }), [lineColor, plColors, colors]);
 
   // 카테고리별 그라데이션 배열
   const categoryShades = useMemo(() => ({

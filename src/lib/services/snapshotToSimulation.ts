@@ -195,18 +195,28 @@ export async function copySnapshotToSimulation(
     // 부동산 항목 복사 (real_estates) - 배치 INSERT
     if (!categories || categories.includes('real_estates')) {
       const realEstateItems = items.filter(
-        item => item.category === 'asset' && ['real_estate', 'residence', 'land'].includes(item.item_type)
+        item => item.category === 'asset' && ['real_estate', 'residence', 'land', 'apartment', 'house', 'officetel', 'commercial'].includes(item.item_type)
       )
 
       if (realEstateItems.length > 0) {
         const realEstatesDataArray = realEstateItems.map(item =>
           mapRealEstateToSimulation(item, simulationId, currentYear, currentMonth)
         )
-        const { error } = await supabase.from('real_estates').insert(realEstatesDataArray)
+        const { data: insertedRealEstates, error } = await supabase
+          .from('real_estates')
+          .insert(realEstatesDataArray)
+          .select()
         if (error) {
           result.errors.push(`Failed to copy real estates: ${error.message}`)
         } else {
           result.copiedItems.realEstates = realEstateItems.length
+
+          // 부동산 연동 항목 생성 (대출→부채, 임대→소득, 월세→지출, 관리비→지출)
+          if (insertedRealEstates) {
+            for (const re of insertedRealEstates) {
+              await createLinkedItemsForRealEstate(re, supabase)
+            }
+          }
         }
       }
     }
@@ -356,6 +366,10 @@ function mapRealEstateToSimulation(
     real_estate: 'residence',
     residence: 'residence',
     land: 'land',
+    apartment: 'investment',
+    house: 'investment',
+    officetel: 'investment',
+    commercial: 'rental',
   }
 
   return {
@@ -371,6 +385,7 @@ function mapRealEstateToSimulation(
     housing_type: metadata.housing_type || '자가',
     deposit: metadata.deposit || null,
     monthly_rent: metadata.monthly_rent || null,
+    maintenance_fee: metadata.maintenance_fee || null,
     has_loan: metadata.has_loan || false,
     loan_amount: metadata.loan_amount || null,
     loan_rate: metadata.loan_rate || null,
@@ -418,4 +433,93 @@ export function formatSnapshotSummary(snapshot: FinancialSnapshot): string {
   }
 
   return `기준일: ${snapshot.recorded_at} | 순자산: ${formatMoney(snapshot.net_worth)}원`
+}
+
+// ============================================
+// 부동산 연동 항목 생성
+// ============================================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function createLinkedItemsForRealEstate(realEstate: any, supabase: any): Promise<void> {
+  const currentYear = new Date().getFullYear()
+  const currentMonth = new Date().getMonth() + 1
+
+  // 대출 → 부채
+  if (realEstate.has_loan && realEstate.loan_amount) {
+    const debtType = (realEstate.housing_type === '전세' || realEstate.housing_type === '월세') ? 'jeonse' : 'mortgage'
+    const loanTitle = realEstate.housing_type === '자가'
+      ? `${realEstate.title} 주담대`
+      : `${realEstate.title} 전월세 보증금 대출`
+
+    await supabase.from('debts').insert({
+      simulation_id: realEstate.simulation_id,
+      type: debtType,
+      title: loanTitle,
+      principal: realEstate.loan_amount,
+      current_balance: realEstate.loan_amount,
+      interest_rate: realEstate.loan_rate || 4,
+      rate_type: realEstate.loan_rate_type || 'fixed',
+      repayment_type: realEstate.loan_repayment_type || '원리금균등상환',
+      start_year: realEstate.loan_start_year || currentYear,
+      start_month: realEstate.loan_start_month || currentMonth,
+      maturity_year: realEstate.loan_maturity_year || currentYear + 30,
+      maturity_month: realEstate.loan_maturity_month || currentMonth,
+      source_type: 'real_estate',
+      source_id: realEstate.id,
+    })
+  }
+
+  // 임대 수익 → 소득
+  if (realEstate.has_rental_income && realEstate.rental_monthly) {
+    await supabase.from('incomes').insert({
+      simulation_id: realEstate.simulation_id,
+      type: 'rental',
+      title: `${realEstate.title} 임대`,
+      owner: realEstate.owner === 'common' ? 'self' : (realEstate.owner || 'self'),
+      amount: realEstate.rental_monthly,
+      frequency: 'monthly',
+      start_year: realEstate.rental_start_year || currentYear,
+      start_month: realEstate.rental_start_month || currentMonth,
+      end_year: realEstate.rental_end_year || null,
+      end_month: realEstate.rental_end_month || null,
+      growth_rate: 2,
+      rate_category: 'realEstate',
+      source_type: 'real_estate',
+      source_id: realEstate.id,
+    })
+  }
+
+  // 월세 거주 → 지출
+  if (realEstate.type === 'residence' && realEstate.housing_type === '월세' && realEstate.monthly_rent) {
+    await supabase.from('expenses').insert({
+      simulation_id: realEstate.simulation_id,
+      type: 'housing',
+      title: `${realEstate.title} 월세`,
+      amount: realEstate.monthly_rent,
+      frequency: 'monthly',
+      start_year: currentYear,
+      start_month: currentMonth,
+      growth_rate: 2,
+      rate_category: 'realEstate',
+      source_type: 'real_estate',
+      source_id: realEstate.id,
+    })
+  }
+
+  // 관리비 → 지출
+  if (realEstate.maintenance_fee) {
+    await supabase.from('expenses').insert({
+      simulation_id: realEstate.simulation_id,
+      type: 'housing',
+      title: `${realEstate.title} 관리비`,
+      amount: realEstate.maintenance_fee,
+      frequency: 'monthly',
+      start_year: currentYear,
+      start_month: currentMonth,
+      growth_rate: 2,
+      rate_category: 'inflation',
+      source_type: 'real_estate',
+      source_id: realEstate.id,
+    })
+  }
 }

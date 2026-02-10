@@ -7,11 +7,18 @@ import {
   LinearScale,
   BarElement,
   Tooltip,
-  Legend,
 } from 'chart.js'
 import annotationPlugin from 'chartjs-plugin-annotation'
-import type { SimulationResult, YearlySnapshot } from '@/lib/services/simulationEngine'
+import type { SimulationResult } from '@/lib/services/simulationEngine'
 import { groupIncomeItems, groupExpenseItems } from '@/lib/utils/tooltipCategories'
+import {
+  getOrCreateTooltip,
+  removeTooltip,
+  positionTooltip,
+  hideTooltip,
+  formatMoneyWithUnit,
+  getAgeText,
+} from '@/lib/utils/chartTooltip'
 import { useChartTheme } from '@/hooks/useChartTheme'
 import styles from './CashFlowChart.module.css'
 
@@ -20,7 +27,6 @@ ChartJS.register(
   LinearScale,
   BarElement,
   Tooltip,
-  Legend,
   annotationPlugin
 )
 
@@ -28,66 +34,44 @@ interface CashFlowChartProps {
   simulationResult: SimulationResult
   endYear: number
   retirementYear: number
+  birthYear?: number
+  spouseBirthYear?: number | null
   onYearClick?: (year: number) => void
   selectedYear?: number | null
+  headerAction?: React.ReactNode
 }
 
-// 금액 포맷팅 (억+만원 단위로 상세 표시)
-function formatMoney(amount: number): string {
-  const absAmount = Math.abs(amount)
-  if (absAmount >= 10000) {
-    const uk = Math.floor(absAmount / 10000)
-    const man = Math.round(absAmount % 10000)
-    if (man === 0) {
-      return `${uk}억`
-    }
-    return `${uk}억 ${man.toLocaleString()}만`
+// Y축 포맷팅
+function formatChartValue(value: number): string {
+  const absValue = Math.abs(value)
+  if (absValue >= 10000) {
+    return `${(absValue / 10000).toFixed(1)}억`
   }
-  return `${absAmount.toLocaleString()}만`
-}
-
-// 커스텀 툴팁 생성
-function getOrCreateTooltip(chart: ChartJS, isDark: boolean): HTMLDivElement {
-  let tooltipEl = chart.canvas.parentNode?.querySelector('div.chart-tooltip') as HTMLDivElement | null
-  if (!tooltipEl) {
-    tooltipEl = document.createElement('div')
-    tooltipEl.className = 'chart-tooltip'
-  }
-  tooltipEl.style.cssText = `
-    background: ${isDark ? 'rgba(39, 39, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)'};
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 12px;
-    border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)'};
-    box-shadow: 0 4px 24px ${isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.12)'};
-    pointer-events: none;
-    position: absolute;
-    transition: all 0.15s ease;
-    padding: 14px 18px;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    white-space: nowrap;
-    z-index: 100;
-    min-width: 200px;
-  `
-  if (!chart.canvas.parentNode?.querySelector('div.chart-tooltip')) {
-    chart.canvas.parentNode?.appendChild(tooltipEl)
-  }
-  return tooltipEl
+  return `${absValue.toLocaleString()}만`
 }
 
 export function CashFlowChart({
   simulationResult,
   endYear,
   retirementYear,
+  birthYear,
+  spouseBirthYear,
   onYearClick,
   selectedYear,
+  headerAction,
 }: CashFlowChartProps) {
-  const { chartLineColors, chartScaleColors, isDark, toRgba } = useChartTheme()
+  const { chartLineColors, chartScaleColors, categoryColors, isDark, toRgba } = useChartTheme()
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<ChartJS | null>(null)
+  const onYearClickRef = useRef(onYearClick)
+  onYearClickRef.current = onYearClick
 
   const { snapshots } = simulationResult
   const currentYear = new Date().getFullYear()
+
+  // 순현금흐름 바 색상
+  const positiveColor = chartLineColors.price
+  const negativeColor = chartLineColors.expense
 
   // 커스텀 툴팁 핸들러
   const externalTooltipHandler = useCallback((context: {
@@ -100,10 +84,10 @@ export function CashFlowChart({
     }
   }) => {
     const { chart, tooltip } = context
-    const tooltipEl = getOrCreateTooltip(chart, isDark)
+    const tooltipEl = getOrCreateTooltip(isDark)
 
     if (tooltip.opacity === 0) {
-      tooltipEl.style.opacity = '0'
+      hideTooltip(tooltipEl)
       return
     }
 
@@ -111,149 +95,157 @@ export function CashFlowChart({
     const snapshot = snapshots[dataIndex]
 
     if (!snapshot) {
-      tooltipEl.style.opacity = '0'
+      hideTooltip(tooltipEl)
       return
     }
 
-    // 소득/지출 breakdown 표시 (카테고리별 그룹핑)
-    const incomeGroups = groupIncomeItems(snapshot.incomeBreakdown)
-    const expenseGroups = groupExpenseItems(snapshot.expenseBreakdown)
-
-    const totalIncome = incomeGroups.reduce((sum, g) => sum + g.total, 0)
-    const totalExpense = expenseGroups.reduce((sum, g) => sum + g.total, 0)
-
     const textColor = isDark ? '#ffffff' : '#1d1d1f'
     const textSecondary = isDark ? '#a1a1aa' : '#86868b'
-    const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+    const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
 
-    const incomeHtml = incomeGroups.length > 0 ? `
-      <div style="margin-bottom: 12px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 12px; font-weight: 600; color: #10b981;">소득</span>
-          <span style="font-size: 12px; font-weight: 600; color: #10b981;">+${formatMoney(totalIncome)}</span>
-        </div>
-        ${incomeGroups.map(group => `
-          <div style="margin-bottom: 6px;">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-              <span style="width: 8px; height: 8px; border-radius: 2px; background: ${group.category.color};"></span>
-              <span style="font-size: 11px; color: ${textSecondary};">${group.category.label}</span>
-            </div>
-            ${group.items.map(item => `
-              <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 1px; padding-left: 14px;">
-                <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
-                <span style="font-size: 12px; color: ${group.category.color};">${formatMoney(item.amount)}</span>
-              </div>
-            `).join('')}
-          </div>
-        `).join('')}
-      </div>
-    ` : ''
-
-    const expenseHtml = expenseGroups.length > 0 ? `
-      <div style="margin-bottom: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 12px; font-weight: 600; color: #ef4444;">지출</span>
-          <span style="font-size: 12px; font-weight: 600; color: #ef4444;">-${formatMoney(totalExpense)}</span>
-        </div>
-        ${expenseGroups.map(group => `
-          <div style="margin-bottom: 6px;">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-              <span style="width: 8px; height: 8px; border-radius: 2px; background: ${group.category.color};"></span>
-              <span style="font-size: 11px; color: ${textSecondary};">${group.category.label}</span>
-            </div>
-            ${group.items.map(item => `
-              <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 1px; padding-left: 14px;">
-                <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
-                <span style="font-size: 12px; color: ${group.category.color};">${formatMoney(item.amount)}</span>
-              </div>
-            `).join('')}
-          </div>
-        `).join('')}
-      </div>
-    ` : ''
-
+    // 순현금흐름
     const netCashFlow = snapshot.netCashFlow
     const netPrefix = netCashFlow >= 0 ? '+' : '-'
     const netColor = netCashFlow >= 0 ? '#10b981' : '#ef4444'
 
+    // 소득/지출 breakdown
+    const incomeGroups = groupIncomeItems(snapshot.incomeBreakdown)
+    const expenseGroups = groupExpenseItems(snapshot.expenseBreakdown)
+    const totalIncome = incomeGroups.reduce((sum, g) => sum + g.total, 0)
+    const totalExpense = expenseGroups.reduce((sum, g) => sum + g.total, 0)
+
+    // 나이 텍스트
+    const ageText = getAgeText(snapshot.year, birthYear, spouseBirthYear)
+
+    // 소득 항목 HTML
+    const incomeItemsHtml = incomeGroups.length > 0 ? `
+      <div style="margin-top: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 13px; font-weight: 700; color: ${textColor};">수입</span>
+          <span style="font-size: 13px; font-weight: 700; color: #10b981;">+${formatMoneyWithUnit(totalIncome)}</span>
+        </div>
+        ${incomeGroups.map(group => group.items.map(item => `
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+              <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
+            </div>
+            <span style="font-size: 12px; color: ${textColor};">+${formatMoneyWithUnit(item.amount)}</span>
+          </div>
+        `).join('')).join('')}
+      </div>
+    ` : ''
+
+    // 지출 항목 HTML
+    const expenseItemsHtml = expenseGroups.length > 0 ? `
+      <div style="margin-top: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 13px; font-weight: 700; color: ${textColor};">지출</span>
+          <span style="font-size: 13px; font-weight: 700; color: #ef4444;">-${formatMoneyWithUnit(totalExpense)}</span>
+        </div>
+        ${expenseGroups.map(group => group.items.map(item => `
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+              <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
+            </div>
+            <span style="font-size: 12px; color: ${textColor};">-${formatMoneyWithUnit(item.amount)}</span>
+          </div>
+        `).join('')).join('')}
+      </div>
+    ` : ''
+
     tooltipEl.innerHTML = `
-      <div style="font-size: 16px; font-weight: 700; color: ${textColor}; margin-bottom: 2px;">${snapshot.year}년</div>
-      <div style="font-size: 12px; color: ${textSecondary}; margin-bottom: 12px;">${snapshot.age}세</div>
-      ${incomeHtml}
-      ${expenseHtml}
-      <div style="border-top: 1px solid ${borderColor}; margin-top: 8px; padding-top: 8px;">
-        <div style="display: flex; justify-content: space-between; gap: 16px;">
-          <span style="font-size: 14px; color: ${textSecondary};">순현금흐름</span>
-          <span style="font-size: 14px; font-weight: 700; color: ${netColor};">${netPrefix}${formatMoney(netCashFlow)}</span>
+      <div style="font-size: 18px; font-weight: 700; color: ${textColor}; margin-bottom: 2px;">${snapshot.year}년</div>
+      <div style="font-size: 12px; color: ${textSecondary}; margin-bottom: 12px;">${ageText}</div>
+      <div style="border-top: 1px solid ${borderColor}; padding-top: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 14px; font-weight: 700; color: ${textColor};">순 현금흐름</span>
+          <span style="font-size: 14px; font-weight: 700; color: ${netColor};">${netPrefix}${formatMoneyWithUnit(netCashFlow)}</span>
         </div>
       </div>
+      ${incomeItemsHtml}
+      ${expenseItemsHtml}
     `
 
-    // 툴팁 위치 계산
-    const chartRect = chart.canvas.getBoundingClientRect()
-    const tooltipWidth = tooltipEl.offsetWidth || 200
-    let leftPos = tooltip.caretX
+    positionTooltip(tooltipEl, chart.canvas, tooltip.caretX, tooltip.caretY)
+  }, [snapshots, isDark, birthYear, spouseBirthYear])
 
-    if (leftPos + tooltipWidth / 2 > chartRect.width) {
-      leftPos = chartRect.width - tooltipWidth / 2 - 10
-    } else if (leftPos - tooltipWidth / 2 < 0) {
-      leftPos = tooltipWidth / 2 + 10
+  // 언마운트 시 차트 + 툴팁 정리
+  useEffect(() => {
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy()
+        chartInstance.current = null
+      }
+      removeTooltip()
     }
-
-    tooltipEl.style.opacity = '1'
-    tooltipEl.style.left = `${leftPos}px`
-    tooltipEl.style.top = `${Math.max(10, tooltip.caretY - 60)}px`
-    tooltipEl.style.transform = 'translate(-50%, 0)'
-  }, [snapshots, isDark])
+  }, [])
 
   useEffect(() => {
     if (!chartRef.current || snapshots.length === 0) return
 
-    // 연도 레이블
     const labels = snapshots.map(s => s.year)
-    // 소득은 양수, 지출은 음수로 변환
-    const incomeData = snapshots.map(s => s.totalIncome)
-    const expenseData = snapshots.map(s => -s.totalExpense) // 음수로 변환
+    const netCashFlowData = snapshots.map(s => s.netCashFlow)
 
-    // 은퇴 연도 인덱스
     const retirementIndex = labels.findIndex(y => y === retirementYear)
 
-    // Y축 범위 계산 (0 중심 대칭)
-    const maxIncome = Math.max(...incomeData)
-    const maxExpense = Math.max(...snapshots.map(s => s.totalExpense))
-    const maxAbsValue = Math.max(maxIncome, maxExpense)
-    const roundedMax = Math.ceil(maxAbsValue / 1000) * 1000
+    // 바 색상 (양수/음수)
+    const bgColors = netCashFlowData.map(v => v >= 0 ? toRgba(positiveColor, 0.7) : toRgba(negativeColor, 0.7))
 
-    // 차트가 이미 있으면 데이터/옵션만 업데이트 (애니메이션 없이)
+    // 0을 가운데로 대칭 y축
+    const maxAbs = Math.max(Math.abs(Math.max(...netCashFlowData)), Math.abs(Math.min(...netCashFlowData))) * 1.1
+
+    // annotation 설정
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const annotationsConfig: any = {
+      zeroLine: {
+        type: 'line',
+        yMin: 0,
+        yMax: 0,
+        borderColor: 'rgba(100, 116, 139, 0.8)',
+        borderWidth: 1.5,
+      },
+    }
+    if (retirementIndex >= 0) {
+      annotationsConfig.retirementLine = {
+        type: 'line',
+        xMin: retirementIndex,
+        xMax: retirementIndex,
+        borderColor: 'rgba(148, 163, 184, 0.8)',
+        borderWidth: 2,
+        borderDash: [6, 4],
+        label: {
+          display: true,
+          content: '은퇴',
+          position: 'start' as const,
+          backgroundColor: 'rgba(100, 116, 139, 0.9)',
+          color: '#fff',
+          font: { size: 11, weight: 'bold' as const },
+          padding: { x: 6, y: 4 },
+          borderRadius: 4,
+        },
+      }
+    }
+
+    // 차트가 이미 있으면 데이터/옵션만 업데이트
     if (chartInstance.current) {
       const chart = chartInstance.current
       chart.data.labels = labels
-      chart.data.datasets[0].data = incomeData
-      ;(chart.data.datasets[0] as any).backgroundColor = snapshots.map(s =>
-        selectedYear === s.year ? toRgba(chartLineColors.value, 1) : toRgba(chartLineColors.value, 0.7)
-      )
-      chart.data.datasets[1].data = expenseData
-      ;(chart.data.datasets[1] as any).backgroundColor = snapshots.map(s =>
-        selectedYear === s.year ? toRgba(chartLineColors.profit, 1) : toRgba(chartLineColors.profit, 0.7)
-      )
+      const ds = chart.data.datasets[0] as any
+      ds.data = netCashFlowData
+      ds.backgroundColor = bgColors
 
-      // 스케일 색상 업데이트
       if (chart.options.scales?.x?.ticks) chart.options.scales.x.ticks.color = chartScaleColors.tickColor
-      if (chart.options.scales?.y?.ticks) chart.options.scales.y.ticks.color = chartScaleColors.tickColor
-      if (chart.options.scales?.y?.grid) (chart.options.scales.y.grid as any).color = chartScaleColors.gridColor
       if (chart.options.scales?.y) {
-        chart.options.scales.y.min = -roundedMax
-        chart.options.scales.y.max = roundedMax
+        chart.options.scales.y.min = -maxAbs
+        chart.options.scales.y.max = maxAbs
+        if (chart.options.scales.y.ticks) chart.options.scales.y.ticks.color = chartScaleColors.tickColor
+        if (chart.options.scales.y.grid) (chart.options.scales.y.grid as any).color = chartScaleColors.gridColor
       }
 
-      // annotation 업데이트
-      const annotations = (chart.options.plugins?.annotation as any)?.annotations
-      if (annotations?.retirementLine) {
-        annotations.retirementLine.xMin = retirementIndex
-        annotations.retirementLine.xMax = retirementIndex
-      }
+      ;(chart.options.plugins as any).annotation = { annotations: annotationsConfig }
 
-      // tooltip 핸들러 업데이트
       if (chart.options.plugins?.tooltip) {
         (chart.options.plugins.tooltip as any).external = externalTooltipHandler
       }
@@ -262,7 +254,7 @@ export function CashFlowChart({
       return
     }
 
-    // 최초 생성 (애니메이션 포함)
+    // 최초 생성
     const ctx = chartRef.current.getContext('2d')
     if (!ctx) return
 
@@ -270,28 +262,13 @@ export function CashFlowChart({
       type: 'bar',
       data: {
         labels,
-        datasets: [
-          {
-            label: '소득',
-            data: incomeData,
-            backgroundColor: snapshots.map(s =>
-              selectedYear === s.year ? toRgba(chartLineColors.value, 1) : toRgba(chartLineColors.value, 0.7)
-            ),
-            borderRadius: 2,
-            barPercentage: 0.7,
-            categoryPercentage: 0.9,
-          },
-          {
-            label: '지출',
-            data: expenseData,
-            backgroundColor: snapshots.map(s =>
-              selectedYear === s.year ? toRgba(chartLineColors.profit, 1) : toRgba(chartLineColors.profit, 0.7)
-            ),
-            borderRadius: 2,
-            barPercentage: 0.7,
-            categoryPercentage: 0.9,
-          },
-        ],
+        datasets: [{
+          label: '순현금흐름',
+          data: netCashFlowData,
+          backgroundColor: bgColors,
+          borderWidth: 0,
+          borderRadius: 2,
+        }],
       },
       options: {
         responsive: true,
@@ -300,108 +277,89 @@ export function CashFlowChart({
           mode: 'index',
           intersect: false,
         },
-        onClick: (event, elements) => {
-          if (elements.length > 0 && onYearClick) {
+        onClick: (_event, elements, chart) => {
+          if (elements.length > 0 && onYearClickRef.current) {
             const index = elements[0].index
-            onYearClick(labels[index])
+            const label = chart.data.labels?.[index]
+            if (label) onYearClickRef.current(Number(label))
           }
         },
         plugins: {
-          legend: {
-            display: true,
-            position: 'top',
-            align: 'end',
-            labels: {
-              boxWidth: 12,
-              boxHeight: 12,
-              padding: 16,
-              font: { size: 11 },
-              usePointStyle: true,
-            },
-          },
+          legend: { display: false },
           tooltip: {
             enabled: false,
             external: externalTooltipHandler,
           },
           annotation: {
-            annotations: {
-              retirementLine: {
-                type: 'line',
-                xMin: retirementIndex,
-                xMax: retirementIndex,
-                borderColor: 'rgba(148, 163, 184, 0.8)',
-                borderWidth: 2,
-                borderDash: [6, 4],
-                label: {
-                  display: true,
-                  content: '은퇴',
-                  position: 'start',
-                  backgroundColor: 'rgba(100, 116, 139, 0.9)',
-                  color: 'white',
-                  font: { size: 10, weight: 'bold' },
-                  padding: 4,
-                },
-              },
-              zeroLine: {
-                type: 'line',
-                yMin: 0,
-                yMax: 0,
-                borderColor: 'rgba(100, 116, 139, 0.8)',
-                borderWidth: 1.5,
-              },
-            },
+            annotations: annotationsConfig,
           },
         },
         scales: {
           x: {
-            stacked: true,
             grid: { display: false },
             ticks: {
-              font: { size: 10 },
-              color: chartScaleColors.tickColor,
               maxRotation: 0,
-              callback: function(value, index) {
-                const year = labels[index]
-                // 5년 단위 또는 현재 연도, 은퇴 연도만 표시
-                if (year === currentYear || year === retirementYear || year % 5 === 0) {
-                  return year
-                }
-                return ''
-              },
+              autoSkip: true,
+              maxTicksLimit: 15,
+              font: { size: 11 },
+              color: chartScaleColors.tickColor,
             },
+            border: { display: false },
           },
           y: {
-            stacked: true,
-            min: -roundedMax,
-            max: roundedMax,
-            grid: {
-              color: chartScaleColors.gridColor,
-            },
+            min: -maxAbs,
+            max: maxAbs,
+            afterFit: (scale: { width: number }) => { scale.width = 60 },
+            grid: { color: chartScaleColors.gridColor },
             ticks: {
-              font: { size: 10 },
-              color: chartScaleColors.tickColor,
-              callback: function(value) {
-                const numValue = Number(value)
+              callback: (value) => {
+                const numValue = value as number
                 if (numValue === 0) return '0'
                 const prefix = numValue > 0 ? '+' : '-'
-                return `${prefix}${formatMoney(numValue)}`
+                return `${prefix}${formatChartValue(numValue)}`
               },
+              font: { size: 11 },
+              color: chartScaleColors.tickColor,
             },
+            border: { display: false },
           },
         },
       },
     })
-  }, [snapshots, retirementYear, selectedYear, onYearClick, currentYear, externalTooltipHandler, chartScaleColors, chartLineColors, toRgba])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshots, retirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, isDark, toRgba])
 
-  // 컴포넌트 언마운트 시에만 차트 파괴
+  // 선택된 연도가 변경될 때 annotation만 업데이트
   useEffect(() => {
-    return () => {
-      if (chartInstance.current) {
-        chartInstance.current.destroy()
-        chartInstance.current = null
+    if (!chartInstance.current || !chartRef.current) return
+
+    const chart = chartInstance.current
+    const annotations = (chart.options.plugins?.annotation as { annotations?: Record<string, unknown> })?.annotations
+
+    if (!annotations) return
+
+    const labels = chart.data.labels as number[]
+    const newSelectedIndex = selectedYear
+      ? labels.findIndex(label => Number(label) === selectedYear)
+      : -1
+
+    const accentColor = getComputedStyle(chartRef.current).getPropertyValue('--accent-color').trim() || '#007aff'
+    const accentWithOpacity = `color-mix(in srgb, ${accentColor} 40%, transparent)`
+
+    if (newSelectedIndex >= 0) {
+      annotations.selectedLine = {
+        type: 'line',
+        xMin: newSelectedIndex,
+        xMax: newSelectedIndex,
+        borderColor: accentWithOpacity,
+        borderWidth: 2,
       }
+    } else {
+      delete annotations.selectedLine
     }
-  }, [])
+
+    chart.update('none')
+  }, [selectedYear, snapshots])
 
   if (snapshots.length === 0) {
     return (
@@ -412,8 +370,26 @@ export function CashFlowChart({
   }
 
   return (
-    <div className={styles.chartWrapper}>
-      <canvas ref={chartRef} />
+    <div className={styles.container}>
+      <div className={styles.legendRow}>
+        <div className={styles.legend}>
+          <div className={styles.legendItem}>
+            <span className={styles.legendColor} style={{ background: positiveColor }} />
+            <span className={styles.legendLabel}>흑자</span>
+          </div>
+          <div className={styles.legendItem}>
+            <span className={styles.legendColor} style={{ background: negativeColor }} />
+            <span className={styles.legendLabel}>적자</span>
+          </div>
+        </div>
+        {headerAction && <div className={styles.headerAction}>{headerAction}</div>}
+      </div>
+      <div className={styles.chartWrapper}>
+        <canvas ref={chartRef} />
+      </div>
+      <p className={styles.hint}>
+        차트를 클릭하면 해당 연도의 상세 정보를 볼 수 있습니다
+      </p>
     </div>
   )
 }

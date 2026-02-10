@@ -92,7 +92,7 @@ export async function createDebt(input: DebtInput): Promise<Debt> {
   // 연동된 부채가 아닌 경우에만 연동 지출 생성
   // (부동산/실물자산에서 온 부채는 해당 서비스에서 지출을 생성함)
   if (!data.source_type) {
-    await createLinkedExpensesForDebt(data)
+    await createLinkedExpensesForDebt(convertFromWon(data, DEBT_MONEY_FIELDS))
   }
 
   // DB(원) -> 클라이언트(만원) 변환
@@ -123,7 +123,7 @@ export async function updateDebt(
   // 연동된 부채가 아닌 경우에만 연동 지출 재생성
   if (!data.source_type) {
     await deleteLinkedExpenses('debt', id)
-    await createLinkedExpensesForDebt(data)
+    await createLinkedExpensesForDebt(convertFromWon(data, DEBT_MONEY_FIELDS))
   }
 
   // DB(원) -> 클라이언트(만원) 변환

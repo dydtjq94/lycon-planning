@@ -383,10 +383,13 @@ export function DashboardContent() {
             setSelectedSimulationId(defaultSim.id);
             updateUrl("simulation", defaultSim.id);
           } else {
-            // 시뮬레이션이 모두 삭제되면 대시보드로 이동
+            // 시뮬레이션이 모두 삭제됨
             setSelectedSimulationId(null as unknown as string);
-            setCurrentSection("dashboard");
-            updateUrl("dashboard", "");
+            // 시뮬레이션 탭에 있을 때만 대시보드로 이동
+            if (currentSection === "simulation") {
+              setCurrentSection("dashboard");
+              updateUrl("dashboard", "");
+            }
           }
         }
       },

@@ -197,7 +197,10 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     const loadBalanceTransactions = async () => {
       if (accounts.length === 0) {
         setBalanceTransactions([]);
-        setBalanceTxLoading(false);
+        // 계좌가 아직 로딩 중이면 balanceTxLoading을 유지
+        if (!accountsLoading) {
+          setBalanceTxLoading(false);
+        }
         return;
       }
 
@@ -255,7 +258,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       .select("*")
       .eq("profile_id", profileId)
       .eq("is_active", true)
-      .in("account_type", ["checking", "savings", "deposit"]) // 은행 계좌만
+      .eq("account_type", "checking") // 입출금 계좌만 (적금/정기예금은 별도 탭)
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: true });
 

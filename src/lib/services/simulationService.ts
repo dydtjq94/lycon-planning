@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Simulation, SimulationInput } from '@/types'
 import type { AccountType, SavingsType } from '@/types/tables'
 import { calculatePortfolioAccountValues, fetchPortfolioPrices, calculateAccountTransactionSummary, calculateExpectedBalance, calculateTermDepositValue } from '@/lib/utils/accountValueCalculator'
+import { copySnapshotToSimulation } from './snapshotToSimulation'
 
 // 은행 계좌 타입
 const BANK_ACCOUNT_TYPES: AccountType[] = ['checking', 'savings', 'deposit', 'free_savings', 'housing']
@@ -118,15 +119,128 @@ export const simulationService = {
   async initializeSimulationData(simulationId: string, profileId: string): Promise<void> {
     const supabase = createClient()
 
+    // 기본 시뮬레이션 찾기 (복사 원본)
+    const { data: defaultSim } = await supabase
+      .from('simulations')
+      .select('id')
+      .eq('profile_id', profileId)
+      .eq('is_default', true)
+      .maybeSingle()
+
     // 현재 계좌 데이터 복사 (실시간 가격 반영)
     const { investmentValues, savingsValues } = await this.calculateCurrentAccountValues(profileId)
     await this.copyAccountsToSimulation(simulationId, profileId, investmentValues, savingsValues)
+
+    // 기본 시뮬레이션에서 나머지 데이터 복사
+    if (defaultSim && defaultSim.id !== simulationId) {
+      await this.copySimulationData(defaultSim.id, simulationId)
+    }
+
+    // 스냅샷에서 부동산/부채/실물자산 복사 (시뮬레이션에 없는 데이터만)
+    await this.copyMissingDataFromSnapshot(simulationId, profileId)
 
     // 동기화 시간 기록
     await supabase
       .from('simulations')
       .update({ last_synced_at: new Date().toISOString() })
       .eq('id', simulationId)
+  },
+
+  /**
+   * 기존 시뮬레이션에서 재무 데이터를 새 시뮬레이션으로 복사
+   * 복사 대상: incomes, expenses, debts, real_estates, physical_assets, insurances, national_pensions
+   * (savings, personal_pensions, retirement_pensions는 copyAccountsToSimulation에서 처리)
+   */
+  async copySimulationData(sourceSimulationId: string, targetSimulationId: string): Promise<void> {
+    const supabase = createClient()
+
+    // 원본 데이터 병렬 조회
+    const [
+      incomesRes,
+      expensesRes,
+      debtsRes,
+      realEstatesRes,
+      physicalAssetsRes,
+      insurancesRes,
+      nationalPensionsRes,
+    ] = await Promise.all([
+      supabase.from('incomes').select('*').eq('simulation_id', sourceSimulationId),
+      supabase.from('expenses').select('*').eq('simulation_id', sourceSimulationId),
+      supabase.from('debts').select('*').eq('simulation_id', sourceSimulationId),
+      supabase.from('real_estates').select('*').eq('simulation_id', sourceSimulationId),
+      supabase.from('physical_assets').select('*').eq('simulation_id', sourceSimulationId),
+      supabase.from('insurances').select('*').eq('simulation_id', sourceSimulationId),
+      supabase.from('national_pensions').select('*').eq('simulation_id', sourceSimulationId),
+    ])
+
+    // id, created_at, updated_at 제거하고 simulation_id 교체하는 헬퍼
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const prepareRows = (rows: any[] | null) => {
+      if (!rows?.length) return []
+      return rows.map(({ id, created_at, updated_at, ...rest }) => ({
+        ...rest,
+        simulation_id: targetSimulationId,
+      }))
+    }
+
+    // 병렬 INSERT
+    const inserts: Promise<unknown>[] = []
+
+    const incomes = prepareRows(incomesRes.data)
+    if (incomes.length > 0) inserts.push(Promise.resolve(supabase.from('incomes').insert(incomes)))
+
+    const expenses = prepareRows(expensesRes.data)
+    if (expenses.length > 0) inserts.push(Promise.resolve(supabase.from('expenses').insert(expenses)))
+
+    const debts = prepareRows(debtsRes.data)
+    if (debts.length > 0) inserts.push(Promise.resolve(supabase.from('debts').insert(debts)))
+
+    const realEstates = prepareRows(realEstatesRes.data)
+    if (realEstates.length > 0) inserts.push(Promise.resolve(supabase.from('real_estates').insert(realEstates)))
+
+    const physicalAssets = prepareRows(physicalAssetsRes.data)
+    if (physicalAssets.length > 0) inserts.push(Promise.resolve(supabase.from('physical_assets').insert(physicalAssets)))
+
+    const insurances = prepareRows(insurancesRes.data)
+    if (insurances.length > 0) inserts.push(Promise.resolve(supabase.from('insurances').insert(insurances)))
+
+    const nationalPensions = prepareRows(nationalPensionsRes.data)
+    if (nationalPensions.length > 0) inserts.push(Promise.resolve(supabase.from('national_pensions').insert(nationalPensions)))
+
+    await Promise.all(inserts)
+  },
+
+  /**
+   * 스냅샷에서 시뮬레이션에 없는 데이터만 복사
+   * 부동산, 부채, 실물자산 등이 시뮬레이션 테이블에 없으면 스냅샷에서 가져옴
+   */
+  async copyMissingDataFromSnapshot(simulationId: string, profileId: string): Promise<void> {
+    const supabase = createClient()
+
+    // 시뮬레이션에 이미 있는 데이터 확인
+    const [debtsRes, realEstatesRes, physicalAssetsRes] = await Promise.all([
+      supabase.from('debts').select('id', { count: 'exact', head: true }).eq('simulation_id', simulationId),
+      supabase.from('real_estates').select('id', { count: 'exact', head: true }).eq('simulation_id', simulationId),
+      supabase.from('physical_assets').select('id', { count: 'exact', head: true }).eq('simulation_id', simulationId),
+    ])
+
+    const hasDebts = (debtsRes.count || 0) > 0
+    const hasRealEstates = (realEstatesRes.count || 0) > 0
+    const hasPhysicalAssets = (physicalAssetsRes.count || 0) > 0
+
+    // 모든 데이터가 있으면 스킵
+    if (hasDebts && hasRealEstates && hasPhysicalAssets) return
+
+    // 빈 카테고리만 스냅샷에서 복사
+    const categoriesToCopy: ('savings' | 'debts' | 'real_estates')[] = []
+    if (!hasDebts) categoriesToCopy.push('debts')
+    if (!hasRealEstates) categoriesToCopy.push('real_estates')
+
+    if (categoriesToCopy.length > 0) {
+      await copySnapshotToSimulation(profileId, simulationId, {
+        categories: categoriesToCopy,
+      })
+    }
   },
 
   /**
@@ -209,17 +323,37 @@ export const simulationService = {
     // 4. 시뮬레이션의 투자 계좌 잔액 업데이트
     const { data: accounts } = await supabase
       .from('accounts')
-      .select('id, name')
+      .select('id, name, account_type')
       .eq('profile_id', profileId)
       .eq('is_active', true)
       .in('account_type', ['general', 'pension_savings', 'irp', 'isa', 'dc'])
 
     if (!accounts?.length) return
 
-    // 5. savings 테이블의 투자 계좌 업데이트
+    // 5. 테이블별로 투자 계좌 업데이트
+    const PENSION_TYPES = ['pension_savings', 'irp', 'isa']
+    const RETIREMENT_TYPES = ['dc']
+
     for (const [accountId, value] of investmentValues) {
       const account = accounts.find(a => a.id === accountId)
-      if (account) {
+      if (!account) continue
+
+      if (PENSION_TYPES.includes(account.account_type)) {
+        // 절세계좌 → personal_pensions 테이블
+        await supabase
+          .from('personal_pensions')
+          .update({ current_balance: value })
+          .eq('simulation_id', simulationId)
+          .eq('title', account.name)
+      } else if (RETIREMENT_TYPES.includes(account.account_type)) {
+        // 퇴직연금 → retirement_pensions 테이블
+        await supabase
+          .from('retirement_pensions')
+          .update({ current_balance: value })
+          .eq('simulation_id', simulationId)
+          .eq('title', account.name)
+      } else {
+        // 일반 투자 → savings 테이블
         await supabase
           .from('savings')
           .update({ current_balance: value })

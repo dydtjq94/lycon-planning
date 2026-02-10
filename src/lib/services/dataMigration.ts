@@ -957,3 +957,28 @@ export function isItemActiveAt(
 
   return targetYM >= startYM && targetYM <= endYM
 }
+
+/**
+ * 항목이 해당 연도에 하나라도 활성 월이 있는지 확인
+ * - isItemActiveAt(item, year, 6)은 6월 기준만 체크해서
+ *   단기 항목(예: 2~3월만 활성)이 누락되는 버그가 있음
+ * - 이 함수는 항목 기간과 연도 기간의 겹침(overlap)을 확인
+ */
+export function isItemActiveInYear(
+  item: {
+    start_year?: number
+    start_month?: number
+    end_year?: number
+    end_month?: number
+  },
+  year: number
+): boolean {
+  const startYM = (item.start_year || 0) * 12 + (item.start_month || 1)
+  const endYM = item.end_year
+    ? item.end_year * 12 + (item.end_month || 12)
+    : 9999 * 12
+  const yearStartYM = year * 12 + 1   // 1월
+  const yearEndYM = year * 12 + 12     // 12월
+
+  return startYM <= yearEndYM && endYM >= yearStartYM
+}

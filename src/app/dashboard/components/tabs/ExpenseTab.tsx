@@ -11,7 +11,7 @@ import {
   Info,
   CreditCard,
   Link,
-  Building2,
+  Home,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -970,10 +970,17 @@ export function ExpenseTab({
     type: ExpenseType,
     items: DisplayItem[],
     description?: string,
+    sectionBadge?: { icon: React.ReactNode; label: string },
   ) => (
     <div className={styles.expenseSection}>
       <div className={styles.sectionHeader}>
         <span className={styles.sectionTitle}>{title}</span>
+        {sectionBadge && (
+          <span className={styles.sectionBadge}>
+            {sectionBadge.icon}
+            {sectionBadge.label}
+          </span>
+        )}
       </div>
       {description && <p className={styles.sectionDesc}>{description}</p>}
 
@@ -1336,7 +1343,7 @@ export function ExpenseTab({
               case "debt":
                 return { label: "부채", icon: <CreditCard size={12} /> };
               case "real_estate":
-                return { label: "부동산", icon: <Building2 size={12} /> };
+                return { label: "부동산", icon: <Home size={12} /> };
               default:
                 return { label: "연동", icon: <Link size={12} /> };
             }
@@ -1358,12 +1365,7 @@ export function ExpenseTab({
                     : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
                 </span>
               </div>
-              {isLinked && linkedBadge ? (
-                <div className={styles.linkedBadge}>
-                  {linkedBadge.icon}
-                  <span>{linkedBadge.label} 연동</span>
-                </div>
-              ) : (
+              {isLinked ? null : (
                 <div className={styles.itemActions}>
                   <button
                     className={styles.editBtn}
@@ -1495,14 +1497,8 @@ export function ExpenseTab({
               </div>
             </div>
           </div>
-        ) : type === "interest" ? (
-          <a href="#debt" className={styles.realEstateLink}>
-            부채 탭에서 대출 이자 관리하기
-          </a>
-        ) : type === "housing" ? (
-          <a href="#realEstate" className={styles.realEstateLink}>
-            부동산 탭에서 주거비 관리하기
-          </a>
+        ) : type === "interest" || type === "housing" ? (
+          null
         ) : (
           <button className={styles.addBtn} onClick={() => setAddingType(type)}>
             <Plus size={16} />
@@ -1735,15 +1731,17 @@ export function ExpenseTab({
         "주거비",
         "housing",
         housingItems,
-        "부동산 탭에서 등록한 월세, 관리비가 표시됩니다",
+        undefined,
+        { icon: <Home size={13} />, label: "부동산과 자동 연동됩니다" },
       )}
       <div className={styles.expenseSection}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionTitle}>이자/원금 상환</span>
+          <span className={styles.sectionBadge}>
+            <CreditCard size={13} />
+            부채와 자동 연동됩니다
+          </span>
         </div>
-        <p className={styles.sectionDesc}>
-          부채 탭에서 등록한 대출 상환금이 표시됩니다
-        </p>
 
         <div className={styles.itemList}>
           {interestItems.map((item) => (
@@ -1757,16 +1755,12 @@ export function ExpenseTab({
                   연간 {formatMoney(item.amount * 12)}
                 </span>
               </div>
-              <div className={styles.linkedBadge}>
-                <CreditCard size={12} />
-                <span>부채 연동</span>
-              </div>
             </div>
           ))}
 
           {interestItems.length === 0 && (
             <p className={styles.emptyText}>
-              부채 탭에서 대출을 등록하면 월 상환금이 표시됩니다
+              부채 탭에서 대출을 등록하면 월 상환금이 자동으로 표시됩니다
             </p>
           )}
         </div>

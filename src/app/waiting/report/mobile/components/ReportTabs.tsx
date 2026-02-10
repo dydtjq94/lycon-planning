@@ -450,7 +450,7 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
 
       {/* 필요 자금 탭 설정 바 */}
       {activeTab === "retirement" && (
-        <div className={styles.settingsBarWrapper}>
+        <div className={`${styles.settingsBarWrapper} ${isSettingsBarHidden ? styles.settingsBarWrapperHidden : ""}`}>
           <div
             className={`${styles.settingsBar} ${isSettingsBarHidden ? styles.settingsBarHidden : ""}`}
           >
@@ -1371,24 +1371,29 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                   {/* 은퇴 시점 월 현금흐름 분석 */}
                   {(() => {
                     // 은퇴 시점 예상 연금/자산 잔액
+                    // Rate adjustment for retirement pension (pre-calculated at 5%)
+                    const baseRate = 0.05;
+                    const selectedRate = calcParams.financialGrowthRate || 0.05;
+                    const rateAdjustment = Math.pow(1 + selectedRate, m.yearsToRetirement) / Math.pow(1 + baseRate, m.yearsToRetirement);
+
                     const retirementPensionAtRetire =
-                      data.retirementPensionBalanceAtRetireSelf +
-                      data.retirementPensionBalanceAtRetireSpouse;
+                      (data.retirementPensionBalanceAtRetireSelf +
+                      data.retirementPensionBalanceAtRetireSpouse) * rateAdjustment;
                     const personalPensionAtRetire =
                       (data.personalPensionStatus.irp.balance +
                         data.personalPensionStatus.pensionSavings.balance) *
-                      Math.pow(1 + 0.05, m.yearsToRetirement);
+                      Math.pow(1 + selectedRate, m.yearsToRetirement);
 
-                    // PMT 계산
+                    // PMT 계산 - use selected rate
                     const retirementPensionPMT = calculatePMT(
                       retirementPensionAtRetire,
                       m.retirementYears,
-                      0.04,
+                      selectedRate,
                     );
                     const personalPensionPMT = calculatePMT(
                       personalPensionAtRetire,
                       m.retirementYears,
-                      0.04,
+                      selectedRate,
                     );
 
                     // 월 수입/지출
@@ -1539,22 +1544,27 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                   {/* 현재 가치 환산 Step */}
                   {(() => {
                     // 다시 계산 (IIFE 밖이라서)
+                    // Rate adjustment for retirement pension (pre-calculated at 5%)
+                    const baseRate = 0.05;
+                    const selectedRate = calcParams.financialGrowthRate || 0.05;
+                    const rateAdjustment = Math.pow(1 + selectedRate, m.yearsToRetirement) / Math.pow(1 + baseRate, m.yearsToRetirement);
+
                     const retirementPensionAtRetire =
-                      data.retirementPensionBalanceAtRetireSelf +
-                      data.retirementPensionBalanceAtRetireSpouse;
+                      (data.retirementPensionBalanceAtRetireSelf +
+                      data.retirementPensionBalanceAtRetireSpouse) * rateAdjustment;
                     const personalPensionAtRetire =
                       (data.personalPensionStatus.irp.balance +
                         data.personalPensionStatus.pensionSavings.balance) *
-                      Math.pow(1 + 0.05, m.yearsToRetirement);
+                      Math.pow(1 + selectedRate, m.yearsToRetirement);
                     const retirementPensionPMT = calculatePMT(
                       retirementPensionAtRetire,
                       m.retirementYears,
-                      0.04,
+                      selectedRate,
                     );
                     const personalPensionPMT = calculatePMT(
                       personalPensionAtRetire,
                       m.retirementYears,
-                      0.04,
+                      selectedRate,
                     );
                     const monthlyIncomeTotal =
                       m.nationalPensionInflated +

@@ -1,10 +1,6 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  height: 100%;
-  overflow-y: auto;
-  background: var(--dashboard-card-bg);
 }
 
 /* 지출 섹션 */
@@ -28,6 +24,18 @@
   font-size: 15px;
   font-weight: 600;
   color: var(--dashboard-text);
+}
+
+.sectionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-bg);
+  border-radius: 6px;
 }
 
 .sectionDesc {

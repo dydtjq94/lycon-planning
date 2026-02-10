@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import { Plus, Trash2, TrendingUp, Pencil, X, Check, ExternalLink, Building2, Link } from "lucide-react";
+import { Plus, Trash2, TrendingUp, Pencil, X, Check, ExternalLink, Home, Landmark, Link } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -848,13 +848,20 @@ export function IncomeTab({
     type: IncomeType,
     items: DisplayItem[],
     placeholder: string,
-    description?: string
+    description?: string,
+    sectionBadge?: { icon: React.ReactNode; label: string },
   ) => (
     <div className={styles.incomeSection}>
       <div className={styles.sectionHeader}>
         <span className={styles.sectionTitle}>{title}</span>
+        {sectionBadge && (
+          <span className={styles.sectionBadge}>
+            {sectionBadge.icon}
+            {sectionBadge.label}
+          </span>
+        )}
       </div>
-      {description && <p className={styles.sectionDesc}>{description}</p>}
+      {description && !sectionBadge && <p className={styles.sectionDesc}>{description}</p>}
 
       <div className={styles.itemList}>
         {items.map((item) => {
@@ -1261,7 +1268,7 @@ export function IncomeTab({
               case 'personal_pension':
                 return { label: '개인연금', icon: <Link size={12} /> };
               case 'real_estate':
-                return { label: '부동산', icon: <Building2 size={12} /> };
+                return { label: '부동산', icon: <Home size={12} /> };
               default:
                 return { label: '연동', icon: <Link size={12} /> };
             }
@@ -1285,12 +1292,7 @@ export function IncomeTab({
                     : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
                 </span>
               </div>
-              {linkedBadge ? (
-                <div className={styles.linkedBadge}>
-                  {linkedBadge.icon}
-                  <span>{linkedBadge.label}</span>
-                </div>
-              ) : !isReadOnly && (
+              {isLinked ? null : !isReadOnly && (
                 <div className={styles.itemActions}>
                   <button
                     className={styles.editBtn}
@@ -1458,14 +1460,8 @@ export function IncomeTab({
               </div>
             </div>
           </div>
-        ) : type === "rental" ? (
-          <a href="#realEstate" className={styles.realEstateLink}>
-            부동산 탭에서 임대 부동산 관리하기
-          </a>
-        ) : type === "pension" ? (
-          <a href="#pension" className={styles.realEstateLink}>
-            연금 탭에서 연금 소득 관리하기
-          </a>
+        ) : type === "rental" || type === "pension" ? (
+          null
         ) : (
           <button className={styles.addBtn} onClick={() => setAddingType(type)}>
             <Plus size={16} />
@@ -1508,14 +1504,16 @@ export function IncomeTab({
         "rental",
         rentalItems,
         "항목명",
-        "부동산 탭에서 등록한 임대 부동산의 소득이 표시됩니다"
+        undefined,
+        { icon: <Home size={13} />, label: "부동산과 자동 연동됩니다" },
       )}
       {renderSection(
         "연금 소득",
         "pension",
         pensionItems,
         "항목명",
-        "연금 탭에서 등록한 연금 소득이 표시됩니다"
+        undefined,
+        { icon: <Landmark size={13} />, label: "연금과 자동 연동됩니다" },
       )}
 
       <p className={styles.infoText}>

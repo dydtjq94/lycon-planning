@@ -37,39 +37,23 @@
   margin: 0;
 }
 
-/* 연도 선택기 (우측 상단) */
-.yearSelector {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.yearDisplay {
+/* 슬라이더 상단 연도/나이 */
+.sliderHeader {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.sliderYear {
+  font-size: 15px;
+  font-weight: 600;
   color: var(--dashboard-text);
 }
 
-.yearValue {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.ageDisplay {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
+.sliderAge {
+  font-size: 13px;
   color: var(--dashboard-text-secondary);
-}
-
-.spouseAge {
-  padding-left: 8px;
-  border-left: 1px solid var(--dashboard-border);
 }
 
 /* 차트 컨텐츠 */
@@ -334,11 +318,6 @@
     flex-direction: column;
     gap: 12px;
     align-items: flex-start;
-  }
-
-  .yearSelector {
-    width: 100%;
-    justify-content: space-between;
   }
 
   .chartArea {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { ChevronDown, Calendar } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import type { GlobalSettings } from '@/types'
 import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
 import { runSimulationFromItems } from '@/lib/services/simulationEngine'
@@ -9,6 +9,7 @@ import { useFinancialItems } from '@/hooks/useFinancialData'
 import { calculateEndYear } from '@/lib/utils/chartDataTransformer'
 import { AssetStackChart } from '../charts'
 import { formatMoney } from '@/lib/utils'
+import { useChartTheme } from '@/hooks/useChartTheme'
 import styles from './NetWorthTab.module.css'
 
 interface NetWorthTabProps {
@@ -18,6 +19,10 @@ interface NetWorthTabProps {
   retirementAge: number
   globalSettings?: GlobalSettings
   isInitializing?: boolean
+  timeRange?: 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full'
+  onTimeRangeChange?: (range: 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full') => void
+  selectedYear?: number
+  onSelectedYearChange?: (year: number) => void
 }
 
 // 기간 선택 옵션
@@ -39,9 +44,14 @@ export function NetWorthTab({
   retirementAge,
   globalSettings,
   isInitializing = false,
+  timeRange: propTimeRange,
+  onTimeRangeChange,
+  selectedYear: propSelectedYear,
+  onSelectedYearChange,
 }: NetWorthTabProps) {
   const currentYear = new Date().getFullYear()
   const currentAge = currentYear - birthYear
+  const { chartLineColors } = useChartTheme()
 
   // 시뮬레이션 설정
   const simulationEndYear = calculateEndYear(birthYear, spouseBirthYear)
@@ -49,8 +59,14 @@ export function NetWorthTab({
   const retirementYear = birthYear + retirementAge
 
   // State
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear)
-  const [timeRange, setTimeRange] = useState<TimeRange>('full')
+  const [localSelectedYear, setLocalSelectedYear] = useState<number>(currentYear)
+  const selectedYear = propSelectedYear ?? localSelectedYear
+  const setSelectedYear = onSelectedYearChange ?? setLocalSelectedYear
+
+  const [localTimeRange, setLocalTimeRange] = useState<TimeRange>('full')
+  const timeRange = propTimeRange ?? localTimeRange
+  const setTimeRange = onTimeRangeChange ?? setLocalTimeRange
+
   const [showTimeRangeMenu, setShowTimeRangeMenu] = useState(false)
   const timeRangeRef = useRef<HTMLDivElement>(null)
 
@@ -188,25 +204,6 @@ export function NetWorthTab({
           </div>
         )}
 
-        {/* 차트 헤더 */}
-        <div className={styles.chartHeader}>
-          <div className={styles.chartTitleArea}>
-            <h3 className={styles.chartTitle}>순자산</h3>
-          </div>
-
-          {/* 연도 선택기 (우측 상단) */}
-          <div className={styles.yearSelector}>
-            <div className={styles.yearDisplay}>
-              <Calendar size={16} />
-              <span className={styles.yearValue}>{selectedYear}</span>
-            </div>
-            <div className={styles.ageDisplay}>
-              <span>{selectedAge}세</span>
-              {spouseAge !== null && <span className={styles.spouseAge}>배우자 {spouseAge}세</span>}
-            </div>
-          </div>
-        </div>
-
         {/* 차트 + 상세 패널 */}
         <div className={styles.chartContent}>
           <div className={styles.chartArea}>
@@ -214,6 +211,8 @@ export function NetWorthTab({
               simulationResult={filteredSimulationResult}
               endYear={displayRange.end}
               retirementYear={retirementYear}
+              birthYear={birthYear}
+              spouseBirthYear={spouseBirthYear}
               onYearClick={handleYearChange}
               selectedYear={selectedYear}
               headerAction={
@@ -264,6 +263,11 @@ export function NetWorthTab({
           <div className={styles.detailPanel}>
             {/* 연도 슬라이더 */}
             <div className={styles.sliderSection}>
+              <div className={styles.sliderHeader}>
+                <span className={styles.sliderYear}>{selectedYear}년</span>
+                <span className={styles.sliderAge}>본인 {selectedAge}세</span>
+                {spouseAge !== null && <span className={styles.sliderAge}>배우자 {spouseAge}세</span>}
+              </div>
               <input
                 type="range"
                 min={displayRange.start}
@@ -283,13 +287,18 @@ export function NetWorthTab({
               {/* 순자산 */}
               <div className={styles.detailRow}>
                 <span className={styles.detailLabel}>순자산</span>
-                <span className={styles.detailValue}>{formatMoney(selectedSnapshot?.netWorth || 0)}</span>
+                <span
+                  className={styles.detailValue}
+                  style={{ color: (selectedSnapshot?.netWorth || 0) >= 0 ? chartLineColors.price : chartLineColors.expense }}
+                >
+                  {formatMoney(selectedSnapshot?.netWorth || 0)}
+                </span>
               </div>
 
               {/* 순자산 변화 */}
               <div className={styles.detailRow}>
                 <span className={styles.detailLabel}>순자산 변화</span>
-                <span className={`${styles.detailValue} ${netWorthChange >= 0 ? styles.positive : styles.negative}`}>
+                <span className={styles.detailValue}>
                   {netWorthChange >= 0 ? '+' : ''}{formatMoney(netWorthChange)}
                 </span>
               </div>

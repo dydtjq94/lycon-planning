@@ -14,7 +14,7 @@ import type {
   CashFlowPriority,
 } from '@/types'
 import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_INVESTMENT_ASSUMPTIONS } from '@/types'
-import { migrateOnboardingToFinancialItems, isItemActiveAt } from './dataMigration'
+import { migrateOnboardingToFinancialItems, isItemActiveInYear } from './dataMigration'
 
 // 프로필 정보 (시뮬레이션용)
 export interface SimulationProfile {
@@ -162,7 +162,7 @@ export function runSimulation(
     const yearsSinceStart = year - currentYear
 
     // 해당 연도의 활성 항목 필터링
-    const activeItems = items.filter(item => isItemActiveAt(item, year, 6))
+    const activeItems = items.filter(item => isItemActiveInYear(item, year))
 
     // owner를 한글로 변환
     const ownerLabels: Record<string, string> = {
@@ -553,7 +553,7 @@ export function runSimulationFromItems(
     const yearsSinceStart = year - currentYear
 
     // 해당 연도의 활성 항목 필터링
-    const activeItems = items.filter(item => isItemActiveAt(item, year, 6))
+    const activeItems = items.filter(item => isItemActiveInYear(item, year))
 
     // 소득 타입 한글 매핑
     const incomeTypeLabels: Record<string, string> = {

@@ -3140,8 +3140,18 @@
   position: sticky;
   top: 115px; /* header 69px + tabNav 46px */
   z-index: 90;
-  background: white;
   overflow: hidden;
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.settingsBarWrapperHidden {
+  grid-template-rows: 0fr;
+}
+
+.settingsBarWrapperHidden > * {
+  min-height: 0;
 }
 
 /* Settings Bar - 애니메이션 담당 */

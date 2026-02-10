@@ -1,7 +1,7 @@
 "use client";
 
 import { PiggyBank, TrendingUp, Shield, Briefcase, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { formatWon } from "@/lib/utils";
 import { simulationService } from "@/lib/services/simulationService";
 import { createClient } from "@/lib/supabase/client";
@@ -201,6 +201,15 @@ export function AccountsSummaryPanel({
   useEffect(() => {
     loadRawData();
   }, [loadRawData]);
+
+  // 가격 동기화 완료 시 데이터 새로고침
+  const prevSyncingPricesRef = useRef(isSyncingPrices);
+  useEffect(() => {
+    if (prevSyncingPricesRef.current && !isSyncingPrices) {
+      loadRawData();
+    }
+    prevSyncingPricesRef.current = isSyncingPrices;
+  }, [isSyncingPrices, loadRawData]);
 
   // 합계 계산 (원 단위)
   const totalAssets = savingsAccounts.reduce((sum, acc) => sum + acc.current_balance, 0)
