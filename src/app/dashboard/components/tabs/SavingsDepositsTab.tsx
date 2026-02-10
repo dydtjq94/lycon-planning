@@ -10,6 +10,14 @@ import {
   updateAccount,
   deleteAccount,
 } from "@/lib/services/budgetService";
+import {
+  calculateTermDepositValue,
+  getMaturityDays,
+  getDurationMonths,
+  getTermDepositPrincipal,
+  calculateMaturityAmountPreTax,
+  calculateMaturityAmountPostTax,
+} from "@/lib/utils/accountValueCalculator";
 import styles from "./SavingsDepositsTab.module.css";
 
 interface SavingsDepositsTabProps {
@@ -93,6 +101,7 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
       is_tax_free: "false",
       currency: "KRW",
       monthly_contribution: "",
+      interest_type: "simple",
     });
   };
 
@@ -114,6 +123,7 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
       currency: account.currency || "KRW",
       monthly_contribution: account.monthly_contribution?.toString() || "",
       memo: account.memo || "",
+      interest_type: account.interest_type || "simple",
     });
   };
 
@@ -157,6 +167,7 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
           ? parseInt(editValues.monthly_contribution)
           : null,
         memo: editValues.memo || null,
+        interest_type: (editValues.interest_type as any) || "simple",
       };
 
       if (isAdding) {
@@ -180,6 +191,7 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
           is_tax_free: input.is_tax_free || false,
           currency: input.currency || "KRW",
           monthly_contribution: input.monthly_contribution || null,
+          interest_type: input.interest_type || "simple",
         });
       } else if (editingId) {
         await updateAccount(editingId, input);
@@ -202,151 +214,13 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
     }
   };
 
-  // 만기일 계산 (D-day)
-  const getMaturityDays = (account: Account): string | null => {
-    if (!account.maturity_year || !account.maturity_month) return null;
-    const maturityDate = new Date(
-      account.maturity_year,
-      account.maturity_month - 1,
-      1
-    );
-    const today = new Date();
-    const diffTime = maturityDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return "만기";
-    if (diffDays === 0) return "D-Day";
-    return `D-${diffDays}`;
-  };
-
-  // 기간(개월) 계산
-  const getDurationMonths = (account: Account): number | null => {
-    if (!account.start_year || !account.maturity_year) return null;
-    const startDate = new Date(account.start_year, (account.start_month || 1) - 1);
-    const endDate = new Date(account.maturity_year, (account.maturity_month || 12) - 1);
-    return (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
-  };
-
-  // 만기일 계산 (가입일 + 기간)
-  const getMaturityDate = (account: Account): string | null => {
-    if (!account.maturity_year) return null;
-    return `${account.maturity_year}-${String(account.maturity_month || 12).padStart(2, '0')}-01`;
-  };
-
-  // 만기 예상 금액 (세전) 계산
-  const calculateMaturityAmountPreTax = (account: Account): number | null => {
-    if (!account.current_balance || !account.interest_rate) return null;
-    const months = getDurationMonths(account);
-    if (months === null) return null;
-
-    if (account.account_type === "savings" && account.monthly_contribution) {
-      // 적금: 단리 적금 공식 (한국 적금은 보통 단리)
-      const monthlyRate = account.interest_rate / 100 / 12;
-      // 적금 단리: 원금 + (n*(n+1)/2 * 월납입금 * 월이율)
-      const principal = account.monthly_contribution * months;
-      const interest = (months * (months + 1) / 2) * account.monthly_contribution * monthlyRate;
-      return Math.round(principal + interest);
-    } else {
-      // 예금: 단리 (한국 정기예금은 보통 단리)
-      const years = months / 12;
-      const interest = account.current_balance * (account.interest_rate / 100) * years;
-      return Math.round(account.current_balance + interest);
-    }
-  };
-
-  // 만기 예상 금액 (세후) 계산 - 이자에 15.4% 세금
-  const calculateMaturityAmountPostTax = (account: Account): number | null => {
-    const preTax = calculateMaturityAmountPreTax(account);
-    if (preTax === null || !account.current_balance) return null;
-
-    const months = getDurationMonths(account);
-    if (months === null) return null;
-
-    let principal: number;
-    if (account.account_type === "savings" && account.monthly_contribution) {
-      principal = account.monthly_contribution * months;
-    } else {
-      principal = account.current_balance;
-    }
-
-    const interest = preTax - principal;
-    const taxRate = account.is_tax_free ? 0 : 0.154; // 비과세면 0%, 아니면 15.4%
-    const tax = interest * taxRate;
-
-    return Math.round(preTax - tax);
-  };
-
-  // 만기 예상 금액 계산 (기존 - 복리 기준, 참고용)
-  const calculateMaturityAmount = (account: Account): number | null => {
-    return calculateMaturityAmountPostTax(account);
-  };
-
-  // 현재까지 누적된 이자 계산
-  const calculateAccumulatedInterest = (account: Account): number | null => {
-    if (!account.current_balance || !account.interest_rate) return null;
-    if (!account.start_year) return null;
-
-    const startDate = new Date(
-      account.start_year,
-      (account.start_month || 1) - 1
-    );
-    const today = new Date();
-    const monthsElapsed = Math.max(0,
-      (today.getFullYear() - startDate.getFullYear()) * 12 +
-      (today.getMonth() - startDate.getMonth())
-    );
-
-    if (account.account_type === "savings" && account.monthly_contribution) {
-      // 적금: 지금까지 납입한 금액 기준 이자
-      const monthlyRate = account.interest_rate / 100 / 12;
-      let total = 0;
-      for (let i = 0; i < monthsElapsed; i++) {
-        total = (total + account.monthly_contribution) * (1 + monthlyRate);
-      }
-      const principal = account.monthly_contribution * monthsElapsed;
-      return Math.round(total - principal);
-    } else {
-      // 예금: 경과 기간 기준 이자
-      const yearsElapsed = monthsElapsed / 12;
-      const rate = account.interest_rate / 100;
-      const currentValue = account.current_balance * Math.pow(1 + rate, yearsElapsed);
-      return Math.round(currentValue - account.current_balance);
-    }
-  };
-
-  // 현재 평가금액 (원금 + 누적이자)
-  const getCurrentValue = (account: Account): number => {
-    const interest = calculateAccumulatedInterest(account);
-    if (account.account_type === "savings" && account.monthly_contribution && account.start_year) {
-      const startDate = new Date(account.start_year, (account.start_month || 1) - 1);
-      const today = new Date();
-      const monthsElapsed = Math.max(0,
-        (today.getFullYear() - startDate.getFullYear()) * 12 +
-        (today.getMonth() - startDate.getMonth())
-      );
-      const principal = account.monthly_contribution * monthsElapsed;
-      return principal + (interest || 0);
-    }
-    return (account.current_balance || 0) + (interest || 0);
-  };
-
-  // 원금 계산
-  const getPrincipal = (account: Account): number => {
-    if (account.account_type === "savings" && account.monthly_contribution && account.start_year) {
-      const startDate = new Date(account.start_year, (account.start_month || 1) - 1);
-      const today = new Date();
-      const monthsElapsed = Math.max(0,
-        (today.getFullYear() - startDate.getFullYear()) * 12 +
-        (today.getMonth() - startDate.getMonth())
-      );
-      return account.monthly_contribution * monthsElapsed;
-    }
-    return account.current_balance || 0;
-  };
-
   // 전체 현재 평가금액
-  const totalCurrentValue = accounts.reduce((sum, acc) => sum + getCurrentValue(acc), 0);
-  const totalPrincipal = accounts.reduce((sum, acc) => sum + getPrincipal(acc), 0);
-  const totalInterest = accounts.reduce((sum, acc) => sum + (calculateAccumulatedInterest(acc) || 0), 0);
+  const totalCurrentValue = accounts.reduce((sum, acc) => sum + calculateTermDepositValue(acc), 0);
+  const totalPrincipal = accounts.reduce((sum, acc) => sum + getTermDepositPrincipal(acc), 0);
+  const totalInterest = accounts.reduce((sum, acc) => {
+    const interest = calculateTermDepositValue(acc) - getTermDepositPrincipal(acc);
+    return sum + interest;
+  }, 0);
 
   if (isLoading) {
     return (
@@ -406,12 +280,12 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
           <span className={styles.noAccountsText}>등록된 예적금 없음</span>
         ) : (
           accounts.map((account) => {
-            const interest = calculateAccumulatedInterest(account) || 0;
+            const interest = calculateTermDepositValue(account) - getTermDepositPrincipal(account);
             return (
               <div key={account.id} className={styles.accountItem}>
                 <span className={styles.accountItemName}>{account.name}</span>
                 <div className={styles.accountItemValues}>
-                  <span className={styles.accountItemBalance}>{formatWon(getCurrentValue(account))}</span>
+                  <span className={styles.accountItemBalance}>{formatWon(calculateTermDepositValue(account))}</span>
                   <span className={`${styles.accountItemChange} ${styles.positive}`}>+{formatWon(interest)}</span>
                 </div>
               </div>
@@ -584,6 +458,20 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
                   </div>
                 </div>
                 <div className={styles.editRow}>
+                  <span className={styles.editRowLabel}>이자방식</span>
+                  <div className={styles.editField}>
+                    <select
+                      value={editValues.interest_type || "simple"}
+                      onChange={(e) => setEditValues({ ...editValues, interest_type: e.target.value })}
+                      className={styles.editInput}
+                    >
+                      <option value="simple">단리</option>
+                      <option value="monthly_compound">월복리</option>
+                      <option value="annual_compound">년복리</option>
+                    </select>
+                  </div>
+                </div>
+                <div className={styles.editRow}>
                   <span className={styles.editRowLabel}>가입일</span>
                   <div className={styles.editField}>
                     <input
@@ -737,13 +625,13 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
                   <div className={styles.fieldItem}>
                     <span className={styles.fieldLabel}>가입일</span>
                     <span className={styles.fieldValueInput}>
-                      {account.start_year}.{String(account.start_month || 1).padStart(2, '0')}
+                      {account.start_year}.{String(account.start_month || 1).padStart(2, '0')}.{String(account.start_day || 1).padStart(2, '0')}
                     </span>
                   </div>
                   <div className={styles.fieldItem}>
                     <span className={styles.fieldLabel}>이율</span>
                     <span className={styles.fieldValueInput}>
-                      {account.interest_rate ? `${account.interest_rate}%` : '-'}
+                      {account.interest_rate ? `${account.interest_rate}% (${account.interest_type === 'simple' ? '단리' : account.interest_type === 'monthly_compound' ? '월복리' : '년복리'})` : '-'}
                     </span>
                   </div>
                   <div className={styles.fieldItem}>
@@ -774,7 +662,7 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
                     <span className={styles.fieldLabel}>만기일</span>
                     <span className={styles.fieldValueCalc}>
                       {account.maturity_year
-                        ? `${account.maturity_year}.${String(account.maturity_month || 12).padStart(2, '0')}`
+                        ? `${account.maturity_year}.${String(account.maturity_month || 12).padStart(2, '0')}.${String(account.maturity_day || 1).padStart(2, '0')}`
                         : '-'}
                     </span>
                   </div>
@@ -797,7 +685,7 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
                   <div className={styles.fieldItem}>
                     <span className={styles.fieldLabel}>예상 이자</span>
                     <span className={`${styles.fieldValueCalc} ${styles.interestColor}`}>
-                      +{formatWon(calculateAccumulatedInterest(account) || 0)}
+                      +{formatWon(Math.round(calculateTermDepositValue(account) - getTermDepositPrincipal(account)))}
                     </span>
                   </div>
                 </div>
@@ -928,6 +816,20 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
                     placeholder="0"
                   />
                   <span className={styles.editUnit}>%</span>
+                </div>
+              </div>
+              <div className={styles.editRow}>
+                <span className={styles.editRowLabel}>이자방식</span>
+                <div className={styles.editField}>
+                  <select
+                    value={editValues.interest_type || "simple"}
+                    onChange={(e) => setEditValues({ ...editValues, interest_type: e.target.value })}
+                    className={styles.editInput}
+                  >
+                    <option value="simple">단리</option>
+                    <option value="monthly_compound">월복리</option>
+                    <option value="annual_compound">년복리</option>
+                  </select>
                 </div>
               </div>
               <div className={styles.editRow}>

@@ -183,6 +183,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
       maturity_day: maturityDay,
       monthly_contribution: accountFormData.monthly_contribution || null,
       is_tax_free: accountFormData.is_tax_free || false,
+      interest_type: (accountFormData.interest_type as any) || 'simple',
     };
 
     // 기본 계좌 설정 시 같은 유형의 기존 기본 계좌 해제
@@ -240,6 +241,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
       maturity_day: account.maturity_day || undefined,
       monthly_contribution: account.monthly_contribution || undefined,
       is_tax_free: account.is_tax_free || false,
+      interest_type: account.interest_type || 'simple',
       duration_months: durationMonths,
       balance_date: account.balance_updated_at
         ? new Date(account.balance_updated_at).toISOString().split("T")[0]
@@ -270,6 +272,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
       start_day: activeTab === "savings" ? now.getDate() : undefined,
       duration_months: activeTab === "savings" ? 12 : undefined,
       is_tax_free: false,
+      interest_type: 'simple',
       // 입출금 계좌 잔액 기준일 (오늘)
       balance_date: now.toISOString().split("T")[0],
     });
@@ -544,7 +547,9 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                       </div>
                     </div>
                   )}
-                  <div className={styles.formGroup}>
+                </div>
+                <div className={styles.formRow}>
+                  <div className={styles.interestGroup}>
                     <label>이율 (%)</label>
                     <input
                       type="number"
@@ -555,6 +560,28 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                       onWheel={(e) => (e.target as HTMLElement).blur()}
                       className={styles.input}
                     />
+                  </div>
+                  <div className={styles.interestGroup}>
+                    <label>이자방식</label>
+                    <select
+                      value={accountFormData.interest_type || "simple"}
+                      onChange={(e) => setAccountFormData({ ...accountFormData, interest_type: e.target.value as any })}
+                      className={styles.select}
+                    >
+                      <option value="simple">단리</option>
+                      <option value="monthly_compound">월복리</option>
+                      <option value="annual_compound">년복리</option>
+                    </select>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.checkboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={accountFormData.is_tax_free || false}
+                        onChange={(e) => setAccountFormData({ ...accountFormData, is_tax_free: e.target.checked })}
+                      />
+                      비과세
+                    </label>
                   </div>
                 </div>
                 {/* 금액 필드 - 유형별 */}
@@ -629,17 +656,6 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                       </div>
                     </>
                   )}
-                  {/* 비과세 체크 */}
-                  <div className={styles.formGroup}>
-                    <label className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={accountFormData.is_tax_free || false}
-                        onChange={(e) => setAccountFormData({ ...accountFormData, is_tax_free: e.target.checked })}
-                      />
-                      <span>비과세</span>
-                    </label>
-                  </div>
                 </div>
               </>
             )}
@@ -686,7 +702,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                         {getAccountTypeLabel(account.account_type || "")}
                         {" · "}{account.broker_name}
                         {account.start_year && ` · ${account.start_year}.${String(account.start_month || 1).padStart(2, "0")}.${String(account.start_day || 1).padStart(2, "0")} 가입`}
-                        {account.interest_rate && ` · ${account.interest_rate}%`}
+                        {account.interest_rate && ` · ${account.interest_rate}% (${account.interest_type === 'simple' ? '단리' : account.interest_type === 'monthly_compound' ? '월복리' : '년복리'})`}
                         {account.current_balance !== null && account.current_balance > 0 && ` · ${formatWon(account.current_balance)}`}
                         {account.monthly_contribution && ` · 월 ${formatWon(account.monthly_contribution)}`}
                         {account.maturity_year && ` · ${account.maturity_year}.${String(account.maturity_month || 1).padStart(2, "0")}.${String(account.maturity_day || 1).padStart(2, "0")} 만기`}

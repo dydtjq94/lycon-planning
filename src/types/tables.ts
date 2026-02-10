@@ -801,6 +801,7 @@ export interface Account {
   is_tax_free: boolean          // 비과세 여부
   currency: CurrencyType        // 통화
   monthly_contribution: number | null  // 월 납입액 (적금용, 원, 서비스에서 만원으로 변환)
+  interest_type: 'simple' | 'monthly_compound' | 'annual_compound'  // 이자 계산 방식
   created_at: string
   updated_at: string
 }
@@ -825,6 +826,7 @@ export interface AccountInput {
   is_tax_free?: boolean
   currency?: CurrencyType
   monthly_contribution?: number | null
+  interest_type?: 'simple' | 'monthly_compound' | 'annual_compound'
 }
 
 // 기존 코드 호환성을 위한 alias

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client'
 import type { Simulation, SimulationInput } from '@/types'
 import type { AccountType, SavingsType } from '@/types/tables'
+import { calculatePortfolioAccountValues, fetchPortfolioPrices, calculateAccountTransactionSummary, calculateExpectedBalance, calculateTermDepositValue } from '@/lib/utils/accountValueCalculator'
 
 // 은행 계좌 타입
 const BANK_ACCOUNT_TYPES: AccountType[] = ['checking', 'savings', 'deposit', 'free_savings', 'housing']
@@ -85,7 +86,7 @@ export const simulationService = {
     })
   },
 
-  // 시뮬레이션 생성
+  // 시뮬레이션 생성 (빠르게 - 레코드만 생성)
   async create(input: Omit<SimulationInput, 'profile_id'> & { profile_id?: string }): Promise<Simulation> {
     const supabase = createClient()
 
@@ -110,11 +111,128 @@ export const simulationService = {
       .single()
 
     if (error) throw error
-
-    // 시뮬레이션 생성 후 현재 계좌 데이터 복사
-    await this.copyAccountsToSimulation(data.id, profileId)
-
     return data
+  },
+
+  // 시뮬레이션 데이터 초기화 (느린 작업 - 백그라운드에서 실행)
+  async initializeSimulationData(simulationId: string, profileId: string): Promise<void> {
+    const supabase = createClient()
+
+    // 현재 계좌 데이터 복사 (실시간 가격 반영)
+    const { investmentValues, savingsValues } = await this.calculateCurrentAccountValues(profileId)
+    await this.copyAccountsToSimulation(simulationId, profileId, investmentValues, savingsValues)
+
+    // 동기화 시간 기록
+    await supabase
+      .from('simulations')
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq('id', simulationId)
+  },
+
+  /**
+   * 현재 계좌 값 빠른 계산 (가격 조회 없이 투자금액 기준)
+   * 실시간 가격은 사용자가 동기화 버튼 클릭 시 반영됨
+   */
+  async calculateCurrentAccountValues(profileId: string): Promise<{
+    investmentValues: Map<string, number>
+    savingsValues: Map<string, number>
+  }> {
+    const supabase = createClient()
+
+    // 병렬로 모든 데이터 조회 (최적화)
+    const currentYear = new Date().getFullYear()
+    const currentMonth = new Date().getMonth() + 1
+
+    const [portfolioRes, accountsRes, budgetRes] = await Promise.all([
+      supabase
+        .from('portfolio_transactions')
+        .select('*')
+        .eq('profile_id', profileId),
+      supabase
+        .from('accounts')
+        .select('*')
+        .eq('profile_id', profileId)
+        .eq('is_active', true)
+        .in('account_type', ['checking', 'savings', 'deposit', 'free_savings', 'housing']),
+      supabase
+        .from('budget_transactions')
+        .select('account_id, type, amount')
+        .eq('profile_id', profileId)
+        .eq('year', currentYear)
+        .eq('month', currentMonth),
+    ])
+
+    // 투자 계좌 평가액 계산 (가격 조회 없이 투자금액 기준)
+    const investmentValues = calculatePortfolioAccountValues(
+      portfolioRes.data || [],
+      null  // 가격 없이 투자금액 사용
+    )
+
+    // 저축 계좌 잔액 계산 (가계부 반영)
+    const savingsValues = new Map<string, number>()
+    const txSummary = calculateAccountTransactionSummary(budgetRes.data || [])
+
+    accountsRes.data?.forEach(acc => {
+      if (acc.account_type === 'checking') {
+        // 입출금 계좌: 현재 잔액 + 가계부 거래
+        const expectedBalance = calculateExpectedBalance(acc.current_balance || 0, txSummary[acc.id])
+        savingsValues.set(acc.id, Math.round(expectedBalance))
+      } else {
+        // 예금/적금: 이자 포함 평가금액
+        savingsValues.set(acc.id, Math.round(calculateTermDepositValue(acc)))
+      }
+    })
+
+    return { investmentValues, savingsValues }
+  },
+
+  /**
+   * 백그라운드에서 실시간 가격 조회 후 시뮬레이션 데이터 업데이트
+   */
+  async syncPricesInBackground(simulationId: string, profileId: string): Promise<void> {
+    const supabase = createClient()
+
+    // 1. 포트폴리오 거래 내역 가져오기
+    const { data: portfolioTransactions } = await supabase
+      .from('portfolio_transactions')
+      .select('*')
+      .eq('profile_id', profileId)
+
+    if (!portfolioTransactions?.length) return
+
+    // 2. 실시간 가격 조회 (외부 API)
+    const priceCache = await fetchPortfolioPrices(portfolioTransactions)
+
+    // 3. 투자 계좌 평가액 계산
+    const investmentValues = calculatePortfolioAccountValues(portfolioTransactions, priceCache)
+
+    // 4. 시뮬레이션의 투자 계좌 잔액 업데이트
+    const { data: accounts } = await supabase
+      .from('accounts')
+      .select('id, name')
+      .eq('profile_id', profileId)
+      .eq('is_active', true)
+      .in('account_type', ['general', 'pension_savings', 'irp', 'isa', 'dc'])
+
+    if (!accounts?.length) return
+
+    // 5. savings 테이블의 투자 계좌 업데이트
+    for (const [accountId, value] of investmentValues) {
+      const account = accounts.find(a => a.id === accountId)
+      if (account) {
+        await supabase
+          .from('savings')
+          .update({ current_balance: value })
+          .eq('simulation_id', simulationId)
+          .eq('title', account.name)
+      }
+    }
+
+    // 6. 동기화 시간 업데이트
+    await supabase
+      .from('simulations')
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq('id', simulationId)
   },
 
   /**
@@ -197,7 +315,12 @@ export const simulationService = {
     ]
 
     if (savingsData.length > 0) {
-      await supabase.from('savings').insert(savingsData)
+      const { error } = await supabase.from('savings').insert(savingsData)
+      if (error) {
+        console.error('Savings insert error:', error)
+        console.error('Savings data:', JSON.stringify(savingsData, null, 2))
+        throw error
+      }
     }
 
     // 4. 절세 계좌 → personal_pensions 테이블

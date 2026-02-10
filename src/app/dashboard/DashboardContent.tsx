@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import {
   Search, RefreshCw, ChevronLeft, ChevronRight, Settings, Tags,
@@ -20,6 +21,7 @@ import {
   useUpdateSimulation,
   useTodaySnapshot,
   useSnapshots,
+  financialKeys,
 } from "@/hooks/useFinancialData";
 import type {
   FinancialItem,
@@ -29,7 +31,7 @@ import type {
 import type { SimulationResult } from "@/lib/services/simulationEngine";
 import { runSimulationFromItems } from "@/lib/services/simulationEngine";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
-import { copySnapshotToSimulation } from "@/lib/services/snapshotToSimulation";
+import { simulationService } from "@/lib/services/simulationService";
 import { calculateEndYear } from "@/lib/utils/chartDataTransformer";
 import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_SETTINGS } from "@/types";
 import { Sidebar } from "./components";
@@ -122,10 +124,15 @@ export function DashboardContent() {
     globalSettings,
   } = useFinancialContext();
 
+  const queryClient = useQueryClient();
+
   // 상태 (URL에서 초기화는 useEffect에서 처리)
   const [currentSection, setCurrentSection] = useState<string>("dashboard");
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [selectedSimulationId, setSelectedSimulationId] = useState<string>(simulation.id);
+  const [initializingSimulationId, setInitializingSimulationId] = useState<string | null>(null);
+  const [syncingPricesSimulationId, setSyncingPricesSimulationId] = useState<string | null>(null);
+  const [simulationDataKey, setSimulationDataKey] = useState(0); // 데이터 리로드 트리거
   const [isEditingSimTitle, setIsEditingSimTitle] = useState(false);
   const [editSimTitle, setEditSimTitle] = useState("");
   const [showIconPicker, setShowIconPicker] = useState(false);
@@ -319,26 +326,48 @@ export function DashboardContent() {
       createSimulation.mutate(
         { title: title.trim() },
         {
-          onSuccess: async (newSim) => {
-            // 스냅샷 데이터를 시뮬레이션에 복사
-            try {
-              const result = await copySnapshotToSimulation(profile.id, newSim.id);
-              if (result.success) {
-                console.log("[handleAddSimulation] Copied snapshot data:", result.copiedItems);
-              } else if (result.errors.length > 0) {
-                console.warn("[handleAddSimulation] Copy errors:", result.errors);
-              }
-            } catch (error) {
-              console.error("[handleAddSimulation] Failed to copy snapshot:", error);
-            }
-
+          onSuccess: (newSim) => {
+            // 즉시 UI 업데이트 (시뮬레이션 리스트에 표시)
             setSelectedSimulationId(newSim.id);
             setCurrentSection("simulation");
+            updateUrl("simulation", newSim.id);
+            setInitializingSimulationId(newSim.id); // 초기화 중 표시
+
+            // 백그라운드에서 데이터 초기화
+            (async () => {
+              try {
+                // 1단계: 계좌 데이터 복사 (가격 없이 빠르게)
+                await simulationService.initializeSimulationData(newSim.id, profile.id);
+
+                // 2단계: UI 표시 (데이터 로드)
+                setInitializingSimulationId(null);
+                setSimulationDataKey(prev => prev + 1);
+                queryClient.invalidateQueries({ queryKey: ["simulations"] });
+                queryClient.invalidateQueries({ queryKey: financialKeys.items(newSim.id) });
+
+                // 3단계: 백그라운드에서 실시간 가격 조회 후 업데이트
+                setSyncingPricesSimulationId(newSim.id);
+                simulationService.syncPricesInBackground(newSim.id, profile.id)
+                  .then(() => {
+                    // 가격 업데이트 후 UI 새로고침
+                    setSyncingPricesSimulationId(null);
+                    queryClient.invalidateQueries({ queryKey: financialKeys.items(newSim.id) });
+                    queryClient.invalidateQueries({ queryKey: ["simulations"] });
+                  })
+                  .catch((error) => {
+                    console.error("Price sync error:", error);
+                    setSyncingPricesSimulationId(null);
+                  });
+              } catch (error) {
+                console.error("[handleAddSimulation] Initialize error:", error);
+                setInitializingSimulationId(null);
+              }
+            })();
           },
         }
       );
     }
-  }, [createSimulation, profile.id]);
+  }, [createSimulation, profile.id, updateUrl]);
 
   // 시뮬레이션 삭제
   const deleteSimulation = useDeleteSimulation();
@@ -352,13 +381,17 @@ export function DashboardContent() {
           if (remaining.length > 0) {
             const defaultSim = remaining.find(s => s.is_default) || remaining[0];
             setSelectedSimulationId(defaultSim.id);
+            updateUrl("simulation", defaultSim.id);
           } else {
+            // 시뮬레이션이 모두 삭제되면 대시보드로 이동
             setSelectedSimulationId(null as unknown as string);
+            setCurrentSection("dashboard");
+            updateUrl("dashboard", "");
           }
         }
       },
     });
-  }, [deleteSimulation, selectedSimulationId, simulations]);
+  }, [deleteSimulation, selectedSimulationId, simulations, updateUrl]);
 
   // 스냅샷 데이터 Prefetch (CurrentAssetTab, AssetRecordTab에서 사용)
   // 탭 전환 시 즉시 로드되도록 미리 캐싱
@@ -664,6 +697,7 @@ export function DashboardContent() {
       case "simulation": {
         return (
           <ScenarioTab
+            key={`${selectedSimulationId}-${simulationDataKey}`}
             simulation={selectedSim || simulation}
             simulationId={selectedSimulationId}
             profile={profile}
@@ -673,6 +707,8 @@ export function DashboardContent() {
             simulationResult={simulationResult}
             isMarried={isMarried}
             spouseMember={spouseMember}
+            isInitializing={initializingSimulationId === selectedSimulationId}
+            isSyncingPrices={syncingPricesSimulationId === selectedSimulationId}
           />
         );
       }

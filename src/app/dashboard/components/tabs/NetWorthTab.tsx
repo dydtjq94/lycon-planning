@@ -17,6 +17,7 @@ interface NetWorthTabProps {
   spouseBirthYear?: number | null
   retirementAge: number
   globalSettings?: GlobalSettings
+  isInitializing?: boolean
 }
 
 // 기간 선택 옵션
@@ -37,6 +38,7 @@ export function NetWorthTab({
   spouseBirthYear,
   retirementAge,
   globalSettings,
+  isInitializing = false,
 }: NetWorthTabProps) {
   const currentYear = new Date().getFullYear()
   const currentAge = currentYear - birthYear
@@ -158,7 +160,7 @@ export function NetWorthTab({
     setSelectedYear(parseInt(e.target.value))
   }, [])
 
-  if (isLoading && items.length === 0) {
+  if ((isLoading || isInitializing) && items.length === 0) {
     return <div className={styles.loadingState}>데이터를 불러오는 중...</div>
   }
 

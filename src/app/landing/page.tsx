@@ -286,11 +286,6 @@ export default function LandingPage() {
             >
               <span className={styles.logoText}>Lycon | Retirement</span>
             </Link>
-            <div className={styles.footerLegal}>
-              <a href="#">이용약관</a>
-              <span className={styles.footerDivider}>|</span>
-              <a href="#">개인정보처리방침</a>
-            </div>
             <p className={styles.footerCopyright}>
               &copy; {currentYear} Lycon. All rights reserved.
             </p>

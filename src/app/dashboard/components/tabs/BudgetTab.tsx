@@ -18,6 +18,7 @@ import { useChartTheme } from "@/hooks/useChartTheme";
 import type { BudgetTransaction, TransactionType } from "@/lib/services/budgetService";
 import type { Account, AccountType, AccountInput, PaymentMethod, PaymentMethodType, PaymentMethodInput } from "@/types/tables";
 import { formatWon } from "@/lib/utils";
+import { calculateAccountBalances } from "@/lib/utils/accountValueCalculator";
 import styles from "./BudgetTab.module.css";
 
 interface BudgetTabProps {
@@ -926,49 +927,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
   // 계좌별 수입/지출 및 예상 잔액 계산
   // balance_updated_at 이후의 거래만 계산하여 current_balance에 더함
   const accountBalanceInfo = useMemo(() => {
-    const info: Record<string, { income: number; expense: number; prevBalance: number | null; expectedBalance: number }> = {};
-
-    accounts.forEach((account) => {
-      // 날짜만 비교하기 위해 시간을 00:00:00으로 설정
-      let balanceDate: Date | null = null;
-      if (account.balance_updated_at) {
-        balanceDate = new Date(account.balance_updated_at);
-        balanceDate.setHours(0, 0, 0, 0);
-      }
-
-      // 해당 계좌의 수입/지출 계산 (balance_updated_at 이후 거래만, balanceTransactions 사용)
-      const accountIncome = balanceTransactions
-        .filter((tx) => {
-          if (tx.type !== "income" || tx.account_id !== account.id) return false;
-          if (!balanceDate) return true; // 날짜 없으면 모든 거래 포함
-          const txDate = new Date(tx.year, tx.month - 1, tx.day ?? 1);
-          txDate.setHours(0, 0, 0, 0);
-          return txDate >= balanceDate; // 같은 날짜 포함
-        })
-        .reduce((sum, tx) => sum + tx.amount, 0);
-      const accountExpense = balanceTransactions
-        .filter((tx) => {
-          if (tx.type !== "expense" || tx.account_id !== account.id) return false;
-          if (!balanceDate) return true;
-          const txDate = new Date(tx.year, tx.month - 1, tx.day ?? 1);
-          txDate.setHours(0, 0, 0, 0);
-          return txDate >= balanceDate; // 같은 날짜 포함
-        })
-        .reduce((sum, tx) => sum + tx.amount, 0);
-
-      // 시작 잔액: current_balance (잔액 기록 시점의 금액)
-      const startBalance = account.current_balance || 0;
-      const expectedBalance = startBalance + accountIncome - accountExpense;
-
-      info[account.id] = {
-        income: accountIncome,
-        expense: accountExpense,
-        prevBalance: startBalance,
-        expectedBalance,
-      };
-    });
-
-    return info;
+    return calculateAccountBalances(accounts, balanceTransactions);
   }, [accounts, balanceTransactions]);
 
   // 전체 누적 잔액 (모든 계좌의 expectedBalance 합계)

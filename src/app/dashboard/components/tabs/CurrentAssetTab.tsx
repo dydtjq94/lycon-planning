@@ -25,9 +25,71 @@ import type { FinancialSnapshotItem, FinancialSnapshotItemInput, PortfolioAccoun
 import { formatMoney, formatWon, calculateAge } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { getTermDepositAccounts, getBudgetTransactions } from "@/lib/services/budgetService";
+import { calculatePortfolioAccountValuesDetailed, calculateAccountBalances, calculateTermDepositValue } from "@/lib/utils/accountValueCalculator";
 import styles from "./CurrentAssetTab.module.css";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
+
+// 은행/증권사 로고 매핑
+const BROKER_LOGO_MAP: Record<string, string> = {
+  // 은행
+  "카카오뱅크": "/logos/banks/kakaobank.png",
+  "토스뱅크": "/logos/banks/tossbank.png",
+  "케이뱅크": "/logos/banks/kbank.png",
+  "국민은행": "/logos/banks/kookmin.png",
+  "KB국민은행": "/logos/banks/kookmin.png",
+  "신한은행": "/logos/banks/shinhan.png",
+  "하나은행": "/logos/banks/hana.png",
+  "우리은행": "/logos/banks/woori.png",
+  "NH농협은행": "/logos/banks/nh.png",
+  "농협은행": "/logos/banks/nh.png",
+  "IBK기업은행": "/logos/banks/ibk.png",
+  "기업은행": "/logos/banks/ibk.png",
+  "SC제일은행": "/logos/banks/sc.png",
+  "씨티은행": "/logos/banks/citi.png",
+  "KDB산업은행": "/logos/banks/kdb.png",
+  "산업은행": "/logos/banks/kdb.png",
+  "수협은행": "/logos/banks/suhyup.png",
+  "대구은행": "/logos/banks/daegu.png",
+  "부산은행": "/logos/banks/busan.png",
+  "경남은행": "/logos/banks/kyongnam.png",
+  "광주은행": "/logos/banks/gwangju.png",
+  "전북은행": "/logos/banks/jeonbuk.png",
+  "제주은행": "/logos/banks/jeju.png",
+  "우체국": "/logos/banks/epost.png",
+  "새마을금고": "/logos/banks/saemaul.png",
+  "신협": "/logos/banks/shinhyup.png",
+  "SBI저축은행": "/logos/banks/sbi.png",
+  "아이엠뱅크": "/logos/banks/im.png",
+  // 증권사
+  "토스증권": "/logos/securities/toss.png",
+  "삼성증권": "/logos/securities/samsung.png",
+  "미래에셋증권": "/logos/securities/mirae.png",
+  "KB증권": "/logos/securities/kb.png",
+  "NH투자증권": "/logos/securities/nh.png",
+  "한국투자증권": "/logos/securities/korea.png",
+  "신한투자증권": "/logos/securities/shinhan.png",
+  "하나증권": "/logos/securities/hana.png",
+  "키움증권": "/logos/securities/kiwoom.png",
+  "대신증권": "/logos/securities/daishin.png",
+  "메리츠증권": "/logos/securities/meritz.png",
+  "한화투자증권": "/logos/securities/hanwha.png",
+  "유안타증권": "/logos/securities/yuanta.png",
+  "유진투자증권": "/logos/securities/eugene.png",
+  "이베스트투자증권": "/logos/securities/ebest.png",
+  "DB금융투자": "/logos/securities/db.png",
+  "교보증권": "/logos/securities/kyobo.png",
+  "신영증권": "/logos/securities/shinyoung.png",
+  "SK증권": "/logos/securities/sk.png",
+  "부국증권": "/logos/securities/bookook.png",
+  "케이프투자증권": "/logos/securities/cape.png",
+  "카카오페이증권": "/logos/securities/kakaopay.png",
+};
+
+function getBrokerLogo(brokerName: string | null): string | null {
+  if (!brokerName) return null;
+  return BROKER_LOGO_MAP[brokerName] || null;
+}
 
 interface CurrentAssetTabProps {
   profileId: string;
@@ -2071,12 +2133,41 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
         const termData = await getTermDepositAccounts(profileId);
         setTermDepositAccounts(termData);
 
-        // 현재 월의 거래 내역 가져오기 (예상 잔액 계산용)
-        const transactions = await getBudgetTransactions(profileId, currentYear, currentMonth);
-        setBudgetTransactions(transactions.map(tx => ({
+        // 잔액 계산용 거래 로드 (balance_updated_at 이후 모든 거래)
+        const balanceDates = (checkingData || [])
+          .filter((a: Account) => a.balance_updated_at)
+          .map((a: Account) => new Date(a.balance_updated_at!));
+
+        let txData: any[] = [];
+        if (balanceDates.length === 0) {
+          // No balance_updated_at, load all transactions
+          const { data } = await supabase
+            .from("budget_transactions")
+            .select("*")
+            .eq("profile_id", profileId)
+            .order("year", { ascending: true })
+            .order("month", { ascending: true });
+          txData = data || [];
+        } else {
+          const oldestDate = new Date(Math.min(...balanceDates.map((d: Date) => d.getTime())));
+          const oldestYear = oldestDate.getFullYear();
+          const oldestMonth = oldestDate.getMonth() + 1;
+          const { data } = await supabase
+            .from("budget_transactions")
+            .select("*")
+            .eq("profile_id", profileId)
+            .or(`year.gt.${oldestYear},and(year.eq.${oldestYear},month.gte.${oldestMonth})`)
+            .order("year", { ascending: true })
+            .order("month", { ascending: true });
+          txData = data || [];
+        }
+        setBudgetTransactions(txData.map((tx: any) => ({
           account_id: tx.account_id,
           type: tx.type,
           amount: tx.amount,
+          year: tx.year,
+          month: tx.month,
+          day: tx.day,
         })));
       } catch (error) {
         console.error("Failed to load savings accounts:", error);
@@ -2085,87 +2176,25 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       }
     };
     loadSavingsAccounts();
-  }, [profileId, supabase, currentYear, currentMonth]);
+  }, [profileId, supabase]);
 
-  // 계좌별 수입/지출 합계 계산
-  const accountTransactionSummary = useMemo(() => {
-    const summary: Record<string, { income: number; expense: number }> = {};
-    budgetTransactions.forEach(tx => {
-      if (!tx.account_id) return;
-      if (!summary[tx.account_id]) {
-        summary[tx.account_id] = { income: 0, expense: 0 };
-      }
-      if (tx.type === "income") {
-        summary[tx.account_id].income += tx.amount;
-      } else {
-        summary[tx.account_id].expense += tx.amount;
-      }
-    });
-    return summary;
-  }, [budgetTransactions]);
-
-  // 정기 예금/적금 현재 평가금액 계산 (SavingsDepositsTab과 동일한 로직)
-  const getTermDepositCurrentValue = (account: Account): number => {
-    // 누적 이자 계산
-    const calculateInterest = (): number => {
-      if (!account.current_balance || !account.interest_rate) return 0;
-      if (!account.start_year) return 0;
-
-      const startDate = new Date(account.start_year, (account.start_month || 1) - 1);
-      const today = new Date();
-      const monthsElapsed = Math.max(0,
-        (today.getFullYear() - startDate.getFullYear()) * 12 +
-        (today.getMonth() - startDate.getMonth())
-      );
-
-      if (account.account_type === "savings" && account.monthly_contribution) {
-        // 적금: 복리 계산
-        const monthlyRate = account.interest_rate / 100 / 12;
-        let total = 0;
-        for (let i = 0; i < monthsElapsed; i++) {
-          total = (total + account.monthly_contribution) * (1 + monthlyRate);
-        }
-        const principal = account.monthly_contribution * monthsElapsed;
-        return Math.round(total - principal);
-      } else {
-        // 예금: 복리 계산
-        const yearsElapsed = monthsElapsed / 12;
-        const rate = account.interest_rate / 100;
-        const currentValue = account.current_balance * Math.pow(1 + rate, yearsElapsed);
-        return Math.round(currentValue - account.current_balance);
-      }
-    };
-
-    const interest = calculateInterest();
-
-    // 현재 평가금액 = 원금 + 이자
-    if (account.account_type === "savings" && account.monthly_contribution && account.start_year) {
-      const startDate = new Date(account.start_year, (account.start_month || 1) - 1);
-      const today = new Date();
-      const monthsElapsed = Math.max(0,
-        (today.getFullYear() - startDate.getFullYear()) * 12 +
-        (today.getMonth() - startDate.getMonth())
-      );
-      const principal = account.monthly_contribution * monthsElapsed;
-      return principal + interest;
-    }
-    return (account.current_balance || 0) + interest;
-  };
+  // 계좌별 누적 잔액 계산 (유틸리티 함수 사용)
+  const accountBalanceInfo = useMemo(() => {
+    return calculateAccountBalances(checkingAccounts, budgetTransactions);
+  }, [checkingAccounts, budgetTransactions]);
 
   // 저축 계좌별 데이터 계산 (원 단위, 거래 반영한 예상 잔액)
   const savingsAccountValues = useMemo(() => {
     const values: { id: string; type: string; name: string; broker: string; value: number }[] = [];
 
-    // 입출금 계좌 (원 단위) - 현재 잔액 + 수입 - 지출 = 예상 잔액
+    // 입출금 계좌 (원 단위) - 유틸리티 함수 사용
     checkingAccounts.forEach(acc => {
-      const summary = accountTransactionSummary[acc.id] || { income: 0, expense: 0 };
-      const expectedBalance = (acc.current_balance || 0) + summary.income - summary.expense;
       values.push({
         id: acc.id,
         type: "checking",
         name: acc.name,
         broker: acc.broker_name,
-        value: expectedBalance,
+        value: accountBalanceInfo[acc.id]?.expectedBalance ?? (acc.current_balance || 0),
       });
     });
 
@@ -2176,12 +2205,12 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
         type: acc.account_type,
         name: acc.name,
         broker: acc.broker_name,
-        value: getTermDepositCurrentValue(acc),
+        value: calculateTermDepositValue(acc),
       });
     });
 
     return values;
-  }, [checkingAccounts, termDepositAccounts, accountTransactionSummary]);
+  }, [checkingAccounts, termDepositAccounts, accountBalanceInfo]);
 
   // 저축 총액 (연동) - 원 단위
   const linkedSavingsTotalWon = useMemo(() => {
@@ -2198,107 +2227,9 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
   const isInvestmentDataReady = !isTransactionsLoading && !isPriceLoading && !isAccountsLoading;
   const isSavingsDataReady = !isSavingsAccountsLoading;
 
-  // 증권 계좌 타입 목록
-  const SECURITIES_ACCOUNT_TYPES = ["general", "isa", "pension_savings", "irp", "dc"];
-
-  // 증권 계좌별 평가금액 계산 (현재가 기준)
+  // 증권 계좌별 평가금액 계산 (유틸리티 함수 사용)
   const accountValues = useMemo(() => {
-    const values = new Map<string, { broker: string; accountName: string; value: number; invested: number; accountType: string }>();
-
-    // 계좌별 보유량 계산
-    const holdingsMap = new Map<string, Map<string, { qty: number; invested: number; currency: string }>>();
-
-    portfolioTransactions.forEach(tx => {
-      const accountId = tx.account_id || "unknown";
-      if (!holdingsMap.has(accountId)) {
-        holdingsMap.set(accountId, new Map());
-      }
-      const accountHoldings = holdingsMap.get(accountId)!;
-      const current = accountHoldings.get(tx.ticker) || { qty: 0, invested: 0, currency: tx.currency };
-
-      if (tx.type === "buy") {
-        current.qty += tx.quantity;
-        current.invested += tx.quantity * tx.price;
-      } else {
-        const sellRatio = current.qty > 0 ? tx.quantity / current.qty : 0;
-        current.qty -= tx.quantity;
-        current.invested *= (1 - sellRatio);
-      }
-      accountHoldings.set(tx.ticker, current);
-    });
-
-    // 가장 최근 환율 찾기
-    let latestExchangeRate = 1400; // 기본값
-    if (priceCache?.exchangeRateMap && priceCache.exchangeRateMap.size > 0) {
-      const sortedFxDates = Array.from(priceCache.exchangeRateMap.keys()).sort();
-      const latestFxDate = sortedFxDates[sortedFxDates.length - 1];
-      latestExchangeRate = priceCache.exchangeRateMap.get(latestFxDate) || 1400;
-    }
-
-    // 모든 증권 계좌를 먼저 추가 (거래 없어도 표시)
-    accounts
-      .filter(acc => SECURITIES_ACCOUNT_TYPES.includes(acc.account_type))
-      .forEach(account => {
-        values.set(account.id, {
-          broker: account.broker_name || "기타",
-          accountName: account.name || "계좌",
-          value: 0,
-          invested: 0,
-          accountType: account.account_type,
-        });
-      });
-
-    // 계좌별 평가금액 계산
-    holdingsMap.forEach((holdings, accountId) => {
-      let totalInvested = 0;
-      let totalValue = 0;
-
-      holdings.forEach((h, ticker) => {
-        if (h.qty > 0) {
-          totalInvested += h.invested;
-
-          // 현재가 찾기
-          let latestPrice = 0;
-          if (priceCache?.priceDataMap) {
-            const tickerPrices = priceCache.priceDataMap.get(ticker);
-            if (tickerPrices && tickerPrices.size > 0) {
-              const sortedDates = Array.from(tickerPrices.keys()).sort();
-              const latestDate = sortedDates[sortedDates.length - 1];
-              latestPrice = tickerPrices.get(latestDate) || 0;
-            }
-          }
-
-          if (latestPrice > 0) {
-            // 해외주식이면 환율 적용
-            if (h.currency === "USD") {
-              totalValue += h.qty * latestPrice * latestExchangeRate;
-            } else {
-              totalValue += h.qty * latestPrice;
-            }
-          } else {
-            // 가격 데이터 없으면 투자금액 사용
-            totalValue += h.invested;
-          }
-        }
-      });
-
-      const account = accounts.find(a => a.id === accountId);
-      const broker = account?.broker_name || "기타";
-      const accountName = account?.name || "계좌";
-      const accountType = account?.account_type || "general";
-
-      if (totalInvested > 0 || totalValue > 0) {
-        values.set(accountId, {
-          broker,
-          accountName,
-          value: totalValue || totalInvested,
-          invested: totalInvested,
-          accountType,
-        });
-      }
-    });
-
-    return values;
+    return calculatePortfolioAccountValuesDetailed(portfolioTransactions, priceCache, accounts);
   }, [portfolioTransactions, accounts, priceCache]);
 
   // 기타 투자 항목 (실물 금, 채권 등)
@@ -3602,27 +3533,36 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
                     </tr>
                   </thead>
                   <tbody>
-                    {savingsAccountValues.map(data => (
-                      <tr key={data.id}>
-                        <td>
-                          <div className={styles.accountCell}>
-                            <div className={styles.accountNameRow}>
-                              <span className={styles.accountName}>{data.name}</span>
-                              <span className={styles.accountTypeLabel}>
-                                {data.type === "checking" ? "입출금" :
-                                 data.type === "deposit" ? "예금" :
-                                 data.type === "housing" ? "청약" :
-                                 data.type === "free_savings" ? "자유적금" : "적금"}
-                              </span>
+                    {savingsAccountValues.map(data => {
+                      const logo = getBrokerLogo(data.broker);
+                      return (
+                        <tr key={data.id}>
+                          <td>
+                            <div className={styles.accountCellWithLogo}>
+                              {logo ? (
+                                <img src={logo} alt="" className={styles.brokerLogo} />
+                              ) : (
+                                <div className={styles.brokerLogoPlaceholder}>
+                                  {(data.broker || data.name || "?").charAt(0)}
+                                </div>
+                              )}
+                              <div className={styles.accountInfo}>
+                                <span className={styles.accountName}>{data.name}</span>
+                                <span className={styles.accountTypeLabel}>
+                                  {data.type === "checking" ? "입출금통장" :
+                                   data.type === "deposit" ? "예금" :
+                                   data.type === "housing" ? "주택청약" :
+                                   data.type === "free_savings" ? "자유적금" : "적금"}
+                                </span>
+                              </div>
                             </div>
-                            <span className={styles.brokerName}>{data.broker}</span>
-                          </div>
-                        </td>
-                        <td className={styles.amountCell}>
-                          {formatWon(data.value)}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className={styles.amountCell}>
+                            {formatWon(data.value)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -3671,22 +3611,29 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
                   </thead>
                   <tbody>
                     {Array.from(accountValues.entries()).map(([id, data]) => {
+                      const logo = getBrokerLogo(data.broker);
                       const accountTypeLabel = {
-                        general: "증권",
+                        general: "증권계좌",
                         isa: "ISA",
                         pension_savings: "연금저축",
                         irp: "IRP",
                         dc: "DC형 퇴직연금",
-                      }[data.accountType] || "증권";
+                      }[data.accountType] || "증권계좌";
                       return (
                         <tr key={id}>
                           <td>
-                            <div className={styles.accountCell}>
-                              <div className={styles.accountNameRow}>
+                            <div className={styles.accountCellWithLogo}>
+                              {logo ? (
+                                <img src={logo} alt="" className={styles.brokerLogo} />
+                              ) : (
+                                <div className={styles.brokerLogoPlaceholder}>
+                                  {(data.broker || data.accountName || "?").charAt(0)}
+                                </div>
+                              )}
+                              <div className={styles.accountInfo}>
                                 <span className={styles.accountName}>{data.accountName}</span>
                                 <span className={styles.accountTypeLabel}>{accountTypeLabel}</span>
                               </div>
-                              <span className={styles.brokerName}>{data.broker}</span>
                             </div>
                           </td>
                           <td className={styles.amountCell}>

@@ -6,6 +6,7 @@ import { formatWon } from "@/lib/utils";
 import { simulationService } from "@/lib/services/simulationService";
 import { createClient } from "@/lib/supabase/client";
 import { usePortfolioTransactions, usePortfolioChartPriceData } from "@/hooks/useFinancialData";
+import { calculatePortfolioAccountValues, calculateAccountTransactionSummary, calculateExpectedBalance } from "@/lib/utils/accountValueCalculator";
 import styles from "./AccountsSummaryPanel.module.css";
 
 // 은행/증권사 로고 매핑
@@ -84,6 +85,8 @@ interface AccountsSummaryPanelProps {
   simulationId: string;
   profileId: string;
   isMarried?: boolean;
+  isInitializing?: boolean;
+  isSyncingPrices?: boolean;
 }
 
 // 저축 계좌 타입
@@ -127,10 +130,16 @@ export function AccountsSummaryPanel({
   simulationId,
   profileId,
   isMarried = false,
+  isInitializing = false,
+  isSyncingPrices = false,
 }: AccountsSummaryPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // 초기화 중이면 로딩 상태 유지
+  const showLoading = isLoading || isInitializing;
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
   // 원 단위 raw 데이터 상태
   const [savingsAccounts, setSavingsAccounts] = useState<RawAccountData[]>([]);
@@ -152,7 +161,7 @@ export function AccountsSummaryPanel({
   const loadRawData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [savingsRes, personalRes, retirementRes] = await Promise.all([
+      const [savingsRes, personalRes, retirementRes, simulationRes] = await Promise.all([
         supabase
           .from("savings")
           .select("id, type, title, owner, current_balance, broker_name")
@@ -169,6 +178,11 @@ export function AccountsSummaryPanel({
           .select("id, pension_type, title, current_balance, broker_name")
           .eq("simulation_id", simulationId)
           .eq("is_active", true),
+        supabase
+          .from("simulations")
+          .select("last_synced_at")
+          .eq("id", simulationId)
+          .single(),
       ]);
 
       const allSavings = (savingsRes.data || []) as RawAccountData[];
@@ -176,6 +190,9 @@ export function AccountsSummaryPanel({
       setInvestmentAccounts(allSavings.filter((s) => INVESTMENT_TYPES.includes(s.type)));
       setPersonalPensions((personalRes.data || []) as RawPensionData[]);
       setRetirementPensions((retirementRes.data || []) as RawPensionData[]);
+      if (simulationRes.data?.last_synced_at) {
+        setLastSyncedAt(new Date(simulationRes.data.last_synced_at));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -192,80 +209,15 @@ export function AccountsSummaryPanel({
     + retirementPensions.reduce((sum, p) => sum + (p.current_balance || 0), 0);
   const totalCount = savingsAccounts.length + investmentAccounts.length + personalPensions.length + retirementPensions.length;
 
-  // 계좌별 투자 평가액 계산 (PortfolioTab과 동일한 로직)
-  const calculateInvestmentAccountValues = useCallback(() => {
-    const values = new Map<string, number>();
-    if (!priceCache || portfolioTransactions.length === 0) return values;
-
-    const { priceDataMap, exchangeRateMap } = priceCache;
-
-    // 가장 최근 환율
-    let latestExchangeRate = 1400;
-    if (exchangeRateMap.size > 0) {
-      const sortedFxDates = Array.from(exchangeRateMap.keys()).sort();
-      const latestFxDate = sortedFxDates[sortedFxDates.length - 1];
-      latestExchangeRate = exchangeRateMap.get(latestFxDate) || 1400;
-    }
-
-    // 계좌별 보유량 계산
-    const accountHoldingsMap = new Map<string, Map<string, { qty: number; currency: string; assetType: string }>>();
-
-    portfolioTransactions.forEach((tx) => {
-      const accountId = tx.account_id || "unknown";
-      if (!accountHoldingsMap.has(accountId)) {
-        accountHoldingsMap.set(accountId, new Map());
-      }
-      const holdings = accountHoldingsMap.get(accountId)!;
-      const existing = holdings.get(tx.ticker);
-
-      if (!existing) {
-        if (tx.type === "buy") {
-          holdings.set(tx.ticker, { qty: tx.quantity, currency: tx.currency, assetType: tx.asset_type });
-        }
-      } else {
-        if (tx.type === "buy") {
-          existing.qty += tx.quantity;
-        } else {
-          existing.qty -= tx.quantity;
-        }
-      }
-    });
-
-    // 계좌별 평가액 계산
-    accountHoldingsMap.forEach((holdings, accountId) => {
-      let accountValue = 0;
-      holdings.forEach((h, ticker) => {
-        if (h.qty > 0) {
-          const tickerPrices = priceDataMap.get(ticker);
-          let latestPrice = 0;
-          if (tickerPrices && tickerPrices.size > 0) {
-            const sortedDates = Array.from(tickerPrices.keys()).sort();
-            const latestDate = sortedDates[sortedDates.length - 1];
-            latestPrice = tickerPrices.get(latestDate) || 0;
-          }
-          if (latestPrice > 0) {
-            const isForeign = h.assetType === "foreign_stock" || h.assetType === "foreign_etf";
-            const holdingValue = isForeign && h.currency === "USD"
-              ? h.qty * latestPrice * latestExchangeRate
-              : h.qty * latestPrice;
-            accountValue += holdingValue;
-          }
-        }
-      });
-      values.set(accountId, Math.round(accountValue));
-    });
-
-    return values;
-  }, [priceCache, portfolioTransactions]);
-
   // 현재 자산 동기화
   const handleSync = async () => {
     setIsSyncing(true);
     try {
-      // 가격 데이터 새로고침
-      await refetchPrices();
+      // 1. 가격 데이터 새로고침 후 결과 직접 사용
+      const priceResult = await refetchPrices();
+      const freshPriceCache = priceResult.data;
 
-      // 1. 저축 계좌 잔액 계산 (가계부 반영)
+      // 2. 저축 계좌 잔액 계산 (가계부 반영)
       const savingsAccountBalances = new Map<string, number>();
       const { data: checkingAccounts } = await supabase
         .from("accounts")
@@ -283,31 +235,26 @@ export function AccountsSummaryPanel({
         .eq("year", currentYear)
         .eq("month", currentMonth);
 
-      const txSummary: Record<string, { income: number; expense: number }> = {};
-      budgetTx?.forEach(tx => {
-        if (!tx.account_id) return;
-        if (!txSummary[tx.account_id]) {
-          txSummary[tx.account_id] = { income: 0, expense: 0 };
-        }
-        if (tx.type === "income") {
-          txSummary[tx.account_id].income += tx.amount;
-        } else if (tx.type === "expense") {
-          txSummary[tx.account_id].expense += tx.amount;
-        }
-      });
+      // 유틸리티 함수 사용
+      const txSummary = calculateAccountTransactionSummary(budgetTx || []);
 
       checkingAccounts?.forEach(acc => {
-        const summary = txSummary[acc.id] || { income: 0, expense: 0 };
-        // accounts.current_balance는 원 단위, budget_transactions.amount는 만원 단위
-        const expectedBalance = (acc.current_balance || 0) + (summary.income - summary.expense) * 10000;
+        const expectedBalance = calculateExpectedBalance(acc.current_balance || 0, txSummary[acc.id]);
         savingsAccountBalances.set(acc.id, Math.round(expectedBalance));
       });
 
-      // 2. 투자 계좌 평가액 (캐시된 가격 데이터 사용)
-      const investmentAccountValues = calculateInvestmentAccountValues();
+      // 3. 투자 계좌 평가액 계산 (유틸리티 함수 사용)
+      const investmentAccountValues = calculatePortfolioAccountValues(portfolioTransactions, freshPriceCache);
 
-      // 3. 시뮬레이션에 복사
+      // 4. 시뮬레이션에 복사
       await simulationService.copyAccountsToSimulation(simulationId, profileId, investmentAccountValues, savingsAccountBalances);
+      // 동기화 시간 저장
+      const now = new Date();
+      await supabase
+        .from("simulations")
+        .update({ last_synced_at: now.toISOString() })
+        .eq("id", simulationId);
+      setLastSyncedAt(now);
       await loadRawData();
     } catch (error) {
       console.error("Failed to sync accounts:", error);
@@ -316,7 +263,7 @@ export function AccountsSummaryPanel({
     }
   };
 
-  if (isLoading) {
+  if (showLoading) {
     return (
       <div className={styles.panel}>
         <div className={styles.skeletonHeader}>
@@ -363,14 +310,21 @@ export function AccountsSummaryPanel({
           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
         <div className={styles.headerRight}>
+          {isSyncingPrices ? (
+            <span className={styles.syncingText}>가격 동기화 중...</span>
+          ) : lastSyncedAt ? (
+            <span className={styles.syncTime}>
+              {lastSyncedAt.toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" })} {lastSyncedAt.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 동기화
+            </span>
+          ) : null}
           <button
             className={styles.syncIconButton}
             onClick={(e) => { e.stopPropagation(); handleSync(); }}
-            disabled={isSyncing}
+            disabled={isSyncing || isSyncingPrices}
             type="button"
             title="현재 자산으로 업데이트"
           >
-            <RefreshCw size={16} className={isSyncing ? styles.spinning : ""} />
+            <RefreshCw size={16} className={(isSyncing || isSyncingPrices) ? styles.spinning : ""} />
           </button>
           <span className={styles.totalAmount}>{formatWon(totalAssets)}</span>
         </div>

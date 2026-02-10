@@ -15,6 +15,7 @@ interface CashFlowOverviewTabProps {
   spouseBirthYear?: number | null
   retirementAge: number
   globalSettings?: GlobalSettings
+  isInitializing?: boolean
 }
 
 export function CashFlowOverviewTab({
@@ -23,6 +24,7 @@ export function CashFlowOverviewTab({
   spouseBirthYear,
   retirementAge,
   globalSettings,
+  isInitializing = false,
 }: CashFlowOverviewTabProps) {
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
 
@@ -96,7 +98,7 @@ export function CashFlowOverviewTab({
   const sankeyAge = sankeyYear - birthYear
 
   // 캐시된 데이터가 없고 로딩 중일 때만 로딩 표시
-  if (loading && items.length === 0) {
+  if ((loading || isInitializing) && items.length === 0) {
     return <div className={styles.loadingState}>데이터를 불러오는 중...</div>
   }
 

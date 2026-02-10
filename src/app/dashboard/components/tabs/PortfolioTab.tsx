@@ -57,6 +57,7 @@ import type {
   AccountType,
 } from "@/types/tables";
 import { formatWon } from "@/lib/utils";
+import { calculatePortfolioAccountValues } from "@/lib/utils/accountValueCalculator";
 import styles from "./PortfolioTab.module.css";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, Filler);
@@ -727,73 +728,10 @@ export function PortfolioTab({
     ? ((currentValue - totalInvested) / totalInvested) * 100
     : null;
 
-  // 계좌별 평가금액 계산
+  // 계좌별 평가금액 계산 (유틸리티 함수 사용)
   const accountValues = useMemo(() => {
-    const values = new Map<string, number>();
-    if (!priceCache) return values;
-
-    const { priceDataMap, exchangeRateMap } = priceCache;
-
-    // 가장 최근 환율 찾기
-    let latestExchangeRate = 1;
-    if (exchangeRateMap.size > 0) {
-      const sortedFxDates = Array.from(exchangeRateMap.keys()).sort();
-      const latestFxDate = sortedFxDates[sortedFxDates.length - 1];
-      latestExchangeRate = exchangeRateMap.get(latestFxDate) || 1400;
-    }
-
-    // 계좌별 보유량 계산
-    accounts.forEach((account) => {
-      const accountTxs = transactions
-        .filter((tx) => tx.account_id === account.id)
-        .sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
-      const holdingsMap = new Map<string, { quantity: number; currency: string; asset_type: string }>();
-
-      accountTxs.forEach((tx) => {
-        const existing = holdingsMap.get(tx.ticker);
-        if (!existing) {
-          if (tx.type === "buy") {
-            holdingsMap.set(tx.ticker, {
-              quantity: tx.quantity,
-              currency: tx.currency,
-              asset_type: tx.asset_type,
-            });
-          }
-        } else {
-          if (tx.type === "buy") {
-            existing.quantity += tx.quantity;
-          } else {
-            existing.quantity -= tx.quantity;
-          }
-        }
-      });
-
-      // 평가금액 계산
-      let accountValue = 0;
-      holdingsMap.forEach((holding, ticker) => {
-        if (holding.quantity > 0) {
-          const tickerPrices = priceDataMap.get(ticker);
-          let latestPrice = 0;
-          if (tickerPrices && tickerPrices.size > 0) {
-            const sortedDates = Array.from(tickerPrices.keys()).sort();
-            const latestDate = sortedDates[sortedDates.length - 1];
-            latestPrice = tickerPrices.get(latestDate) || 0;
-          }
-          if (latestPrice > 0) {
-            const isForeign = holding.asset_type === "foreign_stock" || holding.asset_type === "foreign_etf";
-            const holdingValue = isForeign && holding.currency === "USD"
-              ? holding.quantity * latestPrice * latestExchangeRate
-              : holding.quantity * latestPrice;
-            accountValue += holdingValue;
-          }
-        }
-      });
-
-      values.set(account.id, accountValue);
-    });
-
-    return values;
-  }, [priceCache, accounts, transactions]);
+    return calculatePortfolioAccountValues(transactions, priceCache);
+  }, [priceCache, transactions]);
 
   // 계좌별 투자금액 계산
   const accountInvested = useMemo(() => {

@@ -125,45 +125,47 @@ export async function copySnapshotToSimulation(
       }
     }
 
-    // 4. 카테고리별 복사
+    // 4. 카테고리별 복사 (배치 INSERT로 최적화)
     const currentYear = new Date().getFullYear()
     const currentMonth = new Date().getMonth() + 1
 
-    // 자산 항목 복사 (savings)
+    // 자산 항목 복사 (savings) - 배치 INSERT
     if (!categories || categories.includes('savings')) {
       const assetItems = items.filter(
         item => item.category === 'asset' && ['checking', 'savings', 'deposit', 'domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'etf', 'emergency'].includes(item.item_type)
       )
 
-      for (const item of assetItems) {
-        const savingsData = mapAssetToSavings(item, simulationId, currentYear, currentMonth)
-        const { error } = await supabase.from('savings').insert(savingsData)
-
+      if (assetItems.length > 0) {
+        const savingsDataArray = assetItems.map(item =>
+          mapAssetToSavings(item, simulationId, currentYear, currentMonth)
+        )
+        const { error } = await supabase.from('savings').insert(savingsDataArray)
         if (error) {
-          result.errors.push(`Failed to copy savings "${item.title}": ${error.message}`)
+          result.errors.push(`Failed to copy savings: ${error.message}`)
         } else {
-          result.copiedItems.savings++
+          result.copiedItems.savings = assetItems.length
         }
       }
     }
 
-    // 부채 항목 복사 (debts)
+    // 부채 항목 복사 (debts) - 배치 INSERT
     if (!categories || categories.includes('debts')) {
       const debtItems = items.filter(item => item.category === 'debt')
 
-      for (const item of debtItems) {
-        const debtData = mapDebtToSimulation(item, simulationId, currentYear, currentMonth)
-        const { error } = await supabase.from('debts').insert(debtData)
-
+      if (debtItems.length > 0) {
+        const debtsDataArray = debtItems.map(item =>
+          mapDebtToSimulation(item, simulationId, currentYear, currentMonth)
+        )
+        const { error } = await supabase.from('debts').insert(debtsDataArray)
         if (error) {
-          result.errors.push(`Failed to copy debt "${item.title}": ${error.message}`)
+          result.errors.push(`Failed to copy debts: ${error.message}`)
         } else {
-          result.copiedItems.debts++
+          result.copiedItems.debts = debtItems.length
         }
       }
     }
 
-      // 연금 계좌 복사 (personal_pensions: ISA, 연금저축, IRP)
+    // 연금 계좌 복사 (personal_pensions: ISA, 연금저축, IRP) - 배치 INSERT
     const pensionItems = items.filter(
       item => item.category === 'asset' && ['isa', 'pension_savings', 'irp'].includes(item.item_type)
     )
@@ -179,32 +181,32 @@ export async function copySnapshotToSimulation(
         result.errors.push(`Failed to clear personal_pensions: ${deletePensionError.message}`)
       }
 
-      for (const item of pensionItems) {
-        const pensionData = mapPensionToPersonalPension(item, simulationId)
-        const { error } = await supabase.from('personal_pensions').insert(pensionData)
-
-        if (error) {
-          result.errors.push(`Failed to copy pension "${item.title}": ${error.message}`)
-        } else {
-          result.copiedItems.personalPensions++
-        }
+      const pensionsDataArray = pensionItems.map(item =>
+        mapPensionToPersonalPension(item, simulationId)
+      )
+      const { error } = await supabase.from('personal_pensions').insert(pensionsDataArray)
+      if (error) {
+        result.errors.push(`Failed to copy pensions: ${error.message}`)
+      } else {
+        result.copiedItems.personalPensions = pensionItems.length
       }
     }
 
-    // 부동산 항목 복사 (real_estates)
+    // 부동산 항목 복사 (real_estates) - 배치 INSERT
     if (!categories || categories.includes('real_estates')) {
       const realEstateItems = items.filter(
         item => item.category === 'asset' && ['real_estate', 'residence', 'land'].includes(item.item_type)
       )
 
-      for (const item of realEstateItems) {
-        const realEstateData = mapRealEstateToSimulation(item, simulationId, currentYear, currentMonth)
-        const { error } = await supabase.from('real_estates').insert(realEstateData)
-
+      if (realEstateItems.length > 0) {
+        const realEstatesDataArray = realEstateItems.map(item =>
+          mapRealEstateToSimulation(item, simulationId, currentYear, currentMonth)
+        )
+        const { error } = await supabase.from('real_estates').insert(realEstatesDataArray)
         if (error) {
-          result.errors.push(`Failed to copy real estate "${item.title}": ${error.message}`)
+          result.errors.push(`Failed to copy real estates: ${error.message}`)
         } else {
-          result.copiedItems.realEstates++
+          result.copiedItems.realEstates = realEstateItems.length
         }
       }
     }

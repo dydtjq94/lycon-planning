@@ -43,6 +43,8 @@ interface ScenarioTabProps {
   onInvestmentAssumptionsChange?: (assumptions: InvestmentAssumptions) => void;
   cashFlowPriorities?: CashFlowPriority[];
   onCashFlowPrioritiesChange?: (priorities: CashFlowPriority[]) => void;
+  isInitializing?: boolean;
+  isSyncingPrices?: boolean;
 }
 
 // Top level tabs
@@ -91,6 +93,8 @@ export function ScenarioTab({
   onInvestmentAssumptionsChange,
   cashFlowPriorities: propPriorities,
   onCashFlowPrioritiesChange,
+  isInitializing,
+  isSyncingPrices,
 }: ScenarioTabProps) {
   const [activeTopTab, setActiveTopTab] = useState<"plan" | "cashflow">("plan");
   const [activeCategoryTab, setActiveCategoryTab] = useState<string | null>(null);
@@ -145,6 +149,7 @@ export function ScenarioTab({
           spouseBirthYear={simulationProfile.spouseBirthYear}
           retirementAge={profile.target_retirement_age}
           globalSettings={globalSettings ?? undefined}
+          isInitializing={isInitializing}
         />
       );
     }
@@ -155,6 +160,7 @@ export function ScenarioTab({
           simulationId={simulationId}
           birthYear={simulationProfile.birthYear}
           spouseBirthYear={simulationProfile.spouseBirthYear}
+          isInitializing={isInitializing}
           retirementAge={profile.target_retirement_age}
           globalSettings={globalSettings ?? undefined}
         />
@@ -175,6 +181,8 @@ export function ScenarioTab({
             simulationId={simulationId}
             profileId={profile.id}
             isMarried={isMarried}
+            isInitializing={isInitializing}
+            isSyncingPrices={isSyncingPrices}
           />
         );
       case "investmentAssumptions":

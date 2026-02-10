@@ -64,6 +64,16 @@
   color: var(--accent-color, #007aff);
 }
 
+.syncTime {
+  font-size: 10px;
+  color: var(--dashboard-text-secondary);
+}
+
+.syncingText {
+  font-size: 10px;
+  color: var(--accent-color, #007aff);
+}
+
 .content {
   padding: 0;
 }
