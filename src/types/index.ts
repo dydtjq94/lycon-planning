@@ -15,6 +15,8 @@ export type CashFlowType =
   | 'asset_sale'            // 실물자산 매도
   | 'tax'                   // 세금 (취득세, 양도세 등)
   | 'insurance_premium'     // 보험료
+  | 'housing_expense'       // 주거비 (월세, 관리비)
+  | 'rental_income'         // 임대 소득
   | 'surplus_investment'    // 잉여 현금 투자
   | 'deficit_withdrawal'    // 부족분 인출
 

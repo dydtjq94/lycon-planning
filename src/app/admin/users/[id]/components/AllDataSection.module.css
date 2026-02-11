@@ -1,0 +1,577 @@
+/* AllDataSection */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Loading skeleton */
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+.skeletonContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.skeletonSection {
+  background: white;
+}
+
+.skeletonHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #f5f5f7;
+}
+
+.bone {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.boneTitleWide {
+  width: 140px;
+  height: 14px;
+}
+
+.boneTitleNarrow {
+  width: 28px;
+  height: 14px;
+}
+
+.skeletonBody {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeletonRow {
+  display: flex;
+  gap: 12px;
+}
+
+.boneLabel {
+  width: 100px;
+  height: 12px;
+}
+
+.boneValue {
+  width: 180px;
+  height: 12px;
+}
+
+.boneValueShort {
+  width: 80px;
+  height: 12px;
+}
+
+/* Section */
+.section {
+  background: white;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #f5f5f7;
+  cursor: pointer;
+  user-select: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.sectionHeader:hover {
+  background: #ebebed;
+}
+
+.sectionHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.sectionCount {
+  font-size: 12px;
+  font-weight: 400;
+  color: #86868b;
+}
+
+.chevron {
+  color: #86868b;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.sectionBody {
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Key-Value pairs */
+.kvList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kvRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 22px;
+}
+
+.kvLabel {
+  flex-shrink: 0;
+  width: 180px;
+  font-size: 12px;
+  color: #86868b;
+  padding-top: 2px;
+  word-break: break-all;
+}
+
+.kvValue {
+  flex: 1;
+  font-size: 13px;
+  color: #1d1d1f;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.kvValueNull {
+  color: #c7c7cc;
+}
+
+/* Table */
+.tableWrapper {
+  overflow-x: auto;
+  margin: 0 -16px;
+  padding: 0 16px;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.dataTable th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: #86868b;
+  padding: 6px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: white;
+}
+
+.dataTable td {
+  padding: 5px 8px;
+  color: #1d1d1f;
+  border-bottom: 1px solid #f8f8f8;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataTable tr:hover td {
+  background: #fafafa;
+}
+
+/* JSON block */
+.jsonBlock {
+  background: #f8f8fa;
+  padding: 8px 10px;
+  font-family: "SF Mono", "Menlo", "Monaco", monospace;
+  font-size: 11px;
+  color: #1d1d1f;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.5;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.jsonToggle {
+  font-size: 11px;
+  color: #007aff;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 4px;
+}
+
+.jsonToggle:hover {
+  text-decoration: underline;
+}
+
+/* Sub-section (e.g., simulation sub-tables) */
+.subSection {
+  margin-top: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.subSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #fafafa;
+  cursor: pointer;
+  user-select: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.subSectionHeader:hover {
+  background: #f5f5f5;
+}
+
+.subSectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.subSectionCount {
+  font-size: 11px;
+  font-weight: 400;
+  color: #86868b;
+}
+
+.subSectionBody {
+  padding: 8px 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Empty state */
+.emptyText {
+  font-size: 12px;
+  color: #c7c7cc;
+  padding: 8px 0;
+}
+
+/* Item card for list items */
+.itemCard {
+  padding: 8px 0;
+  border-bottom: 1px solid #f8f8f8;
+}
+
+.itemCard:last-child {
+  border-bottom: none;
+}
+
+/* Prep data sub-categories */
+.prepCategory {
+  margin-bottom: 12px;
+}
+
+.prepCategoryTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 6px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Guide clicks */
+.guideList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.guideItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.guideName {
+  color: #1d1d1f;
+}
+
+.guideClicks {
+  color: #86868b;
+}
+
+/* Error state */
+.errorText {
+  font-size: 12px;
+  color: #ff3b30;
+  padding: 8px 0;
+}
+
+/* Simulation info header */
+.simInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.simInfoItem {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.simInfoItem span {
+  color: #1d1d1f;
+  font-weight: 500;
+}
+
+/* Badge for booleans */
+.badgeTrue {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 6px;
+  background: #d1fae5;
+  color: #059669;
+}
+
+.badgeFalse {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 6px;
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Color dot for budget categories */
+.colorDot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+/* Survey display */
+.surveyContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.surveySection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.surveySectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d1d1f;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.surveyQuestion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+.surveyQuestionText {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.surveyOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.surveyOption {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #f5f5f7;
+  color: #86868b;
+}
+
+.surveyOptionSelected {
+  background: #e8f4fd;
+  color: #007aff;
+  font-weight: 500;
+}
+
+.surveyUnanswered {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #f5f5f7;
+  color: #c7c7cc;
+  font-style: italic;
+}
+
+.surveyCompleted {
+  font-size: 11px;
+  color: #86868b;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Card Grid Layout */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.summaryCard {
+  background: white;
+  padding: 14px 16px;
+  cursor: pointer;
+  border: 1px solid #f0f0f0;
+}
+
+.summaryCard:hover {
+  background: #fafafa;
+}
+
+.cardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardCount {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.cardSummary {
+  font-size: 12px;
+  color: #86868b;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.cardSummaryValue {
+  color: #1d1d1f;
+  font-weight: 500;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalPanel {
+  background: white;
+  width: 100%;
+  max-width: 900px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+}
+
+.modalTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #86868b;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalClose:hover {
+  color: #1d1d1f;
+}
+
+.modalBody {
+  padding: 16px 20px;
+}
+
+/* Skeleton for card grid */
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.skeletonCard {
+  background: white;
+  padding: 14px 16px;
+  border: 1px solid #f0f0f0;
+}
+
+.skeletonCardTitle {
+  width: 80px;
+  height: 14px;
+}
+
+.skeletonCardSummary {
+  width: 120px;
+  height: 12px;
+  margin-top: 8px;
+}

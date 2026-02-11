@@ -14,8 +14,6 @@ import type {
   PhysicalAssetType,
   FinancingType,
   LoanRepaymentType,
-  DebtInput,
-  DebtType,
 } from '@/types/tables'
 import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
 
@@ -151,10 +149,7 @@ async function syncLinkedDebt(asset: PhysicalAsset): Promise<void> {
   // 기존 연동 부채 삭제
   await deleteLinkedDebt(asset.id)
 
-  // 대출/할부가 있으면 부채 생성
-  if (asset.has_loan && asset.loan_amount) {
-    await createLinkedDebt(asset)
-  }
+  // 연동 부채 생성은 엔진에서 처리
 }
 
 async function deleteLinkedDebt(assetId: string): Promise<void> {
@@ -165,43 +160,6 @@ async function deleteLinkedDebt(assetId: string): Promise<void> {
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq('source_type', 'physical_asset')
     .eq('source_id', assetId)
-}
-
-async function createLinkedDebt(asset: PhysicalAsset): Promise<void> {
-  const supabase = createClient()
-  const currentYear = new Date().getFullYear()
-  const currentMonth = new Date().getMonth() + 1
-
-  // 부채 타입 결정
-  const debtType: DebtType = asset.type === 'car' ? 'car' : 'other'
-
-  // 대출/할부 라벨
-  const financingLabel = asset.financing_type === 'loan' ? '대출' : '할부'
-
-  // 할부는 항상 원리금균등상환
-  const repaymentType: LoanRepaymentType = asset.financing_type === 'installment'
-    ? '원리금균등상환'
-    : (asset.loan_repayment_type || '원리금균등상환')
-
-  const debtInput: DebtInput = {
-    simulation_id: asset.simulation_id,
-    type: debtType,
-    title: `${asset.title} ${financingLabel}`,
-    principal: asset.loan_amount!,
-    current_balance: asset.loan_amount,
-    interest_rate: asset.loan_rate || 5,
-    rate_type: 'fixed',
-    repayment_type: repaymentType,
-    grace_period_months: 0,
-    start_year: asset.loan_start_year || currentYear,
-    start_month: asset.loan_start_month || currentMonth,
-    maturity_year: asset.loan_maturity_year || currentYear + 5,
-    maturity_month: asset.loan_maturity_month || currentMonth,
-    source_type: 'physical_asset',
-    source_id: asset.id,
-  }
-
-  await supabase.from('debts').insert(debtInput)
 }
 
 // ============================================

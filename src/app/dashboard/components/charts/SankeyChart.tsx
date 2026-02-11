@@ -47,18 +47,24 @@ interface SankeyChartProps {
   selectedYear: number;
 }
 
-// 금액 포맷팅 (간결하게)
+// 금액 포맷팅 (간결하게, 원 단위까지)
 function formatMoney(amount: number): string {
-  const absAmount = Math.round(Math.abs(amount));
-  if (absAmount >= 10000) {
-    const uk = Math.floor(absAmount / 10000);
-    const man = Math.round(absAmount % 10000);
-    if (man === 0) {
-      return `${uk}억`;
-    }
-    return `${uk}억${man.toLocaleString()}만`;
+  const absAmount = Math.abs(amount);
+  const manPart = Math.floor(absAmount);
+  const wonPart = Math.round((absAmount - manPart) * 10000);
+
+  if (manPart >= 10000) {
+    const uk = Math.floor(manPart / 10000);
+    const man = manPart % 10000;
+    if (man === 0 && wonPart === 0) return `${uk}억`;
+    if (wonPart === 0) return `${uk}억${man.toLocaleString()}만`;
+    if (man === 0) return `${uk}억${wonPart.toLocaleString()}원`;
+    return `${uk}억${man.toLocaleString()}만${wonPart.toLocaleString()}원`;
   }
-  return `${absAmount.toLocaleString()}만`;
+
+  if (wonPart === 0) return `${manPart.toLocaleString()}만`;
+  if (manPart === 0) return `${wonPart.toLocaleString()}원`;
+  return `${manPart.toLocaleString()}만${wonPart.toLocaleString()}원`;
 }
 
 // 라벨 간략화

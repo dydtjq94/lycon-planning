@@ -167,30 +167,20 @@ export default function SchedulePage() {
         <div className={styles.header}>
           <h1 className={styles.title}>스케줄</h1>
         </div>
-
         <div className={styles.content}>
           <div className={styles.calendar}>
-            {/* Calendar Header Skeleton */}
             <div className={styles.calendarHeader}>
-              <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "32px", height: "32px" }} />
-              <div className={`${styles.skeleton} ${styles.skeletonBlock}`} style={{ width: "140px" }} />
-              <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "32px", height: "32px" }} />
+              <div className={`${styles.bone} ${styles.boneMonthTitle}`} />
             </div>
-
-            {/* Weekdays Skeleton */}
             <div className={styles.weekdays}>
               {DAYS.map((day) => (
-                <div key={day} className={styles.weekday}>
-                  {day}
-                </div>
+                <div key={day} className={styles.weekday}>{day}</div>
               ))}
             </div>
-
-            {/* Calendar Grid Skeleton */}
             <div className={styles.daysGrid}>
               {Array.from({ length: 35 }).map((_, i) => (
                 <div key={i} className={styles.day}>
-                  <div className={`${styles.skeleton} ${styles.skeletonCell}`} />
+                  <div className={`${styles.bone} ${styles.boneDayNumber}`} />
                 </div>
               ))}
             </div>

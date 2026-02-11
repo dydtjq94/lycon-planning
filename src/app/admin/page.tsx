@@ -274,59 +274,47 @@ export default function AdminDashboardPage() {
         <div className={styles.header}>
           <h1 className={styles.title}>대시보드</h1>
         </div>
-
         <div className={styles.content}>
-          {/* Stats Skeleton */}
           <div className={styles.statsGrid}>
-            {[1, 2, 3, 4].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <div key={i} className={styles.statCard}>
-                <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "80px" }} />
-                <div className={`${styles.skeleton} ${styles.skeletonValue}`} style={{ width: "120px" }} />
+                <div className={`${styles.bone} ${styles.boneStatLabel}`} />
+                <div className={`${styles.bone} ${styles.boneStatValue}`} />
               </div>
             ))}
           </div>
-
-          {/* Main Grid Skeleton */}
           <div className={styles.mainGrid}>
-            {/* Left: Customer List Skeleton */}
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>내 고객</h2>
+                <div className={`${styles.bone} ${styles.boneName}`} />
               </div>
-              <div className={styles.customerList}>
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className={styles.customerItem}>
-                    <div className={`${styles.skeleton} ${styles.skeletonCircle}`} />
-                    <div className={styles.customerInfo}>
-                      <div className={`${styles.skeleton} ${styles.skeletonBlock}`} style={{ width: "160px", marginBottom: "6px" }} />
-                      <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "120px" }} />
-                    </div>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className={styles.customerItem} style={{ cursor: "default" }}>
+                  <div className={`${styles.bone} ${styles.boneAvatar}`} />
+                  <div className={styles.customerInfo}>
+                    <div className={`${styles.bone} ${styles.boneName}`} />
+                    <div className={`${styles.bone} ${styles.boneMeta}`} />
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-
-            {/* Right: Schedule Skeleton */}
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>예정 상담</h2>
+                <div className={`${styles.bone} ${styles.boneName}`} />
               </div>
-              <div className={styles.scheduleList}>
-                {[1, 2].map((i) => (
-                  <div key={i} className={styles.scheduleItem}>
-                    <div className={styles.scheduleTime}>
-                      <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "40px", marginBottom: "4px" }} />
-                      <div className={`${styles.skeleton} ${styles.skeletonBlock}`} style={{ width: "50px" }} />
-                    </div>
-                    <div className={styles.scheduleDivider} />
-                    <div className={styles.scheduleInfo}>
-                      <div className={`${styles.skeleton} ${styles.skeletonBlock}`} style={{ width: "100px", marginBottom: "4px" }} />
-                      <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "140px" }} />
-                    </div>
-                    <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "40px" }} />
+              {[0, 1].map((i) => (
+                <div key={i} className={styles.scheduleItem} style={{ cursor: "default" }}>
+                  <div className={styles.scheduleTime}>
+                    <div className={`${styles.bone} ${styles.boneDate}`} />
+                    <div className={`${styles.bone} ${styles.boneTime}`} />
                   </div>
-                ))}
-              </div>
+                  <div className={styles.scheduleDivider} />
+                  <div className={styles.scheduleInfo}>
+                    <div className={`${styles.bone} ${styles.boneScheduleName}`} />
+                    <div className={`${styles.bone} ${styles.boneScheduleMeta}`} />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

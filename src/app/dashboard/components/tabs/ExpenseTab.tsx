@@ -183,38 +183,6 @@ export function ExpenseTab({
   // 시나리오 모드 여부 (individual이 아니면 시나리오 적용 중)
   const isScenarioMode = globalSettings.scenarioMode !== "individual";
 
-  // simulationResult에서 현재 연도의 부채 관련 지출 추출
-  const debtExpensesFromSimulation = useMemo(() => {
-    const currentSnapshot = simulationResult.snapshots.find(
-      (s) => s.year === currentYear,
-    );
-    if (!currentSnapshot) return [];
-
-    // expenseBreakdown에서 이자/원금상환 항목 추출
-    return currentSnapshot.expenseBreakdown
-      .filter(
-        (item) =>
-          item.title.includes("이자") || item.title.includes("원금상환"),
-      )
-      .map((item, index) => ({
-        id: `sim-debt-${index}`,
-        type: "interest" as const,
-        label: item.title,
-        amount: Math.round(item.amount / 12), // 연간 → 월간
-        frequency: "monthly" as const,
-        startYear: currentYear,
-        startMonth: 1,
-        endType: "custom" as const,
-        endYear: currentYear + 10,
-        endMonth: 12,
-        growthRate: 0,
-        rateCategory: "fixed" as const,
-        sourceType: "debt" as const,
-        sourceId: `sim-${index}`,
-        displayGrowthRate: 0,
-      }));
-  }, [simulationResult, currentYear]);
-
   // 사용자 지출 표시용 데이터 (부채 지출은 simulationResult에서 가져옴)
   const displayItems = useMemo(() => {
     return expenseItems.map((item) => {
@@ -257,9 +225,6 @@ export function ExpenseTab({
   const variableItems = displayItems.filter((i) => i.type === "variable");
   const onetimeItems = displayItems.filter((i) => i.type === "onetime");
   const medicalItems = displayItems.filter((i) => i.type === "medical");
-  // interestItems는 simulationResult에서 가져옴 (Single Source of Truth)
-  const interestItems = debtExpensesFromSimulation;
-  const housingItems = displayItems.filter((i) => i.type === "housing");
 
   // 월 지출로 변환 (frequency 고려)
   const toMonthlyAmount = (item: ExpenseItem): number => {
@@ -291,23 +256,16 @@ export function ExpenseTab({
     return currentYear >= item.startYear && currentYear <= endYear;
   };
 
-  // 월 지출 (현재 연도에 해당하는 항목만 + simulationResult의 부채 지출)
+  // 월 지출 (현재 연도에 해당하는 항목만)
   const monthlyExpense = useMemo(() => {
     // 일반 지출
     const regularExpense = displayItems
       .filter((item) => isCurrentYearItem(item) && item.type !== "onetime")
       .reduce((sum, item) => sum + toMonthlyAmount(item), 0);
 
-    // 부채 지출 (simulationResult에서 - 이미 월간으로 변환됨)
-    const debtExpense = debtExpensesFromSimulation.reduce(
-      (sum, item) => sum + item.amount,
-      0,
-    );
-
-    return regularExpense + debtExpense;
+    return regularExpense;
   }, [
     displayItems,
-    debtExpensesFromSimulation,
     currentYear,
     selfRetirementYear,
     spouseRetirementYear,
@@ -366,19 +324,12 @@ export function ExpenseTab({
         .filter(isCurrentYearItem)
         .reduce((s, i) => s + i.amount, 0),
       medical: currentMedicalItems.reduce((s, i) => s + toMonthlyAmount(i), 0),
-      // interest는 simulationResult에서 가져온 데이터 사용 (이미 월간으로 변환됨)
-      interest: debtExpensesFromSimulation.reduce((s, i) => s + i.amount, 0),
-      housing: housingItems
-        .filter(isCurrentYearItem)
-        .reduce((s, i) => s + toMonthlyAmount(i), 0),
     }),
     [
       fixedItems,
       variableItems,
       onetimeItems,
       currentMedicalItems,
-      debtExpensesFromSimulation,
-      housingItems,
       currentYear,
       selfRetirementYear,
       spouseRetirementYear,
@@ -392,16 +343,12 @@ export function ExpenseTab({
     const variableData: number[] = [];
     const onetimeData: number[] = [];
     const medicalData: number[] = [];
-    const interestData: number[] = [];
-    const housingData: number[] = [];
 
     simulationResult.snapshots.forEach((snapshot) => {
       let fixedTotal = 0;
       let variableTotal = 0;
       let onetimeTotal = 0;
       let medicalTotal = 0;
-      let interestTotal = 0;
-      let housingTotal = 0;
 
       // expenseBreakdown을 type 필드로 정확히 분류
       snapshot.expenseBreakdown.forEach(
@@ -430,16 +377,6 @@ export function ExpenseTab({
             case "medical":
               medicalTotal += item.amount;
               break;
-            // 대출/이자
-            case "loan":
-            case "interest":
-              interestTotal += item.amount;
-              break;
-            // 주거비
-            case "housing":
-            case "rent":
-              housingTotal += item.amount;
-              break;
             // 일시 지출
             case "travel":
             case "wedding":
@@ -460,12 +397,6 @@ export function ExpenseTab({
                   case "medical":
                     medicalTotal += item.amount;
                     break;
-                  case "loan":
-                    interestTotal += item.amount;
-                    break;
-                  case "housing":
-                    housingTotal += item.amount;
-                    break;
                   default:
                     variableTotal += item.amount;
                 }
@@ -481,8 +412,6 @@ export function ExpenseTab({
       variableData.push(variableTotal);
       onetimeData.push(onetimeTotal);
       medicalData.push(medicalTotal);
-      interestData.push(interestTotal);
-      housingData.push(housingTotal);
     });
 
     return {
@@ -491,8 +420,6 @@ export function ExpenseTab({
       variableData,
       onetimeData,
       medicalData,
-      interestData,
-      housingData,
     };
   }, [simulationResult]);
 
@@ -525,20 +452,6 @@ export function ExpenseTab({
         label: "의료비",
         data: projectionData.medicalData,
         backgroundColor: CHART_COLORS.expense.medical,
-      });
-    }
-    if (projectionData.interestData.some((v) => v > 0)) {
-      datasets.push({
-        label: "이자",
-        data: projectionData.interestData,
-        backgroundColor: CHART_COLORS.expense.interest,
-      });
-    }
-    if (projectionData.housingData.some((v) => v > 0)) {
-      datasets.push({
-        label: "주거",
-        data: projectionData.housingData,
-        backgroundColor: CHART_COLORS.expense.housing,
       });
     }
     return datasets;
@@ -1497,8 +1410,6 @@ export function ExpenseTab({
               </div>
             </div>
           </div>
-        ) : type === "interest" || type === "housing" ? (
-          null
         ) : (
           <button className={styles.addBtn} onClick={() => setAddingType(type)}>
             <Plus size={16} />
@@ -1726,44 +1637,6 @@ export function ExpenseTab({
             )}
           </div>
         )}
-      </div>
-      {renderSection(
-        "주거비",
-        "housing",
-        housingItems,
-        undefined,
-        { icon: <Home size={13} />, label: "부동산과 자동 연동됩니다" },
-      )}
-      <div className={styles.expenseSection}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionTitle}>이자/원금 상환</span>
-          <span className={styles.sectionBadge}>
-            <CreditCard size={13} />
-            부채와 자동 연동됩니다
-          </span>
-        </div>
-
-        <div className={styles.itemList}>
-          {interestItems.map((item) => (
-            <div key={item.id} className={styles.expenseItem}>
-              <div className={styles.itemMain}>
-                <span className={styles.itemLabel}>{item.label}</span>
-                <span className={styles.itemAmount}>
-                  {formatMoney(item.amount)}/월
-                </span>
-                <span className={styles.itemMeta}>
-                  연간 {formatMoney(item.amount * 12)}
-                </span>
-              </div>
-            </div>
-          ))}
-
-          {interestItems.length === 0 && (
-            <p className={styles.emptyText}>
-              부채 탭에서 대출을 등록하면 월 상환금이 자동으로 표시됩니다
-            </p>
-          )}
-        </div>
       </div>
     </div>
   );

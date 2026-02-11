@@ -136,16 +136,23 @@ export function formatChartValue(value: number): string {
  * 툴팁용 금액 포맷팅
  */
 export function formatTooltipValue(value: number): string {
+  const prefix = value < 0 ? '-' : ''
   const absValue = Math.abs(value)
-  if (absValue >= 10000) {
-    const uk = Math.floor(absValue / 10000)
-    const remainder = Math.round(absValue % 10000)
-    if (remainder > 0) {
-      return `${value < 0 ? '-' : ''}${uk}억 ${remainder.toLocaleString()}만원`
-    }
-    return `${value < 0 ? '-' : ''}${uk}억원`
+  const manPart = Math.floor(absValue)
+  const wonPart = Math.round((absValue - manPart) * 10000)
+
+  if (manPart >= 10000) {
+    const uk = Math.floor(manPart / 10000)
+    const man = manPart % 10000
+    if (man === 0 && wonPart === 0) return `${prefix}${uk}억원`
+    if (wonPart === 0) return `${prefix}${uk}억 ${man.toLocaleString()}만원`
+    if (man === 0) return `${prefix}${uk}억 ${wonPart.toLocaleString()}원`
+    return `${prefix}${uk}억 ${man.toLocaleString()}만 ${wonPart.toLocaleString()}원`
   }
-  return `${value.toLocaleString()}만원`
+
+  if (wonPart === 0) return `${prefix}${manPart.toLocaleString()}만원`
+  if (manPart === 0) return `${prefix}${wonPart.toLocaleString()}원`
+  return `${prefix}${manPart.toLocaleString()}만 ${wonPart.toLocaleString()}원`
 }
 
 /**

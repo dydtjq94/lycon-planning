@@ -51,37 +51,33 @@
 }
 
 /* Skeleton Loading */
+/* Skeleton */
 @keyframes shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: 200px 0;
-  }
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
 }
 
-.skeleton {
+.bone {
   background: linear-gradient(
     90deg,
-    var(--skeleton-base) 25%,
-    var(--skeleton-highlight) 50%,
-    var(--skeleton-base) 75%
+    #f0f0f0 25%,
+    #e8e8e8 50%,
+    #f0f0f0 75%
   );
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
 }
 
-.skeletonText {
-  height: 12px;
+.boneMonthTitle {
+  width: 140px;
+  height: 18px;
 }
 
-.skeletonBlock {
-  height: 20px;
-}
-
-.skeletonCell {
-  height: 80px;
+.boneDayNumber {
+  width: 20px;
+  height: 14px;
+  margin: 8px auto 0;
 }
 
 /* Calendar */

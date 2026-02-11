@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { CreditCard, ExternalLink, Pencil, X, Plus } from 'lucide-react'
+import { Pencil, X, Plus } from 'lucide-react'
 import type { Debt, DebtInput, LoanRepaymentType, RateType } from '@/types/tables'
 import { formatMoney } from '@/lib/utils'
 import { useDebts, useInvalidateByCategory } from '@/hooks/useFinancialData'
@@ -85,28 +85,19 @@ export function DebtTab({ simulationId }: DebtTabProps) {
     return { ...debt, monthlyPayment, totalInterest }
   }
 
-  // 부채 카테고리별 분류
+  // 부채 카테고리별 분류 (user-created only)
   const categorizedDebts = useMemo(() => {
-    const result: Record<UIDebtCategory, DebtWithPayment[]> = {
+    const result: Record<'credit' | 'other', DebtWithPayment[]> = {
       credit: [],
       other: [],
-      physicalAsset: [],
-      housing: [],
-      realEstate: [],
     }
 
     debts.forEach(debt => {
+      // 연결된 부채(real_estate, physical_asset) 제외
+      if (debt.source_type !== null) return
+
       const category = getCategoryFromDebt(debt)
-      // housing과 realEstate 구분: source_type이 real_estate이고 title에 '투자'가 있으면 realEstate
-      if (debt.source_type === 'real_estate') {
-        if (debt.title.includes('투자') || debt.type === 'mortgage' && !debt.title.includes('주택') && !debt.title.includes('전세')) {
-          result.realEstate.push(addPaymentInfo(debt))
-        } else {
-          result.housing.push(addPaymentInfo(debt))
-        }
-      } else if (debt.source_type === 'physical_asset') {
-        result.physicalAsset.push(addPaymentInfo(debt))
-      } else {
+      if (category === 'credit' || category === 'other') {
         result[category].push(addPaymentInfo(debt))
       }
     })
@@ -119,9 +110,6 @@ export function DebtTab({ simulationId }: DebtTabProps) {
     const all = [
       ...categorizedDebts.credit,
       ...categorizedDebts.other,
-      ...categorizedDebts.physicalAsset,
-      ...categorizedDebts.housing,
-      ...categorizedDebts.realEstate,
     ]
     return {
       totalDebt: all.reduce((sum, d) => sum + (d.principal || 0), 0),
@@ -130,9 +118,6 @@ export function DebtTab({ simulationId }: DebtTabProps) {
       byCategory: {
         credit: categorizedDebts.credit.reduce((sum, d) => sum + (d.principal || 0), 0),
         other: categorizedDebts.other.reduce((sum, d) => sum + (d.principal || 0), 0),
-        physicalAsset: categorizedDebts.physicalAsset.reduce((sum, d) => sum + (d.principal || 0), 0),
-        housing: categorizedDebts.housing.reduce((sum, d) => sum + (d.principal || 0), 0),
-        realEstate: categorizedDebts.realEstate.reduce((sum, d) => sum + (d.principal || 0), 0),
       }
     }
   }, [categorizedDebts])
@@ -145,9 +130,6 @@ export function DebtTab({ simulationId }: DebtTabProps) {
     const allDebts = [
       ...categorizedDebts.credit,
       ...categorizedDebts.other,
-      ...categorizedDebts.physicalAsset,
-      ...categorizedDebts.housing,
-      ...categorizedDebts.realEstate,
     ]
     if (allDebts.length === 0) return { earliest: null, latest: null }
 
@@ -167,24 +149,19 @@ export function DebtTab({ simulationId }: DebtTabProps) {
     const allDebts = [
       ...categorizedDebts.credit,
       ...categorizedDebts.other,
-      ...categorizedDebts.physicalAsset,
-      ...categorizedDebts.housing,
-      ...categorizedDebts.realEstate,
     ]
     return allDebts
       .filter(d => (d.interest_rate || 0) >= 5)
       .sort((a, b) => (b.interest_rate || 0) - (a.interest_rate || 0))
   }, [categorizedDebts])
 
-  // 담보 대출 비율
-  const securedDebtRatio = totals.totalDebt > 0
-    ? Math.round(((totals.byCategory.housing + totals.byCategory.realEstate + totals.byCategory.physicalAsset) / totals.totalDebt) * 100)
-    : 0
+  // 담보 대출 비율 (removed - no linked debts anymore)
+  // const securedDebtRatio = 0
 
   const hasData = totals.totalDebt > 0
 
   // 부채 추가 시작
-  const startAddDebt = (category: UIDebtCategory) => {
+  const startAddDebt = (category: 'credit' | 'other') => {
     const defaultMat = getDefaultMaturity()
     setEditingDebt({
       ...initialEditingDebt,
@@ -196,7 +173,7 @@ export function DebtTab({ simulationId }: DebtTabProps) {
   }
 
   // 부채 편집 시작
-  const startEditDebt = (debt: DebtWithPayment, category: UIDebtCategory) => {
+  const startEditDebt = (debt: DebtWithPayment, category: 'credit' | 'other') => {
     const defaultMat = getDefaultMaturity()
     setEditingDebt({
       id: debt.id,
@@ -268,8 +245,6 @@ export function DebtTab({ simulationId }: DebtTabProps) {
   const renderEditForm = () => {
     if (!editingDebt) return null
 
-    const isLinked = ['physicalAsset', 'housing', 'realEstate'].includes(editingDebt.category) && editingDebt.id !== null
-
     return (
       <div className={styles.editForm}>
         <div className={styles.editRow}>
@@ -280,7 +255,6 @@ export function DebtTab({ simulationId }: DebtTabProps) {
             value={editingDebt.name}
             onChange={e => setEditingDebt({ ...editingDebt, name: e.target.value })}
             placeholder={editingDebt.category === 'credit' ? '신용대출' : '부채명'}
-            disabled={isLinked}
           />
         </div>
 
@@ -294,7 +268,6 @@ export function DebtTab({ simulationId }: DebtTabProps) {
               onChange={e => setEditingDebt({ ...editingDebt, amount: e.target.value })}
               onWheel={e => (e.target as HTMLElement).blur()}
               placeholder="0"
-              disabled={isLinked}
             />
             <span className={styles.editUnit}>만원</span>
           </div>
@@ -446,11 +419,9 @@ export function DebtTab({ simulationId }: DebtTabProps) {
   // 부채 항목 렌더링
   const renderDebtItem = (
     debt: DebtWithPayment,
-    category: UIDebtCategory,
-    linkedLabel?: string
+    category: 'credit' | 'other'
   ) => {
     const isEditing = editingDebt?.id === debt.id
-    const isLinked = debt.source_type !== null
 
     if (isEditing) {
       return <div key={debt.id}>{renderEditForm()}</div>
@@ -476,21 +447,12 @@ export function DebtTab({ simulationId }: DebtTabProps) {
           </span>
         </div>
         <div className={styles.debtActions}>
-          {isLinked ? (
-            <div className={styles.linkedBadge}>
-              <ExternalLink size={12} />
-              <span>{linkedLabel}</span>
-            </div>
-          ) : (
-            <>
-              <button className={styles.editBtn} onClick={() => startEditDebt(debt, category)}>
-                <Pencil size={16} />
-              </button>
-              <button className={styles.deleteBtn} onClick={() => handleDeleteDebt(debt.id)}>
-                <X size={16} />
-              </button>
-            </>
-          )}
+          <button className={styles.editBtn} onClick={() => startEditDebt(debt, category)}>
+            <Pencil size={16} />
+          </button>
+          <button className={styles.deleteBtn} onClick={() => handleDeleteDebt(debt.id)}>
+            <X size={16} />
+          </button>
         </div>
       </div>
     )
@@ -499,12 +461,8 @@ export function DebtTab({ simulationId }: DebtTabProps) {
   // 섹션 렌더링
   const renderSection = (
     title: string,
-    category: UIDebtCategory,
-    debtList: DebtWithPayment[],
-    linkedLabel?: string,
-    placeholder?: string,
-    canAdd: boolean = false,
-    linkInfo?: { href: string; text: string }
+    category: 'credit' | 'other',
+    debtList: DebtWithPayment[]
   ) => {
     return (
       <div className={styles.section}>
@@ -514,29 +472,17 @@ export function DebtTab({ simulationId }: DebtTabProps) {
 
         {debtList.length > 0 && (
           <div className={styles.debtList}>
-            {debtList.map(debt => renderDebtItem(debt, category, linkedLabel))}
+            {debtList.map(debt => renderDebtItem(debt, category))}
           </div>
         )}
 
-        {debtList.length === 0 && placeholder && !editingDebt && (
-          <p className={styles.placeholder}>{placeholder}</p>
-        )}
-
-        {linkInfo && (
-          <a href={linkInfo.href} className={styles.tabLink}>
-            {linkInfo.text}
-          </a>
-        )}
-
-        {canAdd && (
-          editingDebt?.category === category && !editingDebt.id ? (
-            renderEditForm()
-          ) : (
-            <button className={styles.addBtn} onClick={() => startAddDebt(category)}>
-              <Plus size={16} />
-              <span>{title} 추가</span>
-            </button>
-          )
+        {editingDebt?.category === category && !editingDebt.id ? (
+          renderEditForm()
+        ) : (
+          <button className={styles.addBtn} onClick={() => startAddDebt(category)}>
+            <Plus size={16} />
+            <span>{title} 추가</span>
+          </button>
         )}
       </div>
     )
@@ -553,57 +499,16 @@ export function DebtTab({ simulationId }: DebtTabProps) {
   return (
     <div className={styles.container}>
       {renderSection(
-        '주택담보대출',
-        'housing',
-        categorizedDebts.housing,
-        '거주 부동산',
-        '주택담보대출은 부동산 탭에서 추가하세요',
-        false,
-        { href: '#realEstate', text: '부동산 탭에서 주택담보대출 관리하기' }
-      )}
-
-      {renderSection(
-        '부동산 투자 대출',
-        'realEstate',
-        categorizedDebts.realEstate,
-        '투자 부동산',
-        '투자용 부동산 대출은 부동산 탭에서 추가하세요',
-        false,
-        { href: '#realEstate', text: '부동산 탭에서 투자용 대출 관리하기' }
-      )}
-
-      {renderSection(
-        '자동차/실물자산 대출',
-        'physicalAsset',
-        categorizedDebts.physicalAsset,
-        '실물 자산',
-        '자동차 대출은 실물 자산 탭에서 추가하세요',
-        false,
-        { href: '#asset', text: '실물 자산 탭에서 자동차 대출 관리하기' }
-      )}
-
-      {renderSection(
         '신용대출',
         'credit',
-        categorizedDebts.credit,
-        undefined,
-        undefined,
-        true
+        categorizedDebts.credit
       )}
 
       {renderSection(
         '기타 부채',
         'other',
-        categorizedDebts.other,
-        undefined,
-        undefined,
-        true
+        categorizedDebts.other
       )}
-
-      <p className={styles.infoText}>
-        담보대출(주택, 부동산, 자동차)은 해당 자산 탭에서 관리됩니다.
-        상환방식과 금리는 여기서 수정할 수 있습니다.
-      </p>
     </div>
   )
 }

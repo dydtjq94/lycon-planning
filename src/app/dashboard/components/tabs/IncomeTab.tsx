@@ -219,9 +219,6 @@ export function IncomeTab({
   const businessItems = displayItems.filter((i) => i.type === "business");
   const regularItems = displayItems.filter((i) => i.type === "regular");
   const onetimeItems = displayItems.filter((i) => i.type === "onetime");
-  const rentalItems = displayItems.filter((i) => i.type === "rental");
-  // 연금 소득은 연금 탭에서 자동 생성되어 DB에 저장됨 (handleUpdateData에서 처리)
-  const pensionItems = displayItems.filter((i) => i.type === "pension");
 
   // 월 소득으로 변환 (frequency 고려)
   const toMonthlyAmount = (item: IncomeItem): number => {
@@ -294,16 +291,12 @@ export function IncomeTab({
       business: businessItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
       regular: regularItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
       onetime: onetimeItems.filter(isCurrentYearItem).reduce((s, i) => s + i.amount, 0),
-      rental: rentalItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
-      pension: pensionItems.filter(isCurrentYearItem).reduce((s, i) => s + toMonthlyAmount(i), 0),
     }),
     [
       laborItems,
       businessItems,
       regularItems,
       onetimeItems,
-      rentalItems,
-      pensionItems,
       currentYear,
       selfRetirementYear,
       spouseRetirementYear,
@@ -317,16 +310,12 @@ export function IncomeTab({
     const businessData: number[] = [];
     const regularData: number[] = [];
     const onetimeData: number[] = [];
-    const rentalData: number[] = [];
-    const pensionData: number[] = [];
 
     simulationResult.snapshots.forEach((snapshot) => {
       let laborTotal = 0;
       let businessTotal = 0;
       let regularTotal = 0;
       let onetimeTotal = 0;
-      let rentalTotal = 0;
-      let pensionTotal = 0;
 
       // incomeBreakdown을 type 필드로 정확히 분류
       snapshot.incomeBreakdown.forEach((item: { title: string; amount: number; type?: string }) => {
@@ -344,10 +333,10 @@ export function IncomeTab({
           case 'retirement':    // 퇴직연금
           case 'personal':      // 개인연금
           case 'irp':           // IRP
-            pensionTotal += item.amount;
+            // Pension income is excluded from dashboard view
             break;
           case 'rental':
-            rentalTotal += item.amount;
+            // Rental income is excluded from dashboard view
             break;
           case 'dividend':
           case 'interest':
@@ -367,8 +356,8 @@ export function IncomeTab({
               switch (category.id) {
                 case 'labor': laborTotal += item.amount; break;
                 case 'business': businessTotal += item.amount; break;
-                case 'pension': pensionTotal += item.amount; break;
-                case 'rental': rentalTotal += item.amount; break;
+                case 'pension': break; // Excluded
+                case 'rental': break; // Excluded
                 default: regularTotal += item.amount;
               }
             } else {
@@ -382,8 +371,6 @@ export function IncomeTab({
       businessData.push(businessTotal);
       regularData.push(regularTotal);
       onetimeData.push(onetimeTotal);
-      rentalData.push(rentalTotal);
-      pensionData.push(pensionTotal);
     });
 
     return {
@@ -392,8 +379,6 @@ export function IncomeTab({
       businessData,
       regularData,
       onetimeData,
-      rentalData,
-      pensionData,
     };
   }, [simulationResult]);
 
@@ -426,20 +411,6 @@ export function IncomeTab({
         label: "일시",
         data: projectionData.onetimeData,
         backgroundColor: CHART_COLORS.income.onetime,
-      });
-    }
-    if (projectionData.rentalData.some((v) => v > 0)) {
-      datasets.push({
-        label: "임대",
-        data: projectionData.rentalData,
-        backgroundColor: CHART_COLORS.income.rental,
-      });
-    }
-    if (projectionData.pensionData.some((v) => v > 0)) {
-      datasets.push({
-        label: "연금",
-        data: projectionData.pensionData,
-        backgroundColor: CHART_COLORS.income.pension,
       });
     }
     return datasets;
@@ -1499,26 +1470,6 @@ export function IncomeTab({
         "항목명",
         "상여금, 보너스, 증여, 상속, 퇴직금 등"
       )}
-      {renderSection(
-        "임대 소득",
-        "rental",
-        rentalItems,
-        "항목명",
-        undefined,
-        { icon: <Home size={13} />, label: "부동산과 자동 연동됩니다" },
-      )}
-      {renderSection(
-        "연금 소득",
-        "pension",
-        pensionItems,
-        "항목명",
-        undefined,
-        { icon: <Landmark size={13} />, label: "연금과 자동 연동됩니다" },
-      )}
-
-      <p className={styles.infoText}>
-        배당, 이자 소득은 저축/투자 계좌에 자동으로 추가됩니다.
-      </p>
     </div>
   );
 }

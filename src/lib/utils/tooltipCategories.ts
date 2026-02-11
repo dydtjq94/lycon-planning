@@ -649,7 +649,7 @@ export const INFLOW_CATEGORIES: CashFlowCategory[] = [
   { id: 'income', label: '소득', color: CHART_COLORS.income.labor, flowTypes: ['income'] },
   { id: 'pension_withdrawal', label: '연금 수령', color: CHART_COLORS.asset.pension, flowTypes: ['pension_withdrawal'] },
   { id: 'savings_withdrawal', label: '저축/투자 인출', color: CHART_COLORS.asset.savings, flowTypes: ['savings_withdrawal', 'savings_interest'] },
-  { id: 'real_estate_sale', label: '부동산 매각', color: CHART_COLORS.asset.realEstate, flowTypes: ['real_estate_sale'] },
+  { id: 'real_estate', label: '부동산', color: CHART_COLORS.asset.realEstate, flowTypes: ['real_estate_sale', 'rental_income'] },
   { id: 'asset_sale', label: '자산 매각', color: CHART_COLORS.asset.tangible, flowTypes: ['asset_sale'] },
   { id: 'deficit_withdrawal', label: '부족분 인출', color: CHART_COLORS.expense.variable, flowTypes: ['deficit_withdrawal'] },
 ]
@@ -661,7 +661,7 @@ export const OUTFLOW_CATEGORIES: CashFlowCategory[] = [
   { id: 'pension_contribution', label: '연금 적립', color: CHART_COLORS.asset.pension, flowTypes: ['pension_contribution'] },
   { id: 'tax', label: '세금', color: CHART_COLORS.expense.other, flowTypes: ['tax'] },
   { id: 'insurance', label: '보험료', color: CHART_COLORS.expense.fixed, flowTypes: ['insurance_premium'] },
-  { id: 'real_estate_purchase', label: '부동산 매입', color: CHART_COLORS.asset.realEstate, flowTypes: ['real_estate_purchase'] },
+  { id: 'real_estate', label: '부동산', color: CHART_COLORS.asset.realEstate, flowTypes: ['real_estate_purchase', 'housing_expense'] },
   { id: 'asset_purchase', label: '자산 매입', color: CHART_COLORS.asset.tangible, flowTypes: ['asset_purchase'] },
 ]
 

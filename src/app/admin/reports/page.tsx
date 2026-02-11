@@ -237,24 +237,20 @@ export default function ReportsPage() {
         <div className={styles.header}>
           <h1 className={styles.title}>고객 현황</h1>
         </div>
-
         <div className={styles.content}>
-          {/* Stats Grid Skeleton */}
           <div className={styles.statsGrid}>
-            {[1, 2, 3].map((i) => (
+            {[0, 1, 2].map((i) => (
               <div key={i} className={styles.statCard}>
-                <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "100px" }} />
-                <div className={`${styles.skeleton} ${styles.skeletonValue}`} style={{ width: "80px" }} />
+                <div className={`${styles.bone} ${styles.boneStatLabel}`} />
+                <div className={`${styles.bone} ${styles.boneStatValue}`} />
               </div>
             ))}
           </div>
-
-          {/* Charts Grid Skeleton */}
           <div className={styles.chartsGrid}>
-            {[1, 2].map((i) => (
+            {[0, 1].map((i) => (
               <div key={i} className={styles.chartCard}>
-                <div className={`${styles.skeleton} ${styles.skeletonTitle}`} style={{ width: "120px" }} />
-                <div className={`${styles.skeleton} ${styles.skeletonChart}`} />
+                <div className={`${styles.bone} ${styles.boneChartTitle}`} />
+                <div className={`${styles.bone} ${styles.boneChart}`} />
               </div>
             ))}
           </div>

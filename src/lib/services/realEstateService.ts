@@ -14,11 +14,6 @@ import type {
   RealEstateType,
   HousingType,
   LoanRepaymentType,
-  OwnerWithCommon,
-  DebtType,
-  DebtInput,
-  IncomeInput,
-  ExpenseInput,
 } from '@/types/tables'
 import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
 
@@ -175,43 +170,11 @@ async function syncLinkedItems(realEstate: RealEstate): Promise<void> {
   // 기존 연동 항목 삭제
   await deleteLinkedItems(realEstate.id)
 
-  // 대출이 있으면 부채 생성
-  if (realEstate.has_loan && realEstate.loan_amount) {
-    await createLinkedDebt(realEstate)
-  }
-
-  // 임대 수익이 있으면 소득 생성
-  if (realEstate.has_rental_income && realEstate.rental_monthly) {
-    await createLinkedIncome(realEstate)
-  }
-
-  // 월세 거주면 지출 생성
-  if (realEstate.type === 'residence' && realEstate.housing_type === '월세' && realEstate.monthly_rent) {
-    await createLinkedRentExpense(realEstate)
-  }
-
-  // 관리비가 있으면 지출 생성
-  if (realEstate.maintenance_fee) {
-    await createLinkedMaintenanceExpense(realEstate)
-  }
+  // 연동 항목 생성은 엔진에서 처리
 }
 
 async function deleteLinkedItems(realEstateId: string): Promise<void> {
   const supabase = createClient()
-
-  // 연동된 부채 삭제
-  await supabase
-    .from('debts')
-    .update({ is_active: false, updated_at: new Date().toISOString() })
-    .eq('source_type', 'real_estate')
-    .eq('source_id', realEstateId)
-
-  // 연동된 소득 삭제
-  await supabase
-    .from('incomes')
-    .update({ is_active: false, updated_at: new Date().toISOString() })
-    .eq('source_type', 'real_estate')
-    .eq('source_id', realEstateId)
 
   // 연동된 지출 삭제
   await supabase
@@ -221,125 +184,6 @@ async function deleteLinkedItems(realEstateId: string): Promise<void> {
     .eq('source_id', realEstateId)
 }
 
-async function createLinkedDebt(realEstate: RealEstate): Promise<void> {
-  const supabase = createClient()
-  const currentYear = new Date().getFullYear()
-  const currentMonth = new Date().getMonth() + 1
-
-  // 부채 타입 결정: 자가=주담대(mortgage), 전세/월세=전월세 보증금 대출(jeonse)
-  let debtType: DebtType = 'mortgage'
-  if (realEstate.housing_type === '전세' || realEstate.housing_type === '월세') {
-    debtType = 'jeonse'
-  }
-
-  // 대출명 결정
-  const loanTitle = realEstate.housing_type === '자가'
-    ? `${realEstate.title} 주담대`
-    : `${realEstate.title} 전월세 보증금 대출`
-
-  const debtInput: DebtInput = {
-    simulation_id: realEstate.simulation_id,
-    type: debtType,
-    title: loanTitle,
-    principal: realEstate.loan_amount!,
-    current_balance: realEstate.loan_amount,
-    interest_rate: realEstate.loan_rate || 4,
-    rate_type: realEstate.loan_rate_type || 'fixed',
-    spread: realEstate.loan_spread,
-    repayment_type: realEstate.loan_repayment_type || '원리금균등상환',
-    grace_period_months: 0,
-    start_year: realEstate.loan_start_year || currentYear,
-    start_month: realEstate.loan_start_month || currentMonth,
-    maturity_year: realEstate.loan_maturity_year || currentYear + 30,
-    maturity_month: realEstate.loan_maturity_month || currentMonth,
-    source_type: 'real_estate',
-    source_id: realEstate.id,
-  }
-
-  await supabase.from('debts').insert(debtInput)
-}
-
-async function createLinkedIncome(realEstate: RealEstate): Promise<void> {
-  const supabase = createClient()
-  const currentYear = new Date().getFullYear()
-  const currentMonth = new Date().getMonth() + 1
-
-  const ownerMapping: Record<OwnerWithCommon, 'self' | 'spouse'> = {
-    self: 'self',
-    spouse: 'spouse',
-    common: 'self', // 공동 소유는 본인으로 처리
-  }
-
-  const incomeInput: IncomeInput = {
-    simulation_id: realEstate.simulation_id,
-    type: 'rental',
-    title: `${realEstate.title} 임대`,
-    owner: ownerMapping[realEstate.owner],
-    amount: realEstate.rental_monthly!,
-    frequency: 'monthly',
-    start_year: realEstate.rental_start_year || currentYear,
-    start_month: realEstate.rental_start_month || currentMonth,
-    end_year: realEstate.rental_end_year,
-    end_month: realEstate.rental_end_month,
-    is_fixed_to_retirement: false,
-    growth_rate: 2,
-    rate_category: 'realEstate',
-    source_type: 'real_estate',
-    source_id: realEstate.id,
-  }
-
-  await supabase.from('incomes').insert(incomeInput)
-}
-
-async function createLinkedRentExpense(realEstate: RealEstate): Promise<void> {
-  const supabase = createClient()
-  const currentYear = new Date().getFullYear()
-  const currentMonth = new Date().getMonth() + 1
-
-  const expenseInput: ExpenseInput = {
-    simulation_id: realEstate.simulation_id,
-    type: 'housing',
-    title: `${realEstate.title} 월세`,
-    amount: realEstate.monthly_rent!,
-    frequency: 'monthly',
-    start_year: currentYear,
-    start_month: currentMonth,
-    end_year: null,
-    end_month: null,
-    is_fixed_to_retirement: false,
-    growth_rate: 2,
-    rate_category: 'realEstate',
-    source_type: 'real_estate',
-    source_id: realEstate.id,
-  }
-
-  await supabase.from('expenses').insert(expenseInput)
-}
-
-async function createLinkedMaintenanceExpense(realEstate: RealEstate): Promise<void> {
-  const supabase = createClient()
-  const currentYear = new Date().getFullYear()
-  const currentMonth = new Date().getMonth() + 1
-
-  const expenseInput: ExpenseInput = {
-    simulation_id: realEstate.simulation_id,
-    type: 'housing',
-    title: `${realEstate.title} 관리비`,
-    amount: realEstate.maintenance_fee!,
-    frequency: 'monthly',
-    start_year: currentYear,
-    start_month: currentMonth,
-    end_year: null,
-    end_month: null,
-    is_fixed_to_retirement: false,
-    growth_rate: 2,
-    rate_category: 'inflation',
-    source_type: 'real_estate',
-    source_id: realEstate.id,
-  }
-
-  await supabase.from('expenses').insert(expenseInput)
-}
 
 // ============================================
 // 거주용 부동산 Upsert

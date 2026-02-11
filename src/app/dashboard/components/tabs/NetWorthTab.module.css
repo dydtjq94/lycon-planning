@@ -73,7 +73,7 @@
 
 /* 상세 패널 (우측) */
 .detailPanel {
-  width: 280px;
+  width: 360px;
   border-left: 1px solid var(--dashboard-border);
   background: var(--dashboard-bg);
   display: flex;
