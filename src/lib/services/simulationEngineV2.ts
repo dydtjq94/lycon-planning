@@ -1523,6 +1523,29 @@ export function runSimulationV2(
         }
       }
 
+      // A15 폴백: surplusRules 없을 때 자동 잉여금 배분 (유동성 역순 - 안전자산 우선)
+      if (state.currentCash > 0 && (!priorities?.surplusRules?.length)) {
+        const fallbackOrder = ['checking', 'savings', 'deposit', 'housing',
+          'domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'other']
+
+        for (const type of fallbackOrder) {
+          if (state.currentCash <= 0) break
+          const items = state.savings
+            .filter(s => s.type === type && !s.isMatured && s.isActive)
+            .sort((a, b) => b.balance - a.balance)
+
+          for (const item of items) {
+            if (state.currentCash <= 0) break
+            const allocation = state.currentCash
+            item.balance += allocation
+            item.totalPrincipal += allocation
+            state.currentCash -= allocation
+            surplusInvestments.push({ title: item.title || '저축', amount: allocation, category: 'savings', id: item.id })
+            monthSurplus.push({ title: `${item.title || '저축'} 적립`, amount: allocation, category: 'savings' })
+          }
+        }
+      }
+
       // 월말 스냅샷 생성
       const mFinancialAssets = state.savings
         .filter(s => !s.isMatured && s.isActive)
@@ -2000,8 +2023,17 @@ export function runSimulationV2(
 
     // 세금: snapshot.taxPaid에 별도 저장 (차트 cashFlowBreakdown에는 미포함 - 추후 세금 체계 재설계 예정)
 
-    // 잉여금 배분 (B6)
+    // 잉여금 배분 (A15 월별) - 같은 계좌 적립을 합산
+    const aggregatedSurplus = new Map<string, { title: string; amount: number; category: string; id: string }>()
     for (const inv of surplusInvestments) {
+      const existing = aggregatedSurplus.get(inv.id)
+      if (existing) {
+        existing.amount += inv.amount
+      } else {
+        aggregatedSurplus.set(inv.id, { ...inv })
+      }
+    }
+    for (const inv of aggregatedSurplus.values()) {
       cashFlowItems.push({
         title: `${inv.title} | ${inv.category === 'debt' ? '상환' : '적립'}`,
         amount: -inv.amount,

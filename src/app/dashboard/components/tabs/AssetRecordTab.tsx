@@ -82,6 +82,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
   const [selectedMetric, setSelectedMetric] =
     useState<ChartMetric>("net_worth");
   const [isMetricDropdownOpen, setIsMetricDropdownOpen] = useState(false);
+  const [chartReady, setChartReady] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalData, setModalData] = useState<SnapshotModalData>({
@@ -155,6 +156,13 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
 
   // 차트 데이터 (역순 - 오래된 순서대로)
   const chartSnapshots = [...filteredSnapshots].reverse();
+
+  // 탭 진입 시 애니메이션: 마운트 후 0→실제 데이터 전환
+  useEffect(() => {
+    if (chartSnapshots.length > 0 && !chartReady) {
+      requestAnimationFrame(() => setChartReady(true));
+    }
+  }, [chartSnapshots.length, chartReady]);
   // 데이터가 0을 교차하는지 확인
   const hasNegative = useMemo(() => {
     return chartSnapshots.some((s) => (s[selectedMetric] || 0) < 0);
@@ -222,9 +230,10 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
         },
       ],
     };
-  }, [chartSnapshots, selectedMetric, chartLineColors.value, toRgba, hasPositive, hasNegative]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartSnapshots, selectedMetric, chartLineColors.value, hasPositive, hasNegative]);
 
-  const chartOptions = {
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -341,7 +350,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
         },
       },
     },
-  };
+  }), [chartScaleColors, selectedMetric]);
 
   // 기록 삭제
   const handleDeleteRecord = async (id: string) => {
@@ -549,7 +558,13 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
             ))}
           </div>
           <div className={styles.chartContainer}>
-            <Line data={chartData} options={chartOptions} />
+            <Line
+              data={chartReady ? chartData : {
+                ...chartData,
+                datasets: chartData.datasets.map(ds => ({ ...ds, data: (ds.data as number[]).map(() => 0) })),
+              }}
+              options={chartOptions}
+            />
           </div>
         </div>
       )}

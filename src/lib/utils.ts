@@ -43,8 +43,14 @@ export function formatMoney(amount: number): string {
   const absAmount = Math.abs(amount)
   const prefix = isNegative ? "-" : ""
 
-  const manPart = Math.floor(absAmount)
-  const wonPart = Math.round((absAmount - manPart) * 10000)
+  let manPart = Math.floor(absAmount)
+  let wonPart = Math.round((absAmount - manPart) * 10000)
+
+  // wonPart 반올림으로 10000이 되면 만원 단위로 올림
+  if (wonPart >= 10000) {
+    manPart += 1
+    wonPart = 0
+  }
 
   if (manPart >= 10000) {
     const uk = Math.floor(manPart / 10000)

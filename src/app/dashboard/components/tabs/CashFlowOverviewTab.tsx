@@ -19,6 +19,7 @@ interface CashFlowOverviewTabProps {
   birthYear: number
   spouseBirthYear?: number | null
   retirementAge: number
+  spouseRetirementAge?: number
   globalSettings?: GlobalSettings
   investmentAssumptions?: InvestmentAssumptions
   cashFlowPriorities?: CashFlowPriorities
@@ -50,6 +51,7 @@ export function CashFlowOverviewTab({
   birthYear,
   spouseBirthYear,
   retirementAge,
+  spouseRetirementAge = 60,
   globalSettings,
   investmentAssumptions,
   cashFlowPriorities,
@@ -66,6 +68,7 @@ export function CashFlowOverviewTab({
   const simulationEndYear = calculateEndYear(birthYear, spouseBirthYear)
   const yearsToSimulate = simulationEndYear - currentYear
   const retirementYear = birthYear + retirementAge
+  const spouseRetirementYear = spouseBirthYear ? spouseBirthYear + spouseRetirementAge : undefined
 
   // 기간 선택
   const [localTimeRange, setLocalTimeRange] = useState<TimeRange>('full')
@@ -189,6 +192,7 @@ export function CashFlowOverviewTab({
               simulationResult={filteredSimulationResult}
               endYear={displayRange.end}
               retirementYear={retirementYear}
+              spouseRetirementYear={spouseRetirementYear}
               birthYear={birthYear}
               spouseBirthYear={spouseBirthYear}
               selectedYear={sankeyYear}

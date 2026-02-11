@@ -704,6 +704,7 @@ export function DashboardContent() {
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
             retirementAge={profile.target_retirement_age}
+            spouseRetirementAge={spouseMember?.retirement_age || 60}
             globalSettings={globalSettings}
           />
         );
@@ -714,6 +715,7 @@ export function DashboardContent() {
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
             retirementAge={profile.target_retirement_age}
+            spouseRetirementAge={spouseMember?.retirement_age || 60}
             globalSettings={globalSettings}
           />
         );

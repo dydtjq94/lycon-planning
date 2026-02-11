@@ -47,6 +47,7 @@ interface AssetStackChartProps {
   simulationResult: SimulationResult
   endYear?: number
   retirementYear?: number
+  spouseRetirementYear?: number | null
   birthYear?: number
   spouseBirthYear?: number | null
   onYearClick?: (year: number) => void
@@ -60,6 +61,7 @@ export function AssetStackChart({
   simulationResult,
   endYear,
   retirementYear,
+  spouseRetirementYear,
   birthYear,
   spouseBirthYear,
   onYearClick,
@@ -411,6 +413,34 @@ export function AssetStackChart({
       }
     }
 
+    // 배우자 은퇴선
+    const spouseRetirementIndex = spouseRetirementYear
+      ? (isMonthlyMode && monthlyChartData
+        ? monthlyChartData.snapshots.findIndex(ms => ms.year === spouseRetirementYear && ms.month === 1)
+        : activeLabels.findIndex(label => parseInt(label) === spouseRetirementYear))
+      : -1
+
+    if (spouseRetirementIndex >= 0 && spouseRetirementIndex !== retirementIndex) {
+      annotationsConfig.spouseRetirementLine = {
+        type: 'line',
+        xMin: spouseRetirementIndex,
+        xMax: spouseRetirementIndex,
+        borderColor: 'rgba(148, 163, 184, 0.6)',
+        borderWidth: 1.5,
+        borderDash: [4, 4],
+        label: {
+          display: true,
+          content: '배우자 은퇴',
+          position: 'start' as const,
+          backgroundColor: 'rgba(148, 163, 184, 0.8)',
+          color: '#fff',
+          font: { size: 10, weight: 'bold' as const },
+          padding: { x: 5, y: 3 },
+          borderRadius: 4,
+        },
+      }
+    }
+
     // 선택된 연도 라인
     if (selectedYear && chartRef.current) {
       const selectedIndex = isMonthlyMode && monthlyChartData
@@ -448,8 +478,11 @@ export function AssetStackChart({
           return
         }
 
+        const chartHeight = chartArea.bottom - chartArea.top
+        if (!chartHeight || chartHeight <= 0) return
         const zeroPixel = scales.y.getPixelForValue(0)
-        const zeroRatio = (zeroPixel - chartArea.top) / (chartArea.bottom - chartArea.top)
+        const zeroRatio = (zeroPixel - chartArea.top) / chartHeight
+        if (!isFinite(zeroRatio)) return
         const clampedRatio = Math.max(0.01, Math.min(0.99, zeroRatio))
 
         const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
@@ -469,7 +502,7 @@ export function AssetStackChart({
     }
     prevMonthlyModeRef.current = isMonthlyMode
 
-    // 차트가 이미 있으면 데이터/옵션만 업데이트 (애니메이션 없이)
+    // 차트가 이미 있으면 데이터/옵션만 업데이트
     if (chartInstance.current) {
       const chart = chartInstance.current
       chart.data.labels = activeLabels
@@ -540,6 +573,8 @@ export function AssetStackChart({
     const ctx = chartRef.current.getContext('2d')
     if (!ctx) return
 
+    const zeroData = activeNetWorthData.map(() => 0)
+
     chartInstance.current = new ChartJS(ctx, {
       type: 'bar',
       data: {
@@ -547,7 +582,7 @@ export function AssetStackChart({
         datasets: [
           {
             label: '순자산-bar',
-            data: activeNetWorthData,
+            data: zeroData,
             backgroundColor: chartMode === 'bar' ? bgColors : 'transparent',
             borderWidth: 0,
             borderRadius: chartMode === 'bar' ? 2 : 0,
@@ -557,7 +592,7 @@ export function AssetStackChart({
           {
             type: 'line' as const,
             label: '순자산',
-            data: activeNetWorthData,
+            data: zeroData,
             borderColor: positiveColor,
             borderWidth: chartMode === 'line' ? 2.5 : 0,
             pointRadius: 0,
@@ -641,8 +676,19 @@ export function AssetStackChart({
       },
       plugins: [gradientFillPlugin],
     })
+
+    // 0→실제 데이터 전환 애니메이션
+    requestAnimationFrame(() => {
+      const chart = chartInstance.current
+      if (!chart) return
+      const barDs = chart.data.datasets[0] as any
+      const lineDs = chart.data.datasets[1] as any
+      barDs.data = activeNetWorthData
+      if (lineDs) lineDs.data = activeNetWorthData
+      chart.update()
+    })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartData, retirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, netWorthData, toRgba, chartMode, isMonthlyMode, monthlyChartData])
+  }, [chartData, retirementYear, spouseRetirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, netWorthData, toRgba, chartMode, isMonthlyMode, monthlyChartData])
 
   // 선택된 연도가 변경될 때 annotation만 업데이트 (차트 재생성 X)
   useEffect(() => {
@@ -680,7 +726,7 @@ export function AssetStackChart({
       delete annotations.selectedLine
     }
 
-    chart.update('none') // 애니메이션 없이 즉시 업데이트
+    chart.update('none')
   }, [selectedYear, chartData.labels, isMonthlyMode, monthlyChartData])
 
   return (

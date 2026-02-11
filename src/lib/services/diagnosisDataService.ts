@@ -1387,9 +1387,11 @@ export function calculateLeisureCosts(
       totalUntilRetirement += Math.round(opt.annualCost * Math.pow(1 + inflationRate, i));
     }
 
-    // 은퇴 후 비용 (은퇴 시점 물가 기준으로 고정)
-    const retirementCost = Math.round(opt.annualCost * Math.pow(1 + inflationRate, yearsToRetirement));
-    const totalAfterRetirement = retirementCost * retirementYears;
+    // 은퇴 후 비용 (매년 물가상승 반영, 은퇴 전 대비 50% 지출)
+    let totalAfterRetirement = 0;
+    for (let i = yearsToRetirement; i < yearsToRetirement + retirementYears; i++) {
+      totalAfterRetirement += Math.round(opt.annualCost * 0.5 * Math.pow(1 + inflationRate, i));
+    }
 
     return {
       ...opt,
@@ -1414,9 +1416,11 @@ export interface ConsumerGoodsCostOption {
 export function calculateConsumerGoodsCosts(
   currentAge: number,
   lifeExpectancy: number,
-  inflationRate: number = 0.02
+  inflationRate: number = 0.02,
+  targetRetirementAge?: number
 ): ConsumerGoodsCostOption[] {
   const yearsLeft = lifeExpectancy - currentAge;
+  const yearsToRetirement = targetRetirementAge ? Math.max(0, targetRetirementAge - currentAge) : yearsLeft;
 
   // 연간 소비재 비용 (자동차 감가+유지비 + 가전/가구 교체비)
   const options = [
@@ -1450,10 +1454,14 @@ export function calculateConsumerGoodsCosts(
   ];
 
   return options.map((opt) => {
-    // 물가상승 반영한 총 비용
+    // 은퇴 전 비용 (물가상승 반영, 100%)
     let total = 0;
-    for (let i = 0; i < yearsLeft; i++) {
+    for (let i = 0; i < yearsToRetirement; i++) {
       total += Math.round(opt.annualCost * Math.pow(1 + inflationRate, i));
+    }
+    // 은퇴 후 비용 (물가상승 반영, 은퇴 전 대비 50% 지출)
+    for (let i = yearsToRetirement; i < yearsLeft; i++) {
+      total += Math.round(opt.annualCost * 0.5 * Math.pow(1 + inflationRate, i));
     }
 
     return {
@@ -1577,7 +1585,7 @@ export function calculateAdditionalCosts(
 
   const medical = calculateMedicalCosts(data.currentAge, data.spouseAge, effectiveLifeExpectancy, params.inflationRate);
   const leisure = calculateLeisureCosts(data.currentAge, effectiveRetirementAge, effectiveLifeExpectancy, params.inflationRate);
-  const consumerGoods = calculateConsumerGoodsCosts(data.currentAge, effectiveLifeExpectancy, params.inflationRate);
+  const consumerGoods = calculateConsumerGoodsCosts(data.currentAge, effectiveLifeExpectancy, params.inflationRate, effectiveRetirementAge);
   const housing = getHousingOptions();
 
   // 최소 추정 (검소: 자녀교육 일반 + 의료 + 여행(기본) + 소비재(검소))

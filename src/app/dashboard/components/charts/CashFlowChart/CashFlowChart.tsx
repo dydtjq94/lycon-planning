@@ -34,6 +34,7 @@ interface CashFlowChartProps {
   simulationResult: SimulationResult
   endYear: number
   retirementYear: number
+  spouseRetirementYear?: number | null
   birthYear?: number
   spouseBirthYear?: number | null
   onYearClick?: (year: number) => void
@@ -55,6 +56,7 @@ export function CashFlowChart({
   simulationResult,
   endYear,
   retirementYear,
+  spouseRetirementYear,
   birthYear,
   spouseBirthYear,
   onYearClick,
@@ -414,6 +416,34 @@ export function CashFlowChart({
       }
     }
 
+    // 배우자 은퇴선
+    const spouseRetirementIndex = spouseRetirementYear
+      ? (isMonthlyMode && monthlySnapshots
+        ? monthlySnapshots.findIndex(ms => ms.year === spouseRetirementYear && ms.month === 1)
+        : labels.findIndex(y => y === spouseRetirementYear))
+      : -1
+
+    if (spouseRetirementIndex >= 0 && spouseRetirementIndex !== retirementIndex) {
+      annotationsConfig.spouseRetirementLine = {
+        type: 'line',
+        xMin: spouseRetirementIndex,
+        xMax: spouseRetirementIndex,
+        borderColor: 'rgba(148, 163, 184, 0.6)',
+        borderWidth: 1.5,
+        borderDash: [4, 4],
+        label: {
+          display: true,
+          content: '배우자 은퇴',
+          position: 'start' as const,
+          backgroundColor: 'rgba(148, 163, 184, 0.8)',
+          color: '#fff',
+          font: { size: 10, weight: 'bold' as const },
+          padding: { x: 5, y: 3 },
+          borderRadius: 4,
+        },
+      }
+    }
+
     // 선택된 연도 라인
     if (selectedYear && chartRef.current) {
       const selectedIndex = isMonthlyMode && monthlySnapshots
@@ -472,13 +502,15 @@ export function CashFlowChart({
     const ctx = chartRef.current.getContext('2d')
     if (!ctx) return
 
+    const zeroData = netCashFlowData.map(() => 0)
+
     chartInstance.current = new ChartJS(ctx, {
       type: 'bar',
       data: {
         labels,
         datasets: [{
           label: '순현금흐름',
-          data: netCashFlowData,
+          data: zeroData,
           backgroundColor: bgColors,
           borderWidth: 0,
           borderRadius: 2,
@@ -547,8 +579,16 @@ export function CashFlowChart({
         },
       },
     })
+
+    // 0→실제 데이터 전환 애니메이션
+    requestAnimationFrame(() => {
+      const chart = chartInstance.current
+      if (!chart) return
+      ;(chart.data.datasets[0] as any).data = netCashFlowData
+      chart.update()
+    })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [snapshots, retirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, isDark, toRgba, isMonthlyMode, monthlySnapshots])
+  }, [snapshots, retirementYear, spouseRetirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, isDark, toRgba, isMonthlyMode, monthlySnapshots])
 
   // 선택된 연도가 변경될 때 annotation만 업데이트
   useEffect(() => {

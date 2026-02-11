@@ -47,36 +47,27 @@ interface SankeyChartProps {
   selectedYear: number;
 }
 
-// 금액 포맷팅 (간결하게, 원 단위까지)
+// 금액 포맷팅 (만원 단위, 반올림)
 function formatMoney(amount: number): string {
-  const absAmount = Math.abs(amount);
-  const manPart = Math.floor(absAmount);
-  const wonPart = Math.round((absAmount - manPart) * 10000);
+  // 만원 단위로 반올림하여 깔끔하게 표시
+  const rounded = Math.round(Math.abs(amount));
 
-  if (manPart >= 10000) {
-    const uk = Math.floor(manPart / 10000);
-    const man = manPart % 10000;
-    if (man === 0 && wonPart === 0) return `${uk}억`;
-    if (wonPart === 0) return `${uk}억${man.toLocaleString()}만`;
-    if (man === 0) return `${uk}억${wonPart.toLocaleString()}원`;
-    return `${uk}억${man.toLocaleString()}만${wonPart.toLocaleString()}원`;
+  if (rounded >= 10000) {
+    const uk = Math.floor(rounded / 10000);
+    const man = rounded % 10000;
+    if (man === 0) return `${uk}억원`;
+    return `${uk}억 ${man.toLocaleString()}만원`;
   }
 
-  if (wonPart === 0) return `${manPart.toLocaleString()}만`;
-  if (manPart === 0) return `${wonPart.toLocaleString()}원`;
-  return `${manPart.toLocaleString()}만${wonPart.toLocaleString()}원`;
+  if (rounded === 0) return `0원`;
+  return `${rounded.toLocaleString()}만원`;
 }
 
-// 라벨 간략화
+// 라벨 정리 (소유자 태그만 제거, 나머지 전부 표시)
 function shortenLabel(title: string): string {
-  let short = title.replace(/\s*\|\s*(본인|공동|배우자)/, "");
+  let short = title.replace(/\s*\|\s*(본인|공동|배우자)$/, "");
   short = short.replace(" (은퇴 전)", "");
   short = short.replace(" (은퇴 후)", "(후)");
-  short = short.replace("창업 대출 ", "");
-  short = short.replace("주거 ", "");
-  if (short.length > 8) {
-    short = short.substring(0, 7) + "..";
-  }
   return short;
 }
 
@@ -426,9 +417,7 @@ export function SankeyChart({
           .sort((a, b) => b.amount - a.amount)
           .forEach((item) => {
             flows.push({ from: item.title, to: category, flow: item.amount });
-            labels[item.title] = `${shortenLabel(item.title)}\n${formatMoney(
-              item.amount
-            )}`;
+            labels[item.title] = `${shortenLabel(item.title)}\n${formatMoney(item.amount)}`;
             colorMap[item.title] = CATEGORY_COLORS[category] || "#64748b";
             priority[item.title] = incomePriority++;
             columnMap[item.title] = 0; // 개별 소득: 컬럼 0
@@ -555,6 +544,7 @@ export function SankeyChart({
             nodePadding: dynamicPadding,
             priority,
             labels,
+            font: { size: 12 },
           },
         ],
       },
@@ -648,7 +638,7 @@ export function SankeyChart({
     };
   }, [flows, labels, colorMap, priority, totalIncome, nodeCount, columnMap, chartScaleColors, CATEGORY_COLORS]);
 
-  if (totalIncome === 0) {
+  if (flows.length === 0) {
     return (
       <div className={styles.chartContainer}>
         <div className={styles.emptyState}>

@@ -19,6 +19,7 @@ interface NetWorthTabProps {
   birthYear: number
   spouseBirthYear?: number | null
   retirementAge: number
+  spouseRetirementAge?: number
   globalSettings?: GlobalSettings
   isInitializing?: boolean
   timeRange?: 'next3m' | 'next5m' | 'next5' | 'next10' | 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full'
@@ -50,6 +51,7 @@ export function NetWorthTab({
   birthYear,
   spouseBirthYear,
   retirementAge,
+  spouseRetirementAge = 60,
   globalSettings,
   isInitializing = false,
   timeRange: propTimeRange,
@@ -67,6 +69,7 @@ export function NetWorthTab({
   const simulationEndYear = calculateEndYear(birthYear, spouseBirthYear)
   const yearsToSimulate = simulationEndYear - currentYear
   const retirementYear = birthYear + retirementAge
+  const spouseRetirementYear = spouseBirthYear ? spouseBirthYear + spouseRetirementAge : undefined
 
   // State
   const [localSelectedYear, setLocalSelectedYear] = useState<number>(currentYear)
@@ -242,6 +245,7 @@ export function NetWorthTab({
               simulationResult={filteredSimulationResult}
               endYear={displayRange.end}
               retirementYear={retirementYear}
+              spouseRetirementYear={spouseRetirementYear}
               birthYear={birthYear}
               spouseBirthYear={spouseBirthYear}
               onYearClick={handleYearChange}

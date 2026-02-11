@@ -1886,7 +1886,10 @@ function SearchResultChart({
   const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    animation: false as const,
+    animation: {
+      duration: 1000,
+      easing: 'easeOutQuart',
+    },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -2060,6 +2063,7 @@ function PortfolioValueChart({
   toRgba: (hex: string, alpha: number) => string;
 }) {
   const [period, setPeriod] = useState<ChartPeriod>("3M");
+  const [chartReady, setChartReady] = useState(false);
   const loading = priceCacheLoading;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
@@ -2256,6 +2260,13 @@ function PortfolioValueChart({
     };
   }, [fullData, period]);
 
+  // 탭 진입 시 애니메이션: 마운트 후 0→실제 데이터 전환 (1회만)
+  useEffect(() => {
+    if (!loading && chartData && !chartReady) {
+      requestAnimationFrame(() => setChartReady(true));
+    }
+  }, [loading, chartData, chartReady]);
+
   if (loading) {
     return (
       <div className={styles.chartSkeleton}>
@@ -2330,6 +2341,9 @@ function PortfolioValueChart({
     },
   };
 
+  const zeroPlData = chartReady ? plData : plData.map(() => 0);
+  const zeroValueData = chartReady ? chartData.value : chartData.value.map(() => 0);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data: any = {
     labels: chartData.labels,
@@ -2337,7 +2351,7 @@ function PortfolioValueChart({
       {
         type: "bar" as const,
         label: "손익",
-        data: plData,
+        data: zeroPlData,
         backgroundColor: plData.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.7) : toRgba(chartLineColors.loss, 0.7)),
         hoverBackgroundColor: plData.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.9) : toRgba(chartLineColors.loss, 0.9)),
         borderWidth: 0,
@@ -2348,7 +2362,7 @@ function PortfolioValueChart({
       {
         type: "line" as const,
         label: "평가금액",
-        data: chartData.value,
+        data: zeroValueData,
         borderColor: toRgba(chartLineColors.value, 0.8),
         backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
           const { chart } = context;
@@ -2372,7 +2386,10 @@ function PortfolioValueChart({
   const options: any = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: false,
+    animation: {
+      duration: 1000,
+      easing: 'easeOutQuart',
+    },
     interaction: {
       mode: "index" as const,
       intersect: false,
@@ -2573,7 +2590,7 @@ function PortfolioValueChart({
         ))}
       </div>
       <div className={styles.chartInner}>
-        <Chart ref={chartRef} key={`${period}-${txIndices.join(",")}`} type="bar" data={data} options={options} plugins={[txVerticalLinePlugin]} />
+        <Chart ref={chartRef} type="bar" data={data} options={options} plugins={[txVerticalLinePlugin]} />
       </div>
       <div className={styles.chartLegend}>
         <div className={styles.legendItem}>
