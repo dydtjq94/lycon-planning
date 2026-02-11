@@ -522,8 +522,12 @@ export function PortfolioTab({
       });
       setUsdPriceInput("");
     } else {
-      // 해외: 달러 가격 입력, 기본 환율 1450 적용
-      const defaultExchangeRate = 1450;
+      // 해외: 달러 가격 입력, 최신 환율 적용 (없으면 1450)
+      let defaultExchangeRate = 1450;
+      if (priceCache?.exchangeRateMap.size) {
+        const sortedFxDates = Array.from(priceCache.exchangeRateMap.keys()).sort();
+        defaultExchangeRate = Math.round((priceCache.exchangeRateMap.get(sortedFxDates[sortedFxDates.length - 1]) || 1450) * 100) / 100;
+      }
       setUsdPriceInput(searchResult.price.toFixed(2));
       setFormData({
         ...formData,
@@ -635,10 +639,23 @@ export function PortfolioTab({
       if (isForeign && priceCache?.exchangeRateMap.size) {
         const sortedFxDates = Array.from(priceCache.exchangeRateMap.keys()).sort();
         const latestFxDate = sortedFxDates[sortedFxDates.length - 1];
-        exchangeRate = priceCache.exchangeRateMap.get(latestFxDate) || 1450;
+        exchangeRate = Math.round((priceCache.exchangeRateMap.get(latestFxDate) || 1450) * 100) / 100;
       }
 
-      const usdPrice = isForeign ? (holding.avg_price / exchangeRate).toFixed(2) : "";
+      // 현재 시장가가 있으면 시장가, 없으면 평단가 사용
+      let currentMarketPrice = 0;
+      const tickerPrices = priceCache?.priceDataMap.get(holding.ticker);
+      if (tickerPrices && tickerPrices.size > 0) {
+        const sortedDates = Array.from(tickerPrices.keys()).sort();
+        currentMarketPrice = tickerPrices.get(sortedDates[sortedDates.length - 1]) || 0;
+      }
+      const sellPrice = currentMarketPrice > 0
+        ? (isForeign ? Math.round(currentMarketPrice * exchangeRate) : Math.round(currentMarketPrice))
+        : Math.round(holding.avg_price);
+
+      const usdPrice = isForeign
+        ? (sellPrice / exchangeRate).toFixed(2)
+        : "";
       setUsdPriceInput(usdPrice);
 
       // 오늘 날짜 (YYYY-MM-DD)
@@ -651,7 +668,7 @@ export function PortfolioTab({
         asset_type: holding.asset_type,
         currency: holding.currency,
         quantity: holding.quantity,
-        price: Math.round(holding.avg_price),
+        price: sellPrice,
         exchange_rate: isForeign ? exchangeRate : undefined,
         fee: 0,
         account_id: autoAccountId,
