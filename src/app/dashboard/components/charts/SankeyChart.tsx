@@ -145,6 +145,7 @@ export function SankeyChart({
 }: SankeyChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<ChartJS | null>(null);
+  const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const { chartScaleColors, isDark } = useChartTheme();
 
   // 카테고리 색상 (CHART_COLORS 기반 - 툴팁과 동일)
@@ -524,6 +525,69 @@ export function SankeyChart({
 
     if (flows.length === 0) return;
 
+    // 마우스 위치 추적 + 툴팁 위치 실시간 업데이트
+    const canvas = chartRef.current;
+    let sankeyRafId: number | null = null;
+    let sankeyAnimating = false;
+
+    const updateTooltipPosition = () => {
+      const el = document.getElementById('sankey-chart-tooltip') as HTMLDivElement | null;
+      if (!el || el.style.opacity === '0') {
+        sankeyAnimating = false;
+        return;
+      }
+
+      const tw = el.offsetWidth || 200;
+      const th = el.offsetHeight || 60;
+      const mx = mouseRef.current.x;
+      const my = mouseRef.current.y;
+
+      let tl = mx + 16;
+      let tt = my - th - 8;
+      if (tl + tw > window.innerWidth - 10) tl = mx - tw - 16;
+      if (tl < 10) tl = 10;
+      if (tt < 10) tt = my + 20;
+      if (tt + th > window.innerHeight - 10) tt = window.innerHeight - th - 10;
+
+      let cl = parseFloat(el.dataset.curLeft || '0');
+      let ct = parseFloat(el.dataset.curTop || '0');
+      cl += (tl - cl) * 0.15;
+      ct += (tt - ct) * 0.15;
+      if (Math.abs(cl - tl) < 0.5) cl = tl;
+      if (Math.abs(ct - tt) < 0.5) ct = tt;
+
+      el.dataset.curLeft = String(cl);
+      el.dataset.curTop = String(ct);
+      el.style.left = `${cl}px`;
+      el.style.top = `${ct}px`;
+
+      if (el.style.opacity !== '0') {
+        sankeyRafId = requestAnimationFrame(updateTooltipPosition);
+      } else {
+        sankeyAnimating = false;
+      }
+    };
+
+    const startTooltipAnimation = () => {
+      if (!sankeyAnimating) {
+        sankeyAnimating = true;
+        sankeyRafId = requestAnimationFrame(updateTooltipPosition);
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY };
+      startTooltipAnimation();
+    };
+    const handleMouseLeave = () => {
+      const el = document.getElementById('sankey-chart-tooltip');
+      if (el) el.style.opacity = '0';
+      sankeyAnimating = false;
+      if (sankeyRafId) { cancelAnimationFrame(sankeyRafId); sankeyRafId = null; }
+    };
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+
     // 노드 수에 따라 동적 패딩 계산
     const dynamicPadding = Math.max(30, Math.min(60, 400 / nodeCount));
 
@@ -545,6 +609,7 @@ export function SankeyChart({
             priority,
             labels,
             font: { size: 12 },
+            color: chartScaleColors.textColor,
           },
         ],
       },
@@ -598,7 +663,7 @@ export function SankeyChart({
             external: (context) => {
               // Tooltip element
               const tooltipId = 'sankey-chart-tooltip';
-              let tooltipEl = document.getElementById(tooltipId);
+              let tooltipEl = document.getElementById(tooltipId) as HTMLDivElement | null;
 
               // Create element on first render
               if (!tooltipEl) {
@@ -606,8 +671,11 @@ export function SankeyChart({
                 tooltipEl.id = tooltipId;
                 tooltipEl.style.position = 'fixed';
                 tooltipEl.style.pointerEvents = 'none';
-                tooltipEl.style.transition = 'all 0.15s ease';
-                tooltipEl.style.zIndex = '9999';
+                tooltipEl.style.zIndex = '10000';
+                tooltipEl.style.transition = 'opacity 0.15s ease';
+                tooltipEl.dataset.curLeft = '0';
+                tooltipEl.dataset.curTop = '0';
+                tooltipEl.dataset.animating = '0';
                 document.body.appendChild(tooltipEl);
               }
 
@@ -615,6 +683,7 @@ export function SankeyChart({
               const tooltipModel = context.tooltip;
               if (tooltipModel.opacity === 0) {
                 tooltipEl.style.opacity = '0';
+                tooltipEl.dataset.animating = '0';
                 return;
               }
 
@@ -694,34 +763,32 @@ export function SankeyChart({
 
               tooltipEl.style.background = bgColor;
               tooltipEl.style.backdropFilter = 'blur(6px)';
-              tooltipEl.style.WebkitBackdropFilter = 'blur(6px)';
+              (tooltipEl.style as unknown as Record<string, string>)['-webkit-backdrop-filter'] = 'blur(6px)';
               tooltipEl.style.border = `1px solid ${borderColor}`;
               tooltipEl.style.borderRadius = '14px';
               tooltipEl.style.boxShadow = shadow;
               tooltipEl.style.padding = '14px 16px';
+              // 첫 등장이면 즉시 위치 설정
+              const wasHidden = tooltipEl.style.opacity === '0' || tooltipEl.style.opacity === '';
               tooltipEl.style.opacity = '1';
 
-              // Position tooltip (fixed positioning - use getBoundingClientRect directly)
-              const canvas = context.chart.canvas;
-              const rect = canvas.getBoundingClientRect();
-              const tooltipWidth = tooltipEl.offsetWidth || 200;
-              const tooltipHeight = tooltipEl.offsetHeight || 60;
-
-              let left = rect.left + tooltipModel.caretX + 16;
-              let top = rect.top + tooltipModel.caretY - tooltipHeight - 8;
-
-              // Overflow 방지
-              if (left + tooltipWidth > window.innerWidth - 10) {
-                left = rect.left + tooltipModel.caretX - tooltipWidth - 16;
+              if (wasHidden) {
+                const mx = mouseRef.current.x;
+                const my = mouseRef.current.y;
+                const tw = tooltipEl.offsetWidth || 200;
+                const th = tooltipEl.offsetHeight || 60;
+                let l = mx + 16;
+                let t = my - th - 8;
+                if (l + tw > window.innerWidth - 10) l = mx - tw - 16;
+                if (l < 10) l = 10;
+                if (t < 10) t = my + 20;
+                tooltipEl.dataset.curLeft = String(l);
+                tooltipEl.dataset.curTop = String(t);
+                tooltipEl.style.left = `${l}px`;
+                tooltipEl.style.top = `${t}px`;
               }
-              if (left < 10) left = 10;
-              if (top < 10) top = rect.top + tooltipModel.caretY + 20;
-              if (top + tooltipHeight > window.innerHeight - 10) {
-                top = window.innerHeight - tooltipHeight - 10;
-              }
-
-              tooltipEl.style.left = left + 'px';
-              tooltipEl.style.top = top + 'px';
+              // 이후 위치는 mousemove 애니메이션 루프에서 처리
+              startTooltipAnimation();
             },
           },
         },
@@ -729,10 +796,12 @@ export function SankeyChart({
     });
 
     return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
+      if (sankeyRafId) cancelAnimationFrame(sankeyRafId);
       if (chartInstance.current) {
         chartInstance.current.destroy();
       }
-      // Clean up tooltip div
       const tooltipEl = document.getElementById('sankey-chart-tooltip');
       if (tooltipEl) {
         tooltipEl.remove();
