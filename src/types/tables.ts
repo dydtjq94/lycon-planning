@@ -785,6 +785,7 @@ export interface Account {
   broker_name: string       // 증권사/은행명 (예: "키움증권", "국민은행")
   account_number: string | null  // 계좌번호 (마스킹)
   account_type: AccountType
+  owner: Owner              // 소유자 (본인/배우자)
   current_balance: number | null  // 현재 잔액 (원, 서비스에서 만원으로 변환) - 입출금/예금 계좌용
   balance_updated_at: string | null  // 잔액 기록 시점 (checkpoint)
   is_default: boolean       // 기본 계좌 여부
@@ -812,6 +813,7 @@ export interface AccountInput {
   broker_name: string
   account_number?: string | null
   account_type?: AccountType
+  owner?: Owner
   current_balance?: number
   is_default?: boolean
   memo?: string | null

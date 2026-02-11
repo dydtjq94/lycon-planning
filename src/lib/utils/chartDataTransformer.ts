@@ -3,6 +3,7 @@
  */
 
 import type { YearlySnapshot, SimulationResult } from '@/lib/services/simulationEngine'
+import type { CashFlowItem } from '@/types'
 import { CHART_COLORS } from './tooltipCategories'
 
 // Chart.js 데이터셋 타입
@@ -169,9 +170,11 @@ export interface YearDetail {
   // breakdown
   incomeBreakdown: { title: string; amount: number }[]
   expenseBreakdown: { title: string; amount: number }[]
-  assetBreakdown: { title: string; amount: number }[]
-  debtBreakdown: { title: string; amount: number }[]
-  pensionBreakdown: { title: string; amount: number }[]
+  assetBreakdown: { title: string; amount: number; type?: string }[]
+  debtBreakdown: { title: string; amount: number; type?: string }[]
+  pensionBreakdown: { title: string; amount: number; type?: string }[]
+  // 현금흐름 상세
+  cashFlowBreakdown?: CashFlowItem[]
   // 전년 대비
   netWorthChange?: number
   netWorthChangePercent?: number
@@ -209,6 +212,8 @@ export function getYearDetail(
     assetBreakdown: snapshot.assetBreakdown,
     debtBreakdown: snapshot.debtBreakdown,
     pensionBreakdown: snapshot.pensionBreakdown,
+    // 현금흐름 상세
+    cashFlowBreakdown: snapshot.cashFlowBreakdown,
     // 전년 대비
     netWorthChange: prevSnapshot ? snapshot.netWorth - prevSnapshot.netWorth : undefined,
     netWorthChangePercent: prevSnapshot && prevSnapshot.netWorth !== 0

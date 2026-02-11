@@ -1,9 +1,11 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { FinancialItem } from '@/types'
 import type { FinancialSnapshotInput } from '@/types/tables'
 import { loadFinancialItemsFromDB, type SimulationProfile } from '@/lib/services/dbToFinancialItems'
+import type { SimulationV2Input } from '@/lib/services/simulationEngineV2'
 import { getIncomes } from '@/lib/services/incomeService'
 import { getExpenses } from '@/lib/services/expenseService'
 import { getSavings } from '@/lib/services/savingsService'
@@ -152,6 +154,33 @@ export function usePrefetchAllFinancialData(simulationId: string) {
   useNationalPensions(simulationId)
   useRetirementPensions(simulationId)
   usePersonalPensions(simulationId)
+}
+
+/**
+ * V2 시뮬레이션 입력 데이터 훅
+ * - 기존 9개 개별 훅을 조합하여 SimulationV2Input 반환
+ * - React Query 캐시 재활용, 개별 테이블 변경 시 해당 캐시만 무효화
+ */
+export function useSimulationV2Data(simulationId: string, enabled: boolean = true) {
+  const { data: incomes = [], isLoading: l1 } = useIncomes(simulationId, enabled)
+  const { data: expenses = [], isLoading: l2 } = useExpenses(simulationId, enabled)
+  const { data: savings = [], isLoading: l3 } = useSavingsData(simulationId, enabled)
+  const { data: debts = [], isLoading: l4 } = useDebts(simulationId, enabled)
+  const { data: nationalPensions = [], isLoading: l5 } = useNationalPensions(simulationId, enabled)
+  const { data: retirementPensions = [], isLoading: l6 } = useRetirementPensions(simulationId, enabled)
+  const { data: personalPensions = [], isLoading: l7 } = usePersonalPensions(simulationId, enabled)
+  const { data: realEstates = [], isLoading: l8 } = useRealEstates(simulationId, enabled)
+  const { data: physicalAssets = [], isLoading: l9 } = usePhysicalAssets(simulationId, enabled)
+
+  const isLoading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8 || l9
+
+  const data: SimulationV2Input = useMemo(() => ({
+    incomes, expenses, savings, debts,
+    nationalPensions, retirementPensions, personalPensions,
+    realEstates, physicalAssets,
+  }), [incomes, expenses, savings, debts, nationalPensions, retirementPensions, personalPensions, realEstates, physicalAssets])
+
+  return { data, isLoading }
 }
 
 // ============================================

@@ -11,7 +11,8 @@ import type {
   SimulationSettings,
   GlobalSettings,
   InvestmentAssumptions,
-  CashFlowPriority,
+  CashFlowPriorities,
+  CashFlowItem,
 } from '@/types'
 import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_INVESTMENT_ASSUMPTIONS } from '@/types'
 import { migrateOnboardingToFinancialItems, isItemActiveInYear } from './dataMigration'
@@ -68,9 +69,9 @@ export interface YearlySnapshot {
   // 상세 breakdown
   incomeBreakdown: { title: string; amount: number; type?: string }[]
   expenseBreakdown: { title: string; amount: number; type?: string }[]
-  assetBreakdown: { title: string; amount: number }[]
-  debtBreakdown: { title: string; amount: number }[]
-  pensionBreakdown: { title: string; amount: number }[]
+  assetBreakdown: { title: string; amount: number; type?: string }[]
+  debtBreakdown: { title: string; amount: number; type?: string }[]
+  pensionBreakdown: { title: string; amount: number; type?: string }[]
 
   // V2 옵셔널 필드 (하위 호환)
   cashBalance?: number
@@ -80,6 +81,31 @@ export interface YearlySnapshot {
   realEstateBreakdown?: { id: string; title: string; value: number; isSold: boolean }[]
   physicalAssetBreakdown?: { id: string; title: string; value: number }[]
   events?: string[]
+  cashFlowBreakdown?: CashFlowItem[]
+}
+
+export interface MonthlySnapshot {
+  year: number
+  month: number
+  age: number
+
+  // 해당 월의 현금흐름
+  monthlyIncome: number
+  monthlyExpense: number
+  netCashFlow: number
+
+  // 해당 월 말 자산/부채 잔액
+  financialAssets: number
+  pensionAssets: number
+  realEstateValue: number
+  physicalAssetValue: number
+  totalDebts: number
+  netWorth: number
+  currentCash: number
+
+  // 상세 breakdown
+  incomeBreakdown: { title: string; amount: number; type?: string }[]
+  expenseBreakdown: { title: string; amount: number; type?: string }[]
 }
 
 export interface SimulationResult {
@@ -87,6 +113,7 @@ export interface SimulationResult {
   endYear: number
   retirementYear: number
   snapshots: YearlySnapshot[]
+  monthlySnapshots?: MonthlySnapshot[]
 
   // 요약 지표
   summary: {
@@ -487,7 +514,7 @@ export function runSimulationFromItems(
   globalSettings: GlobalSettings,
   yearsToSimulate: number = 50,
   assumptions?: InvestmentAssumptions,
-  priorities?: CashFlowPriority[]
+  priorities?: CashFlowPriorities
 ): SimulationResult {
   const currentYear = new Date().getFullYear()
   const { birthYear, retirementAge, spouseBirthYear } = profile
@@ -692,57 +719,8 @@ export function runSimulationFromItems(
       let pensionAllocation = 0
       let debtAllocation = 0
 
-      if (priorities && priorities.length > 0) {
-        // 우선순위 순으로 정렬
-        const sortedPriorities = [...priorities].sort((a, b) => a.priority - b.priority)
-
-        for (const rule of sortedPriorities) {
-          if (remainingSurplus <= 0) break
-
-          let allocation = 0
-
-          switch (rule.strategy) {
-            case 'maintain': {
-              // 목표 잔액에 도달할 때까지만 할당
-              let currentBalance = 0
-              const targetBalance = rule.targetAmount || 0
-
-              if (rule.targetType === 'pension') {
-                currentBalance = accumulatedPension + pensionAllocation
-              } else if (rule.targetType === 'savings' || rule.targetType === 'investment') {
-                currentBalance = accumulatedSavings
-              }
-              // debt의 maintain은 의미 없음 (목표 부채 유지?)
-
-              const needed = Math.max(0, targetBalance - currentBalance)
-              allocation = Math.min(remainingSurplus, needed)
-              break
-            }
-            case 'maximize': {
-              // 연간 최대 한도까지 할당
-              allocation = Math.min(remainingSurplus, rule.maxAmount || remainingSurplus)
-              break
-            }
-            case 'remainder': {
-              // 남은 잉여금 전액 할당
-              allocation = remainingSurplus
-              break
-            }
-          }
-
-          // 대상별 배분 추적
-          if (rule.targetType === 'pension') {
-            pensionAllocation += allocation
-          } else if (rule.targetType === 'debt') {
-            debtAllocation += allocation
-            // 부채 추가 상환: 현재 모델에서는 부채 잔액 계산이 별도 로직으로 되어 있어
-            // 추가 상환 효과 반영은 추후 구현 필요
-          }
-          // savings, investment는 기본적으로 accumulatedSavings로 합산됨
-
-          remainingSurplus -= allocation
-        }
-      }
+      // V1 엔진에서는 CashFlowPriorities V2 규칙 미적용 (V2 엔진에서만 동작)
+      // priorities 파라미터는 타입 호환만 유지
 
       // 배분 결과 적용
       // - 연금 배분액은 accumulatedPension에 추가

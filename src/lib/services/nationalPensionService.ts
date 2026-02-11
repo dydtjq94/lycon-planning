@@ -65,8 +65,8 @@ export async function createNationalPension(
 
   if (error) throw error
 
-  // 소득 테이블에 연동 항목 생성 (DB 원 단위 데이터로)
-  await createLinkedIncome(data, birthYear)
+  // 소득 테이블에 연동 항목 생성 (만원 변환 후)
+  await createLinkedIncome(convertFromWon(data, NATIONAL_PENSION_MONEY_FIELDS), birthYear)
 
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, NATIONAL_PENSION_MONEY_FIELDS)
@@ -92,9 +92,9 @@ export async function updateNationalPension(
 
   if (error) throw error
 
-  // 기존 연동 소득 삭제 후 재생성 (DB 원 단위 데이터로)
+  // 기존 연동 소득 삭제 후 재생성 (만원 변환 후)
   await deleteLinkedIncomes('national_pension', id)
-  await createLinkedIncome(data, birthYear)
+  await createLinkedIncome(convertFromWon(data, NATIONAL_PENSION_MONEY_FIELDS), birthYear)
 
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, NATIONAL_PENSION_MONEY_FIELDS)

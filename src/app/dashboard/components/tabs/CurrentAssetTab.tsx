@@ -1828,6 +1828,10 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
   const [editDebt, setEditDebt] = useState<Partial<DebtData>>({});
 
+  // 차트 팝오버 상태
+  const [expandedChart, setExpandedChart] = useState<string | null>(null);
+  const chartPopoverRef = useRef<HTMLDivElement>(null);
+
   // 추가 모달 상태
   const [addModalCategory, setAddModalCategory] = useState<ModalCategory | null>(null);
 
@@ -1899,6 +1903,21 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
 
     loadProfileData();
   }, [profileId, supabase]);
+
+  // 차트 팝오버 클릭 외부 감지
+  useEffect(() => {
+    if (!expandedChart) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // 차트 토글 버튼 클릭은 무시 (onClick에서 처리)
+      if (target.closest('[data-chart-toggle]')) return;
+      if (chartPopoverRef.current && !chartPopoverRef.current.contains(target)) {
+        setExpandedChart(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [expandedChart]);
 
   // 가계 단위 여부 (배우자 존재 여부)
   const isCouple = familyMembers.some(m => m.relationship === "spouse");
@@ -2233,7 +2252,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
 
     const realEstateGross = residenceGross + investmentRealEstateGross;
     const realEstateLoan = residenceLoan + investmentRealEstateLoan;
-    const realEstate = realEstateGross - realEstateLoan; // 순자산
+    const realEstate = realEstateGross; // 총 자산 가치 (부채 미차감)
 
     // 실물 자산: 자동차, 귀금속, 미술품 등
     const realAssetItems = items.filter(i => i.category === "asset" && ["car", "precious_metal", "art", "other"].includes(i.item_type));
@@ -2243,17 +2262,19 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       const meta = i.metadata as Record<string, unknown>;
       return sum + ((meta?.has_installment && meta?.installment_balance) ? (meta.installment_balance as number) : 0);
     }, 0);
-    const realAsset = realAssetGross - realAssetInstallment; // 순자산
+    const realAsset = realAssetGross; // 총 자산 가치 (할부 미차감)
 
-    // 금융 부채: 담보대출/할부 제외 (자산에 연결된 부채 제외)
-    const debt = items
+    // 금융 부채 (source 없는 순수 금융부채)
+    const unsecuredDebt = items
       .filter(i => i.category === "debt")
       .filter(i => {
         const meta = i.metadata as Record<string, unknown>;
-        // source가 있으면 자산에 연결된 부채 (담보대출/할부)
         return !meta?.source;
       })
       .reduce((sum, i) => sum + i.amount, 0);
+
+    // 전체 부채 (금융부채 + 주담대 + 할부)
+    const debt = unsecuredDebt + realEstateLoan + realAssetInstallment;
 
     const totalAssets = savings + investment + realEstate + realAsset;
     const netWorth = totalAssets - debt;
@@ -2262,7 +2283,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       savings, investment,
       realEstate, realEstateGross, realEstateLoan,
       realAsset, realAssetGross, realAssetInstallment,
-      debt, totalAssets, netWorth
+      debt, unsecuredDebt, totalAssets, netWorth
     };
   }, [items, accountValues, linkedSavingsTotal]);
 
@@ -2286,7 +2307,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
         real_assets: totals.realAsset,
         total_assets: totals.totalAssets,
         total_debts: totals.debt,
-        unsecured_debt: totals.debt,
+        unsecured_debt: totals.unsecuredDebt,
         net_worth: totals.netWorth,
       },
     });
@@ -2488,14 +2509,12 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
          (i.metadata as Record<string, unknown>)?.purpose === "investment" ||
          ["apartment", "house", "officetel", "land", "commercial"].includes(i.item_type)))
       .forEach((item, idx) => {
-        const meta = item.metadata as Record<string, unknown>;
-        const loanAmount = (meta?.has_loan && meta?.loan_amount) ? (meta.loan_amount as number) : 0;
-        const netValue = item.amount - loanAmount;
-        if (netValue > 0) {
+        if (item.amount > 0) {
+          const meta = item.metadata as Record<string, unknown>;
           const label = item.title || (meta?.housing_type as string) || ITEM_TYPES.realEstate.find(t => t.value === item.item_type)?.label || item.item_type;
           realItems.push({
             label,
-            value: netValue,
+            value: item.amount,
             color: categoryShades.realEstate[idx % categoryShades.realEstate.length],
           });
         }
@@ -2505,14 +2524,11 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     items
       .filter(i => i.category === "asset" && ["car", "precious_metal", "art", "other"].includes(i.item_type))
       .forEach((item, idx) => {
-        const meta = item.metadata as Record<string, unknown>;
-        const installment = (meta?.has_installment && meta?.installment_balance) ? (meta.installment_balance as number) : 0;
-        const netValue = item.amount - installment;
-        if (netValue > 0) {
+        if (item.amount > 0) {
           const label = item.title || ITEM_TYPES.realAsset.find(t => t.value === item.item_type)?.label || item.item_type;
           realItems.push({
             label,
-            value: netValue,
+            value: item.amount,
             color: categoryShades.realAsset[idx % categoryShades.realAsset.length],
           });
         }
@@ -2537,7 +2553,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
   const totalDebtChartData = useMemo(() => {
     const debtItems: { label: string; value: number; color: string }[] = [];
 
-    // 모든 부채 항목
+    // 금융 부채 항목
     items
       .filter(i => i.category === "debt")
       .forEach((item, idx) => {
@@ -2551,7 +2567,45 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
         }
       });
 
-    const total = totals.debt + totals.realEstateLoan + totals.realAssetInstallment;
+    // 부동산 대출 (metadata에 포함된 주담대)
+    let colorIdx = debtItems.length;
+    items
+      .filter(i => i.category === "asset" &&
+        ((i.metadata as Record<string, unknown>)?.purpose === "residential" ||
+         (i.metadata as Record<string, unknown>)?.purpose === "investment" ||
+         ["apartment", "house", "officetel", "land", "commercial"].includes(i.item_type)))
+      .forEach((item) => {
+        const meta = item.metadata as Record<string, unknown>;
+        const loanAmount = (meta?.has_loan && meta?.loan_amount) ? (meta.loan_amount as number) : 0;
+        if (loanAmount > 0) {
+          const title = item.title || '부동산';
+          debtItems.push({
+            label: `${title} 대출`,
+            value: loanAmount,
+            color: categoryShades.debt[colorIdx % categoryShades.debt.length],
+          });
+          colorIdx++;
+        }
+      });
+
+    // 실물자산 할부
+    items
+      .filter(i => i.category === "asset" && ["car", "precious_metal", "art", "other"].includes(i.item_type))
+      .forEach((item) => {
+        const meta = item.metadata as Record<string, unknown>;
+        const installment = (meta?.has_installment && meta?.installment_balance) ? (meta.installment_balance as number) : 0;
+        if (installment > 0) {
+          const title = item.title || '실물자산';
+          debtItems.push({
+            label: `${title} 할부`,
+            value: installment,
+            color: categoryShades.debt[colorIdx % categoryShades.debt.length],
+          });
+          colorIdx++;
+        }
+      });
+
+    const total = totals.debt;
     const hasData = debtItems.length > 0;
 
     return {
@@ -2564,7 +2618,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       }],
       total,
     };
-  }, [items, totals.debt, totals.realEstateLoan, totals.realAssetInstallment, categoryShades.debt, chartScaleColors]);
+  }, [items, totals.debt, categoryShades.debt, chartScaleColors]);
 
   // 서브 차트용 옵션 (커스텀 툴팁)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -3385,11 +3439,32 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
         <div className={styles.chartWrapper}>
           <div className={styles.chartBoxMain}>
             <Doughnut data={chartData} options={chartOptions} />
-            <div className={styles.chartCenter}>
+            <div
+              className={styles.chartCenter}
+              onClick={() => setExpandedChart(expandedChart === 'netWorth' ? null : 'netWorth')}
+              data-chart-toggle
+              style={{ cursor: 'pointer' }}
+            >
               <span className={styles.chartLabel}>순자산</span>
               <span className={styles.chartAmount}>{formatMoney(totals.netWorth)}</span>
             </div>
           </div>
+          {expandedChart === 'netWorth' && (
+            <div ref={chartPopoverRef} className={styles.chartPopover} style={{ background: chartScaleColors.tooltipBg, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: `1px solid ${chartScaleColors.tooltipBorder}`, boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)' }}>
+              {(chartData.labels as string[]).map((label: string, idx: number) => {
+                const value = chartData.datasets[0].data[idx];
+                const color = chartData.datasets[0].backgroundColor[idx];
+                if (!value || value <= 0 || label === '데이터 없음') return null;
+                return (
+                  <div key={idx} className={styles.chartPopoverItem}>
+                    <span className={styles.chartPopoverDot} style={{ background: color }} />
+                    <span className={styles.chartPopoverLabel}>{label}</span>
+                    <span className={styles.chartPopoverValue}>{formatMoney(value)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* 서브 차트들 */}
@@ -3397,33 +3472,96 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
           <div className={styles.chartCardSmall}>
             <div className={styles.chartBoxSmall}>
               <Doughnut data={cashAssetChartData} options={cashChartOptions} />
-              <div className={styles.chartCenter}>
+              <div
+                className={styles.chartCenter}
+                onClick={() => setExpandedChart(expandedChart === 'financial' ? null : 'financial')}
+                data-chart-toggle
+                style={{ cursor: 'pointer' }}
+              >
                 <span className={styles.chartLabelSmall}>금융 자산</span>
                 <span className={styles.chartAmountSmall}>{formatMoney(cashAssetChartData.total)}</span>
               </div>
             </div>
+            {expandedChart === 'financial' && (
+              <div ref={chartPopoverRef} className={styles.chartPopover} style={{ background: chartScaleColors.tooltipBg, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: `1px solid ${chartScaleColors.tooltipBorder}`, boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)' }}>
+                {(cashAssetChartData.labels as string[]).map((label: string, idx: number) => {
+                  const value = cashAssetChartData.datasets[0].data[idx];
+                  const color = cashAssetChartData.datasets[0].backgroundColor[idx];
+                  if (!value || value <= 0 || label === '데이터 없음') return null;
+                  return (
+                    <div key={idx} className={styles.chartPopoverItem}>
+                      <span className={styles.chartPopoverDot} style={{ background: color }} />
+                      <span className={styles.chartPopoverLabel}>{label}</span>
+                      <span className={styles.chartPopoverValue}>{formatMoney(value)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className={styles.chartCardSmall}>
             <div className={styles.chartBoxSmall}>
               <Doughnut data={realAssetTotalChartData} options={realChartOptions} />
-              <div className={styles.chartCenter}>
+              <div
+                className={styles.chartCenter}
+                onClick={() => setExpandedChart(expandedChart === 'realAsset' ? null : 'realAsset')}
+                data-chart-toggle
+                style={{ cursor: 'pointer' }}
+              >
                 <span className={styles.chartLabelSmall}>실물 자산</span>
                 <span className={styles.chartAmountSmall}>{formatMoney(realAssetTotalChartData.total)}</span>
               </div>
             </div>
+            {expandedChart === 'realAsset' && (
+              <div ref={chartPopoverRef} className={styles.chartPopover} style={{ background: chartScaleColors.tooltipBg, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: `1px solid ${chartScaleColors.tooltipBorder}`, boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)' }}>
+                {(realAssetTotalChartData.labels as string[]).map((label: string, idx: number) => {
+                  const value = realAssetTotalChartData.datasets[0].data[idx];
+                  const color = realAssetTotalChartData.datasets[0].backgroundColor[idx];
+                  if (!value || value <= 0 || label === '데이터 없음') return null;
+                  return (
+                    <div key={idx} className={styles.chartPopoverItem}>
+                      <span className={styles.chartPopoverDot} style={{ background: color }} />
+                      <span className={styles.chartPopoverLabel}>{label}</span>
+                      <span className={styles.chartPopoverValue}>{formatMoney(value)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className={styles.chartCardSmall}>
             <div className={styles.chartBoxSmall}>
               <Doughnut data={totalDebtChartData} options={debtChartOptions} />
-              <div className={styles.chartCenter}>
+              <div
+                className={styles.chartCenter}
+                onClick={() => setExpandedChart(expandedChart === 'debt' ? null : 'debt')}
+                data-chart-toggle
+                style={{ cursor: 'pointer' }}
+              >
                 <span className={styles.chartLabelSmall}>부채</span>
                 <span className={styles.chartAmountSmall} style={{ color: "#64748b" }}>
                   {formatMoney(totalDebtChartData.total)}
                 </span>
               </div>
             </div>
+            {expandedChart === 'debt' && (
+              <div ref={chartPopoverRef} className={styles.chartPopover} style={{ background: chartScaleColors.tooltipBg, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: `1px solid ${chartScaleColors.tooltipBorder}`, boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)' }}>
+                {(totalDebtChartData.labels as string[]).map((label: string, idx: number) => {
+                  const value = totalDebtChartData.datasets[0].data[idx];
+                  const color = totalDebtChartData.datasets[0].backgroundColor[idx];
+                  if (!value || value <= 0 || label === '데이터 없음') return null;
+                  return (
+                    <div key={idx} className={styles.chartPopoverItem}>
+                      <span className={styles.chartPopoverDot} style={{ background: color }} />
+                      <span className={styles.chartPopoverLabel}>{label}</span>
+                      <span className={styles.chartPopoverValue}>{formatMoney(value)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -3,13 +3,14 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Chart as ChartJS,
-  CategoryScale,
   LinearScale,
+  TimeScale,
   PointElement,
   LineElement,
   Filler,
   Tooltip,
 } from "chart.js";
+import "chartjs-adapter-date-fns";
 import { Line } from "react-chartjs-2";
 import {
   MoreVertical,
@@ -35,7 +36,7 @@ const METRIC_OPTIONS: { id: ChartMetric; label: string }[] = [
 ];
 
 ChartJS.register(
-  CategoryScale,
+  TimeScale,
   LinearScale,
   PointElement,
   LineElement,
@@ -164,10 +165,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
   }, [chartSnapshots, selectedMetric]);
 
   const chartData = useMemo(() => {
-    const labels = chartSnapshots.map((s) => {
-      const date = new Date(s.recorded_at);
-      return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
-    });
+    const labels = chartSnapshots.map((s) => s.recorded_at);
     const metricData = chartSnapshots.map((s) => s[selectedMetric] || 0);
 
     return {
@@ -236,25 +234,35 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
         external: (context: any) => {
           const tooltipId = "asset-record-tooltip";
           let tooltipEl = document.getElementById(tooltipId);
+          const isDark = document.documentElement.classList.contains("dark");
 
           if (!tooltipEl) {
             tooltipEl = document.createElement("div");
             tooltipEl.id = tooltipId;
-            tooltipEl.style.cssText = `
-              position: fixed;
-              pointer-events: none;
-              background: rgba(255, 255, 255, 0.95);
-              backdrop-filter: blur(8px);
-              border-radius: 8px;
-              padding: 10px 14px;
-              font-size: 13px;
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-              z-index: 9999;
-              transition: opacity 0.15s ease;
-              min-width: 140px;
-            `;
             document.body.appendChild(tooltipEl);
           }
+
+          // 매번 다크/라이트 색상 반영
+          const bg = isDark ? "rgba(34, 37, 41, 0.5)" : "rgba(255, 255, 255, 0.5)";
+          const textColor = isDark ? "#e8e8e8" : "#333";
+          const subColor = isDark ? "#9a9b9e" : "#666";
+          const borderColor = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
+
+          tooltipEl.style.cssText = `
+            position: fixed;
+            pointer-events: none;
+            background: ${bg};
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid ${borderColor};
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            z-index: 9999;
+            transition: opacity 0.15s ease;
+            min-width: 140px;
+          `;
 
           const { tooltip } = context;
 
@@ -272,11 +280,11 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
               "순자산";
 
             tooltipEl.innerHTML = `
-              <div style="margin-bottom: 6px; color: #666; font-size: 11px;">${dateLabel}</div>
+              <div style="margin-bottom: 6px; color: ${subColor}; font-size: 11px;">${dateLabel}</div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="width: 10px; height: 10px; border-radius: 50%; background: #14b8a6; flex-shrink: 0;"></span>
-                <span style="color: #333; font-weight: 500;">${metricLabel}</span>
-                <span style="color: #333; font-weight: 600; margin-left: auto;">${formatMoney(value)}</span>
+                <span style="color: ${textColor}; font-weight: 500;">${metricLabel}</span>
+                <span style="color: ${textColor}; font-weight: 600; margin-left: auto;">${formatMoney(value)}</span>
               </div>
             `;
           }
@@ -306,11 +314,22 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
     },
     scales: {
       x: {
+        type: "time" as const,
+        time: {
+          tooltipFormat: "yyyy.MM.dd",
+          displayFormats: {
+            day: "MM.dd",
+            week: "MM.dd",
+            month: "yyyy.MM",
+            year: "yyyy",
+          },
+        },
         grid: { display: false },
         ticks: {
           color: chartScaleColors.tickColor,
           font: { size: 11 },
           maxTicksLimit: 10,
+          autoSkip: true,
         },
       },
       y: {

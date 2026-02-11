@@ -177,7 +177,10 @@ export function DashboardTab({
                     </div>
                   )}
                   <div className={styles.accountInfo}>
-                    <span className={styles.accountName}>{account.name}</span>
+                    <span className={styles.accountName}>
+                      {account.name}
+                      <span className={styles.ownerBadge}>{account.owner === "spouse" ? "배우자" : "본인"}</span>
+                    </span>
                     <span className={styles.accountMeta}>
                       {account.broker_name}
                       <span className={styles.accountTypeBadge}>
@@ -234,7 +237,10 @@ export function DashboardTab({
                       </div>
                     )}
                     <div className={styles.accountInfo}>
-                      <span className={styles.accountName}>{account.name}</span>
+                      <span className={styles.accountName}>
+                        {account.name}
+                        <span className={styles.ownerBadge}>{account.owner === "spouse" ? "배우자" : "본인"}</span>
+                      </span>
                       <span className={styles.accountMeta}>
                         {account.broker_name}
                         <span className={styles.accountTypeBadge}>

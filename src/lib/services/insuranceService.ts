@@ -94,8 +94,8 @@ export async function createInsurance(input: InsuranceInput): Promise<Insurance>
 
   if (error) throw error
 
-  // 보험료 지출 연동 생성 (DB 원 단위 데이터로)
-  await createLinkedExpenseForInsurance(data)
+  // 보험료 지출 연동 생성 (만원 변환 후)
+  await createLinkedExpenseForInsurance(convertFromWon(data, INSURANCE_MONEY_FIELDS))
 
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, INSURANCE_MONEY_FIELDS)
@@ -122,9 +122,9 @@ export async function updateInsurance(
 
   if (error) throw error
 
-  // 연동 지출 재생성 (DB 원 단위 데이터로)
+  // 연동 지출 재생성 (만원 변환 후)
   await deleteLinkedExpenses('insurance', id)
-  await createLinkedExpenseForInsurance(data)
+  await createLinkedExpenseForInsurance(convertFromWon(data, INSURANCE_MONEY_FIELDS))
 
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, INSURANCE_MONEY_FIELDS)

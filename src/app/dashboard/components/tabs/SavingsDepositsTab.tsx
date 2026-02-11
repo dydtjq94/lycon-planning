@@ -178,6 +178,7 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
           broker_name: input.broker_name!,
           account_number: null,
           account_type: input.account_type || "deposit",
+          owner: input.owner || "self",
           current_balance: input.current_balance || 0,
           is_default: false,
           memo: input.memo || null,

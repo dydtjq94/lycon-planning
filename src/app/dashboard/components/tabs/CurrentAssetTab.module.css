@@ -71,6 +71,7 @@
 }
 
 .chartWrapper {
+  position: relative;
   flex-shrink: 0;
 }
 
@@ -90,6 +91,7 @@
 }
 
 .chartCardSmall {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2129,6 +2131,62 @@
 .modalSaveBtn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* 차트 팝오버 */
+.chartPopover {
+  position: absolute;
+  top: calc(50% + 24px);
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 12px;
+  padding: 12px 16px;
+  min-width: 200px;
+  z-index: 10;
+  animation: chartPopoverSlideDown 0.2s ease-out;
+}
+
+@keyframes chartPopoverSlideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.chartPopoverItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.chartPopoverItem + .chartPopoverItem {
+  border-top: 1px solid var(--dashboard-border);
+}
+
+.chartPopoverDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chartPopoverLabel {
+  flex: 1;
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+  white-space: nowrap;
+}
+
+.chartPopoverValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  white-space: nowrap;
 }
 
 /* 반응형 */

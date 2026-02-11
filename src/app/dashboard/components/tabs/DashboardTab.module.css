@@ -87,12 +87,25 @@
 }
 
 .accountName {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
   font-weight: 500;
   color: var(--dashboard-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.ownerBadge {
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--dashboard-hover-bg);
+  border-radius: 4px;
+  color: var(--dashboard-text-secondary);
+  font-weight: 400;
+  flex-shrink: 0;
 }
 
 .accountMeta {

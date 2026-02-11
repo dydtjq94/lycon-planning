@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { X, Edit2, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { Account, AccountType, AccountInput, PaymentMethod, PaymentMethodType, PaymentMethodInput } from "@/types/tables";
+import type { Account, AccountType, AccountInput, PaymentMethod, PaymentMethodType, PaymentMethodInput, Owner } from "@/types/tables";
 
 // 폼 데이터 타입 (duration_months, balance_date 추가)
-type AccountFormData = Partial<AccountInput> & { duration_months?: number; balance_date?: string };
+type AccountFormData = Partial<AccountInput> & { duration_months?: number; balance_date?: string; owner?: Owner };
 import { formatWon } from "@/lib/utils";
 import styles from "./AccountManagementModal.module.css";
 
@@ -16,6 +16,7 @@ interface AccountManagementModalProps {
   profileId: string;
   onClose: () => void;
   initialTab?: TabType;
+  isMarried?: boolean;
 }
 
 import { BANK_OPTIONS, SECURITIES_OPTIONS, CARD_COMPANY_OPTIONS } from '@/lib/constants/financial'
@@ -50,7 +51,7 @@ const PAYMENT_METHOD_TYPE_OPTIONS = [
 ] as const;
 
 
-export function AccountManagementModal({ profileId, onClose, initialTab = "checking" }: AccountManagementModalProps) {
+export function AccountManagementModal({ profileId, onClose, initialTab = "checking", isMarried = false }: AccountManagementModalProps) {
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
@@ -135,6 +136,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
       broker_name: accountFormData.broker_name,
       account_number: accountFormData.account_number || null,
       account_type: accountFormData.account_type || "checking",
+      owner: accountFormData.owner || "self",
       current_balance: accountFormData.current_balance || 0,
       is_default: accountFormData.is_default || false,
       interest_rate: accountFormData.interest_rate || null,
@@ -193,6 +195,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
       broker_name: account.broker_name,
       account_number: account.account_number || "",
       account_type: account.account_type || "checking",
+      owner: account.owner || "self",
       current_balance: account.current_balance || 0,
       is_default: account.is_default || false,
       interest_rate: account.interest_rate || undefined,
@@ -227,6 +230,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
       name: "",
       account_number: "",
       account_type: defaultType,
+      owner: "self",
       current_balance: 0,
       is_default: false,
       // 정기 예금/적금 탭 기본값
@@ -378,6 +382,21 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
           <div className={styles.formSection}>
             <h4>{editingAccountId ? "계좌 수정" : "새 계좌 추가"}</h4>
             <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label>소유자</label>
+                {isMarried ? (
+                  <select
+                    value={accountFormData.owner || "self"}
+                    onChange={(e) => setAccountFormData({ ...accountFormData, owner: e.target.value as Owner })}
+                    className={styles.select}
+                  >
+                    <option value="self">본인</option>
+                    <option value="spouse">배우자</option>
+                  </select>
+                ) : (
+                  <div className={styles.ownerFixed}>본인</div>
+                )}
+              </div>
               {activeTab !== "checking" && (
                 <div className={styles.formGroup}>
                   <label>유형</label>
@@ -664,6 +683,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                       <div className={styles.listItemMeta}>
                         {getAccountTypeLabel(account.account_type || "")}
                         {" · "}{account.broker_name}
+                        {isMarried && ` · ${account.owner === "spouse" ? "배우자" : "본인"}`}
                         {account.start_year && ` · ${account.start_year}.${String(account.start_month || 1).padStart(2, "0")}.${String(account.start_day || 1).padStart(2, "0")} 가입`}
                         {account.interest_rate && ` · ${account.interest_rate}% (${account.interest_type === 'simple' ? '단리' : account.interest_type === 'monthly_compound' ? '월복리' : '년복리'})`}
                         {account.current_balance !== null && account.current_balance > 0 && ` · ${formatWon(account.current_balance)}`}

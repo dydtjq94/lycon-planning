@@ -13,11 +13,11 @@ import {
 import type {
   Simulation,
   InvestmentAssumptions,
-  CashFlowPriority,
+  CashFlowPriorities,
   GlobalSettings,
   DEFAULT_INVESTMENT_ASSUMPTIONS,
 } from "@/types";
-import { DEFAULT_GLOBAL_SETTINGS } from "@/types";
+import { DEFAULT_GLOBAL_SETTINGS, normalizePriorities } from "@/types";
 import type { SimulationResult, SimulationProfile } from "@/lib/services/simulationEngine";
 import { runSimulationV2 } from "@/lib/services/simulationEngineV2";
 import { getIncomes } from "@/lib/services/incomeService";
@@ -53,8 +53,8 @@ interface SimulationContextValue {
   setInvestmentAssumptions: (assumptions: InvestmentAssumptions) => void;
 
   // Cash Flow Priorities
-  cashFlowPriorities: CashFlowPriority[];
-  setCashFlowPriorities: (priorities: CashFlowPriority[]) => void;
+  cashFlowPriorities: CashFlowPriorities;
+  setCashFlowPriorities: (priorities: CashFlowPriorities) => void;
 
   // Global Settings (기존 호환)
   globalSettings: GlobalSettings;
@@ -110,8 +110,8 @@ export function SimulationProvider({
   );
 
   // Cash Flow Priorities (시뮬레이션에서 로드 또는 빈 배열)
-  const [cashFlowPriorities, setCashFlowPrioritiesState] = useState<CashFlowPriority[]>(
-    currentSimulation?.cash_flow_priorities || []
+  const [cashFlowPriorities, setCashFlowPrioritiesState] = useState<CashFlowPriorities>(
+    normalizePriorities(currentSimulation?.cash_flow_priorities)
   );
 
   // Global Settings
@@ -127,7 +127,7 @@ export function SimulationProvider({
       setInvestmentAssumptionsState(
         currentSimulation.investment_assumptions || DEFAULT_ASSUMPTIONS
       );
-      setCashFlowPrioritiesState(currentSimulation.cash_flow_priorities || []);
+      setCashFlowPrioritiesState(normalizePriorities(currentSimulation.cash_flow_priorities));
     }
   }, [currentSimulation?.id]);
 
@@ -242,7 +242,7 @@ export function SimulationProvider({
   );
 
   const setCashFlowPriorities = useCallback(
-    (priorities: CashFlowPriority[]) => {
+    (priorities: CashFlowPriorities) => {
       setCashFlowPrioritiesState(priorities);
       invalidateCache();
       triggerRecalculation();

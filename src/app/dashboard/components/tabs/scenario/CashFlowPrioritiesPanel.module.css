@@ -9,9 +9,6 @@
   width: 100%;
   padding: 0;
   padding-bottom: 16px;
-  background: none;
-  border: none;
-  cursor: pointer;
   color: var(--dashboard-text);
 }
 
@@ -26,220 +23,166 @@
   font-weight: 600;
 }
 
-.countBadge {
-  font-size: 12px;
-  color: var(--dashboard-text-secondary);
-}
-
-.content {
+/* Sections */
+.section {
   padding: 0;
 }
 
-.description {
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  margin: 0 0 4px 0;
+}
+
+.sectionDescription {
   font-size: 13px;
   color: var(--dashboard-text-secondary);
-  margin-bottom: 16px;
+  margin: 0 0 12px 0;
   line-height: 1.5;
 }
 
-.emptyState {
-  padding: 32px 0;
-  text-align: center;
-  color: var(--dashboard-text-secondary);
-  font-size: 13px;
+.sectionDivider {
+  height: 1px;
+  background: var(--dashboard-border);
+  margin: 20px 0;
 }
 
-.emptyHint {
-  font-size: 12px;
-  color: var(--dashboard-text-muted);
-  margin-top: 8px;
-}
-
+/* Rule list */
 .ruleList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
-.ruleItem {
+.ruleRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: var(--dashboard-hover-bg);
   border-radius: 8px;
   transition: opacity 0.15s, transform 0.15s;
 }
 
-.ruleItem.dragging {
+.ruleRow.dragging {
   opacity: 0.5;
   transform: scale(0.98);
 }
 
+/* Drag handle */
 .dragHandle {
   cursor: grab;
   color: var(--dashboard-text-muted);
-  padding: 4px;
+  padding: 2px;
+  flex-shrink: 0;
 }
 
 .dragHandle:active {
   cursor: grabbing;
 }
 
+/* Priority badge */
 .priorityBadge {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--accent-color, #007aff);
   color: white;
   border-radius: 50%;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   flex-shrink: 0;
 }
 
-.ruleContent {
+/* Rule name */
+.ruleName {
   flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text);
   min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.ruleDisplay {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  padding: 4px;
-  margin: -4px;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-
-.ruleDisplay:hover {
-  background: var(--dashboard-bg);
-}
-
-.ruleIcon {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--dashboard-card-bg);
-  border-radius: 8px;
-  color: var(--dashboard-text-secondary);
-  flex-shrink: 0;
-}
-
-.ruleInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ruleTarget {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-}
-
-.ruleStrategy {
-  font-size: 11px;
-  color: var(--dashboard-text-secondary);
-}
-
-/* Edit form */
-.editForm {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 8px 0;
-}
-
-.formRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.formRow label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  width: 60px;
-  flex-shrink: 0;
-}
-
-.formRow select {
-  flex: 1;
-  padding: 6px 10px;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
-  background: var(--dashboard-card-bg);
-  color: var(--dashboard-text);
-  font-size: 13px;
-  outline: none;
-}
-
-.formRow select:focus {
-  border-color: var(--accent-color, #007aff);
-}
-
-.inputWithUnit {
-  flex: 1;
+/* Limit area (surplus rules only) */
+.limitArea {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
-.inputWithUnit input {
-  width: 100px;
-  padding: 6px 10px;
+.limitInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.limitInput {
+  width: 80px;
+  padding: 4px 8px;
   border: 1px solid var(--dashboard-border);
   border-radius: 6px;
   background: var(--dashboard-card-bg);
   color: var(--dashboard-text);
-  font-size: 13px;
+  font-size: 12px;
   text-align: right;
   outline: none;
 }
 
-.inputWithUnit input:focus {
+.limitInput:focus {
   border-color: var(--accent-color, #007aff);
 }
 
-/* spin button removal */
-.inputWithUnit input::-webkit-outer-spin-button,
-.inputWithUnit input::-webkit-inner-spin-button {
+/* Spin button removal */
+.limitInput::-webkit-outer-spin-button,
+.limitInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.inputWithUnit span {
-  font-size: 12px;
+.limitUnit {
+  font-size: 11px;
   color: var(--dashboard-text-secondary);
   white-space: nowrap;
 }
 
-.doneButton {
-  align-self: flex-end;
-  padding: 6px 14px;
-  background: var(--accent-color, #007aff);
-  border: none;
-  border-radius: 6px;
+.remainderBadge {
   font-size: 12px;
-  font-weight: 500;
-  color: white;
+  color: var(--dashboard-text-muted);
+  padding: 4px 8px;
+  background: var(--dashboard-bg);
+  border-radius: 4px;
+}
+
+.toggleLimitButton {
+  padding: 3px 8px;
+  background: none;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
-  transition: opacity 0.15s;
+  white-space: nowrap;
+  transition: color 0.15s;
 }
 
-.doneButton:hover {
-  opacity: 0.9;
+.toggleLimitButton:hover {
+  color: var(--dashboard-text-secondary);
 }
 
+.toggleLimitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Delete button */
 .deleteButton {
   padding: 6px;
   background: none;
@@ -247,6 +190,7 @@
   border-radius: 4px;
   color: var(--dashboard-text-muted);
   cursor: pointer;
+  flex-shrink: 0;
   transition: color 0.15s;
 }
 
@@ -259,11 +203,70 @@
   cursor: not-allowed;
 }
 
+/* Empty state */
+.emptyState {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--dashboard-text-secondary);
+  font-size: 13px;
+}
+
+.emptyHint {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  margin-top: 6px;
+}
+
+/* Add row (inline selector) */
+.addRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.accountSelect {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 6px;
+  background: var(--dashboard-input-bg);
+  color: var(--dashboard-text);
+  font-size: 13px;
+  outline: none;
+}
+
+.accountSelect:focus {
+  border-color: var(--accent-color, #007aff);
+}
+
+.accountSelect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  padding: 7px 14px;
+  background: none;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.cancelButton:hover {
+  color: var(--dashboard-text);
+}
+
+/* Add button */
 .addButton {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 12px 0;
+  padding: 10px 0;
   background: none;
   border: none;
   font-size: 14px;
@@ -292,7 +295,12 @@
 }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--dashboard-hover-bg) 25%, var(--dashboard-border) 50%, var(--dashboard-hover-bg) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--dashboard-hover-bg) 25%,
+    var(--dashboard-border) 50%,
+    var(--dashboard-hover-bg) 75%
+  );
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
@@ -322,16 +330,6 @@
   height: 18px;
 }
 
-.skeletonCount {
-  width: 50px;
-  height: 14px;
-}
-
-.skeletonChevron {
-  width: 18px;
-  height: 18px;
-}
-
 .skeletonContent {
   padding: 0;
 }
@@ -345,7 +343,7 @@
 .skeletonRuleList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 16px;
 }
 
@@ -353,7 +351,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: var(--dashboard-hover-bg);
   border-radius: 8px;
 }
@@ -365,8 +363,8 @@
 }
 
 .skeletonPriorityBadge {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
 }
 
@@ -377,12 +375,6 @@
   gap: 10px;
 }
 
-.skeletonRuleIcon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-}
-
 .skeletonRuleInfo {
   display: flex;
   flex-direction: column;
@@ -390,7 +382,7 @@
 }
 
 .skeletonRuleTarget {
-  width: 60px;
+  width: 80px;
   height: 14px;
 }
 
@@ -403,10 +395,4 @@
   width: 26px;
   height: 26px;
   border-radius: 4px;
-}
-
-.skeletonAddBtn {
-  width: 80px;
-  height: 20px;
-  margin-top: 4px;
 }

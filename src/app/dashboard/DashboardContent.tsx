@@ -15,6 +15,7 @@ import { CategoryManagementModal } from "./components/CategoryManagementModal";
 import { useFinancialContext } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
+  useSimulationV2Data,
   useSimulations,
   useCreateSimulation,
   useDeleteSimulation,
@@ -29,11 +30,11 @@ import type {
   PensionData,
 } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationEngine";
-import { runSimulationFromItems } from "@/lib/services/simulationEngine";
+import { runSimulationV2 } from "@/lib/services/simulationEngineV2";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
 import { simulationService } from "@/lib/services/simulationService";
 import { calculateEndYear } from "@/lib/utils/chartDataTransformer";
-import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_SETTINGS } from "@/types";
+import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_SETTINGS, DEFAULT_INVESTMENT_ASSUMPTIONS, normalizePriorities } from "@/types";
 import { Sidebar } from "./components";
 import {
   OverviewTab,
@@ -339,25 +340,14 @@ export function DashboardContent() {
                 // 1단계: 계좌 데이터 복사 (가격 없이 빠르게)
                 await simulationService.initializeSimulationData(newSim.id, profile.id);
 
-                // 2단계: UI 표시 (데이터 로드)
-                setInitializingSimulationId(null);
+                // 2단계: 실시간 가격 조회 및 동기화
+                await simulationService.syncPricesInBackground(newSim.id, profile.id);
+
+                // 3단계: 모든 데이터 로드 완료까지 대기 후 로딩 해제
                 setSimulationDataKey(prev => prev + 1);
                 queryClient.invalidateQueries({ queryKey: ["simulations"] });
-                queryClient.invalidateQueries({ queryKey: financialKeys.items(newSim.id) });
-
-                // 3단계: 백그라운드에서 실시간 가격 조회 후 업데이트
-                setSyncingPricesSimulationId(newSim.id);
-                simulationService.syncPricesInBackground(newSim.id, profile.id)
-                  .then(() => {
-                    // 가격 업데이트 후 UI 새로고침
-                    setSyncingPricesSimulationId(null);
-                    queryClient.invalidateQueries({ queryKey: financialKeys.items(newSim.id) });
-                    queryClient.invalidateQueries({ queryKey: ["simulations"] });
-                  })
-                  .catch((error) => {
-                    console.error("Price sync error:", error);
-                    setSyncingPricesSimulationId(null);
-                  });
+                await queryClient.invalidateQueries({ queryKey: financialKeys.all });
+                setInitializingSimulationId(null);
               } catch (error) {
                 console.error("[handleAddSimulation] Initialize error:", error);
                 setInitializingSimulationId(null);
@@ -406,14 +396,12 @@ export function DashboardContent() {
     getTotalUnreadCount().then(setUnreadMessageCount).catch(console.error);
   }, []);
 
-  // React Query로 재무 데이터 로드 (캐싱 적용)
-  const {
-    data: items = [],
-    isLoading,
-    isFetching,
-  } = useFinancialItems(simulation.id, simulationProfile);
+  // V2 시뮬레이션 데이터 로드 (선택된 시뮬레이션 기준)
+  const activeSimulationId = selectedSim?.id || simulation.id;
+  const { data: v2Data, isLoading: isLoadingV2 } = useSimulationV2Data(activeSimulationId);
 
-  // Prefetch 제거 - useFinancialItems가 이미 모든 데이터를 로드함
+  // 레거시 pension sync용으로만 V1 items 유지
+  const { data: items = [], isLoading } = useFinancialItems(simulation.id, simulationProfile);
 
   // 배우자 정보 (IncomeTab, ExpenseTab에서 사용)
   const spouseMember = useMemo(() => {
@@ -421,38 +409,31 @@ export function DashboardContent() {
   }, [familyMembers]);
   const isMarried = !!spouseMember;
 
-  // 중복 제거된 items (title + type + owner + category로 중복 판단)
-  const deduplicatedItems = useMemo(() => {
-    const seen = new Set<string>();
-    return items.filter((item) => {
-      const key = `${item.category}-${item.title}-${item.type}-${
-        item.owner || "self"
-      }`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [items]);
+  // 투자 가정 및 캐시플로우 우선순위 (선택된 시뮬레이션 기준)
+  const activeSim = selectedSim || simulation;
+  const investmentAssumptions = activeSim.investment_assumptions || DEFAULT_INVESTMENT_ASSUMPTIONS;
+  const cashFlowPriorities = normalizePriorities(activeSim.cash_flow_priorities);
 
-  // 공유 시뮬레이션 결과 (Single Source of Truth)
+  // 공유 시뮬레이션 결과 (V2 엔진 사용, 선택된 시뮬레이션 기준)
   const simulationResult: SimulationResult = useMemo(() => {
     const simulationEndYear = calculateEndYear(
       simulationProfile.birthYear,
       simulationProfile.spouseBirthYear
     );
     const yearsToSimulate = simulationEndYear - new Date().getFullYear();
-    // null을 undefined로 변환 (simulationEngine 타입 호환)
-    const engineProfile = {
-      ...simulationProfile,
-      spouseBirthYear: simulationProfile.spouseBirthYear ?? undefined,
-    };
-    return runSimulationFromItems(
-      deduplicatedItems,
-      engineProfile,
+    return runSimulationV2(
+      v2Data,
+      {
+        birthYear: simulationProfile.birthYear,
+        retirementAge: simulationProfile.retirementAge,
+        spouseBirthYear: simulationProfile.spouseBirthYear ?? undefined,
+      },
       globalSettings || DEFAULT_GLOBAL_SETTINGS,
-      yearsToSimulate
+      yearsToSimulate,
+      investmentAssumptions,
+      cashFlowPriorities
     );
-  }, [deduplicatedItems, simulationProfile, globalSettings]);
+  }, [v2Data, simulationProfile, globalSettings, investmentAssumptions, cashFlowPriorities]);
 
   // 기본 설정
   const settings = DEFAULT_SETTINGS;
@@ -1025,6 +1006,7 @@ export function DashboardContent() {
           profileId={profile.id}
           onClose={() => setShowAccountModal(false)}
           initialTab={accountModalTab}
+          isMarried={isMarried}
         />
       )}
 

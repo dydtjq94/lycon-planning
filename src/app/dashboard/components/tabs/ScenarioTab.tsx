@@ -13,7 +13,8 @@ import {
   ListOrdered,
   Settings,
 } from "lucide-react";
-import type { Simulation, GlobalSettings, InvestmentAssumptions, CashFlowPriority } from "@/types";
+import type { Simulation, GlobalSettings, InvestmentAssumptions, CashFlowPriorities } from "@/types";
+import { normalizePriorities } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationEngine";
 import type { SimulationProfile } from "@/lib/services/dbToFinancialItems";
 import type { ProfileBasics, FamilyMember } from "@/contexts/FinancialContext";
@@ -41,8 +42,8 @@ interface ScenarioTabProps {
   spouseMember?: FamilyMember;
   investmentAssumptions?: InvestmentAssumptions;
   onInvestmentAssumptionsChange?: (assumptions: InvestmentAssumptions) => void;
-  cashFlowPriorities?: CashFlowPriority[];
-  onCashFlowPrioritiesChange?: (priorities: CashFlowPriority[]) => void;
+  cashFlowPriorities?: CashFlowPriorities;
+  onCashFlowPrioritiesChange?: (priorities: CashFlowPriorities) => void;
   isInitializing?: boolean;
   isSyncingPrices?: boolean;
 }
@@ -118,8 +119,8 @@ export function ScenarioTab({
   const [localAssumptions, setLocalAssumptions] = useState<InvestmentAssumptions>(
     propAssumptions || simulation.investment_assumptions || DEFAULT_ASSUMPTIONS
   );
-  const [localPriorities, setLocalPriorities] = useState<CashFlowPriority[]>(
-    propPriorities || simulation.cash_flow_priorities || []
+  const [localPriorities, setLocalPriorities] = useState<CashFlowPriorities>(
+    propPriorities || normalizePriorities(simulation.cash_flow_priorities)
   );
 
   // 실제 사용할 값들
@@ -136,7 +137,7 @@ export function ScenarioTab({
   };
 
   // priorities 변경 핸들러
-  const handlePrioritiesChange = (newPriorities: CashFlowPriority[]) => {
+  const handlePrioritiesChange = (newPriorities: CashFlowPriorities) => {
     if (onCashFlowPrioritiesChange) {
       onCashFlowPrioritiesChange(newPriorities);
     } else {
@@ -159,6 +160,8 @@ export function ScenarioTab({
           onTimeRangeChange={setSharedTimeRange}
           selectedYear={sharedSelectedYear}
           onSelectedYearChange={setSharedSelectedYear}
+          investmentAssumptions={assumptions}
+          cashFlowPriorities={priorities}
         />
       );
     }
@@ -176,6 +179,8 @@ export function ScenarioTab({
           onTimeRangeChange={setSharedTimeRange}
           selectedYear={sharedSelectedYear}
           onSelectedYearChange={setSharedSelectedYear}
+          investmentAssumptions={assumptions}
+          cashFlowPriorities={priorities}
         />
       );
     }
@@ -262,6 +267,7 @@ export function ScenarioTab({
           <CashFlowPrioritiesPanel
             priorities={priorities}
             onChange={handlePrioritiesChange}
+            simulationId={simulationId}
           />
         );
       default:

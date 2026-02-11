@@ -19,8 +19,11 @@
   gap: 16px;
 }
 
-/* 헤더 액션 (우측) */
-.headerAction {
+/* 우측 액션 (토글 + 헤더 액션) */
+.rightActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -37,9 +40,49 @@
   flex-shrink: 0;
 }
 
+.legendGradient {
+  width: 20px;
+  height: 12px;
+  border-radius: 2px;
+  border-top: 2px solid;
+  flex-shrink: 0;
+}
+
 .legendLabel {
   font-size: 13px;
   color: var(--dashboard-text-secondary);
+}
+
+.chartModeToggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--dashboard-hover-bg);
+}
+
+.modeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.modeButton:hover {
+  color: var(--dashboard-text-secondary);
+}
+
+.modeActive {
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
 }
 
 /* 차트 영역 */

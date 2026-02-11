@@ -67,9 +67,9 @@ export async function createRetirementPension(
 
   if (error) throw error
 
-  // 연금형일 경우에만 소득 연동 (DB 원 단위 데이터로)
+  // 연금형일 경우에만 소득 연동 (만원 변환 후)
   if (data.receive_type === 'annuity' && data.start_age && data.receiving_years) {
-    await createLinkedIncome(data, birthYear, retirementAge, monthlyIncome)
+    await createLinkedIncome(convertFromWon(data, RETIREMENT_PENSION_MONEY_FIELDS), birthYear, retirementAge, monthlyIncome)
   }
 
   // DB(원) -> 클라이언트(만원) 변환
@@ -101,9 +101,9 @@ export async function updateRetirementPension(
   // 기존 연동 소득 삭제
   await deleteLinkedIncomes('retirement_pension', id)
 
-  // 연금형일 경우에만 소득 연동 재생성 (DB 원 단위 데이터로)
+  // 연금형일 경우에만 소득 연동 재생성 (만원 변환 후)
   if (data.receive_type === 'annuity' && data.start_age && data.receiving_years) {
-    await createLinkedIncome(data, birthYear, retirementAge, monthlyIncome)
+    await createLinkedIncome(convertFromWon(data, RETIREMENT_PENSION_MONEY_FIELDS), birthYear, retirementAge, monthlyIncome)
   }
 
   // DB(원) -> 클라이언트(만원) 변환

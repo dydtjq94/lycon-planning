@@ -10,7 +10,7 @@ import {
 } from 'chart.js'
 import annotationPlugin from 'chartjs-plugin-annotation'
 import type { SimulationResult } from '@/lib/services/simulationEngine'
-import { groupIncomeItems, groupExpenseItems } from '@/lib/utils/tooltipCategories'
+import { groupIncomeItems, groupExpenseItems, groupCashFlowItems } from '@/lib/utils/tooltipCategories'
 import {
   getOrCreateTooltip,
   removeTooltip,
@@ -65,6 +65,8 @@ export function CashFlowChart({
   const chartInstance = useRef<ChartJS | null>(null)
   const onYearClickRef = useRef(onYearClick)
   onYearClickRef.current = onYearClick
+  const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const hoverIndexRef = useRef<number>(-1)
 
   const { snapshots } = simulationResult
   const currentYear = new Date().getFullYear()
@@ -108,52 +110,96 @@ export function CashFlowChart({
     const netPrefix = netCashFlow >= 0 ? '+' : '-'
     const netColor = netCashFlow >= 0 ? '#10b981' : '#ef4444'
 
-    // 소득/지출 breakdown
-    const incomeGroups = groupIncomeItems(snapshot.incomeBreakdown)
-    const expenseGroups = groupExpenseItems(snapshot.expenseBreakdown)
-    const totalIncome = incomeGroups.reduce((sum, g) => sum + g.total, 0)
-    const totalExpense = expenseGroups.reduce((sum, g) => sum + g.total, 0)
-
     // 나이 텍스트
     const ageText = getAgeText(snapshot.year, birthYear, spouseBirthYear)
 
-    // 소득 항목 HTML
-    const incomeItemsHtml = incomeGroups.length > 0 ? `
-      <div style="margin-top: 12px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 13px; font-weight: 700; color: ${textColor};">수입</span>
-          <span style="font-size: 13px; font-weight: 700; color: #10b981;">+${formatMoneyWithUnit(totalIncome)}</span>
-        </div>
-        ${incomeGroups.map(group => group.items.map(item => `
-          <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
-              <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
-            </div>
-            <span style="font-size: 12px; color: ${textColor};">+${formatMoneyWithUnit(item.amount)}</span>
-          </div>
-        `).join('')).join('')}
-      </div>
-    ` : ''
+    // 소득/지출 breakdown
+    let incomeItemsHtml = ''
+    let expenseItemsHtml = ''
 
-    // 지출 항목 HTML
-    const expenseItemsHtml = expenseGroups.length > 0 ? `
-      <div style="margin-top: 12px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 13px; font-weight: 700; color: ${textColor};">지출</span>
-          <span style="font-size: 13px; font-weight: 700; color: #ef4444;">-${formatMoneyWithUnit(totalExpense)}</span>
-        </div>
-        ${expenseGroups.map(group => group.items.map(item => `
-          <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
-              <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
-            </div>
-            <span style="font-size: 12px; color: ${textColor};">-${formatMoneyWithUnit(item.amount)}</span>
+    const cfItems = snapshot.cashFlowBreakdown
+    if (cfItems && cfItems.length > 0) {
+      // V2: use cashFlowBreakdown with grouped categories
+      const { inflows, outflows, totalInflow, totalOutflow } = groupCashFlowItems(cfItems)
+
+      incomeItemsHtml = inflows.length > 0 ? `
+        <div style="margin-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 700; color: ${textColor};">공급</span>
+            <span style="font-size: 13px; font-weight: 700; color: #10b981;">+${formatMoneyWithUnit(totalInflow)}</span>
           </div>
-        `).join('')).join('')}
-      </div>
-    ` : ''
+          ${inflows.map(group => `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+                <span style="font-size: 12px; color: ${textColor};">${group.category.label}</span>
+              </div>
+              <span style="font-size: 12px; color: ${textColor};">+${formatMoneyWithUnit(group.total)}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''
+
+      expenseItemsHtml = outflows.length > 0 ? `
+        <div style="margin-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 700; color: ${textColor};">수요</span>
+            <span style="font-size: 13px; font-weight: 700; color: #ef4444;">-${formatMoneyWithUnit(totalOutflow)}</span>
+          </div>
+          ${outflows.map(group => `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+                <span style="font-size: 12px; color: ${textColor};">${group.category.label}</span>
+              </div>
+              <span style="font-size: 12px; color: ${textColor};">-${formatMoneyWithUnit(group.total)}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''
+    } else {
+      // Fallback: use old income/expense breakdowns
+      const incomeGroups = groupIncomeItems(snapshot.incomeBreakdown)
+      const expenseGroups = groupExpenseItems(snapshot.expenseBreakdown)
+      const totalIncome = incomeGroups.reduce((sum, g) => sum + g.total, 0)
+      const totalExpense = expenseGroups.reduce((sum, g) => sum + g.total, 0)
+
+      incomeItemsHtml = incomeGroups.length > 0 ? `
+        <div style="margin-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 700; color: ${textColor};">공급</span>
+            <span style="font-size: 13px; font-weight: 700; color: #10b981;">+${formatMoneyWithUnit(totalIncome)}</span>
+          </div>
+          ${incomeGroups.map(group => group.items.map(item => `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+                <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
+              </div>
+              <span style="font-size: 12px; color: ${textColor};">+${formatMoneyWithUnit(item.amount)}</span>
+            </div>
+          `).join('')).join('')}
+        </div>
+      ` : ''
+
+      expenseItemsHtml = expenseGroups.length > 0 ? `
+        <div style="margin-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 700; color: ${textColor};">수요</span>
+            <span style="font-size: 13px; font-weight: 700; color: #ef4444;">-${formatMoneyWithUnit(totalExpense)}</span>
+          </div>
+          ${expenseGroups.map(group => group.items.map(item => `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+                <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
+              </div>
+              <span style="font-size: 12px; color: ${textColor};">-${formatMoneyWithUnit(item.amount)}</span>
+            </div>
+          `).join('')).join('')}
+        </div>
+      ` : ''
+    }
 
     tooltipEl.innerHTML = `
       <div style="font-size: 18px; font-weight: 700; color: ${textColor}; margin-bottom: 2px;">${snapshot.year}년</div>
@@ -168,12 +214,64 @@ export function CashFlowChart({
       ${expenseItemsHtml}
     `
 
-    positionTooltip(tooltipEl, chart.canvas, tooltip.caretX, tooltip.caretY)
+    positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
   }, [snapshots, isDark, birthYear, spouseBirthYear])
 
-  // 언마운트 시 차트 + 툴팁 정리
+  // 마우스 추적 + 호버 라인 + 언마운트 정리
   useEffect(() => {
+    const canvas = chartRef.current
+
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY }
+
+      // 툴팁이 보이면 마우스 따라 위치 업데이트
+      const tooltipEl = document.getElementById('sim-chart-tooltip') as HTMLDivElement | null
+      if (tooltipEl && tooltipEl.style.opacity === '1' && canvas) {
+        positionTooltip(tooltipEl, canvas, e.clientX, e.clientY)
+      }
+
+      const chart = chartInstance.current
+      if (!chart) return
+
+      const elements = chart.getElementsAtEventForMode(e, 'index', { intersect: false }, false)
+      const newIndex = elements.length > 0 ? elements[0].index : -1
+      if (newIndex === hoverIndexRef.current) return
+      hoverIndexRef.current = newIndex
+
+      const annotations = (chart.options.plugins?.annotation as { annotations?: Record<string, unknown> })?.annotations
+      if (!annotations) return
+
+      if (newIndex >= 0) {
+        const accent = getComputedStyle(canvas!).getPropertyValue('--accent-color').trim() || '#007aff'
+        annotations.hoverLine = {
+          type: 'line',
+          xMin: newIndex,
+          xMax: newIndex,
+          borderColor: `color-mix(in srgb, ${accent} 25%, transparent)`,
+          borderWidth: 1.5,
+        }
+      } else {
+        delete annotations.hoverLine
+      }
+      chart.update('none')
+    }
+
+    const handleMouseLeave = () => {
+      hoverIndexRef.current = -1
+      const chart = chartInstance.current
+      if (!chart) return
+      const annotations = (chart.options.plugins?.annotation as { annotations?: Record<string, unknown> })?.annotations
+      if (annotations?.hoverLine) {
+        delete annotations.hoverLine
+        chart.update('none')
+      }
+    }
+
+    canvas?.addEventListener('mousemove', handleMouseMove)
+    canvas?.addEventListener('mouseleave', handleMouseLeave)
     return () => {
+      canvas?.removeEventListener('mousemove', handleMouseMove)
+      canvas?.removeEventListener('mouseleave', handleMouseLeave)
       if (chartInstance.current) {
         chartInstance.current.destroy()
         chartInstance.current = null

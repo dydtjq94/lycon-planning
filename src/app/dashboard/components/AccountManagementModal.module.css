@@ -171,6 +171,12 @@
   border-color: #1a1a1a;
 }
 
+.ownerFixed {
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--dashboard-text-secondary, #6b7280);
+}
+
 .dateInputs {
   display: flex;
   gap: 8px;

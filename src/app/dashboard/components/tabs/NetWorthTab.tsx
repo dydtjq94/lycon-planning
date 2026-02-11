@@ -2,14 +2,15 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { ChevronDown } from 'lucide-react'
-import type { GlobalSettings } from '@/types'
-import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
-import { runSimulationFromItems } from '@/lib/services/simulationEngine'
-import { useFinancialItems } from '@/hooks/useFinancialData'
+import type { GlobalSettings, InvestmentAssumptions, CashFlowPriorities } from '@/types'
+import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_INVESTMENT_ASSUMPTIONS } from '@/types'
+import { runSimulationV2 } from '@/lib/services/simulationEngineV2'
+import { useSimulationV2Data } from '@/hooks/useFinancialData'
 import { calculateEndYear } from '@/lib/utils/chartDataTransformer'
 import { AssetStackChart } from '../charts'
 import { formatMoney } from '@/lib/utils'
 import { useChartTheme } from '@/hooks/useChartTheme'
+import { groupAssetItems, groupDebtItems } from '@/lib/utils/tooltipCategories'
 import styles from './NetWorthTab.module.css'
 
 interface NetWorthTabProps {
@@ -23,6 +24,8 @@ interface NetWorthTabProps {
   onTimeRangeChange?: (range: 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full') => void
   selectedYear?: number
   onSelectedYearChange?: (year: number) => void
+  investmentAssumptions?: InvestmentAssumptions
+  cashFlowPriorities?: CashFlowPriorities
 }
 
 // 기간 선택 옵션
@@ -48,6 +51,8 @@ export function NetWorthTab({
   onTimeRangeChange,
   selectedYear: propSelectedYear,
   onSelectedYearChange,
+  investmentAssumptions,
+  cashFlowPriorities,
 }: NetWorthTabProps) {
   const currentYear = new Date().getFullYear()
   const currentAge = currentYear - birthYear
@@ -84,49 +89,25 @@ export function NetWorthTab({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showTimeRangeMenu])
 
-  // 프로필 정보
-  const profile = useMemo(() => ({
-    birthYear,
-    retirementAge,
-    spouseBirthYear: spouseBirthYear || undefined,
-  }), [birthYear, retirementAge, spouseBirthYear])
-
   // React Query로 데이터 로드
-  const { data: items = [], isLoading } = useFinancialItems(simulationId, profile)
+  const { data: v2Data, isLoading } = useSimulationV2Data(simulationId)
 
   // 시뮬레이션 실행
   const simulationResult = useMemo(() => {
-    if (items.length === 0) {
-      return {
-        startYear: currentYear,
-        endYear: simulationEndYear,
-        retirementYear,
-        snapshots: [],
-        summary: {
-          currentNetWorth: 0,
-          retirementNetWorth: 0,
-          peakNetWorth: 0,
-          peakNetWorthYear: currentYear,
-          yearsToFI: null,
-          fiTarget: 0,
-          bankruptcyYear: null,
-        },
-      }
-    }
-
     const gs = globalSettings || DEFAULT_GLOBAL_SETTINGS
-
-    return runSimulationFromItems(
-      items,
+    return runSimulationV2(
+      v2Data,
       {
         birthYear,
         retirementAge,
         spouseBirthYear: spouseBirthYear || undefined,
       },
       gs,
-      yearsToSimulate
+      yearsToSimulate,
+      investmentAssumptions || DEFAULT_INVESTMENT_ASSUMPTIONS,
+      cashFlowPriorities
     )
-  }, [items, birthYear, retirementAge, spouseBirthYear, globalSettings, yearsToSimulate, currentYear, simulationEndYear, retirementYear])
+  }, [v2Data, birthYear, retirementAge, spouseBirthYear, globalSettings, yearsToSimulate, investmentAssumptions, cashFlowPriorities])
 
   // 기간에 따른 표시 범위 계산
   const displayRange = useMemo(() => {
@@ -176,7 +157,22 @@ export function NetWorthTab({
     setSelectedYear(parseInt(e.target.value))
   }, [])
 
-  if ((isLoading || isInitializing) && items.length === 0) {
+  // 자산/부채 카테고리 그룹 계산 (hooks는 early return 전에 위치해야 함)
+  const assetGroups = useMemo(() => {
+    if (!selectedSnapshot) return []
+    const allAssetItems = [
+      ...(selectedSnapshot.assetBreakdown || []),
+      ...(selectedSnapshot.pensionBreakdown || [])
+    ]
+    return groupAssetItems(allAssetItems)
+  }, [selectedSnapshot])
+
+  const debtGroups = useMemo(() => {
+    if (!selectedSnapshot) return []
+    return groupDebtItems(selectedSnapshot.debtBreakdown || [])
+  }, [selectedSnapshot])
+
+  if (isLoading || isInitializing) {
     return <div className={styles.loadingState}>데이터를 불러오는 중...</div>
   }
 
@@ -330,32 +326,47 @@ export function NetWorthTab({
 
               <div className={styles.divider} />
 
-              {/* 금융자산 */}
-              <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>금융자산</span>
-                <span className={styles.detailValue}>{formatMoney(selectedSnapshot?.financialAssets || 0)}</span>
-              </div>
-
-              {/* 부동산 */}
-              <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>부동산</span>
-                <span className={styles.detailValue}>{formatMoney(selectedSnapshot?.realEstateValue || 0)}</span>
-              </div>
-
-              {/* 연금 */}
-              <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>연금</span>
-                <span className={styles.detailValue}>{formatMoney(selectedSnapshot?.pensionAssets || 0)}</span>
-              </div>
-
-              {/* 부채 */}
-              {(selectedSnapshot?.totalDebts || 0) > 0 && (
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel} style={{ color: '#ef4444' }}>부채</span>
-                  <span className={`${styles.detailValue} ${styles.negative}`}>
-                    -{formatMoney(selectedSnapshot?.totalDebts || 0)}
-                  </span>
+              {/* 자산 카테고리별 */}
+              {assetGroups.map(group => (
+                <div key={group.category.id}>
+                  <div className={styles.detailRow}>
+                    <span className={styles.detailLabel}>
+                      <span className={styles.categoryDot} style={{ background: group.category.color }} />
+                      {group.category.label}
+                    </span>
+                    <span className={styles.detailValue}>{formatMoney(group.total)}</span>
+                  </div>
+                  {group.items.length > 1 && group.items.map((item, idx) => (
+                    <div key={idx} className={styles.subItemRow}>
+                      <span className={styles.subItemLabel}>{item.title}</span>
+                      <span className={styles.subItemValue}>{formatMoney(item.amount)}</span>
+                    </div>
+                  ))}
                 </div>
+              ))}
+
+              {/* 부채 카테고리별 */}
+              {debtGroups.length > 0 && (
+                <>
+                  <div className={styles.divider} />
+                  {debtGroups.map(group => (
+                    <div key={group.category.id}>
+                      <div className={styles.detailRow}>
+                        <span className={styles.detailLabel}>
+                          <span className={styles.categoryDot} style={{ background: group.category.color }} />
+                          {group.category.label}
+                        </span>
+                        <span className={`${styles.detailValue} ${styles.negative}`}>-{formatMoney(group.total)}</span>
+                      </div>
+                      {group.items.length > 1 && group.items.map((item, idx) => (
+                        <div key={idx} className={styles.subItemRow}>
+                          <span className={styles.subItemLabel}>{item.title}</span>
+                          <span className={`${styles.subItemValue} ${styles.negative}`}>-{formatMoney(item.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           </div>

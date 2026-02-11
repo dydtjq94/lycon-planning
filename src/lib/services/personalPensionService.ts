@@ -67,9 +67,9 @@ export async function createPersonalPension(
 
   if (error) throw error
 
-  // 수령 정보가 있을 경우에만 소득 연동 (DB 원 단위 데이터로)
+  // 수령 정보가 있을 경우에만 소득 연동 (만원 변환 후)
   if (data.start_age && data.receiving_years) {
-    await createLinkedIncome(data, birthYear, retirementAge)
+    await createLinkedIncome(convertFromWon(data, PERSONAL_PENSION_MONEY_FIELDS), birthYear, retirementAge)
   }
 
   // DB(원) -> 클라이언트(만원) 변환
@@ -100,9 +100,9 @@ export async function updatePersonalPension(
   // 기존 연동 소득 삭제
   await deleteLinkedIncomes('personal_pension', id)
 
-  // 수령 정보가 있을 경우에만 소득 연동 재생성 (DB 원 단위 데이터로)
+  // 수령 정보가 있을 경우에만 소득 연동 재생성 (만원 변환 후)
   if (data.start_age && data.receiving_years) {
-    await createLinkedIncome(data, birthYear, retirementAge)
+    await createLinkedIncome(convertFromWon(data, PERSONAL_PENSION_MONEY_FIELDS), birthYear, retirementAge)
   }
 
   // DB(원) -> 클라이언트(만원) 변환

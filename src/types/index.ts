@@ -1,3 +1,32 @@
+// 현금흐름 유형
+export type CashFlowType =
+  | 'income'                // 소득 (근로, 사업, 임대 등)
+  | 'expense'               // 지출 (생활비, 의료비 등)
+  | 'savings_contribution'  // 저축/투자 적립
+  | 'savings_withdrawal'    // 저축/투자 인출
+  | 'savings_interest'      // 저축 이자/배당 수익
+  | 'pension_contribution'  // 연금 적립
+  | 'pension_withdrawal'    // 연금 수령
+  | 'debt_interest'         // 대출 이자
+  | 'debt_principal'        // 원금 상환
+  | 'real_estate_purchase'  // 부동산 구매
+  | 'real_estate_sale'      // 부동산 매도
+  | 'asset_purchase'        // 실물자산 구매
+  | 'asset_sale'            // 실물자산 매도
+  | 'tax'                   // 세금 (취득세, 양도세 등)
+  | 'insurance_premium'     // 보험료
+  | 'surplus_investment'    // 잉여 현금 투자
+  | 'deficit_withdrawal'    // 부족분 인출
+
+// 현금흐름 개별 항목
+export interface CashFlowItem {
+  title: string
+  amount: number            // 양수 = 유입, 음수 = 유출
+  flowType: CashFlowType
+  sourceType?: string       // 원천 테이블 (savings, debts, pensions, real_estates, etc.)
+  sourceId?: string         // 원천 ID
+}
+
 // 자산 카테고리 타입
 export type AssetCategory = 'income' | 'expense' | 'real_estate' | 'asset' | 'debt' | 'pension'
 
@@ -544,6 +573,8 @@ export interface ChartData {
 // Investment Assumptions (투자 가정)
 // ============================================
 
+import type { HistoricalIndex } from '../lib/data/historicalRates'
+
 export type InvestmentAssumptionsMode = 'fixed' | 'historical' | 'advanced'
 
 export interface InvestmentRates {
@@ -554,9 +585,15 @@ export interface InvestmentRates {
   inflation: number     // 물가상승률 (%)
 }
 
+export interface HistoricalRateConfig {
+  indexMapping: Record<keyof InvestmentRates, HistoricalIndex>
+  startOffset: number
+}
+
 export interface InvestmentAssumptions {
   mode: InvestmentAssumptionsMode
   rates: InvestmentRates
+  historicalConfig?: HistoricalRateConfig
 }
 
 export const DEFAULT_INVESTMENT_ASSUMPTIONS: InvestmentAssumptions = {
@@ -571,21 +608,41 @@ export const DEFAULT_INVESTMENT_ASSUMPTIONS: InvestmentAssumptions = {
 }
 
 // ============================================
-// Cash Flow Priorities (현금흐름 우선순위)
+// Cash Flow Priorities (현금흐름 우선순위) V2
 // ============================================
 
-export type CashFlowTargetType = 'savings' | 'investment' | 'pension' | 'debt'
-export type CashFlowStrategy = 'maintain' | 'maximize' | 'remainder'
+export type CashFlowAccountCategory = 'savings' | 'pension' | 'debt'
 
-export interface CashFlowPriority {
+// 잉여금 배분 규칙 (특정 계좌 단위)
+export interface SurplusAllocationRule {
   id: string
-  targetType: CashFlowTargetType     // 대상 자산 유형
-  targetId?: string                   // 특정 항목 지정 (없으면 유형 전체)
-  targetName?: string                 // UI 표시용 이름
-  strategy: CashFlowStrategy
-  targetAmount?: number               // maintain: 목표 잔액 (만원)
-  maxAmount?: number                  // maximize: 연간 최대 한도 (만원)
-  priority: number                    // 낮을수록 먼저 적용 (1, 2, 3...)
+  targetId: string                      // DB row ID (savings.id, pensions.id, debts.id)
+  targetCategory: CashFlowAccountCategory
+  targetName: string                    // UI 표시용
+  annualLimit?: number                  // 연간 최대 한도 (만원). undefined = 나머지 전부
+  priority: number                      // 낮을수록 먼저 (1, 2, 3...)
+}
+
+// 인출 순서 규칙 (특정 계좌 단위)
+export interface WithdrawalOrderRule {
+  id: string
+  targetId: string
+  targetCategory: CashFlowAccountCategory
+  targetName: string
+  priority: number
+}
+
+// 최상위 구조 (simulations.cash_flow_priorities JSONB에 저장)
+export interface CashFlowPriorities {
+  surplusRules: SurplusAllocationRule[]
+  withdrawalRules: WithdrawalOrderRule[]
+}
+
+// 하위 호환 헬퍼 (레거시 CashFlowPriority[] → CashFlowPriorities 변환)
+export function normalizePriorities(raw: unknown): CashFlowPriorities {
+  if (!raw) return { surplusRules: [], withdrawalRules: [] }
+  if (Array.isArray(raw)) return { surplusRules: [], withdrawalRules: [] } // 레거시 → 빈 값
+  return raw as CashFlowPriorities
 }
 
 // ============================================
@@ -602,7 +659,7 @@ export interface Simulation {
   sort_order: number
   // 새 필드
   investment_assumptions?: InvestmentAssumptions
-  cash_flow_priorities?: CashFlowPriority[]
+  cash_flow_priorities?: CashFlowPriorities
   created_at: string
   updated_at: string
 }
@@ -815,7 +872,7 @@ export interface SimulationInput {
   sort_order?: number
   // 새 필드
   investment_assumptions?: InvestmentAssumptions
-  cash_flow_priorities?: CashFlowPriority[]
+  cash_flow_priorities?: CashFlowPriorities
 }
 
 // ============================================

@@ -221,6 +221,12 @@ export interface AssetCategory {
 
 export const ASSET_CATEGORIES: AssetCategory[] = [
   {
+    id: 'pension',
+    label: '연금자산',
+    color: CHART_COLORS.asset.pension,
+    keywords: ['연금저축', '연금', 'IRP', 'ISA', '퇴직연금', '개인연금', '퇴직금'],
+  },
+  {
     id: 'savings',
     label: '저축/계좌',
     color: CHART_COLORS.asset.savings,
@@ -245,16 +251,10 @@ export const ASSET_CATEGORIES: AssetCategory[] = [
     keywords: ['전세', '보증금', '임차'],
   },
   {
-    id: 'pension',
-    label: '연금자산',
-    color: CHART_COLORS.asset.pension,
-    keywords: ['연금', 'IRP', 'ISA', '퇴직연금', '개인연금', '연금저축'],
-  },
-  {
     id: 'tangible',
     label: '실물자산',
     color: CHART_COLORS.asset.tangible,
-    keywords: ['자동차', '귀금속', '예술품', '시계', '금', '은', '보석', '골동품'],
+    keywords: ['자동차', '귀금속', '예술품', '시계', '금괴', '보석', '골동품'],
   },
   {
     id: 'other_asset',
@@ -378,6 +378,35 @@ export interface GroupedItem<T> {
   category: T
   items: { title: string; amount: number }[]
   total: number
+}
+
+/**
+ * 자산 타입을 카테고리 ID로 매핑
+ */
+function getAssetCategoryId(type: string): string {
+  const typeToCategory: Record<string, string> = {
+    savings: 'savings',
+    investment: 'investment',
+    real_estate: 'real_estate',
+    deposit: 'deposit',
+    pension: 'pension',
+    tangible: 'tangible',
+  }
+  return typeToCategory[type] || 'other_asset'
+}
+
+/**
+ * 부채 타입을 카테고리 ID로 매핑
+ */
+function getDebtCategoryIdFromType(type: string): string {
+  const typeToCategory: Record<string, string> = {
+    mortgage: 'mortgage',
+    jeonse: 'jeonse',
+    credit: 'credit',
+    car: 'car',
+    student: 'student',
+  }
+  return typeToCategory[type] || 'other_debt'
 }
 
 /**
@@ -523,13 +552,24 @@ export function groupExpenseItems(
  * 자산 항목들을 카테고리별로 그룹핑
  */
 export function groupAssetItems(
-  items: { title: string; amount: number }[]
+  items: { title: string; amount: number; type?: string }[]
 ): GroupedItem<AssetCategory>[] {
   const groups = new Map<string, GroupedItem<AssetCategory>>()
 
   items.forEach(item => {
     if (item.amount <= 0) return
-    const category = categorizeAsset(item.title)
+
+    // type 필드가 있으면 사용, 없으면 키워드 기반 폴백
+    let categoryId: string
+    if (item.type) {
+      categoryId = getAssetCategoryId(item.type)
+    } else {
+      categoryId = categorizeAsset(item.title).id
+    }
+
+    const category = ASSET_CATEGORIES.find(c => c.id === categoryId)
+      || ASSET_CATEGORIES[ASSET_CATEGORIES.length - 1]
+
     const existing = groups.get(category.id)
     if (existing) {
       existing.items.push(item)
@@ -554,13 +594,24 @@ export function groupAssetItems(
  * 부채 항목들을 카테고리별로 그룹핑
  */
 export function groupDebtItems(
-  items: { title: string; amount: number }[]
+  items: { title: string; amount: number; type?: string }[]
 ): GroupedItem<DebtCategory>[] {
   const groups = new Map<string, GroupedItem<DebtCategory>>()
 
   items.forEach(item => {
     if (item.amount <= 0) return
-    const category = categorizeDebt(item.title)
+
+    // type 필드가 있으면 사용, 없으면 키워드 기반 폴백
+    let categoryId: string
+    if (item.type) {
+      categoryId = getDebtCategoryIdFromType(item.type)
+    } else {
+      categoryId = categorizeDebt(item.title).id
+    }
+
+    const category = DEBT_CATEGORIES.find(c => c.id === categoryId)
+      || DEBT_CATEGORIES[DEBT_CATEGORIES.length - 1]
+
     const existing = groups.get(category.id)
     if (existing) {
       existing.items.push(item)
@@ -579,4 +630,97 @@ export function groupDebtItems(
   return Array.from(groups.values()).sort(
     (a, b) => categoryOrder.indexOf(a.category.id) - categoryOrder.indexOf(b.category.id)
   )
+}
+
+// ============================================
+// Cash Flow 카테고리 (flowType별 그룹핑)
+// ============================================
+
+import type { CashFlowType, CashFlowItem } from '@/types'
+
+export interface CashFlowCategory {
+  id: string
+  label: string
+  color: string
+  flowTypes: CashFlowType[]
+}
+
+export const INFLOW_CATEGORIES: CashFlowCategory[] = [
+  { id: 'income', label: '소득', color: CHART_COLORS.income.labor, flowTypes: ['income'] },
+  { id: 'pension_withdrawal', label: '연금 수령', color: CHART_COLORS.asset.pension, flowTypes: ['pension_withdrawal'] },
+  { id: 'savings_withdrawal', label: '저축/투자 인출', color: CHART_COLORS.asset.savings, flowTypes: ['savings_withdrawal', 'savings_interest'] },
+  { id: 'real_estate_sale', label: '부동산 매각', color: CHART_COLORS.asset.realEstate, flowTypes: ['real_estate_sale'] },
+  { id: 'asset_sale', label: '자산 매각', color: CHART_COLORS.asset.tangible, flowTypes: ['asset_sale'] },
+  { id: 'deficit_withdrawal', label: '부족분 인출', color: CHART_COLORS.expense.variable, flowTypes: ['deficit_withdrawal'] },
+]
+
+export const OUTFLOW_CATEGORIES: CashFlowCategory[] = [
+  { id: 'expense', label: '지출', color: CHART_COLORS.expense.variable, flowTypes: ['expense'] },
+  { id: 'debt', label: '대출 상환', color: CHART_COLORS.expense.loan, flowTypes: ['debt_interest', 'debt_principal'] },
+  { id: 'savings_contribution', label: '저축/투자', color: CHART_COLORS.asset.savings, flowTypes: ['savings_contribution', 'surplus_investment'] },
+  { id: 'pension_contribution', label: '연금 적립', color: CHART_COLORS.asset.pension, flowTypes: ['pension_contribution'] },
+  { id: 'tax', label: '세금', color: CHART_COLORS.expense.other, flowTypes: ['tax'] },
+  { id: 'insurance', label: '보험료', color: CHART_COLORS.expense.fixed, flowTypes: ['insurance_premium'] },
+  { id: 'real_estate_purchase', label: '부동산 매입', color: CHART_COLORS.asset.realEstate, flowTypes: ['real_estate_purchase'] },
+  { id: 'asset_purchase', label: '자산 매입', color: CHART_COLORS.asset.tangible, flowTypes: ['asset_purchase'] },
+]
+
+export interface GroupedCashFlow {
+  category: CashFlowCategory
+  items: CashFlowItem[]
+  total: number  // always positive
+}
+
+export function groupCashFlowItems(items: CashFlowItem[]): {
+  inflows: GroupedCashFlow[]
+  outflows: GroupedCashFlow[]
+  totalInflow: number
+  totalOutflow: number
+} {
+  const inflowGroups = new Map<string, GroupedCashFlow>()
+  const outflowGroups = new Map<string, GroupedCashFlow>()
+
+  for (const item of items) {
+    if (item.amount > 0) {
+      // inflow
+      const cat = INFLOW_CATEGORIES.find(c => c.flowTypes.includes(item.flowType))
+        || INFLOW_CATEGORIES[INFLOW_CATEGORIES.length - 1]
+      const existing = inflowGroups.get(cat.id)
+      if (existing) {
+        existing.items.push(item)
+        existing.total += item.amount
+      } else {
+        inflowGroups.set(cat.id, { category: cat, items: [item], total: item.amount })
+      }
+    } else if (item.amount < 0) {
+      // outflow
+      const cat = OUTFLOW_CATEGORIES.find(c => c.flowTypes.includes(item.flowType))
+        || OUTFLOW_CATEGORIES[OUTFLOW_CATEGORIES.length - 1]
+      const existing = outflowGroups.get(cat.id)
+      if (existing) {
+        existing.items.push(item)
+        existing.total += Math.abs(item.amount)
+      } else {
+        outflowGroups.set(cat.id, { category: cat, items: [item], total: Math.abs(item.amount) })
+      }
+    }
+  }
+
+  // Sort by category order
+  const inflowOrder = INFLOW_CATEGORIES.map(c => c.id)
+  const outflowOrder = OUTFLOW_CATEGORIES.map(c => c.id)
+
+  const inflows = Array.from(inflowGroups.values()).sort(
+    (a, b) => inflowOrder.indexOf(a.category.id) - inflowOrder.indexOf(b.category.id)
+  )
+  const outflows = Array.from(outflowGroups.values()).sort(
+    (a, b) => outflowOrder.indexOf(a.category.id) - outflowOrder.indexOf(b.category.id)
+  )
+
+  return {
+    inflows,
+    outflows,
+    totalInflow: inflows.reduce((sum, g) => sum + g.total, 0),
+    totalOutflow: outflows.reduce((sum, g) => sum + g.total, 0),
+  }
 }
