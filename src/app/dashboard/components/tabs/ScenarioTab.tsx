@@ -101,7 +101,7 @@ export function ScenarioTab({
   const [activeCategoryTab, setActiveCategoryTab] = useState<string | null>(null);
 
   // Shared state for time range and selected year
-  type TimeRange = 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full'
+  type TimeRange = 'next3m' | 'next5m' | 'next5' | 'next10' | 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full'
   const [sharedTimeRange, setSharedTimeRange] = useState<TimeRange>('full')
   const [sharedSelectedYear, setSharedSelectedYear] = useState<number>(new Date().getFullYear())
 

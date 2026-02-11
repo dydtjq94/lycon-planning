@@ -2,7 +2,7 @@
  * 시뮬레이션 결과를 Chart.js 데이터 형식으로 변환
  */
 
-import type { YearlySnapshot, SimulationResult } from '@/lib/services/simulationEngine'
+import type { YearlySnapshot, SimulationResult, MonthlySnapshot } from '@/lib/services/simulationEngine'
 import type { CashFlowItem } from '@/types'
 import { CHART_COLORS } from './tooltipCategories'
 
@@ -218,6 +218,68 @@ export function getYearDetail(
     netWorthChange: prevSnapshot ? snapshot.netWorth - prevSnapshot.netWorth : undefined,
     netWorthChangePercent: prevSnapshot && prevSnapshot.netWorth !== 0
       ? ((snapshot.netWorth - prevSnapshot.netWorth) / Math.abs(prevSnapshot.netWorth)) * 100
+      : undefined,
+  }
+}
+
+/**
+ * 월별 상세 데이터 추출
+ */
+export interface MonthDetail {
+  year: number
+  month: number
+  age: number
+  // 자산
+  financialAssets: number
+  realEstate: number
+  pension: number
+  totalAssets: number
+  // 부채
+  totalDebts: number
+  // 순자산
+  netWorth: number
+  // 현금흐름
+  monthlyIncome: number
+  monthlyExpense: number
+  netCashFlow: number
+  // breakdown
+  incomeBreakdown: { title: string; amount: number; type?: string }[]
+  expenseBreakdown: { title: string; amount: number; type?: string }[]
+  // 전월 대비
+  netWorthChange?: number
+  netWorthChangePercent?: number
+}
+
+export function getMonthDetail(
+  monthlySnapshots: MonthlySnapshot[],
+  year: number,
+  month: number
+): MonthDetail | null {
+  const index = monthlySnapshots.findIndex(s => s.year === year && s.month === month)
+  if (index === -1) return null
+
+  const ms = monthlySnapshots[index]
+  const prevMs = index > 0 ? monthlySnapshots[index - 1] : null
+  const totalAssets = ms.financialAssets + ms.realEstateValue + ms.pensionAssets + ms.physicalAssetValue
+
+  return {
+    year: ms.year,
+    month: ms.month,
+    age: ms.age,
+    financialAssets: ms.financialAssets,
+    realEstate: ms.realEstateValue,
+    pension: ms.pensionAssets,
+    totalAssets,
+    totalDebts: ms.totalDebts,
+    netWorth: ms.netWorth,
+    monthlyIncome: ms.monthlyIncome,
+    monthlyExpense: ms.monthlyExpense,
+    netCashFlow: ms.netCashFlow,
+    incomeBreakdown: ms.incomeBreakdown,
+    expenseBreakdown: ms.expenseBreakdown,
+    netWorthChange: prevMs ? ms.netWorth - prevMs.netWorth : undefined,
+    netWorthChangePercent: prevMs && prevMs.netWorth !== 0
+      ? ((ms.netWorth - prevMs.netWorth) / Math.abs(prevMs.netWorth)) * 100
       : undefined,
   }
 }

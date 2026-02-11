@@ -636,6 +636,7 @@ export interface WithdrawalOrderRule {
 export interface CashFlowPriorities {
   surplusRules: SurplusAllocationRule[]
   withdrawalRules: WithdrawalOrderRule[]
+  _initialized?: boolean
 }
 
 // 하위 호환 헬퍼 (레거시 CashFlowPriority[] → CashFlowPriorities 변환)

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Settings, X } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import {
   getExpertBookings,
   BookingWithUser,
@@ -11,6 +10,7 @@ import {
   updateAvailability,
   ExpertAvailability,
 } from "@/lib/services/bookingService";
+import { useAdmin } from "../AdminContext";
 import styles from "./schedule.module.css";
 
 const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -27,7 +27,7 @@ interface DaySchedule {
 
 export default function SchedulePage() {
   const router = useRouter();
-  const [expertId, setExpertId] = useState<string | null>(null);
+  const { expertId } = useAdmin();
   const [bookings, setBookings] = useState<BookingWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -39,25 +39,11 @@ export default function SchedulePage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: expert } = await supabase
-        .from("experts")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!expert) return;
-      setExpertId(expert.id);
-
-      // 예약 목록 로드
-      const bookingList = await getExpertBookings(expert.id);
-      setBookings(bookingList);
-
-      // 스케줄 설정 로드
-      const availability = await getExpertAvailability(expert.id);
+      // bookings + availability 병렬
+      const [bookingList, availability] = await Promise.all([
+        getExpertBookings(expertId),
+        getExpertAvailability(expertId),
+      ]);
       const scheduleMap: Record<number, ExpertAvailability> = {};
       availability.forEach((a) => {
         scheduleMap[a.day_of_week] = a;
@@ -84,7 +70,7 @@ export default function SchedulePage() {
     };
 
     loadData();
-  }, []);
+  }, [expertId]);
 
   // 캘린더 데이터 생성
   const getCalendarDays = () => {
@@ -178,8 +164,37 @@ export default function SchedulePage() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
+        <div className={styles.header}>
+          <h1 className={styles.title}>스케줄</h1>
+        </div>
+
+        <div className={styles.content}>
+          <div className={styles.calendar}>
+            {/* Calendar Header Skeleton */}
+            <div className={styles.calendarHeader}>
+              <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "32px", height: "32px" }} />
+              <div className={`${styles.skeleton} ${styles.skeletonBlock}`} style={{ width: "140px" }} />
+              <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "32px", height: "32px" }} />
+            </div>
+
+            {/* Weekdays Skeleton */}
+            <div className={styles.weekdays}>
+              {DAYS.map((day) => (
+                <div key={day} className={styles.weekday}>
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar Grid Skeleton */}
+            <div className={styles.daysGrid}>
+              {Array.from({ length: 35 }).map((_, i) => (
+                <div key={i} className={styles.day}>
+                  <div className={`${styles.skeleton} ${styles.skeletonCell}`} />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -106,6 +106,15 @@ export interface MonthlySnapshot {
   // 상세 breakdown
   incomeBreakdown: { title: string; amount: number; type?: string }[]
   expenseBreakdown: { title: string; amount: number; type?: string }[]
+
+  // 자산/부채/연금 개별 항목 (월말 잔액)
+  assetBreakdown?: { title: string; amount: number; type: string }[]
+  debtBreakdown?: { title: string; amount: number; type: string }[]
+  pensionBreakdown?: { title: string; amount: number; type: string }[]
+
+  // 월별 인출/적립 내역
+  withdrawalBreakdown?: { title: string; amount: number; category: string }[]
+  surplusBreakdown?: { title: string; amount: number; category: string }[]
 }
 
 export interface SimulationResult {

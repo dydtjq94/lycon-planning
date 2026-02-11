@@ -119,6 +119,60 @@ export function CashFlowPrioritiesPanel({
     return accounts;
   }, [v2Data]);
 
+  // Auto-populate default rules when not initialized and accounts are available
+  useEffect(() => {
+    if (priorities._initialized || availableAccounts.length === 0 || dataLoading) return;
+
+    const surplusRules: SurplusAllocationRule[] = [];
+    const withdrawalRules: WithdrawalOrderRule[] = [];
+    let surplusPriority = 1;
+    let withdrawalPriority = 1;
+
+    // Savings accounts (excluding checking - checking is managed as currentCash)
+    const savingsAccounts = availableAccounts.filter(a => a.category === 'savings');
+    for (const account of savingsAccounts) {
+      surplusRules.push({
+        id: generateId(),
+        targetId: account.id,
+        targetCategory: account.category,
+        targetName: account.name,
+        priority: surplusPriority++,
+      });
+      withdrawalRules.push({
+        id: generateId(),
+        targetId: account.id,
+        targetCategory: account.category,
+        targetName: account.name,
+        priority: withdrawalPriority++,
+      });
+    }
+
+    // Pension accounts (IRP, ISA, 연금저축)
+    const pensionAccounts = availableAccounts.filter(a => a.category === 'pension');
+    for (const account of pensionAccounts) {
+      surplusRules.push({
+        id: generateId(),
+        targetId: account.id,
+        targetCategory: account.category,
+        targetName: account.name,
+        priority: surplusPriority++,
+      });
+      withdrawalRules.push({
+        id: generateId(),
+        targetId: account.id,
+        targetCategory: account.category,
+        targetName: account.name,
+        priority: withdrawalPriority++,
+      });
+    }
+
+    onChange({
+      surplusRules,
+      withdrawalRules,
+      _initialized: true,
+    });
+  }, [priorities._initialized, availableAccounts, dataLoading, onChange]);
+
   // Filter out already-used accounts for each section
   const availableSurplusAccounts = useMemo(() => {
     const usedIds = new Set(
@@ -504,6 +558,18 @@ export function CashFlowPrioritiesPanel({
             </p>
           </div>
         )}
+
+        {/* Fixed overdraft row - always shown at bottom */}
+        <div className={styles.overdraftDivider} />
+        <div className={styles.overdraftRow}>
+          <div className={styles.overdraftIcon}>
+            <List size={14} />
+          </div>
+          <div className={styles.overdraftInfo}>
+            <span className={styles.overdraftName}>마이너스 통장</span>
+            <span className={styles.overdraftHint}>모든 계좌 잔액이 0원일 때 자동 차입</span>
+          </div>
+        </div>
 
         {addingWithdrawal ? (
           <div className={styles.addRow}>

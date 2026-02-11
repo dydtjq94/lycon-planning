@@ -172,6 +172,25 @@
   margin: 8px 0;
 }
 
+/* 자산/부채 총합 헤더 */
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.sectionHeaderLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+}
+
+.sectionHeaderValue {
+  font-size: 14px;
+  font-weight: 700;
+}
+
 /* 카테고리 점 */
 .categoryDot {
   display: inline-block;

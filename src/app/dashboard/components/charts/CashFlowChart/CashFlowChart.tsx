@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from 'chart.js'
 import annotationPlugin from 'chartjs-plugin-annotation'
-import type { SimulationResult } from '@/lib/services/simulationEngine'
+import type { SimulationResult, MonthlySnapshot } from '@/lib/services/simulationEngine'
 import { groupIncomeItems, groupExpenseItems, groupCashFlowItems } from '@/lib/utils/tooltipCategories'
 import {
   getOrCreateTooltip,
@@ -39,6 +39,7 @@ interface CashFlowChartProps {
   onYearClick?: (year: number) => void
   selectedYear?: number | null
   headerAction?: React.ReactNode
+  monthlySnapshots?: MonthlySnapshot[]
 }
 
 // Y축 포맷팅
@@ -59,6 +60,7 @@ export function CashFlowChart({
   onYearClick,
   selectedYear,
   headerAction,
+  monthlySnapshots,
 }: CashFlowChartProps) {
   const { chartLineColors, chartScaleColors, categoryColors, isDark, toRgba } = useChartTheme()
   const chartRef = useRef<HTMLCanvasElement>(null)
@@ -67,6 +69,9 @@ export function CashFlowChart({
   onYearClickRef.current = onYearClick
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const hoverIndexRef = useRef<number>(-1)
+
+  const isMonthlyMode = !!monthlySnapshots && monthlySnapshots.length > 0
+  const prevMonthlyModeRef = useRef(isMonthlyMode)
 
   const { snapshots } = simulationResult
   const currentYear = new Date().getFullYear()
@@ -94,6 +99,70 @@ export function CashFlowChart({
     }
 
     const dataIndex = tooltip.dataPoints?.[0]?.dataIndex ?? 0
+
+    // Monthly mode tooltip
+    if (isMonthlyMode && monthlySnapshots) {
+      const ms = monthlySnapshots[dataIndex]
+      if (!ms) {
+        hideTooltip(tooltipEl)
+        return
+      }
+
+      const textColor = isDark ? '#ffffff' : '#1d1d1f'
+      const textSecondary = isDark ? '#a1a1aa' : '#86868b'
+      const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
+      const ageText = getAgeText(ms.year, birthYear, spouseBirthYear)
+      const netCashFlow = ms.netCashFlow
+      const netColor = netCashFlow >= 0 ? '#10b981' : '#ef4444'
+      const netPrefix = netCashFlow >= 0 ? '+' : '-'
+
+      const incomeItemsHtml = ms.incomeBreakdown.length > 0 ? `
+        <div style="margin-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 700; color: ${textColor};">월수입</span>
+            <span style="font-size: 13px; font-weight: 700; color: #10b981;">+${formatMoneyWithUnit(ms.monthlyIncome)}</span>
+          </div>
+          ${ms.incomeBreakdown.filter(i => i.amount > 0).map(item => `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
+              <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
+              <span style="font-size: 12px; color: ${textColor};">${formatMoneyWithUnit(item.amount)}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''
+
+      const expenseItemsHtml = ms.expenseBreakdown.length > 0 ? `
+        <div style="margin-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 700; color: ${textColor};">월지출</span>
+            <span style="font-size: 13px; font-weight: 700; color: #ef4444;">-${formatMoneyWithUnit(ms.monthlyExpense)}</span>
+          </div>
+          ${ms.expenseBreakdown.filter(i => i.amount > 0).map(item => `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
+              <span style="font-size: 12px; color: ${textColor};">${item.title}</span>
+              <span style="font-size: 12px; color: ${textColor};">${formatMoneyWithUnit(item.amount)}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''
+
+      tooltipEl.innerHTML = `
+        <div style="font-size: 18px; font-weight: 700; color: ${textColor}; margin-bottom: 2px;">${ms.year}년 ${ms.month}월</div>
+        <div style="font-size: 12px; color: ${textSecondary}; margin-bottom: 12px;">${ageText}</div>
+        <div style="border-top: 1px solid ${borderColor}; padding-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 14px; font-weight: 700; color: ${textColor};">순 현금흐름</span>
+            <span style="font-size: 14px; font-weight: 700; color: ${netColor};">${netPrefix}${formatMoneyWithUnit(netCashFlow)}</span>
+          </div>
+        </div>
+        ${incomeItemsHtml}
+        ${expenseItemsHtml}
+      `
+
+      positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
+      return
+    }
+
     const snapshot = snapshots[dataIndex]
 
     if (!snapshot) {
@@ -105,11 +174,6 @@ export function CashFlowChart({
     const textSecondary = isDark ? '#a1a1aa' : '#86868b'
     const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
 
-    // 순현금흐름
-    const netCashFlow = snapshot.netCashFlow
-    const netPrefix = netCashFlow >= 0 ? '+' : '-'
-    const netColor = netCashFlow >= 0 ? '#10b981' : '#ef4444'
-
     // 나이 텍스트
     const ageText = getAgeText(snapshot.year, birthYear, spouseBirthYear)
 
@@ -117,10 +181,23 @@ export function CashFlowChart({
     let incomeItemsHtml = ''
     let expenseItemsHtml = ''
 
+    // 순현금흐름 (cashFlowBreakdown 기반으로 계산)
+    let netCashFlow = snapshot.netCashFlow  // fallback
+    let netPrefix = netCashFlow >= 0 ? '+' : '-'
+    let netColor = netCashFlow >= 0 ? '#10b981' : '#ef4444'
+
     const cfItems = snapshot.cashFlowBreakdown
     if (cfItems && cfItems.length > 0) {
-      // V2: use cashFlowBreakdown with grouped categories
-      const { inflows, outflows, totalInflow, totalOutflow } = groupCashFlowItems(cfItems)
+      // V2: use cashFlowBreakdown with grouped categories (exclude deficit/surplus - Sankey only)
+      const regularItems = cfItems.filter(
+        item => item.flowType !== 'deficit_withdrawal' && item.flowType !== 'surplus_investment'
+      )
+      const { inflows, outflows, totalInflow, totalOutflow } = groupCashFlowItems(regularItems)
+
+      // cashFlowItems 기반 순현금흐름 (모든 뷰에서 동일한 값)
+      netCashFlow = totalInflow - totalOutflow
+      netPrefix = netCashFlow >= 0 ? '+' : '-'
+      netColor = netCashFlow >= 0 ? '#10b981' : '#ef4444'
 
       incomeItemsHtml = inflows.length > 0 ? `
         <div style="margin-top: 12px;">
@@ -215,7 +292,7 @@ export function CashFlowChart({
     `
 
     positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
-  }, [snapshots, isDark, birthYear, spouseBirthYear])
+  }, [snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlySnapshots])
 
   // 마우스 추적 + 호버 라인 + 언마운트 정리
   useEffect(() => {
@@ -283,10 +360,21 @@ export function CashFlowChart({
   useEffect(() => {
     if (!chartRef.current || snapshots.length === 0) return
 
-    const labels = snapshots.map(s => s.year)
-    const netCashFlowData = snapshots.map(s => s.netCashFlow)
+    // 월별/연별 데이터 선택
+    const labels: (number | string)[] = isMonthlyMode && monthlySnapshots
+      ? monthlySnapshots.map(ms => {
+          const yy = String(ms.year).slice(-2)
+          const mm = String(ms.month).padStart(2, '0')
+          return `${yy}.${mm}`
+        })
+      : snapshots.map(s => s.year)
+    const netCashFlowData = isMonthlyMode && monthlySnapshots
+      ? monthlySnapshots.map(ms => ms.netCashFlow)
+      : snapshots.map(s => s.netCashFlow)
 
-    const retirementIndex = labels.findIndex(y => y === retirementYear)
+    const retirementIndex = isMonthlyMode && monthlySnapshots
+      ? monthlySnapshots.findIndex(ms => ms.year === retirementYear && ms.month === 1)
+      : labels.findIndex(y => y === retirementYear)
 
     // 바 색상 (양수/음수)
     const bgColors = netCashFlowData.map(v => v >= 0 ? toRgba(positiveColor, 0.7) : toRgba(negativeColor, 0.7))
@@ -325,6 +413,34 @@ export function CashFlowChart({
         },
       }
     }
+
+    // 선택된 연도 라인
+    if (selectedYear && chartRef.current) {
+      const selectedIndex = isMonthlyMode && monthlySnapshots
+        ? monthlySnapshots.findIndex(ms => {
+            const selectedMonth = Math.round((selectedYear % 1) * 100) || 1
+            return ms.year === Math.floor(selectedYear) && ms.month === selectedMonth
+          })
+        : labels.findIndex(label => Number(label) === selectedYear)
+      if (selectedIndex >= 0) {
+        const accentColor = getComputedStyle(chartRef.current).getPropertyValue('--accent-color').trim() || '#007aff'
+        const accentWithOpacity = `color-mix(in srgb, ${accentColor} 40%, transparent)`
+        annotationsConfig.selectedLine = {
+          type: 'line',
+          xMin: selectedIndex,
+          xMax: selectedIndex,
+          borderColor: accentWithOpacity,
+          borderWidth: 2,
+        }
+      }
+    }
+
+    // 월별↔연간 모드 전환 시 차트 완전 재생성 (onClick 클로저 갱신)
+    if (chartInstance.current && prevMonthlyModeRef.current !== isMonthlyMode) {
+      chartInstance.current.destroy()
+      chartInstance.current = null
+    }
+    prevMonthlyModeRef.current = isMonthlyMode
 
     // 차트가 이미 있으면 데이터/옵션만 업데이트
     if (chartInstance.current) {
@@ -379,7 +495,14 @@ export function CashFlowChart({
           if (elements.length > 0 && onYearClickRef.current) {
             const index = elements[0].index
             const label = chart.data.labels?.[index]
-            if (label) onYearClickRef.current(Number(label))
+            if (label) {
+              if (isMonthlyMode && monthlySnapshots) {
+                const ms = monthlySnapshots[index]
+                if (ms) onYearClickRef.current(ms.year + ms.month / 100)
+              } else {
+                onYearClickRef.current(Number(label))
+              }
+            }
           }
         },
         plugins: {
@@ -425,7 +548,7 @@ export function CashFlowChart({
       },
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [snapshots, retirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, isDark, toRgba])
+  }, [snapshots, retirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, isDark, toRgba, isMonthlyMode, monthlySnapshots])
 
   // 선택된 연도가 변경될 때 annotation만 업데이트
   useEffect(() => {
@@ -437,9 +560,15 @@ export function CashFlowChart({
     if (!annotations) return
 
     const labels = chart.data.labels as number[]
-    const newSelectedIndex = selectedYear
-      ? labels.findIndex(label => Number(label) === selectedYear)
-      : -1
+    const newSelectedIndex = (() => {
+      if (!selectedYear) return -1
+      if (isMonthlyMode && monthlySnapshots) {
+        const selectedMonth = Math.round((selectedYear % 1) * 100) || 1
+        return monthlySnapshots.findIndex(ms => ms.year === Math.floor(selectedYear) && ms.month === selectedMonth)
+      }
+      const chartLabels = chart.data.labels as number[]
+      return chartLabels.findIndex(label => Number(label) === selectedYear)
+    })()
 
     const accentColor = getComputedStyle(chartRef.current).getPropertyValue('--accent-color').trim() || '#007aff'
     const accentWithOpacity = `color-mix(in srgb, ${accentColor} 40%, transparent)`
@@ -457,7 +586,7 @@ export function CashFlowChart({
     }
 
     chart.update('none')
-  }, [selectedYear, snapshots])
+  }, [selectedYear, snapshots, isMonthlyMode, monthlySnapshots])
 
   if (snapshots.length === 0) {
     return (

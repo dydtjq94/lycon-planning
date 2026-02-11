@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { X, Search, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { AdminSidebar } from "./components";
+import { AdminProvider } from "./AdminContext";
 import styles from "./admin.module.css";
 
 interface Expert {
@@ -53,16 +54,14 @@ export default function AdminLayout({
   const [searchQuery, setSearchQuery] = useState("");
   const [addingCustomer, setAddingCustomer] = useState<string | null>(null);
 
+  // 데이터 로딩 (한 번만 실행)
   useEffect(() => {
-    const checkExpert = async () => {
+    const loadData = async () => {
       const supabase = createClient();
 
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        if (pathname !== "/admin/login" && pathname !== "/admin/setup") {
-          router.replace("/admin/login");
-        }
         setLoading(false);
         return;
       }
@@ -74,9 +73,6 @@ export default function AdminLayout({
         .single();
 
       if (!expertData) {
-        if (pathname !== "/admin/login" && pathname !== "/admin/setup") {
-          router.replace("/admin/login");
-        }
         setLoading(false);
         return;
       }
@@ -98,7 +94,6 @@ export default function AdminLayout({
         .order("last_message_at", { ascending: false });
 
       if (conversations) {
-        // 대화 데이터 저장 (실시간 구독용)
         conversationsRef.current = conversations
           .filter((c) => c.profiles)
           .map((c) => {
@@ -112,36 +107,56 @@ export default function AdminLayout({
           })
           .filter((c) => c.profileId);
 
-        // 각 대화별 읽지 않은 메시지 수 조회
-        const customerList: Customer[] = await Promise.all(
-          conversationsRef.current.map(async (c) => {
-            const { data: unreadMessages } = await supabase
-              .from("messages")
-              .select("id")
-              .eq("conversation_id", c.id)
-              .eq("sender_type", "user")
-              .eq("is_read", false);
-
-            return {
-              id: c.profileId,
-              name: c.profileName,
-              unreadCount: unreadMessages?.length || 0,
-            };
-          })
-        );
-        setCustomers(customerList);
+        // 고객 목록 먼저 보여주기 (unread 0으로)
+        setCustomers(conversationsRef.current.map(c => ({
+          id: c.profileId,
+          name: c.profileName,
+          unreadCount: 0,
+        })));
         setConversationsLoaded(true);
       }
 
+      // 사이드바 즉시 표시
       setLoading(false);
 
-      if (pathname === "/admin/login") {
-        router.replace("/admin");
+      // unread 카운트는 백그라운드에서 로드
+      if (conversationsRef.current.length > 0) {
+        const conversationIds = conversationsRef.current.map(c => c.id);
+        const { data: unreadMessages } = await supabase
+          .from("messages")
+          .select("conversation_id")
+          .in("conversation_id", conversationIds)
+          .eq("sender_type", "user")
+          .eq("is_read", false);
+
+        const unreadMap: Record<string, number> = {};
+        unreadMessages?.forEach(m => {
+          unreadMap[m.conversation_id] = (unreadMap[m.conversation_id] || 0) + 1;
+        });
+
+        setCustomers(conversationsRef.current.map(c => ({
+          id: c.profileId,
+          name: c.profileName,
+          unreadCount: unreadMap[c.id] || 0,
+        })));
       }
     };
 
-    checkExpert();
-  }, [pathname, router]);
+    loadData();
+  }, []);
+
+  // 인증 체크 및 리다이렉트 (pathname 변경 시에만)
+  useEffect(() => {
+    if (loading) return;
+
+    if (!expert) {
+      if (pathname !== "/admin/login" && pathname !== "/admin/setup") {
+        router.replace("/admin/login");
+      }
+    } else if (pathname === "/admin/login") {
+      router.replace("/admin");
+    }
+  }, [pathname, router, expert, loading]);
 
   // 실시간 메시지 구독 - 읽지 않은 수 업데이트
   useEffect(() => {
@@ -151,22 +166,28 @@ export default function AdminLayout({
     const conversationIds = conversationsRef.current.map((c) => c.id);
 
     const refreshUnreadCounts = async () => {
-      const updatedCustomers = await Promise.all(
-        conversationsRef.current.map(async (c) => {
-          const { data: unreadMessages } = await supabase
-            .from("messages")
-            .select("id")
-            .eq("conversation_id", c.id)
-            .eq("sender_type", "user")
-            .eq("is_read", false);
+      // 단일 쿼리로 모든 읽지 않은 메시지 조회
+      const conversationIds = conversationsRef.current.map(c => c.id);
+      const { data: unreadMessages } = await supabase
+        .from("messages")
+        .select("conversation_id")
+        .in("conversation_id", conversationIds)
+        .eq("sender_type", "user")
+        .eq("is_read", false);
 
-          return {
-            id: c.profileId,
-            name: c.profileName,
-            unreadCount: unreadMessages?.length || 0,
-          };
-        })
-      );
+      // conversation_id별로 그룹화
+      const unreadMap: Record<string, number> = {};
+      unreadMessages?.forEach(m => {
+        unreadMap[m.conversation_id] = (unreadMap[m.conversation_id] || 0) + 1;
+      });
+
+      // 고객 목록 업데이트
+      const updatedCustomers: Customer[] = conversationsRef.current.map(c => ({
+        id: c.profileId,
+        name: c.profileName,
+        unreadCount: unreadMap[c.id] || 0,
+      }));
+
       setCustomers(updatedCustomers);
     };
 
@@ -328,6 +349,7 @@ export default function AdminLayout({
   };
 
   return (
+    <AdminProvider value={{ expertId: expert.id, expertName: expert.name }}>
     <div className={styles.layout}>
       <AdminSidebar
         expertName={expert.name}
@@ -406,5 +428,6 @@ export default function AdminLayout({
         </div>
       )}
     </div>
+    </AdminProvider>
   );
 }

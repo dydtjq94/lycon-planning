@@ -34,27 +34,44 @@
   background: #f5f5f7;
 }
 
-/* Loading */
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;
-}
-
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #e5e5e5;
-  border-top-color: #007aff;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+/* Skeleton Loading */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
   }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeletonText {
+  height: 12px;
+}
+
+.skeletonValue {
+  height: 28px;
+  margin-top: 6px;
+}
+
+.skeletonTitle {
+  height: 16px;
+  margin-bottom: 16px;
+}
+
+.skeletonChart {
+  height: 240px;
 }
 
 .statsGrid {

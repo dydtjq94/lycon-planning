@@ -13,6 +13,7 @@ import {
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { createClient } from "@/lib/supabase/client";
+import { useAdmin } from "../AdminContext";
 import styles from "./reports.module.css";
 
 ChartJS.register(
@@ -40,6 +41,7 @@ interface FunnelData {
 }
 
 export default function ReportsPage() {
+  const { expertId } = useAdmin();
   const [loading, setLoading] = useState(true);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([]);
   const [funnelData, setFunnelData] = useState<FunnelData>({
@@ -61,38 +63,29 @@ export default function ReportsPage() {
   async function loadReportData() {
     const supabase = createClient();
 
-    // Get current expert
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: expert } = await supabase
-      .from("experts")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (!expert) return;
-
-    // Get all conversations for this expert
-    const { data: conversations } = await supabase
-      .from("conversations")
-      .select(`
-        id,
-        user_id,
-        created_at,
-        profiles:user_id (
+    // conversations + bookings 병렬
+    const [conversationsRes, bookingsRes] = await Promise.all([
+      supabase
+        .from("conversations")
+        .select(`
           id,
+          user_id,
           created_at,
-          onboarding_step
-        )
-      `)
-      .eq("expert_id", expert.id);
+          profiles:user_id (
+            id,
+            created_at,
+            onboarding_step
+          )
+        `)
+        .eq("expert_id", expertId),
+      supabase
+        .from("bookings")
+        .select("*")
+        .eq("expert_id", expertId),
+    ]);
 
-    // Get all bookings for this expert
-    const { data: bookings } = await supabase
-      .from("bookings")
-      .select("*")
-      .eq("expert_id", expert.id);
+    const conversations = conversationsRes.data;
+    const bookings = bookingsRes.data;
 
     if (conversations && bookings) {
       // Calculate funnel data
@@ -244,8 +237,27 @@ export default function ReportsPage() {
         <div className={styles.header}>
           <h1 className={styles.title}>고객 현황</h1>
         </div>
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
+
+        <div className={styles.content}>
+          {/* Stats Grid Skeleton */}
+          <div className={styles.statsGrid}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={styles.statCard}>
+                <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "100px" }} />
+                <div className={`${styles.skeleton} ${styles.skeletonValue}`} style={{ width: "80px" }} />
+              </div>
+            ))}
+          </div>
+
+          {/* Charts Grid Skeleton */}
+          <div className={styles.chartsGrid}>
+            {[1, 2].map((i) => (
+              <div key={i} className={styles.chartCard}>
+                <div className={`${styles.skeleton} ${styles.skeletonTitle}`} style={{ width: "120px" }} />
+                <div className={`${styles.skeleton} ${styles.skeletonChart}`} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

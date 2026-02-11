@@ -574,6 +574,12 @@ export function runSimulationV2(
     let yearlyIncome = 0
     let yearlyExpense = 0
 
+    // B6/B7 추적 배열
+    const surplusInvestments: { title: string; amount: number; category: string; id: string }[] = []
+    const deficitWithdrawals: { title: string; amount: number; category: string; id: string }[] = []
+    const yearStartCash = state.currentCash
+    const eventFlowItems: CashFlowItem[] = []
+
     // 연도별 수익률 (히스토리컬이면 매년 다름)
     const savingsReturnPct = getRateForYear('savings', year, currentYear, effectiveAssumptions)
     const investmentReturnPct = getRateForYear('investment', year, currentYear, effectiveAssumptions)
@@ -604,6 +610,8 @@ export function runSimulationV2(
       let monthExpense = 0
       const monthIncomeBreakdown: { title: string; amount: number; type?: string }[] = []
       const monthExpenseBreakdown: { title: string; amount: number; type?: string }[] = []
+      const monthWithdrawals: { title: string; amount: number; category: string }[] = []
+      const monthSurplus: { title: string; amount: number; category: string }[] = []
 
       // A1. 월간 소득 (연금 연동 소득은 A10/A11에서 직접 계산)
       for (const income of data.incomes) {
@@ -940,9 +948,10 @@ export function runSimulationV2(
           const holdingYears = re.purchaseYear ? year - re.purchaseYear : 0
           const isResidence = re.type === 'residence'
 
-          // 양도소득세 계산
-          const cgt = calculateCapitalGainsTax(salePrice, re.purchasePrice, holdingYears, isResidence)
-          yearlyTax += cgt
+          // 세금 비활성화 (추후 프리미엄 기능으로 재설계)
+          // const cgt = calculateCapitalGainsTax(salePrice, re.purchasePrice, holdingYears, isResidence)
+          // yearlyTax += cgt
+          const cgt = 0
 
           // 순매각대금 → currentCash
           const netProceeds = salePrice - cgt
@@ -957,11 +966,26 @@ export function runSimulationV2(
             yearlyExpense += re.loanBalance
             monthExpense += re.loanBalance
             monthExpenseBreakdown.push({ title: `${re.title} 대출 상환`, amount: re.loanBalance, type: 'loan_repayment' })
+            eventFlowItems.push({
+              title: `${re.title} 대출 상환`,
+              amount: -Math.round(re.loanBalance),
+              flowType: 'debt_principal',
+              sourceType: 'real_estates',
+              sourceId: re.id,
+            })
             re.loanBalance = 0
           }
 
           re.isSold = true
           events.push(`${re.title} 매각 (${Math.round(salePrice)}만원, 세금 ${Math.round(cgt)}만원)`)
+          // Track for cashFlowItems
+          eventFlowItems.push({
+            title: `${re.title} 매각`,
+            amount: Math.round(salePrice),
+            flowType: 'real_estate_sale',
+            sourceType: 'real_estates',
+            sourceId: re.id,
+          })
         }
       }
 
@@ -975,6 +999,13 @@ export function runSimulationV2(
           monthIncomeBreakdown.push({ title: `${asset.title} 매각`, amount: asset.currentValue, type: 'physical_asset_sale' })
           asset.isSold = true
           events.push(`${asset.title} 매각 (${Math.round(asset.currentValue)}만원)`)
+          eventFlowItems.push({
+            title: `${asset.title} 매각`,
+            amount: Math.round(asset.currentValue),
+            flowType: 'asset_sale',
+            sourceType: 'physical_assets',
+            sourceId: asset.id,
+          })
         }
       }
 
@@ -984,8 +1015,10 @@ export function runSimulationV2(
         if (pension.pensionSubType !== 'isa') continue
         if (pension.isaMaturityYear === year && pension.isaMaturityMonth === month) {
           const gain = pension.balance - pension.totalPrincipal
-          const tax = calculateISATax(gain)
-          yearlyTax += tax
+          // 세금 비활성화 (추후 프리미엄 기능으로 재설계)
+          // const tax = calculateISATax(gain)
+          // yearlyTax += tax
+          const tax = 0
           const netAmount = pension.balance - tax
 
           switch (pension.isaMaturityStrategy) {
@@ -1022,6 +1055,13 @@ export function runSimulationV2(
               monthIncome += netAmount
               monthIncomeBreakdown.push({ title: `${pension.title} 만기`, amount: netAmount, type: 'isa_maturity' })
               events.push(`${pension.title} 만기 → 현금 수령 (${Math.round(netAmount)}만원)`)
+              eventFlowItems.push({
+                title: `${pension.title} 만기`,
+                amount: Math.round(pension.balance),
+                flowType: 'savings_withdrawal',
+                sourceType: 'pension',
+                sourceId: pension.id,
+              })
           }
 
           pension.balance = 0
@@ -1096,6 +1136,202 @@ export function runSimulationV2(
         }
       }
 
+      // A14. 월별 자산 성장 (이자/수익률/가치 상승)
+      // 저축 이자/수익률
+      for (const saving of state.savings) {
+        if (saving.isMatured || !saving.isActive) continue
+        let annualRate: number
+        if (isSavingsType(saving.type)) {
+          annualRate = saving.interestRate ?? savingsReturnPct
+        } else {
+          annualRate = saving.expectedReturn ?? investmentReturnPct
+        }
+        if (annualRate > 0) {
+          const monthlyRate = Math.pow(1 + annualRate / 100, 1 / 12) - 1
+          saving.balance *= (1 + monthlyRate)
+        }
+      }
+      // 연금 적립 성장
+      for (const pension of state.pensions) {
+        if (pension.category === 'national' || pension.isMatured) continue
+        if (pension.pensionSubType === 'isa') continue
+        if (pension.isReceiving) continue
+        const returnRate = pension.returnRate || pensionReturnPct
+        if (returnRate > 0) {
+          const monthlyRate = Math.pow(1 + returnRate / 100, 1 / 12) - 1
+          pension.balance *= (1 + monthlyRate)
+        }
+      }
+      // 부동산 가치 성장
+      for (const re of state.realEstates) {
+        if (re.isSold) continue
+        const effectiveRate = getEffectiveRate(re.growthRate, 'realEstate' as RateCategory, gs.scenarioMode, gs)
+        if (effectiveRate !== 0) {
+          const monthlyRate = Math.pow(1 + effectiveRate / 100, 1 / 12) - 1
+          re.currentValue *= (1 + monthlyRate)
+        }
+      }
+      // 실물자산 성장/감가
+      for (const asset of state.physicalAssets) {
+        if (asset.isSold) continue
+        if (asset.annualRate !== 0) {
+          const monthlyRate = Math.pow(1 + asset.annualRate / 100, 1 / 12) - 1
+          asset.currentValue *= (1 + monthlyRate)
+          if (asset.currentValue < 0) asset.currentValue = 0
+        }
+      }
+
+      // A12. 저축 만기 처리 (정기예금 등)
+      for (const saving of state.savings) {
+        if (saving.isMatured || !saving.isActive) continue
+        if (!saving.maturityYear || !saving.maturityMonth) continue
+        if (year !== saving.maturityYear || month !== saving.maturityMonth) continue
+
+        // A14에서 이미 월별 이자 적용됨 → 추가 이자 계산 불필요
+        const gain = saving.balance - saving.totalPrincipal
+        // 세금 비활성화 (추후 프리미엄 기능으로 재설계)
+        // const tax = calculateInterestIncomeTax(gain, saving.isTaxFree)
+        // yearlyTax += tax
+        const tax = 0
+
+        const maturityAmount = saving.balance - tax
+        state.currentCash += maturityAmount
+        yearlyIncome += maturityAmount
+        monthIncome += maturityAmount
+        monthIncomeBreakdown.push({ title: `${saving.title} 만기`, amount: maturityAmount, type: 'savings_maturity' })
+        events.push(`${saving.title} 만기 (${Math.round(maturityAmount)}만원, 세금 ${Math.round(tax)}만원)`)
+        eventFlowItems.push({
+          title: `${saving.title} 만기`,
+          amount: Math.round(saving.balance),
+          flowType: 'savings_withdrawal',
+          sourceType: 'savings',
+          sourceId: saving.id,
+        })
+
+        saving.balance = 0
+        saving.isMatured = true
+      }
+
+      // A13. 월별 적자 보전 (currentCash < 0이면 저축에서 인출)
+      if (state.currentCash < 0) {
+        // 1단계: 사용자 설정 인출 순서
+        if (priorities?.withdrawalRules?.length) {
+          const sorted = [...priorities.withdrawalRules].sort((a, b) => a.priority - b.priority)
+          for (const rule of sorted) {
+            if (state.currentCash >= 0) break
+
+            if (rule.targetCategory === 'savings') {
+              const item = state.savings.find(s => s.id === rule.targetId && !s.isMatured && s.isActive && s.balance > 0)
+              if (!item) continue
+              const deficit = -state.currentCash
+              const withdrawal = Math.min(item.balance, deficit)
+              item.balance -= withdrawal
+              item.totalPrincipal = Math.max(0, item.totalPrincipal - withdrawal)
+              state.currentCash += withdrawal
+              deficitWithdrawals.push({ title: item.title || '저축', amount: withdrawal, category: 'savings', id: item.id })
+              monthWithdrawals.push({ title: `${item.title || '저축'} 인출`, amount: Math.round(withdrawal), category: 'savings' })
+            } else if (rule.targetCategory === 'pension') {
+              const item = state.pensions.find(p => p.id === rule.targetId && !p.isMatured && p.balance > 0)
+              if (!item) continue
+              const withdrawal = Math.min(item.balance, -state.currentCash)
+              item.balance -= withdrawal
+              state.currentCash += withdrawal
+              deficitWithdrawals.push({ title: item.title || '연금', amount: withdrawal, category: 'pension', id: item.id })
+              monthWithdrawals.push({ title: `${item.title || '연금'} 인출`, amount: Math.round(withdrawal), category: 'pension' })
+              if (item.balance <= 0) {
+                item.balance = 0
+                item.isMatured = true
+              }
+            }
+          }
+        }
+
+        // 2단계: 폴백 (유동성 순서)
+        if (state.currentCash < 0) {
+          const fallbackOrder = ['checking', 'savings', 'deposit', 'housing',
+            'domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'other']
+
+          for (const type of fallbackOrder) {
+            if (state.currentCash >= 0) break
+            const items = state.savings
+              .filter(s => s.type === type && !s.isMatured && s.isActive && s.balance > 0)
+              .sort((a, b) => b.balance - a.balance)
+
+            for (const item of items) {
+              if (state.currentCash >= 0) break
+              const deficit = -state.currentCash
+              const withdrawal = Math.min(item.balance, deficit)
+              item.balance -= withdrawal
+              item.totalPrincipal = Math.max(0, item.totalPrincipal - withdrawal)
+              state.currentCash += withdrawal
+              deficitWithdrawals.push({ title: item.title || '저축', amount: withdrawal, category: 'savings', id: item.id })
+              monthWithdrawals.push({ title: `${item.title || '저축'} 인출`, amount: Math.round(withdrawal), category: 'savings' })
+            }
+          }
+        }
+      }
+
+      // A15. 월별 잉여금 배분 (Cash Flow Priorities)
+      if (state.currentCash > 0 && priorities?.surplusRules?.length) {
+        const sorted = [...priorities.surplusRules].sort((a, b) => a.priority - b.priority)
+
+        for (const rule of sorted) {
+          if (state.currentCash <= 0) break
+
+          // 연간 한도 체크 (surplusAllocated는 연 단위로 추적)
+          const allocated = surplusAllocated.get(rule.id) || 0
+          let maxThisRule = state.currentCash
+          if (rule.annualLimit != null) {
+            maxThisRule = Math.min(state.currentCash, Math.max(0, rule.annualLimit - allocated))
+          }
+          if (maxThisRule <= 0) continue
+
+          let actualAllocation = 0
+
+          if (rule.targetCategory === 'savings') {
+            const target = state.savings.find(s => s.id === rule.targetId && !s.isMatured && s.isActive)
+            if (!target) continue
+            target.balance += maxThisRule
+            target.totalPrincipal += maxThisRule
+            actualAllocation = maxThisRule
+          } else if (rule.targetCategory === 'pension') {
+            const target = state.pensions.find(p => p.id === rule.targetId && !p.isMatured)
+            if (!target) continue
+            target.balance += maxThisRule
+            target.totalPrincipal += maxThisRule
+            actualAllocation = maxThisRule
+          } else if (rule.targetCategory === 'debt') {
+            const target = state.debts.find(d => d.id === rule.targetId && !d.isPaidOff)
+            if (!target) continue
+            const repay = Math.min(maxThisRule, target.currentBalance)
+            target.currentBalance -= repay
+            if (target.currentBalance <= 0) {
+              target.isPaidOff = true
+              events.push(`${target.title} 조기상환`)
+            }
+            actualAllocation = repay
+          }
+
+          if (actualAllocation > 0) {
+            state.currentCash -= actualAllocation
+            surplusAllocated.set(rule.id, allocated + actualAllocation)
+            const targetName = rule.targetCategory === 'savings'
+              ? state.savings.find(s => s.id === rule.targetId)?.title
+              : rule.targetCategory === 'pension'
+              ? state.pensions.find(p => p.id === rule.targetId)?.title
+              : state.debts.find(d => d.id === rule.targetId)?.title
+            surplusInvestments.push({
+              title: targetName || '알 수 없음',
+              amount: actualAllocation,
+              category: rule.targetCategory,
+              id: rule.targetId
+            })
+            const actionLabel = rule.targetCategory === 'debt' ? '상환' : '적립'
+            monthSurplus.push({ title: `${targetName || '알 수 없음'} ${actionLabel}`, amount: Math.round(actualAllocation), category: rule.targetCategory })
+          }
+        }
+      }
+
       // 월말 스냅샷 생성
       const mFinancialAssets = state.savings
         .filter(s => !s.isMatured && s.isActive)
@@ -1121,11 +1357,69 @@ export function runSimulationV2(
       const mTotalDebts = state.debts
         .filter(d => !d.isPaidOff)
         .reduce((sum, d) => sum + d.currentBalance, 0) +
-        state.realEstates
-          .filter(re => !re.isSold && re.hasLoan && re.loanBalance > 0)
-          .reduce((sum, re) => sum + re.loanBalance, 0)
+        (state.currentCash < 0 ? Math.abs(state.currentCash) : 0)
 
       const mTotalAssets = mFinancialAssets + mPensionAssets + mRealEstateValue + mPhysicalAssetValue
+
+      // 월별 자산 breakdown
+      const mAssetBreakdown: { title: string; amount: number; type: string }[] = []
+
+      // 부동산
+      for (const re of state.realEstates) {
+        if (re.isSold) continue
+        const label = ownerLabels[re.owner] || ''
+        const displayTitle = label ? `${re.title} | ${label}` : re.title
+        if (re.housingType === '전세' || re.housingType === '월세') {
+          if (re.deposit && re.deposit > 0) {
+            mAssetBreakdown.push({ title: `${displayTitle} 보증금`, amount: Math.round(re.deposit), type: 'deposit' })
+          }
+        } else {
+          if (re.currentValue > 0) {
+            mAssetBreakdown.push({ title: displayTitle, amount: Math.round(re.currentValue), type: 'real_estate' })
+          }
+        }
+      }
+
+      // 저축/투자 계좌
+      for (const saving of state.savings) {
+        if (saving.isMatured || !saving.isActive || saving.balance <= 0) continue
+        const label = ownerLabels[saving.owner] || ''
+        const displayTitle = label ? `${saving.title} | ${label}` : saving.title
+        const savingsCategory = getSavingsAssetCategory(saving.type)
+        mAssetBreakdown.push({ title: displayTitle, amount: Math.round(saving.balance), type: savingsCategory })
+      }
+
+      // 현금잔고 (입출금통장)
+      if (state.currentCash > 0) {
+        mAssetBreakdown.push({ title: state.checkingAccountTitle || '현금잔고', amount: Math.round(state.currentCash), type: 'savings' })
+      }
+
+      // 실물자산
+      for (const asset of state.physicalAssets) {
+        if (asset.isSold || asset.currentValue <= 0) continue
+        const label = ownerLabels[asset.owner] || ''
+        const displayTitle = label ? `${asset.title} | ${label}` : asset.title
+        mAssetBreakdown.push({ title: displayTitle, amount: Math.round(asset.currentValue), type: 'tangible' })
+      }
+
+      // 월별 부채 breakdown
+      const mDebtBreakdown: { title: string; amount: number; type: string }[] = []
+      for (const debt of state.debts) {
+        if (debt.isPaidOff) continue
+        mDebtBreakdown.push({ title: debt.title, amount: Math.round(debt.currentBalance), type: getDebtAssetCategory(debt.type) })
+      }
+      if (state.currentCash < 0) {
+        mDebtBreakdown.push({ title: '마이너스 통장', amount: Math.round(Math.abs(state.currentCash)), type: 'other_debt' })
+      }
+
+      // 월별 연금 breakdown
+      const mPensionBreakdown: { title: string; amount: number; type: string }[] = []
+      for (const pension of state.pensions) {
+        if (pension.isMatured || pension.balance <= 0) continue
+        const label = ownerLabels[pension.owner] || ''
+        const displayTitle = label ? `${pension.title} | ${label}` : pension.title
+        mPensionBreakdown.push({ title: displayTitle, amount: Math.round(pension.balance), type: 'pension' })
+      }
 
       monthlySnapshots.push({
         year,
@@ -1143,176 +1437,45 @@ export function runSimulationV2(
         currentCash: Math.round(state.currentCash),
         incomeBreakdown: monthIncomeBreakdown,
         expenseBreakdown: monthExpenseBreakdown,
+        assetBreakdown: mAssetBreakdown,
+        debtBreakdown: mDebtBreakdown,
+        pensionBreakdown: mPensionBreakdown,
+        withdrawalBreakdown: monthWithdrawals.length > 0 ? monthWithdrawals : undefined,
+        surplusBreakdown: monthSurplus.length > 0 ? monthSurplus : undefined,
       })
     }
 
     // ==============================
-    // Phase B: 연말 자산 처리
+    // Phase B: 연말 처리 (자산 성장/잉여배분/적자인출은 A14/A15/A13에서 월별 처리)
     // ==============================
 
-    // B1. 저축 항목별 이자/수익률 적용
-    for (const saving of state.savings) {
-      if (saving.isMatured || !saving.isActive) continue
-
-      let annualRate: number
-      if (isSavingsType(saving.type)) {
-        annualRate = saving.interestRate ?? savingsReturnPct
-      } else {
-        annualRate = saving.expectedReturn ?? investmentReturnPct
-      }
-
-      const monthlyRate = Math.pow(1 + annualRate / 100, 1 / 12) - 1
-      // 12개월 복리 적용
-      saving.balance = saving.balance * Math.pow(1 + monthlyRate, 12)
-    }
-
-    // B2. 저축 만기 처리
+    // B2. 저축 만기 처리 (maturityMonth가 없는 경우만 - 연말 기준 처리)
+    // A14에서 이미 12개월 이자가 월별 적용되었으므로 추가 이자 불필요
     for (const saving of state.savings) {
       if (saving.isMatured || !saving.isActive) continue
       if (!saving.maturityYear) continue
+      if (saving.maturityMonth) continue  // maturityMonth가 있으면 A12에서 이미 처리됨
 
-      if (year > saving.maturityYear || (year === saving.maturityYear && 12 >= (saving.maturityMonth || 12))) {
+      if (year >= saving.maturityYear) {
         const gain = saving.balance - saving.totalPrincipal
-        const tax = calculateInterestIncomeTax(gain, saving.isTaxFree)
-        yearlyTax += tax
+        // 세금 비활성화 (추후 프리미엄 기능으로 재설계)
+        // const tax = calculateInterestIncomeTax(gain, saving.isTaxFree)
+        // yearlyTax += tax
+        const tax = 0
 
         const maturityAmount = saving.balance - tax
         state.currentCash += maturityAmount
         events.push(`${saving.title} 만기 (${Math.round(maturityAmount)}만원, 세금 ${Math.round(tax)}만원)`)
+        eventFlowItems.push({
+          title: `${saving.title} 만기`,
+          amount: Math.round(saving.balance),
+          flowType: 'savings_withdrawal',
+          sourceType: 'savings',
+          sourceId: saving.id,
+        })
 
         saving.balance = 0
         saving.isMatured = true
-      }
-    }
-
-    // B3. 부동산 가치 성장
-    for (const re of state.realEstates) {
-      if (re.isSold) continue
-      const effectiveRate = getEffectiveRate(re.growthRate, 'realEstate' as RateCategory, gs.scenarioMode, gs)
-      re.currentValue = re.currentValue * (1 + effectiveRate / 100)
-    }
-
-    // B4. 실물자산 성장/감가
-    for (const asset of state.physicalAssets) {
-      if (asset.isSold) continue
-      asset.currentValue = asset.currentValue * (1 + asset.annualRate / 100)
-      if (asset.currentValue < 0) asset.currentValue = 0
-    }
-
-    // B5. 연금 적립 성장
-    for (const pension of state.pensions) {
-      if (pension.category === 'national' || pension.isMatured) continue
-      if (pension.pensionSubType === 'isa') continue
-      if (pension.isReceiving) continue // 수령 중인 연금은 A11에서 처리됨
-
-      const returnRate = pension.returnRate || pensionReturnPct
-      const monthlyRate = Math.pow(1 + returnRate / 100, 1 / 12) - 1
-      pension.balance = pension.balance * Math.pow(1 + monthlyRate, 12)
-    }
-
-    // B6. 잉여금 배분 (계좌 단위, Cash Flow Priorities V2)
-    if (state.currentCash > 0 && priorities?.surplusRules?.length) {
-      const sorted = [...priorities.surplusRules].sort((a, b) => a.priority - b.priority)
-
-      for (const rule of sorted) {
-        if (state.currentCash <= 0) break
-
-        // 연간 이미 배분한 금액 확인
-        const allocated = surplusAllocated.get(rule.id) || 0
-        let maxThisRule = state.currentCash
-        if (rule.annualLimit != null) {
-          maxThisRule = Math.min(state.currentCash, Math.max(0, rule.annualLimit - allocated))
-        }
-        if (maxThisRule <= 0) continue
-
-        let actualAllocation = 0
-
-        if (rule.targetCategory === 'savings') {
-          const target = state.savings.find(s => s.id === rule.targetId && !s.isMatured && s.isActive)
-          if (!target) continue
-          target.balance += maxThisRule
-          target.totalPrincipal += maxThisRule
-          actualAllocation = maxThisRule
-        } else if (rule.targetCategory === 'pension') {
-          const target = state.pensions.find(p => p.id === rule.targetId && !p.isMatured)
-          if (!target) continue
-          target.balance += maxThisRule
-          target.totalPrincipal += maxThisRule
-          actualAllocation = maxThisRule
-        } else if (rule.targetCategory === 'debt') {
-          const target = state.debts.find(d => d.id === rule.targetId && !d.isPaidOff)
-          if (!target) continue
-          const repay = Math.min(maxThisRule, target.currentBalance)
-          target.currentBalance -= repay
-          if (target.currentBalance <= 0) {
-            target.isPaidOff = true
-            events.push(`${target.title} 조기상환`)
-          }
-          actualAllocation = repay
-        }
-
-        if (actualAllocation > 0) {
-          state.currentCash -= actualAllocation
-          surplusAllocated.set(rule.id, allocated + actualAllocation)
-        }
-      }
-    }
-
-    // B7. 적자 시 자산 인출 (사용자 설정 순서 → 폴백)
-    if (state.currentCash < 0) {
-      // 1단계: 사용자 설정 인출 순서
-      if (priorities?.withdrawalRules?.length) {
-        const sorted = [...priorities.withdrawalRules].sort((a, b) => a.priority - b.priority)
-        for (const rule of sorted) {
-          if (state.currentCash >= 0) break
-
-          if (rule.targetCategory === 'savings') {
-            const item = state.savings.find(s => s.id === rule.targetId && !s.isMatured && s.isActive && s.balance > 0)
-            if (!item) continue
-            const withdrawal = Math.min(item.balance, -state.currentCash)
-            const gain = withdrawal * Math.max(0, item.balance - item.totalPrincipal) / item.balance
-            const tax = calculateInterestIncomeTax(Math.max(0, gain), item.isTaxFree)
-            yearlyTax += tax
-            item.balance -= withdrawal
-            item.totalPrincipal = Math.max(0, item.totalPrincipal - (withdrawal - Math.max(0, gain)))
-            state.currentCash += withdrawal - tax
-          } else if (rule.targetCategory === 'pension') {
-            const item = state.pensions.find(p => p.id === rule.targetId && !p.isMatured && p.balance > 0)
-            if (!item) continue
-            const withdrawal = Math.min(item.balance, -state.currentCash)
-            item.balance -= withdrawal
-            state.currentCash += withdrawal
-            if (item.balance <= 0) {
-              item.balance = 0
-              item.isMatured = true
-            }
-          }
-        }
-      }
-
-      // 2단계: 폴백 (설정 안 된 나머지 계좌, 유동성 순서)
-      if (state.currentCash < 0) {
-        const fallbackOrder = ['savings', 'deposit', 'housing',
-          'domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'other']
-
-        for (const type of fallbackOrder) {
-          if (state.currentCash >= 0) break
-
-          const items = state.savings
-            .filter(s => s.type === type && !s.isMatured && s.isActive && s.balance > 0)
-            .sort((a, b) => b.balance - a.balance)
-
-          for (const item of items) {
-            if (state.currentCash >= 0) break
-            const withdrawal = Math.min(item.balance, -state.currentCash)
-            const gain = withdrawal * Math.max(0, item.balance - item.totalPrincipal) / item.balance
-            const tax = calculateInterestIncomeTax(Math.max(0, gain), item.isTaxFree)
-            yearlyTax += tax
-            item.balance -= withdrawal
-            item.totalPrincipal = Math.max(0, item.totalPrincipal - (withdrawal - Math.max(0, gain)))
-            state.currentCash += withdrawal - tax
-          }
-        }
       }
     }
 
@@ -1328,7 +1491,7 @@ export function runSimulationV2(
     for (const debt of state.debts) {
       const amount = debtPaymentTotals.get(debt.id)
       if (amount && amount > 0) {
-        expenseBrkDown.push({ title: debt.title, amount: Math.round(amount), type: 'debt' })
+        expenseBrkDown.push({ title: debt.title, amount: amount, type: 'debt' })
       }
     }
 
@@ -1336,7 +1499,7 @@ export function runSimulationV2(
     for (const pension of state.pensions) {
       const amount = pensionIncomeTotals.get(pension.id)
       if (amount && amount > 0) {
-        incomeBrkDown.push({ title: pension.title, amount: Math.round(amount), type: 'pension' })
+        incomeBrkDown.push({ title: pension.title, amount: amount, type: 'pension' })
       }
     }
 
@@ -1368,13 +1531,11 @@ export function runSimulationV2(
       .filter(d => !d.isPaidOff)
       .reduce((sum, d) => sum + d.currentBalance, 0)
 
-    // 부동산 대출 잔액도 부채에 포함
-    const realEstateLoanDebts = state.realEstates
-      .filter(re => !re.isSold && re.hasLoan && re.loanBalance > 0)
-      .reduce((sum, re) => sum + re.loanBalance, 0)
+    // 부동산 연동 대출은 state.debts에 이미 포함 (source_type: 'real_estate')
+    // realEstates.loanBalance는 매각 시 대출 정리용으로만 사용
 
     const cashDeficit = state.currentCash < 0 ? Math.abs(state.currentCash) : 0
-    const totalDebtsAll = Math.round(totalDebts + realEstateLoanDebts + cashDeficit)
+    const totalDebtsAll = Math.round(totalDebts + cashDeficit)
 
     const netWorth = totalAssets - totalDebtsAll
 
@@ -1426,13 +1587,10 @@ export function runSimulationV2(
       if (debt.isPaidOff) continue
       debtBreakdown.push({ title: debt.title, amount: Math.round(debt.currentBalance), type: getDebtAssetCategory(debt.type) })
     }
-    for (const re of state.realEstates) {
-      if (re.isSold || !re.hasLoan || re.loanBalance <= 0) continue
-      debtBreakdown.push({ title: `${re.title} 대출`, amount: Math.round(re.loanBalance), type: 'mortgage' })
-    }
-    // 부족 현금 (현금 적자 시 부채로 표시)
+    // 부동산 연동 대출은 state.debts에서 이미 포함됨 (중복 방지)
+    // 마이너스 통장 (현금 적자 시 부채로 표시)
     if (state.currentCash < 0) {
-      debtBreakdown.push({ title: '부족 현금', amount: Math.round(Math.abs(state.currentCash)), type: 'other_debt' })
+      debtBreakdown.push({ title: '마이너스 통장', amount: Math.round(Math.abs(state.currentCash)), type: 'other_debt' })
     }
 
     // 연금 breakdown
@@ -1468,17 +1626,23 @@ export function runSimulationV2(
     for (const item of incomeBrkDown) {
       cashFlowItems.push({
         title: item.title,
-        amount: Math.round(item.amount),
+        amount: item.amount,
         flowType: 'income',
         sourceType: 'income',
       })
     }
 
-    // 지출 항목
+    // 이벤트 현금흐름 (부동산 매각, 자산 매각, 저축 만기 등)
+    for (const event of eventFlowItems) {
+      cashFlowItems.push(event)
+    }
+
+    // 지출 항목 (부채는 아래에서 이자/원금 분리로 추적하므로 제외)
     for (const item of expenseBrkDown) {
+      if (item.type === 'debt') continue
       cashFlowItems.push({
         title: item.title,
-        amount: -Math.round(Math.abs(item.amount)),
+        amount: -Math.abs(item.amount),
         flowType: 'expense',
         sourceType: 'expense',
       })
@@ -1489,7 +1653,7 @@ export function runSimulationV2(
       if (contrib.amount > 0) {
         cashFlowItems.push({
           title: `${contrib.title} | 적립`,
-          amount: -Math.round(contrib.amount),
+          amount: -contrib.amount,
           flowType: 'savings_contribution',
           sourceType: 'savings',
           sourceId: id,
@@ -1502,7 +1666,7 @@ export function runSimulationV2(
       if (contrib.amount > 0) {
         cashFlowItems.push({
           title: `${contrib.title} | 적립`,
-          amount: -Math.round(contrib.amount),
+          amount: -contrib.amount,
           flowType: 'pension_contribution',
           sourceType: `${contrib.category}_pension`,
           sourceId: id,
@@ -1515,7 +1679,7 @@ export function runSimulationV2(
       if (interest.amount > 0) {
         cashFlowItems.push({
           title: `${interest.title} | 이자`,
-          amount: -Math.round(interest.amount),
+          amount: -interest.amount,
           flowType: 'debt_interest',
           sourceType: 'debts',
           sourceId: id,
@@ -1528,7 +1692,7 @@ export function runSimulationV2(
       if (principal.amount > 0) {
         cashFlowItems.push({
           title: `${principal.title} | 원금상환`,
-          amount: -Math.round(principal.amount),
+          amount: -principal.amount,
           flowType: 'debt_principal',
           sourceType: 'debts',
           sourceId: id,
@@ -1536,12 +1700,90 @@ export function runSimulationV2(
       }
     }
 
-    // 세금
-    if (yearlyTax > 0) {
+    // 세금: snapshot.taxPaid에 별도 저장 (차트 cashFlowBreakdown에는 미포함 - 추후 세금 체계 재설계 예정)
+
+    // 잉여금 배분 (B6)
+    for (const inv of surplusInvestments) {
       cashFlowItems.push({
-        title: '세금',
-        amount: -Math.round(yearlyTax),
-        flowType: 'tax',
+        title: `${inv.title} | 저축`,
+        amount: -inv.amount,
+        flowType: 'surplus_investment',
+        sourceType: inv.category === 'savings' ? 'savings' : inv.category === 'pension' ? 'pension' : 'debts',
+        sourceId: inv.id,
+      })
+    }
+
+    // 현금잔고 / 마이너스 통장 연간 변화분 (잔액이 아닌 delta만 표시)
+    const overdraftStart = yearStartCash < 0 ? Math.abs(yearStartCash) : 0
+    const overdraftEnd = state.currentCash < 0 ? Math.abs(state.currentCash) : 0
+    const cashStart = Math.max(0, yearStartCash)
+    const cashEnd = Math.max(0, state.currentCash)
+
+    // 마이너스 통장 변화
+    if (overdraftEnd > overdraftStart) {
+      // 추가 차입 → 유입
+      cashFlowItems.push({
+        title: '마이너스 통장 | 인출',
+        amount: overdraftEnd - overdraftStart,
+        flowType: 'deficit_withdrawal',
+        sourceType: 'cash',
+        sourceId: 'overdraft',
+      })
+    } else if (overdraftStart > overdraftEnd) {
+      // 상환 → 유출
+      cashFlowItems.push({
+        title: '마이너스 통장 | 상환',
+        amount: -(overdraftStart - overdraftEnd),
+        flowType: 'surplus_investment',
+        sourceType: 'cash',
+        sourceId: 'overdraft_repayment',
+      })
+    }
+
+    // 현금잔고 변화
+    if (cashEnd > cashStart) {
+      // 현금 증가 → 유출 (입출금통장에 적립)
+      const delta = cashEnd - cashStart
+      if (delta > 1) {
+        cashFlowItems.push({
+          title: `${state.checkingAccountTitle || '현금잔고'} | 적립`,
+          amount: -delta,
+          flowType: 'surplus_investment',
+          sourceType: 'cash',
+          sourceId: 'cash_balance',
+        })
+      }
+    } else if (cashStart > cashEnd) {
+      // 현금 감소 → 유입 (입출금통장에서 인출)
+      const delta = cashStart - cashEnd
+      if (delta > 1) {
+        cashFlowItems.push({
+          title: `${state.checkingAccountTitle || '현금잔고'} | 인출`,
+          amount: delta,
+          flowType: 'deficit_withdrawal',
+          sourceType: 'cash',
+          sourceId: 'cash_balance',
+        })
+      }
+    }
+
+    // 적자 인출 (A13 월별 + B7 연말) - 같은 계좌 인출을 합산
+    const aggregatedWithdrawals = new Map<string, { title: string; amount: number; category: string; id: string }>()
+    for (const w of deficitWithdrawals) {
+      const existing = aggregatedWithdrawals.get(w.id)
+      if (existing) {
+        existing.amount += w.amount
+      } else {
+        aggregatedWithdrawals.set(w.id, { ...w })
+      }
+    }
+    for (const w of aggregatedWithdrawals.values()) {
+      cashFlowItems.push({
+        title: `${w.title} | 인출`,
+        amount: w.amount,
+        flowType: 'deficit_withdrawal',
+        sourceType: w.category === 'savings' ? 'savings' : w.category === 'cash' ? 'cash' : 'pension',
+        sourceId: w.id,
       })
     }
 
@@ -1550,7 +1792,9 @@ export function runSimulationV2(
       age,
       totalIncome: Math.round(yearlyIncome),
       totalExpense: Math.round(yearlyExpense),
-      netCashFlow: Math.round(yearlyIncome - yearlyExpense),
+      netCashFlow: Math.round(cashFlowItems
+        .filter(item => item.flowType !== 'deficit_withdrawal' && item.flowType !== 'surplus_investment')
+        .reduce((sum, item) => sum + item.amount, 0)),
       totalAssets,
       realEstateValue: Math.round(realEstateValue),
       financialAssets: Math.round(financialAssets),
@@ -1658,7 +1902,7 @@ function buildIncomeBreakdown(
       const label = ownerLabels[income.owner] || ''
       const typeLabel = incomeTypeLabels[income.type] || income.type
       const displayTitle = label ? `${typeLabel} | ${label}` : typeLabel
-      result.push({ title: displayTitle, amount: Math.round(yearTotal), type: income.type })
+      result.push({ title: displayTitle, amount: yearTotal, type: income.type })
     }
   }
 
@@ -1702,7 +1946,7 @@ function buildExpenseBreakdown(
     }
 
     if (yearTotal > 0) {
-      result.push({ title: expense.title, amount: Math.round(yearTotal), type: expense.type })
+      result.push({ title: expense.title, amount: yearTotal, type: expense.type })
     }
   }
 

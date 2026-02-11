@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Calendar, MessageSquare, ChevronRight, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getExpertBookings, BookingWithUser } from "@/lib/services/bookingService";
-import { formatMoney } from "@/lib/utils";
+import { formatWon } from "@/lib/utils";
+import { useAdmin } from "./AdminContext";
 import { BookingModal } from "./components";
 import styles from "./dashboard.module.css";
 
@@ -42,10 +43,10 @@ interface AssetSummary {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const { expertId } = useAdmin();
   const [users, setUsers] = useState<User[]>([]);
   const [bookings, setBookings] = useState<BookingWithUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expertId, setExpertId] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<BookingWithUser | null>(null);
   const [assetSummary, setAssetSummary] = useState<AssetSummary>({
     totalAssets: 0,
@@ -80,43 +81,33 @@ export default function AdminDashboardPage() {
     const loadData = async () => {
       const supabase = createClient();
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // 1단계: bookings + conversations 병렬
+      const [bookingList, conversationsRes] = await Promise.all([
+        getExpertBookings(expertId),
+        supabase
+          .from("conversations")
+          .select(`
+            id,
+            user_id,
+            last_message_at,
+            profiles:user_id (
+              id,
+              name,
+              birth_date,
+              gender,
+              phone_number,
+              created_at,
+              onboarding_step,
+              customer_stage
+            )
+          `)
+          .eq("expert_id", expertId)
+          .order("last_message_at", { ascending: false }),
+      ]);
 
-      const { data: expert } = await supabase
-        .from("experts")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!expert) return;
-      setExpertId(expert.id);
-
-      // 예약 목록 로드
-      const bookingList = await getExpertBookings(expert.id);
       setBookings(bookingList);
 
-      // 대화방과 유저 정보
-      const { data: conversations } = await supabase
-        .from("conversations")
-        .select(`
-          id,
-          user_id,
-          last_message_at,
-          profiles:user_id (
-            id,
-            name,
-            birth_date,
-            gender,
-            phone_number,
-            created_at,
-            onboarding_step,
-            customer_stage
-          )
-        `)
-        .eq("expert_id", expert.id)
-        .order("last_message_at", { ascending: false });
-
+      const conversations = conversationsRes.data;
       if (conversations) {
         type ProfileData = {
           id: string;
@@ -128,19 +119,6 @@ export default function AdminDashboardPage() {
           onboarding_step: string | null;
           customer_stage: CustomerStage | null;
         };
-
-        const conversationIds = conversations.map(c => c.id);
-        const { data: unreadCounts } = await supabase
-          .from("messages")
-          .select("conversation_id")
-          .in("conversation_id", conversationIds)
-          .eq("sender_type", "user")
-          .eq("is_read", false);
-
-        const unreadMap: Record<string, number> = {};
-        unreadCounts?.forEach(m => {
-          unreadMap[m.conversation_id] = (unreadMap[m.conversation_id] || 0) + 1;
-        });
 
         const userList: User[] = conversations
           .filter((c) => c.profiles && (Array.isArray(c.profiles) ? c.profiles.length > 0 : true))
@@ -155,7 +133,7 @@ export default function AdminDashboardPage() {
               phone_number: profile.phone_number,
               created_at: profile.created_at,
               onboarding_step: profile.onboarding_step,
-              unread_count: unreadMap[c.id] || 0,
+              unread_count: 0,
               conversation_id: c.id,
               last_message_at: c.last_message_at,
               customer_stage: profile.customer_stage || "new",
@@ -163,44 +141,61 @@ export default function AdminDashboardPage() {
           });
 
         setUsers(userList);
+        setLoading(false);
 
-        // 자산 총합 계산 (모든 고객의 시뮬레이션 데이터)
+        // 2단계: unread + assets 백그라운드 병렬
+        const conversationIds = conversations.map(c => c.id);
         const userIds = userList.map(u => u.id);
-        if (userIds.length > 0) {
-          // 시뮬레이션 조회
-          const { data: simulations } = await supabase
-            .from("simulations")
-            .select("id")
-            .in("profile_id", userIds);
 
-          if (simulations && simulations.length > 0) {
-            const simIds = simulations.map(s => s.id);
+        const [unreadRes, simulationsRes] = await Promise.all([
+          supabase
+            .from("messages")
+            .select("conversation_id")
+            .in("conversation_id", conversationIds)
+            .eq("sender_type", "user")
+            .eq("is_read", false),
+          userIds.length > 0
+            ? supabase.from("simulations").select("id").in("profile_id", userIds)
+            : Promise.resolve({ data: null }),
+        ]);
 
-            // 자산 합계
-            const [savingsRes, realEstateRes, debtsRes] = await Promise.all([
-              supabase.from("savings").select("current_balance").in("simulation_id", simIds),
-              supabase.from("real_estates").select("current_value").in("simulation_id", simIds),
-              supabase.from("debts").select("current_balance").in("simulation_id", simIds),
-            ]);
+        // unread 반영
+        const unreadMap: Record<string, number> = {};
+        unreadRes.data?.forEach(m => {
+          unreadMap[m.conversation_id] = (unreadMap[m.conversation_id] || 0) + 1;
+        });
+        setUsers(prev => prev.map(u => ({
+          ...u,
+          unread_count: unreadMap[u.conversation_id] || 0,
+        })));
 
-            const totalSavings = savingsRes.data?.reduce((sum, s) => sum + (s.current_balance || 0), 0) || 0;
-            const totalRealEstate = realEstateRes.data?.reduce((sum, r) => sum + (r.current_value || 0), 0) || 0;
-            const totalDebts = debtsRes.data?.reduce((sum, d) => sum + (d.current_balance || 0), 0) || 0;
+        // assets 반영
+        const simulations = simulationsRes.data;
+        if (simulations && simulations.length > 0) {
+          const simIds = simulations.map(s => s.id);
+          const [savingsRes, realEstateRes, debtsRes] = await Promise.all([
+            supabase.from("savings").select("current_balance").in("simulation_id", simIds),
+            supabase.from("real_estates").select("current_value").in("simulation_id", simIds),
+            supabase.from("debts").select("current_balance").in("simulation_id", simIds),
+          ]);
 
-            setAssetSummary({
-              totalAssets: totalSavings + totalRealEstate,
-              totalDebts,
-              netWorth: totalSavings + totalRealEstate - totalDebts,
-            });
-          }
+          const totalSavings = savingsRes.data?.reduce((sum, s) => sum + (s.current_balance || 0), 0) || 0;
+          const totalRealEstate = realEstateRes.data?.reduce((sum, r) => sum + (r.current_value || 0), 0) || 0;
+          const totalDebts = debtsRes.data?.reduce((sum, d) => sum + (d.current_balance || 0), 0) || 0;
+
+          setAssetSummary({
+            totalAssets: totalSavings + totalRealEstate,
+            totalDebts,
+            netWorth: totalSavings + totalRealEstate - totalDebts,
+          });
         }
+      } else {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     loadData();
-  }, []);
+  }, [expertId]);
 
   // 실시간 메시지 구독
   useEffect(() => {
@@ -276,8 +271,64 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
+        <div className={styles.header}>
+          <h1 className={styles.title}>대시보드</h1>
+        </div>
+
+        <div className={styles.content}>
+          {/* Stats Skeleton */}
+          <div className={styles.statsGrid}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={styles.statCard}>
+                <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "80px" }} />
+                <div className={`${styles.skeleton} ${styles.skeletonValue}`} style={{ width: "120px" }} />
+              </div>
+            ))}
+          </div>
+
+          {/* Main Grid Skeleton */}
+          <div className={styles.mainGrid}>
+            {/* Left: Customer List Skeleton */}
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>내 고객</h2>
+              </div>
+              <div className={styles.customerList}>
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className={styles.customerItem}>
+                    <div className={`${styles.skeleton} ${styles.skeletonCircle}`} />
+                    <div className={styles.customerInfo}>
+                      <div className={`${styles.skeleton} ${styles.skeletonBlock}`} style={{ width: "160px", marginBottom: "6px" }} />
+                      <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "120px" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Schedule Skeleton */}
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>예정 상담</h2>
+              </div>
+              <div className={styles.scheduleList}>
+                {[1, 2].map((i) => (
+                  <div key={i} className={styles.scheduleItem}>
+                    <div className={styles.scheduleTime}>
+                      <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "40px", marginBottom: "4px" }} />
+                      <div className={`${styles.skeleton} ${styles.skeletonBlock}`} style={{ width: "50px" }} />
+                    </div>
+                    <div className={styles.scheduleDivider} />
+                    <div className={styles.scheduleInfo}>
+                      <div className={`${styles.skeleton} ${styles.skeletonBlock}`} style={{ width: "100px", marginBottom: "4px" }} />
+                      <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "140px" }} />
+                    </div>
+                    <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: "40px" }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -310,7 +361,7 @@ export default function AdminDashboardPage() {
         </div>
         <div className={styles.statCard}>
           <div className={styles.statLabel}>총 관리 자산</div>
-          <div className={styles.statValue}>{formatMoney(assetSummary.totalAssets)}</div>
+          <div className={styles.statValue}>{formatWon(assetSummary.totalAssets)}</div>
         </div>
         <div className={styles.statCard}>
           <div className={styles.statLabel}>예정 상담</div>
@@ -364,7 +415,7 @@ export default function AdminDashboardPage() {
                       className={styles.chatButton}
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/admin/chat/${user.id}`);
+                        router.push(`/admin/users/${user.id}#chat`);
                       }}
                     >
                       <MessageSquare size={16} />

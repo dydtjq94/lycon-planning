@@ -12,7 +12,7 @@ import {
   Tooltip,
 } from 'chart.js'
 import annotationPlugin from 'chartjs-plugin-annotation'
-import type { SimulationResult } from '@/lib/services/simulationEngine'
+import type { SimulationResult, MonthlySnapshot } from '@/lib/services/simulationEngine'
 import {
   transformSimulationToChartData,
   formatChartValue,
@@ -52,6 +52,7 @@ interface AssetStackChartProps {
   onYearClick?: (year: number) => void
   selectedYear?: number | null
   headerAction?: React.ReactNode
+  monthlySnapshots?: MonthlySnapshot[]
 }
 
 
@@ -64,6 +65,7 @@ export function AssetStackChart({
   onYearClick,
   selectedYear,
   headerAction,
+  monthlySnapshots,
 }: AssetStackChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<ChartJS | null>(null)
@@ -87,6 +89,9 @@ export function AssetStackChart({
 
   const { snapshots } = simulationResult
 
+  const isMonthlyMode = !!monthlySnapshots && monthlySnapshots.length > 0
+  const prevMonthlyModeRef = useRef(isMonthlyMode)
+
   // 차트 데이터 변환 - 메모이제이션
   const chartData = useMemo(
     () => transformSimulationToChartData(simulationResult, { endYear }),
@@ -98,6 +103,18 @@ export function AssetStackChart({
     () => chartData.snapshots.map(s => s.netWorth),
     [chartData.snapshots]
   )
+
+  // 월별 데이터 (isMonthlyMode일 때 사용)
+  const monthlyChartData = useMemo(() => {
+    if (!isMonthlyMode) return null
+    const labels = monthlySnapshots!.map(ms => {
+      const yy = String(ms.year).slice(-2)
+      const mm = String(ms.month).padStart(2, '0')
+      return `${yy}.${mm}`
+    })
+    const netWorthValues = monthlySnapshots!.map(ms => ms.netWorth)
+    return { labels, netWorthValues, snapshots: monthlySnapshots! }
+  }, [isMonthlyMode, monthlySnapshots])
 
   // 커스텀 툴팁 핸들러
   const externalTooltipHandler = useCallback((context: {
@@ -118,6 +135,85 @@ export function AssetStackChart({
     }
 
     const dataIndex = tooltip.dataPoints?.[0]?.dataIndex ?? 0
+
+    // Monthly mode: use monthlySnapshots
+    if (isMonthlyMode && monthlyChartData) {
+      const ms = monthlyChartData.snapshots[dataIndex]
+      if (!ms) {
+        hideTooltip(tooltipEl)
+        return
+      }
+
+      const textColor = isDark ? '#ffffff' : '#1d1d1f'
+      const textSecondary = isDark ? '#a1a1aa' : '#86868b'
+      const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
+      const netWorth = ms.netWorth
+      const netColor = netWorth >= 0 ? '#10b981' : '#ef4444'
+      const netPrefix = netWorth >= 0 ? '' : '-'
+      const totalAssets = ms.financialAssets + ms.realEstateValue + ms.pensionAssets + (ms.physicalAssetValue || 0)
+      const ageText = getAgeText(ms.year, birthYear, spouseBirthYear)
+
+      // 자산 카테고리별 그룹핑 (연간 모드와 동일)
+      const allAssetItems = [
+        ...(ms.assetBreakdown || []),
+        ...(ms.pensionBreakdown || [])
+      ]
+      const assetGroups = groupAssetItems(allAssetItems)
+      const debtGroups = groupDebtItems(ms.debtBreakdown || [])
+
+      const assetSectionHtml = assetGroups.length > 0 ? `
+        <div style="margin-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 700; color: ${textColor};">자산</span>
+            <span style="font-size: 13px; font-weight: 700; color: #10b981;">${formatMoneyWithUnit(totalAssets)}</span>
+          </div>
+          ${assetGroups.map(group => `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+                <span style="font-size: 12px; color: ${textColor};">${group.category.label}</span>
+              </div>
+              <span style="font-size: 12px; color: ${textColor};">${formatMoneyWithUnit(group.total)}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''
+
+      const debtSectionHtml = debtGroups.length > 0 ? `
+        <div style="margin-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; font-weight: 700; color: ${textColor};">부채</span>
+            <span style="font-size: 13px; font-weight: 700; color: #ef4444;">-${formatMoneyWithUnit(ms.totalDebts)}</span>
+          </div>
+          ${debtGroups.map(group => `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+                <span style="font-size: 12px; color: ${textColor};">${group.category.label}</span>
+              </div>
+              <span style="font-size: 12px; color: ${textColor};">-${formatMoneyWithUnit(group.total)}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''
+
+      tooltipEl.innerHTML = `
+        <div style="font-size: 18px; font-weight: 700; color: ${textColor}; margin-bottom: 2px;">${ms.year}년 ${ms.month}월</div>
+        <div style="font-size: 12px; color: ${textSecondary}; margin-bottom: 12px;">${ageText}</div>
+        <div style="border-top: 1px solid ${borderColor}; padding-top: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 14px; font-weight: 700; color: ${textColor};">순자산</span>
+            <span style="font-size: 14px; font-weight: 700; color: ${netColor};">${netPrefix}${formatMoneyWithUnit(netWorth)}</span>
+          </div>
+        </div>
+        ${assetSectionHtml}
+        ${debtSectionHtml}
+      `
+
+      positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
+      return
+    }
+
     const snapshot = chartData.snapshots[dataIndex]
 
     if (!snapshot) {
@@ -135,7 +231,7 @@ export function AssetStackChart({
     const netPrefix = netWorth >= 0 ? '' : '-'
 
     // 자산 총계
-    const totalAssets = snapshot.financialAssets + snapshot.realEstateValue + snapshot.pensionAssets
+    const totalAssets = snapshot.financialAssets + snapshot.realEstateValue + snapshot.pensionAssets + (snapshot.physicalAssetValue || 0)
 
     // 나이 텍스트
     const ageText = getAgeText(snapshot.year, birthYear, spouseBirthYear)
@@ -196,7 +292,7 @@ export function AssetStackChart({
     `
 
     positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
-  }, [chartData.snapshots, isDark, birthYear, spouseBirthYear])
+  }, [chartData.snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlyChartData])
 
   // 마우스 추적 + 호버 라인 + 언마운트 정리
   useEffect(() => {
@@ -268,15 +364,21 @@ export function AssetStackChart({
     const positiveColor = chartLineColors.price
     const negativeColor = chartLineColors.expense
 
-    // Bar mode에서 사용할 색상 배열
-    const bgColors = netWorthData.map(v => v >= 0 ? toRgba(positiveColor, 0.7) : toRgba(negativeColor, 0.7))
+    // 월별/연별 데이터 선택
+    const activeLabels = isMonthlyMode && monthlyChartData ? monthlyChartData.labels : chartData.labels
+    const activeNetWorthData = isMonthlyMode && monthlyChartData ? monthlyChartData.netWorthValues : netWorthData
 
-    const retirementIndex = retirementYear
-      ? chartData.labels.findIndex(label => parseInt(label) === retirementYear)
-      : -1
+    // Bar mode에서 사용할 색상 배열
+    const bgColors = activeNetWorthData.map(v => v >= 0 ? toRgba(positiveColor, 0.7) : toRgba(negativeColor, 0.7))
+
+    const retirementIndex = isMonthlyMode && monthlyChartData
+      ? monthlyChartData.snapshots.findIndex(ms => ms.year === retirementYear && ms.month === 1)
+      : retirementYear
+        ? chartData.labels.findIndex(label => parseInt(label) === retirementYear)
+        : -1
 
     // 0을 가운데로 대칭 y축
-    const maxAbs = Math.max(Math.abs(Math.max(...netWorthData)), Math.abs(Math.min(...netWorthData))) * 1.1
+    const maxAbs = Math.max(Math.abs(Math.max(...activeNetWorthData)), Math.abs(Math.min(...activeNetWorthData))) * 1.1
 
     // annotation 설정
     const annotationsConfig: any = {
@@ -306,6 +408,27 @@ export function AssetStackChart({
           padding: { x: 6, y: 4 },
           borderRadius: 4,
         },
+      }
+    }
+
+    // 선택된 연도 라인
+    if (selectedYear && chartRef.current) {
+      const selectedIndex = isMonthlyMode && monthlyChartData
+        ? monthlyChartData.snapshots.findIndex(ms => {
+            const selectedMonth = Math.round((selectedYear % 1) * 100) || 1
+            return ms.year === Math.floor(selectedYear) && ms.month === selectedMonth
+          })
+        : activeLabels.findIndex(label => parseInt(label) === selectedYear)
+      if (selectedIndex >= 0) {
+        const accentColor = getComputedStyle(chartRef.current).getPropertyValue('--accent-color').trim() || '#007aff'
+        const accentWithOpacity = `color-mix(in srgb, ${accentColor} 40%, transparent)`
+        annotationsConfig.selectedLine = {
+          type: 'line',
+          xMin: selectedIndex,
+          xMax: selectedIndex,
+          borderColor: accentWithOpacity,
+          borderWidth: 2,
+        }
       }
     }
 
@@ -339,16 +462,23 @@ export function AssetStackChart({
       },
     }
 
+    // 월별↔연간 모드 전환 시 차트 완전 재생성 (onClick 클로저 갱신)
+    if (chartInstance.current && prevMonthlyModeRef.current !== isMonthlyMode) {
+      chartInstance.current.destroy()
+      chartInstance.current = null
+    }
+    prevMonthlyModeRef.current = isMonthlyMode
+
     // 차트가 이미 있으면 데이터/옵션만 업데이트 (애니메이션 없이)
     if (chartInstance.current) {
       const chart = chartInstance.current
-      chart.data.labels = chartData.labels
+      chart.data.labels = activeLabels
 
       const barDs = chart.data.datasets[0] as any
       const lineDs = chart.data.datasets[1] as any
 
-      barDs.data = netWorthData
-      if (lineDs) lineDs.data = netWorthData
+      barDs.data = activeNetWorthData
+      if (lineDs) lineDs.data = activeNetWorthData
 
       if (chartMode === 'bar') {
         // Bar visible
@@ -413,11 +543,11 @@ export function AssetStackChart({
     chartInstance.current = new ChartJS(ctx, {
       type: 'bar',
       data: {
-        labels: chartData.labels,
+        labels: activeLabels,
         datasets: [
           {
             label: '순자산-bar',
-            data: netWorthData,
+            data: activeNetWorthData,
             backgroundColor: chartMode === 'bar' ? bgColors : 'transparent',
             borderWidth: 0,
             borderRadius: chartMode === 'bar' ? 2 : 0,
@@ -427,7 +557,7 @@ export function AssetStackChart({
           {
             type: 'line' as const,
             label: '순자산',
-            data: netWorthData,
+            data: activeNetWorthData,
             borderColor: positiveColor,
             borderWidth: chartMode === 'line' ? 2.5 : 0,
             pointRadius: 0,
@@ -458,7 +588,14 @@ export function AssetStackChart({
           if (elements.length > 0 && onYearClickRef.current) {
             const index = elements[0].index
             const label = chart.data.labels?.[index]
-            if (label) onYearClickRef.current(parseInt(String(label)))
+            if (label) {
+              if (isMonthlyMode && monthlyChartData) {
+                const ms = monthlyChartData.snapshots[index]
+                if (ms) onYearClickRef.current(ms.year + ms.month / 100)
+              } else {
+                onYearClickRef.current(parseInt(String(label)))
+              }
+            }
           }
         },
         scales: {
@@ -505,7 +642,7 @@ export function AssetStackChart({
       plugins: [gradientFillPlugin],
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartData, retirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, netWorthData, toRgba, chartMode])
+  }, [chartData, retirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, netWorthData, toRgba, chartMode, isMonthlyMode, monthlyChartData])
 
   // 선택된 연도가 변경될 때 annotation만 업데이트 (차트 재생성 X)
   useEffect(() => {
@@ -517,9 +654,14 @@ export function AssetStackChart({
     if (!annotations) return
 
     // 선택된 연도 인덱스 계산
-    const newSelectedIndex = selectedYear
-      ? chartData.labels.findIndex(label => parseInt(label) === selectedYear)
-      : -1
+    const newSelectedIndex = (() => {
+      if (!selectedYear) return -1
+      if (isMonthlyMode && monthlyChartData) {
+        const selectedMonth = Math.round((selectedYear % 1) * 100) || 1
+        return monthlyChartData.snapshots.findIndex(ms => ms.year === Math.floor(selectedYear) && ms.month === selectedMonth)
+      }
+      return chartData.labels.findIndex(label => parseInt(label) === selectedYear)
+    })()
 
     // CSS 변수에서 accent color 가져오기 (opacity 40%)
     const accentColor = getComputedStyle(chartRef.current).getPropertyValue('--accent-color').trim() || '#007aff'
@@ -539,7 +681,7 @@ export function AssetStackChart({
     }
 
     chart.update('none') // 애니메이션 없이 즉시 업데이트
-  }, [selectedYear, chartData.labels])
+  }, [selectedYear, chartData.labels, isMonthlyMode, monthlyChartData])
 
   return (
     <div className={styles.container}>

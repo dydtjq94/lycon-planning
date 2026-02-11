@@ -38,6 +38,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { loadPrepData } from "@/lib/services/prepDataService";
 import type { PrepData } from "@/components/forms";
+import { useAdmin } from "../../AdminContext";
 import {
   NotesSection,
   ProgressSection,
@@ -230,10 +231,28 @@ const tabs = [
   { id: "scenario" as Section, label: "시나리오", icon: Target },
 ];
 
+// 모듈 레벨 캐시 (페이지 이동해도 유지)
+interface CachedUserData {
+  profile: Profile | null;
+  familyMembers: FamilyMember[];
+  conversationId: string | null;
+  bookings: Booking[];
+  consultationRecords: ConsultationRecord[];
+  consultationHistory: Record<string, string | null>;
+  snapshots: FinancialSnapshot[];
+  latestSnapshot: FinancialSnapshot | null;
+  prepData: PrepData | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  surveyResponses: any;
+}
+
+const userDataCache = new Map<string, CachedUserData>();
+
 export default function UserDetailPage() {
   const router = useRouter();
   const params = useParams();
   const userId = params.id as string;
+  const { expertId } = useAdmin();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
@@ -246,7 +265,6 @@ export default function UserDetailPage() {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
   });
-  const [expertId, setExpertId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -444,33 +462,79 @@ export default function UserDetailPage() {
   }, []);
 
   useEffect(() => {
+    // 캐시 히트 시 즉시 표시
+    const cached = userDataCache.get(userId);
+    if (cached) {
+      setProfile(cached.profile);
+      setFamilyMembers(cached.familyMembers);
+      setConversationId(cached.conversationId);
+      setScheduledBookings(cached.bookings);
+      setConsultationRecords(cached.consultationRecords);
+      setConsultationHistory(cached.consultationHistory);
+      setSnapshots(cached.snapshots);
+      setLatestSnapshot(cached.latestSnapshot);
+      setPrepData(cached.prepData);
+      if (cached.surveyResponses) setSurveyResponses(cached.surveyResponses);
+      setLoading(false);
+    }
+
     const loadUserData = async () => {
       const supabase = createClient();
 
-      // 현재 로그인한 전문가 ID
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { data: expert } = await supabase
-          .from("experts")
+      // 2단계: 나머지 전부 병렬 실행
+      const today = new Date().toISOString().split("T")[0];
+
+      const [
+        profileRes,
+        familyRes,
+        conversationRes,
+        bookingsRes,
+        recordsRes,
+        snapshotRes,
+        prepDataRes,
+      ] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "id, name, birth_date, gender, target_retirement_age, created_at, onboarding_step, phone_number, customer_stage, survey_responses, guide_clicks, prep_data",
+          )
+          .eq("id", userId)
+          .single(),
+        supabase
+          .from("family_members")
+          .select("id, relation, name, birth_date")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("conversations")
           .select("id")
-          .eq("user_id", user.id)
-          .single();
-        if (expert) {
-          setExpertId(expert.id);
-        }
-      }
+          .eq("user_id", userId)
+          .eq("expert_id", expertId)
+          .maybeSingle(),
+        supabase
+          .from("bookings")
+          .select("id, booking_date, booking_time, consultation_type, status")
+          .eq("user_id", userId)
+          .in("status", ["confirmed", "pending"])
+          .gte("booking_date", today)
+          .order("booking_date", { ascending: true }),
+        supabase
+          .from("consultation_records")
+          .select(
+            "id, consultation_type, scheduled_date, scheduled_time, completed_date, status, summary",
+          )
+          .eq("profile_id", userId)
+          .order("scheduled_date", { ascending: false }),
+        supabase
+          .from("financial_snapshots")
+          .select("*")
+          .eq("profile_id", userId)
+          .order("recorded_at", { ascending: false }),
+        loadPrepData(userId).catch(() => null),
+      ]);
 
-      // 고객 프로필
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select(
-          "id, name, birth_date, gender, target_retirement_age, created_at, onboarding_step, phone_number, customer_stage, survey_responses, guide_clicks, prep_data",
-        )
-        .eq("id", userId)
-        .single();
-
+      // 결과 처리
+      const profileData = profileRes.data;
       if (profileData) {
         setProfile(profileData);
         if (profileData.survey_responses) {
@@ -478,46 +542,69 @@ export default function UserDetailPage() {
         }
       }
 
-      // 가족 구성원
-      const { data: familyData } = await supabase
-        .from("family_members")
-        .select("id, relation, name, birth_date")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: true });
+      const familyData = familyRes.data || [];
+      setFamilyMembers(familyData);
 
-      if (familyData) {
-        setFamilyMembers(familyData);
-      }
+      const conversation = conversationRes.data;
+      setConversationId(conversation?.id || null);
 
-      // 현재 전문가의 대화방 로드 또는 생성
-      let conversation: { id: string } | null = null;
+      const bookingsData = bookingsRes.data || [];
+      setScheduledBookings(bookingsData);
 
-      if (user) {
-        const { data: expert } = await supabase
-          .from("experts")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
+      let history: Record<string, string | null> = {
+        "retirement-diagnosis": null,
+        "budget-consultation": null,
+        "investment-portfolio": null,
+        "asset-review": null,
+        "pension-analysis": null,
+        "real-estate": null,
+        "tax-consultation": null,
+        "financial-decision": null,
+      };
 
-        if (expert) {
-          // 현재 전문가의 대화방 조회 (자동 생성하지 않음)
-          const { data: existingConv } = await supabase
-            .from("conversations")
-            .select("id")
-            .eq("user_id", userId)
-            .eq("expert_id", expert.id)
-            .maybeSingle();
+      const recordsData = recordsRes.data || [];
+      setConsultationRecords(recordsData);
 
-          if (existingConv) {
-            conversation = existingConv;
+      recordsData
+        .filter((r) => r.status === "completed" && r.completed_date)
+        .forEach((r) => {
+          if (
+            !history[r.consultation_type] ||
+            r.completed_date! > history[r.consultation_type]!
+          ) {
+            history[r.consultation_type] = r.completed_date;
           }
-          // 대화방이 없으면 담당 고객이 아님 - 자동 생성하지 않음
-        }
+        });
+      setConsultationHistory(history);
+
+      const snapshotData = snapshotRes.data || [];
+      if (snapshotData.length > 0) {
+        setSnapshots(snapshotData);
+        setLatestSnapshot(snapshotData[0]);
       }
 
-      if (conversation) {
-        setConversationId(conversation.id);
+      if (prepDataRes) {
+        setPrepData(prepDataRes);
+      }
 
+      // 캐시 저장
+      userDataCache.set(userId, {
+        profile: profileData || null,
+        familyMembers: familyData,
+        conversationId: conversation?.id || null,
+        bookings: bookingsData,
+        consultationRecords: recordsData,
+        consultationHistory: history,
+        snapshots: snapshotData,
+        latestSnapshot: snapshotData[0] || null,
+        prepData: prepDataRes || null,
+        surveyResponses: profileData?.survey_responses || null,
+      });
+
+      setLoading(false);
+
+      // 3단계: unread 카운트는 백그라운드
+      if (conversation) {
         const { data: unreadMessages } = await supabase
           .from("messages")
           .select("id")
@@ -526,85 +613,9 @@ export default function UserDetailPage() {
           .eq("is_read", false);
 
         setUnreadCount(unreadMessages?.length || 0);
-      } else {
-        setConversationId(null);
       }
 
-      // 예약된 상담 로드 (오늘 이후, confirmed 또는 pending 상태만)
-      const today = new Date().toISOString().split("T")[0];
-      const { data: bookingsData } = await supabase
-        .from("bookings")
-        .select("id, booking_date, booking_time, consultation_type, status")
-        .eq("user_id", userId)
-        .in("status", ["confirmed", "pending"])
-        .gte("booking_date", today)
-        .order("booking_date", { ascending: true });
-
-      if (bookingsData) {
-        setScheduledBookings(bookingsData);
-      }
-
-      // 상담 이력 로드
-      const { data: recordsData } = await supabase
-        .from("consultation_records")
-        .select(
-          "id, consultation_type, scheduled_date, scheduled_time, completed_date, status, summary",
-        )
-        .eq("profile_id", userId)
-        .order("scheduled_date", { ascending: false });
-
-      if (recordsData) {
-        setConsultationRecords(recordsData);
-
-        // 각 상담 종류별 마지막 완료일 계산
-        const history: Record<string, string | null> = {
-          "retirement-diagnosis": null,
-          "budget-consultation": null,
-          "investment-portfolio": null,
-          "asset-review": null,
-          "pension-analysis": null,
-          "real-estate": null,
-          "tax-consultation": null,
-          "financial-decision": null,
-        };
-
-        recordsData
-          .filter((r) => r.status === "completed" && r.completed_date)
-          .forEach((r) => {
-            if (
-              !history[r.consultation_type] ||
-              r.completed_date! > history[r.consultation_type]!
-            ) {
-              history[r.consultation_type] = r.completed_date;
-            }
-          });
-
-        setConsultationHistory(history);
-      }
-
-      // PrepData 로드 (Gemini 에이전트용)
-      try {
-        const prepDataResult = await loadPrepData(userId);
-        setPrepData(prepDataResult);
-      } catch (err) {
-        console.error("PrepData 로드 실패:", err);
-      }
-
-      // 재무 스냅샷 로드
-      const { data: snapshotData } = await supabase
-        .from("financial_snapshots")
-        .select("*")
-        .eq("profile_id", userId)
-        .order("recorded_at", { ascending: false });
-
-      if (snapshotData && snapshotData.length > 0) {
-        setSnapshots(snapshotData);
-        setLatestSnapshot(snapshotData[0]);
-      }
-
-      setLoading(false);
-
-      // URL 해시가 chat이면 메시지 로드 후 스크롤
+      // URL 해시 처리
       const hash = window.location.hash.replace("#", "");
       if (hash === "chat") {
         setCurrentSection("chat");

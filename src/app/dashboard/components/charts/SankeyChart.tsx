@@ -11,6 +11,12 @@ import {
 import { SankeyController, Flow } from "chartjs-chart-sankey";
 import type { SimulationResult } from "@/lib/services/simulationEngine";
 import { useChartTheme } from "@/hooks/useChartTheme";
+import {
+  CHART_COLORS,
+  INFLOW_CATEGORIES,
+  OUTFLOW_CATEGORIES,
+  groupCashFlowItems,
+} from "@/lib/utils/tooltipCategories";
 import styles from "./Charts.module.css";
 
 ChartJS.register(
@@ -43,7 +49,7 @@ interface SankeyChartProps {
 
 // 금액 포맷팅 (간결하게)
 function formatMoney(amount: number): string {
-  const absAmount = Math.abs(amount);
+  const absAmount = Math.round(Math.abs(amount));
   if (absAmount >= 10000) {
     const uk = Math.floor(absAmount / 10000);
     const man = Math.round(absAmount % 10000);
@@ -101,11 +107,15 @@ function getIncomeCategory(type: string, title: string): string {
 function getExpenseCategory(type: string, title: string): string {
   // 부채상환
   if (
+    type === "debt" ||
     type === "interest" ||
     type === "loan" ||
     title.includes("이자") ||
     title.includes("원금") ||
-    title.includes("대출")
+    title.includes("대출") ||
+    title.includes("주담대") ||
+    title.includes("담보") ||
+    title.includes("상환")
   ) {
     return "부채상환";
   }
@@ -138,38 +148,42 @@ export function SankeyChart({
 }: SankeyChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<ChartJS | null>(null);
-  const { chartScaleColors, isDark, categoryColors, categoryShades, chartLineColors } = useChartTheme();
+  const { chartScaleColors } = useChartTheme();
 
-  // 동적 카테고리 색상 (테마 기반)
-  const CATEGORY_COLORS: Record<string, string> = useMemo(() => ({
-    // 소득 (투자/저축 색상 계열)
-    근로소득: categoryShades.investment[0],
-    사업소득: categoryShades.investment[1],
-    연금소득: categoryShades.investment[2],
-    임대소득: categoryShades.savings[1],
-    금융소득: categoryShades.savings[2],
-    기타소득: categoryColors.debt,
-
-    // 중간 노드
-    "총 유입": chartLineColors.price,
-
-    // 지출 (손실 색상 계열 - 빨강)
-    생활비: chartLineColors.profit,
-    주거비: categoryShades.realAsset[0],
-    의료비: categoryShades.realAsset[1],
-    부채상환: categoryShades.realAsset[2],
-    기타지출: categoryColors.debt,
-
-    // 저축 (저축 색상)
-    잉여현금: categoryColors.savings,
-    "저축/투자": categoryColors.savings,
-  }), [categoryColors, categoryShades, chartLineColors, isDark]);
+  // 카테고리 색상 (CHART_COLORS 기반 - 툴팁과 동일)
+  const CATEGORY_COLORS: Record<string, string> = useMemo(() => {
+    const colors: Record<string, string> = {
+      "총 공급": CHART_COLORS.positive,
+    };
+    for (const cat of INFLOW_CATEGORIES) {
+      colors[cat.label] = cat.color;
+    }
+    for (const cat of OUTFLOW_CATEGORIES) {
+      colors[cat.label] = cat.color;
+    }
+    // Fallback colors for legacy categories
+    colors["근로소득"] = CHART_COLORS.income.labor;
+    colors["사업소득"] = CHART_COLORS.income.business;
+    colors["연금소득"] = CHART_COLORS.income.pension;
+    colors["임대소득"] = CHART_COLORS.income.rental;
+    colors["금융소득"] = CHART_COLORS.income.financial;
+    colors["기타소득"] = CHART_COLORS.income.other;
+    colors["생활비"] = CHART_COLORS.expense.variable;
+    colors["주거비"] = CHART_COLORS.expense.housing;
+    colors["의료비"] = CHART_COLORS.expense.medical;
+    colors["부채상환"] = CHART_COLORS.expense.loan;
+    colors["기타지출"] = CHART_COLORS.expense.other;
+    colors["잉여현금"] = CHART_COLORS.asset.savings;
+    colors["저축/투자"] = CHART_COLORS.asset.savings;
+    colors["부족분 충당"] = CHART_COLORS.debt.credit;
+    return colors;
+  }, []);
 
   const snapshot = useMemo(() => {
     return simulationResult.snapshots.find((s) => s.year === selectedYear);
   }, [simulationResult.snapshots, selectedYear]);
 
-  // 데이터 준비 - 더 단순하게
+  // 데이터 준비 - cashFlowBreakdown 기반 (fallback: incomeBreakdown/expenseBreakdown)
   const {
     flows,
     labels,
@@ -192,166 +206,315 @@ export function SankeyChart({
     }
 
     const flows: { from: string; to: string; flow: number }[] = [];
-    // 각 노드가 어떤 컬럼에 있는지 추적 (왼쪽→오른쪽 애니메이션용)
     const columnMap: Record<string, number> = {};
     const labels: Record<string, string> = {};
     const colorMap: Record<string, string> = { ...CATEGORY_COLORS };
     const priority: Record<string, number> = {};
 
-    const totalIncome = snapshot.totalIncome;
-    const totalExpense = snapshot.totalExpense;
-    const savings = Math.max(0, totalIncome - totalExpense);
+    // Use cashFlowBreakdown if available, otherwise fall back to old logic
+    if (snapshot.cashFlowBreakdown && snapshot.cashFlowBreakdown.length > 0) {
+      // NEW APPROACH: Use cashFlowBreakdown with flowType-based categorization
+      // surplus_investment, deficit_withdrawal 분리 후 regular items만 그룹핑
+      const regularItems = snapshot.cashFlowBreakdown.filter(
+        item => item.flowType !== 'surplus_investment' && item.flowType !== 'deficit_withdrawal'
+      );
+      const { inflows, outflows, totalInflow, totalOutflow } = groupCashFlowItems(regularItems);
 
-    // 최소 표시 금액 (총 소득의 2% 미만은 기타로 통합)
-    const minAmount = totalIncome * 0.02;
+      const surplusItems = snapshot.cashFlowBreakdown.filter(item => item.flowType === 'surplus_investment');
+      const deficitItems = snapshot.cashFlowBreakdown.filter(item => item.flowType === 'deficit_withdrawal');
+      const surplusTotal = surplusItems.reduce((sum, item) => sum + Math.abs(item.amount), 0);
+      const deficitTotal = deficitItems.reduce((sum, item) => sum + Math.abs(item.amount), 0);
 
-    // 소득 처리 - 카테고리별 그룹화
-    const incomeByCategory: Record<
-      string,
-      { items: { title: string; amount: number }[]; total: number }
-    > = {};
+      const seenTitles = new Set<string>();
 
-    snapshot.incomeBreakdown.forEach(
-      (item: { title: string; amount: number; type?: string }) => {
-        if (item.amount <= 0) return;
-        const category = getIncomeCategory(item.type || "", item.title);
-        if (!incomeByCategory[category]) {
-          incomeByCategory[category] = { items: [], total: 0 };
+      // Helper to make titles unique
+      const makeUnique = (title: string, isCategory: boolean = false): string => {
+        if (!seenTitles.has(title)) {
+          seenTitles.add(title);
+          return title;
         }
-        incomeByCategory[category].items.push({
-          title: item.title,
-          amount: item.amount,
-        });
-        incomeByCategory[category].total += item.amount;
-      }
-    );
-
-    // 소득 카테고리 크기순 정렬
-    const sortedIncomeCategories = Object.entries(incomeByCategory).sort(
-      (a, b) => b[1].total - a[1].total
-    );
-
-    let incomePriority = 0;
-    sortedIncomeCategories.forEach(([category, data]) => {
-      // 항상 카테고리 노드 사용 (일관된 단계 유지)
-      // 개별 소득 → 카테고리 (컬럼 0 → 1)
-      data.items
-        .sort((a, b) => b.amount - a.amount)
-        .forEach((item) => {
-          flows.push({ from: item.title, to: category, flow: item.amount });
-          labels[item.title] = `${shortenLabel(item.title)}\n${formatMoney(
-            item.amount
-          )}`;
-          colorMap[item.title] = CATEGORY_COLORS[category] || "#64748b";
-          priority[item.title] = incomePriority++;
-          columnMap[item.title] = 0; // 개별 소득: 컬럼 0
-        });
-
-      // 카테고리 → 총 유입 (컬럼 1 → 2)
-      flows.push({ from: category, to: "총 유입", flow: data.total });
-      labels[category] = `${category}\n${formatMoney(data.total)}`;
-      priority[category] = incomePriority++;
-      columnMap[category] = 1; // 소득 카테고리: 컬럼 1
-    });
-
-    // 총 유입 (컬럼 2)
-    priority["총 유입"] = 50;
-    labels["총 유입"] = `총 유입\n${formatMoney(totalIncome)}`;
-    columnMap["총 유입"] = 2;
-
-    // 지출 처리 - 카테고리별 그룹화
-    const expenseByCategory: Record<
-      string,
-      { items: { title: string; amount: number }[]; total: number }
-    > = {};
-    let otherExpenseTotal = 0;
-
-    snapshot.expenseBreakdown.forEach(
-      (item: { title: string; amount: number; type?: string }) => {
-        if (item.amount <= 0) return;
-
-        // 작은 항목은 기타로
-        if (item.amount < minAmount) {
-          otherExpenseTotal += item.amount;
-          return;
+        // If collision, add suffix
+        let counter = 2;
+        let uniqueTitle = isCategory ? `${title} (${counter})` : `${title} #${counter}`;
+        while (seenTitles.has(uniqueTitle)) {
+          counter++;
+          uniqueTitle = isCategory ? `${title} (${counter})` : `${title} #${counter}`;
         }
+        seenTitles.add(uniqueTitle);
+        return uniqueTitle;
+      };
 
-        const category = getExpenseCategory(item.type || "", item.title);
-        if (!expenseByCategory[category]) {
-          expenseByCategory[category] = { items: [], total: 0 };
-        }
-        expenseByCategory[category].items.push({
-          title: item.title,
-          amount: item.amount,
+      // Add category labels to seen set first
+      for (const cat of INFLOW_CATEGORIES) {
+        seenTitles.add(cat.label);
+      }
+      for (const cat of OUTFLOW_CATEGORIES) {
+        seenTitles.add(cat.label);
+      }
+      seenTitles.add("총 공급");
+
+      // INFLOW PROCESSING
+      let incomePriority = 0;
+      const inflowsSorted = [...inflows].sort((a, b) => b.total - a.total);
+
+      inflowsSorted.forEach((group) => {
+        const categoryLabel = group.category.label;
+        const categoryColor = group.category.color;
+
+        // Individual items → Category (Column 0 → 1)
+        const sortedItems = [...group.items].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+        sortedItems.forEach((item) => {
+          if (Math.abs(item.amount) === 0) return;
+
+          const uniqueTitle = makeUnique(item.title);
+          flows.push({ from: uniqueTitle, to: categoryLabel, flow: Math.abs(item.amount) });
+          labels[uniqueTitle] = `${shortenLabel(item.title)}\n${formatMoney(Math.abs(item.amount))}`;
+          colorMap[uniqueTitle] = categoryColor;
+          priority[uniqueTitle] = incomePriority++;
+          columnMap[uniqueTitle] = 0;
         });
-        expenseByCategory[category].total += item.amount;
-      }
-    );
 
-    // 기타 지출 추가
-    if (otherExpenseTotal > 0) {
-      if (!expenseByCategory["기타지출"]) {
-        expenseByCategory["기타지출"] = { items: [], total: 0 };
-      }
-      expenseByCategory["기타지출"].items.push({
-        title: "기타",
-        amount: otherExpenseTotal,
+        // Category → 총 공급 (Column 1 → 2)
+        flows.push({ from: categoryLabel, to: "총 공급", flow: group.total });
+        labels[categoryLabel] = `${categoryLabel}\n${formatMoney(group.total)}`;
+        colorMap[categoryLabel] = categoryColor;
+        priority[categoryLabel] = incomePriority++;
+        columnMap[categoryLabel] = 1;
       });
-      expenseByCategory["기타지출"].total += otherExpenseTotal;
-    }
 
-    // 지출 카테고리 크기순 정렬
-    const sortedCategories = Object.entries(expenseByCategory).sort(
-      (a, b) => b[1].total - a[1].total
-    );
+      // 총 공급 (Column 2)
+      priority["총 공급"] = 50;
+      labels["총 공급"] = `총 공급\n${formatMoney(totalInflow)}`;
+      colorMap["총 공급"] = CHART_COLORS.positive;
+      columnMap["총 공급"] = 2;
 
-    let expensePriority = 100;
-    sortedCategories.forEach(([category, data]) => {
-      // 총 유입 → 지출 카테고리 (컬럼 2 → 3)
-      flows.push({ from: "총 유입", to: category, flow: data.total });
-      labels[category] = `${category}\n${formatMoney(data.total)}`;
-      priority[category] = expensePriority++;
-      columnMap[category] = 3; // 지출 카테고리: 컬럼 3
+      // OUTFLOW PROCESSING
+      let expensePriority = 100;
+      const outflowsSorted = [...outflows].sort((a, b) => b.total - a.total);
 
-      // 지출 카테고리 → 개별 지출 (컬럼 3 → 4)
-      data.items
-        .sort((a, b) => b.amount - a.amount)
-        .forEach((item) => {
-          const displayName =
-            item.title === "기타" ? `기타(${category})` : item.title;
-          flows.push({ from: category, to: displayName, flow: item.amount });
-          labels[displayName] = `${shortenLabel(
-            item.title === "기타" ? "기타" : item.title
-          )}\n${formatMoney(item.amount)}`;
-          colorMap[displayName] = CATEGORY_COLORS[category] || "#ef4444";
-          priority[displayName] = expensePriority++;
-          columnMap[displayName] = 4; // 개별 지출: 컬럼 4
+      outflowsSorted.forEach((group) => {
+        const categoryLabel = group.category.label;
+        const categoryColor = group.category.color;
+
+        // 총 공급 → Category (Column 2 → 3)
+        flows.push({ from: "총 공급", to: categoryLabel, flow: group.total });
+        labels[categoryLabel] = `${categoryLabel}\n${formatMoney(group.total)}`;
+        colorMap[categoryLabel] = categoryColor;
+        priority[categoryLabel] = expensePriority++;
+        columnMap[categoryLabel] = 3;
+
+        // Category → Individual items (Column 3 → 4)
+        const sortedOutItems = [...group.items].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+        sortedOutItems.forEach((item) => {
+          if (Math.abs(item.amount) === 0) return;
+
+          const uniqueTitle = makeUnique(item.title);
+          flows.push({ from: categoryLabel, to: uniqueTitle, flow: Math.abs(item.amount) });
+          labels[uniqueTitle] = `${shortenLabel(item.title)}\n${formatMoney(Math.abs(item.amount))}`;
+          colorMap[uniqueTitle] = categoryColor;
+          priority[uniqueTitle] = expensePriority++;
+          columnMap[uniqueTitle] = 4;
         });
-    });
+      });
 
-    // 잉여 현금 → 저축/투자 (컬럼 2 → 3 → 4)
-    if (savings > 0) {
-      flows.push({ from: "총 유입", to: "잉여현금", flow: savings });
-      flows.push({ from: "잉여현금", to: "저축/투자", flow: savings });
-      labels["잉여현금"] = `잉여현금\n${formatMoney(savings)}`;
-      labels["저축/투자"] = `저축/투자\n${formatMoney(savings)}`;
-      priority["잉여현금"] = 900;
-      priority["저축/투자"] = 901;
-      columnMap["잉여현금"] = 3; // 잉여현금: 컬럼 3
-      columnMap["저축/투자"] = 4; // 저축/투자: 컬럼 4
+      // SURPLUS HANDLING: Use actual surplus_investment items from cashFlowBreakdown
+      if (surplusTotal > 0) {
+        const surplusLabel = makeUnique("잉여현금", true);
+
+        // 총 공급 → 잉여현금 (Column 2 → 3)
+        flows.push({ from: "총 공급", to: surplusLabel, flow: surplusTotal });
+        labels[surplusLabel] = `잉여현금\n${formatMoney(surplusTotal)}`;
+        colorMap[surplusLabel] = CHART_COLORS.asset.savings;
+        priority[surplusLabel] = 900;
+        columnMap[surplusLabel] = 3;
+
+        // 잉여현금 → 개별 계좌 (Column 3 → 4)
+        let surplusPriority = 901;
+        surplusItems.forEach((item) => {
+          const amount = Math.abs(item.amount);
+          if (amount === 0) return;
+          const uniqueTitle = makeUnique(item.title);
+          flows.push({ from: surplusLabel, to: uniqueTitle, flow: amount });
+          labels[uniqueTitle] = `${shortenLabel(item.title)}\n${formatMoney(amount)}`;
+          colorMap[uniqueTitle] = CHART_COLORS.asset.savings;
+          priority[uniqueTitle] = surplusPriority++;
+          columnMap[uniqueTitle] = 4;
+        });
+      }
+
+      // DEFICIT HANDLING: Use actual deficit_withdrawal items from cashFlowBreakdown
+      if (deficitTotal > 0) {
+        const deficitLabel = makeUnique("부족분 충당", true);
+
+        // 부족분 충당 → 총 공급 (Column 1 → 2)
+        flows.push({ from: deficitLabel, to: "총 공급", flow: deficitTotal });
+        labels[deficitLabel] = `부족분 충당\n${formatMoney(deficitTotal)}`;
+        colorMap[deficitLabel] = CHART_COLORS.debt.credit;
+        priority[deficitLabel] = -1;
+        columnMap[deficitLabel] = 1;
+
+        // 개별 인출 계좌 → 부족분 충당 (Column 0 → 1)
+        let deficitPriority = -10;
+        deficitItems.forEach((item) => {
+          const amount = Math.abs(item.amount);
+          if (amount === 0) return;
+          const uniqueTitle = makeUnique(item.title);
+          flows.push({ from: uniqueTitle, to: deficitLabel, flow: amount });
+          labels[uniqueTitle] = `${shortenLabel(item.title)}\n${formatMoney(amount)}`;
+          colorMap[uniqueTitle] = CHART_COLORS.debt.credit;
+          priority[uniqueTitle] = deficitPriority++;
+          columnMap[uniqueTitle] = 0;
+        });
+
+        // Update 총 공급 label to include deficit
+        labels["총 공급"] = `총 공급\n${formatMoney(totalInflow + deficitTotal)}`;
+      }
+
+      const nodeCount = Object.keys(labels).length;
+      return {
+        flows,
+        labels,
+        colorMap,
+        priority,
+        totalIncome: totalInflow,
+        nodeCount,
+        columnMap,
+      };
+    } else {
+      // FALLBACK: Use old incomeBreakdown/expenseBreakdown logic
+      const totalIncome = snapshot.totalIncome;
+      const totalExpense = snapshot.totalExpense;
+      const savings = Math.max(0, totalIncome - totalExpense);
+
+      // 소득 처리 - 카테고리별 그룹화
+      const incomeByCategory: Record<
+        string,
+        { items: { title: string; amount: number }[]; total: number }
+      > = {};
+
+      snapshot.incomeBreakdown.forEach(
+        (item: { title: string; amount: number; type?: string }) => {
+          if (item.amount <= 0) return;
+          const category = getIncomeCategory(item.type || "", item.title);
+          if (!incomeByCategory[category]) {
+            incomeByCategory[category] = { items: [], total: 0 };
+          }
+          incomeByCategory[category].items.push({
+            title: item.title,
+            amount: item.amount,
+          });
+          incomeByCategory[category].total += item.amount;
+        }
+      );
+
+      // 소득 카테고리 크기순 정렬
+      const sortedIncomeCategories = Object.entries(incomeByCategory).sort(
+        (a, b) => b[1].total - a[1].total
+      );
+
+      let incomePriority = 0;
+      sortedIncomeCategories.forEach(([category, data]) => {
+        // 항상 카테고리 노드 사용 (일관된 단계 유지)
+        // 개별 소득 → 카테고리 (컬럼 0 → 1)
+        data.items
+          .sort((a, b) => b.amount - a.amount)
+          .forEach((item) => {
+            flows.push({ from: item.title, to: category, flow: item.amount });
+            labels[item.title] = `${shortenLabel(item.title)}\n${formatMoney(
+              item.amount
+            )}`;
+            colorMap[item.title] = CATEGORY_COLORS[category] || "#64748b";
+            priority[item.title] = incomePriority++;
+            columnMap[item.title] = 0; // 개별 소득: 컬럼 0
+          });
+
+        // 카테고리 → 총 공급 (컬럼 1 → 2)
+        flows.push({ from: category, to: "총 공급", flow: data.total });
+        labels[category] = `${category}\n${formatMoney(data.total)}`;
+        priority[category] = incomePriority++;
+        columnMap[category] = 1; // 소득 카테고리: 컬럼 1
+      });
+
+      // 총 공급 (컬럼 2)
+      priority["총 공급"] = 50;
+      labels["총 공급"] = `총 공급\n${formatMoney(totalIncome)}`;
+      columnMap["총 공급"] = 2;
+
+      // 지출 처리 - 카테고리별 그룹화
+      const expenseByCategory: Record<
+        string,
+        { items: { title: string; amount: number }[]; total: number }
+      > = {};
+
+      snapshot.expenseBreakdown.forEach(
+        (item: { title: string; amount: number; type?: string }) => {
+          if (item.amount <= 0) return;
+
+          const category = getExpenseCategory(item.type || "", item.title);
+          if (!expenseByCategory[category]) {
+            expenseByCategory[category] = { items: [], total: 0 };
+          }
+          expenseByCategory[category].items.push({
+            title: item.title,
+            amount: item.amount,
+          });
+          expenseByCategory[category].total += item.amount;
+        }
+      );
+
+      // 지출 카테고리 크기순 정렬
+      const sortedCategories = Object.entries(expenseByCategory).sort(
+        (a, b) => b[1].total - a[1].total
+      );
+
+      let expensePriority = 100;
+      sortedCategories.forEach(([category, data]) => {
+        // 총 공급 → 지출 카테고리 (컬럼 2 → 3)
+        flows.push({ from: "총 공급", to: category, flow: data.total });
+        labels[category] = `${category}\n${formatMoney(data.total)}`;
+        priority[category] = expensePriority++;
+        columnMap[category] = 3; // 지출 카테고리: 컬럼 3
+
+        // 지출 카테고리 → 개별 지출 (컬럼 3 → 4)
+        data.items
+          .sort((a, b) => b.amount - a.amount)
+          .forEach((item) => {
+            const displayName =
+              item.title === "기타" ? `기타(${category})` : item.title;
+            flows.push({ from: category, to: displayName, flow: item.amount });
+            labels[displayName] = `${shortenLabel(
+              item.title === "기타" ? "기타" : item.title
+            )}\n${formatMoney(item.amount)}`;
+            colorMap[displayName] = CATEGORY_COLORS[category] || "#ef4444";
+            priority[displayName] = expensePriority++;
+            columnMap[displayName] = 4; // 개별 지출: 컬럼 4
+          });
+      });
+
+      // 잉여 현금 → 저축/투자 (컬럼 2 → 3 → 4)
+      if (savings > 0) {
+        flows.push({ from: "총 공급", to: "잉여현금", flow: savings });
+        flows.push({ from: "잉여현금", to: "저축/투자", flow: savings });
+        labels["잉여현금"] = `잉여현금\n${formatMoney(savings)}`;
+        labels["저축/투자"] = `저축/투자\n${formatMoney(savings)}`;
+        priority["잉여현금"] = 900;
+        priority["저축/투자"] = 901;
+        columnMap["잉여현금"] = 3; // 잉여현금: 컬럼 3
+        columnMap["저축/투자"] = 4; // 저축/투자: 컬럼 4
+      }
+
+      const nodeCount = Object.keys(labels).length;
+
+      return {
+        flows,
+        labels,
+        colorMap,
+        priority,
+        totalIncome,
+        nodeCount,
+        columnMap,
+      };
     }
-
-    const nodeCount = Object.keys(labels).length;
-
-    return {
-      flows,
-      labels,
-      colorMap,
-      priority,
-      totalIncome,
-      nodeCount,
-      columnMap,
-    };
   }, [snapshot, CATEGORY_COLORS]);
 
   useEffect(() => {
@@ -392,6 +555,9 @@ export function SankeyChart({
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: {
+          padding: { top: 24, bottom: 24 },
+        },
         animation: {
           duration: 200,
           easing: "linear",

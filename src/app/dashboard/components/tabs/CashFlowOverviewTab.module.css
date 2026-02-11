@@ -183,6 +183,25 @@
   margin: 8px 0;
 }
 
+/* 섹션 헤더 (총 공급/총 수요) */
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.sectionHeaderLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+}
+
+.sectionHeaderValue {
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .categoryDot {
   display: inline-block;
   width: 8px;
