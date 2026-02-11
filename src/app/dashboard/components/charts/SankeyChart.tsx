@@ -145,7 +145,7 @@ export function SankeyChart({
 }: SankeyChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<ChartJS | null>(null);
-  const { chartScaleColors } = useChartTheme();
+  const { chartScaleColors, isDark } = useChartTheme();
 
   // 카테고리 색상 (CHART_COLORS 기반 - 툴팁과 동일)
   const CATEGORY_COLORS: Record<string, string> = useMemo(() => {
@@ -594,37 +594,134 @@ export function SankeyChart({
             display: false,
           },
           tooltip: {
-            backgroundColor: chartScaleColors.tooltipBg,
-            titleColor: chartScaleColors.tooltipText,
-            bodyColor: chartScaleColors.textSecondary,
-            borderColor: chartScaleColors.tooltipBorder,
-            borderWidth: 1,
-            padding: 12,
-            boxPadding: 6,
-            cornerRadius: 8,
-            titleFont: { weight: "bold", size: 13 },
-            bodyFont: { size: 12 },
-            callbacks: {
-              title: (items) => {
-                const raw = items[0].raw as {
+            enabled: false,
+            external: (context) => {
+              // Tooltip element
+              const tooltipId = 'sankey-chart-tooltip';
+              let tooltipEl = document.getElementById(tooltipId);
+
+              // Create element on first render
+              if (!tooltipEl) {
+                tooltipEl = document.createElement('div');
+                tooltipEl.id = tooltipId;
+                tooltipEl.style.position = 'fixed';
+                tooltipEl.style.pointerEvents = 'none';
+                tooltipEl.style.transition = 'all 0.15s ease';
+                tooltipEl.style.zIndex = '9999';
+                document.body.appendChild(tooltipEl);
+              }
+
+              // Hide if no tooltip
+              const tooltipModel = context.tooltip;
+              if (tooltipModel.opacity === 0) {
+                tooltipEl.style.opacity = '0';
+                return;
+              }
+
+              // Get raw data
+              if (tooltipModel.body) {
+                const raw = tooltipModel.dataPoints[0].raw as {
                   from: string;
                   to: string;
                   flow: number;
                 };
-                return `${raw.from} → ${raw.to}`;
-              },
-              label: (context) => {
-                const raw = context.raw as {
-                  from: string;
-                  to: string;
-                  flow: number;
-                };
-                const percentage =
-                  totalIncome > 0
-                    ? Math.round((raw.flow / totalIncome) * 100)
-                    : 0;
-                return `${formatMoney(raw.flow)}원/년 (${percentage}%)`;
-              },
+
+                const fromColor = colorMap[raw.from] || '#64748b';
+                const textColor = isDark ? '#e8e8e8' : '#1d1d1f';
+                const secondaryTextColor = isDark ? '#9a9b9e' : '#a8a29e';
+                const mutedColor = isDark ? '#6b6d70' : '#d4d4d4';
+                const fromLabel = shortenLabel(raw.from);
+                const toLabel = shortenLabel(raw.to);
+                const amount = formatMoney(raw.flow);
+
+                // 인플로우(총 공급까지) vs 아웃플로우(총 공급 이후)
+                const toCol = columnMap[raw.to] ?? 99;
+                const isInflowSide = toCol <= 2;
+
+                const toColor = colorMap[raw.to] || '#64748b';
+                const labelColor = isDark ? '#b0b1b4' : '#78716c';
+                const arrowColor = isDark ? '#9a9b9e' : '#a8a29e';
+
+                if (isInflowSide) {
+                  const targetTotal = flows
+                    .filter(f => f.to === raw.to)
+                    .reduce((sum, f) => sum + f.flow, 0);
+                  const pct = targetTotal > 0
+                    ? (raw.flow / targetTotal * 100).toFixed(1)
+                    : '0';
+
+                  tooltipEl.innerHTML = `
+                    <div style="display: grid; grid-template-columns: auto auto auto; gap: 4px 10px; align-items: center; justify-items: center;">
+                      <span style="font-size: 15px; font-weight: 700; color: ${fromColor}; justify-self: end;">${amount}</span>
+                      <span style="font-size: 13px; color: ${arrowColor};">→</span>
+                      <span style="font-size: 15px; font-weight: 700; color: ${toColor}; justify-self: start;">${formatMoney(targetTotal)}</span>
+                      <span style="font-size: 11px; color: ${labelColor}; justify-self: end;">${fromLabel}</span>
+                      <span style="font-size: 11px; font-weight: 600; color: ${labelColor};">${pct}%</span>
+                      <span style="font-size: 11px; color: ${labelColor}; justify-self: start;">${toLabel}</span>
+                    </div>
+                  `;
+                } else {
+                  const sourceTotal = flows
+                    .filter(f => f.from === raw.from)
+                    .reduce((sum, f) => sum + f.flow, 0);
+                  const pct = sourceTotal > 0
+                    ? (raw.flow / sourceTotal * 100).toFixed(1)
+                    : '0';
+
+                  tooltipEl.innerHTML = `
+                    <div style="display: grid; grid-template-columns: auto auto auto; gap: 4px 10px; align-items: center; justify-items: center;">
+                      <span style="font-size: 15px; font-weight: 700; color: ${fromColor}; justify-self: end;">${formatMoney(sourceTotal)}</span>
+                      <span style="font-size: 13px; color: ${arrowColor};">→</span>
+                      <span style="font-size: 15px; font-weight: 700; color: ${toColor}; justify-self: start;">${amount}</span>
+                      <span style="font-size: 11px; color: ${labelColor}; justify-self: end;">${fromLabel}</span>
+                      <span style="font-size: 11px; font-weight: 600; color: ${labelColor};">${pct}%</span>
+                      <span style="font-size: 11px; color: ${labelColor}; justify-self: start;">${toLabel}</span>
+                    </div>
+                  `;
+                }
+              }
+
+              // Glassmorphism styles
+              const bgColor = isDark
+                ? 'rgba(34, 37, 41, 0.5)'
+                : 'rgba(255, 255, 255, 0.5)';
+              const borderColor = isDark
+                ? 'rgba(255, 255, 255, 0.12)'
+                : 'rgba(0, 0, 0, 0.06)';
+              const shadow = isDark
+                ? '0 8px 32px rgba(0, 0, 0, 0.5)'
+                : '0 8px 32px rgba(0, 0, 0, 0.12)';
+
+              tooltipEl.style.background = bgColor;
+              tooltipEl.style.backdropFilter = 'blur(6px)';
+              tooltipEl.style.WebkitBackdropFilter = 'blur(6px)';
+              tooltipEl.style.border = `1px solid ${borderColor}`;
+              tooltipEl.style.borderRadius = '14px';
+              tooltipEl.style.boxShadow = shadow;
+              tooltipEl.style.padding = '14px 16px';
+              tooltipEl.style.opacity = '1';
+
+              // Position tooltip (fixed positioning - use getBoundingClientRect directly)
+              const canvas = context.chart.canvas;
+              const rect = canvas.getBoundingClientRect();
+              const tooltipWidth = tooltipEl.offsetWidth || 200;
+              const tooltipHeight = tooltipEl.offsetHeight || 60;
+
+              let left = rect.left + tooltipModel.caretX + 16;
+              let top = rect.top + tooltipModel.caretY - tooltipHeight - 8;
+
+              // Overflow 방지
+              if (left + tooltipWidth > window.innerWidth - 10) {
+                left = rect.left + tooltipModel.caretX - tooltipWidth - 16;
+              }
+              if (left < 10) left = 10;
+              if (top < 10) top = rect.top + tooltipModel.caretY + 20;
+              if (top + tooltipHeight > window.innerHeight - 10) {
+                top = window.innerHeight - tooltipHeight - 10;
+              }
+
+              tooltipEl.style.left = left + 'px';
+              tooltipEl.style.top = top + 'px';
             },
           },
         },
@@ -635,8 +732,13 @@ export function SankeyChart({
       if (chartInstance.current) {
         chartInstance.current.destroy();
       }
+      // Clean up tooltip div
+      const tooltipEl = document.getElementById('sankey-chart-tooltip');
+      if (tooltipEl) {
+        tooltipEl.remove();
+      }
     };
-  }, [flows, labels, colorMap, priority, totalIncome, nodeCount, columnMap, chartScaleColors, CATEGORY_COLORS]);
+  }, [flows, labels, colorMap, priority, totalIncome, nodeCount, columnMap, chartScaleColors, CATEGORY_COLORS, isDark]);
 
   if (flows.length === 0) {
     return (

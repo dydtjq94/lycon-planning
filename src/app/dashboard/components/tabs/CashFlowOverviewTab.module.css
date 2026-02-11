@@ -361,3 +361,76 @@
   color: var(--dashboard-text-secondary);
   font-size: 14px;
 }
+
+/* 공통 뷰 헤더 (모드 전환해도 위치 고정) */
+.viewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  margin-bottom: 16px;
+}
+
+.viewHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.viewLabelArea {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.viewIcon {
+  flex-shrink: 0;
+}
+
+.viewLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+}
+
+/* 뷰 토글 (아이콘) */
+.chartModeToggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--dashboard-hover-bg);
+}
+
+.modeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.modeButton:hover {
+  color: var(--dashboard-text-secondary);
+}
+
+.modeActive {
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+}
+
+.sankeyBody {
+  flex: 1;
+  min-height: 0;
+}
+
+.sankeyBody > div {
+  padding: 0;
+}

@@ -41,6 +41,7 @@ interface CashFlowChartProps {
   selectedYear?: number | null
   headerAction?: React.ReactNode
   monthlySnapshots?: MonthlySnapshot[]
+  hideLegend?: boolean
 }
 
 // Y축 포맷팅
@@ -63,6 +64,7 @@ export function CashFlowChart({
   selectedYear,
   headerAction,
   monthlySnapshots,
+  hideLegend,
 }: CashFlowChartProps) {
   const { chartLineColors, chartScaleColors, categoryColors, isDark, toRgba } = useChartTheme()
   const chartRef = useRef<HTMLCanvasElement>(null)
@@ -638,19 +640,21 @@ export function CashFlowChart({
 
   return (
     <div className={styles.container}>
-      <div className={styles.legendRow}>
-        <div className={styles.legend}>
-          <div className={styles.legendItem}>
-            <span className={styles.legendColor} style={{ background: positiveColor }} />
-            <span className={styles.legendLabel}>흑자</span>
+      {!hideLegend && (
+        <div className={styles.legendRow}>
+          <div className={styles.legend}>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ background: positiveColor }} />
+              <span className={styles.legendLabel}>흑자</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ background: negativeColor }} />
+              <span className={styles.legendLabel}>적자</span>
+            </div>
           </div>
-          <div className={styles.legendItem}>
-            <span className={styles.legendColor} style={{ background: negativeColor }} />
-            <span className={styles.legendLabel}>적자</span>
-          </div>
+          {headerAction && <div className={styles.headerAction}>{headerAction}</div>}
         </div>
-        {headerAction && <div className={styles.headerAction}>{headerAction}</div>}
-      </div>
+      )}
       <div className={styles.chartWrapper}>
         <canvas ref={chartRef} />
       </div>

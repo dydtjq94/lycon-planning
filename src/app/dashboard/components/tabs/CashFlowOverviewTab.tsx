@@ -157,6 +157,9 @@ export function CashFlowOverviewTab({
 
   const isMonthlyMode = !!filteredMonthlySnapshots && filteredMonthlySnapshots.length > 0
 
+  // 뷰 모드 (차트 or 현금흐름도)
+  const [viewMode, setViewMode] = useState<'chart' | 'sankey'>('chart')
+
   // 현금흐름도 연도 선택 상태 (기본값: 현재 연도)
   const [localSelectedYear, setLocalSelectedYear] = useState<number>(currentYear)
   const sankeyYear = propSelectedYear ?? localSelectedYear
@@ -188,19 +191,63 @@ export function CashFlowOverviewTab({
       <div className={styles.chartSection}>
         <div className={styles.chartContent}>
           <div className={styles.chartArea}>
-            <CashFlowChart
-              simulationResult={filteredSimulationResult}
-              endYear={displayRange.end}
-              retirementYear={retirementYear}
-              spouseRetirementYear={spouseRetirementYear}
-              birthYear={birthYear}
-              spouseBirthYear={spouseBirthYear}
-              selectedYear={sankeyYear}
-              onYearClick={(year) => {
-                setSankeyYear(year)
-              }}
-              monthlySnapshots={filteredMonthlySnapshots}
-              headerAction={
+            {/* 공통 헤더 (모드 전환해도 위치 고정) */}
+            <div className={styles.viewHeader}>
+              <div className={styles.viewLabelArea}>
+                {viewMode === 'chart' ? (
+                  <svg width="18" height="14" viewBox="0 0 18 14" fill="none" className={styles.viewIcon}>
+                    <defs>
+                      <linearGradient id="cfBarGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={chartLineColors.price} stopOpacity="0.9" />
+                        <stop offset="100%" stopColor={chartLineColors.price} stopOpacity="0.25" />
+                      </linearGradient>
+                    </defs>
+                    <rect x="1" y="7" width="4" height="7" rx="1" fill="url(#cfBarGrad)" />
+                    <rect x="7" y="3" width="4" height="11" rx="1" fill="url(#cfBarGrad)" />
+                    <rect x="13" y="0" width="4" height="14" rx="1" fill="url(#cfBarGrad)" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="14" viewBox="0 0 18 14" fill="none" className={styles.viewIcon}>
+                    <defs>
+                      <linearGradient id="cfWaveGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={chartLineColors.price} stopOpacity="0.9" />
+                        <stop offset="100%" stopColor={chartLineColors.price} stopOpacity="0.25" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M1 4C4 1.5 6.5 7 9 4C11.5 1.5 14 7 17 4" stroke="url(#cfWaveGrad)" strokeWidth="2" strokeLinecap="round" fill="none" />
+                    <path d="M1 10C4 7.5 6.5 13 9 10C11.5 7.5 14 13 17 10" stroke="url(#cfWaveGrad)" strokeWidth="2" strokeLinecap="round" fill="none" />
+                  </svg>
+                )}
+                <span className={styles.viewLabel}>
+                  {viewMode === 'chart' ? '가계 현금 흐름' : '현금 흐름도'}
+                </span>
+              </div>
+              <div className={styles.viewHeaderRight}>
+                {!isMonthlyMode && (
+                  <div className={styles.chartModeToggle}>
+                    <button
+                      className={`${styles.modeButton} ${viewMode === 'chart' ? styles.modeActive : ''}`}
+                      onClick={() => setViewMode('chart')}
+                      title="차트"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <rect x="1" y="6" width="3" height="7" rx="0.5" fill="currentColor"/>
+                        <rect x="5.5" y="3" width="3" height="10" rx="0.5" fill="currentColor"/>
+                        <rect x="10" y="1" width="3" height="12" rx="0.5" fill="currentColor"/>
+                      </svg>
+                    </button>
+                    <button
+                      className={`${styles.modeButton} ${viewMode === 'sankey' ? styles.modeActive : ''}`}
+                      onClick={() => setViewMode('sankey')}
+                      title="현금흐름도"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M1 4C3 2 5 6 7 4C9 2 11 6 13 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                        <path d="M1 8C3 6 5 10 7 8C9 6 11 10 13 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                )}
                 <div ref={timeRangeRef} className={styles.timeRangeSelector}>
                   <button
                     className={styles.timeRangeButton}
@@ -218,7 +265,6 @@ export function CashFlowOverviewTab({
                           onClick={() => {
                             setTimeRange(range.id)
                             setShowTimeRangeMenu(false)
-                            // 모드 전환 시 항상 새 범위의 시작점으로 리셋
                             if (range.id === 'next3m' || range.id === 'next5m') {
                               setSankeyYear(currentYear + 1 / 100)
                             } else {
@@ -238,8 +284,31 @@ export function CashFlowOverviewTab({
                     </div>
                   )}
                 </div>
-              }
-            />
+              </div>
+            </div>
+
+            {/* 차트 / 현금흐름도 */}
+            {viewMode === 'chart' ? (
+              <CashFlowChart
+                simulationResult={filteredSimulationResult}
+                endYear={displayRange.end}
+                retirementYear={retirementYear}
+                spouseRetirementYear={spouseRetirementYear}
+                birthYear={birthYear}
+                spouseBirthYear={spouseBirthYear}
+                selectedYear={sankeyYear}
+                onYearClick={(year) => setSankeyYear(year)}
+                monthlySnapshots={filteredMonthlySnapshots}
+                hideLegend
+              />
+            ) : (
+              <div className={styles.sankeyBody}>
+                <SankeyChart
+                  simulationResult={simulationResult}
+                  selectedYear={sankeyYear}
+                />
+              </div>
+            )}
           </div>
 
           {/* 연도 상세 패널 */}
@@ -589,17 +658,6 @@ export function CashFlowOverviewTab({
         </div>
       </div>
 
-      {/* 현금흐름도 (월별 모드에서는 미지원) */}
-      {!isMonthlyMode && (
-        <div className={styles.chartSection}>
-          <div className={styles.sankeyArea}>
-            <SankeyChart
-              simulationResult={simulationResult}
-              selectedYear={sankeyYear}
-            />
-          </div>
-        </div>
-      )}
     </div>
   )
 }

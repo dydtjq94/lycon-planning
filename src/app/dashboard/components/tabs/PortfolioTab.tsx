@@ -1889,7 +1889,7 @@ function SearchResultChart({
     animation: {
       duration: 1000,
       easing: 'easeOutQuart',
-    },
+    } as const,
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -2388,7 +2388,7 @@ function PortfolioValueChart({
     maintainAspectRatio: false,
     animation: {
       duration: 1000,
-      easing: 'easeOutQuart',
+      easing: 'easeOutQuart' as const,
     },
     interaction: {
       mode: "index" as const,
