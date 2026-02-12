@@ -51,6 +51,7 @@ export function AssetTab({ simulationId }: AssetTabProps) {
   const [editingAsset, setEditingAsset] = useState<{ type: UIAssetType, id: string | null } | null>(null)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
 
   // 타입별 필터링
   const carAssets = useMemo(
@@ -419,44 +420,50 @@ export function AssetTab({ simulationId }: AssetTabProps) {
     const financingLabel = asset.financing_type === 'loan' ? '대출' : '할부'
     const uiType = dbTypeToUIType(asset.type)
 
-    // 취득일 표시
-    const purchaseDate = asset.purchase_year
-      ? `${asset.purchase_year}년${asset.purchase_month ? ` ${asset.purchase_month}월` : ''}`
-      : null
+    // 메타 정보 구성
+    const metaParts = []
+
+    if (asset.purchase_year) {
+      metaParts.push(`${asset.purchase_year}년${asset.purchase_month ? ` ${asset.purchase_month}월` : ''} 취득`)
+    }
+
+    if (hasFinancing && asset.loan_amount) {
+      const loanInfo = `${financingLabel} ${formatMoney(asset.loan_amount)}`
+      const loanDetails = []
+      if (asset.loan_rate) loanDetails.push(`${asset.loan_rate}%`)
+      if (asset.loan_maturity_year) {
+        loanDetails.push(`${asset.loan_maturity_year}.${String(asset.loan_maturity_month || 1).padStart(2, '0')} 만기`)
+      }
+      metaParts.push(loanDetails.length > 0 ? `${loanInfo} | ${loanDetails.join(' | ')}` : loanInfo)
+    }
 
     return (
       <div key={asset.id} className={styles.assetItem}>
-        <div className={styles.itemMain}>
-          <span className={styles.itemLabel}>{ASSET_TYPE_LABELS[uiType]}</span>
-          <span className={styles.itemAmount}>{formatMoney(asset.current_value)}</span>
+        <div className={styles.itemInfo}>
           <span className={styles.itemName}>{asset.title}</span>
-          {purchaseDate && (
+          {metaParts.length > 0 && (
             <span className={styles.itemMeta}>
-              {purchaseDate} 취득
-            </span>
-          )}
-          {hasFinancing && asset.loan_amount && (
-            <span className={styles.itemLoan}>
-              {financingLabel} {formatMoney(asset.loan_amount)}
-              {asset.loan_rate && ` | ${asset.loan_rate}%`}
-              {asset.loan_maturity_year && ` | ${asset.loan_maturity_year}.${String(asset.loan_maturity_month || 1).padStart(2, '0')} 만기`}
+              {metaParts.join(' | ')}
             </span>
           )}
         </div>
-        <div className={styles.itemActions}>
-          <button
-            className={styles.editBtn}
-            onClick={() => startEditAsset(asset)}
-          >
-            <Pencil size={16} />
-          </button>
-          <button
-            className={styles.deleteBtn}
-            onClick={() => handleDelete(asset.id)}
-            disabled={isSaving}
-          >
-            <Trash2 size={16} />
-          </button>
+        <div className={styles.itemRight}>
+          <span className={styles.itemAmount}>{formatMoney(asset.current_value)}</span>
+          <div className={styles.itemActions}>
+            <button
+              className={styles.editBtn}
+              onClick={() => startEditAsset(asset)}
+            >
+              <Pencil size={16} />
+            </button>
+            <button
+              className={styles.deleteBtn}
+              onClick={() => handleDelete(asset.id)}
+              disabled={isSaving}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -515,6 +522,17 @@ export function AssetTab({ simulationId }: AssetTabProps) {
 
   return (
     <div className={styles.container}>
+      <div className={styles.header}>
+        <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
+          <span className={styles.title}>실물자산</span>
+          <span className={styles.count}>{dbAssets.length}개</span>
+        </button>
+        <div className={styles.headerRight}>
+          <span className={styles.totalAmount}>{formatMoney(totalAssets)}</span>
+        </div>
+      </div>
+      {isExpanded && (
+        <>
       {/* ========== 자동차 ========== */}
       <section className={styles.assetSection}>
         <div className={styles.sectionHeader}>
@@ -596,6 +614,8 @@ export function AssetTab({ simulationId }: AssetTabProps) {
       <p className={styles.infoText}>
         자동차 대출/할부는 부채 탭에서 확인할 수 있습니다.
       </p>
+        </>
+      )}
     </div>
   )
 }

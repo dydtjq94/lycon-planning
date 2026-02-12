@@ -175,18 +175,22 @@ export function NationalPensionSection({
   if (pension) {
     return (
       <div className={styles.pensionItem}>
-        <div className={styles.itemMain}>
-          <span className={styles.itemLabel}>{ownerLabel} 국민연금</span>
-          <span className={styles.itemAmount}>{formatMoney(pension.expected_monthly_amount)}/월</span>
-          <span className={styles.itemMeta}>{birthYear + pension.start_age}년부터 수령{pension.end_age ? ` ~ ${birthYear + pension.end_age}년` : ''}</span>
+        <div className={styles.itemInfo}>
+          <span className={styles.itemName}>{ownerLabel} 국민연금</span>
+          <span className={styles.itemMeta}>
+            {birthYear + pension.start_age}년부터 수령{pension.end_age ? ` ~ ${birthYear + pension.end_age}년` : ''}
+          </span>
         </div>
-        <div className={styles.itemActions}>
-          <button className={styles.editBtn} onClick={startEdit}>
-            <Pencil size={16} />
-          </button>
-          <button className={styles.deleteBtn} onClick={handleDelete} disabled={isSaving}>
-            <Trash2 size={16} />
-          </button>
+        <div className={styles.itemRight}>
+          <span className={styles.itemAmount}>{formatMoney(pension.expected_monthly_amount)}/월</span>
+          <div className={styles.itemActions}>
+            <button className={styles.editBtn} onClick={startEdit}>
+              <Pencil size={16} />
+            </button>
+            <button className={styles.deleteBtn} onClick={handleDelete} disabled={isSaving}>
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
       </div>
     )

@@ -265,12 +265,44 @@ export function RetirementPensionSection({
   if (pension) {
     const isDBType = pension.pension_type === 'db' || pension.pension_type === 'severance'
 
+    // 메타 정보 구성
+    const metaParts = []
+
+    if (isDBType) {
+      if (pension.years_of_service) {
+        metaParts.push(`현재 ${pension.years_of_service}년 → 퇴직 시 ${pension.years_of_service + yearsUntilRetirement}년 근속`)
+      } else {
+        metaParts.push('근속연수를 입력하세요')
+      }
+    } else {
+      if (pension.current_balance) {
+        metaParts.push(`현재 잔액 ${formatMoney(pension.current_balance)}`)
+      } else {
+        metaParts.push('현재 잔액을 입력하세요')
+      }
+    }
+
+    if (pension.receive_type === 'annuity') {
+      metaParts.push(`${birthYear + (pension.start_age || 56)}년부터 ${(pension.receiving_years || 10)}년간 연금 수령`)
+    } else if (pension.receive_type === 'lump_sum') {
+      metaParts.push('일시금 수령')
+    }
+
+    if (!monthlyIncome) {
+      metaParts.push('소득 탭에서 근로소득 입력 필요')
+    }
+
     return (
       <div className={styles.pensionItem}>
-        <div className={styles.itemMain}>
-          <span className={styles.itemLabel}>
+        <div className={styles.itemInfo}>
+          <span className={styles.itemName}>
             {ownerLabel} {isDBType ? 'DB형/퇴직금' : 'DC형/기업IRP'}
           </span>
+          <span className={styles.itemMeta}>
+            {metaParts.join(' | ')}
+          </span>
+        </div>
+        <div className={styles.itemRight}>
           <span className={styles.itemAmount}>
             {projection
               ? pension.receive_type === 'annuity' && projection.monthlyPMT
@@ -278,31 +310,14 @@ export function RetirementPensionSection({
                 : formatMoney(projection.totalAmount)
               : '계산 불가'}
           </span>
-          <span className={styles.itemMeta}>
-            {isDBType
-              ? pension.years_of_service
-                ? `현재 ${pension.years_of_service}년 → 퇴직 시 ${pension.years_of_service + yearsUntilRetirement}년 근속`
-                : '근속연수를 입력하세요'
-              : pension.current_balance
-                ? `현재 잔액 ${formatMoney(pension.current_balance)}`
-                : '현재 잔액을 입력하세요'
-            }
-            {pension.receive_type === 'annuity'
-              ? ` | ${birthYear + (pension.start_age || 56)}년부터 ${(pension.receiving_years || 10)}년간 연금 수령`
-              : pension.receive_type === 'lump_sum'
-                ? ' | 일시금 수령'
-                : ''
-            }
-            {!monthlyIncome && ' | 소득 탭에서 근로소득 입력 필요'}
-          </span>
-        </div>
-        <div className={styles.itemActions}>
-          <button className={styles.editBtn} onClick={startEdit}>
-            <Pencil size={16} />
-          </button>
-          <button className={styles.deleteBtn} onClick={handleDelete} disabled={isSaving}>
-            <Trash2 size={16} />
-          </button>
+          <div className={styles.itemActions}>
+            <button className={styles.editBtn} onClick={startEdit}>
+              <Pencil size={16} />
+            </button>
+            <button className={styles.deleteBtn} onClick={handleDelete} disabled={isSaving}>
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
       </div>
     )

@@ -201,6 +201,9 @@ export function ExpenseTab({
     });
   }, [expenseItems, globalSettings]);
 
+  // 확장/축소 상태
+  const [isExpanded, setIsExpanded] = useState(true);
+
   // 의료비 섹션 토글 상태
   const [medicalExpanded, setMedicalExpanded] = useState(false);
   const [showMedicalInfo, setShowMedicalInfo] = useState(false);
@@ -225,6 +228,16 @@ export function ExpenseTab({
   const variableItems = displayItems.filter((i) => i.type === "variable");
   const onetimeItems = displayItems.filter((i) => i.type === "onetime");
   const medicalItems = displayItems.filter((i) => i.type === "medical");
+
+  // 헤더 총 개수 및 월 지출 계산
+  const totalCount = displayItems.length;
+  const totalMonthlyExpense = useMemo(() => {
+    return displayItems.reduce((sum, item) => {
+      if (item.type === 'onetime') return sum;
+      if (item.frequency === 'yearly') return sum + Math.round(item.amount / 12);
+      return sum + item.amount;
+    }, 0);
+  }, [displayItems]);
 
   // 월 지출로 변환 (frequency 고려)
   const toMonthlyAmount = (item: ExpenseItem): number => {
@@ -1267,10 +1280,15 @@ export function ExpenseTab({
           // 읽기 모드 - displayGrowthRate 사용 (이미 시나리오 적용됨)
           return (
             <div key={item.id} className={styles.expenseItem}>
-              <div className={styles.itemMain}>
-                <span className={styles.itemLabel}>{item.label}</span>
-                <span className={styles.itemAmount}>
-                  {formatAmountWithFreq(item)}
+              <div className={styles.itemInfo}>
+                <span className={styles.itemName}>
+                  {item.label}
+                  {linkedBadge && (
+                    <span className={styles.linkedBadge}>
+                      {linkedBadge.icon}
+                      {linkedBadge.label}
+                    </span>
+                  )}
                 </span>
                 <span className={styles.itemMeta}>
                   {item.type === "onetime"
@@ -1278,22 +1296,27 @@ export function ExpenseTab({
                     : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
                 </span>
               </div>
-              {isLinked ? null : (
-                <div className={styles.itemActions}>
-                  <button
-                    className={styles.editBtn}
-                    onClick={() => startEdit(item)}
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    className={styles.deleteBtn}
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              )}
+              <div className={styles.itemRight}>
+                <span className={styles.itemAmount}>
+                  {formatAmountWithFreq(item)}
+                </span>
+                {isLinked ? null : (
+                  <div className={styles.itemActions}>
+                    <button
+                      className={styles.editBtn}
+                      onClick={() => startEdit(item)}
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button
+                      className={styles.deleteBtn}
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
@@ -1431,25 +1454,37 @@ export function ExpenseTab({
 
   return (
     <div className={styles.container}>
-      {renderSection(
-        "고정비",
-        "fixed",
-        fixedItems,
-        "보험료, 통신비, 구독료 등 매월 고정적으로 나가는 지출",
-      )}
-      {renderSection(
-        "변동비",
-        "variable",
-        variableItems,
-        "식비, 교통비, 여가비 등 매월 변동되는 지출",
-      )}
-      {renderSection(
-        "일회성 지출",
-        "onetime",
-        onetimeItems,
-        "여행, 결혼, 차량구입, 이사 등 특정 시점의 큰 지출",
-      )}
-      <div className={styles.expenseSection}>
+      <div className={styles.header}>
+        <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
+          <span className={styles.title}>지출</span>
+          <span className={styles.count}>{totalCount}개</span>
+        </button>
+        <div className={styles.headerRight}>
+          <span className={styles.totalAmount}>{formatMoney(totalMonthlyExpense)}/월</span>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <>
+          {renderSection(
+            "고정비",
+            "fixed",
+            fixedItems,
+            "보험료, 통신비, 구독료 등 매월 고정적으로 나가는 지출",
+          )}
+          {renderSection(
+            "변동비",
+            "variable",
+            variableItems,
+            "식비, 교통비, 여가비 등 매월 변동되는 지출",
+          )}
+          {renderSection(
+            "일회성 지출",
+            "onetime",
+            onetimeItems,
+            "여행, 결혼, 차량구입, 이사 등 특정 시점의 큰 지출",
+          )}
+          <div className={styles.expenseSection}>
         <div
           className={styles.sectionHeader}
           style={{ cursor: "pointer" }}
@@ -1581,31 +1616,33 @@ export function ExpenseTab({
 
                   return (
                     <div key={item.id} className={styles.expenseItem}>
-                      <div className={styles.itemMain}>
-                        <span className={styles.itemLabel}>{item.label}</span>
+                      <div className={styles.itemInfo}>
+                        <span className={styles.itemName}>{item.label}</span>
+                        <span className={styles.itemMeta}>
+                          {`${item.startYear}년 ~ ${item.endYear}년 | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
+                        </span>
+                      </div>
+                      <div className={styles.itemRight}>
                         <span className={styles.itemAmount}>
                           {formatMoney(item.amount)}
                           <span className={styles.itemFrequency}>
                             /{item.frequency === "monthly" ? "월" : "년"}
                           </span>
                         </span>
-                        <span className={styles.itemMeta}>
-                          {`${item.startYear}년 ~ ${item.endYear}년 | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
-                        </span>
-                      </div>
-                      <div className={styles.itemActions}>
-                        <button
-                          className={styles.editBtn}
-                          onClick={() => startEdit(item)}
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          className={styles.deleteBtn}
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className={styles.itemActions}>
+                          <button
+                            className={styles.editBtn}
+                            onClick={() => startEdit(item)}
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            className={styles.deleteBtn}
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1637,7 +1674,9 @@ export function ExpenseTab({
             )}
           </div>
         )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

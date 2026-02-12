@@ -218,17 +218,11 @@ export function PersonalPensionSection({
         </div>
       ) : (
         <div className={styles.pensionItem}>
-          <div className={styles.itemMain}>
-            <span className={styles.itemLabel}>{ownerLabel} 연금저축</span>
-            <span className={styles.itemAmount}>
-              {pensionSavings?.current_balance ? formatMoney(pensionSavings.current_balance) : '0'}
+          <div className={styles.itemInfo}>
+            <span className={styles.itemName}>
+              {ownerLabel} 연금저축
+              {pensionSavings?.broker_name && <span className={styles.brokerName}>{pensionSavings.broker_name}</span>}
             </span>
-            {pensionSavings?.title && (
-              <span className={styles.itemName}>
-                {pensionSavings.title}
-                {pensionSavings.broker_name && <span className={styles.brokerName}>{pensionSavings.broker_name}</span>}
-              </span>
-            )}
             {(pensionSavings?.current_balance || pensionSavings?.monthly_contribution) ? (
               <span className={styles.itemMeta}>
                 {pensionSavings?.monthly_contribution ? `월 ${formatMoney(pensionSavings.monthly_contribution)} 납입 | ` : ''}
@@ -236,19 +230,24 @@ export function PersonalPensionSection({
               </span>
             ) : null}
           </div>
-          <div className={styles.itemActions}>
-            <button className={styles.editBtn} onClick={startEditPensionSavings}>
-              <Pencil size={16} />
-            </button>
-            {pensionSavings && (
-              <button
-                className={styles.deleteBtn}
-                onClick={() => handleDelete('pension_savings')}
-                disabled={isSaving}
-              >
-                <Trash2 size={16} />
+          <div className={styles.itemRight}>
+            <span className={styles.itemAmount}>
+              {pensionSavings?.current_balance ? formatMoney(pensionSavings.current_balance) : '0'}
+            </span>
+            <div className={styles.itemActions}>
+              <button className={styles.editBtn} onClick={startEditPensionSavings}>
+                <Pencil size={16} />
               </button>
-            )}
+              {pensionSavings && (
+                <button
+                  className={styles.deleteBtn}
+                  onClick={() => handleDelete('pension_savings')}
+                  disabled={isSaving}
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -348,17 +347,11 @@ export function PersonalPensionSection({
         </div>
       ) : (
         <div className={styles.pensionItem}>
-          <div className={styles.itemMain}>
-            <span className={styles.itemLabel}>{ownerLabel} IRP</span>
-            <span className={styles.itemAmount}>
-              {irp?.current_balance ? formatMoney(irp.current_balance) : '0'}
+          <div className={styles.itemInfo}>
+            <span className={styles.itemName}>
+              {ownerLabel} IRP
+              {irp?.broker_name && <span className={styles.brokerName}>{irp.broker_name}</span>}
             </span>
-            {irp?.title && (
-              <span className={styles.itemName}>
-                {irp.title}
-                {irp.broker_name && <span className={styles.brokerName}>{irp.broker_name}</span>}
-              </span>
-            )}
             {(irp?.current_balance || irp?.monthly_contribution) ? (
               <span className={styles.itemMeta}>
                 {irp?.monthly_contribution ? `월 ${formatMoney(irp.monthly_contribution)} 납입 | ` : ''}
@@ -366,19 +359,24 @@ export function PersonalPensionSection({
               </span>
             ) : null}
           </div>
-          <div className={styles.itemActions}>
-            <button className={styles.editBtn} onClick={startEditIrp}>
-              <Pencil size={16} />
-            </button>
-            {irp && (
-              <button
-                className={styles.deleteBtn}
-                onClick={() => handleDelete('irp')}
-                disabled={isSaving}
-              >
-                <Trash2 size={16} />
+          <div className={styles.itemRight}>
+            <span className={styles.itemAmount}>
+              {irp?.current_balance ? formatMoney(irp.current_balance) : '0'}
+            </span>
+            <div className={styles.itemActions}>
+              <button className={styles.editBtn} onClick={startEditIrp}>
+                <Pencil size={16} />
               </button>
-            )}
+              {irp && (
+                <button
+                  className={styles.deleteBtn}
+                  onClick={() => handleDelete('irp')}
+                  disabled={isSaving}
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

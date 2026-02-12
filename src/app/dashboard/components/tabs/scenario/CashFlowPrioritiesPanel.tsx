@@ -38,6 +38,9 @@ export function CashFlowPrioritiesPanel({
     useSimulationV2Data(simulationId);
   const isLoading = externalLoading || dataLoading;
 
+  // Expand/collapse state
+  const [isExpanded, setIsExpanded] = useState(true);
+
   // Adding state: which section is currently adding
   const [addingSurplus, setAddingSurplus] = useState(false);
   const [addingWithdrawal, setAddingWithdrawal] = useState(false);
@@ -187,6 +190,9 @@ export function CashFlowPrioritiesPanel({
     );
     return availableAccounts.filter((a) => !usedIds.has(a.id));
   }, [availableAccounts, priorities.withdrawalRules]);
+
+  // Calculate total rule count
+  const totalRuleCount = priorities.surplusRules.length + priorities.withdrawalRules.length;
 
   // ======== Surplus Rule Handlers ========
 
@@ -370,13 +376,15 @@ export function CashFlowPrioritiesPanel({
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <List size={18} />
-          <span className={styles.headerTitle}>현금흐름 우선순위</span>
-        </div>
+        <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
+          <span className={styles.title}>현금흐름 우선순위</span>
+          <span className={styles.count}>{totalRuleCount}개</span>
+        </button>
       </div>
 
-      {/* Section 1: Surplus Allocation */}
+      {isExpanded && (
+        <>
+          {/* Section 1: Surplus Allocation */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>잉여금 배분 순서</h3>
         <p className={styles.sectionDescription}>
@@ -611,6 +619,8 @@ export function CashFlowPrioritiesPanel({
           </button>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

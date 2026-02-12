@@ -3,6 +3,48 @@
   flex-direction: column;
 }
 
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-bottom: 12px;
+}
+
+.headerToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--dashboard-text);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.count {
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.totalAmount {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-color, #007aff);
+}
+
 .section {
   padding: 24px 0;
   border-bottom: 1px solid var(--dashboard-border);
@@ -20,7 +62,7 @@
 }
 
 .sectionTitle {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--dashboard-text);
 }
@@ -34,9 +76,9 @@
 
 .debtItem {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  padding: 16px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--dashboard-border);
 }
 
@@ -44,36 +86,36 @@
   border-bottom: none;
 }
 
-.debtMain {
+.itemInfo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
   min-width: 0;
 }
 
-.debtLabel {
+.itemName {
   font-size: 13px;
   font-weight: 500;
+  color: var(--dashboard-text);
+}
+
+.itemMeta {
+  font-size: 11px;
   color: var(--dashboard-text-secondary);
+}
+
+.itemRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .debtAmount {
-  font-size: 17px;
+  font-size: 13px;
   font-weight: 600;
   color: #ff3b30;
-}
-
-.debtName {
-  font-size: 14px;
-  color: var(--dashboard-text);
-  margin-top: 2px;
-}
-
-.debtMeta {
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
-  margin-top: 2px;
 }
 
 .debtActions {
@@ -81,7 +123,6 @@
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  margin-top: -4px;
 }
 
 .linkedBadge {
@@ -141,7 +182,7 @@
 }
 
 .infoText {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--dashboard-text-secondary);
   margin: 24px 0 0;
   padding-top: 24px;
@@ -155,7 +196,7 @@
   align-items: center;
   gap: 6px;
   padding: 12px 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: var(--accent-color, #007aff);
   background: transparent;
@@ -189,7 +230,7 @@
   font-size: 13px;
   color: var(--dashboard-text-secondary);
   flex-shrink: 0;
-  padding-top: 10px;
+  padding-top: 8px;
 }
 
 .editField {
@@ -201,42 +242,42 @@
 
 .editInput {
   flex: 1;
-  padding: 8px 12px;
-  font-size: 15px;
+  padding: 6px 0;
+  font-size: 14px;
   color: var(--dashboard-text);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
+  border: none;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
-  background: var(--dashboard-card-bg);
+  background: transparent;
 }
 
 .editInput:focus {
-  border-color: var(--accent-color, #007aff);
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editInput:disabled {
-  background: var(--dashboard-bg);
+  background: transparent;
   color: var(--dashboard-text-secondary);
 }
 
 .editInputNumber {
   width: 120px;
-  padding: 8px 12px;
-  font-size: 15px;
+  padding: 6px 0;
+  font-size: 14px;
   color: var(--dashboard-text);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
+  border: none;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
-  background: var(--dashboard-card-bg);
+  background: transparent;
   text-align: right;
 }
 
 .editInputNumber:focus {
-  border-color: var(--accent-color, #007aff);
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editInputNumber:disabled {
-  background: var(--dashboard-bg);
+  background: transparent;
   color: var(--dashboard-text-secondary);
 }
 
@@ -248,18 +289,18 @@
 
 .editInputSmall {
   width: 70px;
-  padding: 8px 12px;
-  font-size: 15px;
+  padding: 6px 0;
+  font-size: 14px;
   color: var(--dashboard-text);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
+  border: none;
+  border-bottom: 1px solid var(--dashboard-border);
   outline: none;
-  background: var(--dashboard-card-bg);
+  background: transparent;
   text-align: center;
 }
 
 .editInputSmall:focus {
-  border-color: var(--accent-color, #007aff);
+  border-bottom-color: var(--accent-color, #007aff);
 }
 
 .editInputSmall::-webkit-outer-spin-button,
@@ -320,7 +361,7 @@
 }
 
 .previewValue {
-  font-size: 17px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--accent-color, #007aff);
 }
@@ -334,7 +375,7 @@
 
 .cancelBtn {
   padding: 8px 16px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--dashboard-text-secondary);
   background: transparent;
   border: none;
@@ -347,7 +388,7 @@
 
 .saveBtn {
   padding: 8px 20px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #fff;
   background: var(--accent-color, #007aff);

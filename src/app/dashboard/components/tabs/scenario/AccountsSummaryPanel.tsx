@@ -1,6 +1,6 @@
 "use client";
 
-import { PiggyBank, TrendingUp, Shield, Briefcase, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { PiggyBank, TrendingUp, Shield, Briefcase, RefreshCw } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { formatWon } from "@/lib/utils";
 import { simulationService } from "@/lib/services/simulationService";
@@ -256,7 +256,6 @@ export function AccountsSummaryPanel({
         >
           <span className={styles.title}>계좌</span>
           <span className={styles.count}>{totalCount}개</span>
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
         <div className={styles.headerRight}>
           {isSyncingPrices ? (

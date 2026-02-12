@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import type { GlobalSettings } from '@/types'
 import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
 import {
@@ -55,6 +55,7 @@ export function PensionTab({
 
   const invalidate = useInvalidateByCategory(simulationId)
   const isLoading = nationalLoading || retirementLoading || personalLoading
+  const [isExpanded, setIsExpanded] = useState(true)
 
   // 모든 연금 데이터 캐시 무효화
   const loadPensions = () => {
@@ -107,6 +108,9 @@ export function PensionTab({
   // 모든 데이터가 없는 경우에만 로딩 표시
   const hasNoData = dbNationalPensions.length === 0 && dbRetirementPensions.length === 0 && dbPersonalPensions.length === 0
 
+  // 총 연금 개수 및 합계
+  const totalPensionCount = dbNationalPensions.length + dbRetirementPensions.length + dbPersonalPensions.length
+
   if (isLoading && hasNoData) {
     return (
       <div className={styles.container}>
@@ -117,8 +121,17 @@ export function PensionTab({
 
   return (
     <div className={styles.container}>
-      {/* ========== 국민연금 ========== */}
-      <section className={styles.pensionSection}>
+      <div className={styles.header}>
+        <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
+          <span className={styles.title}>연금</span>
+          <span className={styles.count}>{totalPensionCount}개</span>
+        </button>
+      </div>
+
+      {isExpanded && (
+        <>
+          {/* ========== 국민연금 ========== */}
+          <section className={styles.pensionSection}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionTitle}>국민연금</span>
         </div>
@@ -222,7 +235,9 @@ export function PensionTab({
             />
           </>
         )}
-      </section>
+          </section>
+        </>
+      )}
     </div>
   )
 }

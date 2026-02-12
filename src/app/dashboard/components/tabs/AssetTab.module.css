@@ -3,6 +3,48 @@
   flex-direction: column;
 }
 
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-bottom: 12px;
+}
+
+.headerToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--dashboard-text);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.count {
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.totalAmount {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-color, #007aff);
+}
+
 /* 자산 섹션 */
 .assetSection {
   padding: 24px 0;
@@ -21,7 +63,7 @@
 }
 
 .sectionTitle {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--dashboard-text);
 }
@@ -33,9 +75,9 @@
 }
 
 .sectionDesc {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--dashboard-text-secondary);
-  margin: 0 0 16px 0;
+  margin: 0 0 8px 0;
 }
 
 /* 항목 리스트 */
@@ -48,9 +90,9 @@
 /* ========== 읽기 모드 ========== */
 .assetItem {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  padding: 16px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--dashboard-border);
 }
 
@@ -58,42 +100,39 @@
   border-bottom: none;
 }
 
-.itemMain {
+.itemInfo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
   min-width: 0;
 }
 
-.itemLabel {
+.itemName {
   font-size: 13px;
   font-weight: 500;
-  color: var(--dashboard-text-secondary);
-}
-
-.itemAmount {
-  font-size: 17px;
-  font-weight: 600;
   color: var(--dashboard-text);
-}
-
-.itemName {
-  font-size: 14px;
-  color: var(--dashboard-text);
-  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .itemMeta {
-  font-size: 13px;
+  font-size: 11px;
   color: var(--dashboard-text-secondary);
-  margin-top: 2px;
 }
 
-.itemLoan {
+.itemRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.itemAmount {
   font-size: 13px;
-  color: #ff3b30;
-  margin-top: 2px;
+  font-weight: 600;
+  color: var(--dashboard-text);
 }
 
 .itemActions {
@@ -101,7 +140,6 @@
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  margin-top: -4px;
 }
 
 .editBtn {
@@ -168,8 +206,8 @@
 
 .editInput {
   width: 120px;
-  padding: 8px 0;
-  font-size: 16px;
+  padding: 6px 0;
+  font-size: 14px;
   font-weight: 500;
   color: var(--dashboard-text);
   border: none;
@@ -191,8 +229,8 @@
 
 .editInputSmall {
   width: 60px;
-  padding: 8px 0;
-  font-size: 16px;
+  padding: 6px 0;
+  font-size: 14px;
   font-weight: 500;
   color: var(--dashboard-text);
   border: none;
@@ -219,8 +257,8 @@
 
 .editInputWide {
   width: 200px;
-  padding: 8px 0;
-  font-size: 16px;
+  padding: 6px 0;
+  font-size: 14px;
   font-weight: 500;
   color: var(--dashboard-text);
   border: none;
@@ -277,7 +315,7 @@
 
 .cancelBtn {
   padding: 8px 16px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: var(--dashboard-text-secondary);
   background: transparent;
@@ -291,7 +329,7 @@
 
 .saveBtn {
   padding: 8px 20px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #fff;
   background: var(--accent-color, #007aff);
@@ -310,7 +348,7 @@
   align-items: center;
   gap: 4px;
   padding: 12px 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: var(--accent-color, #007aff);
   background: transparent;

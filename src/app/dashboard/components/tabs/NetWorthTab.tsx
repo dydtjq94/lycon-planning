@@ -83,7 +83,7 @@ export function NetWorthTab({
   const [showTimeRangeMenu, setShowTimeRangeMenu] = useState(false)
   const timeRangeRef = useRef<HTMLDivElement>(null)
 
-  // 메뉴 바깥 클릭 시 닫기
+  // 메뉴 바깥 클릭 또는 ESC 시 닫기
   useEffect(() => {
     if (!showTimeRangeMenu) return
 
@@ -92,9 +92,16 @@ export function NetWorthTab({
         setShowTimeRangeMenu(false)
       }
     }
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowTimeRangeMenu(false)
+    }
 
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    window.addEventListener('keydown', handleEsc)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('keydown', handleEsc)
+    }
   }, [showTimeRangeMenu])
 
   // React Query로 데이터 로드

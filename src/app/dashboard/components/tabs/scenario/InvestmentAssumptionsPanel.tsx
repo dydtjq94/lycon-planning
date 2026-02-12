@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Settings, TrendingUp, Landmark, Home, Percent, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, Landmark, Home, Percent } from "lucide-react";
 import type { InvestmentAssumptions, InvestmentRates } from "@/types";
 import styles from "./InvestmentAssumptionsPanel.module.css";
 
@@ -119,13 +119,15 @@ export function InvestmentAssumptionsPanel({
   if (isLoading && isInitialLoad) {
     return (
       <div className={styles.panel}>
-        <div className={styles.skeletonHeader}>
-          <div className={styles.skeletonHeaderLeft}>
-            <div className={`${styles.skeleton} ${styles.skeletonIcon}`} />
+        <div className={styles.header}>
+          <div className={styles.skeletonHeaderToggle}>
             <div className={`${styles.skeleton} ${styles.skeletonTitle}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonCount}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonChevron}`} />
+          </div>
+          <div className={styles.headerRight}>
             <div className={`${styles.skeleton} ${styles.skeletonBadge}`} />
           </div>
-          <div className={`${styles.skeleton} ${styles.skeletonChevron}`} />
         </div>
         <div className={styles.skeletonContent}>
           <div className={`${styles.skeleton} ${styles.skeletonDesc}`} />
@@ -153,18 +155,15 @@ export function InvestmentAssumptionsPanel({
 
   return (
     <div className={styles.panel}>
-      <button
-        className={styles.header}
-        onClick={() => setIsExpanded(!isExpanded)}
-        type="button"
-      >
-        <div className={styles.headerLeft}>
-          <Settings size={18} />
-          <span className={styles.headerTitle}>투자 가정</span>
+      <div className={styles.header}>
+        <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
+          <span className={styles.title}>투자 가정</span>
+          <span className={styles.count}>5개</span>
+        </button>
+        <div className={styles.headerRight}>
           <span className={styles.modeBadge}>고정 수익률</span>
         </div>
-        {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-      </button>
+      </div>
 
       {isExpanded && (
         <div className={styles.content}>

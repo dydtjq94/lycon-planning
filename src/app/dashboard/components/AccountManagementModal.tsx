@@ -53,10 +53,19 @@ const PAYMENT_METHOD_TYPE_OPTIONS = [
 ] as const;
 
 
-export function AccountManagementModal({ profileId, onClose, initialTab = "checking", isMarried = false }: AccountManagementModalProps) {
+export function AccountManagementModal({ profileId, onClose, initialTab = "checking", isMarried = false, triggerRect }: AccountManagementModalProps) {
   const { isDark } = useChartTheme();
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+
+  // ESC로 모달 닫기
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
 
   // 계좌 데이터
   const [checkingAccounts, setCheckingAccounts] = useState<Account[]>([]);
@@ -348,13 +357,33 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
     return allOptions.find(opt => opt.value === type)?.label || type;
   };
 
+  // Calculate modal position
+  const modalStyle: React.CSSProperties = {
+    background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+  };
+
+  if (triggerRect) {
+    const modalWidth = 700;
+    // Try to align left edge with button left edge
+    let left = triggerRect.left;
+    // If overflows right, push left
+    if (left + modalWidth > window.innerWidth - 16) {
+      left = window.innerWidth - modalWidth - 16;
+    }
+    // If overflows left, push right
+    if (left < 16) left = 16;
+
+    modalStyle.position = 'fixed';
+    modalStyle.top = triggerRect.top + 6;
+    modalStyle.left = left;
+  }
+
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{
-        background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-      }}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={modalStyle}>
         <div className={styles.modalHeader}>
           <h3>계좌 관리</h3>
           <button className={styles.modalCloseBtn} onClick={onClose}>

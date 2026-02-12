@@ -51,6 +51,7 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
   const [editValues, setEditValues] = useState<Record<string, string>>({})
   const [editBooleans, setEditBooleans] = useState<{ hasRentalIncome: boolean, hasLoan: boolean }>({ hasRentalIncome: false, hasLoan: false })
   const [isSaving, setIsSaving] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
 
   // 타입별 분류
   const residenceProperty = useMemo(
@@ -891,41 +892,52 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
 
   // 부동산 아이템 렌더링
   const renderPropertyItem = (property: RealEstate) => {
-    const purchaseDate = property.purchase_year
-      ? `${property.purchase_year}년${property.purchase_month ? ` ${property.purchase_month}월` : ''}`
-      : null
+    // 메타 정보 구성
+    const metaParts = []
+
+    if (property.purchase_year) {
+      metaParts.push(`${property.purchase_year}년${property.purchase_month ? ` ${property.purchase_month}월` : ''} 취득`)
+    }
+
+    if (property.has_rental_income && property.rental_monthly) {
+      const rentInfo = `월 임대 ${formatMoney(property.rental_monthly)}`
+      if (property.rental_deposit) {
+        metaParts.push(`${rentInfo} | 보증금 ${formatMoney(property.rental_deposit)}`)
+      } else {
+        metaParts.push(rentInfo)
+      }
+    }
+
+    if (property.has_loan && property.loan_amount) {
+      const loanParts = [`대출 ${formatMoney(property.loan_amount)}`]
+      if (property.loan_rate) loanParts.push(`${property.loan_rate}%`)
+      if (property.loan_repayment_type) loanParts.push(REPAYMENT_TYPE_LABELS[property.loan_repayment_type])
+      if (property.loan_maturity_year) {
+        loanParts.push(`${property.loan_maturity_year}.${String(property.loan_maturity_month || 1).padStart(2, '0')} 만기`)
+      }
+      metaParts.push(loanParts.join(' | '))
+    }
 
     return (
       <div key={property.id} className={styles.assetItem}>
-        <div className={styles.itemMain}>
-          <span className={styles.itemLabel}>{REAL_ESTATE_TYPE_LABELS[property.type]}</span>
-          <span className={styles.itemAmount}>{formatMoney(property.current_value)}</span>
+        <div className={styles.itemInfo}>
           <span className={styles.itemName}>{property.title}</span>
-          {purchaseDate && (
-            <span className={styles.itemMeta}>{purchaseDate} 취득</span>
-          )}
-          {property.has_rental_income && property.rental_monthly && (
-            <span className={styles.itemRent}>
-              월 임대 {formatMoney(property.rental_monthly)}
-              {property.rental_deposit && ` | 보증금 ${formatMoney(property.rental_deposit)}`}
-            </span>
-          )}
-          {property.has_loan && property.loan_amount && (
-            <span className={styles.itemLoan}>
-              대출 {formatMoney(property.loan_amount)}
-              {property.loan_rate && ` | ${property.loan_rate}%`}
-              {property.loan_repayment_type && ` | ${REPAYMENT_TYPE_LABELS[property.loan_repayment_type]}`}
-              {property.loan_maturity_year && ` | ${property.loan_maturity_year}.${String(property.loan_maturity_month || 1).padStart(2, '0')} 만기`}
+          {metaParts.length > 0 && (
+            <span className={styles.itemMeta}>
+              {metaParts.join(' | ')}
             </span>
           )}
         </div>
-        <div className={styles.itemActions}>
-          <button className={styles.editBtn} onClick={() => startEditProperty(property)}>
-            <Pencil size={16} />
-          </button>
-          <button className={styles.deleteBtn} onClick={() => handleDelete(property.id)} disabled={isSaving}>
-            <Trash2 size={16} />
-          </button>
+        <div className={styles.itemRight}>
+          <span className={styles.itemAmount}>{formatMoney(property.current_value)}</span>
+          <div className={styles.itemActions}>
+            <button className={styles.editBtn} onClick={() => startEditProperty(property)}>
+              <Pencil size={16} />
+            </button>
+            <button className={styles.deleteBtn} onClick={() => handleDelete(property.id)} disabled={isSaving}>
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -989,10 +1001,24 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
     )
   }
 
+  const totalPropertyCount = dbRealEstates.length
+
   return (
     <div className={styles.container}>
-      {/* ========== 거주용 부동산 ========== */}
-        <section className={styles.assetSection}>
+      <div className={styles.header}>
+        <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
+          <span className={styles.title}>부동산</span>
+          <span className={styles.count}>{totalPropertyCount}개</span>
+        </button>
+        <div className={styles.headerRight}>
+          <span className={styles.totalAmount}>{formatMoney(totalRealEstateValue)}</span>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <>
+          {/* ========== 거주용 부동산 ========== */}
+          <section className={styles.assetSection}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionTitle}>거주용 부동산</span>
           </div>
@@ -1005,41 +1031,55 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
               renderResidenceEditForm()
             ) : residenceProperty ? (
               <div className={styles.assetItem}>
-                <div className={styles.itemMain}>
-                  <span className={styles.itemLabel}>{residenceProperty.housing_type}</span>
+                <div className={styles.itemInfo}>
+                  <span className={styles.itemName}>{residenceProperty.housing_type}</span>
+                  <span className={styles.itemMeta}>
+                    {(() => {
+                      const metaParts = []
+
+                      if (residenceProperty.housing_type === '자가') {
+                        if (residenceProperty.purchase_year && residenceProperty.purchase_month) {
+                          metaParts.push(`취득 ${residenceProperty.purchase_year}.${String(residenceProperty.purchase_month).padStart(2, '0')}`)
+                        }
+                        if (residenceProperty.purchase_price) {
+                          metaParts.push(`취득가 ${formatMoney(residenceProperty.purchase_price)}`)
+                        }
+                      }
+
+                      if (residenceProperty.housing_type === '월세' && residenceProperty.monthly_rent) {
+                        metaParts.push(`월세 ${formatMoney(residenceProperty.monthly_rent)}`)
+                      }
+
+                      if (residenceProperty.maintenance_fee) {
+                        metaParts.push(`관리비 ${formatMoney(residenceProperty.maintenance_fee)}/월`)
+                      }
+
+                      if (residenceProperty.has_loan && residenceProperty.loan_amount) {
+                        const loanLabel = residenceProperty.housing_type === '자가' ? '주담대' : '전월세 보증금 대출'
+                        const loanParts = [`${loanLabel} ${formatMoney(residenceProperty.loan_amount)}`]
+                        if (residenceProperty.loan_rate) loanParts.push(`${residenceProperty.loan_rate}%`)
+                        if (residenceProperty.loan_repayment_type) loanParts.push(REPAYMENT_TYPE_LABELS[residenceProperty.loan_repayment_type])
+                        if (residenceProperty.loan_maturity_year) {
+                          loanParts.push(`${residenceProperty.loan_maturity_year}.${String(residenceProperty.loan_maturity_month || 1).padStart(2, '0')} 만기`)
+                        }
+                        metaParts.push(loanParts.join(' | '))
+                      }
+
+                      return metaParts.join(' | ')
+                    })()}
+                  </span>
+                </div>
+                <div className={styles.itemRight}>
                   <span className={styles.itemAmount}>
                     {residenceProperty.housing_type === '자가'
                       ? formatMoney(residenceProperty.current_value)
                       : `보증금 ${formatMoney(residenceProperty.current_value)}`}
                   </span>
-                  {residenceProperty.housing_type === '자가' && (residenceProperty.purchase_year || residenceProperty.purchase_price) && (
-                    <span className={styles.itemMeta}>
-                      {residenceProperty.purchase_year && residenceProperty.purchase_month && (
-                        `취득 ${residenceProperty.purchase_year}.${String(residenceProperty.purchase_month).padStart(2, '0')}`
-                      )}
-                      {residenceProperty.purchase_year && residenceProperty.purchase_price && ' | '}
-                      {residenceProperty.purchase_price && `취득가 ${formatMoney(residenceProperty.purchase_price)}`}
-                    </span>
-                  )}
-                  {residenceProperty.housing_type === '월세' && residenceProperty.monthly_rent && (
-                    <span className={styles.itemMeta}>월세 {formatMoney(residenceProperty.monthly_rent)}</span>
-                  )}
-                  {residenceProperty.maintenance_fee && (
-                    <span className={styles.itemMeta}>관리비 {formatMoney(residenceProperty.maintenance_fee)}/월</span>
-                  )}
-                  {residenceProperty.has_loan && residenceProperty.loan_amount && (
-                    <span className={styles.itemLoan}>
-                      {residenceProperty.housing_type === '자가' ? '주담대' : '전월세 보증금 대출'} {formatMoney(residenceProperty.loan_amount)}
-                      {residenceProperty.loan_rate && ` | ${residenceProperty.loan_rate}%`}
-                      {residenceProperty.loan_repayment_type && ` | ${REPAYMENT_TYPE_LABELS[residenceProperty.loan_repayment_type]}`}
-                      {residenceProperty.loan_maturity_year && ` | ${residenceProperty.loan_maturity_year}.${String(residenceProperty.loan_maturity_month || 1).padStart(2, '0')} 만기`}
-                    </span>
-                  )}
-                </div>
-                <div className={styles.itemActions}>
-                  <button className={styles.editBtn} onClick={startEditResidence}>
-                    <Pencil size={16} />
-                  </button>
+                  <div className={styles.itemActions}>
+                    <button className={styles.editBtn} onClick={startEditResidence}>
+                      <Pencil size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -1137,9 +1177,11 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
           </div>
         </section>
 
-      <p className={styles.infoText}>
-        부동산 대출은 부채 탭에, 임대 수익은 소득 탭에 자동 연동됩니다.
-      </p>
+          <p className={styles.infoText}>
+            부동산 대출은 부채 탭에, 임대 수익은 소득 탭에 자동 연동됩니다.
+          </p>
+        </>
+      )}
     </div>
   )
 }

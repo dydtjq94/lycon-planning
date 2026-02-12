@@ -1,7 +1,5 @@
 .panel {
   width: 100%;
-  padding-top: 24px;
-  border-top: 1px solid var(--dashboard-border);
 }
 
 .header {
@@ -9,23 +7,34 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  padding-bottom: 12px;
+}
+
+.headerToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 0;
-  padding-bottom: 16px;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--dashboard-text);
 }
 
-.headerLeft {
+.title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.count {
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+}
+
+.headerRight {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.headerTitle {
-  font-size: 15px;
-  font-weight: 600;
 }
 
 .modeBadge {
@@ -42,7 +51,7 @@
 }
 
 .description {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--dashboard-text-secondary);
   margin-bottom: 16px;
   line-height: 1.5;
@@ -59,7 +68,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--dashboard-border);
 }
 
@@ -89,13 +98,13 @@
 }
 
 .rateLabel {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--dashboard-text);
 }
 
 .rateDesc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--dashboard-text-secondary);
   line-height: 1.4;
 }
@@ -114,7 +123,7 @@
   border-bottom: 1px solid var(--dashboard-border);
   background: transparent;
   color: var(--dashboard-text);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   text-align: right;
   outline: none;
@@ -138,7 +147,7 @@
 }
 
 .rateUnit {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--dashboard-text-secondary);
   font-weight: 500;
 }
@@ -186,28 +195,20 @@
   border-radius: 4px;
 }
 
-.skeletonHeader {
+.skeletonHeaderToggle {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-bottom: 16px;
-}
-
-.skeletonHeaderLeft {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.skeletonIcon {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
+  gap: 8px;
 }
 
 .skeletonTitle {
   width: 60px;
   height: 18px;
+}
+
+.skeletonCount {
+  width: 24px;
+  height: 17px;
 }
 
 .skeletonBadge {
@@ -217,8 +218,8 @@
 }
 
 .skeletonChevron {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .skeletonContent {
@@ -242,7 +243,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--dashboard-border);
 }
 

@@ -78,7 +78,7 @@ export function CashFlowOverviewTab({
   const [showTimeRangeMenu, setShowTimeRangeMenu] = useState(false)
   const timeRangeRef = useRef<HTMLDivElement>(null)
 
-  // 메뉴 바깥 클릭 시 닫기
+  // 메뉴 바깥 클릭 또는 ESC 시 닫기
   useEffect(() => {
     if (!showTimeRangeMenu) return
     const handleClickOutside = (e: MouseEvent) => {
@@ -86,8 +86,15 @@ export function CashFlowOverviewTab({
         setShowTimeRangeMenu(false)
       }
     }
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowTimeRangeMenu(false)
+    }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    window.addEventListener('keydown', handleEsc)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('keydown', handleEsc)
+    }
   }, [showTimeRangeMenu])
 
   // 기간에 따른 표시 범위 계산

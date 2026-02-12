@@ -198,6 +198,9 @@ export function IncomeTab({
     });
   }, [incomeItems, globalSettings]);
 
+  // 확장/축소 상태
+  const [isExpanded, setIsExpanded] = useState(true);
+
   // 편집 중인 항목 ID
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<IncomeItem | null>(null);
@@ -219,6 +222,16 @@ export function IncomeTab({
   const businessItems = displayItems.filter((i) => i.type === "business");
   const regularItems = displayItems.filter((i) => i.type === "regular");
   const onetimeItems = displayItems.filter((i) => i.type === "onetime");
+
+  // 헤더 총 개수 및 월 소득 계산
+  const totalCount = displayItems.length;
+  const totalMonthlyIncome = useMemo(() => {
+    return displayItems.reduce((sum, item) => {
+      if (item.type === 'onetime') return sum;
+      if (item.frequency === 'yearly') return sum + Math.round(item.amount / 12);
+      return sum + item.amount;
+    }, 0);
+  }, [displayItems]);
 
   // 월 소득으로 변환 (frequency 고려)
   const toMonthlyAmount = (item: IncomeItem): number => {
@@ -1248,12 +1261,15 @@ export function IncomeTab({
 
           return (
             <div key={item.id} className={styles.incomeItem}>
-              <div className={styles.itemMain}>
-                <span className={styles.itemLabel}>
+              <div className={styles.itemInfo}>
+                <span className={styles.itemName}>
                   {item.label}
-                </span>
-                <span className={styles.itemAmount}>
-                  {formatAmountWithFreq(item)}
+                  {linkedBadge && (
+                    <span className={styles.linkedBadge}>
+                      {linkedBadge.icon}
+                      {linkedBadge.label}
+                    </span>
+                  )}
                 </span>
                 <span className={styles.itemMeta}>
                   {item.type === "onetime"
@@ -1263,22 +1279,27 @@ export function IncomeTab({
                     : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
                 </span>
               </div>
-              {isLinked ? null : !isReadOnly && (
-                <div className={styles.itemActions}>
-                  <button
-                    className={styles.editBtn}
-                    onClick={() => startEdit(item)}
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    className={styles.deleteBtn}
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              )}
+              <div className={styles.itemRight}>
+                <span className={styles.itemAmount}>
+                  {formatAmountWithFreq(item)}
+                </span>
+                {isLinked ? null : !isReadOnly && (
+                  <div className={styles.itemActions}>
+                    <button
+                      className={styles.editBtn}
+                      onClick={() => startEdit(item)}
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button
+                      className={styles.deleteBtn}
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
@@ -1454,21 +1475,35 @@ export function IncomeTab({
 
   return (
     <div className={styles.container}>
-      {renderSection("근로 소득", "labor", laborItems, "본인/배우자")}
-      {renderSection("사업 소득", "business", businessItems, "본인/배우자")}
-      {renderSection(
-        "정기적 소득",
-        "regular",
-        regularItems,
-        "항목명",
-        "연금외 정기지급금, 아르바이트, 용돈 등"
-      )}
-      {renderSection(
-        "일시적 소득",
-        "onetime",
-        onetimeItems,
-        "항목명",
-        "상여금, 보너스, 증여, 상속, 퇴직금 등"
+      <div className={styles.header}>
+        <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
+          <span className={styles.title}>소득</span>
+          <span className={styles.count}>{totalCount}개</span>
+        </button>
+        <div className={styles.headerRight}>
+          <span className={styles.totalAmount}>{formatMoney(totalMonthlyIncome)}/월</span>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <>
+          {renderSection("근로 소득", "labor", laborItems, "본인/배우자")}
+          {renderSection("사업 소득", "business", businessItems, "본인/배우자")}
+          {renderSection(
+            "정기적 소득",
+            "regular",
+            regularItems,
+            "항목명",
+            "연금외 정기지급금, 아르바이트, 용돈 등"
+          )}
+          {renderSection(
+            "일시적 소득",
+            "onetime",
+            onetimeItems,
+            "항목명",
+            "상여금, 보너스, 증여, 상속, 퇴직금 등"
+          )}
+        </>
       )}
     </div>
   );

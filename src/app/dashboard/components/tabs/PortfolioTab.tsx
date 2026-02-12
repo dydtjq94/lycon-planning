@@ -126,7 +126,7 @@ export function PortfolioTab({
   setSearchLoading,
   onSearchTrigger,
 }: PortfolioTabProps) {
-  const { chartLineColors, chartScaleColors, toRgba, isReady: isThemeReady } = useChartTheme();
+  const { chartLineColors, chartScaleColors, toRgba, isReady: isThemeReady, isDark } = useChartTheme();
   const [transactions, setTransactions] = useState<PortfolioTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -156,6 +156,8 @@ export function PortfolioTab({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const searchPanelRef = useRef<HTMLDivElement>(null);
+  const holdingPanelRef = useRef<HTMLDivElement>(null);
 
   // 티커 검색 상태
   const [searchTicker, setSearchTicker] = useState("");
@@ -183,8 +185,18 @@ export function PortfolioTab({
     setTimeout(() => {
       setSearchResult(null);
       setIsSearchPanelClosing(false);
-    }, 250);
+    }, 200);
   }, []);
+
+  // ESC key handler for search panel
+  useEffect(() => {
+    if (!searchResult) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeSearchPanel();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [searchResult, closeSearchPanel]);
 
   // 보유 종목 패널 닫기
   const closeHoldingPanel = useCallback(() => {
@@ -192,8 +204,42 @@ export function PortfolioTab({
     setTimeout(() => {
       setSelectedHolding(null);
       setIsHoldingPanelClosing(false);
-    }, 250);
+    }, 200);
   }, []);
+
+  // ESC key handler for holding panel
+  useEffect(() => {
+    if (!selectedHolding) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeHoldingPanel();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [selectedHolding, closeHoldingPanel]);
+
+  // Click-outside handler for search panel
+  useEffect(() => {
+    if (!searchResult) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchPanelRef.current && !searchPanelRef.current.contains(e.target as Node)) {
+        closeSearchPanel();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [searchResult, closeSearchPanel]);
+
+  // Click-outside handler for holding panel
+  useEffect(() => {
+    if (!selectedHolding) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (holdingPanelRef.current && !holdingPanelRef.current.contains(e.target as Node)) {
+        closeHoldingPanel();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedHolding, closeHoldingPanel]);
 
   // 폼 상태
   const [formData, setFormData] = useState<Partial<PortfolioTransactionInput>>({
@@ -1125,11 +1171,16 @@ export function PortfolioTab({
       {searchResult && (
         <div
           className={`${styles.searchPanelOverlay} ${isSearchPanelClosing ? styles.closing : ""}`}
-          onClick={closeSearchPanel}
         >
           <div
+            ref={searchPanelRef}
             className={`${styles.searchPanel} ${isSearchPanelClosing ? styles.closing : ""}`}
-            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            }}
           >
             <div className={styles.searchPanelHeader}>
               <div>
@@ -1153,8 +1204,22 @@ export function PortfolioTab({
             </div>
 
             {/* 차트 */}
-            <div className={styles.searchPanelChart}>
-              <SearchResultChart data={searchResult.data} symbol={searchResult.symbol} chartLineColors={chartLineColors} chartScaleColors={chartScaleColors} toRgba={toRgba} />
+            <div className={styles.holdingPanelChart}>
+              {searchResult.data && searchResult.data.length > 0 && (
+                <span className={styles.chartDateLabel}>{searchResult.data[searchResult.data.length - 1]?.Date} 기준</span>
+              )}
+              <Sparkline
+                priceData={(() => {
+                  const map = new Map<string, number>();
+                  searchResult.data.forEach(d => map.set(d.Date, d.Close));
+                  return map;
+                })()}
+                profitLoss={searchResult.changePercent >= 0 ? 1 : -1}
+                chartLineColors={chartLineColors}
+                toRgba={toRgba}
+                width={472}
+                height={80}
+              />
             </div>
 
             <button onClick={applySearchResult} className={styles.searchPanelAddBtn}>
@@ -1168,11 +1233,16 @@ export function PortfolioTab({
       {selectedHolding && (
         <div
           className={`${styles.searchPanelOverlay} ${isHoldingPanelClosing ? styles.closing : ""}`}
-          onClick={closeHoldingPanel}
         >
           <div
-            className={`${styles.searchPanel} ${isHoldingPanelClosing ? styles.closing : ""}`}
-            onClick={(e) => e.stopPropagation()}
+            ref={holdingPanelRef}
+            className={`${styles.holdingPanel} ${isHoldingPanelClosing ? styles.closing : ""}`}
+            style={{
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            }}
           >
             <div className={styles.searchPanelHeader}>
               <div>

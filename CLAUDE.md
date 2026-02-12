@@ -225,6 +225,7 @@ function MyChart() {
 #### 1. 툴팁/팝오버 (작은 요소)
 - **배경 투명도**: `0.5` (라이트/다크 모두)
 - **블러**: `blur(6px)` 고정
+- **그림자**: `0 4px 20px rgba(0, 0, 0, 0.12)`
 - **다른 값 사용 금지**: 투명도와 블러 값을 임의로 변경하지 말 것
 
 ```tsx
@@ -232,6 +233,7 @@ function MyChart() {
 background: isDark ? 'rgba(34, 37, 41, 0.5)' : 'rgba(255, 255, 255, 0.5)'
 backdropFilter: 'blur(6px)'
 WebkitBackdropFilter: 'blur(6px)'
+boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12)'
 
 // Chart.js 기본 툴팁 (useChartTheme의 tooltipBg 사용 시)
 backgroundColor: chartScaleColors.tooltipBg  // 이미 0.5 적용됨
@@ -240,6 +242,7 @@ backgroundColor: chartScaleColors.tooltipBg  // 이미 0.5 적용됨
 #### 2. 모달/드롭다운 (큰 요소)
 - **배경 투명도**: `0.6` (라이트/다크 모두)
 - **블러**: `blur(8px)` 고정
+- **그림자**: `0 8px 32px rgba(0, 0, 0, 0.12)`
 - **다른 값 사용 금지**: 투명도와 블러 값을 임의로 변경하지 말 것
 
 ```tsx
@@ -247,6 +250,7 @@ backgroundColor: chartScaleColors.tooltipBg  // 이미 0.5 적용됨
 background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)'
 backdropFilter: 'blur(8px)'
 WebkitBackdropFilter: 'blur(8px)'
+boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
 ```
 
 #### 구현 시 주의사항 (매우 중요!)
@@ -270,6 +274,7 @@ const { isDark } = useChartTheme()
   background: isDark ? 'rgba(34, 37, 41, 0.5)' : 'rgba(255, 255, 255, 0.5)',
   backdropFilter: 'blur(6px)',
   WebkitBackdropFilter: 'blur(6px)',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12)',
 }}>
 
 // 잘못된 구현 (절대 하지 말 것!)
@@ -292,6 +297,22 @@ if (left + dropdownWidth > window.innerWidth - 16) left = window.innerWidth - dr
 if (left < 16) left = 16
 
 style={{ top: btnRect.bottom + 6, left }}
+```
+
+#### ESC 키로 닫기 (필수!)
+- 모든 모달, 드롭다운, 팝오버는 ESC 키로 닫을 수 있어야 함
+- `useEffect`에서 `window.addEventListener('keydown', ...)` 사용
+- 컴포넌트 언마운트 시 반드시 리스너 제거
+
+```tsx
+// 모달/드롭다운 ESC 닫기
+useEffect(() => {
+  const handleEsc = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') onClose()  // 또는 setShow(false)
+  }
+  window.addEventListener('keydown', handleEsc)
+  return () => window.removeEventListener('keydown', handleEsc)
+}, [onClose])
 ```
 
 #### 글래스모피즘 등장 애니메이션 (필수!)

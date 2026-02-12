@@ -91,6 +91,7 @@ export function SavingsTab({
   // 편집 상태
   const [editingAccount, setEditingAccount] = useState<{ section: 'savings' | 'investment', id: string | null } | null>(null)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
+  const [isExpanded, setIsExpanded] = useState(true)
 
   // ISA 편집 상태
   const [editingIsa, setEditingIsa] = useState<string | 'new' | null>(null)
@@ -391,8 +392,21 @@ export function SavingsTab({
     )
   }
 
+  const totalCount = savingsAccounts.length + investmentAccounts.length + isaAccounts.length
+
   return (
     <div className={styles.container}>
+      <div className={styles.header}>
+        <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
+          <span className={styles.title}>저축/투자</span>
+          <span className={styles.count}>{totalCount}개</span>
+        </button>
+        <div className={styles.headerRight}>
+          <span className={styles.totalAmount}>{formatMoney(totalAssets)}</span>
+        </div>
+      </div>
+      {isExpanded && (
+        <>
         {/* ========== 저축 계좌 ========== */}
         <section className={styles.assetSection}>
           <div className={styles.sectionHeader}>
@@ -609,37 +623,37 @@ export function SavingsTab({
                 </div>
               ) : (
                 <div key={account.id} className={styles.assetItem}>
-                  <div className={styles.itemMain}>
-                    <span className={styles.itemLabel}>{SAVINGS_TYPE_LABELS[account.type as UISavingsType] || account.type}</span>
-                    <span className={styles.itemAmount}>{formatMoney(account.current_balance)}</span>
+                  <div className={styles.itemInfo}>
                     <span className={styles.itemName}>
                       {account.title}
                       {account.broker_name && <span className={styles.brokerTag}>{account.broker_name}</span>}
                       {account.owner === 'spouse' && <span className={styles.ownerBadge}>배우자</span>}
                     </span>
-                    {account.interest_rate && (
-                      <span className={styles.itemMeta}>
-                        금리 {account.interest_rate}%
-                        {account.maturity_year && ` | ${account.maturity_year}년 ${account.maturity_month || 12}월 만기`}
-                      </span>
-                    )}
+                    <span className={styles.itemMeta}>
+                      {SAVINGS_TYPE_LABELS[account.type as UISavingsType] || account.type}
+                      {account.interest_rate && ` | 금리 ${account.interest_rate}%`}
+                      {account.maturity_year && ` | ${account.maturity_year}년 ${account.maturity_month || 12}월 만기`}
+                    </span>
                   </div>
-                  <div className={styles.itemActions}>
-                    <button
-                      className={styles.editBtn}
-                      onClick={() => startEditSavingsAccount(account)}
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    {/* 입출금통장은 삭제 불가 (기본 현금 관리 통장) */}
-                    {!(account.type === 'checking' && account.title === '입출금통장') && (
+                  <div className={styles.itemRight}>
+                    <span className={styles.itemAmount}>{formatMoney(account.current_balance)}</span>
+                    <div className={styles.itemActions}>
                       <button
-                        className={styles.deleteBtn}
-                        onClick={() => handleDeleteAccount(account.id)}
+                        className={styles.editBtn}
+                        onClick={() => startEditSavingsAccount(account)}
                       >
-                        <Trash2 size={16} />
+                        <Pencil size={16} />
                       </button>
-                    )}
+                      {/* 입출금통장은 삭제 불가 (기본 현금 관리 통장) */}
+                      {!(account.type === 'checking' && account.title === '입출금통장') && (
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDeleteAccount(account.id)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )
@@ -968,31 +982,33 @@ export function SavingsTab({
                 </div>
               ) : (
                 <div key={account.id} className={styles.assetItem}>
-                  <div className={styles.itemMain}>
-                    <span className={styles.itemLabel}>{INVESTMENT_TYPE_LABELS[account.type as UIInvestmentType] || account.type}</span>
-                    <span className={styles.itemAmount}>{formatMoney(account.current_balance)}</span>
+                  <div className={styles.itemInfo}>
                     <span className={styles.itemName}>
                       {account.title}
                       {account.broker_name && <span className={styles.brokerTag}>{account.broker_name}</span>}
                       {account.owner === 'spouse' && <span className={styles.ownerBadge}>배우자</span>}
                     </span>
-                    {account.expected_return && (
-                      <span className={styles.itemMeta}>예상 수익률 {account.expected_return}%</span>
-                    )}
+                    <span className={styles.itemMeta}>
+                      {INVESTMENT_TYPE_LABELS[account.type as UIInvestmentType] || account.type}
+                      {account.expected_return && ` | 예상 수익률 ${account.expected_return}%`}
+                    </span>
                   </div>
-                  <div className={styles.itemActions}>
-                    <button
-                      className={styles.editBtn}
-                      onClick={() => startEditSavingsAccount(account)}
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => handleDeleteAccount(account.id)}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                  <div className={styles.itemRight}>
+                    <span className={styles.itemAmount}>{formatMoney(account.current_balance)}</span>
+                    <div className={styles.itemActions}>
+                      <button
+                        className={styles.editBtn}
+                        onClick={() => startEditSavingsAccount(account)}
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        className={styles.deleteBtn}
+                        onClick={() => handleDeleteAccount(account.id)}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )
@@ -1253,31 +1269,30 @@ export function SavingsTab({
                 </div>
               ) : (
                 <div key={isa.id} className={styles.assetItem}>
-                  <div className={styles.itemMain}>
-                    <span className={styles.itemLabel}>ISA</span>
-                    <span className={styles.itemAmount}>
-                      {formatMoney(isa.current_balance)}
-                    </span>
+                  <div className={styles.itemInfo}>
                     <span className={styles.itemName}>
                       {isa.title || 'ISA'}
                       {isa.broker_name && <span className={styles.brokerTag}>{isa.broker_name}</span>}
                       {isa.owner === 'spouse' && <span className={styles.ownerBadge}>배우자</span>}
                     </span>
-                    {(isa.isa_maturity_year || isa.monthly_contribution) && (
-                      <span className={styles.itemMeta}>
-                        {isa.monthly_contribution ? `월 ${formatMoney(isa.monthly_contribution)} 납입` : ''}
-                        {isa.monthly_contribution && isa.isa_maturity_year ? ' | ' : ''}
-                        {isa.isa_maturity_year ? `${isa.isa_maturity_year}년 ${isa.isa_maturity_month || 12}월 만기 -> ${ISA_STRATEGY_LABELS[isa.isa_maturity_strategy as keyof typeof ISA_STRATEGY_LABELS] || '연금저축 전환'}` : ''}
-                      </span>
-                    )}
+                    <span className={styles.itemMeta}>
+                      ISA
+                      {isa.monthly_contribution && ` | 월 ${formatMoney(isa.monthly_contribution)} 납입`}
+                      {isa.isa_maturity_year && ` | ${isa.isa_maturity_year}년 ${isa.isa_maturity_month || 12}월 만기 -> ${ISA_STRATEGY_LABELS[isa.isa_maturity_strategy as keyof typeof ISA_STRATEGY_LABELS] || '연금저축 전환'}`}
+                    </span>
                   </div>
-                  <div className={styles.itemActions}>
-                    <button className={styles.editBtn} onClick={() => startEditIsaAccount(isa)}>
-                      <Pencil size={16} />
-                    </button>
-                    <button className={styles.deleteBtn} onClick={() => handleDeleteIsa(isa.id)}>
-                      <Trash2 size={16} />
-                    </button>
+                  <div className={styles.itemRight}>
+                    <span className={styles.itemAmount}>
+                      {formatMoney(isa.current_balance)}
+                    </span>
+                    <div className={styles.itemActions}>
+                      <button className={styles.editBtn} onClick={() => startEditIsaAccount(isa)}>
+                        <Pencil size={16} />
+                      </button>
+                      <button className={styles.deleteBtn} onClick={() => handleDeleteIsa(isa.id)}>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )
@@ -1430,6 +1445,8 @@ export function SavingsTab({
         <p className={styles.infoText}>
           연금저축, IRP는 연금 탭에서 관리됩니다.
         </p>
+        </>
+      )}
     </div>
   )
 }

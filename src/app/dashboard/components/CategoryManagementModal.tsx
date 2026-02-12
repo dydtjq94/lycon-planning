@@ -173,6 +173,7 @@ export function CategoryManagementModal({
     background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
   };
 
   if (triggerRect) {

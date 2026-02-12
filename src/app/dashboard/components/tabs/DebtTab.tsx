@@ -75,6 +75,7 @@ export function DebtTab({ simulationId }: DebtTabProps) {
   // 편집 상태
   const [editingDebt, setEditingDebt] = useState<EditingDebt | null>(null)
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
+  const [isExpanded, setIsExpanded] = useState(true)
 
   // 부채에 월 상환액 정보 추가
   const addPaymentInfo = (debt: Debt): DebtWithPayment => {
@@ -506,28 +507,28 @@ export function DebtTab({ simulationId }: DebtTabProps) {
 
     return (
       <div key={debt.id} className={styles.debtItem}>
-        <div className={styles.debtMain}>
-          <span className={styles.debtLabel}>
+        <div className={styles.itemInfo}>
+          <span className={styles.itemName}>{debt.title}</span>
+          <span className={styles.itemMeta}>
             {debt.rate_type === 'floating'
               ? `변동 ${debt.spread || 0}%`
               : `${debt.interest_rate || 0}%`
             }
             {` | ${maturityStr} 만기`}
-          </span>
-          <span className={styles.debtAmount}>{formatMoney(debt.principal || 0)}</span>
-          <span className={styles.debtName}>{debt.title}</span>
-          <span className={styles.debtMeta}>
-            {debt.repayment_type}
+            {` | ${debt.repayment_type}`}
             {debt.monthlyPayment > 0 && ` | 월 ${formatMoney(debt.monthlyPayment)} 상환`}
           </span>
         </div>
-        <div className={styles.debtActions}>
-          <button className={styles.editBtn} onClick={() => startEditDebt(debt, category)}>
-            <Pencil size={16} />
-          </button>
-          <button className={styles.deleteBtn} onClick={() => handleDeleteDebt(debt.id)}>
-            <X size={16} />
-          </button>
+        <div className={styles.itemRight}>
+          <span className={styles.debtAmount}>{formatMoney(debt.principal || 0)}</span>
+          <div className={styles.debtActions}>
+            <button className={styles.editBtn} onClick={() => startEditDebt(debt, category)}>
+              <Pencil size={16} />
+            </button>
+            <button className={styles.deleteBtn} onClick={() => handleDeleteDebt(debt.id)}>
+              <X size={16} />
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -573,16 +574,29 @@ export function DebtTab({ simulationId }: DebtTabProps) {
 
   return (
     <div className={styles.container}>
-      {renderSection(
-        '신용대출',
-        'credit',
-        categorizedDebts.credit
-      )}
+      <div className={styles.header}>
+        <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
+          <span className={styles.title}>부채</span>
+          <span className={styles.count}>{debts.length}개</span>
+        </button>
+        <div className={styles.headerRight}>
+          <span className={styles.totalAmount}>{formatMoney(totals.totalDebt)}</span>
+        </div>
+      </div>
+      {isExpanded && (
+        <>
+          {renderSection(
+            '신용대출',
+            'credit',
+            categorizedDebts.credit
+          )}
 
-      {renderSection(
-        '기타 부채',
-        'other',
-        categorizedDebts.other
+          {renderSection(
+            '기타 부채',
+            'other',
+            categorizedDebts.other
+          )}
+        </>
       )}
     </div>
   )
