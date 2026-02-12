@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { List, Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, GripVertical } from "lucide-react";
 import type {
   CashFlowPriorities,
   CashFlowAccountCategory,
@@ -38,8 +38,8 @@ export function CashFlowPrioritiesPanel({
     useSimulationV2Data(simulationId);
   const isLoading = externalLoading || dataLoading;
 
-  // Expand/collapse state
-  const [isExpanded, setIsExpanded] = useState(true);
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"surplus" | "withdrawal">("surplus");
 
   // Adding state: which section is currently adding
   const [addingSurplus, setAddingSurplus] = useState(false);
@@ -376,250 +376,252 @@ export function CashFlowPrioritiesPanel({
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
-        <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
-          <span className={styles.title}>현금흐름 우선순위</span>
-          <span className={styles.count}>{totalRuleCount}개</span>
+        <span className={styles.title}>현금흐름 우선순위</span>
+        <span className={styles.count}>{totalRuleCount}개</span>
+      </div>
+
+      <div className={styles.tabBar}>
+        <button
+          className={`${styles.tab} ${activeTab === "surplus" ? styles.tabActive : ""}`}
+          onClick={() => setActiveTab("surplus")}
+          type="button"
+        >
+          잉여금 배분
+        </button>
+        <button
+          className={`${styles.tab} ${activeTab === "withdrawal" ? styles.tabActive : ""}`}
+          onClick={() => setActiveTab("withdrawal")}
+          type="button"
+        >
+          부족시 인출
         </button>
       </div>
 
-      {isExpanded && (
-        <>
-          {/* Section 1: Surplus Allocation */}
-      <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>잉여금 배분 순서</h3>
-        <p className={styles.sectionDescription}>
-          연간 잉여금을 아래 순서대로 배분합니다.
-        </p>
+      {activeTab === "surplus" && (
+        <div className={styles.tabContent}>
+          <p className={styles.sectionDescription}>
+            연간 잉여금을 아래 순서대로 배분합니다.
+          </p>
 
-        {priorities.surplusRules.length > 0 && (
-          <div className={styles.ruleList}>
-            {priorities.surplusRules
-              .sort((a, b) => a.priority - b.priority)
-              .map((rule) => (
-                <div
-                  key={rule.id}
-                  className={`${styles.ruleRow} ${
-                    draggedSurplusId === rule.id ? styles.dragging : ""
-                  }`}
-                  draggable
-                  onDragStart={(e) => handleSurplusDragStart(e, rule.id)}
-                  onDragOver={handleSurplusDragOver}
-                  onDrop={(e) => handleSurplusDrop(e, rule.id)}
-                  onDragEnd={handleSurplusDragEnd}
-                >
-                  <div className={styles.dragHandle}>
-                    <GripVertical size={16} />
-                  </div>
-                  <div className={styles.priorityBadge}>{rule.priority}</div>
-                  <div className={styles.ruleName}>{rule.targetName}</div>
-                  <div className={styles.limitArea}>
-                    {rule.annualLimit !== undefined ? (
-                      <div className={styles.limitInputWrap}>
-                        <span className={styles.limitUnit}>연</span>
-                        <input
-                          type="number"
-                          className={styles.limitInput}
-                          value={rule.annualLimit}
-                          onChange={(e) =>
-                            handleUpdateSurplusLimit(rule.id, e.target.value)
-                          }
-                          onWheel={(e) => (e.target as HTMLElement).blur()}
-                          disabled={isLoading}
-                        />
-                        <span className={styles.limitUnit}>만원</span>
-                      </div>
-                    ) : (
-                      <span className={styles.remainderBadge}>나머지</span>
-                    )}
+          {priorities.surplusRules.length > 0 && (
+            <div className={styles.ruleList}>
+              {priorities.surplusRules
+                .sort((a, b) => a.priority - b.priority)
+                .map((rule) => (
+                  <div
+                    key={rule.id}
+                    className={`${styles.ruleRow} ${
+                      draggedSurplusId === rule.id ? styles.dragging : ""
+                    }`}
+                    draggable
+                    onDragStart={(e) => handleSurplusDragStart(e, rule.id)}
+                    onDragOver={handleSurplusDragOver}
+                    onDrop={(e) => handleSurplusDrop(e, rule.id)}
+                    onDragEnd={handleSurplusDragEnd}
+                  >
+                    <div className={styles.dragHandle}>
+                      <GripVertical size={16} />
+                    </div>
+                    <div className={styles.priorityBadge}>{rule.priority}</div>
+                    <div className={styles.ruleName}>{rule.targetName}</div>
+                    <div className={styles.limitArea}>
+                      {rule.annualLimit !== undefined ? (
+                        <div className={styles.limitInputWrap}>
+                          <span className={styles.limitUnit}>연</span>
+                          <input
+                            type="number"
+                            className={styles.limitInput}
+                            value={rule.annualLimit}
+                            onChange={(e) =>
+                              handleUpdateSurplusLimit(rule.id, e.target.value)
+                            }
+                            onWheel={(e) => (e.target as HTMLElement).blur()}
+                            disabled={isLoading}
+                          />
+                          <span className={styles.limitUnit}>만원</span>
+                        </div>
+                      ) : (
+                        <span className={styles.remainderBadge}>나머지</span>
+                      )}
+                      <button
+                        className={styles.toggleLimitButton}
+                        onClick={() =>
+                          handleUpdateSurplusLimit(
+                            rule.id,
+                            rule.annualLimit !== undefined ? "" : "0"
+                          )
+                        }
+                        type="button"
+                        title={
+                          rule.annualLimit !== undefined
+                            ? "나머지로 변경"
+                            : "한도 설정"
+                        }
+                        disabled={isLoading}
+                      >
+                        {rule.annualLimit !== undefined ? "나머지" : "한도"}
+                      </button>
+                    </div>
                     <button
-                      className={styles.toggleLimitButton}
-                      onClick={() =>
-                        handleUpdateSurplusLimit(
-                          rule.id,
-                          rule.annualLimit !== undefined ? "" : "0"
-                        )
-                      }
-                      type="button"
-                      title={
-                        rule.annualLimit !== undefined
-                          ? "나머지로 변경"
-                          : "한도 설정"
-                      }
+                      className={styles.deleteButton}
+                      onClick={() => handleDeleteSurplusRule(rule.id)}
                       disabled={isLoading}
+                      type="button"
+                      title="삭제"
                     >
-                      {rule.annualLimit !== undefined ? "나머지" : "한도"}
+                      <Trash2 size={14} />
                     </button>
                   </div>
-                  <button
-                    className={styles.deleteButton}
-                    onClick={() => handleDeleteSurplusRule(rule.id)}
-                    disabled={isLoading}
-                    type="button"
-                    title="삭제"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
-          </div>
-        )}
+                ))}
+            </div>
+          )}
 
-        {priorities.surplusRules.length === 0 && !addingSurplus && (
-          <div className={styles.emptyState}>
-            <p>설정된 규칙이 없습니다</p>
-            <p className={styles.emptyHint}>
-              규칙을 추가하지 않으면 잉여금이 현금으로 누적됩니다
-            </p>
-          </div>
-        )}
+          {priorities.surplusRules.length === 0 && !addingSurplus && (
+            <div className={styles.emptyState}>
+              <p>설정된 규칙이 없습니다</p>
+              <p className={styles.emptyHint}>
+                규칙을 추가하지 않으면 잉여금이 현금으로 누적됩니다
+              </p>
+            </div>
+          )}
 
-        {addingSurplus ? (
-          <div className={styles.addRow}>
-            <select
-              className={styles.accountSelect}
-              onChange={(e) => {
-                if (e.target.value) handleAddSurplusRule(e.target.value);
-              }}
-              defaultValue=""
-              autoFocus
-              disabled={isLoading}
-            >
-              <option value="" disabled>
-                계좌 선택...
-              </option>
-              {availableSurplusAccounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
+          {addingSurplus ? (
+            <div className={styles.addRow}>
+              <select
+                className={styles.accountSelect}
+                onChange={(e) => {
+                  if (e.target.value) handleAddSurplusRule(e.target.value);
+                }}
+                defaultValue=""
+                autoFocus
+                disabled={isLoading}
+              >
+                <option value="" disabled>
+                  계좌 선택...
                 </option>
-              ))}
-            </select>
+                {availableSurplusAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className={styles.cancelButton}
+                onClick={() => setAddingSurplus(false)}
+                type="button"
+              >
+                취소
+              </button>
+            </div>
+          ) : (
             <button
-              className={styles.cancelButton}
-              onClick={() => setAddingSurplus(false)}
+              className={styles.addButton}
+              onClick={() => setAddingSurplus(true)}
+              disabled={isLoading || availableSurplusAccounts.length === 0}
               type="button"
             >
-              취소
+              <Plus size={16} />
+              추가
             </button>
-          </div>
-        ) : (
-          <button
-            className={styles.addButton}
-            onClick={() => setAddingSurplus(true)}
-            disabled={isLoading || availableSurplusAccounts.length === 0}
-            type="button"
-          >
-            <Plus size={16} />
-            추가
-          </button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      <div className={styles.sectionDivider} />
+      {activeTab === "withdrawal" && (
+        <div className={styles.tabContent}>
+          <p className={styles.sectionDescription}>
+            현금이 부족할 때 아래 순서대로 인출합니다.
+          </p>
 
-      {/* Section 2: Withdrawal Order */}
-      <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>부족시 인출 순서</h3>
-        <p className={styles.sectionDescription}>
-          현금이 부족할 때 아래 순서대로 인출합니다.
-        </p>
-
-        {priorities.withdrawalRules.length > 0 && (
-          <div className={styles.ruleList}>
-            {priorities.withdrawalRules
-              .sort((a, b) => a.priority - b.priority)
-              .map((rule) => (
-                <div
-                  key={rule.id}
-                  className={`${styles.ruleRow} ${
-                    draggedWithdrawalId === rule.id ? styles.dragging : ""
-                  }`}
-                  draggable
-                  onDragStart={(e) => handleWithdrawalDragStart(e, rule.id)}
-                  onDragOver={handleWithdrawalDragOver}
-                  onDrop={(e) => handleWithdrawalDrop(e, rule.id)}
-                  onDragEnd={handleWithdrawalDragEnd}
-                >
-                  <div className={styles.dragHandle}>
-                    <GripVertical size={16} />
-                  </div>
-                  <div className={styles.priorityBadge}>{rule.priority}</div>
-                  <div className={styles.ruleName}>{rule.targetName}</div>
-                  <button
-                    className={styles.deleteButton}
-                    onClick={() => handleDeleteWithdrawalRule(rule.id)}
-                    disabled={isLoading}
-                    type="button"
-                    title="삭제"
+          {priorities.withdrawalRules.length > 0 && (
+            <div className={styles.ruleList}>
+              {priorities.withdrawalRules
+                .sort((a, b) => a.priority - b.priority)
+                .map((rule) => (
+                  <div
+                    key={rule.id}
+                    className={`${styles.ruleRow} ${
+                      draggedWithdrawalId === rule.id ? styles.dragging : ""
+                    }`}
+                    draggable
+                    onDragStart={(e) => handleWithdrawalDragStart(e, rule.id)}
+                    onDragOver={handleWithdrawalDragOver}
+                    onDrop={(e) => handleWithdrawalDrop(e, rule.id)}
+                    onDragEnd={handleWithdrawalDragEnd}
                   >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
-          </div>
-        )}
+                    <div className={styles.dragHandle}>
+                      <GripVertical size={16} />
+                    </div>
+                    <div className={styles.priorityBadge}>{rule.priority}</div>
+                    <div className={styles.ruleName}>{rule.targetName}</div>
+                    <button
+                      className={styles.deleteButton}
+                      onClick={() => handleDeleteWithdrawalRule(rule.id)}
+                      disabled={isLoading}
+                      type="button"
+                      title="삭제"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )}
 
-        {priorities.withdrawalRules.length === 0 && !addingWithdrawal && (
-          <div className={styles.emptyState}>
-            <p>설정된 규칙이 없습니다</p>
-            <p className={styles.emptyHint}>
-              규칙을 추가하지 않으면 기본 순서로 인출됩니다
-            </p>
-          </div>
-        )}
+          {priorities.withdrawalRules.length === 0 && !addingWithdrawal && (
+            <div className={styles.emptyState}>
+              <p>설정된 규칙이 없습니다</p>
+              <p className={styles.emptyHint}>
+                규칙을 추가하지 않으면 기본 순서로 인출됩니다
+              </p>
+            </div>
+          )}
 
-        {/* Fixed overdraft row - always shown at bottom */}
-        <div className={styles.overdraftDivider} />
-        <div className={styles.overdraftRow}>
-          <div className={styles.overdraftIcon}>
-            <List size={14} />
-          </div>
-          <div className={styles.overdraftInfo}>
-            <span className={styles.overdraftName}>마이너스 통장</span>
-            <span className={styles.overdraftHint}>모든 계좌 잔액이 0원일 때 자동 차입</span>
+          {addingWithdrawal ? (
+            <div className={styles.addRow}>
+              <select
+                className={styles.accountSelect}
+                onChange={(e) => {
+                  if (e.target.value) handleAddWithdrawalRule(e.target.value);
+                }}
+                defaultValue=""
+                autoFocus
+                disabled={isLoading}
+              >
+                <option value="" disabled>
+                  계좌 선택...
+                </option>
+                {availableWithdrawalAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className={styles.cancelButton}
+                onClick={() => setAddingWithdrawal(false)}
+                type="button"
+              >
+                취소
+              </button>
+            </div>
+          ) : (
+            <button
+              className={styles.addButton}
+              onClick={() => setAddingWithdrawal(true)}
+              disabled={isLoading || availableWithdrawalAccounts.length === 0}
+              type="button"
+            >
+              <Plus size={16} />
+              추가
+            </button>
+          )}
+
+          <div className={styles.overdraftNotice}>
+            <span className={styles.overdraftLabel}>마이너스 통장</span>
+            <span className={styles.overdraftDesc}>모든 계좌 잔액이 0원일 때 자동 차입됩니다</span>
           </div>
         </div>
-
-        {addingWithdrawal ? (
-          <div className={styles.addRow}>
-            <select
-              className={styles.accountSelect}
-              onChange={(e) => {
-                if (e.target.value) handleAddWithdrawalRule(e.target.value);
-              }}
-              defaultValue=""
-              autoFocus
-              disabled={isLoading}
-            >
-              <option value="" disabled>
-                계좌 선택...
-              </option>
-              {availableWithdrawalAccounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-            <button
-              className={styles.cancelButton}
-              onClick={() => setAddingWithdrawal(false)}
-              type="button"
-            >
-              취소
-            </button>
-          </div>
-        ) : (
-          <button
-            className={styles.addButton}
-            onClick={() => setAddingWithdrawal(true)}
-            disabled={isLoading || availableWithdrawalAccounts.length === 0}
-            type="button"
-          >
-            <Plus size={16} />
-            추가
-          </button>
-        )}
-      </div>
-        </>
       )}
     </div>
   );

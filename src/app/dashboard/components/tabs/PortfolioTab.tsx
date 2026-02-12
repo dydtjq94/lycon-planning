@@ -178,6 +178,8 @@ export function PortfolioTab({
   // 보유 종목 상세 패널
   const [selectedHolding, setSelectedHolding] = useState<PortfolioHolding | null>(null);
   const [isHoldingPanelClosing, setIsHoldingPanelClosing] = useState(false);
+  const [isModalClosing, setIsModalClosing] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // 패널 닫기 (애니메이션 포함)
   const closeSearchPanel = useCallback(() => {
@@ -240,6 +242,28 @@ export function PortfolioTab({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [selectedHolding, closeHoldingPanel]);
+
+  // ESC key handler for transaction modal
+  useEffect(() => {
+    if (!showAddForm) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleCancel();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showAddForm]);
+
+  // Click-outside handler for transaction modal
+  useEffect(() => {
+    if (!showAddForm) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        handleCancel();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAddForm]);
 
   // 폼 상태
   const [formData, setFormData] = useState<Partial<PortfolioTransactionInput>>({
@@ -1012,9 +1036,13 @@ export function PortfolioTab({
   };
 
   const handleCancel = () => {
-    setShowAddForm(false);
-    setEditingId(null);
-    resetForm();
+    setIsModalClosing(true);
+    setTimeout(() => {
+      setShowAddForm(false);
+      setEditingId(null);
+      resetForm();
+      setIsModalClosing(false);
+    }, 200);
   };
 
   // 거래 내역 로딩 중이거나 가격 데이터 로딩 중이거나 테마 로딩 중일 때 전체 스켈레톤 표시
@@ -1392,8 +1420,17 @@ export function PortfolioTab({
 
       {/* 거래 추가/수정 모달 */}
       {showAddForm && (
-        <div className={styles.modalOverlay} onClick={handleCancel}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={`${styles.modalOverlay} ${isModalClosing ? styles.closing : ""}`}>
+          <div
+            ref={modalRef}
+            className={`${styles.modal} ${isModalClosing ? styles.closing : ""}`}
+            style={{
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            }}
+          >
             <div className={styles.modalHeader}>
               <h3>{editingId ? "거래 수정" : "새 거래 추가"}</h3>
               <button className={styles.modalCloseBtn} onClick={handleCancel}>

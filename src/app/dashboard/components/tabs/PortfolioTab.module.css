@@ -130,15 +130,18 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modalOverlay.closing {
+  animation: fadeOut 0.2s ease-out forwards;
 }
 
 .modal {
-  background: var(--dashboard-card-bg);
   border-radius: 16px;
   width: 100%;
   max-width: 640px;
@@ -146,6 +149,33 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  animation: modalEnter 0.2s ease-out;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalExit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.modal.closing {
+  animation: modalExit 0.2s ease-out forwards;
 }
 
 .modalHeader {

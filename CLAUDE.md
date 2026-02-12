@@ -107,6 +107,44 @@ import styles from './Component.module.css'
 <div className={styles.container}>
 ```
 
+### 색상 하드코딩 절대 금지 (가장 중요!)
+
+**모든 색상은 반드시 CSS 변수 사용. 하드코딩된 hex/rgb 색상은 다크모드에서 깨짐.**
+
+```css
+/* 절대 하지 말 것 */
+color: #1a1a1a;
+background: white;
+border: 1px solid #e5e7eb;
+background: #f9fafb;
+
+/* 반드시 이렇게 */
+color: var(--dashboard-text);
+background: var(--dashboard-input-bg);
+border: 1px solid var(--dashboard-border);
+background: var(--dashboard-bg-secondary);
+```
+
+**자주 쓰는 CSS 변수 매핑:**
+| 용도 | CSS 변수 |
+|------|---------|
+| 기본 텍스트 | `var(--dashboard-text)` |
+| 보조 텍스트 | `var(--dashboard-text-secondary)` |
+| 흐린 텍스트 | `var(--dashboard-text-muted)` |
+| 카드 배경 | `var(--dashboard-card-bg)` |
+| 페이지 배경 | `var(--dashboard-bg)` |
+| 입력 배경 | `var(--dashboard-input-bg)` |
+| 입력 테두리 | `var(--dashboard-input-border)` |
+| 구분선/테두리 | `var(--dashboard-border)` |
+| hover 배경 | `var(--dashboard-hover-bg)` |
+| 보조 배경 | `var(--dashboard-bg-secondary)` |
+
+**예외 (하드코딩 허용):**
+- 주식 색상: `#ef4444` (상승), `#3b82f6` (하락) - 테마 무관 고정
+- 차트 라인: `#10b981` - 테마 무관 고정
+- 글래스모피즘 rgba: 인라인 스타일로 직접 지정 (isDark 분기)
+- 특수 브랜드 색상 (뱃지 등): 양쪽 모드에서 동일하게 보이는 색
+
 ## 주식/금융 색상 규칙 (한국식)
 
 - **상승(수익)은 빨간색**: `#ef4444` - 양수, 상승, 수익

@@ -36,13 +36,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .modalHeader h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0;
 }
 
@@ -55,18 +55,18 @@
   background: none;
   border: none;
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
 .modalCloseBtn:hover {
-  background: #f3f4f6;
+  background: var(--dashboard-hover-bg);
 }
 
 /* 탭 */
 .tabs {
   display: flex;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--dashboard-border);
   padding: 0 24px;
 }
 
@@ -76,17 +76,17 @@
   border: none;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
   position: relative;
 }
 
 .tab:hover {
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .tabActive {
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .tabActive::after {
@@ -96,28 +96,32 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: #1a1a1a;
+  background: var(--accent-color, #007aff);
+  border-radius: 1px;
 }
 
 .modalContent {
-  padding: 24px;
+  padding: 20px 24px;
   overflow-y: auto;
   flex: 1;
 }
 
 /* 폼 섹션 */
 .formSection {
-  padding: 20px;
-  background: #f9fafb;
-  border-radius: 12px;
-  margin-bottom: 24px;
+  padding: 0 0 20px 0;
+  background: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--dashboard-border);
+  margin-bottom: 20px;
 }
 
 .formSection h4 {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--dashboard-text-muted);
+  margin: 0 0 14px 0;
 }
 
 .formRow {
@@ -140,21 +144,21 @@
 .formGroup label {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .input {
   padding: 10px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #1a1a1a;
-  background: white;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
 }
 
 .input:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .input::-webkit-outer-spin-button,
@@ -165,17 +169,17 @@
 
 .select {
   padding: 10px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #1a1a1a;
-  background: white;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
   cursor: pointer;
 }
 
 .select:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--dashboard-text);
 }
 
 .ownerFixed {
@@ -197,7 +201,7 @@
   display: flex;
   align-items: center;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   white-space: nowrap;
 }
 
@@ -211,7 +215,7 @@
 .interestGroup label {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .interestGroup .input,
@@ -223,9 +227,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-top: 20px;
+  padding-top: 0;
   font-size: 13px;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   cursor: pointer;
 }
 
@@ -244,32 +248,32 @@
 }
 
 .cancelBtn {
-  padding: 10px 20px;
-  border: 1px solid #e5e7eb;
+  padding: 8px 16px;
+  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
-  background: white;
-  color: #6b7280;
-  font-size: 14px;
+  background: transparent;
+  color: var(--dashboard-text-secondary);
+  font-size: 13px;
   cursor: pointer;
 }
 
 .cancelBtn:hover {
-  background: #f9fafb;
+  background: var(--dashboard-hover-bg);
 }
 
 .submitBtn {
-  padding: 10px 24px;
+  padding: 8px 20px;
   border: none;
   border-radius: 8px;
-  background: #1a1a1a;
+  background: var(--accent-color, #007aff);
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .submitBtn:hover {
-  background: #374151;
+  opacity: 0.9;
 }
 
 /* 리스트 섹션 */
@@ -284,16 +288,16 @@
 .listSection h4 {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
   margin: 0 0 12px 0;
 }
 
 .emptyState {
   padding: 40px 24px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   font-size: 14px;
-  background: #f9fafb;
+  background: var(--dashboard-bg-secondary);
   border-radius: 12px;
 }
 
@@ -302,8 +306,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-border);
   border-radius: 10px;
   margin-bottom: 8px;
 }
@@ -324,17 +328,17 @@
   gap: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--dashboard-text);
 }
 
 .listItemMeta {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .defaultBadge {
   padding: 2px 6px;
-  background: #dcfce7;
+  background: rgba(22, 163, 74, 0.1);
   border-radius: 4px;
   font-size: 10px;
   font-weight: 600;
@@ -350,10 +354,10 @@
 
 .linkedPaymentBadge {
   padding: 2px 8px;
-  background: #f3f4f6;
+  background: var(--dashboard-hover-bg);
   border-radius: 4px;
   font-size: 11px;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
 }
 
 .listItemActions {
@@ -370,11 +374,11 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #9ca3af;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
 }
 
 .actionBtn:hover {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-secondary);
 }
