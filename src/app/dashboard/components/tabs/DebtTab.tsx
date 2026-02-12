@@ -32,10 +32,13 @@ interface EditingDebt {
   rate: string
   rateType: RateType
   spread: string
+  startYear: string
+  startMonth: string
   maturityYear: string
   maturityMonth: string
   repaymentType: LoanRepaymentType
-  gracePeriodMonths: string
+  graceEndYear: string
+  graceEndMonth: string
 }
 
 const initialEditingDebt: EditingDebt = {
@@ -46,10 +49,13 @@ const initialEditingDebt: EditingDebt = {
   rate: String(DEFAULT_LOAN_RATE),
   rateType: 'fixed',
   spread: '1.5',
+  startYear: '',
+  startMonth: '',
   maturityYear: '',
   maturityMonth: '',
   repaymentType: '원리금균등상환',
-  gracePeriodMonths: '12',
+  graceEndYear: '',
+  graceEndMonth: '',
 }
 
 // 부채 + 계산 정보
@@ -167,6 +173,8 @@ export function DebtTab({ simulationId }: DebtTabProps) {
       ...initialEditingDebt,
       category,
       name: category === 'credit' ? '신용대출' : '',
+      startYear: String(currentYear),
+      startMonth: String(currentMonth),
       maturityYear: String(defaultMat.year),
       maturityMonth: String(defaultMat.month),
     })
@@ -175,6 +183,13 @@ export function DebtTab({ simulationId }: DebtTabProps) {
   // 부채 편집 시작
   const startEditDebt = (debt: DebtWithPayment, category: 'credit' | 'other') => {
     const defaultMat = getDefaultMaturity()
+    // 거치 종료일 계산: 시작일 + grace_period_months
+    const graceMonths = debt.grace_period_months || 0
+    const sYear = debt.start_year || currentYear
+    const sMonth = debt.start_month || currentMonth
+    const graceEndTotal = sYear * 12 + (sMonth - 1) + graceMonths
+    const gEndYear = Math.floor(graceEndTotal / 12)
+    const gEndMonth = (graceEndTotal % 12) + 1
     setEditingDebt({
       id: debt.id,
       category,
@@ -183,10 +198,13 @@ export function DebtTab({ simulationId }: DebtTabProps) {
       rate: debt.interest_rate?.toString() || String(DEFAULT_LOAN_RATE),
       rateType: debt.rate_type || 'fixed',
       spread: debt.spread?.toString() || '1.5',
+      startYear: sYear.toString(),
+      startMonth: sMonth.toString(),
       maturityYear: debt.maturity_year?.toString() || String(defaultMat.year),
       maturityMonth: debt.maturity_month?.toString() || String(defaultMat.month),
       repaymentType: debt.repayment_type || '원리금균등상환',
-      gracePeriodMonths: debt.grace_period_months?.toString() || '12',
+      graceEndYear: graceMonths > 0 ? String(gEndYear) : '',
+      graceEndMonth: graceMonths > 0 ? String(gEndMonth) : '',
     })
   }
 
@@ -198,8 +216,19 @@ export function DebtTab({ simulationId }: DebtTabProps) {
       const principal = parseFloat(editingDebt.amount) || 0
       const rate = parseFloat(editingDebt.rate) || 0
       const spread = parseFloat(editingDebt.spread) || 0
+      const startYear = parseInt(editingDebt.startYear) || currentYear
+      const startMonth = parseInt(editingDebt.startMonth) || currentMonth
       const maturityYear = parseInt(editingDebt.maturityYear) || currentYear + 5
       const maturityMonth = parseInt(editingDebt.maturityMonth) || 12
+
+      // 거치기간 계산: graceEnd - start (월 단위)
+      let gracePeriodMonths = 0
+      if (editingDebt.repaymentType === '거치식상환' && editingDebt.graceEndYear && editingDebt.graceEndMonth) {
+        const gEndYear = parseInt(editingDebt.graceEndYear)
+        const gEndMonth = parseInt(editingDebt.graceEndMonth)
+        gracePeriodMonths = (gEndYear - startYear) * 12 + (gEndMonth - startMonth)
+        if (gracePeriodMonths < 0) gracePeriodMonths = 0
+      }
 
       const input: DebtInput = {
         simulation_id: simulationId,
@@ -211,9 +240,9 @@ export function DebtTab({ simulationId }: DebtTabProps) {
         rate_type: editingDebt.rateType,
         spread: editingDebt.rateType === 'floating' ? spread : null,
         repayment_type: editingDebt.repaymentType,
-        grace_period_months: editingDebt.repaymentType === '거치식상환' ? parseInt(editingDebt.gracePeriodMonths) || 12 : 0,
-        start_year: currentYear,
-        start_month: currentMonth,
+        grace_period_months: gracePeriodMonths,
+        start_year: startYear,
+        start_month: startMonth,
         maturity_year: maturityYear,
         maturity_month: maturityMonth,
       }
@@ -324,6 +353,32 @@ export function DebtTab({ simulationId }: DebtTabProps) {
         </div>
 
         <div className={styles.editRow}>
+          <label className={styles.editLabel}>시작일</label>
+          <div className={styles.editField}>
+            <input
+              type="number"
+              className={styles.editInputSmall}
+              value={editingDebt.startYear}
+              onChange={e => setEditingDebt({ ...editingDebt, startYear: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              placeholder={String(currentYear)}
+            />
+            <span className={styles.editUnit}>년</span>
+            <input
+              type="number"
+              className={styles.editInputSmall}
+              value={editingDebt.startMonth}
+              onChange={e => setEditingDebt({ ...editingDebt, startMonth: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              placeholder={String(currentMonth)}
+              min={1}
+              max={12}
+            />
+            <span className={styles.editUnit}>월</span>
+          </div>
+        </div>
+
+        <div className={styles.editRow}>
           <label className={styles.editLabel}>만기</label>
           <div className={styles.editField}>
             <input
@@ -370,19 +425,28 @@ export function DebtTab({ simulationId }: DebtTabProps) {
 
         {editingDebt.repaymentType === '거치식상환' && (
           <div className={styles.editRow}>
-            <label className={styles.editLabel}>거치</label>
+            <label className={styles.editLabel}>거치종료</label>
             <div className={styles.editField}>
               <input
                 type="number"
                 className={styles.editInputSmall}
-                value={editingDebt.gracePeriodMonths}
-                onChange={e => setEditingDebt({ ...editingDebt, gracePeriodMonths: e.target.value })}
+                value={editingDebt.graceEndYear}
+                onChange={e => setEditingDebt({ ...editingDebt, graceEndYear: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                placeholder={String(currentYear + 1)}
+              />
+              <span className={styles.editUnit}>년</span>
+              <input
+                type="number"
+                className={styles.editInputSmall}
+                value={editingDebt.graceEndMonth}
+                onChange={e => setEditingDebt({ ...editingDebt, graceEndMonth: e.target.value })}
                 onWheel={e => (e.target as HTMLElement).blur()}
                 placeholder="12"
                 min={1}
-                max={60}
+                max={12}
               />
-              <span className={styles.editUnit}>개월</span>
+              <span className={styles.editUnit}>월</span>
             </div>
           </div>
         )}
@@ -390,20 +454,31 @@ export function DebtTab({ simulationId }: DebtTabProps) {
         {/* 예상 월 상환액 미리보기 */}
         {editingDebt.amount && editingDebt.maturityYear && editingDebt.maturityMonth && (
           <div className={styles.paymentPreview}>
-            <span className={styles.previewLabel}>예상 월 상환액</span>
+            <span className={styles.previewLabel}>
+              예상 월 상환액{editingDebt.repaymentType === '원금균등상환' ? ' (첫달)' : ''}
+            </span>
             <span className={styles.previewValue}>
-              {formatMoney(
-                calculateMonthlyPayment(
-                  parseFloat(editingDebt.amount) || 0,
-                  parseFloat(editingDebt.rate) || 0,
-                  currentYear,
-                  currentMonth,
-                  parseInt(editingDebt.maturityYear) || currentYear + 5,
-                  parseInt(editingDebt.maturityMonth) || 12,
-                  editingDebt.repaymentType,
-                  parseInt(editingDebt.gracePeriodMonths) || 12
-                ).monthlyPayment
-              )}/월
+              {(() => {
+                const sY = parseInt(editingDebt.startYear) || currentYear
+                const sM = parseInt(editingDebt.startMonth) || currentMonth
+                let gMonths = 0
+                if (editingDebt.repaymentType === '거치식상환' && editingDebt.graceEndYear && editingDebt.graceEndMonth) {
+                  gMonths = (parseInt(editingDebt.graceEndYear) - sY) * 12 + (parseInt(editingDebt.graceEndMonth) - sM)
+                  if (gMonths < 0) gMonths = 0
+                }
+                return formatMoney(
+                  calculateMonthlyPayment(
+                    parseFloat(editingDebt.amount) || 0,
+                    parseFloat(editingDebt.rate) || 0,
+                    sY,
+                    sM,
+                    parseInt(editingDebt.maturityYear) || currentYear + 5,
+                    parseInt(editingDebt.maturityMonth) || 12,
+                    editingDebt.repaymentType,
+                    gMonths
+                  ).monthlyPayment
+                )
+              })()}/월
             </span>
           </div>
         )}

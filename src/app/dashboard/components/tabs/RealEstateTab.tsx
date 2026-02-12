@@ -133,6 +133,8 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
       maturityYear = prop.loan_maturity_year.toString()
       maturityMonth = prop.loan_maturity_month.toString()
     }
+    const startYear = prop?.loan_start_year?.toString() || ''
+    const startMonth = prop?.loan_start_month?.toString() || ''
 
     setEditingProperty({ type: 'residence', id: prop?.id || null })
     setEditBooleans({ hasRentalIncome: false, hasLoan: prop?.has_loan || false })
@@ -146,9 +148,13 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
       maintenanceFee: prop?.maintenance_fee?.toString() || '',
       loanAmount: prop?.loan_amount?.toString() || '',
       loanRate: prop?.loan_rate?.toString() || '',
+      loanStartYear: startYear,
+      loanStartMonth: startMonth,
       loanMaturityYear: maturityYear,
       loanMaturityMonth: maturityMonth,
       loanRepaymentType: prop?.loan_repayment_type || '',
+      graceEndYear: prop?.grace_end_year?.toString() || '',
+      graceEndMonth: prop?.grace_end_month?.toString() || '',
     })
   }
 
@@ -165,9 +171,13 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
       rentalDeposit: '',
       loanAmount: '',
       loanRate: '',
+      loanStartYear: currentYear.toString(),
+      loanStartMonth: currentMonth.toString(),
       loanMaturityYear: '',
       loanMaturityMonth: '',
       loanRepaymentType: '',
+      graceEndYear: '',
+      graceEndMonth: '',
     })
   }
 
@@ -194,9 +204,13 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
       rentalDeposit: property.rental_deposit?.toString() || '',
       loanAmount: property.loan_amount?.toString() || '',
       loanRate: property.loan_rate?.toString() || '',
+      loanStartYear: property.loan_start_year?.toString() || '',
+      loanStartMonth: property.loan_start_month?.toString() || '',
       loanMaturityYear: maturityYear,
       loanMaturityMonth: maturityMonth,
       loanRepaymentType: property.loan_repayment_type || '',
+      graceEndYear: property.grace_end_year?.toString() || '',
+      graceEndMonth: property.grace_end_month?.toString() || '',
     })
   }
 
@@ -225,9 +239,13 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
         has_loan: editBooleans.hasLoan,
         loan_amount: editValues.loanAmount ? parseFloat(editValues.loanAmount) : null,
         loan_rate: editValues.loanRate ? parseFloat(editValues.loanRate) : null,
+        loan_start_year: editValues.loanStartYear ? parseInt(editValues.loanStartYear) : null,
+        loan_start_month: editValues.loanStartMonth ? parseInt(editValues.loanStartMonth) : null,
         loan_maturity_year: editValues.loanMaturityYear ? parseInt(editValues.loanMaturityYear) : null,
         loan_maturity_month: editValues.loanMaturityMonth ? parseInt(editValues.loanMaturityMonth) : null,
         loan_repayment_type: editValues.loanRepaymentType as LoanRepaymentType | null,
+        grace_end_year: editValues.loanRepaymentType === '거치식상환' && editValues.graceEndYear ? parseInt(editValues.graceEndYear) : null,
+        grace_end_month: editValues.loanRepaymentType === '거치식상환' && editValues.graceEndMonth ? parseInt(editValues.graceEndMonth) : null,
       })
 
       invalidate('realEstates')
@@ -260,11 +278,17 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
         has_loan: editBooleans.hasLoan,
         loan_amount: editBooleans.hasLoan && editValues.loanAmount ? parseFloat(editValues.loanAmount) : null,
         loan_rate: editBooleans.hasLoan && editValues.loanRate ? parseFloat(editValues.loanRate) : null,
+        loan_start_year: editBooleans.hasLoan && editValues.loanStartYear ? parseInt(editValues.loanStartYear) : null,
+        loan_start_month: editBooleans.hasLoan && editValues.loanStartMonth ? parseInt(editValues.loanStartMonth) : null,
         loan_maturity_year: editBooleans.hasLoan && editValues.loanMaturityYear ? parseInt(editValues.loanMaturityYear) : null,
         loan_maturity_month: editBooleans.hasLoan && editValues.loanMaturityMonth ? parseInt(editValues.loanMaturityMonth) : null,
         loan_repayment_type: editBooleans.hasLoan && editValues.loanRepaymentType
           ? editValues.loanRepaymentType as LoanRepaymentType
           : null,
+        grace_end_year: editBooleans.hasLoan && editValues.loanRepaymentType === '거치식상환' && editValues.graceEndYear
+          ? parseInt(editValues.graceEndYear) : null,
+        grace_end_month: editBooleans.hasLoan && editValues.loanRepaymentType === '거치식상환' && editValues.graceEndMonth
+          ? parseInt(editValues.graceEndMonth) : null,
       }
 
       if (editingProperty.id) {
@@ -471,6 +495,31 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
                       </div>
                     </div>
                     <div className={styles.editRow}>
+                      <span className={styles.editRowLabel}>대출시작</span>
+                      <div className={styles.editField}>
+                        <input
+                          type="number"
+                          className={styles.editInputSmall}
+                          value={editValues.loanStartYear || ''}
+                          onChange={e => setEditValues({ ...editValues, loanStartYear: e.target.value })}
+                          onWheel={e => (e.target as HTMLElement).blur()}
+                          placeholder={String(currentYear)}
+                        />
+                        <span className={styles.editUnit}>년</span>
+                        <input
+                          type="number"
+                          className={styles.editInputSmall}
+                          value={editValues.loanStartMonth || ''}
+                          onChange={e => setEditValues({ ...editValues, loanStartMonth: e.target.value })}
+                          onWheel={e => (e.target as HTMLElement).blur()}
+                          min={1}
+                          max={12}
+                          placeholder="1"
+                        />
+                        <span className={styles.editUnit}>월</span>
+                      </div>
+                    </div>
+                    <div className={styles.editRow}>
                       <span className={styles.editRowLabel}>만기</span>
                       <div className={styles.editField}>
                         <input
@@ -510,6 +559,33 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
                         ))}
                       </div>
                     </div>
+                    {editValues.loanRepaymentType === '거치식상환' && (
+                      <div className={styles.editRow}>
+                        <span className={styles.editRowLabel}>거치종료</span>
+                        <div className={styles.editField}>
+                          <input
+                            type="number"
+                            className={styles.editInputSmall}
+                            value={editValues.graceEndYear || ''}
+                            onChange={e => setEditValues({ ...editValues, graceEndYear: e.target.value })}
+                            onWheel={e => (e.target as HTMLElement).blur()}
+                            placeholder={String(currentYear + 1)}
+                          />
+                          <span className={styles.editUnit}>년</span>
+                          <input
+                            type="number"
+                            className={styles.editInputSmall}
+                            value={editValues.graceEndMonth || ''}
+                            onChange={e => setEditValues({ ...editValues, graceEndMonth: e.target.value })}
+                            onWheel={e => (e.target as HTMLElement).blur()}
+                            min={1}
+                            max={12}
+                            placeholder="12"
+                          />
+                          <span className={styles.editUnit}>월</span>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </>
@@ -709,6 +785,31 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
               </div>
             </div>
             <div className={styles.editRow}>
+              <span className={styles.editRowLabel}>대출시작</span>
+              <div className={styles.editField}>
+                <input
+                  type="number"
+                  className={styles.editInputSmall}
+                  value={editValues.loanStartYear || ''}
+                  onChange={e => setEditValues({ ...editValues, loanStartYear: e.target.value })}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  placeholder={String(currentYear)}
+                />
+                <span className={styles.editUnit}>년</span>
+                <input
+                  type="number"
+                  className={styles.editInputSmall}
+                  value={editValues.loanStartMonth || ''}
+                  onChange={e => setEditValues({ ...editValues, loanStartMonth: e.target.value })}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  min={1}
+                  max={12}
+                  placeholder="1"
+                />
+                <span className={styles.editUnit}>월</span>
+              </div>
+            </div>
+            <div className={styles.editRow}>
               <span className={styles.editRowLabel}>만기</span>
               <div className={styles.editField}>
                 <input
@@ -748,6 +849,33 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
                 ))}
               </div>
             </div>
+            {editValues.loanRepaymentType === '거치식상환' && (
+              <div className={styles.editRow}>
+                <span className={styles.editRowLabel}>거치종료</span>
+                <div className={styles.editField}>
+                  <input
+                    type="number"
+                    className={styles.editInputSmall}
+                    value={editValues.graceEndYear || ''}
+                    onChange={e => setEditValues({ ...editValues, graceEndYear: e.target.value })}
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    placeholder={String(currentYear + 1)}
+                  />
+                  <span className={styles.editUnit}>년</span>
+                  <input
+                    type="number"
+                    className={styles.editInputSmall}
+                    value={editValues.graceEndMonth || ''}
+                    onChange={e => setEditValues({ ...editValues, graceEndMonth: e.target.value })}
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    min={1}
+                    max={12}
+                    placeholder="12"
+                  />
+                  <span className={styles.editUnit}>월</span>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -786,6 +914,7 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
             <span className={styles.itemLoan}>
               대출 {formatMoney(property.loan_amount)}
               {property.loan_rate && ` | ${property.loan_rate}%`}
+              {property.loan_repayment_type && ` | ${REPAYMENT_TYPE_LABELS[property.loan_repayment_type]}`}
               {property.loan_maturity_year && ` | ${property.loan_maturity_year}.${String(property.loan_maturity_month || 1).padStart(2, '0')} 만기`}
             </span>
           )}
@@ -902,6 +1031,7 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
                     <span className={styles.itemLoan}>
                       {residenceProperty.housing_type === '자가' ? '주담대' : '전월세 보증금 대출'} {formatMoney(residenceProperty.loan_amount)}
                       {residenceProperty.loan_rate && ` | ${residenceProperty.loan_rate}%`}
+                      {residenceProperty.loan_repayment_type && ` | ${REPAYMENT_TYPE_LABELS[residenceProperty.loan_repayment_type]}`}
                       {residenceProperty.loan_maturity_year && ` | ${residenceProperty.loan_maturity_year}.${String(residenceProperty.loan_maturity_month || 1).padStart(2, '0')} 만기`}
                     </span>
                   )}

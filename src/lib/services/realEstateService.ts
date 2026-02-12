@@ -102,6 +102,8 @@ export async function createRealEstate(input: RealEstateInput): Promise<RealEsta
       loan_maturity_year: convertedInput.loan_maturity_year,
       loan_maturity_month: convertedInput.loan_maturity_month,
       loan_repayment_type: convertedInput.loan_repayment_type,
+      grace_end_year: convertedInput.grace_end_year,
+      grace_end_month: convertedInput.grace_end_month,
       sell_year: convertedInput.sell_year,
       sell_month: convertedInput.sell_month,
       memo: convertedInput.memo,
@@ -208,6 +210,8 @@ export async function upsertResidenceRealEstate(
     loan_maturity_year?: number | null
     loan_maturity_month?: number | null
     loan_repayment_type?: LoanRepaymentType | null
+    grace_end_year?: number | null
+    grace_end_month?: number | null
   }
 ): Promise<RealEstate | null> {
   const supabase = createClient()
@@ -259,6 +263,8 @@ export async function upsertResidenceRealEstate(
     loan_maturity_year: input.loan_maturity_year,
     loan_maturity_month: input.loan_maturity_month,
     loan_repayment_type: input.loan_repayment_type,
+    grace_end_year: input.grace_end_year,
+    grace_end_month: input.grace_end_month,
   }
 
   if (existing) {

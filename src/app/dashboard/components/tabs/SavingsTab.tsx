@@ -121,7 +121,8 @@ export function SavingsTab({
         interestRate: '',
         startYear: String(currentYear),
         startMonth: String(new Date().getMonth() + 1),
-        durationMonths: '12',
+        maturityYear: String(currentYear + 1),
+        maturityMonth: '12',
         isTaxFree: 'false',
         currency: 'KRW',
         owner: 'self',
@@ -135,14 +136,6 @@ export function SavingsTab({
     const section = ['checking', 'savings', 'deposit'].includes(account.type) ? 'savings' : 'investment'
     setEditingAccount({ section, id: account.id })
     if (section === 'savings') {
-      // 기간(개월) 계산: 가입일 ~ 만기일
-      let durationMonths = ''
-      if (account.contribution_start_year && account.maturity_year) {
-        const startDate = new Date(account.contribution_start_year, (account.contribution_start_month || 1) - 1)
-        const endDate = new Date(account.maturity_year, (account.maturity_month || 12) - 1)
-        const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth())
-        durationMonths = String(months)
-      }
       setEditValues({
         type: account.type,
         name: account.title,
@@ -151,7 +144,6 @@ export function SavingsTab({
         interestRate: account.interest_rate?.toString() || '',
         startYear: account.contribution_start_year?.toString() || '',
         startMonth: account.contribution_start_month?.toString() || '',
-        durationMonths,
         maturityYear: account.maturity_year?.toString() || '',
         maturityMonth: account.maturity_month?.toString() || '',
         isTaxFree: account.is_tax_free ? 'true' : 'false',
@@ -188,15 +180,6 @@ export function SavingsTab({
       if (!isChecking) {
         maturityYear = editValues.maturityYear ? parseInt(editValues.maturityYear) : null
         maturityMonth = editValues.maturityMonth ? parseInt(editValues.maturityMonth) : null
-
-        if (editValues.startYear && editValues.durationMonths && !maturityYear) {
-          const startYear = parseInt(editValues.startYear)
-          const startMonth = parseInt(editValues.startMonth || '1')
-          const duration = parseInt(editValues.durationMonths)
-          const endDate = new Date(startYear, startMonth - 1 + duration)
-          maturityYear = endDate.getFullYear()
-          maturityMonth = endDate.getMonth() + 1
-        }
       }
 
       const input: SavingsInput = {
@@ -542,18 +525,28 @@ export function SavingsTab({
                         </div>
                       </div>
                       <div className={styles.editRow}>
-                        <span className={styles.editRowLabel}>기간</span>
+                        <span className={styles.editRowLabel}>만기</span>
                         <div className={styles.editField}>
                           <input
                             type="number"
                             className={styles.editInputSmall}
-                            value={editValues.durationMonths || ''}
-                            onChange={e => setEditValues({ ...editValues, durationMonths: e.target.value })}
+                            value={editValues.maturityYear || ''}
+                            onChange={e => setEditValues({ ...editValues, maturityYear: e.target.value })}
+                            onWheel={e => (e.target as HTMLElement).blur()}
+                            placeholder={String(currentYear + 1)}
+                          />
+                          <span className={styles.editUnit}>년</span>
+                          <input
+                            type="number"
+                            className={styles.editInputSmall}
+                            value={editValues.maturityMonth || ''}
+                            onChange={e => setEditValues({ ...editValues, maturityMonth: e.target.value })}
                             onWheel={e => (e.target as HTMLElement).blur()}
                             min={1}
+                            max={12}
                             placeholder="12"
                           />
-                          <span className={styles.editUnit}>개월</span>
+                          <span className={styles.editUnit}>월</span>
                         </div>
                       </div>
                       <div className={styles.editRow}>
@@ -774,18 +767,28 @@ export function SavingsTab({
                       </div>
                     </div>
                     <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>기간</span>
+                      <span className={styles.editRowLabel}>만기</span>
                       <div className={styles.editField}>
                         <input
                           type="number"
                           className={styles.editInputSmall}
-                          value={editValues.durationMonths || ''}
-                          onChange={e => setEditValues({ ...editValues, durationMonths: e.target.value })}
+                          value={editValues.maturityYear || ''}
+                          onChange={e => setEditValues({ ...editValues, maturityYear: e.target.value })}
+                          onWheel={e => (e.target as HTMLElement).blur()}
+                          placeholder={String(currentYear + 1)}
+                        />
+                        <span className={styles.editUnit}>년</span>
+                        <input
+                          type="number"
+                          className={styles.editInputSmall}
+                          value={editValues.maturityMonth || ''}
+                          onChange={e => setEditValues({ ...editValues, maturityMonth: e.target.value })}
                           onWheel={e => (e.target as HTMLElement).blur()}
                           min={1}
+                          max={12}
                           placeholder="12"
                         />
-                        <span className={styles.editUnit}>개월</span>
+                        <span className={styles.editUnit}>월</span>
                       </div>
                     </div>
                     <div className={styles.editRow}>

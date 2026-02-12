@@ -241,10 +241,10 @@ export function calculateMonthlyPayment(
 
     case '원금균등상환': {
       const monthlyPrincipal = principal / totalMonths
-      const avgInterest = (principal * monthlyRate * (totalMonths + 1)) / 2 / totalMonths
-      const avgPayment = monthlyPrincipal + avgInterest
+      const firstMonthInterest = principal * monthlyRate
+      const firstMonthPayment = monthlyPrincipal + firstMonthInterest
       const totalInterest = (principal * monthlyRate * (totalMonths + 1)) / 2
-      return { monthlyPayment: Math.round(avgPayment), totalInterest: Math.round(totalInterest) }
+      return { monthlyPayment: Math.round(firstMonthPayment), totalInterest: Math.round(totalInterest) }
     }
 
     case '거치식상환': {

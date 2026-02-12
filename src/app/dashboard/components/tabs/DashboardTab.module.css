@@ -1,26 +1,16 @@
+/* Container */
 .container {
   padding: 24px;
-  min-width: 0;
   width: 100%;
-  max-width: 600px;
+  max-width: none;
 }
 
-.loadingState {
-  padding: 40px;
-  text-align: center;
-  color: var(--dashboard-text-secondary);
-  font-size: 14px;
-}
-
-/* 섹션 */
-.section {
-  margin-bottom: 28px;
-}
-
+/* Section Headers */
 .sectionHeader {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .sectionTitle {
@@ -29,172 +19,298 @@
   color: var(--dashboard-text);
 }
 
-.sectionCount {
-  font-size: 12px;
-  color: var(--dashboard-text-secondary);
-  margin-left: 8px;
+/* ===== Section 1: Hero Stats ===== */
+.heroGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
-/* 계좌 리스트 */
-.accountList {
+.heroCard {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.accountWithPayments {
-  display: flex;
-  flex-direction: column;
-}
-
-.accountItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 4px;
+  padding: 16px;
   background: var(--dashboard-card-bg);
   border: 1px solid var(--dashboard-border);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
-.accountIcon {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.accountLogo {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  object-fit: contain;
-  flex-shrink: 0;
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border-light);
-}
-
-.accountInfo {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.accountName {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
+.heroLabel {
+  font-size: 12px;
   font-weight: 500;
+  color: var(--dashboard-text-secondary);
+}
+
+.heroValue {
+  font-size: 18px;
+  font-weight: 700;
   color: var(--dashboard-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.ownerBadge {
-  font-size: 10px;
-  padding: 1px 5px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 4px;
-  color: var(--dashboard-text-secondary);
-  font-weight: 400;
-  flex-shrink: 0;
-}
-
-.accountMeta {
+.heroSub {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--dashboard-text-secondary);
 }
 
-.accountTypeBadge {
-  padding: 1px 5px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 500;
-}
-
-/* 연결된 카드/페이 */
-.linkedPayments {
-  margin-left: 16px;
-  padding-left: 16px;
-  border-left: 1px solid var(--dashboard-border);
-}
-
-.linkedPaymentItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  margin-top: 4px;
-  background: var(--dashboard-bg-secondary);
-  border-radius: 6px;
-  position: relative;
-}
-
-.linkedLine {
-  position: absolute;
-  left: -17px;
-  top: 50%;
-  width: 16px;
-  height: 1px;
+.heroDivider {
+  width: 1px;
+  height: 10px;
   background: var(--dashboard-border);
 }
 
-.paymentIcon {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  color: #fff;
-  flex-shrink: 0;
+/* Korean financial colors */
+.positive {
+  color: #ef4444;
 }
 
-.paymentLogo {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  object-fit: contain;
-  flex-shrink: 0;
+.negative {
+  color: #3b82f6;
+}
+
+.muted {
+  color: var(--dashboard-text-muted);
+}
+
+/* Retirement progress bar */
+.progressBarWrap {
+  width: 100%;
+  height: 4px;
+  background: var(--dashboard-hover-bg);
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--accent-color, #007aff);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* ===== Section 2: Asset Composition ===== */
+.assetSection {
+  margin-bottom: 24px;
+  padding: 20px;
   background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 10px;
 }
 
-.paymentIconLarge {
-  width: 32px;
-  height: 32px;
+.detailBtn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.paymentName {
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: none;
   font-size: 12px;
   font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.detailBtn:hover {
+  color: var(--accent-color, #007aff);
+}
+
+.assetContent {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.doughnutWrap {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+}
+
+.doughnutCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.doughnutCenterLabel {
+  font-size: 10px;
+  color: var(--dashboard-text-secondary);
+}
+
+.doughnutCenterValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+  white-space: nowrap;
+}
+
+.legendList {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+  flex: 1;
+}
+
+.legendValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  white-space: nowrap;
+}
+
+/* ===== Section 3: Recent Activity ===== */
+.activityGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.activityCard {
+  padding: 16px;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.activityHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.activityTitle {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--dashboard-text);
 }
 
-.paymentTypeBadge {
-  padding: 1px 5px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 4px;
-  font-size: 9px;
+.moreBtn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 11px;
   font-weight: 500;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.moreBtn:hover {
+  color: var(--accent-color, #007aff);
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activityRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.activityDate {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
+  width: 36px;
+}
+
+.activityName {
+  flex: 1;
+  color: var(--dashboard-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activityIncome {
+  color: #ef4444;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.activityExpense {
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.activityAmount {
+  color: var(--dashboard-text);
+  font-weight: 500;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badgeBuy {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.badgeSell {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  flex-shrink: 0;
 }
 
 .emptyState {
@@ -202,38 +318,215 @@
   text-align: center;
   font-size: 12px;
   color: var(--dashboard-text-muted);
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 8px;
 }
 
-/* 추가 버튼 */
-.addBtn {
+/* ===== Section 4: Quick Nav ===== */
+.quickNav {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.quickNavItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.quickNavItem:hover {
+  border-color: var(--accent-color, #007aff);
+}
+
+.quickNavIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  width: 100%;
-  margin-top: 6px;
-  padding: 8px;
-  background: none;
-  border: 1px dashed var(--dashboard-border);
-  border-radius: 6px;
+  color: var(--dashboard-text-secondary);
+}
+
+.quickNavLabel {
   font-size: 12px;
   font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  color: var(--dashboard-text);
 }
 
-.addBtn:hover {
-  border-color: var(--accent-color, #007aff);
-  color: var(--accent-color, #007aff);
+/* ===== Skeleton Loading ===== */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
 }
 
-/* 반응형 */
+.skeletonContainer {
+  padding: 24px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.skeletonHeroGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.skeletonCard {
+  height: 90px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonChart {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 20px;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 10px;
+}
+
+.skeletonCircle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonLegend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeletonLine {
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonActivityGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.skeletonActivityCard {
+  height: 180px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonQuickNav {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.skeletonQuickItem {
+  height: 72px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ===== Responsive ===== */
 @media (max-width: 600px) {
   .container {
     padding: 16px;
+  }
+
+  .heroGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .assetContent {
+    flex-direction: column;
+  }
+
+  .doughnutWrap {
+    width: 140px;
+    height: 140px;
+  }
+
+  .activityGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .quickNav {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Skeleton responsive */
+  .skeletonContainer {
+    padding: 16px;
+  }
+
+  .skeletonHeroGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeletonChart {
+    flex-direction: column;
+  }
+
+  .skeletonCircle {
+    width: 140px;
+    height: 140px;
+  }
+
+  .skeletonActivityGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeletonQuickNav {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

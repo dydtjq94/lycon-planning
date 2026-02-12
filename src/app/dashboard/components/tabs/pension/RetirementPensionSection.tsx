@@ -49,8 +49,10 @@ export function RetirementPensionSection({
       years: pension?.years_of_service?.toString() || '',
       balance: pension?.current_balance?.toString() || '',
       receiveType: pension?.receive_type || 'annuity',
-      startAge: (pension?.start_age || 56).toString(),
-      receivingYears: (pension?.receiving_years || 10).toString(),
+      startYear: String(birthYear + (pension?.start_age || 56)),
+      startMonth: '1',
+      endYear: String(birthYear + (pension?.start_age || 56) + (pension?.receiving_years || 10)),
+      endMonth: '12',
     })
   }
 
@@ -64,7 +66,10 @@ export function RetirementPensionSection({
 
     setIsSaving(true)
     try {
-      const validatedStartAge = Math.max(56, parseInt(editValues.startAge) || 56)
+      const startYear = parseInt(editValues.startYear) || (birthYear + 56)
+      const endYear = parseInt(editValues.endYear) || (startYear + 10)
+      const validatedStartAge = Math.max(56, startYear - birthYear)
+      const receivingYears = Math.max(1, endYear - startYear)
       const pensionType: RetirementPensionType = editValues.type === 'DB' ? 'db' : 'dc'
       const receiveType = editValues.receiveType as ReceiveType
 
@@ -77,7 +82,7 @@ export function RetirementPensionSection({
           years_of_service: editValues.type === 'DB' && editValues.years ? parseInt(editValues.years) : null,
           receive_type: receiveType,
           start_age: receiveType === 'annuity' ? validatedStartAge : null,
-          receiving_years: receiveType === 'annuity' && editValues.receivingYears ? parseInt(editValues.receivingYears) : null,
+          receiving_years: receiveType === 'annuity' ? receivingYears : null,
           return_rate: 5, // 기본 수익률 5%
         },
         birthYear,
@@ -191,33 +196,56 @@ export function RetirementPensionSection({
             </div>
 
             {editValues.receiveType === 'annuity' && (
-              <div className={styles.editRow}>
-                <span className={styles.editRowLabel}>기간</span>
-                <div className={styles.editField}>
-                  <input
-                    type="number"
-                    className={styles.editInputSmall}
-                    value={editValues.startAge || ''}
-                    onChange={e => setEditValues({ ...editValues, startAge: e.target.value })}
-                    onWheel={e => (e.target as HTMLElement).blur()}
-                    min={56}
-                    max={80}
-                    placeholder="56"
-                  />
-                  <span className={styles.editUnit}>세부터</span>
-                  <input
-                    type="number"
-                    className={styles.editInputSmall}
-                    value={editValues.receivingYears || ''}
-                    onChange={e => setEditValues({ ...editValues, receivingYears: e.target.value })}
-                    onWheel={e => (e.target as HTMLElement).blur()}
-                    min={5}
-                    max={30}
-                    placeholder="10"
-                  />
-                  <span className={styles.editUnit}>년간</span>
+              <>
+                <div className={styles.editRow}>
+                  <span className={styles.editRowLabel}>수령시작</span>
+                  <div className={styles.editField}>
+                    <input
+                      type="number"
+                      className={styles.editInputSmall}
+                      value={editValues.startYear || ''}
+                      onChange={e => setEditValues({ ...editValues, startYear: e.target.value })}
+                      onWheel={e => (e.target as HTMLElement).blur()}
+                    />
+                    <span className={styles.editUnit}>년</span>
+                    <input
+                      type="number"
+                      className={styles.editInputSmall}
+                      value={editValues.startMonth || ''}
+                      onChange={e => setEditValues({ ...editValues, startMonth: e.target.value })}
+                      onWheel={e => (e.target as HTMLElement).blur()}
+                      min={1}
+                      max={12}
+                      placeholder="1"
+                    />
+                    <span className={styles.editUnit}>월</span>
+                  </div>
                 </div>
-              </div>
+                <div className={styles.editRow}>
+                  <span className={styles.editRowLabel}>수령종료</span>
+                  <div className={styles.editField}>
+                    <input
+                      type="number"
+                      className={styles.editInputSmall}
+                      value={editValues.endYear || ''}
+                      onChange={e => setEditValues({ ...editValues, endYear: e.target.value })}
+                      onWheel={e => (e.target as HTMLElement).blur()}
+                    />
+                    <span className={styles.editUnit}>년</span>
+                    <input
+                      type="number"
+                      className={styles.editInputSmall}
+                      value={editValues.endMonth || ''}
+                      onChange={e => setEditValues({ ...editValues, endMonth: e.target.value })}
+                      onWheel={e => (e.target as HTMLElement).blur()}
+                      min={1}
+                      max={12}
+                      placeholder="12"
+                    />
+                    <span className={styles.editUnit}>월</span>
+                  </div>
+                </div>
+              </>
             )}
           </>
         )}
@@ -260,7 +288,7 @@ export function RetirementPensionSection({
                 : '현재 잔액을 입력하세요'
             }
             {pension.receive_type === 'annuity'
-              ? ` | ${pension.start_age || 56}세부터 ${pension.receiving_years || 10}년간 연금 수령`
+              ? ` | ${birthYear + (pension.start_age || 56)}년부터 ${(pension.receiving_years || 10)}년간 연금 수령`
               : pension.receive_type === 'lump_sum'
                 ? ' | 일시금 수령'
                 : ''

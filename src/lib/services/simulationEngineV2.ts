@@ -151,6 +151,8 @@ interface RealEstateItemState {
   loanMaturityYear: number | null
   loanMaturityMonth: number | null
   loanRepaymentType: string | null
+  loanGraceEndYear: number | null
+  loanGraceEndMonth: number | null
   loanBalance: number
 }
 
@@ -508,11 +510,13 @@ function initializeState(
       loanRate: re.loan_rate,
       loanRateType: re.loan_rate_type,
       loanSpread: re.loan_spread,
-      loanStartYear: re.loan_start_year,
-      loanStartMonth: re.loan_start_month,
-      loanMaturityYear: re.loan_maturity_year,
-      loanMaturityMonth: re.loan_maturity_month,
-      loanRepaymentType: re.loan_repayment_type,
+      loanStartYear: re.loan_start_year || re.purchase_year || new Date().getFullYear(),
+      loanStartMonth: re.loan_start_month || 1,
+      loanMaturityYear: re.loan_maturity_year || (re.loan_start_year || re.purchase_year || new Date().getFullYear()) + 30,
+      loanMaturityMonth: re.loan_maturity_month || 12,
+      loanRepaymentType: re.loan_repayment_type || '원리금균등상환',
+      loanGraceEndYear: re.grace_end_year,
+      loanGraceEndMonth: re.grace_end_month,
       loanBalance: re.loan_amount || 0,
     })
   }
@@ -535,11 +539,11 @@ function initializeState(
       hasLoan: a.has_loan,
       loanAmount: a.loan_amount,
       loanRate: a.loan_rate,
-      loanStartYear: a.loan_start_year,
-      loanStartMonth: a.loan_start_month,
-      loanMaturityYear: a.loan_maturity_year,
-      loanMaturityMonth: a.loan_maturity_month,
-      loanRepaymentType: a.loan_repayment_type,
+      loanStartYear: a.loan_start_year || new Date().getFullYear(),
+      loanStartMonth: a.loan_start_month || 1,
+      loanMaturityYear: a.loan_maturity_year || (a.loan_start_year || new Date().getFullYear()) + 30,
+      loanMaturityMonth: a.loan_maturity_month || 12,
+      loanRepaymentType: a.loan_repayment_type || '원리금균등상환',
       loanBalance: a.loan_amount || 0,
     })
   }
@@ -943,8 +947,16 @@ export function runSimulationV2(
             re.loanBalance = Math.max(0, re.loanBalance - rePrincipal)
             break
           }
-          case '거치식상환':
-            if (monthsElapsedLoan <= totalLoanMonths * 0.3) {
+          case '거치식상환': {
+            // 거치종료 시점 계산: DB에 있으면 사용, 없으면 전체의 30% 기본값
+            let gracePeriodMonths: number
+            if (re.loanGraceEndYear && re.loanGraceEndMonth) {
+              gracePeriodMonths = (re.loanGraceEndYear - (re.loanStartYear || 0)) * 12 +
+                (re.loanGraceEndMonth - (re.loanStartMonth || 1))
+            } else {
+              gracePeriodMonths = Math.round(totalLoanMonths * 0.3)
+            }
+            if (monthsElapsedLoan < gracePeriodMonths) {
               // 거치기간: 이자만
               reInterest = re.loanBalance * loanMonthlyRate
             } else {
@@ -955,6 +967,7 @@ export function runSimulationV2(
               re.loanBalance = Math.max(0, re.loanBalance - rePrincipal)
             }
             break
+          }
         }
 
         const rePayment = reInterest + rePrincipal

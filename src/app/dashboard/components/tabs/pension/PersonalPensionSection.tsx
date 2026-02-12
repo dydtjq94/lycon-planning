@@ -54,8 +54,10 @@ export function PersonalPensionSection({
     setEditValues({
       balance: pensionSavings?.current_balance?.toString() || '',
       monthly: pensionSavings?.monthly_contribution?.toString() || '',
-      startAge: (pensionSavings?.start_age || 56).toString(),
-      years: (pensionSavings?.receiving_years || 20).toString(),
+      startYear: String(birthYear + (pensionSavings?.start_age || 56)),
+      startMonth: '1',
+      endYear: String(birthYear + (pensionSavings?.start_age || 56) + (pensionSavings?.receiving_years || 20)),
+      endMonth: '12',
     })
   }
 
@@ -64,15 +66,20 @@ export function PersonalPensionSection({
     setEditValues({
       balance: irp?.current_balance?.toString() || '',
       monthly: irp?.monthly_contribution?.toString() || '',
-      startAge: (irp?.start_age || 56).toString(),
-      years: (irp?.receiving_years || 20).toString(),
+      startYear: String(birthYear + (irp?.start_age || 56)),
+      startMonth: '1',
+      endYear: String(birthYear + (irp?.start_age || 56) + (irp?.receiving_years || 20)),
+      endMonth: '12',
     })
   }
 
   const savePension = async (pensionType: PersonalPensionType) => {
     setIsSaving(true)
     try {
-      const validatedStartAge = Math.max(56, parseInt(editValues.startAge) || 56)
+      const startYear = parseInt(editValues.startYear) || (birthYear + 56)
+      const endYear = parseInt(editValues.endYear) || (startYear + 20)
+      const validatedStartAge = Math.max(56, startYear - birthYear)
+      const receivingYears = Math.max(1, endYear - startYear)
 
       await upsertPersonalPension(
         simulationId,
@@ -83,7 +90,7 @@ export function PersonalPensionSection({
           monthly_contribution: editValues.monthly ? parseFloat(editValues.monthly) : null,
           is_contribution_fixed_to_retirement: true,
           start_age: validatedStartAge,
-          receiving_years: editValues.years ? parseInt(editValues.years) : 20,
+          receiving_years: receivingYears,
           return_rate: 5, // 기본 수익률 5%
         },
         birthYear,
@@ -149,30 +156,51 @@ export function PersonalPensionSection({
             </div>
           </div>
           <div className={styles.editRow}>
-            <span className={styles.editRowLabel}>수령</span>
+            <span className={styles.editRowLabel}>수령시작</span>
             <div className={styles.editField}>
               <input
                 type="number"
                 className={styles.editInputSmall}
-                value={editValues.startAge || ''}
-                onChange={e => setEditValues({ ...editValues, startAge: e.target.value })}
+                value={editValues.startYear || ''}
+                onChange={e => setEditValues({ ...editValues, startYear: e.target.value })}
                 onWheel={e => (e.target as HTMLElement).blur()}
-                min={56}
-                max={80}
-                placeholder="56"
               />
-              <span className={styles.editUnit}>세부터</span>
+              <span className={styles.editUnit}>년</span>
               <input
                 type="number"
                 className={styles.editInputSmall}
-                value={editValues.years || ''}
-                onChange={e => setEditValues({ ...editValues, years: e.target.value })}
+                value={editValues.startMonth || ''}
+                onChange={e => setEditValues({ ...editValues, startMonth: e.target.value })}
                 onWheel={e => (e.target as HTMLElement).blur()}
-                min={10}
-                max={30}
-                placeholder="20"
+                min={1}
+                max={12}
+                placeholder="1"
               />
-              <span className={styles.editUnit}>년간</span>
+              <span className={styles.editUnit}>월</span>
+            </div>
+          </div>
+          <div className={styles.editRow}>
+            <span className={styles.editRowLabel}>수령종료</span>
+            <div className={styles.editField}>
+              <input
+                type="number"
+                className={styles.editInputSmall}
+                value={editValues.endYear || ''}
+                onChange={e => setEditValues({ ...editValues, endYear: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+              />
+              <span className={styles.editUnit}>년</span>
+              <input
+                type="number"
+                className={styles.editInputSmall}
+                value={editValues.endMonth || ''}
+                onChange={e => setEditValues({ ...editValues, endMonth: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                min={1}
+                max={12}
+                placeholder="12"
+              />
+              <span className={styles.editUnit}>월</span>
             </div>
           </div>
           <div className={styles.editActions}>
@@ -204,7 +232,7 @@ export function PersonalPensionSection({
             {(pensionSavings?.current_balance || pensionSavings?.monthly_contribution) ? (
               <span className={styles.itemMeta}>
                 {pensionSavings?.monthly_contribution ? `월 ${formatMoney(pensionSavings.monthly_contribution)} 납입 | ` : ''}
-                {pensionSavings?.start_age || 56}세부터 {pensionSavings?.receiving_years || 20}년간 수령
+                {birthYear + (pensionSavings?.start_age || 56)}년부터 {pensionSavings?.receiving_years || 20}년간 수령
               </span>
             ) : null}
           </div>
@@ -258,30 +286,51 @@ export function PersonalPensionSection({
             </div>
           </div>
           <div className={styles.editRow}>
-            <span className={styles.editRowLabel}>수령</span>
+            <span className={styles.editRowLabel}>수령시작</span>
             <div className={styles.editField}>
               <input
                 type="number"
                 className={styles.editInputSmall}
-                value={editValues.startAge || ''}
-                onChange={e => setEditValues({ ...editValues, startAge: e.target.value })}
+                value={editValues.startYear || ''}
+                onChange={e => setEditValues({ ...editValues, startYear: e.target.value })}
                 onWheel={e => (e.target as HTMLElement).blur()}
-                min={56}
-                max={80}
-                placeholder="56"
               />
-              <span className={styles.editUnit}>세부터</span>
+              <span className={styles.editUnit}>년</span>
               <input
                 type="number"
                 className={styles.editInputSmall}
-                value={editValues.years || ''}
-                onChange={e => setEditValues({ ...editValues, years: e.target.value })}
+                value={editValues.startMonth || ''}
+                onChange={e => setEditValues({ ...editValues, startMonth: e.target.value })}
                 onWheel={e => (e.target as HTMLElement).blur()}
-                min={10}
-                max={30}
-                placeholder="20"
+                min={1}
+                max={12}
+                placeholder="1"
               />
-              <span className={styles.editUnit}>년간</span>
+              <span className={styles.editUnit}>월</span>
+            </div>
+          </div>
+          <div className={styles.editRow}>
+            <span className={styles.editRowLabel}>수령종료</span>
+            <div className={styles.editField}>
+              <input
+                type="number"
+                className={styles.editInputSmall}
+                value={editValues.endYear || ''}
+                onChange={e => setEditValues({ ...editValues, endYear: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+              />
+              <span className={styles.editUnit}>년</span>
+              <input
+                type="number"
+                className={styles.editInputSmall}
+                value={editValues.endMonth || ''}
+                onChange={e => setEditValues({ ...editValues, endMonth: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                min={1}
+                max={12}
+                placeholder="12"
+              />
+              <span className={styles.editUnit}>월</span>
             </div>
           </div>
           <div className={styles.editActions}>
@@ -313,7 +362,7 @@ export function PersonalPensionSection({
             {(irp?.current_balance || irp?.monthly_contribution) ? (
               <span className={styles.itemMeta}>
                 {irp?.monthly_contribution ? `월 ${formatMoney(irp.monthly_contribution)} 납입 | ` : ''}
-                {irp?.start_age || 56}세부터 {irp?.receiving_years || 20}년간 수령
+                {birthYear + (irp?.start_age || 56)}년부터 {irp?.receiving_years || 20}년간 수령
               </span>
             ) : null}
           </div>
