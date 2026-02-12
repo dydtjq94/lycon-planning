@@ -72,54 +72,47 @@
   overflow-y: auto;
 }
 
-.chartOverlay {
-  position: absolute;
+/* ============================================
+   Category Dropdown Popover
+   ============================================ */
+
+.dropdownBackdrop {
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0);
-  z-index: 5;
-  pointer-events: none;
-  transition: background 0.3s ease;
+  z-index: 199;
 }
 
-.chartOverlayVisible {
-  background: rgba(0, 0, 0, 0.3);
-  pointer-events: auto;
-  cursor: pointer;
-}
-
-/* ============================================
-   Category Slide Panel (overlay from left)
-   ============================================ */
-
-.categoryPanel {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 480px;
-  max-width: 100%;
-  background: var(--dashboard-bg);
-  border-right: 1px solid var(--dashboard-border);
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
-  z-index: 10;
+.dropdown {
+  position: fixed;
+  z-index: 200;
+  width: 520px;
+  max-height: 60vh;
+  border-radius: 12px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  animation: dropdownEnter 0.2s ease-out;
 }
 
-.categoryPanelOpen {
-  transform: translateX(0);
-}
-
-.categoryPanelContent {
+.dropdownContent {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 20px;
+}
+
+@keyframes dropdownEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ============================================

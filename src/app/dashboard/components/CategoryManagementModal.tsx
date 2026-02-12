@@ -12,17 +12,21 @@ import {
   BudgetCategory,
 } from "@/lib/services/budgetService";
 import { useQueryClient } from "@tanstack/react-query";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import styles from "./CategoryManagementModal.module.css";
 
 interface CategoryManagementModalProps {
   profileId: string;
   onClose: () => void;
+  triggerRect?: { top: number; left: number; width: number } | null;
 }
 
 export function CategoryManagementModal({
   profileId,
   onClose,
+  triggerRect,
 }: CategoryManagementModalProps) {
+  const { isDark } = useChartTheme();
   const queryClient = useQueryClient();
   const { data: categories = [] } = useBudgetCategories(profileId);
 
@@ -164,9 +168,32 @@ export function CategoryManagementModal({
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
+  // Calculate modal position
+  const modalStyle: React.CSSProperties = {
+    background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+  };
+
+  if (triggerRect) {
+    const modalWidth = 480;
+    // Try to align left edge with button left edge
+    let left = triggerRect.left;
+    // If overflows right, push left
+    if (left + modalWidth > window.innerWidth - 16) {
+      left = window.innerWidth - modalWidth - 16;
+    }
+    // If overflows left, push right
+    if (left < 16) left = 16;
+
+    modalStyle.position = 'fixed';
+    modalStyle.top = triggerRect.top + 6;
+    modalStyle.left = left;
+  }
+
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={modalStyle}>
         <div className={styles.header}>
           <h3>카테고리 관리</h3>
           <button className={styles.closeBtn} onClick={onClose}>

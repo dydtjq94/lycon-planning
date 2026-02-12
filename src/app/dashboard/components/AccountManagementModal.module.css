@@ -6,7 +6,6 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,14 +13,25 @@
 }
 
 .modal {
-  background: white;
   border-radius: 16px;
+  animation: glassEnter 0.2s ease-out;
   width: 100%;
   max-width: 700px;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+@keyframes glassEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modalHeader {

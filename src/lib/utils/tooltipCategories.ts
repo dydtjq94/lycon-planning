@@ -222,19 +222,19 @@ export interface AssetCategory {
 export const ASSET_CATEGORIES: AssetCategory[] = [
   {
     id: 'pension',
-    label: '연금자산',
+    label: '연금',
     color: CHART_COLORS.asset.pension,
     keywords: ['연금저축', '연금', 'IRP', 'ISA', '퇴직연금', '개인연금', '퇴직금'],
   },
   {
     id: 'savings',
-    label: '저축/계좌',
+    label: '저축',
     color: CHART_COLORS.asset.savings,
     keywords: ['예금', '적금', '저축', 'CMA', 'MMF', '입출금', '통장', '계좌', '현금'],
   },
   {
     id: 'investment',
-    label: '투자자산',
+    label: '투자',
     color: CHART_COLORS.asset.investment,
     keywords: ['투자', '주식', '펀드', 'ETF', '채권', '코인', '가상화폐', '증권'],
   },

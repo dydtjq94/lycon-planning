@@ -218,22 +218,102 @@ function MyChart() {
 | `emptyState` | 데이터 없음 상태 | `#e5e7eb` | `#35373b` |
 | `tooltipBg` | 툴팁 배경 | `rgba(255,255,255,0.5)` | `rgba(34,37,41,0.5)` |
 
-### 차트 툴팁 글래스모피즘 (Glassmorphism) 규칙
+### 글래스모피즘 (Glassmorphism) 규칙
 
-모든 차트 툴팁은 동일한 글래스모피즘 스타일을 적용:
+두 가지 레벨이 있음. 용도에 맞게 사용:
 
+#### 1. 툴팁/팝오버 (작은 요소)
 - **배경 투명도**: `0.5` (라이트/다크 모두)
 - **블러**: `blur(6px)` 고정
 - **다른 값 사용 금지**: 투명도와 블러 값을 임의로 변경하지 말 것
 
 ```tsx
-// 커스텀 외부 툴팁 (chartTooltip.ts 유틸리티 사용 시)
+// 툴팁, 차트 팝오버 등 작은 요소
 background: isDark ? 'rgba(34, 37, 41, 0.5)' : 'rgba(255, 255, 255, 0.5)'
 backdropFilter: 'blur(6px)'
 WebkitBackdropFilter: 'blur(6px)'
 
 // Chart.js 기본 툴팁 (useChartTheme의 tooltipBg 사용 시)
 backgroundColor: chartScaleColors.tooltipBg  // 이미 0.5 적용됨
+```
+
+#### 2. 모달/드롭다운 (큰 요소)
+- **배경 투명도**: `0.6` (라이트/다크 모두)
+- **블러**: `blur(8px)` 고정
+- **다른 값 사용 금지**: 투명도와 블러 값을 임의로 변경하지 말 것
+
+```tsx
+// 모달, 드롭다운 패널 등 큰 요소
+background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)'
+backdropFilter: 'blur(8px)'
+WebkitBackdropFilter: 'blur(8px)'
+```
+
+#### 구현 시 주의사항 (매우 중요!)
+- **CSS Module에서 `backdrop-filter` 사용 금지**: Next.js CSS Module 빌드 파이프라인에서 `backdrop-filter`가 제대로 적용 안 됨
+- **반드시 인라인 스타일 사용**: `style={{ backdropFilter: 'blur(Xpx)', WebkitBackdropFilter: 'blur(Xpx)' }}`
+- **CSS Module에는 레이아웃만**: `position`, `width`, `border-radius`, `overflow`, `z-index` 등
+- **CSS Module에서 `background` 제거 필수**: 기존 opaque 배경(`var(--dashboard-card-bg)` 등)이 있으면 반드시 제거, 인라인 rgba로 대체
+- **`useChartTheme`에서 `isDark` 가져와서 사용**: 다크모드 대응
+
+```tsx
+// 올바른 구현 예시
+import { useChartTheme } from '@/hooks/useChartTheme'
+
+const { isDark } = useChartTheme()
+
+// CSS Module: 레이아웃만 (background 없음!)
+// .menu { position: absolute; border-radius: 10px; z-index: 100; }
+
+// JSX: 인라인 스타일로 glassmorphism 적용
+<div className={styles.menu} style={{
+  background: isDark ? 'rgba(34, 37, 41, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+  backdropFilter: 'blur(6px)',
+  WebkitBackdropFilter: 'blur(6px)',
+}}>
+
+// 잘못된 구현 (절대 하지 말 것!)
+// .menu { background: var(--dashboard-card-bg); backdrop-filter: blur(6px); }
+```
+
+#### 글래스모피즘 위치 규칙 (매우 중요!)
+- **버튼에서 드롭다운**: 클릭한 버튼 바로 아래에서 나타남 (버튼 위치 기준 `position: fixed`, `top: btnRect.bottom + 6`)
+- **화면 중앙 모달 금지**: 모달/드롭다운은 화면 가운데가 아니라 **트리거한 버튼 위치**에서 나와야 함
+- **버튼 여러개가 나열된 경우**: 왼쪽 버튼은 좌측 정렬, 오른쪽 버튼일수록 버튼이 드롭다운 중앙에 오도록 보간
+
+```tsx
+// 버튼 위치 기준 드롭다운 위치 계산
+const btnRect = btn.getBoundingClientRect()
+const ratio = tabIndex / (totalTabs - 1)  // 0=첫번째, 1=마지막
+let left = btnRect.left - ratio * (dropdownWidth / 2 - btnRect.width / 2)
+
+// 화면 넘침 방지
+if (left + dropdownWidth > window.innerWidth - 16) left = window.innerWidth - dropdownWidth - 16
+if (left < 16) left = 16
+
+style={{ top: btnRect.bottom + 6, left }}
+```
+
+#### 글래스모피즘 등장 애니메이션 (필수!)
+- 모든 글래스모피즘 요소(툴팁, 팝오버, 모달, 드롭다운)는 등장 시 애니메이션 필수
+- **방향**: 위에서 아래로 스르르 (translateY -8px → 0)
+- **속도**: `0.2s ease-out` 고정
+- **애니메이션은 CSS Module에서 정의** (backdrop-filter와 다르게 CSS Module에서 정상 작동)
+
+```css
+/* CSS Module에 추가 */
+animation: glassEnter 0.2s ease-out;
+
+@keyframes glassEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 ```
 
 ### 0을 교차하는 차트 그라데이션

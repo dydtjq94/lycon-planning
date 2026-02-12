@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Home,
   CreditCard,
@@ -18,6 +19,7 @@ import { normalizePriorities } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationEngine";
 import type { SimulationProfile } from "@/lib/services/dbToFinancialItems";
 import type { ProfileBasics, FamilyMember } from "@/contexts/FinancialContext";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import { NetWorthTab } from "./NetWorthTab";
 import { CashFlowOverviewTab } from "./CashFlowOverviewTab";
 import { IncomeTab } from "./IncomeTab";
@@ -97,15 +99,54 @@ export function ScenarioTab({
   isInitializing,
   isSyncingPrices,
 }: ScenarioTabProps) {
+  const { isDark, chartScaleColors } = useChartTheme();
   const [activeTopTab, setActiveTopTab] = useState<"plan" | "cashflow">("plan");
   const [activeCategoryTab, setActiveCategoryTab] = useState<string | null>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
   // Shared state for time range and selected year
   type TimeRange = 'next3m' | 'next5m' | 'next5' | 'next10' | 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full'
   const [sharedTimeRange, setSharedTimeRange] = useState<TimeRange>('full')
   const [sharedSelectedYear, setSharedSelectedYear] = useState<number>(new Date().getFullYear())
 
-  // ESC 키로 패널 닫기
+  // 카테고리 버튼 클릭 → 드롭다운 위치 계산
+  // 왼쪽 버튼: 좌측 정렬, 오른쪽 버튼: 버튼이 드롭다운 중앙에 오도록 보간
+  const handleCategoryClick = useCallback((tabId: string) => {
+    if (activeCategoryTab === tabId) {
+      setActiveCategoryTab(null);
+      return;
+    }
+
+    const btn = buttonRefs.current.get(tabId);
+    if (btn) {
+      const btnRect = btn.getBoundingClientRect();
+      const dropdownWidth = 520;
+
+      // 버튼 인덱스 비율 (0=첫번째, 1=마지막)
+      const tabIndex = CATEGORY_TABS.findIndex(t => t.id === tabId);
+      const ratio = CATEGORY_TABS.length > 1 ? tabIndex / (CATEGORY_TABS.length - 1) : 0;
+
+      // 보간: ratio=0 → 좌측 정렬, ratio=1 → 버튼 중앙 정렬
+      let left = btnRect.left - ratio * (dropdownWidth / 2 - btnRect.width / 2);
+
+      // 화면 넘침 방지
+      if (left + dropdownWidth > window.innerWidth - 16) {
+        left = window.innerWidth - dropdownWidth - 16;
+      }
+      if (left < 16) left = 16;
+
+      setDropdownStyle({
+        top: btnRect.bottom + 6,
+        left,
+      });
+    }
+
+    setActiveCategoryTab(tabId);
+  }, [activeCategoryTab]);
+
+  // ESC 키로 드롭다운 닫기
   useEffect(() => {
     if (!activeCategoryTab) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -276,6 +317,7 @@ export function ScenarioTab({
   };
 
   return (
+    <>
     <div className={styles.container}>
       {/* Top tabs */}
       <div className={styles.topTabs}>
@@ -298,8 +340,9 @@ export function ScenarioTab({
           return (
             <button
               key={tab.id}
+              ref={(el) => { if (el) buttonRefs.current.set(tab.id, el); }}
               className={`${styles.categoryTab} ${activeCategoryTab === tab.id ? styles.active : ""}`}
-              onClick={() => setActiveCategoryTab(activeCategoryTab === tab.id ? null : tab.id)}
+              onClick={() => handleCategoryClick(tab.id)}
               type="button"
             >
               <Icon size={16} />
@@ -309,25 +352,38 @@ export function ScenarioTab({
         })}
       </div>
 
-      {/* Main area: Chart always visible, category panel overlays */}
+      {/* Main area: Chart always visible */}
       <div className={styles.mainArea}>
         <div className={styles.chartArea}>
           {renderMainContent()}
         </div>
+      </div>
 
-        {/* Overlay */}
+    </div>
+
+    {/* Category dropdown popover (portal to body for backdrop-filter) */}
+    {activeCategoryTab && createPortal(
+      <>
+        <div className={styles.dropdownBackdrop} onClick={() => setActiveCategoryTab(null)} />
         <div
-          className={`${styles.chartOverlay} ${activeCategoryTab ? styles.chartOverlayVisible : ""}`}
-          onClick={() => setActiveCategoryTab(null)}
-        />
-
-        {/* Category slide panel */}
-        <div className={`${styles.categoryPanel} ${activeCategoryTab ? styles.categoryPanelOpen : ""}`}>
-          <div className={styles.categoryPanelContent}>
-            {activeCategoryTab && renderCategoryContent()}
+          ref={dropdownRef}
+          className={styles.dropdown}
+          style={{
+            ...dropdownStyle,
+            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: `1px solid ${chartScaleColors.gridColor}`,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }}
+        >
+          <div className={styles.dropdownContent}>
+            {renderCategoryContent()}
           </div>
         </div>
-      </div>
-    </div>
+      </>,
+      document.body
+    )}
+  </>
   );
 }

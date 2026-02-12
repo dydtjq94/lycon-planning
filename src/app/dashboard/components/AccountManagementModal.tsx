@@ -8,6 +8,7 @@ import type { Account, AccountType, AccountInput, PaymentMethod, PaymentMethodTy
 // 폼 데이터 타입 (duration_months, balance_date 추가)
 type AccountFormData = Partial<AccountInput> & { duration_months?: number; balance_date?: string; owner?: Owner };
 import { formatWon } from "@/lib/utils";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import styles from "./AccountManagementModal.module.css";
 
 type TabType = "checking" | "savings" | "securities";
@@ -17,6 +18,7 @@ interface AccountManagementModalProps {
   onClose: () => void;
   initialTab?: TabType;
   isMarried?: boolean;
+  triggerRect?: { top: number; left: number; width: number } | null;
 }
 
 import { BANK_OPTIONS, SECURITIES_OPTIONS, CARD_COMPANY_OPTIONS } from '@/lib/constants/financial'
@@ -52,6 +54,7 @@ const PAYMENT_METHOD_TYPE_OPTIONS = [
 
 
 export function AccountManagementModal({ profileId, onClose, initialTab = "checking", isMarried = false }: AccountManagementModalProps) {
+  const { isDark } = useChartTheme();
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
@@ -347,7 +350,11 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{
+        background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+      }}>
         <div className={styles.modalHeader}>
           <h3>계좌 관리</h3>
           <button className={styles.modalCloseBtn} onClick={onClose}>

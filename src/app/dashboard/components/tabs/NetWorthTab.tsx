@@ -63,7 +63,7 @@ export function NetWorthTab({
 }: NetWorthTabProps) {
   const currentYear = new Date().getFullYear()
   const currentAge = currentYear - birthYear
-  const { chartLineColors } = useChartTheme()
+  const { isDark, chartLineColors } = useChartTheme()
 
   // 시뮬레이션 설정
   const simulationEndYear = calculateEndYear(birthYear, spouseBirthYear)
@@ -262,7 +262,11 @@ export function NetWorthTab({
                   </button>
 
                   {showTimeRangeMenu && (
-                    <div className={styles.timeRangeMenu}>
+                    <div className={styles.timeRangeMenu} style={{
+                      background: isDark ? 'rgba(34, 37, 41, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+                      backdropFilter: 'blur(6px)',
+                      WebkitBackdropFilter: 'blur(6px)',
+                    }}>
                       {TIME_RANGES.map(range => (
                         <button
                           key={range.id}

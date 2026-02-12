@@ -229,9 +229,13 @@ export function DashboardContent() {
   // 계좌 관리 모달
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "securities">("checking");
+  const [accountBtnRect, setAccountBtnRect] = useState<{top: number, left: number, width: number} | null>(null);
+  const accountBtnRef = useRef<HTMLButtonElement>(null);
 
   // 카테고리 관리 모달
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categoryBtnRect, setCategoryBtnRect] = useState<{top: number, left: number, width: number} | null>(null);
+  const categoryBtnRef = useRef<HTMLButtonElement>(null);
 
   // 종목 자동완성
   interface StockItem {
@@ -916,8 +920,15 @@ export function DashboardContent() {
                 {/* 카테고리 관리 버튼 (가계부만) */}
                 {currentSection === "household-budget" && (
                   <button
+                    ref={categoryBtnRef}
                     className={styles.accountManageBtn}
-                    onClick={() => setShowCategoryModal(true)}
+                    onClick={() => {
+                      if (categoryBtnRef.current) {
+                        const rect = categoryBtnRef.current.getBoundingClientRect();
+                        setCategoryBtnRect({ top: rect.bottom, left: rect.left, width: rect.width });
+                      }
+                      setShowCategoryModal(true);
+                    }}
                   >
                     <Tags size={14} />
                     카테고리 관리
@@ -926,12 +937,18 @@ export function DashboardContent() {
 
                 {/* 계좌 관리 버튼 */}
                 <button
+                  ref={accountBtnRef}
                   className={styles.accountManageBtn}
                   onClick={() => {
                     // 섹션에 따라 적절한 탭 열기
                     if (currentSection === "household-budget") setAccountModalTab("checking");
                     else if (currentSection === "savings-deposits") setAccountModalTab("savings");
                     else if (currentSection === "portfolio") setAccountModalTab("securities");
+
+                    if (accountBtnRef.current) {
+                      const rect = accountBtnRef.current.getBoundingClientRect();
+                      setAccountBtnRect({ top: rect.bottom, left: rect.left, width: rect.width });
+                    }
                     setShowAccountModal(true);
                   }}
                 >
@@ -1009,6 +1026,7 @@ export function DashboardContent() {
           onClose={() => setShowAccountModal(false)}
           initialTab={accountModalTab}
           isMarried={isMarried}
+          triggerRect={accountBtnRect}
         />
       )}
 
@@ -1017,6 +1035,7 @@ export function DashboardContent() {
         <CategoryManagementModal
           profileId={profile.id}
           onClose={() => setShowCategoryModal(false)}
+          triggerRect={categoryBtnRect}
         />
       )}
     </div>
