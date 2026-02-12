@@ -57,12 +57,11 @@
   top: 100%;
   left: 0;
   margin-top: 8px;
-  background: var(--dashboard-card-bg);
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   min-width: 140px;
   z-index: 100;
   overflow: hidden;
+  animation: glassEnter 0.2s ease-out;
 }
 
 .metricOption {
@@ -329,12 +328,22 @@
   top: 100%;
   right: 0;
   margin-top: 4px;
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   min-width: 100px;
   z-index: 100;
+  overflow: hidden;
+  animation: glassEnter 0.2s ease-out;
+}
+
+@keyframes glassEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dropdownItem {
@@ -429,10 +438,10 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding-left: 220px;
   z-index: 100;
   animation: fadeIn 0.15s ease;
 }
@@ -443,19 +452,18 @@
 }
 
 .modal {
-  background: var(--dashboard-card-bg);
   border-radius: 16px;
   width: 100%;
   max-width: 520px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: slideUp 0.2s ease;
+  animation: modalEnter 0.2s ease-out;
 }
 
-@keyframes slideUp {
+@keyframes modalEnter {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;

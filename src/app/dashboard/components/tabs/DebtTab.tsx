@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Pencil, X, Plus } from 'lucide-react'
 import type { Debt, DebtInput, LoanRepaymentType, RateType } from '@/types/tables'
 import { formatMoney } from '@/lib/utils'
@@ -18,6 +19,7 @@ import {
   type UIDebtCategory,
 } from '@/lib/services/debtService'
 import { TabSkeleton } from './shared/TabSkeleton'
+import { useChartTheme } from '@/hooks/useChartTheme'
 import styles from './DebtTab.module.css'
 
 interface DebtTabProps {
@@ -65,6 +67,7 @@ interface DebtWithPayment extends Debt {
 }
 
 export function DebtTab({ simulationId }: DebtTabProps) {
+  const { isDark } = useChartTheme()
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth() + 1
 
@@ -76,6 +79,10 @@ export function DebtTab({ simulationId }: DebtTabProps) {
   const [editingDebt, setEditingDebt] = useState<EditingDebt | null>(null)
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(true)
+
+  // 타입 선택 드롭다운
+  const [showTypeMenu, setShowTypeMenu] = useState(false)
+  const addButtonRef = useRef<HTMLButtonElement>(null)
 
   // 부채에 월 상환액 정보 추가
   const addPaymentInfo = (debt: Debt): DebtWithPayment => {
@@ -179,6 +186,7 @@ export function DebtTab({ simulationId }: DebtTabProps) {
       maturityYear: String(defaultMat.year),
       maturityMonth: String(defaultMat.month),
     })
+    setShowTypeMenu(false)
   }
 
   // 부채 편집 시작
@@ -534,35 +542,32 @@ export function DebtTab({ simulationId }: DebtTabProps) {
     )
   }
 
-  // 섹션 렌더링
-  const renderSection = (
-    title: string,
-    category: 'credit' | 'other',
-    debtList: DebtWithPayment[]
-  ) => {
-    return (
-      <div className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionTitle}>{title}</span>
-        </div>
+  // ESC 키로 드롭다운 닫기
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showTypeMenu) {
+        setShowTypeMenu(false)
+      }
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [showTypeMenu])
 
-        {debtList.length > 0 && (
-          <div className={styles.debtList}>
-            {debtList.map(debt => renderDebtItem(debt, category))}
-          </div>
-        )}
-
-        {editingDebt?.category === category && !editingDebt.id ? (
-          renderEditForm()
-        ) : (
-          <button className={styles.addBtn} onClick={() => startAddDebt(category)}>
-            <Plus size={16} />
-            <span>{title} 추가</span>
-          </button>
-        )}
-      </div>
-    )
-  }
+  // 드롭다운 외부 클릭으로 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        showTypeMenu &&
+        addButtonRef.current &&
+        !addButtonRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement).closest(`.${styles.typeMenu}`)
+      ) {
+        setShowTypeMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showTypeMenu])
 
   if (isLoading && debts.length === 0) {
     return (
@@ -572,6 +577,14 @@ export function DebtTab({ simulationId }: DebtTabProps) {
     )
   }
 
+  // 모든 부채 리스트 (flat)
+  const allDebts = useMemo(() => {
+    return [
+      ...categorizedDebts.credit,
+      ...categorizedDebts.other,
+    ]
+  }, [categorizedDebts])
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -580,23 +593,61 @@ export function DebtTab({ simulationId }: DebtTabProps) {
           <span className={styles.count}>{debts.length}개</span>
         </button>
         <div className={styles.headerRight}>
-          <span className={styles.totalAmount}>{formatMoney(totals.totalDebt)}</span>
+          <button
+            ref={addButtonRef}
+            className={styles.addIconBtn}
+            onClick={() => setShowTypeMenu(!showTypeMenu)}
+            type="button"
+          >
+            <Plus size={18} />
+          </button>
         </div>
       </div>
-      {isExpanded && (
-        <>
-          {renderSection(
-            '신용대출',
-            'credit',
-            categorizedDebts.credit
-          )}
 
-          {renderSection(
-            '기타 부채',
-            'other',
-            categorizedDebts.other
+      {/* 타입 선택 드롭다운 - portal로 body에 렌더 */}
+      {showTypeMenu && addButtonRef.current && createPortal(
+        <div
+          className={styles.typeMenu}
+          style={{
+            position: 'fixed',
+            top: addButtonRef.current.getBoundingClientRect().bottom + 6,
+            left: addButtonRef.current.getBoundingClientRect().right - 150,
+            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }}
+        >
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => startAddDebt('credit')}
+          >
+            신용대출
+          </button>
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => startAddDebt('other')}
+          >
+            기타부채
+          </button>
+        </div>,
+        document.body
+      )}
+
+      {isExpanded && (
+        <div className={styles.flatList}>
+          {allDebts.length === 0 && !editingDebt && (
+            <p className={styles.emptyHint}>
+              아직 등록된 부채가 없습니다. 오른쪽 + 버튼으로 추가하세요.
+            </p>
           )}
-        </>
+          {allDebts.map(debt => {
+            const category = getCategoryFromDebt(debt)
+            if (category !== 'credit' && category !== 'other') return null
+            return renderDebtItem(debt, category)
+          })}
+          {editingDebt && !editingDebt.id && renderEditForm()}
+        </div>
       )}
     </div>
   )

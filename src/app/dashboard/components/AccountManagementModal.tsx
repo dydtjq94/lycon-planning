@@ -677,7 +677,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                 </div>
               </>
             )}
-            <div className={styles.formRow}>
+            <div className={styles.formRow} style={{ alignItems: 'center' }}>
               <div className={styles.formGroup}>
                 <label className={styles.checkboxLabel}>
                   <input
@@ -720,13 +720,17 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                         {getAccountTypeLabel(account.account_type || "")}
                         {" · "}{account.broker_name}
                         {isMarried && ` · ${account.owner === "spouse" ? "배우자" : "본인"}`}
-                        {account.start_year && ` · ${account.start_year}.${String(account.start_month || 1).padStart(2, "0")}.${String(account.start_day || 1).padStart(2, "0")} 가입`}
-                        {account.interest_rate && ` · ${account.interest_rate}% (${account.interest_type === 'simple' ? '단리' : account.interest_type === 'monthly_compound' ? '월복리' : '년복리'})`}
-                        {account.current_balance !== null && account.current_balance > 0 && ` · ${formatWon(account.current_balance)}`}
-                        {account.monthly_contribution && ` · 월 ${formatWon(account.monthly_contribution)}`}
-                        {account.maturity_year && ` · ${account.maturity_year}.${String(account.maturity_month || 1).padStart(2, "0")}.${String(account.maturity_day || 1).padStart(2, "0")} 만기`}
-                        {account.is_tax_free && " · 비과세"}
                       </div>
+                      {(account.start_year || account.interest_rate || (account.current_balance !== null && account.current_balance > 0) || account.monthly_contribution || account.maturity_year || account.is_tax_free) && (
+                        <div className={styles.listItemMeta}>
+                          {account.start_year && `${account.start_year}.${String(account.start_month || 1).padStart(2, "0")}.${String(account.start_day || 1).padStart(2, "0")} 가입`}
+                          {account.interest_rate && `${account.start_year ? " · " : ""}${account.interest_rate}% (${account.interest_type === 'simple' ? '단리' : account.interest_type === 'monthly_compound' ? '월복리' : '년복리'})`}
+                          {account.current_balance !== null && account.current_balance > 0 && `${account.start_year || account.interest_rate ? " · " : ""}${formatWon(account.current_balance)}`}
+                          {account.monthly_contribution && ` · 월 ${formatWon(account.monthly_contribution)}`}
+                          {account.maturity_year && ` · ${account.maturity_year}.${String(account.maturity_month || 1).padStart(2, "0")}.${String(account.maturity_day || 1).padStart(2, "0")} 만기`}
+                          {account.is_tax_free && " · 비과세"}
+                        </div>
+                      )}
                       {linkedPayments.length > 0 && (
                         <div className={styles.linkedPayments}>
                           {linkedPayments.map(pm => (
@@ -807,13 +811,15 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                       </select>
                     </div>
                   </div>
-                  <div className={styles.formActions}>
-                    {editingPaymentMethodId && (
-                      <button onClick={resetPaymentMethodForm} className={styles.cancelBtn}>취소</button>
-                    )}
-                    <button onClick={handleSavePaymentMethod} className={styles.submitBtn}>
-                      {editingPaymentMethodId ? "수정" : "추가"}
-                    </button>
+                  <div className={styles.formRow} style={{ alignItems: 'flex-end', marginBottom: 0 }}>
+                    <div className={styles.formActions} style={{ marginLeft: 'auto' }}>
+                      {editingPaymentMethodId && (
+                        <button onClick={resetPaymentMethodForm} className={styles.cancelBtn}>취소</button>
+                      )}
+                      <button onClick={handleSavePaymentMethod} className={styles.submitBtn}>
+                        {editingPaymentMethodId ? "수정" : "추가"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

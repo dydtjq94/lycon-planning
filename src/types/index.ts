@@ -506,7 +506,8 @@ export interface GlobalSettings {
   baseRate: number                // 기준금리 (%) - 변동금리 대출에 적용
 
   // 수명
-  lifeExpectancy: number          // 예상 수명 (세)
+  lifeExpectancy: number          // 본인 예상 수명 (세)
+  spouseLifeExpectancy?: number   // 배우자 예상 수명 (세)
 
   // 커스텀 모드 저장값 (다른 모드 갔다가 돌아올 때 복원용)
   customRates: ScenarioRates
@@ -652,6 +653,25 @@ export function normalizePriorities(raw: unknown): CashFlowPriorities {
 // 시뮬레이션 (시나리오)
 // ============================================
 
+export interface LifeCycleSettings {
+  selfRetirementAge: number
+  selfLifeExpectancy: number
+  spouseRetirementAge?: number
+  spouseLifeExpectancy?: number
+}
+
+export interface SimFamilyMember {
+  id: string
+  relationship: 'spouse' | 'child' | 'parent' | string
+  name: string
+  birth_date: string | null
+  gender: 'male' | 'female' | null
+  is_dependent: boolean
+  is_working: boolean
+  retirement_age: number | null
+  monthly_income: number | null
+}
+
 export interface Simulation {
   id: string
   profile_id: string
@@ -663,6 +683,8 @@ export interface Simulation {
   // 새 필드
   investment_assumptions?: InvestmentAssumptions
   cash_flow_priorities?: CashFlowPriorities
+  life_cycle_settings?: LifeCycleSettings
+  family_config?: SimFamilyMember[]
   created_at: string
   updated_at: string
 }
@@ -876,6 +898,8 @@ export interface SimulationInput {
   // 새 필드
   investment_assumptions?: InvestmentAssumptions
   cash_flow_priorities?: CashFlowPriorities
+  life_cycle_settings?: LifeCycleSettings
+  family_config?: SimFamilyMember[]
 }
 
 // ============================================

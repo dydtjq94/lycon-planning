@@ -533,47 +533,47 @@ export function CashFlowPrioritiesPanel({
             현금이 부족할 때 아래 순서대로 인출합니다.
           </p>
 
-          {priorities.withdrawalRules.length > 0 && (
-            <div className={styles.ruleList}>
-              {priorities.withdrawalRules
-                .sort((a, b) => a.priority - b.priority)
-                .map((rule) => (
-                  <div
-                    key={rule.id}
-                    className={`${styles.ruleRow} ${
-                      draggedWithdrawalId === rule.id ? styles.dragging : ""
-                    }`}
-                    draggable
-                    onDragStart={(e) => handleWithdrawalDragStart(e, rule.id)}
-                    onDragOver={handleWithdrawalDragOver}
-                    onDrop={(e) => handleWithdrawalDrop(e, rule.id)}
-                    onDragEnd={handleWithdrawalDragEnd}
-                  >
-                    <div className={styles.dragHandle}>
-                      <GripVertical size={16} />
-                    </div>
-                    <div className={styles.priorityBadge}>{rule.priority}</div>
-                    <div className={styles.ruleName}>{rule.targetName}</div>
-                    <button
-                      className={styles.deleteButton}
-                      onClick={() => handleDeleteWithdrawalRule(rule.id)}
-                      disabled={isLoading}
-                      type="button"
-                      title="삭제"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+          <div className={styles.ruleList}>
+            {priorities.withdrawalRules
+              .sort((a, b) => a.priority - b.priority)
+              .map((rule) => (
+                <div
+                  key={rule.id}
+                  className={`${styles.ruleRow} ${
+                    draggedWithdrawalId === rule.id ? styles.dragging : ""
+                  }`}
+                  draggable
+                  onDragStart={(e) => handleWithdrawalDragStart(e, rule.id)}
+                  onDragOver={handleWithdrawalDragOver}
+                  onDrop={(e) => handleWithdrawalDrop(e, rule.id)}
+                  onDragEnd={handleWithdrawalDragEnd}
+                >
+                  <div className={styles.dragHandle}>
+                    <GripVertical size={16} />
                   </div>
-                ))}
+                  <div className={styles.priorityBadge}>{rule.priority}</div>
+                  <div className={styles.ruleName}>{rule.targetName}</div>
+                  <button
+                    className={styles.deleteButton}
+                    onClick={() => handleDeleteWithdrawalRule(rule.id)}
+                    disabled={isLoading}
+                    type="button"
+                    title="삭제"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            {/* 마이너스 통장 - 항상 마지막 고정 */}
+            <div className={styles.ruleRowFixed}>
+              <div className={styles.priorityBadge}>{priorities.withdrawalRules.length + 1}</div>
+              <div className={styles.ruleName}>마이너스 통장</div>
             </div>
-          )}
+          </div>
 
           {priorities.withdrawalRules.length === 0 && !addingWithdrawal && (
-            <div className={styles.emptyState}>
-              <p>설정된 규칙이 없습니다</p>
-              <p className={styles.emptyHint}>
-                규칙을 추가하지 않으면 기본 순서로 인출됩니다
-              </p>
+            <div className={styles.emptyHint}>
+              규칙을 추가하지 않으면 기본 순서로 인출됩니다
             </div>
           )}
 
@@ -617,10 +617,6 @@ export function CashFlowPrioritiesPanel({
             </button>
           )}
 
-          <div className={styles.overdraftNotice}>
-            <span className={styles.overdraftLabel}>마이너스 통장</span>
-            <span className={styles.overdraftDesc}>모든 계좌 잔액이 0원일 때 자동 차입됩니다</span>
-          </div>
         </div>
       )}
     </div>

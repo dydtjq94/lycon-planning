@@ -689,7 +689,7 @@ export function useUpdateSimulation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<{ title: string; description?: string; icon?: string }> }) =>
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<{ title: string; description?: string; icon?: string; investment_assumptions?: any; cash_flow_priorities?: any; life_cycle_settings?: any; family_config?: any }> }) =>
       simulationService.update(id, updates),
     onSuccess: async () => {
       await queryClient.refetchQueries({ queryKey: simulationKeys.list() })

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Pencil, Trash2, Building2 } from 'lucide-react'
+import { useState, useMemo, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { Pencil, Trash2, Building2, Plus } from 'lucide-react'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -22,6 +23,7 @@ import {
   REPAYMENT_TYPE_LABELS,
 } from '@/lib/services/realEstateService'
 import { TabSkeleton } from './shared/TabSkeleton'
+import { useChartTheme } from '@/hooks/useChartTheme'
 import styles from './RealEstateTab.module.css'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
@@ -39,6 +41,7 @@ const USAGE_COLORS: Record<Exclude<RealEstateType, 'residence'>, string> = {
 }
 
 export function RealEstateTab({ simulationId }: RealEstateTabProps) {
+  const { isDark } = useChartTheme()
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth() + 1
 
@@ -52,6 +55,10 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
   const [editBooleans, setEditBooleans] = useState<{ hasRentalIncome: boolean, hasLoan: boolean }>({ hasRentalIncome: false, hasLoan: false })
   const [isSaving, setIsSaving] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
+
+  // 타입 선택 드롭다운
+  const [showTypeMenu, setShowTypeMenu] = useState(false)
+  const addButtonRef = useRef<HTMLButtonElement>(null)
 
   // 타입별 분류
   const residenceProperty = useMemo(
@@ -180,6 +187,7 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
       graceEndYear: '',
       graceEndMonth: '',
     })
+    setShowTypeMenu(false)
   }
 
   const startEditProperty = (property: RealEstate) => {
@@ -993,6 +1001,33 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
 
   const hasData = totalRealEstateValue > 0 || !!residenceProperty
 
+  // ESC 키로 드롭다운 닫기
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showTypeMenu) {
+        setShowTypeMenu(false)
+      }
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [showTypeMenu])
+
+  // 드롭다운 외부 클릭으로 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        showTypeMenu &&
+        addButtonRef.current &&
+        !addButtonRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement).closest(`.${styles.typeMenu}`)
+      ) {
+        setShowTypeMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showTypeMenu])
+
   if (isLoading && dbRealEstates.length === 0) {
     return (
       <div className={styles.container}>
@@ -1011,176 +1046,151 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
           <span className={styles.count}>{totalPropertyCount}개</span>
         </button>
         <div className={styles.headerRight}>
-          <span className={styles.totalAmount}>{formatMoney(totalRealEstateValue)}</span>
+          <button
+            ref={addButtonRef}
+            className={styles.addIconBtn}
+            onClick={() => setShowTypeMenu(!showTypeMenu)}
+            type="button"
+          >
+            <Plus size={18} />
+          </button>
         </div>
       </div>
 
+      {/* 타입 선택 드롭다운 - portal로 body에 렌더 */}
+      {showTypeMenu && addButtonRef.current && createPortal(
+        <div
+          className={styles.typeMenu}
+          style={{
+            position: 'fixed',
+            top: addButtonRef.current.getBoundingClientRect().bottom + 6,
+            left: addButtonRef.current.getBoundingClientRect().right - 150,
+            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }}
+        >
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => startEditResidence()}
+          >
+            거주용
+          </button>
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => startAddProperty('investment')}
+          >
+            투자용
+          </button>
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => startAddProperty('rental')}
+          >
+            임대용
+          </button>
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => startAddProperty('land')}
+          >
+            토지
+          </button>
+        </div>,
+        document.body
+      )}
+
       {isExpanded && (
-        <>
-          {/* ========== 거주용 부동산 ========== */}
-          <section className={styles.assetSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>거주용 부동산</span>
-          </div>
-          <p className={styles.sectionDesc}>
-            현재 거주 중인 부동산 정보입니다.
-          </p>
+        <div className={styles.flatList}>
+          {dbRealEstates.length === 0 && !editingProperty && (
+            <p className={styles.emptyHint}>
+              아직 등록된 부동산이 없습니다. 오른쪽 + 버튼으로 추가하세요.
+            </p>
+          )}
 
-          <div className={styles.itemList}>
-            {editingProperty?.type === 'residence' ? (
-              renderResidenceEditForm()
-            ) : residenceProperty ? (
-              <div className={styles.assetItem}>
-                <div className={styles.itemInfo}>
-                  <span className={styles.itemName}>{residenceProperty.housing_type}</span>
-                  <span className={styles.itemMeta}>
-                    {(() => {
-                      const metaParts = []
+          {/* 거주용 */}
+          {editingProperty?.type === 'residence' ? (
+            renderResidenceEditForm()
+          ) : residenceProperty ? (
+            <div className={styles.assetItem}>
+              <div className={styles.itemInfo}>
+                <span className={styles.itemName}>{residenceProperty.housing_type}</span>
+                <span className={styles.itemMeta}>
+                  {(() => {
+                    const metaParts: string[] = []
 
-                      if (residenceProperty.housing_type === '자가') {
-                        if (residenceProperty.purchase_year && residenceProperty.purchase_month) {
-                          metaParts.push(`취득 ${residenceProperty.purchase_year}.${String(residenceProperty.purchase_month).padStart(2, '0')}`)
-                        }
-                        if (residenceProperty.purchase_price) {
-                          metaParts.push(`취득가 ${formatMoney(residenceProperty.purchase_price)}`)
-                        }
+                    if (residenceProperty.housing_type === '자가') {
+                      if (residenceProperty.purchase_year && residenceProperty.purchase_month) {
+                        metaParts.push(`취득 ${residenceProperty.purchase_year}.${String(residenceProperty.purchase_month).padStart(2, '0')}`)
                       }
-
-                      if (residenceProperty.housing_type === '월세' && residenceProperty.monthly_rent) {
-                        metaParts.push(`월세 ${formatMoney(residenceProperty.monthly_rent)}`)
+                      if (residenceProperty.purchase_price) {
+                        metaParts.push(`취득가 ${formatMoney(residenceProperty.purchase_price)}`)
                       }
+                    }
 
-                      if (residenceProperty.maintenance_fee) {
-                        metaParts.push(`관리비 ${formatMoney(residenceProperty.maintenance_fee)}/월`)
+                    if (residenceProperty.housing_type === '월세' && residenceProperty.monthly_rent) {
+                      metaParts.push(`월세 ${formatMoney(residenceProperty.monthly_rent)}`)
+                    }
+
+                    if (residenceProperty.maintenance_fee) {
+                      metaParts.push(`관리비 ${formatMoney(residenceProperty.maintenance_fee)}/월`)
+                    }
+
+                    if (residenceProperty.has_loan && residenceProperty.loan_amount) {
+                      const loanLabel = residenceProperty.housing_type === '자가' ? '주담대' : '전월세 보증금 대출'
+                      const loanParts = [`${loanLabel} ${formatMoney(residenceProperty.loan_amount)}`]
+                      if (residenceProperty.loan_rate) loanParts.push(`${residenceProperty.loan_rate}%`)
+                      if (residenceProperty.loan_repayment_type) loanParts.push(REPAYMENT_TYPE_LABELS[residenceProperty.loan_repayment_type])
+                      if (residenceProperty.loan_maturity_year) {
+                        loanParts.push(`${residenceProperty.loan_maturity_year}.${String(residenceProperty.loan_maturity_month || 1).padStart(2, '0')} 만기`)
                       }
+                      metaParts.push(loanParts.join(' | '))
+                    }
 
-                      if (residenceProperty.has_loan && residenceProperty.loan_amount) {
-                        const loanLabel = residenceProperty.housing_type === '자가' ? '주담대' : '전월세 보증금 대출'
-                        const loanParts = [`${loanLabel} ${formatMoney(residenceProperty.loan_amount)}`]
-                        if (residenceProperty.loan_rate) loanParts.push(`${residenceProperty.loan_rate}%`)
-                        if (residenceProperty.loan_repayment_type) loanParts.push(REPAYMENT_TYPE_LABELS[residenceProperty.loan_repayment_type])
-                        if (residenceProperty.loan_maturity_year) {
-                          loanParts.push(`${residenceProperty.loan_maturity_year}.${String(residenceProperty.loan_maturity_month || 1).padStart(2, '0')} 만기`)
-                        }
-                        metaParts.push(loanParts.join(' | '))
-                      }
-
-                      return metaParts.join(' | ')
-                    })()}
-                  </span>
-                </div>
-                <div className={styles.itemRight}>
-                  <span className={styles.itemAmount}>
-                    {residenceProperty.housing_type === '자가'
-                      ? formatMoney(residenceProperty.current_value)
-                      : `보증금 ${formatMoney(residenceProperty.current_value)}`}
-                  </span>
-                  <div className={styles.itemActions}>
-                    <button className={styles.editBtn} onClick={startEditResidence}>
-                      <Pencil size={16} />
-                    </button>
-                  </div>
+                    return metaParts.join(' | ')
+                  })()}
+                </span>
+              </div>
+              <div className={styles.itemRight}>
+                <span className={styles.itemAmount}>
+                  {residenceProperty.housing_type === '자가'
+                    ? formatMoney(residenceProperty.current_value)
+                    : `보증금 ${formatMoney(residenceProperty.current_value)}`}
+                </span>
+                <div className={styles.itemActions}>
+                  <button className={styles.editBtn} onClick={startEditResidence}>
+                    <Pencil size={16} />
+                  </button>
                 </div>
               </div>
-            ) : (
-              <button className={styles.addBtn} onClick={startEditResidence}>
-                + 거주 정보 입력
-              </button>
-            )}
-          </div>
-        </section>
+            </div>
+          ) : null}
 
-        {/* ========== 투자용 부동산 ========== */}
-        <section className={styles.assetSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>투자용 부동산</span>
-            {investmentTotal > 0 && (
-              <span className={styles.sectionTotal}>{formatMoney(investmentTotal)}</span>
-            )}
-          </div>
-          <p className={styles.sectionDesc}>
-            거주 목적이 아닌 투자용 부동산 (아파트, 빌라, 주택 등).
-          </p>
+          {/* 투자용 */}
+          {investmentProperties.map(property => (
+            editingProperty?.type === 'investment' && editingProperty.id === property.id
+              ? <div key={property.id}>{renderPropertyEditForm('investment')}</div>
+              : renderPropertyItem(property)
+          ))}
 
-          <div className={styles.itemList}>
-            {investmentProperties.map(property => (
-              editingProperty?.type === 'investment' && editingProperty.id === property.id
-                ? <div key={property.id}>{renderPropertyEditForm('investment')}</div>
-                : renderPropertyItem(property)
-            ))}
+          {/* 임대용 */}
+          {rentalProperties.map(property => (
+            editingProperty?.type === 'rental' && editingProperty.id === property.id
+              ? <div key={property.id}>{renderPropertyEditForm('rental')}</div>
+              : renderPropertyItem(property)
+          ))}
 
-            {editingProperty?.type === 'investment' && editingProperty.id === null ? (
-              renderPropertyEditForm('investment')
-            ) : (
-              <button className={styles.addBtn} onClick={() => startAddProperty('investment')}>
-                + 투자용 부동산 추가
-              </button>
-            )}
-          </div>
-        </section>
+          {/* 토지 */}
+          {landProperties.map(property => (
+            editingProperty?.type === 'land' && editingProperty.id === property.id
+              ? <div key={property.id}>{renderPropertyEditForm('land')}</div>
+              : renderPropertyItem(property)
+          ))}
 
-        {/* ========== 임대용 부동산 ========== */}
-        <section className={styles.assetSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>임대용 부동산</span>
-            {rentalTotal > 0 && (
-              <span className={styles.sectionTotal}>{formatMoney(rentalTotal)}</span>
-            )}
-          </div>
-          <p className={styles.sectionDesc}>
-            임대 수익 목적의 부동산 (상가, 오피스텔, 원룸 등).
-          </p>
-
-          <div className={styles.itemList}>
-            {rentalProperties.map(property => (
-              editingProperty?.type === 'rental' && editingProperty.id === property.id
-                ? <div key={property.id}>{renderPropertyEditForm('rental')}</div>
-                : renderPropertyItem(property)
-            ))}
-
-            {editingProperty?.type === 'rental' && editingProperty.id === null ? (
-              renderPropertyEditForm('rental')
-            ) : (
-              <button className={styles.addBtn} onClick={() => startAddProperty('rental')}>
-                + 임대용 부동산 추가
-              </button>
-            )}
-          </div>
-        </section>
-
-        {/* ========== 토지 ========== */}
-        <section className={styles.assetSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>토지</span>
-            {landTotal > 0 && (
-              <span className={styles.sectionTotal}>{formatMoney(landTotal)}</span>
-            )}
-          </div>
-          <p className={styles.sectionDesc}>
-            건물이 없는 토지, 땅 등.
-          </p>
-
-          <div className={styles.itemList}>
-            {landProperties.map(property => (
-              editingProperty?.type === 'land' && editingProperty.id === property.id
-                ? <div key={property.id}>{renderPropertyEditForm('land')}</div>
-                : renderPropertyItem(property)
-            ))}
-
-            {editingProperty?.type === 'land' && editingProperty.id === null ? (
-              renderPropertyEditForm('land')
-            ) : (
-              <button className={styles.addBtn} onClick={() => startAddProperty('land')}>
-                + 토지 추가
-              </button>
-            )}
-          </div>
-        </section>
-
-          <p className={styles.infoText}>
-            부동산 대출은 부채 탭에, 임대 수익은 소득 탭에 자동 연동됩니다.
-          </p>
-        </>
+          {/* 추가 폼 (+ 드롭다운에서 선택 시) */}
+          {editingProperty && editingProperty.id === null && editingProperty.type !== 'residence' && (
+            renderPropertyEditForm(editingProperty.type as Exclude<typeof editingProperty.type, 'residence'>)
+          )}
+        </div>
       )}
     </div>
   )

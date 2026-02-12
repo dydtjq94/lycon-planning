@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Pencil, Trash2, Package } from 'lucide-react'
+import { useState, useMemo, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { Pencil, Trash2, Package, Plus } from 'lucide-react'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -24,6 +25,7 @@ import {
   REPAYMENT_TYPE_LABELS,
 } from '@/lib/services/physicalAssetService'
 import { TabSkeleton } from './shared/TabSkeleton'
+import { useChartTheme } from '@/hooks/useChartTheme'
 import styles from './AssetTab.module.css'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
@@ -40,6 +42,7 @@ const COLORS: Record<UIAssetType, string> = {
 }
 
 export function AssetTab({ simulationId }: AssetTabProps) {
+  const { isDark } = useChartTheme()
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth() + 1
 
@@ -53,84 +56,15 @@ export function AssetTab({ simulationId }: AssetTabProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
 
-  // 타입별 필터링
-  const carAssets = useMemo(
-    () => dbAssets.filter(a => dbTypeToUIType(a.type) === 'car'),
-    [dbAssets]
-  )
-  const preciousMetalAssets = useMemo(
-    () => dbAssets.filter(a => dbTypeToUIType(a.type) === 'precious_metal'),
-    [dbAssets]
-  )
-  const customAssets = useMemo(
-    () => dbAssets.filter(a => dbTypeToUIType(a.type) === 'custom'),
-    [dbAssets]
-  )
+  // 타입 선택 드롭다운
+  const [showTypeMenu, setShowTypeMenu] = useState(false)
+  const addButtonRef = useRef<HTMLButtonElement>(null)
 
   // 합계 계산 (현재 가치 기준)
-  const carTotal = carAssets.reduce((sum, a) => sum + a.current_value, 0)
-  const preciousMetalTotal = preciousMetalAssets.reduce((sum, a) => sum + a.current_value, 0)
-  const customTotal = customAssets.reduce((sum, a) => sum + a.current_value, 0)
-  const totalAssets = carTotal + preciousMetalTotal + customTotal
-
-  // 대출/할부 합계
-  const totalLoans = dbAssets.reduce((sum, a) => {
-    return sum + (a.has_loan ? (a.loan_amount || 0) : 0)
-  }, 0)
-
-  // 순자산 (자산 - 대출/할부)
-  const netAssets = totalAssets - totalLoans
-
-  // 자동차 감가상각 계산 (연 15% 감가 가정)
-  const carDepreciation = useMemo(() => {
-    if (carAssets.length === 0) return { currentValue: 0, depreciation: 0 }
-
-    let totalCurrentValue = 0
-    let totalPurchaseValue = 0
-    let totalDepreciation = 0
-
-    carAssets.forEach(car => {
-      const purchaseYear = car.purchase_year || currentYear
-      const purchaseValue = car.purchase_price || car.current_value
-      const yearsOwned = currentYear - purchaseYear
-      // 감가율: 첫해 20%, 이후 연 15%
-      let depreciationRate = 0
-      if (yearsOwned > 0) {
-        depreciationRate = 1 - (0.8 * Math.pow(0.85, yearsOwned))
-      }
-      const currentValue = purchaseValue * (1 - depreciationRate)
-      totalCurrentValue += currentValue
-      totalPurchaseValue += purchaseValue
-      totalDepreciation += purchaseValue - currentValue
-    })
-
-    return {
-      currentValue: Math.round(totalCurrentValue),
-      depreciation: Math.round(totalDepreciation),
-    }
-  }, [carAssets, currentYear])
-
-  // 자산 유동성 분류
-  const liquidityBreakdown = useMemo(() => {
-    return {
-      high: preciousMetalTotal,
-      medium: carTotal,
-      low: customTotal,
-    }
-  }, [preciousMetalTotal, carTotal, customTotal])
-
-  // 자산 대비 대출 비율
-  const loanToAssetRatio = totalAssets > 0
-    ? Math.round((totalLoans / totalAssets) * 100)
-    : 0
-
-  // 가장 가치 있는 자산
-  const mostValuableAsset = useMemo(() => {
-    if (dbAssets.length === 0) return null
-    return dbAssets.reduce((max, a) =>
-      a.current_value > max.current_value ? a : max
-    )
+  const totalAssets = useMemo(() => {
+    return dbAssets.reduce((sum, a) => sum + a.current_value, 0)
   }, [dbAssets])
+
 
   // 편집 시작
   const startAddAsset = (type: UIAssetType) => {
@@ -469,48 +403,37 @@ export function AssetTab({ simulationId }: AssetTabProps) {
     )
   }
 
-  // 도넛 차트 데이터
-  const chartData = useMemo(() => {
-    const labels: string[] = []
-    const values: number[] = []
-    const colors: string[] = []
+  // ESC 키로 드롭다운 닫기
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showTypeMenu) {
+        setShowTypeMenu(false)
+      }
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [showTypeMenu])
 
-    dbAssets.forEach(asset => {
-      const uiType = dbTypeToUIType(asset.type)
-      labels.push(asset.title)
-      values.push(asset.current_value)
-      colors.push(COLORS[uiType])
-    })
+  // 드롭다운 외부 클릭으로 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        showTypeMenu &&
+        addButtonRef.current &&
+        !addButtonRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement).closest(`.${styles.typeMenu}`)
+      ) {
+        setShowTypeMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showTypeMenu])
 
-    return { labels, values, colors }
-  }, [dbAssets])
-
-  const doughnutData = {
-    labels: chartData.labels,
-    datasets: [{
-      data: chartData.values,
-      backgroundColor: chartData.colors,
-      borderWidth: 0,
-    }],
+  const handleTypeSelect = (type: UIAssetType) => {
+    startAddAsset(type)
+    setShowTypeMenu(false)
   }
-
-  const doughnutOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '65%',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (context: { label?: string, raw: unknown }) => {
-            return `${context.label || ''}: ${formatMoney(context.raw as number)}`
-          },
-        },
-      },
-    },
-  }
-
-  const hasData = totalAssets > 0
 
   if (isLoading && dbAssets.length === 0) {
     return (
@@ -524,97 +447,72 @@ export function AssetTab({ simulationId }: AssetTabProps) {
     <div className={styles.container}>
       <div className={styles.header}>
         <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
-          <span className={styles.title}>실물자산</span>
+          <span className={styles.title}>실물 자산</span>
           <span className={styles.count}>{dbAssets.length}개</span>
         </button>
         <div className={styles.headerRight}>
-          <span className={styles.totalAmount}>{formatMoney(totalAssets)}</span>
+          <button
+            ref={addButtonRef}
+            className={styles.addIconBtn}
+            onClick={() => setShowTypeMenu(!showTypeMenu)}
+            type="button"
+          >
+            <Plus size={18} />
+          </button>
         </div>
       </div>
+
+      {/* 타입 선택 드롭다운 - portal로 body에 렌더 */}
+      {showTypeMenu && addButtonRef.current && createPortal(
+        <div
+          className={styles.typeMenu}
+          style={{
+            position: 'fixed',
+            top: addButtonRef.current.getBoundingClientRect().bottom + 6,
+            left: addButtonRef.current.getBoundingClientRect().right - 150,
+            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }}
+        >
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => handleTypeSelect('car')}
+          >
+            자동차
+          </button>
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => handleTypeSelect('precious_metal')}
+          >
+            귀금속/금
+          </button>
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => handleTypeSelect('custom')}
+          >
+            기타자산
+          </button>
+        </div>,
+        document.body
+      )}
+
       {isExpanded && (
-        <>
-      {/* ========== 자동차 ========== */}
-      <section className={styles.assetSection}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionTitle}>자동차</span>
-        </div>
-        <p className={styles.sectionDesc}>
-          보유 중인 자동차. 대출/할부가 있으면 부채에 자동 연동됩니다.
-        </p>
-
-        <div className={styles.itemList}>
-          {carAssets.map(asset => (
-            editingAsset?.type === 'car' && editingAsset.id === asset.id
-              ? <div key={asset.id}>{renderEditForm('car')}</div>
+        <div className={styles.flatList}>
+          {dbAssets.length === 0 && !editingAsset && (
+            <p className={styles.emptyHint}>
+              아직 등록된 실물 자산이 없습니다. 오른쪽 + 버튼으로 추가하세요.
+            </p>
+          )}
+          {dbAssets.map(asset => (
+            editingAsset?.type === dbTypeToUIType(asset.type) && editingAsset.id === asset.id
+              ? <div key={asset.id}>{renderEditForm(dbTypeToUIType(asset.type))}</div>
               : renderAssetItem(asset)
           ))}
 
-          {editingAsset?.type === 'car' && editingAsset.id === null ? (
-            renderEditForm('car')
-          ) : (
-            <button className={styles.addBtn} onClick={() => startAddAsset('car')}>
-              + 자동차 추가
-            </button>
-          )}
+          {editingAsset && editingAsset.id === null && renderEditForm(editingAsset.type)}
         </div>
-      </section>
-
-      {/* ========== 귀금속/금 ========== */}
-      <section className={styles.assetSection}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionTitle}>귀금속/금</span>
-        </div>
-        <p className={styles.sectionDesc}>
-          금, 은, 다이아몬드 등 귀금속. 장기적으로 가치가 상승하는 실물 자산.
-        </p>
-
-        <div className={styles.itemList}>
-          {preciousMetalAssets.map(asset => (
-            editingAsset?.type === 'precious_metal' && editingAsset.id === asset.id
-              ? <div key={asset.id}>{renderEditForm('precious_metal')}</div>
-              : renderAssetItem(asset)
-          ))}
-
-          {editingAsset?.type === 'precious_metal' && editingAsset.id === null ? (
-            renderEditForm('precious_metal')
-          ) : (
-            <button className={styles.addBtn} onClick={() => startAddAsset('precious_metal')}>
-              + 귀금속 추가
-            </button>
-          )}
-        </div>
-      </section>
-
-      {/* ========== 기타 자산 ========== */}
-      <section className={styles.assetSection}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionTitle}>기타 자산</span>
-        </div>
-        <p className={styles.sectionDesc}>
-          미술품, 수집품, 고가 장비 등 기타 실물 자산.
-        </p>
-
-        <div className={styles.itemList}>
-          {customAssets.map(asset => (
-            editingAsset?.type === 'custom' && editingAsset.id === asset.id
-              ? <div key={asset.id}>{renderEditForm('custom')}</div>
-              : renderAssetItem(asset)
-          ))}
-
-          {editingAsset?.type === 'custom' && editingAsset.id === null ? (
-            renderEditForm('custom')
-          ) : (
-            <button className={styles.addBtn} onClick={() => startAddAsset('custom')}>
-              + 기타 자산 추가
-            </button>
-          )}
-        </div>
-      </section>
-
-      <p className={styles.infoText}>
-        자동차 대출/할부는 부채 탭에서 확인할 수 있습니다.
-      </p>
-        </>
       )}
     </div>
   )

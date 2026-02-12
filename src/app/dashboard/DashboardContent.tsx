@@ -3,16 +3,20 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import {
   Search, RefreshCw, ChevronLeft, ChevronRight, Settings, Tags,
   Landmark, Home, Briefcase, GraduationCap, Plane, Heart,
   TrendingUp, Wallet, PiggyBank, Shield, Target, Umbrella,
   Baby, Car, Gem, Building2, Palmtree, Rocket, Star, Coffee,
+  ListOrdered, Percent, Users, CalendarClock,
   type LucideIcon,
 } from "lucide-react";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import { AccountManagementModal } from "./components/AccountManagementModal";
 import { CategoryManagementModal } from "./components/CategoryManagementModal";
-import { useFinancialContext } from "@/contexts/FinancialContext";
+import { AccountsSummaryPanel, InvestmentAssumptionsPanel, CashFlowPrioritiesPanel, FamilyConfigPanel, LifeCyclePanel } from "./components/tabs/scenario";
+import { useFinancialContext, type FamilyMember } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
   useSimulationV2Data,
@@ -28,6 +32,8 @@ import type {
   FinancialItem,
   IncomeData,
   PensionData,
+  LifeCycleSettings,
+  SimFamilyMember,
 } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationEngine";
 import { runSimulationV2 } from "@/lib/services/simulationEngineV2";
@@ -113,6 +119,7 @@ function getSimulationIcon(iconId?: string): LucideIcon {
 }
 
 export function DashboardContent() {
+  const { isDark } = useChartTheme();
   // URL pathname
   const pathname = usePathname();
 
@@ -121,6 +128,8 @@ export function DashboardContent() {
     simulation,
     profile,
     familyMembers,
+    setFamilyMembers,
+    updateProfile,
     simulationProfile,
     globalSettings,
   } = useFinancialContext();
@@ -138,6 +147,30 @@ export function DashboardContent() {
   const [editSimTitle, setEditSimTitle] = useState("");
   const [showIconPicker, setShowIconPicker] = useState(false);
   const iconPickerRef = useRef<HTMLDivElement>(null);
+  const [showAccountsPanel, setShowAccountsPanel] = useState(false);
+  const [accountsPanelRect, setAccountsPanelRect] = useState<{ top: number; left: number } | null>(null);
+  const accountsPanelBtnRef = useRef<HTMLButtonElement>(null);
+  const accountsPanelRef = useRef<HTMLDivElement>(null);
+
+  const [showAssumptionsPanel, setShowAssumptionsPanel] = useState(false);
+  const [assumptionsPanelRect, setAssumptionsPanelRect] = useState<{ top: number; left: number } | null>(null);
+  const assumptionsPanelBtnRef = useRef<HTMLButtonElement>(null);
+  const assumptionsPanelRef = useRef<HTMLDivElement>(null);
+
+  const [showPrioritiesPanel, setShowPrioritiesPanel] = useState(false);
+  const [prioritiesPanelRect, setPrioritiesPanelRect] = useState<{ top: number; left: number } | null>(null);
+  const prioritiesPanelBtnRef = useRef<HTMLButtonElement>(null);
+  const prioritiesPanelRef = useRef<HTMLDivElement>(null);
+
+  const [showFamilyPanel, setShowFamilyPanel] = useState(false);
+  const [familyPanelRect, setFamilyPanelRect] = useState<{ top: number; left: number } | null>(null);
+  const familyPanelBtnRef = useRef<HTMLButtonElement>(null);
+  const familyPanelRef = useRef<HTMLDivElement>(null);
+
+  const [showLifeCyclePanel, setShowLifeCyclePanel] = useState(false);
+  const [lifeCyclePanelRect, setLifeCyclePanelRect] = useState<{ top: number; left: number } | null>(null);
+  const lifeCyclePanelBtnRef = useRef<HTMLButtonElement>(null);
+  const lifeCyclePanelRef = useRef<HTMLDivElement>(null);
 
   // URL 업데이트 함수 (pushState 직접 사용으로 즉시 반응)
   const updateUrl = useCallback((section: string, simId: string) => {
@@ -286,6 +319,116 @@ export function DashboardContent() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Accounts panel click-outside handler
+  useEffect(() => {
+    if (!showAccountsPanel) return;
+    const handleClick = (e: MouseEvent) => {
+      if (
+        accountsPanelRef.current && !accountsPanelRef.current.contains(e.target as Node) &&
+        accountsPanelBtnRef.current && !accountsPanelBtnRef.current.contains(e.target as Node)
+      ) {
+        setShowAccountsPanel(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowAccountsPanel(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [showAccountsPanel]);
+
+  // Assumptions panel click-outside handler
+  useEffect(() => {
+    if (!showAssumptionsPanel) return;
+    const handleClick = (e: MouseEvent) => {
+      if (
+        assumptionsPanelRef.current && !assumptionsPanelRef.current.contains(e.target as Node) &&
+        assumptionsPanelBtnRef.current && !assumptionsPanelBtnRef.current.contains(e.target as Node)
+      ) {
+        setShowAssumptionsPanel(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowAssumptionsPanel(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [showAssumptionsPanel]);
+
+  // Priorities panel click-outside handler
+  useEffect(() => {
+    if (!showPrioritiesPanel) return;
+    const handleClick = (e: MouseEvent) => {
+      if (
+        prioritiesPanelRef.current && !prioritiesPanelRef.current.contains(e.target as Node) &&
+        prioritiesPanelBtnRef.current && !prioritiesPanelBtnRef.current.contains(e.target as Node)
+      ) {
+        setShowPrioritiesPanel(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowPrioritiesPanel(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [showPrioritiesPanel]);
+
+  // Family panel click-outside handler
+  useEffect(() => {
+    if (!showFamilyPanel) return;
+    const handleClick = (e: MouseEvent) => {
+      if (
+        familyPanelRef.current && !familyPanelRef.current.contains(e.target as Node) &&
+        familyPanelBtnRef.current && !familyPanelBtnRef.current.contains(e.target as Node)
+      ) {
+        setShowFamilyPanel(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowFamilyPanel(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [showFamilyPanel]);
+
+  // Life cycle panel click-outside handler
+  useEffect(() => {
+    if (!showLifeCyclePanel) return;
+    const handleClick = (e: MouseEvent) => {
+      if (
+        lifeCyclePanelRef.current && !lifeCyclePanelRef.current.contains(e.target as Node) &&
+        lifeCyclePanelBtnRef.current && !lifeCyclePanelBtnRef.current.contains(e.target as Node)
+      ) {
+        setShowLifeCyclePanel(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowLifeCyclePanel(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [showLifeCyclePanel]);
+
   // 검색어로 종목 필터링
   const filterSuggestions = useCallback((query: string) => {
     if (!query.trim() || stocksList.length === 0) {
@@ -407,16 +550,95 @@ export function DashboardContent() {
   // 레거시 pension sync용으로만 V1 items 유지
   const { data: items = [], isLoading } = useFinancialItems(simulation.id, simulationProfile);
 
-  // 배우자 정보 (IncomeTab, ExpenseTab에서 사용)
-  const spouseMember = useMemo(() => {
-    return familyMembers.find((fm) => fm.relationship === "spouse");
-  }, [familyMembers]);
-  const isMarried = !!spouseMember;
-
   // 투자 가정 및 캐시플로우 우선순위 (선택된 시뮬레이션 기준)
   const activeSim = selectedSim || simulation;
   const investmentAssumptions = activeSim.investment_assumptions || DEFAULT_INVESTMENT_ASSUMPTIONS;
   const cashFlowPriorities = normalizePriorities(activeSim.cash_flow_priorities);
+
+  // 시뮬레이션별 가족 구성 (없으면 프로필의 가족 사용)
+  const simFamilyMembers: SimFamilyMember[] = useMemo(() => {
+    if (activeSim.family_config) return activeSim.family_config;
+    return familyMembers.map((fm) => ({
+      id: fm.id,
+      relationship: fm.relationship,
+      name: fm.name,
+      birth_date: fm.birth_date,
+      gender: fm.gender,
+      is_dependent: fm.is_dependent,
+      is_working: fm.is_working,
+      retirement_age: fm.retirement_age,
+      monthly_income: fm.monthly_income,
+    }));
+  }, [activeSim.family_config, familyMembers]);
+
+  // 배우자 정보 (시뮬레이션별 가족 기준)
+  const spouseMember = useMemo(() => {
+    return simFamilyMembers.find((fm) => fm.relationship === "spouse");
+  }, [simFamilyMembers]);
+  const isMarried = !!spouseMember;
+
+  // 생애 주기 설정 (시뮬레이션별, 없으면 프로필 기본값)
+  const lifeCycleSettings: LifeCycleSettings = useMemo(() => {
+    const saved = activeSim.life_cycle_settings;
+    return {
+      selfRetirementAge: saved?.selfRetirementAge ?? profile.target_retirement_age,
+      selfLifeExpectancy: saved?.selfLifeExpectancy ?? globalSettings.lifeExpectancy,
+      spouseRetirementAge: saved?.spouseRetirementAge ?? spouseMember?.retirement_age ?? 65,
+      spouseLifeExpectancy: saved?.spouseLifeExpectancy ?? saved?.selfLifeExpectancy ?? globalSettings.lifeExpectancy,
+    };
+  }, [activeSim.life_cycle_settings, profile.target_retirement_age, globalSettings.lifeExpectancy, spouseMember?.retirement_age]);
+
+  // 투자 가정 변경 핸들러
+  const handleInvestmentAssumptionsChange = useCallback((newAssumptions: any) => {
+    if (selectedSim) {
+      updateSimulation.mutate({
+        id: selectedSim.id,
+        updates: { investment_assumptions: newAssumptions }
+      });
+    }
+  }, [selectedSim, updateSimulation]);
+
+  // 현금 흐름 우선순위 변경 핸들러
+  const handleCashFlowPrioritiesChange = useCallback((newPriorities: any) => {
+    if (selectedSim) {
+      updateSimulation.mutate({
+        id: selectedSim.id,
+        updates: { cash_flow_priorities: newPriorities }
+      });
+    }
+  }, [selectedSim, updateSimulation]);
+
+  // 생애 주기 변경 핸들러 (시뮬레이션별 저장)
+  const handleLifeCycleChange = useCallback((newSettings: LifeCycleSettings) => {
+    if (selectedSim) {
+      updateSimulation.mutate({
+        id: selectedSim.id,
+        updates: { life_cycle_settings: newSettings }
+      });
+    }
+  }, [selectedSim, updateSimulation]);
+
+  // 가족 구성 변경 핸들러 (시뮬레이션별 저장)
+  const handleFamilyConfigChange = useCallback((newFamily: SimFamilyMember[]) => {
+    if (selectedSim) {
+      updateSimulation.mutate({
+        id: selectedSim.id,
+        updates: { family_config: newFamily }
+      });
+    }
+  }, [selectedSim, updateSimulation]);
+
+  // Profile update handler (saves to profiles table + updates context)
+  const handleProfileUpdate = useCallback(async (updates: Record<string, any>) => {
+    const supabase = createClient();
+    await supabase.from("profiles").update(updates).eq("id", profile.id);
+    updateProfile(updates as Partial<typeof profile>);
+  }, [profile.id, updateProfile]);
+
+  // Family members change handler (updates context so tab switching preserves changes)
+  const handleFamilyMembersRefresh = useCallback((updatedMembers: FamilyMember[]) => {
+    setFamilyMembers(updatedMembers);
+  }, [setFamilyMembers]);
 
   // 공유 시뮬레이션 결과 (V2 엔진 사용, 선택된 시뮬레이션 기준)
   const simulationResult: SimulationResult = useMemo(() => {
@@ -429,15 +651,20 @@ export function DashboardContent() {
       v2Data,
       {
         birthYear: simulationProfile.birthYear,
-        retirementAge: simulationProfile.retirementAge,
+        retirementAge: lifeCycleSettings.selfRetirementAge,
         spouseBirthYear: simulationProfile.spouseBirthYear ?? undefined,
+        spouseRetirementAge: lifeCycleSettings.spouseRetirementAge,
       },
-      globalSettings || DEFAULT_GLOBAL_SETTINGS,
+      {
+        ...(globalSettings || DEFAULT_GLOBAL_SETTINGS),
+        lifeExpectancy: lifeCycleSettings.selfLifeExpectancy,
+        spouseLifeExpectancy: lifeCycleSettings.spouseLifeExpectancy,
+      },
       yearsToSimulate,
       investmentAssumptions,
       cashFlowPriorities
     );
-  }, [v2Data, simulationProfile, globalSettings, investmentAssumptions, cashFlowPriorities]);
+  }, [v2Data, simulationProfile, globalSettings, lifeCycleSettings, investmentAssumptions, cashFlowPriorities]);
 
   // 기본 설정
   const settings = DEFAULT_SETTINGS;
@@ -680,7 +907,14 @@ export function DashboardContent() {
         return <SavingsDepositsTab profileId={profile.id} />;
       // 설정
       case "settings":
-        return <SettingsTab profileName={profile.name || ""} />;
+        return (
+          <SettingsTab
+            profile={profile}
+            familyMembers={familyMembers}
+            onFamilyMembersChange={handleFamilyMembersRefresh}
+            onProfileUpdate={handleProfileUpdate}
+          />
+        );
       // 시뮬레이션
       case "simulation": {
         return (
@@ -690,7 +924,7 @@ export function DashboardContent() {
             simulationId={selectedSimulationId}
             profile={profile}
             simulationProfile={simulationProfile}
-            familyMembers={familyMembers}
+            familyMembers={simFamilyMembers}
             globalSettings={globalSettings}
             simulationResult={simulationResult}
             isMarried={isMarried}
@@ -806,6 +1040,7 @@ export function DashboardContent() {
                     className={styles.simIconBtn}
                     onClick={() => setShowIconPicker(!showIconPicker)}
                     type="button"
+                    data-tooltip="아이콘 변경"
                   >
                     {(() => {
                       const SimIcon = getSimulationIcon(selectedSim.icon);
@@ -840,8 +1075,10 @@ export function DashboardContent() {
                     value={editSimTitle}
                     onChange={(e) => setEditSimTitle(e.target.value)}
                     onBlur={() => {
-                      if (editSimTitle.trim() && editSimTitle.trim() !== selectedSim.title) {
-                        updateSimulation.mutate({ id: selectedSim.id, updates: { title: editSimTitle.trim() } });
+                      const newTitle = editSimTitle.trim();
+                      if (newTitle && newTitle !== selectedSim.title) {
+                        selectedSim.title = newTitle;
+                        updateSimulation.mutate({ id: selectedSim.id, updates: { title: newTitle } });
                       }
                       setIsEditingSimTitle(false);
                     }}
@@ -858,15 +1095,93 @@ export function DashboardContent() {
                 ) : (
                   <h1
                     className={styles.pageTitle}
-                    onDoubleClick={() => {
+                    onClick={() => {
                       setEditSimTitle(selectedSim.title);
                       setIsEditingSimTitle(true);
                     }}
-                    style={{ cursor: "default" }}
+                    style={{ cursor: "pointer" }}
+                    data-tooltip="클릭하여 이름 변경"
                   >
                     {selectedSim.title}
                   </h1>
                 )}
+                <div className={styles.simHeaderDivider} />
+                <button
+                  ref={familyPanelBtnRef}
+                  className={styles.simHeaderAction}
+                  onClick={() => {
+                    if (familyPanelBtnRef.current) {
+                      const rect = familyPanelBtnRef.current.getBoundingClientRect();
+                      setFamilyPanelRect({ top: rect.bottom + 6, left: rect.left });
+                    }
+                    setShowFamilyPanel(!showFamilyPanel);
+                  }}
+                  type="button"
+                  data-tooltip={showFamilyPanel ? undefined : "가족 구성"}
+                >
+                  <Users size={15} />
+                </button>
+                <button
+                  ref={lifeCyclePanelBtnRef}
+                  className={styles.simHeaderAction}
+                  onClick={() => {
+                    if (lifeCyclePanelBtnRef.current) {
+                      const rect = lifeCyclePanelBtnRef.current.getBoundingClientRect();
+                      setLifeCyclePanelRect({ top: rect.bottom + 6, left: rect.left });
+                    }
+                    setShowLifeCyclePanel(!showLifeCyclePanel);
+                  }}
+                  type="button"
+                  data-tooltip={showLifeCyclePanel ? undefined : "생애 주기"}
+                >
+                  <CalendarClock size={15} />
+                </button>
+                <div className={styles.simHeaderDivider} />
+                <button
+                  ref={accountsPanelBtnRef}
+                  className={styles.simHeaderAction}
+                  onClick={() => {
+                    if (accountsPanelBtnRef.current) {
+                      const rect = accountsPanelBtnRef.current.getBoundingClientRect();
+                      setAccountsPanelRect({ top: rect.bottom + 6, left: rect.left });
+                    }
+                    setShowAccountsPanel(!showAccountsPanel);
+                  }}
+                  type="button"
+                  data-tooltip={showAccountsPanel ? undefined : "계좌"}
+                >
+                  <Wallet size={15} />
+                </button>
+                <button
+                  ref={assumptionsPanelBtnRef}
+                  className={styles.simHeaderAction}
+                  onClick={() => {
+                    if (assumptionsPanelBtnRef.current) {
+                      const rect = assumptionsPanelBtnRef.current.getBoundingClientRect();
+                      setAssumptionsPanelRect({ top: rect.bottom + 6, left: rect.left });
+                    }
+                    setShowAssumptionsPanel(!showAssumptionsPanel);
+                  }}
+                  type="button"
+                  data-tooltip={showAssumptionsPanel ? undefined : "투자 가정"}
+                >
+                  <Percent size={15} />
+                </button>
+                <button
+                  ref={prioritiesPanelBtnRef}
+                  className={styles.simHeaderAction}
+                  onClick={() => {
+                    if (prioritiesPanelBtnRef.current) {
+                      const rect = prioritiesPanelBtnRef.current.getBoundingClientRect();
+                      setPrioritiesPanelRect({ top: rect.bottom + 6, left: rect.left });
+                    }
+                    setShowPrioritiesPanel(!showPrioritiesPanel);
+                  }}
+                  type="button"
+                  data-tooltip={showPrioritiesPanel ? undefined : "현금 흐름 우선순위"}
+                >
+                  <ListOrdered size={15} />
+                </button>
               </div>
             ) : (
               <h1 key={currentSection} className={styles.pageTitle}>
@@ -1013,6 +1328,123 @@ export function DashboardContent() {
             )}
           </div>
         </header>
+
+        {showAccountsPanel && accountsPanelRect && currentSection === "simulation" && selectedSim && (
+          <div
+            ref={accountsPanelRef}
+            className={styles.accountsPanelDropdown}
+            style={{
+              position: 'fixed',
+              top: accountsPanelRect.top,
+              left: accountsPanelRect.left,
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              zIndex: 200,
+            }}
+          >
+            <AccountsSummaryPanel
+              simulationId={selectedSimulationId}
+              profileId={profile.id}
+              isMarried={isMarried}
+              isInitializing={initializingSimulationId === selectedSimulationId}
+              isSyncingPrices={syncingPricesSimulationId === selectedSimulationId}
+            />
+          </div>
+        )}
+
+        {showAssumptionsPanel && assumptionsPanelRect && currentSection === "simulation" && selectedSim && (
+          <div
+            ref={assumptionsPanelRef}
+            className={styles.accountsPanelDropdown}
+            style={{
+              position: 'fixed',
+              top: assumptionsPanelRect.top,
+              left: Math.min(assumptionsPanelRect.left, window.innerWidth - 436),
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              zIndex: 200,
+            }}
+          >
+            <InvestmentAssumptionsPanel
+              assumptions={investmentAssumptions}
+              onChange={handleInvestmentAssumptionsChange}
+            />
+          </div>
+        )}
+
+        {showPrioritiesPanel && prioritiesPanelRect && currentSection === "simulation" && selectedSim && (
+          <div
+            ref={prioritiesPanelRef}
+            className={styles.accountsPanelDropdown}
+            style={{
+              position: 'fixed',
+              top: prioritiesPanelRect.top,
+              left: Math.min(prioritiesPanelRect.left, window.innerWidth - 436),
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              zIndex: 200,
+            }}
+          >
+            <CashFlowPrioritiesPanel
+              priorities={cashFlowPriorities}
+              onChange={handleCashFlowPrioritiesChange}
+              simulationId={selectedSimulationId}
+            />
+          </div>
+        )}
+
+        {showFamilyPanel && familyPanelRect && currentSection === "simulation" && selectedSim && (
+          <div
+            ref={familyPanelRef}
+            className={styles.accountsPanelDropdown}
+            style={{
+              position: 'fixed',
+              top: familyPanelRect.top,
+              left: familyPanelRect.left,
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              zIndex: 200,
+            }}
+          >
+            <FamilyConfigPanel
+              profile={profile}
+              familyMembers={simFamilyMembers}
+              onFamilyChange={handleFamilyConfigChange}
+            />
+          </div>
+        )}
+
+        {showLifeCyclePanel && lifeCyclePanelRect && currentSection === "simulation" && selectedSim && (
+          <div
+            ref={lifeCyclePanelRef}
+            className={styles.accountsPanelDropdown}
+            style={{
+              position: 'fixed',
+              top: lifeCyclePanelRect.top,
+              left: lifeCyclePanelRect.left,
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              zIndex: 200,
+            }}
+          >
+            <LifeCyclePanel
+              profile={profile}
+              spouseMember={spouseMember}
+              lifeCycleSettings={lifeCycleSettings}
+              onLifeCycleChange={handleLifeCycleChange}
+            />
+          </div>
+        )}
 
         <div className={`${styles.content} ${currentSection === "simulation" ? styles.noPadding : ""}`}>
           <div key={currentSection} className={`${styles.contentInner} ${currentSection === "simulation" ? styles.fullWidth : ""}`}>{renderContent()}</div>

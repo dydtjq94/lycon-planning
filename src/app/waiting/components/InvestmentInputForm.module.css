@@ -211,6 +211,42 @@
   color: #9ca3af;
 }
 
+/* 투자 유형 선택 */
+.typeSelect {
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1d1d1f;
+  cursor: pointer;
+}
+
+.typeSelect:focus {
+  outline: none;
+  border-color: #1d1d1f;
+}
+
+/* 제목 입력 */
+.titleInput {
+  width: 180px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1d1d1f;
+}
+
+.titleInput:focus {
+  outline: none;
+  border-color: #1d1d1f;
+}
+
+.titleInput::placeholder {
+  color: #d1d5db;
+}
+
 /* 하단 영역 */
 .bottomArea {
   position: sticky;

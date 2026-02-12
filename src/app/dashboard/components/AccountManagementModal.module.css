@@ -286,30 +286,37 @@
 }
 
 .listSection h4 {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--dashboard-text);
-  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--dashboard-text-muted);
+  margin: 0 0 8px 0;
 }
 
 .emptyState {
-  padding: 40px 24px;
+  padding: 32px 24px;
   text-align: center;
   color: var(--dashboard-text-muted);
-  font-size: 14px;
-  background: var(--dashboard-bg-secondary);
-  border-radius: 12px;
+  font-size: 13px;
+  background: none;
+  border-radius: 0;
 }
 
 .listItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  background: var(--dashboard-input-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 10px;
-  margin-bottom: 8px;
+  padding: 12px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  margin-bottom: 2px;
+  transition: background 0.15s;
+}
+
+.listItem:hover {
+  background: var(--dashboard-hover-bg);
 }
 
 .listItem:last-child {
@@ -363,6 +370,12 @@
 .listItemActions {
   display: flex;
   gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.listItem:hover .listItemActions {
+  opacity: 1;
 }
 
 .actionBtn {

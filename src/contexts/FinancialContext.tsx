@@ -76,6 +76,10 @@ interface FinancialContextValue {
 
   // 가족 구성원
   familyMembers: FamilyMember[]
+  setFamilyMembers: (members: FamilyMember[]) => void
+
+  // 프로필 업데이트
+  updateProfile: (updates: Partial<ProfileBasics>) => void
 
   // 시뮬레이션 프로필 (계산된 값)
   simulationProfile: SimulationProfile
@@ -125,26 +129,36 @@ interface FinancialProviderProps {
 export function FinancialProvider({
   children,
   simulation,
-  profile,
-  familyMembers,
+  profile: initialProfile,
+  familyMembers: initialFamilyMembers,
   initialGlobalSettings,
 }: FinancialProviderProps) {
   // React Query Client
   const queryClient = useQueryClient()
 
+  // 프로필 상태 (설정 탭에서 수정 가능)
+  const [profile, setProfile] = useState<ProfileBasics>(initialProfile)
+
+  // 가족 구성원 상태 (설정 탭에서 수정 가능)
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(initialFamilyMembers)
+
+  // 프로필 업데이트 (로컬 상태 반영)
+  const updateProfile = useCallback((updates: Partial<ProfileBasics>) => {
+    setProfile((prev) => ({ ...prev, ...updates }))
+  }, [])
+
   // 글로벌 설정 상태
   const [globalSettings, setGlobalSettings] = useState<GlobalSettings>(
-    initialGlobalSettings || DEFAULT_GLOBAL_SETTINGS
+    () => initialGlobalSettings || DEFAULT_GLOBAL_SETTINGS
   )
 
   // 리프레시 트리거 상태 (레거시 호환용)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
 
-  // 글로벌 설정 업데이트
+  // 글로벌 설정 업데이트 (로컬 상태만 변경 - 생애주기는 시뮬레이션별 저장)
   const updateGlobalSettings = useCallback((updates: Partial<GlobalSettings>) => {
     setGlobalSettings((prev) => ({ ...prev, ...updates }))
-    // TODO: Supabase에 저장 (profiles.settings)
   }, [])
 
   // React Query 캐시 무효화
@@ -220,6 +234,10 @@ export function FinancialProvider({
 
       // 가족 구성원
       familyMembers,
+      setFamilyMembers,
+
+      // 프로필 업데이트
+      updateProfile,
 
       // 시뮬레이션 프로필
       simulationProfile,
@@ -251,6 +269,8 @@ export function FinancialProvider({
       simulation,
       profile,
       familyMembers,
+      setFamilyMembers,
+      updateProfile,
       simulationProfile,
       globalSettings,
       updateGlobalSettings,

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { LogOut, User, Bell, Shield, HelpCircle, ChevronRight, Check, Sun, Moon, Monitor } from "lucide-react";
+import { LogOut, User, Bell, Shield, HelpCircle, ChevronRight, Check, Sun, Moon, Monitor, X } from "lucide-react";
 import { useTheme, type ColorMode, type AccentColor } from "@/contexts/ThemeContext";
+import { ProfileBasics, FamilyMember } from "@/contexts/FinancialContext";
+import { createFamilyMember, updateFamilyMember, deleteFamilyMember } from "@/lib/services/familyService";
 import styles from "./SettingsTab.module.css";
 type ChartThemeId = "default" | "pastel" | "mono" | "vivid" | "ocean" | "sunset" | "forest" | "neon" | "retro" | "candy";
 
@@ -86,14 +88,50 @@ const chartThemes: ChartTheme[] = [
   },
 ];
 
+const RELATIONSHIP_LABELS: Record<string, string> = {
+  self: "본인",
+  spouse: "배우자",
+  child: "자녀",
+  parent: "부양가족",
+};
+
 interface SettingsTabProps {
-  profileName: string;
+  profile: ProfileBasics;
+  familyMembers: FamilyMember[];
+  onFamilyMembersChange: (members: FamilyMember[]) => void;
+  onProfileUpdate: (updates: Partial<ProfileBasics>) => void;
 }
 
-export function SettingsTab({ profileName }: SettingsTabProps) {
+export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onProfileUpdate }: SettingsTabProps) {
   const router = useRouter();
   const { colorMode, accentColor, setColorMode, setAccentColor } = useTheme();
   const [currentChartTheme, setCurrentChartTheme] = useState<ChartThemeId>("default");
+
+  // 가족 구성원 상태
+  const [members, setMembers] = useState<FamilyMember[]>(familyMembers);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<"name" | "birth_date" | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  // 생애 주기 상태
+  const spouse = members.find((m) => m.relationship === "spouse");
+  const [selfRetirementAge, setSelfRetirementAge] = useState(profile.target_retirement_age);
+  const [selfLifeExpectancy, setSelfLifeExpectancy] = useState(profile.settings?.lifeExpectancy || 85);
+  const [spouseRetirementAge, setSpouseRetirementAge] = useState(spouse?.retirement_age || 65);
+  const [spouseLifeExpectancy, setSpouseLifeExpectancy] = useState(profile.settings?.lifeExpectancy || 85);
+
+  // familyMembers 프롭이 변경되면 로컬 상태 업데이트
+  useEffect(() => {
+    setMembers(familyMembers);
+  }, [familyMembers]);
+
+  const calculateAge = useCallback((birthDate: string | null): string => {
+    if (!birthDate) return "";
+    const currentYear = new Date().getFullYear();
+    const birthYear = parseInt(birthDate.split("-")[0]);
+    const age = currentYear - birthYear;
+    return `${age}세`;
+  }, []);
 
   useEffect(() => {
     // 차트 테마 로드
@@ -124,6 +162,85 @@ export function SettingsTab({ profileName }: SettingsTabProps) {
     router.refresh();
   };
 
+  // 가족 구성원 CRUD
+  const handleAddMember = useCallback(async (
+    relationship: "spouse" | "child" | "parent",
+    options?: { gender?: "male" | "female"; name?: string }
+  ) => {
+    const defaultName = options?.name
+      || (relationship === "child" ? (options?.gender === "male" ? "아들" : "딸") : RELATIONSHIP_LABELS[relationship]);
+    const newMember = await createFamilyMember({
+      user_id: profile.id,
+      relationship,
+      name: defaultName,
+      birth_date: null,
+      gender: options?.gender || null,
+      is_dependent: relationship !== "spouse",
+      is_working: relationship === "spouse",
+      retirement_age: relationship === "spouse" ? 65 : null,
+      monthly_income: 0,
+      notes: null,
+    });
+    if (newMember) {
+      const next = [...members, newMember];
+      setMembers(next);
+      onFamilyMembersChange(next);
+    }
+  }, [profile.id, members, onFamilyMembersChange]);
+
+  const handleUpdateMember = useCallback(async (id: string, updates: Record<string, any>) => {
+    const updated = await updateFamilyMember(id, updates);
+    if (updated) {
+      const next = members.map((m) => (m.id === id ? updated : m));
+      setMembers(next);
+      onFamilyMembersChange(next);
+    }
+  }, [members, onFamilyMembersChange]);
+
+  const handleDeleteMember = useCallback(async (id: string) => {
+    const success = await deleteFamilyMember(id);
+    if (success) {
+      const next = members.filter((m) => m.id !== id);
+      setMembers(next);
+      onFamilyMembersChange(next);
+    }
+  }, [members, onFamilyMembersChange]);
+
+  const startEdit = useCallback((memberId: string, field: "name" | "birth_date", currentValue: string) => {
+    setEditingMemberId(memberId);
+    setEditingField(field);
+    setEditValue(currentValue || "");
+  }, []);
+
+  const saveEdit = useCallback(async () => {
+    if (!editingMemberId || !editingField) return;
+    // 빈 문자열은 null로 변환 (date 타입 컬럼에 빈 문자열 불가)
+    const value = editValue || null;
+    await handleUpdateMember(editingMemberId, { [editingField]: value });
+    setEditingMemberId(null);
+    setEditingField(null);
+  }, [editingMemberId, editingField, editValue, handleUpdateMember]);
+
+  // 생애 주기 저장
+  const handleSaveSelfRetirementAge = useCallback(async (value: number) => {
+    onProfileUpdate({ target_retirement_age: value });
+  }, [onProfileUpdate]);
+
+  const handleSaveSelfLifeExpectancy = useCallback(async (value: number) => {
+    onProfileUpdate({ settings: { ...profile.settings, lifeExpectancy: value } });
+  }, [onProfileUpdate, profile.settings]);
+
+  const handleSaveSpouseRetirementAge = useCallback(async (value: number) => {
+    if (!spouse) return;
+    await handleUpdateMember(spouse.id, { retirement_age: value });
+  }, [spouse, handleUpdateMember]);
+
+  const handleSaveSpouseLifeExpectancy = useCallback(async (value: number) => {
+    const newSettings = { ...profile.settings, lifeExpectancy: profile.settings?.lifeExpectancy || 85 };
+    (newSettings as any).spouseLifeExpectancy = value;
+    onProfileUpdate({ settings: newSettings });
+  }, [onProfileUpdate, profile.settings]);
+
   return (
     <div className={styles.container}>
       <div className={styles.content}>
@@ -137,10 +254,203 @@ export function SettingsTab({ profileName }: SettingsTabProps) {
                 <User size={20} />
                 <div className={styles.menuInfo}>
                   <span className={styles.menuLabel}>내 정보</span>
-                  <span className={styles.menuValue}>{profileName || "이름 없음"}</span>
+                  <span className={styles.menuValue}>{profile.name || "이름 없음"}</span>
                 </div>
                 <ChevronRight size={16} className={styles.chevron} />
               </button>
+            </div>
+          </section>
+
+          {/* 가족 구성 섹션 */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>가족 구성</h2>
+            <div className={styles.menuList}>
+              {/* 본인 (읽기 전용) */}
+              <div className={styles.memberRow}>
+                <span className={styles.roleBadge}>본인</span>
+                <div className={styles.memberInfo}>
+                  <span className={styles.memberName}>{profile.name || "이름 없음"}</span>
+                  <span className={styles.memberBirth}>
+                    {profile.birth_date ? `${profile.birth_date} (${calculateAge(profile.birth_date)})` : "생년월일 없음"}
+                  </span>
+                </div>
+              </div>
+
+              {/* 가족 구성원 */}
+              {members
+                .filter((m) => m.relationship !== "self")
+                .map((member) => (
+                  <div key={member.id} className={styles.memberRow}>
+                    <span className={styles.roleBadge}>
+                      {member.relationship === "child"
+                        ? (member.gender === "male" ? "아들" : member.gender === "female" ? "딸" : "자녀")
+                        : (RELATIONSHIP_LABELS[member.relationship] || member.relationship)}
+                    </span>
+                    <div className={styles.memberInfo}>
+                      {editingMemberId === member.id && editingField === "name" ? (
+                        <input
+                          className={styles.nameInput}
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={saveEdit}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveEdit();
+                            if (e.key === "Escape") {
+                              setEditingMemberId(null);
+                              setEditingField(null);
+                            }
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          className={styles.memberName}
+                          onClick={() => startEdit(member.id, "name", member.name)}
+                        >
+                          {member.name}
+                        </span>
+                      )}
+                      {editingMemberId === member.id && editingField === "birth_date" ? (
+                        <input
+                          type="date"
+                          className={styles.dateInput}
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={saveEdit}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveEdit();
+                            if (e.key === "Escape") {
+                              setEditingMemberId(null);
+                              setEditingField(null);
+                            }
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          className={styles.memberBirth}
+                          onClick={() => startEdit(member.id, "birth_date", member.birth_date || "")}
+                        >
+                          {member.birth_date
+                            ? `${member.birth_date} (${calculateAge(member.birth_date)})`
+                            : "생년월일 없음"}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      className={styles.memberDeleteBtn}
+                      onClick={() => handleDeleteMember(member.id)}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+
+              {/* 추가 버튼 */}
+              <div className={styles.addButtonsRow}>
+                {!members.some((m) => m.relationship === "spouse") && (
+                  <button
+                    className={styles.addMemberBtn}
+                    onClick={() => handleAddMember("spouse")}
+                  >
+                    + 배우자 추가
+                  </button>
+                )}
+                <button
+                  className={styles.addMemberBtn}
+                  onClick={() => handleAddMember("child", { gender: "male" })}
+                >
+                  + 아들 추가
+                </button>
+                <button
+                  className={styles.addMemberBtn}
+                  onClick={() => handleAddMember("child", { gender: "female" })}
+                >
+                  + 딸 추가
+                </button>
+                <button
+                  className={styles.addMemberBtn}
+                  onClick={() => handleAddMember("parent")}
+                >
+                  + 부양가족 추가
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* 생애 주기 섹션 */}
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>생애 주기</h2>
+            <div className={styles.menuList}>
+              {/* 본인 은퇴 나이 */}
+              <div className={styles.lifeCycleRow}>
+                <span className={styles.lifeCycleLabel}>본인 은퇴 나이</span>
+                <div className={styles.lifeCycleInputGroup}>
+                  <input
+                    type="number"
+                    className={styles.lifeCycleInput}
+                    value={selfRetirementAge}
+                    onChange={(e) => setSelfRetirementAge(parseInt(e.target.value) || 0)}
+                    onBlur={() => handleSaveSelfRetirementAge(selfRetirementAge)}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.lifeCycleUnit}>세</span>
+                </div>
+              </div>
+
+              {/* 본인 기대 수명 */}
+              <div className={styles.lifeCycleRow}>
+                <span className={styles.lifeCycleLabel}>본인 기대 수명</span>
+                <div className={styles.lifeCycleInputGroup}>
+                  <input
+                    type="number"
+                    className={styles.lifeCycleInput}
+                    value={selfLifeExpectancy}
+                    onChange={(e) => setSelfLifeExpectancy(parseInt(e.target.value) || 0)}
+                    onBlur={() => handleSaveSelfLifeExpectancy(selfLifeExpectancy)}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  <span className={styles.lifeCycleUnit}>세</span>
+                </div>
+              </div>
+
+              {/* 배우자 설정 (배우자가 있을 때만) */}
+              {spouse && (
+                <>
+                  <hr className={styles.lifeCycleDivider} />
+                  <div className={styles.lifeCycleSectionTitle}>배우자</div>
+
+                  <div className={styles.lifeCycleRow}>
+                    <span className={styles.lifeCycleLabel}>배우자 은퇴 나이</span>
+                    <div className={styles.lifeCycleInputGroup}>
+                      <input
+                        type="number"
+                        className={styles.lifeCycleInput}
+                        value={spouseRetirementAge}
+                        onChange={(e) => setSpouseRetirementAge(parseInt(e.target.value) || 0)}
+                        onBlur={() => handleSaveSpouseRetirementAge(spouseRetirementAge)}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
+                      />
+                      <span className={styles.lifeCycleUnit}>세</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.lifeCycleRow}>
+                    <span className={styles.lifeCycleLabel}>배우자 기대 수명</span>
+                    <div className={styles.lifeCycleInputGroup}>
+                      <input
+                        type="number"
+                        className={styles.lifeCycleInput}
+                        value={spouseLifeExpectancy}
+                        onChange={(e) => setSpouseLifeExpectancy(parseInt(e.target.value) || 0)}
+                        onBlur={() => handleSaveSpouseLifeExpectancy(spouseLifeExpectancy)}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
+                      />
+                      <span className={styles.lifeCycleUnit}>세</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </section>
 

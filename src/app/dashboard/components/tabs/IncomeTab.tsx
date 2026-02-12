@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Plus, Trash2, TrendingUp, Pencil, X, Check, ExternalLink, Home, Landmark, Link } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -71,7 +72,7 @@ export function IncomeTab({
   globalSettings,
   simulationResult,
 }: IncomeTabProps) {
-  const { chartScaleColors } = useChartTheme();
+  const { chartScaleColors, isDark } = useChartTheme();
   const currentYear = new Date().getFullYear();
 
   // React Query로 소득 데이터 로드 (캐시에서 즉시 가져옴)
@@ -215,6 +216,10 @@ export function IncomeTab({
   const [newFrequency, setNewFrequency] = useState<IncomeFrequency>("monthly");
   const [newOnetimeYear, setNewOnetimeYear] = useState(currentYear);
   const [newOnetimeMonth, setNewOnetimeMonth] = useState(currentMonth);
+
+  // 타입 선택 드롭다운
+  const [showTypeMenu, setShowTypeMenu] = useState(false);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
 
   // 타입별 항목 (displayItems에서 필터 - 시나리오 적용된 상승률 포함)
   type DisplayItem = IncomeItem & { displayGrowthRate: number };
@@ -826,36 +831,47 @@ export function IncomeTab({
   const isPresetRate = (rate: number) =>
     GROWTH_PRESETS.some((p) => p.value === rate);
 
-  // 섹션 렌더링 (items는 displayItems에서 필터된 것)
-  const renderSection = (
-    title: string,
-    type: IncomeType,
-    items: DisplayItem[],
-    placeholder: string,
-    description?: string,
-    sectionBadge?: { icon: React.ReactNode; label: string },
-  ) => (
-    <div className={styles.incomeSection}>
-      <div className={styles.sectionHeader}>
-        <span className={styles.sectionTitle}>{title}</span>
-        {sectionBadge && (
-          <span className={styles.sectionBadge}>
-            {sectionBadge.icon}
-            {sectionBadge.label}
-          </span>
-        )}
-      </div>
-      {description && !sectionBadge && <p className={styles.sectionDesc}>{description}</p>}
+  // ESC 키로 드롭다운 닫기
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showTypeMenu) {
+        setShowTypeMenu(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showTypeMenu]);
 
-      <div className={styles.itemList}>
-        {items.map((item) => {
-          const isEditing = editingId === item.id;
+  // 드롭다운 외부 클릭으로 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        showTypeMenu &&
+        addButtonRef.current &&
+        !addButtonRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement).closest(`.${styles.typeMenu}`)
+      ) {
+        setShowTypeMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showTypeMenu]);
 
-          if (isEditing && editForm) {
-            // 일시적 소득 편집 모드
-            if (item.type === "onetime") {
-              return (
-                <div key={item.id} className={styles.editItem}>
+  const handleTypeSelect = (type: IncomeType) => {
+    setAddingType(type);
+    setShowTypeMenu(false);
+  };
+
+  // 아이템 렌더링 함수 (개별 항목)
+  const renderItem = (item: DisplayItem) => {
+    const isEditing = editingId === item.id;
+
+    if (isEditing && editForm) {
+      // 일시적 소득 편집 모드
+      if (item.type === "onetime") {
+        return (
+          <div key={item.id} className={styles.editItem}>
                   <div className={styles.editRow}>
                     <span className={styles.editRowLabel}>항목</span>
                     <input
@@ -938,16 +954,16 @@ export function IncomeTab({
                     <button className={styles.saveBtn} onClick={saveEdit}>
                       저장
                     </button>
-                  </div>
-                </div>
-              );
-            }
+            </div>
+          </div>
+        );
+      }
 
-            // 일반 소득 편집 모드
-            const isLaborOrBusiness =
-              item.type === "labor" || item.type === "business";
-            return (
-              <div key={item.id} className={styles.editItem}>
+      // 일반 소득 편집 모드
+      const isLaborOrBusiness =
+        item.type === "labor" || item.type === "business";
+      return (
+        <div key={item.id} className={styles.editItem}>
                 <div className={styles.editRow}>
                   <span className={styles.editRowLabel}>
                     {isLaborOrBusiness ? "주체" : "항목"}
@@ -1232,237 +1248,231 @@ export function IncomeTab({
                   <button className={styles.saveBtn} onClick={saveEdit}>
                     저장
                   </button>
-                </div>
-              </div>
-            );
-          }
+          </div>
+        </div>
+      );
+    }
 
-          // 읽기 모드 - displayGrowthRate 사용 (이미 시나리오 적용됨)
-          const isLinked = item.sourceType !== null && item.sourceType !== undefined;
-          const isReadOnly = item.isSystem || isLinked;
+    // 읽기 모드 - displayGrowthRate 사용 (이미 시나리오 적용됨)
+    const isLinked = item.sourceType !== null && item.sourceType !== undefined;
+    const isReadOnly = item.isSystem || isLinked;
 
-          // 연동 소스 라벨 및 아이콘
-          const getLinkedBadge = () => {
-            if (!item.sourceType) return null;
-            switch (item.sourceType) {
-              case 'national_pension':
-                return { label: '국민연금', icon: <Link size={12} /> };
-              case 'retirement_pension':
-                return { label: '퇴직연금', icon: <Link size={12} /> };
-              case 'personal_pension':
-                return { label: '개인연금', icon: <Link size={12} /> };
-              case 'real_estate':
-                return { label: '부동산', icon: <Home size={12} /> };
-              default:
-                return { label: '연동', icon: <Link size={12} /> };
-            }
-          };
-          const linkedBadge = getLinkedBadge();
+    // 연동 소스 라벨 및 아이콘
+    const getLinkedBadge = () => {
+      if (!item.sourceType) return null;
+      switch (item.sourceType) {
+        case 'national_pension':
+          return { label: '국민연금', icon: <Link size={12} /> };
+        case 'retirement_pension':
+          return { label: '퇴직연금', icon: <Link size={12} /> };
+        case 'personal_pension':
+          return { label: '개인연금', icon: <Link size={12} /> };
+        case 'real_estate':
+          return { label: '부동산', icon: <Home size={12} /> };
+        default:
+          return { label: '연동', icon: <Link size={12} /> };
+      }
+    };
+    const linkedBadge = getLinkedBadge();
 
-          return (
-            <div key={item.id} className={styles.incomeItem}>
-              <div className={styles.itemInfo}>
-                <span className={styles.itemName}>
-                  {item.label}
-                  {linkedBadge && (
-                    <span className={styles.linkedBadge}>
-                      {linkedBadge.icon}
-                      {linkedBadge.label}
-                    </span>
-                  )}
-                </span>
-                <span className={styles.itemMeta}>
-                  {item.type === "onetime"
-                    ? formatPeriod(item)
-                    : isReadOnly
-                    ? formatPeriod(item)
-                    : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
-                </span>
-              </div>
-              <div className={styles.itemRight}>
-                <span className={styles.itemAmount}>
-                  {formatAmountWithFreq(item)}
-                </span>
-                {isLinked ? null : !isReadOnly && (
-                  <div className={styles.itemActions}>
-                    <button
-                      className={styles.editBtn}
-                      onClick={() => startEdit(item)}
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                )}
-              </div>
+    return (
+      <div key={item.id} className={styles.incomeItem}>
+        <div className={styles.itemInfo}>
+          <span className={styles.itemName}>
+            {item.label}
+            {linkedBadge && (
+              <span className={styles.linkedBadge}>
+                {linkedBadge.icon}
+                {linkedBadge.label}
+              </span>
+            )}
+          </span>
+          <span className={styles.itemMeta}>
+            {item.type === "onetime"
+              ? formatPeriod(item)
+              : isReadOnly
+              ? formatPeriod(item)
+              : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
+          </span>
+        </div>
+        <div className={styles.itemRight}>
+          <span className={styles.itemAmount}>
+            {formatAmountWithFreq(item)}
+          </span>
+          {isLinked ? null : !isReadOnly && (
+            <div className={styles.itemActions}>
+              <button
+                className={styles.editBtn}
+                onClick={() => startEdit(item)}
+              >
+                <Pencil size={16} />
+              </button>
+              <button
+                className={styles.deleteBtn}
+                onClick={() => handleDelete(item.id)}
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
-          );
-        })}
+          )}
+        </div>
+      </div>
+    );
+  };
 
-        {/* 인라인 추가 폼 */}
-        {addingType === type ? (
-          <div className={styles.inlineAddForm}>
-            {/* 첫 번째 줄: 항목명 + 본인/배우자 */}
-            <div className={styles.addFormRow}>
-              {(type === "regular" || type === "onetime") && (
+  // 인라인 추가 폼 렌더링
+  const renderInlineAddForm = () => {
+    if (!addingType) return null;
+
+    return (
+      <div className={styles.inlineAddForm}>
+        {/* 첫 번째 줄: 항목명 + 본인/배우자 */}
+        <div className={styles.addFormRow}>
+          {(addingType === "regular" || addingType === "onetime") && (
+            <input
+              type="text"
+              className={styles.inlineLabelInput}
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              placeholder="항목명"
+              autoFocus
+            />
+          )}
+          <div className={styles.ownerButtons}>
+            <button
+              type="button"
+              className={`${styles.ownerBtn} ${
+                newOwner === "self" ? styles.active : ""
+              }`}
+              onClick={() => setNewOwner("self")}
+            >
+              본인
+            </button>
+            {hasSpouse && (
+              <button
+                type="button"
+                className={`${styles.ownerBtn} ${
+                  newOwner === "spouse" ? styles.active : ""
+                }`}
+                onClick={() => setNewOwner("spouse")}
+              >
+                배우자
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 두 번째 줄: 금액 + 주기 (또는 수령시점) */}
+        <div className={styles.addFormRow}>
+          {addingType === "onetime" ? (
+            <>
+              <div className={styles.inlineAmountGroup}>
                 <input
-                  type="text"
-                  className={styles.inlineLabelInput}
-                  value={newLabel}
-                  onChange={(e) => setNewLabel(e.target.value)}
-                  placeholder="항목명"
-                  autoFocus
+                  type="number"
+                  className={styles.inlineAmountInput}
+                  value={newAmount}
+                  onChange={(e) => setNewAmount(e.target.value)}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
+                  placeholder="0"
                 />
-              )}
-              <div className={styles.ownerButtons}>
+                <span className={styles.inlineUnit}>만원</span>
+              </div>
+              <div className={styles.inlineDateGroup}>
+                <input
+                  type="number"
+                  className={styles.editYearInput}
+                  min={1900}
+                  max={2200}
+                  value={newOnetimeYear}
+                  onChange={(e) =>
+                    setNewOnetimeYear(
+                      parseInt(e.target.value) || currentYear
+                    )
+                  }
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
+                />
+                <span className={styles.editUnit}>년</span>
+                <input
+                  type="number"
+                  className={styles.editMonthInput}
+                  value={newOnetimeMonth}
+                  min={1}
+                  max={12}
+                  onChange={(e) =>
+                    setNewOnetimeMonth(
+                      Math.min(
+                        12,
+                        Math.max(1, parseInt(e.target.value) || 1)
+                      )
+                    )
+                  }
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
+                />
+                <span className={styles.editUnit}>월 수령</span>
+              </div>
+            </>
+          ) : (
+            <div className={styles.inlineAmountGroup}>
+              <input
+                type="number"
+                className={styles.inlineAmountInput}
+                value={newAmount}
+                onChange={(e) => setNewAmount(e.target.value)}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
+                placeholder="0"
+                autoFocus={addingType !== "regular"}
+              />
+              <span className={styles.inlineUnit}>만원</span>
+              <div className={styles.frequencyButtons}>
                 <button
                   type="button"
-                  className={`${styles.ownerBtn} ${
-                    newOwner === "self" ? styles.active : ""
+                  className={`${styles.freqBtn} ${
+                    newFrequency === "monthly" ? styles.active : ""
                   }`}
-                  onClick={() => setNewOwner("self")}
+                  onClick={() => setNewFrequency("monthly")}
                 >
-                  본인
-                </button>
-                {hasSpouse && (
-                  <button
-                    type="button"
-                    className={`${styles.ownerBtn} ${
-                      newOwner === "spouse" ? styles.active : ""
-                    }`}
-                    onClick={() => setNewOwner("spouse")}
-                  >
-                    배우자
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* 두 번째 줄: 금액 + 주기 (또는 수령시점) */}
-            <div className={styles.addFormRow}>
-              {type === "onetime" ? (
-                <>
-                  <div className={styles.inlineAmountGroup}>
-                    <input
-                      type="number"
-                      className={styles.inlineAmountInput}
-                      value={newAmount}
-                      onChange={(e) => setNewAmount(e.target.value)}
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                      placeholder="0"
-                    />
-                    <span className={styles.inlineUnit}>만원</span>
-                  </div>
-                  <div className={styles.inlineDateGroup}>
-                    <input
-                      type="number"
-                      className={styles.editYearInput}
-                      min={1900}
-                      max={2200}
-                      value={newOnetimeYear}
-                      onChange={(e) =>
-                        setNewOnetimeYear(
-                          parseInt(e.target.value) || currentYear
-                        )
-                      }
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                    />
-                    <span className={styles.editUnit}>년</span>
-                    <input
-                      type="number"
-                      className={styles.editMonthInput}
-                      value={newOnetimeMonth}
-                      min={1}
-                      max={12}
-                      onChange={(e) =>
-                        setNewOnetimeMonth(
-                          Math.min(
-                            12,
-                            Math.max(1, parseInt(e.target.value) || 1)
-                          )
-                        )
-                      }
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                    />
-                    <span className={styles.editUnit}>월 수령</span>
-                  </div>
-                </>
-              ) : (
-                <div className={styles.inlineAmountGroup}>
-                  <input
-                    type="number"
-                    className={styles.inlineAmountInput}
-                    value={newAmount}
-                    onChange={(e) => setNewAmount(e.target.value)}
-                    onWheel={(e) => (e.target as HTMLElement).blur()}
-                    placeholder="0"
-                    autoFocus={type !== "regular"}
-                  />
-                  <span className={styles.inlineUnit}>만원</span>
-                  <div className={styles.frequencyButtons}>
-                    <button
-                      type="button"
-                      className={`${styles.freqBtn} ${
-                        newFrequency === "monthly" ? styles.active : ""
-                      }`}
-                      onClick={() => setNewFrequency("monthly")}
-                    >
-                      /월
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.freqBtn} ${
-                        newFrequency === "yearly" ? styles.active : ""
-                      }`}
-                      onClick={() => setNewFrequency("yearly")}
-                    >
-                      /년
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className={styles.inlineActions}>
-                <button
-                  className={styles.inlineCancelBtn}
-                  onClick={() => {
-                    setAddingType(null);
-                    setNewOwner("self");
-                    setNewLabel("");
-                    setNewAmount("");
-                    setNewFrequency("monthly");
-                    setNewOnetimeYear(currentYear);
-                    setNewOnetimeMonth(currentMonth);
-                  }}
-                >
-                  취소
+                  /월
                 </button>
                 <button
-                  className={styles.inlineAddBtn}
-                  onClick={handleAdd}
-                  disabled={!newAmount}
+                  type="button"
+                  className={`${styles.freqBtn} ${
+                    newFrequency === "yearly" ? styles.active : ""
+                  }`}
+                  onClick={() => setNewFrequency("yearly")}
                 >
-                  추가
+                  /년
                 </button>
               </div>
             </div>
+          )}
+
+          <div className={styles.inlineActions}>
+            <button
+              className={styles.inlineCancelBtn}
+              onClick={() => {
+                setAddingType(null);
+                setNewOwner("self");
+                setNewLabel("");
+                setNewAmount("");
+                setNewFrequency("monthly");
+                setNewOnetimeYear(currentYear);
+                setNewOnetimeMonth(currentMonth);
+              }}
+            >
+              취소
+            </button>
+            <button
+              className={styles.inlineAddBtn}
+              onClick={handleAdd}
+              disabled={!newAmount}
+            >
+              추가
+            </button>
           </div>
-        ) : type === "rental" || type === "pension" ? (
-          null
-        ) : (
-          <button className={styles.addBtn} onClick={() => setAddingType(type)}>
-            <Plus size={16} />
-            추가
-          </button>
-        )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // 캐시된 데이터가 없고 로딩 중일 때만 스켈레톤 표시
   if (isLoading && dbIncomes.length === 0) {
@@ -1481,29 +1491,69 @@ export function IncomeTab({
           <span className={styles.count}>{totalCount}개</span>
         </button>
         <div className={styles.headerRight}>
-          <span className={styles.totalAmount}>{formatMoney(totalMonthlyIncome)}/월</span>
+          <button
+            ref={addButtonRef}
+            className={styles.addIconBtn}
+            onClick={() => setShowTypeMenu(!showTypeMenu)}
+            type="button"
+          >
+            <Plus size={18} />
+          </button>
         </div>
       </div>
 
+      {/* 타입 선택 드롭다운 - portal로 body에 렌더 (부모 backdrop-filter 스택킹 컨텍스트 회피) */}
+      {showTypeMenu && addButtonRef.current && createPortal(
+        <div
+          className={styles.typeMenu}
+          style={{
+            position: 'fixed',
+            top: addButtonRef.current.getBoundingClientRect().bottom + 6,
+            left: addButtonRef.current.getBoundingClientRect().right - 150,
+            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }}
+        >
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => handleTypeSelect('labor')}
+          >
+            근로 소득
+          </button>
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => handleTypeSelect('business')}
+          >
+            사업 소득
+          </button>
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => handleTypeSelect('regular')}
+          >
+            정기적 소득
+          </button>
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => handleTypeSelect('onetime')}
+          >
+            일시적 소득
+          </button>
+        </div>,
+        document.body
+      )}
+
       {isExpanded && (
-        <>
-          {renderSection("근로 소득", "labor", laborItems, "본인/배우자")}
-          {renderSection("사업 소득", "business", businessItems, "본인/배우자")}
-          {renderSection(
-            "정기적 소득",
-            "regular",
-            regularItems,
-            "항목명",
-            "연금외 정기지급금, 아르바이트, 용돈 등"
+        <div className={styles.flatList}>
+          {displayItems.length === 0 && !addingType && (
+            <p className={styles.emptyHint}>
+              아직 등록된 소득이 없습니다. 오른쪽 + 버튼으로 추가하세요.
+            </p>
           )}
-          {renderSection(
-            "일시적 소득",
-            "onetime",
-            onetimeItems,
-            "항목명",
-            "상여금, 보너스, 증여, 상속, 퇴직금 등"
-          )}
-        </>
+          {displayItems.map((item) => renderItem(item))}
+          {renderInlineAddForm()}
+        </div>
       )}
     </div>
   );

@@ -236,6 +236,184 @@
   color: var(--dashboard-text-secondary);
 }
 
+/* Family members */
+.familySection {
+  display: flex;
+  flex-direction: column;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.memberRow:last-child {
+  border-bottom: none;
+}
+
+.roleBadge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-secondary);
+  white-space: nowrap;
+}
+
+.memberInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.memberName {
+  font-size: 14px;
+  color: var(--dashboard-text);
+  cursor: pointer;
+}
+
+.memberName:hover {
+  color: var(--accent-color, #007aff);
+}
+
+.memberBirth {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+}
+
+.memberBirth:hover {
+  color: var(--dashboard-text-secondary);
+}
+
+.memberDeleteBtn {
+  background: none;
+  border: none;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.15s;
+}
+
+.memberDeleteBtn:hover {
+  color: #ef4444;
+}
+
+.addButtonsRow {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  flex-wrap: wrap;
+}
+
+.addMemberBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  background: none;
+  border: 1px dashed var(--dashboard-border);
+  border-radius: 8px;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.addMemberBtn:hover {
+  border-color: var(--accent-color, #007aff);
+  color: var(--accent-color, #007aff);
+}
+
+.nameInput {
+  font-size: 14px;
+  padding: 2px 6px;
+  background: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 4px;
+  color: var(--dashboard-text);
+  width: 100px;
+}
+
+.nameInput::-webkit-outer-spin-button,
+.nameInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.dateInput {
+  font-size: 12px;
+  padding: 2px 6px;
+  background: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 4px;
+  color: var(--dashboard-text);
+}
+
+/* Life cycle */
+.lifeCycleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.lifeCycleRow:last-child {
+  border-bottom: none;
+}
+
+.lifeCycleLabel {
+  font-size: 14px;
+  color: var(--dashboard-text);
+  flex: 1;
+}
+
+.lifeCycleInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lifeCycleInput {
+  width: 64px;
+  padding: 6px 8px;
+  text-align: right;
+  font-size: 14px;
+  background: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 6px;
+  color: var(--dashboard-text);
+}
+
+.lifeCycleInput::-webkit-outer-spin-button,
+.lifeCycleInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.lifeCycleUnit {
+  font-size: 13px;
+  color: var(--dashboard-text-muted);
+}
+
+.lifeCycleDivider {
+  border: none;
+  border-top: 1px solid var(--dashboard-border);
+  margin: 4px 16px;
+}
+
+.lifeCycleSectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dashboard-text-secondary);
+  padding: 8px 16px 4px;
+}
+
 /* Responsive */
 @media (max-width: 1100px) {
   .content {

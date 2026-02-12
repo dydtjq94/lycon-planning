@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Pencil, Trash2, PiggyBank } from 'lucide-react'
+import { useState, useMemo, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { Pencil, Trash2, PiggyBank, Plus } from 'lucide-react'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -29,6 +30,7 @@ import {
   upsertPersonalPension,
 } from '@/lib/services/personalPensionService'
 import { BANK_OPTIONS, SECURITIES_OPTIONS } from '@/lib/constants/financial'
+import { useChartTheme } from '@/hooks/useChartTheme'
 import { TabSkeleton } from './shared/TabSkeleton'
 import styles from './SavingsTab.module.css'
 
@@ -69,6 +71,7 @@ export function SavingsTab({
   spouseBirthYear = null,
   retirementAge = 60
 }: SavingsTabProps) {
+  const { isDark } = useChartTheme()
   const currentYear = new Date().getFullYear()
 
   // React Query로 데이터 로드 (캐시에서 즉시 가져옴)
@@ -104,6 +107,10 @@ export function SavingsTab({
   )
   const isMarried = spouseBirthYear !== null
 
+  // 타입 선택 드롭다운
+  const [showTypeMenu, setShowTypeMenu] = useState(false)
+  const addButtonRef = useRef<HTMLButtonElement>(null)
+
   // 합계 계산
   const savingsTotal = savingsAccounts.reduce((sum, acc) => sum + acc.current_balance, 0)
   const investmentTotal = investmentAccounts.reduce((sum, acc) => sum + acc.current_balance, 0)
@@ -111,7 +118,11 @@ export function SavingsTab({
   const totalAssets = savingsTotal + investmentTotal + isaTotal
 
   // 저축 계좌 CRUD
-  const startAddAccount = (section: 'savings' | 'investment') => {
+  const startAddAccount = (section: 'savings' | 'investment' | 'isa') => {
+    if (section === 'isa') {
+      startAddIsa()
+      return
+    }
     setEditingAccount({ section, id: null })
     if (section === 'savings') {
       setEditValues({
@@ -384,6 +395,38 @@ export function SavingsTab({
   // 모든 데이터가 없는 경우에만 로딩 표시
   const hasNoData = allSavings.length === 0 && personalPensions.length === 0
 
+  // ESC 키로 드롭다운 닫기
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showTypeMenu) {
+        setShowTypeMenu(false)
+      }
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [showTypeMenu])
+
+  // 드롭다운 외부 클릭으로 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        showTypeMenu &&
+        addButtonRef.current &&
+        !addButtonRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement).closest(`.${styles.typeMenu}`)
+      ) {
+        setShowTypeMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showTypeMenu])
+
+  const handleTypeSelect = (section: 'savings' | 'investment' | 'isa') => {
+    startAddAccount(section)
+    setShowTypeMenu(false)
+  }
+
   if (isLoading && hasNoData) {
     return (
       <div className={styles.container}>
@@ -394,6 +437,467 @@ export function SavingsTab({
 
   const totalCount = savingsAccounts.length + investmentAccounts.length + isaAccounts.length
 
+  // 모든 항목을 단일 리스트로 합치기
+  const allItems = useMemo(() => {
+    const items: Array<{ type: 'savings' | 'investment' | 'isa', data: Savings | PersonalPension }> = []
+    savingsAccounts.forEach(s => items.push({ type: 'savings', data: s }))
+    investmentAccounts.forEach(i => items.push({ type: 'investment', data: i }))
+    isaAccounts.forEach(isa => items.push({ type: 'isa', data: isa }))
+    return items
+  }, [savingsAccounts, investmentAccounts, isaAccounts])
+
+  // 렌더 함수들
+  const renderSavingsEditForm = (account: Savings | null) => {
+    const isEditing = account !== null
+    const isChecking = editValues.type === 'checking'
+
+    return (
+      <div className={styles.editItem}>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>유형</span>
+          <div className={styles.typeButtons}>
+            {(['checking', 'savings', 'deposit'] as UISavingsType[]).map(type => (
+              <button
+                key={type}
+                type="button"
+                className={`${styles.typeBtn} ${editValues.type === type ? styles.active : ''}`}
+                onClick={() => setEditValues({ ...editValues, type })}
+              >
+                {SAVINGS_TYPE_LABELS[type]}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>계좌명</span>
+          <div className={styles.editField}>
+            <input
+              type="text"
+              className={styles.editInputWide}
+              value={editValues.name || ''}
+              onChange={e => setEditValues({ ...editValues, name: e.target.value })}
+              placeholder="예: 정기예금, 적금"
+              autoFocus
+            />
+          </div>
+        </div>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>은행</span>
+          <div className={styles.editField}>
+            <select
+              className={styles.editSelect}
+              value={editValues.broker || ''}
+              onChange={e => setEditValues({ ...editValues, broker: e.target.value })}
+            >
+              <option value="">선택</option>
+              {BANK_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>잔액</span>
+          <div className={styles.editField}>
+            <input
+              type="number"
+              className={styles.editInput}
+              value={editValues.balance || ''}
+              onChange={e => setEditValues({ ...editValues, balance: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              placeholder="0"
+            />
+            <span className={styles.editUnit}>만원</span>
+          </div>
+        </div>
+        {isMarried && (
+          <div className={styles.editRow}>
+            <span className={styles.editRowLabel}>소유자</span>
+            <div className={styles.typeButtons}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${editValues.owner === 'self' ? styles.active : ''}`}
+                onClick={() => setEditValues({ ...editValues, owner: 'self' })}
+              >
+                본인
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${editValues.owner === 'spouse' ? styles.active : ''}`}
+                onClick={() => setEditValues({ ...editValues, owner: 'spouse' })}
+              >
+                배우자
+              </button>
+            </div>
+          </div>
+        )}
+        {(editValues.type === 'savings' || editValues.type === 'deposit') && (
+          <>
+            <div className={styles.editRow}>
+              <span className={styles.editRowLabel}>가입일</span>
+              <div className={styles.editField}>
+                <input
+                  type="number"
+                  className={styles.editInputSmall}
+                  value={editValues.startYear || ''}
+                  onChange={e => setEditValues({ ...editValues, startYear: e.target.value })}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  placeholder={String(currentYear)}
+                />
+                <span className={styles.editUnit}>년</span>
+                <input
+                  type="number"
+                  className={styles.editInputSmall}
+                  value={editValues.startMonth || ''}
+                  onChange={e => setEditValues({ ...editValues, startMonth: e.target.value })}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  min={1}
+                  max={12}
+                  placeholder="1"
+                />
+                <span className={styles.editUnit}>월</span>
+              </div>
+            </div>
+            <div className={styles.editRow}>
+              <span className={styles.editRowLabel}>이율</span>
+              <div className={styles.editField}>
+                <input
+                  type="number"
+                  className={styles.editInputSmall}
+                  value={editValues.interestRate || ''}
+                  onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  step="0.01"
+                  placeholder="0"
+                />
+                <span className={styles.editUnit}>%</span>
+              </div>
+            </div>
+            <div className={styles.editRow}>
+              <span className={styles.editRowLabel}>만기</span>
+              <div className={styles.editField}>
+                <input
+                  type="number"
+                  className={styles.editInputSmall}
+                  value={editValues.maturityYear || ''}
+                  onChange={e => setEditValues({ ...editValues, maturityYear: e.target.value })}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  placeholder={String(currentYear + 1)}
+                />
+                <span className={styles.editUnit}>년</span>
+                <input
+                  type="number"
+                  className={styles.editInputSmall}
+                  value={editValues.maturityMonth || ''}
+                  onChange={e => setEditValues({ ...editValues, maturityMonth: e.target.value })}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  min={1}
+                  max={12}
+                  placeholder="12"
+                />
+                <span className={styles.editUnit}>월</span>
+              </div>
+            </div>
+            <div className={styles.editRow}>
+              <span className={styles.editRowLabel}>비과세</span>
+              <div className={styles.typeButtons}>
+                <button
+                  type="button"
+                  className={`${styles.typeBtn} ${editValues.isTaxFree === 'true' ? styles.active : ''}`}
+                  onClick={() => setEditValues({ ...editValues, isTaxFree: 'true' })}
+                >
+                  O
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.typeBtn} ${editValues.isTaxFree !== 'true' ? styles.active : ''}`}
+                  onClick={() => setEditValues({ ...editValues, isTaxFree: 'false' })}
+                >
+                  X
+                </button>
+              </div>
+            </div>
+            <div className={styles.editRow}>
+              <span className={styles.editRowLabel}>통화</span>
+              <div className={styles.editField}>
+                <select
+                  className={styles.editSelect}
+                  value={editValues.currency || 'KRW'}
+                  onChange={e => setEditValues({ ...editValues, currency: e.target.value })}
+                >
+                  <option value="KRW">KRW (원)</option>
+                  <option value="USD">USD (달러)</option>
+                  <option value="EUR">EUR (유로)</option>
+                  <option value="JPY">JPY (엔)</option>
+                </select>
+              </div>
+            </div>
+          </>
+        )}
+        {editValues.type === 'checking' && (
+          <div className={styles.editRow}>
+            <span className={styles.editRowLabel}>금리</span>
+            <div className={styles.editField}>
+              <input
+                type="number"
+                className={styles.editInputSmall}
+                value={editValues.interestRate || ''}
+                onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                step="0.01"
+                placeholder="0"
+              />
+              <span className={styles.editUnit}>%</span>
+            </div>
+          </div>
+        )}
+        <div className={styles.editActions}>
+          <button className={styles.cancelBtn} onClick={cancelEdit}>취소</button>
+          <button className={styles.saveBtn} onClick={handleSaveSavingsAccount}>저장</button>
+        </div>
+      </div>
+    )
+  }
+
+  const renderInvestmentEditForm = (account: Savings | null) => {
+    return (
+      <div className={styles.editItem}>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>유형</span>
+          <div className={styles.typeButtons}>
+            {(['domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'other'] as UIInvestmentType[]).map(type => (
+              <button
+                key={type}
+                type="button"
+                className={`${styles.typeBtn} ${editValues.type === type ? styles.active : ''}`}
+                onClick={() => setEditValues({ ...editValues, type })}
+              >
+                {INVESTMENT_TYPE_LABELS[type]}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>계좌명</span>
+          <div className={styles.editField}>
+            <input
+              type="text"
+              className={styles.editInputWide}
+              value={editValues.name || ''}
+              onChange={e => setEditValues({ ...editValues, name: e.target.value })}
+              placeholder="예: 미국주식, 국내ETF"
+              autoFocus
+            />
+          </div>
+        </div>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>증권사</span>
+          <div className={styles.editField}>
+            <select
+              className={styles.editSelect}
+              value={editValues.broker || ''}
+              onChange={e => setEditValues({ ...editValues, broker: e.target.value })}
+            >
+              <option value="">선택</option>
+              {SECURITIES_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>평가액</span>
+          <div className={styles.editField}>
+            <input
+              type="number"
+              className={styles.editInput}
+              value={editValues.balance || ''}
+              onChange={e => setEditValues({ ...editValues, balance: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              placeholder="0"
+            />
+            <span className={styles.editUnit}>만원</span>
+          </div>
+        </div>
+        {isMarried && (
+          <div className={styles.editRow}>
+            <span className={styles.editRowLabel}>소유자</span>
+            <div className={styles.typeButtons}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${editValues.owner === 'self' ? styles.active : ''}`}
+                onClick={() => setEditValues({ ...editValues, owner: 'self' })}
+              >
+                본인
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${editValues.owner === 'spouse' ? styles.active : ''}`}
+                onClick={() => setEditValues({ ...editValues, owner: 'spouse' })}
+              >
+                배우자
+              </button>
+            </div>
+          </div>
+        )}
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>수익률</span>
+          <div className={styles.editField}>
+            <input
+              type="number"
+              className={styles.editInputSmall}
+              value={editValues.expectedReturn || ''}
+              onChange={e => setEditValues({ ...editValues, expectedReturn: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              step="0.1"
+              placeholder="0"
+            />
+            <span className={styles.editUnit}>%</span>
+          </div>
+        </div>
+        <div className={styles.editActions}>
+          <button className={styles.cancelBtn} onClick={cancelEdit}>취소</button>
+          <button className={styles.saveBtn} onClick={handleSaveInvestmentAccount}>저장</button>
+        </div>
+      </div>
+    )
+  }
+
+  const renderIsaEditForm = (isa: PersonalPension | null) => {
+    return (
+      <div className={styles.editItem}>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>계좌명</span>
+          <div className={styles.editField}>
+            <input
+              type="text"
+              className={styles.editInputWide}
+              value={isaEditValues.name || ''}
+              onChange={e => setIsaEditValues({ ...isaEditValues, name: e.target.value })}
+              placeholder="예: ISA중개형"
+              autoFocus
+            />
+          </div>
+        </div>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>증권사</span>
+          <div className={styles.editField}>
+            <select
+              className={styles.editSelect}
+              value={isaEditValues.broker || ''}
+              onChange={e => setIsaEditValues({ ...isaEditValues, broker: e.target.value })}
+            >
+              <option value="">선택</option>
+              {SECURITIES_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>잔액</span>
+          <div className={styles.editField}>
+            <input
+              type="number"
+              className={styles.editInput}
+              value={isaEditValues.balance || ''}
+              onChange={e => setIsaEditValues({ ...isaEditValues, balance: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              placeholder="0"
+            />
+            <span className={styles.editUnit}>만원</span>
+          </div>
+        </div>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>납입</span>
+          <div className={styles.editField}>
+            <input
+              type="number"
+              className={styles.editInput}
+              value={isaEditValues.monthly || ''}
+              onChange={e => setIsaEditValues({ ...isaEditValues, monthly: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              placeholder="0"
+            />
+            <span className={styles.editUnit}>만원/월</span>
+          </div>
+        </div>
+        {isMarried && (
+          <div className={styles.editRow}>
+            <span className={styles.editRowLabel}>소유자</span>
+            <div className={styles.typeButtons}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${isaEditValues.owner === 'self' ? styles.active : ''}`}
+                onClick={() => setIsaEditValues({ ...isaEditValues, owner: 'self' })}
+              >
+                본인
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${isaEditValues.owner === 'spouse' ? styles.active : ''}`}
+                onClick={() => setIsaEditValues({ ...isaEditValues, owner: 'spouse' })}
+              >
+                배우자
+              </button>
+            </div>
+          </div>
+        )}
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>만기</span>
+          <div className={styles.editField}>
+            <input
+              type="number"
+              className={styles.editInputSmall}
+              value={isaEditValues.maturityYear || ''}
+              onChange={e => setIsaEditValues({ ...isaEditValues, maturityYear: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              min={currentYear}
+              max={currentYear + 10}
+              placeholder={String(currentYear + 3)}
+            />
+            <span className={styles.editUnit}>년</span>
+            <input
+              type="number"
+              className={styles.editInputSmall}
+              value={isaEditValues.maturityMonth || ''}
+              onChange={e => setIsaEditValues({ ...isaEditValues, maturityMonth: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              min={1}
+              max={12}
+              placeholder="12"
+            />
+            <span className={styles.editUnit}>월</span>
+          </div>
+        </div>
+        <div className={styles.editRow}>
+          <span className={styles.editRowLabel}>전략</span>
+          <div className={styles.typeButtons}>
+            <button
+              type="button"
+              className={`${styles.typeBtn} ${isaEditValues.strategy === 'pension_savings' ? styles.active : ''}`}
+              onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'pension_savings' })}
+            >
+              연금저축 전환
+            </button>
+            <button
+              type="button"
+              className={`${styles.typeBtn} ${isaEditValues.strategy === 'irp' ? styles.active : ''}`}
+              onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'irp' })}
+            >
+              IRP 전환
+            </button>
+            <button
+              type="button"
+              className={`${styles.typeBtn} ${isaEditValues.strategy === 'cash' ? styles.active : ''}`}
+              onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'cash' })}
+            >
+              현금 인출
+            </button>
+          </div>
+        </div>
+        <div className={styles.editActions}>
+          <button className={styles.cancelBtn} onClick={cancelIsaEdit}>취소</button>
+          <button className={styles.saveBtn} onClick={handleSaveIsa}>저장</button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -402,872 +906,69 @@ export function SavingsTab({
           <span className={styles.count}>{totalCount}개</span>
         </button>
         <div className={styles.headerRight}>
-          <span className={styles.totalAmount}>{formatMoney(totalAssets)}</span>
+          <button
+            ref={addButtonRef}
+            className={styles.addIconBtn}
+            onClick={() => setShowTypeMenu(!showTypeMenu)}
+            type="button"
+          >
+            <Plus size={18} />
+          </button>
         </div>
       </div>
+
+      {/* 타입 선택 드롭다운 - portal로 body에 렌더 */}
+      {showTypeMenu && addButtonRef.current && createPortal(
+        <div
+          className={styles.typeMenu}
+          style={{
+            position: 'fixed',
+            top: addButtonRef.current.getBoundingClientRect().bottom + 6,
+            left: addButtonRef.current.getBoundingClientRect().right - 150,
+            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }}
+        >
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => handleTypeSelect('savings')}
+          >
+            저축 계좌
+          </button>
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => handleTypeSelect('investment')}
+          >
+            투자 계좌
+          </button>
+          <button
+            className={styles.typeMenuItem}
+            onClick={() => handleTypeSelect('isa')}
+          >
+            ISA 계좌
+          </button>
+        </div>,
+        document.body
+      )}
+
       {isExpanded && (
-        <>
-        {/* ========== 저축 계좌 ========== */}
-        <section className={styles.assetSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>저축 계좌</span>
-          </div>
-          <p className={styles.sectionDesc}>
-            입출금통장, 적금, 정기예금 등 원금이 보장되는 계좌
-          </p>
+        <div className={styles.flatList}>
+          {allItems.length === 0 && !editingAccount && !editingIsa && (
+            <p className={styles.emptyHint}>
+              아직 등록된 저축/투자가 없습니다. 오른쪽 + 버튼으로 추가하세요.
+            </p>
+          )}
 
-          <div className={styles.itemList}>
-            {savingsAccounts.map(account => (
-              editingAccount?.section === 'savings' && editingAccount.id === account.id ? (
-                <div key={account.id} className={styles.editItem}>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>유형</span>
-                    <div className={styles.typeButtons}>
-                      {(['checking', 'savings', 'deposit'] as UISavingsType[]).map(type => (
-                        <button
-                          key={type}
-                          type="button"
-                          className={`${styles.typeBtn} ${editValues.type === type ? styles.active : ''}`}
-                          onClick={() => setEditValues({ ...editValues, type })}
-                        >
-                          {SAVINGS_TYPE_LABELS[type]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>계좌명</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="text"
-                        className={styles.editInputWide}
-                        value={editValues.name || ''}
-                        onChange={e => setEditValues({ ...editValues, name: e.target.value })}
-                        placeholder="예: 정기예금, 적금"
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>은행</span>
-                    <div className={styles.editField}>
-                      <select
-                        className={styles.editSelect}
-                        value={editValues.broker || ''}
-                        onChange={e => setEditValues({ ...editValues, broker: e.target.value })}
-                      >
-                        <option value="">선택</option>
-                        {BANK_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>잔액</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="number"
-                        className={styles.editInput}
-                        value={editValues.balance || ''}
-                        onChange={e => setEditValues({ ...editValues, balance: e.target.value })}
-                        onWheel={e => (e.target as HTMLElement).blur()}
-                        placeholder="0"
-                      />
-                      <span className={styles.editUnit}>만원</span>
-                    </div>
-                  </div>
-                  {isMarried && (
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>소유자</span>
-                      <div className={styles.typeButtons}>
-                        <button
-                          type="button"
-                          className={`${styles.typeBtn} ${editValues.owner === 'self' ? styles.active : ''}`}
-                          onClick={() => setEditValues({ ...editValues, owner: 'self' })}
-                        >
-                          본인
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.typeBtn} ${editValues.owner === 'spouse' ? styles.active : ''}`}
-                          onClick={() => setEditValues({ ...editValues, owner: 'spouse' })}
-                        >
-                          배우자
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {(editValues.type === 'savings' || editValues.type === 'deposit') && (
-                    <>
-                      <div className={styles.editRow}>
-                        <span className={styles.editRowLabel}>가입일</span>
-                        <div className={styles.editField}>
-                          <input
-                            type="number"
-                            className={styles.editInputSmall}
-                            value={editValues.startYear || ''}
-                            onChange={e => setEditValues({ ...editValues, startYear: e.target.value })}
-                            onWheel={e => (e.target as HTMLElement).blur()}
-                            placeholder={String(currentYear)}
-                          />
-                          <span className={styles.editUnit}>년</span>
-                          <input
-                            type="number"
-                            className={styles.editInputSmall}
-                            value={editValues.startMonth || ''}
-                            onChange={e => setEditValues({ ...editValues, startMonth: e.target.value })}
-                            onWheel={e => (e.target as HTMLElement).blur()}
-                            min={1}
-                            max={12}
-                            placeholder="1"
-                          />
-                          <span className={styles.editUnit}>월</span>
-                        </div>
-                      </div>
-                      <div className={styles.editRow}>
-                        <span className={styles.editRowLabel}>이율</span>
-                        <div className={styles.editField}>
-                          <input
-                            type="number"
-                            className={styles.editInputSmall}
-                            value={editValues.interestRate || ''}
-                            onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
-                            onWheel={e => (e.target as HTMLElement).blur()}
-                            step="0.01"
-                            placeholder="0"
-                          />
-                          <span className={styles.editUnit}>%</span>
-                        </div>
-                      </div>
-                      <div className={styles.editRow}>
-                        <span className={styles.editRowLabel}>만기</span>
-                        <div className={styles.editField}>
-                          <input
-                            type="number"
-                            className={styles.editInputSmall}
-                            value={editValues.maturityYear || ''}
-                            onChange={e => setEditValues({ ...editValues, maturityYear: e.target.value })}
-                            onWheel={e => (e.target as HTMLElement).blur()}
-                            placeholder={String(currentYear + 1)}
-                          />
-                          <span className={styles.editUnit}>년</span>
-                          <input
-                            type="number"
-                            className={styles.editInputSmall}
-                            value={editValues.maturityMonth || ''}
-                            onChange={e => setEditValues({ ...editValues, maturityMonth: e.target.value })}
-                            onWheel={e => (e.target as HTMLElement).blur()}
-                            min={1}
-                            max={12}
-                            placeholder="12"
-                          />
-                          <span className={styles.editUnit}>월</span>
-                        </div>
-                      </div>
-                      <div className={styles.editRow}>
-                        <span className={styles.editRowLabel}>비과세</span>
-                        <div className={styles.typeButtons}>
-                          <button
-                            type="button"
-                            className={`${styles.typeBtn} ${editValues.isTaxFree === 'true' ? styles.active : ''}`}
-                            onClick={() => setEditValues({ ...editValues, isTaxFree: 'true' })}
-                          >
-                            O
-                          </button>
-                          <button
-                            type="button"
-                            className={`${styles.typeBtn} ${editValues.isTaxFree !== 'true' ? styles.active : ''}`}
-                            onClick={() => setEditValues({ ...editValues, isTaxFree: 'false' })}
-                          >
-                            X
-                          </button>
-                        </div>
-                      </div>
-                      <div className={styles.editRow}>
-                        <span className={styles.editRowLabel}>통화</span>
-                        <div className={styles.editField}>
-                          <select
-                            className={styles.editSelect}
-                            value={editValues.currency || 'KRW'}
-                            onChange={e => setEditValues({ ...editValues, currency: e.target.value })}
-                          >
-                            <option value="KRW">KRW (원)</option>
-                            <option value="USD">USD (달러)</option>
-                            <option value="EUR">EUR (유로)</option>
-                            <option value="JPY">JPY (엔)</option>
-                          </select>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  {editValues.type === 'checking' && (
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>금리</span>
-                      <div className={styles.editField}>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.interestRate || ''}
-                          onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          step="0.01"
-                          placeholder="0"
-                        />
-                        <span className={styles.editUnit}>%</span>
-                      </div>
-                    </div>
-                  )}
-                  <div className={styles.editActions}>
-                    <button className={styles.cancelBtn} onClick={cancelEdit}>취소</button>
-                    <button className={styles.saveBtn} onClick={handleSaveSavingsAccount}>저장</button>
-                  </div>
-                </div>
-              ) : (
-                <div key={account.id} className={styles.assetItem}>
-                  <div className={styles.itemInfo}>
-                    <span className={styles.itemName}>
-                      {account.title}
-                      {account.broker_name && <span className={styles.brokerTag}>{account.broker_name}</span>}
-                      {account.owner === 'spouse' && <span className={styles.ownerBadge}>배우자</span>}
-                    </span>
-                    <span className={styles.itemMeta}>
-                      {SAVINGS_TYPE_LABELS[account.type as UISavingsType] || account.type}
-                      {account.interest_rate && ` | 금리 ${account.interest_rate}%`}
-                      {account.maturity_year && ` | ${account.maturity_year}년 ${account.maturity_month || 12}월 만기`}
-                    </span>
-                  </div>
-                  <div className={styles.itemRight}>
-                    <span className={styles.itemAmount}>{formatMoney(account.current_balance)}</span>
-                    <div className={styles.itemActions}>
-                      <button
-                        className={styles.editBtn}
-                        onClick={() => startEditSavingsAccount(account)}
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      {/* 입출금통장은 삭제 불가 (기본 현금 관리 통장) */}
-                      {!(account.type === 'checking' && account.title === '입출금통장') && (
-                        <button
-                          className={styles.deleteBtn}
-                          onClick={() => handleDeleteAccount(account.id)}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )
-            ))}
-
-            {/* 추가 폼 */}
-            {editingAccount?.section === 'savings' && editingAccount.id === null ? (
-              <div className={styles.editItem}>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>유형</span>
-                  <div className={styles.typeButtons}>
-                    {(['checking', 'savings', 'deposit'] as UISavingsType[]).map(type => (
-                      <button
-                        key={type}
-                        type="button"
-                        className={`${styles.typeBtn} ${editValues.type === type ? styles.active : ''}`}
-                        onClick={() => setEditValues({ ...editValues, type })}
-                      >
-                        {SAVINGS_TYPE_LABELS[type]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>계좌명</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="text"
-                      className={styles.editInputWide}
-                      value={editValues.name || ''}
-                      onChange={e => setEditValues({ ...editValues, name: e.target.value })}
-                      placeholder="예: 정기예금, 적금"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>은행</span>
-                  <div className={styles.editField}>
-                    <select
-                      className={styles.editSelect}
-                      value={editValues.broker || ''}
-                      onChange={e => setEditValues({ ...editValues, broker: e.target.value })}
-                    >
-                      <option value="">선택</option>
-                      {BANK_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>잔액</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInput}
-                      value={editValues.balance || ''}
-                      onChange={e => setEditValues({ ...editValues, balance: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      placeholder="0"
-                    />
-                    <span className={styles.editUnit}>만원</span>
-                  </div>
-                </div>
-                {isMarried && (
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>소유자</span>
-                    <div className={styles.typeButtons}>
-                      <button
-                        type="button"
-                        className={`${styles.typeBtn} ${editValues.owner === 'self' ? styles.active : ''}`}
-                        onClick={() => setEditValues({ ...editValues, owner: 'self' })}
-                      >
-                        본인
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.typeBtn} ${editValues.owner === 'spouse' ? styles.active : ''}`}
-                        onClick={() => setEditValues({ ...editValues, owner: 'spouse' })}
-                      >
-                        배우자
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {(editValues.type === 'savings' || editValues.type === 'deposit') && (
-                  <>
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>가입일</span>
-                      <div className={styles.editField}>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.startYear || ''}
-                          onChange={e => setEditValues({ ...editValues, startYear: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          placeholder={String(currentYear)}
-                        />
-                        <span className={styles.editUnit}>년</span>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.startMonth || ''}
-                          onChange={e => setEditValues({ ...editValues, startMonth: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          min={1}
-                          max={12}
-                          placeholder="1"
-                        />
-                        <span className={styles.editUnit}>월</span>
-                      </div>
-                    </div>
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>이율</span>
-                      <div className={styles.editField}>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.interestRate || ''}
-                          onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          step="0.01"
-                          placeholder="0"
-                        />
-                        <span className={styles.editUnit}>%</span>
-                      </div>
-                    </div>
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>만기</span>
-                      <div className={styles.editField}>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.maturityYear || ''}
-                          onChange={e => setEditValues({ ...editValues, maturityYear: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          placeholder={String(currentYear + 1)}
-                        />
-                        <span className={styles.editUnit}>년</span>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.maturityMonth || ''}
-                          onChange={e => setEditValues({ ...editValues, maturityMonth: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          min={1}
-                          max={12}
-                          placeholder="12"
-                        />
-                        <span className={styles.editUnit}>월</span>
-                      </div>
-                    </div>
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>비과세</span>
-                      <div className={styles.typeButtons}>
-                        <button
-                          type="button"
-                          className={`${styles.typeBtn} ${editValues.isTaxFree === 'true' ? styles.active : ''}`}
-                          onClick={() => setEditValues({ ...editValues, isTaxFree: 'true' })}
-                        >
-                          O
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.typeBtn} ${editValues.isTaxFree !== 'true' ? styles.active : ''}`}
-                          onClick={() => setEditValues({ ...editValues, isTaxFree: 'false' })}
-                        >
-                          X
-                        </button>
-                      </div>
-                    </div>
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>통화</span>
-                      <div className={styles.editField}>
-                        <select
-                          className={styles.editSelect}
-                          value={editValues.currency || 'KRW'}
-                          onChange={e => setEditValues({ ...editValues, currency: e.target.value })}
-                        >
-                          <option value="KRW">KRW (원)</option>
-                          <option value="USD">USD (달러)</option>
-                          <option value="EUR">EUR (유로)</option>
-                          <option value="JPY">JPY (엔)</option>
-                        </select>
-                      </div>
-                    </div>
-                  </>
-                )}
-                {editValues.type === 'checking' && (
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>금리</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="number"
-                        className={styles.editInputSmall}
-                        value={editValues.interestRate || ''}
-                        onChange={e => setEditValues({ ...editValues, interestRate: e.target.value })}
-                        onWheel={e => (e.target as HTMLElement).blur()}
-                        step="0.01"
-                        placeholder="0"
-                      />
-                      <span className={styles.editUnit}>%</span>
-                    </div>
-                  </div>
-                )}
-                <div className={styles.editActions}>
-                  <button className={styles.cancelBtn} onClick={cancelEdit}>취소</button>
-                  <button className={styles.saveBtn} onClick={handleSaveSavingsAccount}>저장</button>
-                </div>
-              </div>
-            ) : (
-              <button className={styles.addBtn} onClick={() => startAddAccount('savings')}>
-                + 저축 계좌 추가
-              </button>
-            )}
-          </div>
-        </section>
-
-        {/* ========== 투자 계좌 ========== */}
-        <section className={styles.assetSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>투자 계좌</span>
-          </div>
-          <p className={styles.sectionDesc}>
-            주식, ETF, 펀드, 채권, 암호화폐 등 시장 가치가 변동하는 계좌
-          </p>
-
-          <div className={styles.itemList}>
-            {investmentAccounts.map(account => (
-              editingAccount?.section === 'investment' && editingAccount.id === account.id ? (
-                <div key={account.id} className={styles.editItem}>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>유형</span>
-                    <div className={styles.typeButtons}>
-                      {(['domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'other'] as UIInvestmentType[]).map(type => (
-                        <button
-                          key={type}
-                          type="button"
-                          className={`${styles.typeBtn} ${editValues.type === type ? styles.active : ''}`}
-                          onClick={() => setEditValues({ ...editValues, type })}
-                        >
-                          {INVESTMENT_TYPE_LABELS[type]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>계좌명</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="text"
-                        className={styles.editInputWide}
-                        value={editValues.name || ''}
-                        onChange={e => setEditValues({ ...editValues, name: e.target.value })}
-                        placeholder="예: 미국주식, 국내ETF"
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>증권사</span>
-                    <div className={styles.editField}>
-                      <select
-                        className={styles.editSelect}
-                        value={editValues.broker || ''}
-                        onChange={e => setEditValues({ ...editValues, broker: e.target.value })}
-                      >
-                        <option value="">선택</option>
-                        {SECURITIES_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>평가액</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="number"
-                        className={styles.editInput}
-                        value={editValues.balance || ''}
-                        onChange={e => setEditValues({ ...editValues, balance: e.target.value })}
-                        onWheel={e => (e.target as HTMLElement).blur()}
-                        placeholder="0"
-                      />
-                      <span className={styles.editUnit}>만원</span>
-                    </div>
-                  </div>
-                  {isMarried && (
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>소유자</span>
-                      <div className={styles.typeButtons}>
-                        <button
-                          type="button"
-                          className={`${styles.typeBtn} ${editValues.owner === 'self' ? styles.active : ''}`}
-                          onClick={() => setEditValues({ ...editValues, owner: 'self' })}
-                        >
-                          본인
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.typeBtn} ${editValues.owner === 'spouse' ? styles.active : ''}`}
-                          onClick={() => setEditValues({ ...editValues, owner: 'spouse' })}
-                        >
-                          배우자
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>수익률</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="number"
-                        className={styles.editInputSmall}
-                        value={editValues.expectedReturn || ''}
-                        onChange={e => setEditValues({ ...editValues, expectedReturn: e.target.value })}
-                        onWheel={e => (e.target as HTMLElement).blur()}
-                        step="0.1"
-                        placeholder="0"
-                      />
-                      <span className={styles.editUnit}>%</span>
-                    </div>
-                  </div>
-                  <div className={styles.editActions}>
-                    <button className={styles.cancelBtn} onClick={cancelEdit}>취소</button>
-                    <button className={styles.saveBtn} onClick={handleSaveInvestmentAccount}>저장</button>
-                  </div>
-                </div>
-              ) : (
-                <div key={account.id} className={styles.assetItem}>
-                  <div className={styles.itemInfo}>
-                    <span className={styles.itemName}>
-                      {account.title}
-                      {account.broker_name && <span className={styles.brokerTag}>{account.broker_name}</span>}
-                      {account.owner === 'spouse' && <span className={styles.ownerBadge}>배우자</span>}
-                    </span>
-                    <span className={styles.itemMeta}>
-                      {INVESTMENT_TYPE_LABELS[account.type as UIInvestmentType] || account.type}
-                      {account.expected_return && ` | 예상 수익률 ${account.expected_return}%`}
-                    </span>
-                  </div>
-                  <div className={styles.itemRight}>
-                    <span className={styles.itemAmount}>{formatMoney(account.current_balance)}</span>
-                    <div className={styles.itemActions}>
-                      <button
-                        className={styles.editBtn}
-                        onClick={() => startEditSavingsAccount(account)}
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        className={styles.deleteBtn}
-                        onClick={() => handleDeleteAccount(account.id)}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            ))}
-
-            {/* 추가 폼 */}
-            {editingAccount?.section === 'investment' && editingAccount.id === null ? (
-              <div className={styles.editItem}>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>유형</span>
-                  <div className={styles.typeButtons}>
-                    {(['domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'other'] as UIInvestmentType[]).map(type => (
-                      <button
-                        key={type}
-                        type="button"
-                        className={`${styles.typeBtn} ${editValues.type === type ? styles.active : ''}`}
-                        onClick={() => setEditValues({ ...editValues, type })}
-                      >
-                        {INVESTMENT_TYPE_LABELS[type]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>계좌명</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="text"
-                      className={styles.editInputWide}
-                      value={editValues.name || ''}
-                      onChange={e => setEditValues({ ...editValues, name: e.target.value })}
-                      placeholder="예: 미국주식, 국내ETF"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>증권사</span>
-                  <div className={styles.editField}>
-                    <select
-                      className={styles.editSelect}
-                      value={editValues.broker || ''}
-                      onChange={e => setEditValues({ ...editValues, broker: e.target.value })}
-                    >
-                      <option value="">선택</option>
-                      {SECURITIES_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>평가액</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInput}
-                      value={editValues.balance || ''}
-                      onChange={e => setEditValues({ ...editValues, balance: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      placeholder="0"
-                    />
-                    <span className={styles.editUnit}>만원</span>
-                  </div>
-                </div>
-                {isMarried && (
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>소유자</span>
-                    <div className={styles.typeButtons}>
-                      <button
-                        type="button"
-                        className={`${styles.typeBtn} ${editValues.owner === 'self' ? styles.active : ''}`}
-                        onClick={() => setEditValues({ ...editValues, owner: 'self' })}
-                      >
-                        본인
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.typeBtn} ${editValues.owner === 'spouse' ? styles.active : ''}`}
-                        onClick={() => setEditValues({ ...editValues, owner: 'spouse' })}
-                      >
-                        배우자
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>수익률</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInputSmall}
-                      value={editValues.expectedReturn || ''}
-                      onChange={e => setEditValues({ ...editValues, expectedReturn: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      step="0.1"
-                      placeholder="0"
-                    />
-                    <span className={styles.editUnit}>%</span>
-                  </div>
-                </div>
-                <div className={styles.editActions}>
-                  <button className={styles.cancelBtn} onClick={cancelEdit}>취소</button>
-                  <button className={styles.saveBtn} onClick={handleSaveInvestmentAccount}>저장</button>
-                </div>
-              </div>
-            ) : (
-              <button className={styles.addBtn} onClick={() => startAddAccount('investment')}>
-                + 투자 계좌 추가
-              </button>
-            )}
-          </div>
-        </section>
-
-        {/* ========== ISA 계좌 ========== */}
-        <section className={styles.assetSection}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>ISA 계좌</span>
-          </div>
-          <p className={styles.sectionDesc}>
-            ISA(개인종합자산관리계좌). 만기 해제 후 재가입이 가능합니다.
-          </p>
-
-          <div className={styles.itemList}>
-            {isaAccounts.map(isa => (
-              editingIsa === isa.id ? (
-                <div key={isa.id} className={styles.editItem}>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>계좌명</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="text"
-                        className={styles.editInputWide}
-                        value={isaEditValues.name || ''}
-                        onChange={e => setIsaEditValues({ ...isaEditValues, name: e.target.value })}
-                        placeholder="예: ISA중개형"
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>증권사</span>
-                    <div className={styles.editField}>
-                      <select
-                        className={styles.editSelect}
-                        value={isaEditValues.broker || ''}
-                        onChange={e => setIsaEditValues({ ...isaEditValues, broker: e.target.value })}
-                      >
-                        <option value="">선택</option>
-                        {SECURITIES_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>잔액</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="number"
-                        className={styles.editInput}
-                        value={isaEditValues.balance || ''}
-                        onChange={e => setIsaEditValues({ ...isaEditValues, balance: e.target.value })}
-                        onWheel={e => (e.target as HTMLElement).blur()}
-                        placeholder="0"
-                      />
-                      <span className={styles.editUnit}>만원</span>
-                    </div>
-                  </div>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>납입</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="number"
-                        className={styles.editInput}
-                        value={isaEditValues.monthly || ''}
-                        onChange={e => setIsaEditValues({ ...isaEditValues, monthly: e.target.value })}
-                        onWheel={e => (e.target as HTMLElement).blur()}
-                        placeholder="0"
-                      />
-                      <span className={styles.editUnit}>만원/월</span>
-                    </div>
-                  </div>
-                  {isMarried && (
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>소유자</span>
-                      <div className={styles.typeButtons}>
-                        <button
-                          type="button"
-                          className={`${styles.typeBtn} ${isaEditValues.owner === 'self' ? styles.active : ''}`}
-                          onClick={() => setIsaEditValues({ ...isaEditValues, owner: 'self' })}
-                        >
-                          본인
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.typeBtn} ${isaEditValues.owner === 'spouse' ? styles.active : ''}`}
-                          onClick={() => setIsaEditValues({ ...isaEditValues, owner: 'spouse' })}
-                        >
-                          배우자
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>만기</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="number"
-                        className={styles.editInputSmall}
-                        value={isaEditValues.maturityYear || ''}
-                        onChange={e => setIsaEditValues({ ...isaEditValues, maturityYear: e.target.value })}
-                        onWheel={e => (e.target as HTMLElement).blur()}
-                        min={currentYear}
-                        max={currentYear + 10}
-                        placeholder={String(currentYear + 3)}
-                      />
-                      <span className={styles.editUnit}>년</span>
-                      <input
-                        type="number"
-                        className={styles.editInputSmall}
-                        value={isaEditValues.maturityMonth || ''}
-                        onChange={e => setIsaEditValues({ ...isaEditValues, maturityMonth: e.target.value })}
-                        onWheel={e => (e.target as HTMLElement).blur()}
-                        min={1}
-                        max={12}
-                        placeholder="12"
-                      />
-                      <span className={styles.editUnit}>월</span>
-                    </div>
-                  </div>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>전략</span>
-                    <div className={styles.typeButtons}>
-                      <button
-                        type="button"
-                        className={`${styles.typeBtn} ${isaEditValues.strategy === 'pension_savings' ? styles.active : ''}`}
-                        onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'pension_savings' })}
-                      >
-                        연금저축 전환
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.typeBtn} ${isaEditValues.strategy === 'irp' ? styles.active : ''}`}
-                        onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'irp' })}
-                      >
-                        IRP 전환
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.typeBtn} ${isaEditValues.strategy === 'cash' ? styles.active : ''}`}
-                        onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'cash' })}
-                      >
-                        현금 인출
-                      </button>
-                    </div>
-                  </div>
-                  <div className={styles.editActions}>
-                    <button className={styles.cancelBtn} onClick={cancelIsaEdit}>취소</button>
-                    <button className={styles.saveBtn} onClick={handleSaveIsa}>저장</button>
-                  </div>
-                </div>
-              ) : (
+          {/* 기존 항목 렌더링 */}
+          {allItems.map((item) => {
+            if (item.type === 'isa') {
+              const isa = item.data as PersonalPension
+              if (editingIsa === isa.id) {
+                return <div key={isa.id}>{renderIsaEditForm(isa)}</div>
+              }
+              return (
                 <div key={isa.id} className={styles.assetItem}>
                   <div className={styles.itemInfo}>
                     <span className={styles.itemName}>
@@ -1296,157 +997,66 @@ export function SavingsTab({
                   </div>
                 </div>
               )
-            ))}
+            }
 
-            {/* Add new ISA form */}
-            {editingIsa === 'new' ? (
-              <div className={styles.editItem}>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>계좌명</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="text"
-                      className={styles.editInputWide}
-                      value={isaEditValues.name || ''}
-                      onChange={e => setIsaEditValues({ ...isaEditValues, name: e.target.value })}
-                      placeholder="예: ISA중개형"
-                      autoFocus
-                    />
-                  </div>
+            const account = item.data as Savings
+            const section = item.type
+            if (editingAccount?.section === section && editingAccount.id === account.id) {
+              return (
+                <div key={account.id}>
+                  {section === 'savings' ? renderSavingsEditForm(account) : renderInvestmentEditForm(account)}
                 </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>증권사</span>
-                  <div className={styles.editField}>
-                    <select
-                      className={styles.editSelect}
-                      value={isaEditValues.broker || ''}
-                      onChange={e => setIsaEditValues({ ...isaEditValues, broker: e.target.value })}
+              )
+            }
+
+            return (
+              <div key={account.id} className={styles.assetItem}>
+                <div className={styles.itemInfo}>
+                  <span className={styles.itemName}>
+                    {account.title}
+                    {account.broker_name && <span className={styles.brokerTag}>{account.broker_name}</span>}
+                    {account.owner === 'spouse' && <span className={styles.ownerBadge}>배우자</span>}
+                  </span>
+                  <span className={styles.itemMeta}>
+                    {section === 'savings'
+                      ? `${SAVINGS_TYPE_LABELS[account.type as UISavingsType] || account.type}${account.interest_rate ? ` | 금리 ${account.interest_rate}%` : ''}${account.maturity_year ? ` | ${account.maturity_year}년 ${account.maturity_month || 12}월 만기` : ''}`
+                      : `${INVESTMENT_TYPE_LABELS[account.type as UIInvestmentType] || account.type}${account.expected_return ? ` | 예상 수익률 ${account.expected_return}%` : ''}`
+                    }
+                  </span>
+                </div>
+                <div className={styles.itemRight}>
+                  <span className={styles.itemAmount}>{formatMoney(account.current_balance)}</span>
+                  <div className={styles.itemActions}>
+                    <button
+                      className={styles.editBtn}
+                      onClick={() => startEditSavingsAccount(account)}
                     >
-                      <option value="">선택</option>
-                      {SECURITIES_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>잔액</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInput}
-                      value={isaEditValues.balance || ''}
-                      onChange={e => setIsaEditValues({ ...isaEditValues, balance: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      placeholder="0"
-                    />
-                    <span className={styles.editUnit}>만원</span>
-                  </div>
-                </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>납입</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInput}
-                      value={isaEditValues.monthly || ''}
-                      onChange={e => setIsaEditValues({ ...isaEditValues, monthly: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      placeholder="0"
-                    />
-                    <span className={styles.editUnit}>만원/월</span>
-                  </div>
-                </div>
-                {isMarried && (
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>소유자</span>
-                    <div className={styles.typeButtons}>
+                      <Pencil size={16} />
+                    </button>
+                    {!(account.type === 'checking' && account.title === '입출금통장') && (
                       <button
-                        type="button"
-                        className={`${styles.typeBtn} ${isaEditValues.owner === 'self' ? styles.active : ''}`}
-                        onClick={() => setIsaEditValues({ ...isaEditValues, owner: 'self' })}
+                        className={styles.deleteBtn}
+                        onClick={() => handleDeleteAccount(account.id)}
                       >
-                        본인
+                        <Trash2 size={16} />
                       </button>
-                      <button
-                        type="button"
-                        className={`${styles.typeBtn} ${isaEditValues.owner === 'spouse' ? styles.active : ''}`}
-                        onClick={() => setIsaEditValues({ ...isaEditValues, owner: 'spouse' })}
-                      >
-                        배우자
-                      </button>
-                    </div>
+                    )}
                   </div>
-                )}
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>만기</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInputSmall}
-                      value={isaEditValues.maturityYear || ''}
-                      onChange={e => setIsaEditValues({ ...isaEditValues, maturityYear: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      min={currentYear}
-                      max={currentYear + 10}
-                      placeholder={String(currentYear + 3)}
-                    />
-                    <span className={styles.editUnit}>년</span>
-                    <input
-                      type="number"
-                      className={styles.editInputSmall}
-                      value={isaEditValues.maturityMonth || ''}
-                      onChange={e => setIsaEditValues({ ...isaEditValues, maturityMonth: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      min={1}
-                      max={12}
-                      placeholder="12"
-                    />
-                    <span className={styles.editUnit}>월</span>
-                  </div>
-                </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>전략</span>
-                  <div className={styles.typeButtons}>
-                    <button
-                      type="button"
-                      className={`${styles.typeBtn} ${isaEditValues.strategy === 'pension_savings' ? styles.active : ''}`}
-                      onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'pension_savings' })}
-                    >
-                      연금저축 전환
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.typeBtn} ${isaEditValues.strategy === 'irp' ? styles.active : ''}`}
-                      onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'irp' })}
-                    >
-                      IRP 전환
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.typeBtn} ${isaEditValues.strategy === 'cash' ? styles.active : ''}`}
-                      onClick={() => setIsaEditValues({ ...isaEditValues, strategy: 'cash' })}
-                    >
-                      현금 인출
-                    </button>
-                  </div>
-                </div>
-                <div className={styles.editActions}>
-                  <button className={styles.cancelBtn} onClick={cancelIsaEdit}>취소</button>
-                  <button className={styles.saveBtn} onClick={handleSaveIsa}>저장</button>
                 </div>
               </div>
-            ) : (
-              <button className={styles.addBtn} onClick={startAddIsa}>
-                + ISA 계좌 추가
-              </button>
-            )}
-          </div>
-        </section>
+            )
+          })}
 
-        <p className={styles.infoText}>
-          연금저축, IRP는 연금 탭에서 관리됩니다.
-        </p>
-        </>
+          {/* 추가 폼 (하단) */}
+          {editingAccount?.id === null && editingAccount.section === 'savings' && renderSavingsEditForm(null)}
+          {editingAccount?.id === null && editingAccount.section === 'investment' && renderInvestmentEditForm(null)}
+          {editingIsa === 'new' && renderIsaEditForm(null)}
+        </div>
       )}
+
+      <p className={styles.infoText}>
+        연금저축, IRP는 연금 탭에서 관리됩니다.
+      </p>
     </div>
   )
 }

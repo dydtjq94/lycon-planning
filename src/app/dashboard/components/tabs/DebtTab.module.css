@@ -39,6 +39,22 @@
   gap: 10px;
 }
 
+.addIconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: var(--accent-color, #007aff);
+  cursor: pointer;
+}
+
+.addIconBtn:hover {
+  filter: brightness(0.85);
+}
+
 .totalAmount {
   font-size: 14px;
   font-weight: 600;
@@ -65,6 +81,22 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--dashboard-text);
+}
+
+/* 플랫 리스트 (섹션 없음) */
+.flatList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 12px;
+}
+
+.emptyHint {
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+  padding: 16px 0;
+  margin: 0;
+  text-align: left;
 }
 
 /* 부채 리스트 */
@@ -433,6 +465,45 @@
   height: 100%;
   color: var(--dashboard-text-secondary);
   font-size: 14px;
+}
+
+/* 타입 선택 드롭다운 */
+.typeMenu {
+  border-radius: 10px;
+  z-index: 300;
+  padding: 6px;
+  min-width: 150px;
+  animation: glassEnter 0.2s ease-out;
+}
+
+.typeMenuItem {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--dashboard-text);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.typeMenuItem:hover {
+  background: var(--dashboard-hover-bg);
+  color: var(--accent-color, #007aff);
+}
+
+@keyframes glassEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1024px) {

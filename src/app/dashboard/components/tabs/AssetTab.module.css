@@ -39,53 +39,79 @@
   gap: 10px;
 }
 
-.totalAmount {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--accent-color, #007aff);
-}
-
-/* 자산 섹션 */
-.assetSection {
-  padding: 24px 0;
-  border-bottom: 1px solid var(--dashboard-border);
-}
-
-.assetSection:last-of-type {
-  border-bottom: none;
-}
-
-.sectionHeader {
+.addIconBtn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.sectionTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--dashboard-text);
-}
-
-.sectionTotal {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--accent-color, #007aff);
-}
-
-.sectionDesc {
-  font-size: 12px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
   color: var(--dashboard-text-secondary);
-  margin: 0 0 8px 0;
+  cursor: pointer;
+  border-radius: 6px;
 }
 
-/* 항목 리스트 */
-.itemList {
+.addIconBtn:hover {
+  color: var(--accent-color, #007aff);
+  background: var(--dashboard-hover-bg);
+}
+
+/* 타입 선택 드롭다운 */
+.typeMenu {
+  position: fixed;
+  border-radius: 10px;
+  z-index: 300;
+  padding: 6px;
+  min-width: 150px;
+  animation: glassEnter 0.2s ease-out;
+}
+
+@keyframes glassEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.typeMenuItem {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--dashboard-text);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.typeMenuItem:hover {
+  background: var(--dashboard-hover-bg);
+}
+
+/* 플랫 리스트 */
+.flatList {
   display: flex;
   flex-direction: column;
   gap: 0;
+  padding-top: 12px;
 }
+
+.emptyHint {
+  font-size: 13px;
+  color: var(--dashboard-text-muted);
+  padding: 24px 0;
+  margin: 0;
+}
+
 
 /* ========== 읽기 모드 ========== */
 .assetItem {

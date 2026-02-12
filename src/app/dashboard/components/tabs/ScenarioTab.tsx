@@ -10,15 +10,12 @@ import {
   Receipt,
   LineChart,
   Landmark,
-  Wallet,
-  ListOrdered,
-  Settings,
 } from "lucide-react";
-import type { Simulation, GlobalSettings, InvestmentAssumptions, CashFlowPriorities } from "@/types";
+import type { Simulation, GlobalSettings, InvestmentAssumptions, CashFlowPriorities, SimFamilyMember } from "@/types";
 import { normalizePriorities } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationEngine";
 import type { SimulationProfile } from "@/lib/services/dbToFinancialItems";
-import type { ProfileBasics, FamilyMember } from "@/contexts/FinancialContext";
+import type { ProfileBasics } from "@/contexts/FinancialContext";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { NetWorthTab } from "./NetWorthTab";
 import { CashFlowOverviewTab } from "./CashFlowOverviewTab";
@@ -29,7 +26,6 @@ import { AssetTab } from "./AssetTab";
 import { DebtTab } from "./DebtTab";
 import { RealEstateTab } from "./RealEstateTab";
 import { PensionTab } from "./PensionTab";
-import { InvestmentAssumptionsPanel, CashFlowPrioritiesPanel, AccountsSummaryPanel } from "./scenario";
 import styles from "./ScenarioTab.module.css";
 
 interface ScenarioTabProps {
@@ -37,11 +33,11 @@ interface ScenarioTabProps {
   simulationId: string;
   profile: ProfileBasics;
   simulationProfile: SimulationProfile;
-  familyMembers: FamilyMember[];
+  familyMembers: SimFamilyMember[];
   globalSettings: GlobalSettings | null;
   simulationResult: SimulationResult;
   isMarried: boolean;
-  spouseMember?: FamilyMember;
+  spouseMember?: SimFamilyMember;
   investmentAssumptions?: InvestmentAssumptions;
   onInvestmentAssumptionsChange?: (assumptions: InvestmentAssumptions) => void;
   cashFlowPriorities?: CashFlowPriorities;
@@ -58,16 +54,13 @@ const TOP_TABS = [
 
 // Category tabs
 const CATEGORY_TABS = [
-  { id: "accounts", label: "계좌", icon: Wallet },
   { id: "income", label: "소득", icon: Banknote },
   { id: "expense", label: "지출", icon: Receipt },
   { id: "savings", label: "저축/투자", icon: LineChart },
   { id: "pension", label: "연금", icon: Landmark },
   { id: "realEstate", label: "부동산", icon: Home },
-  { id: "asset", label: "실물자산", icon: Car },
+  { id: "asset", label: "실물 자산", icon: Car },
   { id: "debt", label: "부채", icon: CreditCard },
-  { id: "investmentAssumptions", label: "투자 가정", icon: Settings },
-  { id: "cashflowPriorities", label: "현금 흐름 우선순위", icon: ListOrdered },
 ] as const;
 
 // 기본 Investment Assumptions
@@ -156,6 +149,23 @@ export function ScenarioTab({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeCategoryTab]);
 
+  // 드롭다운 외부 클릭으로 닫기 (백드롭 대신)
+  const categoryTabsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!activeCategoryTab) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      // 드롭다운 내부 클릭 → 무시
+      if (dropdownRef.current?.contains(target)) return;
+      // 카테고리 탭 버튼 클릭 → handleCategoryClick이 처리하므로 무시
+      if (categoryTabsRef.current?.contains(target)) return;
+      // 그 외 영역 클릭 → 닫기
+      setActiveCategoryTab(null);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [activeCategoryTab]);
+
   // 로컬 state (props가 없으면 시뮬레이션에서 로드하거나 기본값 사용)
   const [localAssumptions, setLocalAssumptions] = useState<InvestmentAssumptions>(
     propAssumptions || simulation.investment_assumptions || DEFAULT_ASSUMPTIONS
@@ -234,23 +244,6 @@ export function ScenarioTab({
     if (!activeCategoryTab) return null;
 
     switch (activeCategoryTab) {
-      case "accounts":
-        return (
-          <AccountsSummaryPanel
-            simulationId={simulationId}
-            profileId={profile.id}
-            isMarried={isMarried}
-            isInitializing={isInitializing}
-            isSyncingPrices={isSyncingPrices}
-          />
-        );
-      case "investmentAssumptions":
-        return (
-          <InvestmentAssumptionsPanel
-            assumptions={assumptions}
-            onChange={handleAssumptionsChange}
-          />
-        );
       case "income":
         return globalSettings ? (
           <IncomeTab
@@ -303,14 +296,6 @@ export function ScenarioTab({
             globalSettings={globalSettings ?? undefined}
           />
         );
-      case "cashflowPriorities":
-        return (
-          <CashFlowPrioritiesPanel
-            priorities={priorities}
-            onChange={handlePrioritiesChange}
-            simulationId={simulationId}
-          />
-        );
       default:
         return null;
     }
@@ -334,7 +319,7 @@ export function ScenarioTab({
       </div>
 
       {/* Category tabs (below top tabs) */}
-      <div className={styles.categoryTabs}>
+      <div ref={categoryTabsRef} className={styles.categoryTabs}>
         {CATEGORY_TABS.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -363,25 +348,22 @@ export function ScenarioTab({
 
     {/* Category dropdown popover (portal to body for backdrop-filter) */}
     {activeCategoryTab && createPortal(
-      <>
-        <div className={styles.dropdownBackdrop} onClick={() => setActiveCategoryTab(null)} />
-        <div
-          ref={dropdownRef}
-          className={styles.dropdown}
-          style={{
-            ...dropdownStyle,
-            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            border: `1px solid ${chartScaleColors.gridColor}`,
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-          }}
-        >
-          <div className={styles.dropdownContent}>
-            {renderCategoryContent()}
-          </div>
+      <div
+        ref={dropdownRef}
+        className={styles.dropdown}
+        style={{
+          ...dropdownStyle,
+          background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          border: `1px solid ${chartScaleColors.gridColor}`,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+        }}
+      >
+        <div className={styles.dropdownContent}>
+          {renderCategoryContent()}
         </div>
-      </>,
+      </div>,
       document.body
     )}
   </>

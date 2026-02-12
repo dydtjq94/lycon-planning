@@ -101,7 +101,8 @@ export async function updateFamilyMember(
     .single();
 
   if (error) {
-    console.error("Error updating family member:", error);
+    console.error("Error updating family member:", JSON.stringify(error, null, 2));
+    console.error("Update params - id:", id, "updates:", JSON.stringify(convertedUpdates));
     return null;
   }
 

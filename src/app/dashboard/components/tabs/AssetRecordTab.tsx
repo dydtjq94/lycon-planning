@@ -71,7 +71,7 @@ interface SnapshotModalData {
 }
 
 export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
-  const { chartLineColors, chartScaleColors, toRgba } = useChartTheme();
+  const { chartLineColors, chartScaleColors, toRgba, isDark } = useChartTheme();
   const { data: snapshots = [], isLoading } = useSnapshots(profileId);
   const deleteMutation = useDeleteSnapshot(profileId);
   const createMutation = useCreateSnapshot(profileId);
@@ -494,7 +494,12 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
               <ChevronDown size={16} />
             </button>
             {isMetricDropdownOpen && (
-              <div className={styles.metricDropdown}>
+              <div className={styles.metricDropdown} style={{
+                background: isDark ? 'rgba(34, 37, 41, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12)',
+              }}>
                 {METRIC_OPTIONS.map((option) => (
                   <button
                     key={option.id}
@@ -626,7 +631,12 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                           <MoreVertical size={16} />
                         </button>
                         {openMenuId === record.id && (
-                          <div className={styles.dropdownMenu}>
+                          <div className={styles.dropdownMenu} style={{
+                            background: isDark ? 'rgba(34, 37, 41, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+                            backdropFilter: 'blur(6px)',
+                            WebkitBackdropFilter: 'blur(6px)',
+                            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12)',
+                          }}>
                             <button
                               className={styles.dropdownItem}
                               onClick={() => handleOpenEditModal(record)}
@@ -667,7 +677,12 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
       {/* 기록 추가/수정 모달 */}
       {isModalOpen && (
         <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{
+            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }}>
             <div className={styles.modalHeader}>
               <h2>{editingId ? "기록 수정" : "기록 추가"}</h2>
               <button className={styles.modalClose} onClick={() => setIsModalOpen(false)}>
