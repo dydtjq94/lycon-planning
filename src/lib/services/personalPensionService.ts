@@ -10,7 +10,6 @@
 
 import { createClient } from '@/lib/supabase/client'
 import type { PersonalPension, PersonalPensionInput, Owner, PersonalPensionType } from '@/types/tables'
-import { createIncome, deleteLinkedIncomes } from './incomeService'
 import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
 
 // 금액 필드 목록
@@ -67,11 +66,6 @@ export async function createPersonalPension(
 
   if (error) throw error
 
-  // 수령 정보가 있을 경우에만 소득 연동 (만원 변환 후)
-  if (data.start_age && data.receiving_years) {
-    await createLinkedIncome(convertFromWon(data, PERSONAL_PENSION_MONEY_FIELDS), birthYear, retirementAge)
-  }
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, PERSONAL_PENSION_MONEY_FIELDS)
 }
@@ -97,24 +91,13 @@ export async function updatePersonalPension(
 
   if (error) throw error
 
-  // 기존 연동 소득 삭제
-  await deleteLinkedIncomes('personal_pension', id)
-
-  // 수령 정보가 있을 경우에만 소득 연동 재생성 (만원 변환 후)
-  if (data.start_age && data.receiving_years) {
-    await createLinkedIncome(convertFromWon(data, PERSONAL_PENSION_MONEY_FIELDS), birthYear, retirementAge)
-  }
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, PERSONAL_PENSION_MONEY_FIELDS)
 }
 
-// 개인연금 삭제 + 연동 소득 삭제
+// 개인연금 삭제
 export async function deletePersonalPension(id: string): Promise<void> {
   const supabase = createClient()
-
-  // 연동된 소득 먼저 삭제
-  await deleteLinkedIncomes('personal_pension', id)
 
   const { error } = await supabase
     .from('personal_pensions')
@@ -151,65 +134,6 @@ export function calculatePersonalPensionAmount(
   }
 
   return Math.round(total)
-}
-
-// 연동 소득 생성 (개인연금 → 소득)
-async function createLinkedIncome(
-  pension: PersonalPension,
-  birthYear: number,
-  retirementAge: number
-): Promise<void> {
-  if (!pension.start_age || !pension.receiving_years) return
-
-  const currentYear = new Date().getFullYear()
-  const currentAge = currentYear - birthYear
-  const yearsUntilStart = pension.start_age - currentAge
-
-  // 적립 종료까지의 년수 계산
-  let contributionYears = 0
-  if (pension.is_contribution_fixed_to_retirement) {
-    contributionYears = retirementAge - currentAge
-  } else if (pension.contribution_end_year) {
-    contributionYears = pension.contribution_end_year - currentYear
-  }
-  contributionYears = Math.max(0, contributionYears)
-
-  // 예상 총액 계산
-  const totalAmount = calculatePersonalPensionAmount(
-    pension.current_balance,
-    pension.monthly_contribution,
-    pension.return_rate,
-    yearsUntilStart,
-    contributionYears
-  )
-
-  // 월 수령액 계산
-  const monthlyAmount = Math.round(totalAmount / (pension.receiving_years * 12))
-  if (monthlyAmount <= 0) return
-
-  const startYear = birthYear + pension.start_age
-  const endYear = startYear + pension.receiving_years
-
-  const ownerLabel = pension.owner === 'self' ? '본인' : '배우자'
-  const typeLabel = PENSION_TYPE_LABELS[pension.pension_type]
-
-  await createIncome({
-    simulation_id: pension.simulation_id,
-    type: 'pension',
-    title: `${ownerLabel} ${typeLabel}`,
-    owner: pension.owner,
-    amount: monthlyAmount,
-    frequency: 'monthly',
-    start_year: startYear,
-    start_month: 1,
-    end_year: endYear,
-    end_month: 12,
-    is_fixed_to_retirement: false,
-    growth_rate: 0,
-    rate_category: 'fixed',
-    source_type: 'personal_pension',
-    source_id: pension.id,
-  })
 }
 
 // 개인연금 타입 라벨

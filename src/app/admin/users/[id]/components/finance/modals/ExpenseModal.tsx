@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import { BaseModal, FormField, FormRow } from "../shared";
-import { EXPENSE_TYPE_LABELS, EXPENSE_TYPE_DEFAULTS, createExpense, updateExpense } from "@/lib/services/expenseService";
+import {
+  EXPENSE_TYPE_LABELS,
+  EXPENSE_TYPE_DEFAULTS,
+  createExpense,
+  updateExpense,
+} from "@/lib/services/expenseService";
 import type { Expense, ExpenseType, Frequency } from "@/types/tables";
 import styles from "./Modal.module.css";
 
@@ -87,7 +92,10 @@ export function ExpenseModal({
 
     setSaving(true);
     try {
-      const defaults = EXPENSE_TYPE_DEFAULTS[type] || { rateCategory: "inflation", growthRate: 2.5 };
+      const defaults = EXPENSE_TYPE_DEFAULTS[type] || {
+        rateCategory: "inflation",
+        growthRate: 2.5,
+      };
 
       if (expense) {
         await updateExpense(expense.id, {
@@ -260,7 +268,7 @@ export function ExpenseModal({
         </FormRow>
       )}
 
-      <FormField label="연 상승률" hint="물가상승률 반영">
+      <FormField label="연 상승률" hint="물가 상승률 반영">
         <div className={styles.inputWithUnit}>
           <input
             type="number"

@@ -1287,7 +1287,7 @@ export function DiagnosisReport({
                     costOptions.housing.tierIndex
                   ]?.price || 0
                 : 0;
-              // 은퇴 시점 주거비 = 현재 가격 * 물가상승률
+              // 은퇴 시점 주거비 = 현재 가격 * 물가 상승률
               const housingInflationFactor = Math.pow(
                 1 + calcParams.inflationRate,
                 m.yearsToRetirement,
@@ -1384,7 +1384,7 @@ export function DiagnosisReport({
                     const monthlyCashflow =
                       monthlyIncomeTotal - monthlyExpenseTotal;
 
-                    // 현재 가치로 환산 (물가상승률 역산)
+                    // 현재 가치로 환산 (물가 상승률 역산)
                     const presentValueCashflow = Math.round(
                       monthlyCashflow /
                         Math.pow(
@@ -1645,7 +1645,7 @@ export function DiagnosisReport({
                                   </span>
                                 </div>
                                 <div className={styles.goalExplanationNote}>
-                                  {m.yearsToRetirement}년간 물가상승률{" "}
+                                  {m.yearsToRetirement}년간 물가 상승률{" "}
                                   {calcParams.inflationRate * 100}% 역산
                                 </div>
                               </div>
@@ -1693,7 +1693,7 @@ export function DiagnosisReport({
                                   </span>
                                 </div>
                                 <div className={styles.goalExplanationNote}>
-                                  {m.yearsToRetirement}년간 물가상승률{" "}
+                                  {m.yearsToRetirement}년간 물가 상승률{" "}
                                   {calcParams.inflationRate * 100}% 역산
                                 </div>
                               </div>
@@ -3047,9 +3047,9 @@ export function DiagnosisReport({
             </div>
           </div>
 
-          {/* 물가상승률 */}
+          {/* 물가 상승률 */}
           <div className={styles.calcSettingRow}>
-            <span className={styles.calcSettingLabel}>물가상승률</span>
+            <span className={styles.calcSettingLabel}>물가 상승률</span>
             <div className={styles.calcSettingOptions}>
               {[
                 { value: 0.045, label: "4.5%", desc: "비관" },
@@ -3071,9 +3071,9 @@ export function DiagnosisReport({
             </div>
           </div>
 
-          {/* 소득상승률 */}
+          {/* 소득 상승률 */}
           <div className={styles.calcSettingRow}>
-            <span className={styles.calcSettingLabel}>소득상승률</span>
+            <span className={styles.calcSettingLabel}>소득 상승률</span>
             <div className={styles.calcSettingOptions}>
               {[
                 { value: 0.02, label: "2%", desc: "비관" },

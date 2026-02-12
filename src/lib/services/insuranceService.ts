@@ -13,7 +13,6 @@ import type {
   InsuranceInput,
   InsuranceType,
 } from '@/types/tables'
-import { createExpense, deleteLinkedExpenses } from './expenseService'
 import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
 
 // 금액 필드 목록
@@ -94,9 +93,6 @@ export async function createInsurance(input: InsuranceInput): Promise<Insurance>
 
   if (error) throw error
 
-  // 보험료 지출 연동 생성 (만원 변환 후)
-  await createLinkedExpenseForInsurance(convertFromWon(data, INSURANCE_MONEY_FIELDS))
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, INSURANCE_MONEY_FIELDS)
 }
@@ -122,19 +118,12 @@ export async function updateInsurance(
 
   if (error) throw error
 
-  // 연동 지출 재생성 (만원 변환 후)
-  await deleteLinkedExpenses('insurance', id)
-  await createLinkedExpenseForInsurance(convertFromWon(data, INSURANCE_MONEY_FIELDS))
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, INSURANCE_MONEY_FIELDS)
 }
 
 export async function deleteInsurance(id: string): Promise<void> {
   const supabase = createClient()
-
-  // 연동된 지출 먼저 삭제
-  await deleteLinkedExpenses('insurance', id)
 
   const { error } = await supabase
     .from('insurances')
@@ -220,35 +209,6 @@ export const INSURANCE_TYPE_OPTIONS: { value: InsuranceType; label: string; desc
   { value: 'pension', label: '연금보험', desc: '은퇴 후 연금 수령' },
   { value: 'other', label: '기타', desc: '그 외 보험' },
 ]
-
-// ============================================
-// 연동 지출 생성 (보험 → 지출)
-// ============================================
-
-async function createLinkedExpenseForInsurance(insurance: Insurance): Promise<void> {
-  if (!insurance.monthly_premium || insurance.monthly_premium <= 0) return
-
-  const now = new Date()
-  const startYear = insurance.premium_start_year || now.getFullYear()
-  const startMonth = insurance.premium_start_month || 1
-
-  await createExpense({
-    simulation_id: insurance.simulation_id,
-    type: 'insurance',
-    title: `${insurance.title} 보험료`,
-    amount: insurance.monthly_premium,
-    frequency: 'monthly',
-    start_year: startYear,
-    start_month: startMonth,
-    end_year: insurance.premium_end_year,
-    end_month: insurance.premium_end_month,
-    is_fixed_to_retirement: insurance.is_premium_fixed_to_retirement,
-    growth_rate: 0,
-    rate_category: 'fixed',
-    source_type: 'insurance',
-    source_id: insurance.id,
-  })
-}
 
 // ============================================
 // 월 보험료 합계 계산

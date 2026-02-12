@@ -114,9 +114,6 @@ export async function createRealEstate(input: RealEstateInput): Promise<RealEsta
 
   if (error) throw error
 
-  // 연동 항목 생성 (DB 원 단위 데이터로)
-  await syncLinkedItems(data)
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, REAL_ESTATE_MONEY_FIELDS)
 }
@@ -142,18 +139,12 @@ export async function updateRealEstate(
 
   if (error) throw error
 
-  // 연동 항목 재동기화 (DB 원 단위 데이터로)
-  await syncLinkedItems(data)
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, REAL_ESTATE_MONEY_FIELDS)
 }
 
 export async function deleteRealEstate(id: string): Promise<void> {
   const supabase = createClient()
-
-  // 연동된 항목들 먼저 삭제
-  await deleteLinkedItems(id)
 
   // 부동산 삭제 (soft delete)
   const { error } = await supabase
@@ -163,29 +154,6 @@ export async function deleteRealEstate(id: string): Promise<void> {
 
   if (error) throw error
 }
-
-// ============================================
-// 연동 항목 관리
-// ============================================
-
-async function syncLinkedItems(realEstate: RealEstate): Promise<void> {
-  // 기존 연동 항목 삭제
-  await deleteLinkedItems(realEstate.id)
-
-  // 연동 항목 생성은 엔진에서 처리
-}
-
-async function deleteLinkedItems(realEstateId: string): Promise<void> {
-  const supabase = createClient()
-
-  // 연동된 지출 삭제
-  await supabase
-    .from('expenses')
-    .update({ is_active: false, updated_at: new Date().toISOString() })
-    .eq('source_type', 'real_estate')
-    .eq('source_id', realEstateId)
-}
-
 
 // ============================================
 // 거주용 부동산 Upsert

@@ -1,12 +1,13 @@
 .panel {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .header {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
   padding-bottom: 8px;
 }
 
@@ -24,22 +25,21 @@
 /* Tab bar */
 .tabBar {
   display: flex;
-  gap: 0;
+  gap: 16px;
+  margin-bottom: 8px;
   border-bottom: 1px solid var(--dashboard-border);
-  margin-bottom: 12px;
 }
 
 .tab {
-  padding: 8px 16px;
-  font-size: 13px;
+  padding: 6px 0;
+  font-size: 12px;
   font-weight: 500;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
   cursor: pointer;
+  position: relative;
   transition: color 0.15s;
-  margin-bottom: -1px;
 }
 
 .tab:hover {
@@ -47,8 +47,18 @@
 }
 
 .tabActive {
-  color: var(--accent-color, #007aff);
-  border-bottom-color: var(--accent-color, #007aff);
+  color: var(--dashboard-text);
+}
+
+.tabActive::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-color, #007aff);
+  border-radius: 1px;
 }
 
 /* Tab content */
@@ -57,27 +67,25 @@
 }
 
 .sectionDescription {
-  font-size: 12px;
-  color: var(--dashboard-text-secondary);
-  margin: 0 0 12px 0;
-  line-height: 1.5;
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+  margin: 0 0 8px 0;
+  line-height: 1.4;
 }
 
 /* Rule list */
 .ruleList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 4px;
+  margin-bottom: 4px;
 }
 
 .ruleRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 8px;
+  gap: 6px;
+  padding: 4px 0;
   transition: opacity 0.15s, transform 0.15s;
 }
 
@@ -89,19 +97,28 @@
 .ruleRowFixed {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  padding-left: 39px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 8px;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+/* Pin handle (fixed row) */
+.pinHandle {
+  color: var(--dashboard-text-muted);
+  padding: 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
 }
 
 /* Drag handle */
 .dragHandle {
   cursor: grab;
   color: var(--dashboard-text-muted);
-  padding: 2px;
+  padding: 0;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 .dragHandle:active {
@@ -110,14 +127,12 @@
 
 /* Priority badge */
 .priorityBadge {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-color, #007aff);
-  color: white;
-  border-radius: 50%;
+  color: var(--dashboard-text-muted);
   font-size: 11px;
   font-weight: 600;
   flex-shrink: 0;
@@ -126,9 +141,9 @@
 /* Rule name */
 .ruleName {
   flex: 1;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: var(--dashboard-text);
+  color: var(--dashboard-text-secondary);
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -139,24 +154,24 @@
 .limitArea {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
 .limitInputWrap {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .limitInput {
-  width: 80px;
-  padding: 4px 8px;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
-  background: var(--dashboard-card-bg);
+  width: 60px;
+  padding: 3px 6px;
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 4px;
+  background: var(--dashboard-input-bg);
   color: var(--dashboard-text);
-  font-size: 12px;
+  font-size: 11px;
   text-align: right;
   outline: none;
 }
@@ -174,23 +189,19 @@
 
 .limitUnit {
   font-size: 11px;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
   white-space: nowrap;
 }
 
 .remainderBadge {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--dashboard-text-muted);
-  padding: 4px 8px;
-  background: var(--dashboard-bg);
-  border-radius: 4px;
 }
 
 .toggleLimitButton {
-  padding: 3px 8px;
+  padding: 2px 6px;
   background: none;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 4px;
+  border: none;
   font-size: 11px;
   color: var(--dashboard-text-muted);
   cursor: pointer;
@@ -209,7 +220,7 @@
 
 /* Delete button */
 .deleteButton {
-  padding: 6px;
+  padding: 2px;
   background: none;
   border: none;
   border-radius: 4px;
@@ -230,34 +241,41 @@
 
 /* Empty state */
 .emptyState {
-  padding: 24px 0;
+  padding: 16px 0;
   text-align: center;
-  color: var(--dashboard-text-secondary);
-  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  font-size: 11px;
 }
 
 .emptyHint {
   font-size: 11px;
   color: var(--dashboard-text-muted);
-  margin-top: 6px;
+  margin-top: 4px;
+}
+
+.fixedHint {
+  font-size: 10px;
+  color: var(--dashboard-text-muted);
+  margin: 2px 0 0 0;
+  line-height: 1.4;
 }
 
 /* Add row (inline selector) */
 .addRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 0;
+  gap: 6px;
+  padding: 4px 0;
 }
 
 .accountSelect {
   flex: 1;
-  padding: 7px 10px;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 4px;
   background: var(--dashboard-input-bg);
   color: var(--dashboard-text);
-  font-size: 13px;
+  font-size: 12px;
   outline: none;
 }
 
@@ -271,12 +289,11 @@
 }
 
 .cancelButton {
-  padding: 7px 14px;
+  padding: 4px 10px;
   background: none;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
+  border: none;
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   white-space: nowrap;
   transition: color 0.15s;
@@ -290,18 +307,20 @@
 .addButton {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 10px 0;
+  gap: 3px;
+  padding: 0;
+  margin-top: 4px;
   background: none;
   border: none;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
-  color: var(--accent-color, #007aff);
+  color: var(--dashboard-text-muted);
   cursor: pointer;
+  transition: color 0.15s;
 }
 
 .addButton:hover {
-  filter: brightness(0.85);
+  color: var(--dashboard-text);
 }
 
 .addButton:disabled {
@@ -335,14 +354,14 @@
 .skeletonHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-bottom: 16px;
+  gap: 8px;
+  padding-bottom: 8px;
 }
 
 .skeletonHeaderLeft {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .skeletonIcon {
@@ -357,48 +376,47 @@
 }
 
 .skeletonContent {
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .skeletonDesc {
   width: 100%;
-  height: 36px;
-  margin-bottom: 16px;
+  height: 14px;
+  margin-bottom: 8px;
 }
 
 .skeletonRuleList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 4px;
 }
 
 .skeletonRuleItem {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 8px;
+  gap: 6px;
+  padding: 4px 0;
 }
 
 .skeletonDragHandle {
-  width: 16px;
-  height: 24px;
+  width: 14px;
+  height: 20px;
   border-radius: 4px;
 }
 
 .skeletonPriorityBadge {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
 }
 
 .skeletonRuleContent {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .skeletonRuleInfo {
@@ -409,16 +427,16 @@
 
 .skeletonRuleTarget {
   width: 80px;
-  height: 14px;
+  height: 12px;
 }
 
 .skeletonRuleStrategy {
-  width: 100px;
+  width: 60px;
   height: 12px;
 }
 
 .skeletonDeleteBtn {
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   border-radius: 4px;
 }

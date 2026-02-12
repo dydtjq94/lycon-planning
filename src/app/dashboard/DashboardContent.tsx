@@ -58,7 +58,6 @@ import {
   SavingsTab,
   AssetTab,
   DebtTab,
-  InsuranceTab,
   RealEstateTab,
   PensionTab,
   DashboardTab,
@@ -555,9 +554,9 @@ export function DashboardContent() {
   const investmentAssumptions = activeSim.investment_assumptions || DEFAULT_INVESTMENT_ASSUMPTIONS;
   const cashFlowPriorities = normalizePriorities(activeSim.cash_flow_priorities);
 
-  // 시뮬레이션별 가족 구성 (없으면 프로필의 가족 사용)
+  // 시뮬레이션별 가족 구성 (없으면 프로필의 가족 사용, self 제외)
   const simFamilyMembers: SimFamilyMember[] = useMemo(() => {
-    if (activeSim.family_config) return activeSim.family_config;
+    if (activeSim.family_config) return activeSim.family_config.filter(m => m.relationship !== 'self');
     return familyMembers.map((fm) => ({
       id: fm.id,
       relationship: fm.relationship,
@@ -570,6 +569,11 @@ export function DashboardContent() {
       monthly_income: fm.monthly_income,
     }));
   }, [activeSim.family_config, familyMembers]);
+
+  // 본인 아이콘 설정 (family_config 내 self 엔트리)
+  const selfFamilyConfig = useMemo(() => {
+    return activeSim.family_config?.find(m => m.relationship === 'self') ?? null;
+  }, [activeSim.family_config]);
 
   // 배우자 정보 (시뮬레이션별 가족 기준)
   const spouseMember = useMemo(() => {
@@ -585,6 +589,14 @@ export function DashboardContent() {
       selfLifeExpectancy: saved?.selfLifeExpectancy ?? globalSettings.lifeExpectancy,
       spouseRetirementAge: saved?.spouseRetirementAge ?? spouseMember?.retirement_age ?? 65,
       spouseLifeExpectancy: saved?.spouseLifeExpectancy ?? saved?.selfLifeExpectancy ?? globalSettings.lifeExpectancy,
+      retirementIcon: saved?.retirementIcon,
+      retirementColor: saved?.retirementColor,
+      lifeExpectancyIcon: saved?.lifeExpectancyIcon,
+      lifeExpectancyColor: saved?.lifeExpectancyColor,
+      spouseRetirementIcon: saved?.spouseRetirementIcon,
+      spouseRetirementColor: saved?.spouseRetirementColor,
+      spouseLifeExpectancyIcon: saved?.spouseLifeExpectancyIcon,
+      spouseLifeExpectancyColor: saved?.spouseLifeExpectancyColor,
     };
   }, [activeSim.life_cycle_settings, profile.target_retirement_age, globalSettings.lifeExpectancy, spouseMember?.retirement_age]);
 
@@ -618,15 +630,19 @@ export function DashboardContent() {
     }
   }, [selectedSim, updateSimulation]);
 
-  // 가족 구성 변경 핸들러 (시뮬레이션별 저장)
-  const handleFamilyConfigChange = useCallback((newFamily: SimFamilyMember[]) => {
+  // 가족 구성 변경 핸들러 (시뮬레이션별 저장, self 엔트리 포함)
+  const handleFamilyConfigChange = useCallback((newFamily: SimFamilyMember[], selfEntry?: SimFamilyMember | null) => {
     if (selectedSim) {
+      // self 엔트리를 포함하여 저장 (있으면 앞에 추가)
+      const existing = activeSim.family_config?.find(m => m.relationship === 'self');
+      const selfToSave = selfEntry !== undefined ? selfEntry : existing;
+      const fullConfig = selfToSave ? [selfToSave, ...newFamily.filter(m => m.relationship !== 'self')] : newFamily;
       updateSimulation.mutate({
         id: selectedSim.id,
-        updates: { family_config: newFamily }
+        updates: { family_config: fullConfig }
       });
     }
-  }, [selectedSim, updateSimulation]);
+  }, [selectedSim, updateSimulation, activeSim.family_config]);
 
   // Profile update handler (saves to profiles table + updates context)
   const handleProfileUpdate = useCallback(async (updates: Record<string, any>) => {
@@ -997,8 +1013,6 @@ export function DashboardContent() {
         return <AssetTab simulationId={simulation.id} />;
       case "debt":
         return <DebtTab simulationId={simulation.id} />;
-      case "insurance":
-        return <InsuranceTab simulationId={simulation.id} />;
       case "realEstate":
         return <RealEstateTab simulationId={simulation.id} />;
       case "pension":
@@ -1163,7 +1177,7 @@ export function DashboardContent() {
                     setShowAssumptionsPanel(!showAssumptionsPanel);
                   }}
                   type="button"
-                  data-tooltip={showAssumptionsPanel ? undefined : "투자 가정"}
+                  data-tooltip={showAssumptionsPanel ? undefined : "시뮬레이션 가정"}
                 >
                   <Percent size={15} />
                 </button>
@@ -1417,6 +1431,7 @@ export function DashboardContent() {
             <FamilyConfigPanel
               profile={profile}
               familyMembers={simFamilyMembers}
+              selfConfig={selfFamilyConfig}
               onFamilyChange={handleFamilyConfigChange}
             />
           </div>

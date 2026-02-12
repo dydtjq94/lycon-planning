@@ -10,9 +10,6 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
-  CreditCard,
-  Link,
-  Home,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -67,7 +64,7 @@ interface ExpenseTabProps {
   simulationResult: SimulationResult;
 }
 
-// 상승률 프리셋 (물가상승률 기준)
+// 상승률 프리셋 (물가 상승률 기준)
 const GROWTH_PRESETS = [
   { id: "rate-3", value: 3 },
   { id: "rate-2.5", value: 2.5 },
@@ -238,8 +235,9 @@ export function ExpenseTab({
   const totalCount = displayItems.length;
   const totalMonthlyExpense = useMemo(() => {
     return displayItems.reduce((sum, item) => {
-      if (item.type === 'onetime') return sum;
-      if (item.frequency === 'yearly') return sum + Math.round(item.amount / 12);
+      if (item.type === "onetime") return sum;
+      if (item.frequency === "yearly")
+        return sum + Math.round(item.amount / 12);
       return sum + item.amount;
     }, 0);
   }, [displayItems]);
@@ -282,12 +280,7 @@ export function ExpenseTab({
       .reduce((sum, item) => sum + toMonthlyAmount(item), 0);
 
     return regularExpense;
-  }, [
-    displayItems,
-    currentYear,
-    selfRetirementYear,
-    spouseRetirementYear,
-  ]);
+  }, [displayItems, currentYear, selfRetirementYear, spouseRetirementYear]);
 
   // 은퇴까지 총 지출 (상승률 반영, 은퇴 전에 시작하는 항목만)
   const lifetimeExpense = useMemo(() => {
@@ -898,12 +891,12 @@ export function ExpenseTab({
   // ESC 키로 드롭다운 닫기
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showTypeMenu) {
+      if (e.key === "Escape" && showTypeMenu) {
         setShowTypeMenu(false);
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, [showTypeMenu]);
 
   // 드롭다운 외부 클릭으로 닫기
@@ -918,8 +911,8 @@ export function ExpenseTab({
         setShowTypeMenu(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showTypeMenu]);
 
   const handleTypeSelect = (type: ExpenseType) => {
@@ -1127,9 +1120,7 @@ export function ExpenseTab({
                 <button
                   type="button"
                   className={`${styles.endTypeBtn} ${
-                    editForm.endType === "self-retirement"
-                      ? styles.active
-                      : ""
+                    editForm.endType === "self-retirement" ? styles.active : ""
                   }`}
                   onClick={() =>
                     setEditForm({
@@ -1244,8 +1235,7 @@ export function ExpenseTab({
                   key={preset.id}
                   type="button"
                   className={`${styles.rateBtn} ${
-                    !isCustomRateMode &&
-                    editForm.growthRate === preset.value
+                    !isCustomRateMode && editForm.growthRate === preset.value
                       ? styles.active
                       : ""
                   }`}
@@ -1276,37 +1266,11 @@ export function ExpenseTab({
       );
     }
 
-    // 연동 항목 여부 확인
-    const isLinked = !!item.sourceType;
-
-    // 연동 배지 정보
-    const getLinkedBadge = () => {
-      if (!item.sourceType) return null;
-      switch (item.sourceType) {
-        case "debt":
-          return { label: "부채", icon: <CreditCard size={12} /> };
-        case "real_estate":
-          return { label: "부동산", icon: <Home size={12} /> };
-        default:
-          return { label: "연동", icon: <Link size={12} /> };
-      }
-    };
-
-    const linkedBadge = getLinkedBadge();
-
     // 읽기 모드 - displayGrowthRate 사용 (이미 시나리오 적용됨)
     return (
       <div key={item.id} className={styles.expenseItem}>
         <div className={styles.itemInfo}>
-          <span className={styles.itemName}>
-            {item.label}
-            {linkedBadge && (
-              <span className={styles.linkedBadge}>
-                {linkedBadge.icon}
-                {linkedBadge.label}
-              </span>
-            )}
-          </span>
+          <span className={styles.itemName}>{item.label}</span>
           <span className={styles.itemMeta}>
             {item.type === "onetime"
               ? formatPeriod(item)
@@ -1317,22 +1281,17 @@ export function ExpenseTab({
           <span className={styles.itemAmount}>
             {formatAmountWithFreq(item)}
           </span>
-          {isLinked ? null : (
-            <div className={styles.itemActions}>
-              <button
-                className={styles.editBtn}
-                onClick={() => startEdit(item)}
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                className={styles.deleteBtn}
-                onClick={() => handleDelete(item.id)}
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          )}
+          <div className={styles.itemActions}>
+            <button className={styles.editBtn} onClick={() => startEdit(item)}>
+              <Pencil size={16} />
+            </button>
+            <button
+              className={styles.deleteBtn}
+              onClick={() => handleDelete(item.id)}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1377,9 +1336,7 @@ export function ExpenseTab({
                   max={2200}
                   value={newOnetimeYear}
                   onChange={(e) =>
-                    setNewOnetimeYear(
-                      parseInt(e.target.value) || currentYear,
-                    )
+                    setNewOnetimeYear(parseInt(e.target.value) || currentYear)
                   }
                   onWheel={(e) => (e.target as HTMLElement).blur()}
                 />
@@ -1392,10 +1349,7 @@ export function ExpenseTab({
                   max={12}
                   onChange={(e) =>
                     setNewOnetimeMonth(
-                      Math.min(
-                        12,
-                        Math.max(1, parseInt(e.target.value) || 1),
-                      ),
+                      Math.min(12, Math.max(1, parseInt(e.target.value) || 1)),
                     )
                   }
                   onWheel={(e) => (e.target as HTMLElement).blur()}
@@ -1437,10 +1391,7 @@ export function ExpenseTab({
           )}
 
           <div className={styles.inlineActions}>
-            <button
-              className={styles.inlineCancelBtn}
-              onClick={resetAddForm}
-            >
+            <button className={styles.inlineCancelBtn} onClick={resetAddForm}>
               취소
             </button>
             <button
@@ -1825,37 +1776,11 @@ export function ExpenseTab({
             );
           }
 
-          // 연동 항목 여부 확인
-          const isLinked = !!item.sourceType;
-
-          // 연동 배지 정보
-          const getLinkedBadge = () => {
-            if (!item.sourceType) return null;
-            switch (item.sourceType) {
-              case "debt":
-                return { label: "부채", icon: <CreditCard size={12} /> };
-              case "real_estate":
-                return { label: "부동산", icon: <Home size={12} /> };
-              default:
-                return { label: "연동", icon: <Link size={12} /> };
-            }
-          };
-
-          const linkedBadge = getLinkedBadge();
-
           // 읽기 모드 - displayGrowthRate 사용 (이미 시나리오 적용됨)
           return (
             <div key={item.id} className={styles.expenseItem}>
               <div className={styles.itemInfo}>
-                <span className={styles.itemName}>
-                  {item.label}
-                  {linkedBadge && (
-                    <span className={styles.linkedBadge}>
-                      {linkedBadge.icon}
-                      {linkedBadge.label}
-                    </span>
-                  )}
-                </span>
+                <span className={styles.itemName}>{item.label}</span>
                 <span className={styles.itemMeta}>
                   {item.type === "onetime"
                     ? formatPeriod(item)
@@ -1866,22 +1791,20 @@ export function ExpenseTab({
                 <span className={styles.itemAmount}>
                   {formatAmountWithFreq(item)}
                 </span>
-                {isLinked ? null : (
-                  <div className={styles.itemActions}>
-                    <button
-                      className={styles.editBtn}
-                      onClick={() => startEdit(item)}
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                )}
+                <div className={styles.itemActions}>
+                  <button
+                    className={styles.editBtn}
+                    onClick={() => startEdit(item)}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -2021,7 +1944,11 @@ export function ExpenseTab({
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <button className={styles.headerToggle} onClick={() => setIsExpanded(!isExpanded)} type="button">
+        <button
+          className={styles.headerToggle}
+          onClick={() => setIsExpanded(!isExpanded)}
+          type="button"
+        >
           <span className={styles.title}>지출</span>
           <span className={styles.count}>{totalCount}개</span>
         </button>
@@ -2038,46 +1965,51 @@ export function ExpenseTab({
       </div>
 
       {/* 타입 선택 드롭다운 - portal로 body에 렌더 */}
-      {showTypeMenu && addButtonRef.current && createPortal(
-        <div
-          className={styles.typeMenu}
-          style={{
-            position: 'fixed',
-            top: addButtonRef.current.getBoundingClientRect().bottom + 6,
-            left: addButtonRef.current.getBoundingClientRect().right - 150,
-            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-          }}
-        >
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => handleTypeSelect('fixed')}
+      {showTypeMenu &&
+        addButtonRef.current &&
+        createPortal(
+          <div
+            className={styles.typeMenu}
+            data-scenario-dropdown-portal
+            style={{
+              position: "fixed",
+              top: addButtonRef.current.getBoundingClientRect().bottom + 6,
+              left: addButtonRef.current.getBoundingClientRect().right - 150,
+              background: isDark
+                ? "rgba(34, 37, 41, 0.6)"
+                : "rgba(255, 255, 255, 0.6)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+            }}
           >
-            고정 지출
-          </button>
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => handleTypeSelect('variable')}
-          >
-            변동 지출
-          </button>
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => handleTypeSelect('onetime')}
-          >
-            일시적 지출
-          </button>
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => handleTypeSelect('medical')}
-          >
-            의료비
-          </button>
-        </div>,
-        document.body
-      )}
+            <button
+              className={styles.typeMenuItem}
+              onClick={() => handleTypeSelect("fixed")}
+            >
+              고정 지출
+            </button>
+            <button
+              className={styles.typeMenuItem}
+              onClick={() => handleTypeSelect("variable")}
+            >
+              변동 지출
+            </button>
+            <button
+              className={styles.typeMenuItem}
+              onClick={() => handleTypeSelect("onetime")}
+            >
+              일시적 지출
+            </button>
+            <button
+              className={styles.typeMenuItem}
+              onClick={() => handleTypeSelect("medical")}
+            >
+              의료비
+            </button>
+          </div>,
+          document.body,
+        )}
 
       {isExpanded && (
         <>
@@ -2092,195 +2024,200 @@ export function ExpenseTab({
           </div>
 
           <div className={styles.expenseSection}>
-        <div
-          className={styles.sectionHeader}
-          style={{ cursor: "pointer" }}
-          onClick={() => setMedicalExpanded(!medicalExpanded)}
-        >
-          <div className={styles.sectionTitleGroup}>
-            <span className={styles.sectionTitle}>의료비</span>
-            <button
-              className={styles.infoBtn}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowMedicalInfo(!showMedicalInfo);
-              }}
-              title="의료비 안내"
+            <div
+              className={styles.sectionHeader}
+              style={{ cursor: "pointer" }}
+              onClick={() => setMedicalExpanded(!medicalExpanded)}
             >
-              <Info size={14} />
-            </button>
-          </div>
-          <div className={styles.sectionToggle}>
-            {medicalExpanded ? (
-              <ChevronUp size={18} />
-            ) : (
-              <ChevronDown size={18} />
-            )}
-          </div>
-        </div>
-
-        {showMedicalInfo && (
-          <div className={styles.medicalInfoBox}>
-            <p className={styles.medicalInfoText}>{MEDICAL_EXPENSE_INFO}</p>
-            <button
-              className={styles.medicalInfoClose}
-              onClick={() => setShowMedicalInfo(false)}
-            >
-              닫기
-            </button>
-          </div>
-        )}
-
-        {medicalExpanded && (
-          <div className={styles.sectionContent}>
-            {medicalItems.length === 0 ? (
-              <div className={styles.emptyMedical}>
-                <p className={styles.emptyMedicalText}>
-                  나이대별 의료비를 자동으로 생성할 수 있습니다.
-                </p>
+              <div className={styles.sectionTitleGroup}>
+                <span className={styles.sectionTitle}>의료비</span>
                 <button
-                  className={styles.generateMedicalBtn}
-                  onClick={generateMedicalExpenses}
+                  className={styles.infoBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMedicalInfo(!showMedicalInfo);
+                  }}
+                  title="의료비 안내"
                 >
-                  나이대별 의료비 자동 생성
+                  <Info size={14} />
                 </button>
               </div>
-            ) : (
-              <>
-                {medicalItems.map((item) => {
-                  if (editingId === item.id && editForm) {
-                    return (
-                      <div key={item.id} className={styles.expenseItem}>
-                        <div className={styles.editMode}>
-                          <div className={styles.editRow}>
-                            <span className={styles.editRowLabel}>
-                              항목명
-                            </span>
-                            <input
-                              type="text"
-                              className={styles.editLabelInput}
-                              value={editForm.label}
-                              onChange={(e) =>
-                                setEditForm({
-                                  ...editForm,
-                                  label: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-                          <div className={styles.editRow}>
-                            <span className={styles.editRowLabel}>금액</span>
-                            <div className={styles.editField}>
-                              <input
-                                type="number"
-                                className={styles.editAmountInput}
-                                value={editForm.amount}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    amount: parseInt(e.target.value) || 0,
-                                  })
-                                }
-                                onWheel={(e) =>
-                                  (e.target as HTMLElement).blur()
-                                }
-                              />
-                              <span className={styles.editUnit}>만원</span>
-                              <select
-                                className={styles.editSelect}
-                                value={editForm.frequency}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    frequency: e.target
-                                      .value as ExpenseFrequency,
-                                  })
-                                }
-                              >
-                                <option value="monthly">월</option>
-                                <option value="yearly">년</option>
-                              </select>
+              <div className={styles.sectionToggle}>
+                {medicalExpanded ? (
+                  <ChevronUp size={18} />
+                ) : (
+                  <ChevronDown size={18} />
+                )}
+              </div>
+            </div>
+
+            {showMedicalInfo && (
+              <div className={styles.medicalInfoBox}>
+                <p className={styles.medicalInfoText}>{MEDICAL_EXPENSE_INFO}</p>
+                <button
+                  className={styles.medicalInfoClose}
+                  onClick={() => setShowMedicalInfo(false)}
+                >
+                  닫기
+                </button>
+              </div>
+            )}
+
+            {medicalExpanded && (
+              <div className={styles.sectionContent}>
+                {medicalItems.length === 0 ? (
+                  <div className={styles.emptyMedical}>
+                    <p className={styles.emptyMedicalText}>
+                      나이대별 의료비를 자동으로 생성할 수 있습니다.
+                    </p>
+                    <button
+                      className={styles.generateMedicalBtn}
+                      onClick={generateMedicalExpenses}
+                    >
+                      나이대별 의료비 자동 생성
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {medicalItems.map((item) => {
+                      if (editingId === item.id && editForm) {
+                        return (
+                          <div key={item.id} className={styles.expenseItem}>
+                            <div className={styles.editMode}>
+                              <div className={styles.editRow}>
+                                <span className={styles.editRowLabel}>
+                                  항목명
+                                </span>
+                                <input
+                                  type="text"
+                                  className={styles.editLabelInput}
+                                  value={editForm.label}
+                                  onChange={(e) =>
+                                    setEditForm({
+                                      ...editForm,
+                                      label: e.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div className={styles.editRow}>
+                                <span className={styles.editRowLabel}>
+                                  금액
+                                </span>
+                                <div className={styles.editField}>
+                                  <input
+                                    type="number"
+                                    className={styles.editAmountInput}
+                                    value={editForm.amount}
+                                    onChange={(e) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        amount: parseInt(e.target.value) || 0,
+                                      })
+                                    }
+                                    onWheel={(e) =>
+                                      (e.target as HTMLElement).blur()
+                                    }
+                                  />
+                                  <span className={styles.editUnit}>만원</span>
+                                  <select
+                                    className={styles.editSelect}
+                                    value={editForm.frequency}
+                                    onChange={(e) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        frequency: e.target
+                                          .value as ExpenseFrequency,
+                                      })
+                                    }
+                                  >
+                                    <option value="monthly">월</option>
+                                    <option value="yearly">년</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div className={styles.editActions}>
+                                <button
+                                  className={styles.saveBtn}
+                                  onClick={saveEdit}
+                                >
+                                  저장
+                                </button>
+                                <button
+                                  className={styles.cancelBtn}
+                                  onClick={() => setEditingId(null)}
+                                >
+                                  취소
+                                </button>
+                              </div>
                             </div>
                           </div>
-                          <div className={styles.editActions}>
-                            <button
-                              className={styles.saveBtn}
-                              onClick={saveEdit}
-                            >
-                              저장
-                            </button>
-                            <button
-                              className={styles.cancelBtn}
-                              onClick={() => setEditingId(null)}
-                            >
-                              취소
-                            </button>
+                        );
+                      }
+
+                      return (
+                        <div key={item.id} className={styles.expenseItem}>
+                          <div className={styles.itemInfo}>
+                            <span className={styles.itemName}>
+                              {item.label}
+                            </span>
+                            <span className={styles.itemMeta}>
+                              {`${item.startYear}년 ~ ${item.endYear}년 | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
+                            </span>
+                          </div>
+                          <div className={styles.itemRight}>
+                            <span className={styles.itemAmount}>
+                              {formatMoney(item.amount)}
+                              <span className={styles.itemFrequency}>
+                                /{item.frequency === "monthly" ? "월" : "년"}
+                              </span>
+                            </span>
+                            <div className={styles.itemActions}>
+                              <button
+                                className={styles.editBtn}
+                                onClick={() => startEdit(item)}
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                className={styles.deleteBtn}
+                                onClick={() => handleDelete(item.id)}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  }
+                      );
+                    })}
 
-                  return (
-                    <div key={item.id} className={styles.expenseItem}>
-                      <div className={styles.itemInfo}>
-                        <span className={styles.itemName}>{item.label}</span>
-                        <span className={styles.itemMeta}>
-                          {`${item.startYear}년 ~ ${item.endYear}년 | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
-                        </span>
-                      </div>
-                      <div className={styles.itemRight}>
-                        <span className={styles.itemAmount}>
-                          {formatMoney(item.amount)}
-                          <span className={styles.itemFrequency}>
-                            /{item.frequency === "monthly" ? "월" : "년"}
-                          </span>
-                        </span>
-                        <div className={styles.itemActions}>
-                          <button
-                            className={styles.editBtn}
-                            onClick={() => startEdit(item)}
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            className={styles.deleteBtn}
-                            onClick={() => handleDelete(item.id)}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
+                    <div className={styles.medicalActions}>
+                      <button
+                        className={styles.regenerateMedicalBtn}
+                        onClick={generateMedicalExpenses}
+                      >
+                        나이대별 의료비 다시 생성
+                      </button>
                     </div>
-                  );
-                })}
-
-                <div className={styles.medicalActions}>
-                  <button
-                    className={styles.regenerateMedicalBtn}
-                    onClick={generateMedicalExpenses}
-                  >
-                    나이대별 의료비 다시 생성
-                  </button>
-                </div>
-              </>
+                  </>
+                )}
+              </div>
             )}
-          </div>
-        )}
 
-        {!medicalExpanded && medicalItems.length > 0 && (
-          <div className={styles.collapsedSummary}>
-            {medicalItems.length}개 항목 (현재 적용:{" "}
-            {currentMedicalItems.length}개), 월{" "}
-            {formatMoney(
-              currentMedicalItems.reduce(
-                (sum, i) =>
-                  sum + (i.frequency === "yearly" ? i.amount / 12 : i.amount),
-                0,
-              ),
+            {!medicalExpanded && medicalItems.length > 0 && (
+              <div className={styles.collapsedSummary}>
+                {medicalItems.length}개 항목 (현재 적용:{" "}
+                {currentMedicalItems.length}개), 월{" "}
+                {formatMoney(
+                  currentMedicalItems.reduce(
+                    (sum, i) =>
+                      sum +
+                      (i.frequency === "yearly" ? i.amount / 12 : i.amount),
+                    0,
+                  ),
+                )}
+              </div>
             )}
-          </div>
-        )}
           </div>
         </>
       )}

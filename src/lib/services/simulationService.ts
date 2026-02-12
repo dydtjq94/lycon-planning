@@ -54,8 +54,8 @@ export const simulationService = {
     return data || []
   },
 
-  // 기본 시뮬레이션 조회 (없으면 생성)
-  async getDefault(): Promise<Simulation> {
+  // 기본 시뮬레이션 조회 (없으면 null)
+  async getDefault(): Promise<Simulation | null> {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('User not authenticated')
@@ -63,11 +63,10 @@ export const simulationService = {
     return this.getDefaultByUserId(user.id)
   },
 
-  // 특정 유저의 기본 시뮬레이션 조회 (없으면 생성)
-  async getDefaultByUserId(userId: string): Promise<Simulation> {
+  // 특정 유저의 기본 시뮬레이션 조회 (없으면 null)
+  async getDefaultByUserId(userId: string): Promise<Simulation | null> {
     const supabase = createClient()
 
-    // 기본 시뮬레이션 조회 (maybeSingle은 없으면 null 반환)
     const { data, error } = await supabase
       .from('simulations')
       .select('*')
@@ -76,15 +75,7 @@ export const simulationService = {
       .maybeSingle()
 
     if (error) throw error
-    if (data) return data
-
-    // 없으면 생성
-    return this.create({
-      profile_id: userId,
-      title: '은퇴',
-      is_default: true,
-      sort_order: 0,
-    })
+    return data
   },
 
   // 시뮬레이션 생성 (빠르게 - 레코드만 생성)

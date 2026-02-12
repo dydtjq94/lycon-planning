@@ -1,137 +1,81 @@
 .panel {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding-bottom: 12px;
-}
-
-.headerToggle {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  padding: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--dashboard-text);
+  padding-bottom: 8px;
 }
 
 .title {
   font-size: 14px;
   font-weight: 600;
-}
-
-.count {
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
-}
-
-.headerRight {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.modeBadge {
-  padding: 2px 8px;
-  background: var(--accent-color-light, #e5f1ff);
-  color: var(--accent-color, #007aff);
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.content {
-  padding: 0;
-}
-
-.description {
-  font-size: 12px;
-  color: var(--dashboard-text-secondary);
-  margin-bottom: 16px;
-  line-height: 1.5;
+  color: var(--dashboard-text);
 }
 
 .rateList {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 6px;
 }
 
-.rateItem {
+.row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--dashboard-border);
+  gap: 12px;
 }
 
-.rateItem:last-child {
-  border-bottom: none;
-}
-
-.rateHeader {
+.labelGroup {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
+  gap: 6px;
 }
 
 .rateIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--dashboard-text-secondary);
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
-}
-
-.rateInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.rateLabel {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-}
-
-.rateDesc {
-  font-size: 11px;
   color: var(--dashboard-text-secondary);
-  line-height: 1.4;
 }
 
-.rateInputWrapper {
+.label {
+  font-size: 12px;
+  color: var(--dashboard-text-secondary);
+}
+
+.inputGroup {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
+  gap: 6px;
 }
 
 .rateInput {
-  width: 70px;
-  padding: 6px 0;
-  border: none;
-  border-bottom: 1px solid var(--dashboard-border);
-  background: transparent;
-  color: var(--dashboard-text);
-  font-size: 14px;
-  font-weight: 500;
+  width: 60px;
+  padding: 4px 8px;
+  font-size: 13px;
   text-align: right;
+  color: var(--dashboard-text);
+  background-color: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 6px;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.2s;
 }
 
 .rateInput:focus {
-  border-bottom-color: var(--accent-color, #007aff);
+  border-color: var(--accent-color, #007aff);
+}
+
+.rateInput:hover {
+  border-color: var(--dashboard-text-muted);
 }
 
 .rateInput:disabled {
@@ -146,25 +90,26 @@
   margin: 0;
 }
 
-.rateUnit {
-  font-size: 13px;
+.rateInput[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.unit {
+  font-size: 12px;
   color: var(--dashboard-text-secondary);
-  font-weight: 500;
 }
 
 .footer {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-start;
+  margin-top: 8px;
 }
 
 .resetButton {
   padding: 0;
   background: none;
   border: none;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   transition: color 0.15s;
 }
@@ -195,101 +140,59 @@
   border-radius: 4px;
 }
 
-.skeletonHeaderToggle {
+.skeletonHeader {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding-bottom: 8px;
 }
 
 .skeletonTitle {
-  width: 60px;
+  width: 90px;
   height: 18px;
-}
-
-.skeletonCount {
-  width: 24px;
-  height: 17px;
-}
-
-.skeletonBadge {
-  width: 70px;
-  height: 20px;
-  border-radius: 4px;
-}
-
-.skeletonChevron {
-  width: 16px;
-  height: 16px;
 }
 
 .skeletonContent {
-  padding: 0;
-}
-
-.skeletonDesc {
-  width: 100%;
-  height: 36px;
-  margin-bottom: 16px;
-}
-
-.skeletonRateList {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 6px;
 }
 
-.skeletonRateItem {
+.skeletonRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--dashboard-border);
+  gap: 12px;
 }
 
-.skeletonRateItem:last-child {
-  border-bottom: none;
-}
-
-.skeletonRateHeader {
+.skeletonLabel {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
+  gap: 6px;
 }
 
-.skeletonRateIcon {
-  width: 18px;
-  height: 18px;
+.skeletonIcon {
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
 }
 
-.skeletonRateInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.skeletonRateLabel {
-  width: 90px;
-  height: 16px;
-}
-
-.skeletonRateDesc {
-  width: 180px;
+.skeletonText {
+  width: 80px;
   height: 14px;
 }
 
-.skeletonRateInput {
-  width: 70px;
-  height: 28px;
+.skeletonInput {
+  width: 60px;
+  height: 26px;
+  border-radius: 6px;
 }
 
 .skeletonFooter {
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .skeletonResetBtn {
-  width: 100px;
-  height: 16px;
+  width: 80px;
+  height: 14px;
 }

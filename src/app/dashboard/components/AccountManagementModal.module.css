@@ -55,30 +55,33 @@
   background: none;
   border: none;
   border-radius: 8px;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
   cursor: pointer;
+  transition: color 0.15s;
 }
 
 .modalCloseBtn:hover {
-  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text);
 }
 
 /* 탭 */
 .tabs {
   display: flex;
-  border-bottom: 1px solid var(--dashboard-border);
+  gap: 20px;
   padding: 0 24px;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .tab {
-  padding: 12px 16px;
+  padding: 12px 0;
   background: none;
   border: none;
   font-size: 14px;
   font-weight: 500;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   position: relative;
+  transition: color 0.15s;
 }
 
 .tab:hover {
@@ -108,11 +111,11 @@
 
 /* 폼 섹션 */
 .formSection {
-  padding: 0 0 20px 0;
+  padding: 0 0 16px 0;
   background: none;
   border-radius: 0;
   border-bottom: 1px solid var(--dashboard-border);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .formSection h4 {
@@ -121,13 +124,13 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--dashboard-text-muted);
-  margin: 0 0 14px 0;
+  margin: 0 0 12px 0;
 }
 
 .formRow {
   display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 14px;
+  margin-bottom: 12px;
 }
 
 .formRow:last-child {
@@ -138,27 +141,28 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .formGroup label {
   font-size: 12px;
   font-weight: 500;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
 }
 
 .input {
-  padding: 10px 12px;
-  border: 1px solid var(--dashboard-border);
+  padding: 8px 12px;
+  border: 1px solid var(--dashboard-input-border);
   border-radius: 8px;
   font-size: 14px;
   color: var(--dashboard-text);
   background: var(--dashboard-input-bg);
+  outline: none;
+  transition: border-color 0.15s;
 }
 
 .input:focus {
-  outline: none;
-  border-color: var(--dashboard-text);
+  border-color: var(--accent-color, #007aff);
 }
 
 .input::-webkit-outer-spin-button,
@@ -168,24 +172,25 @@
 }
 
 .select {
-  padding: 10px 12px;
-  border: 1px solid var(--dashboard-border);
+  padding: 8px 12px;
+  border: 1px solid var(--dashboard-input-border);
   border-radius: 8px;
   font-size: 14px;
   color: var(--dashboard-text);
   background: var(--dashboard-input-bg);
   cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
 }
 
 .select:focus {
-  outline: none;
-  border-color: var(--dashboard-text);
+  border-color: var(--accent-color, #007aff);
 }
 
 .ownerFixed {
-  padding: 10px 12px;
+  padding: 8px 12px;
   font-size: 14px;
-  color: var(--dashboard-text-secondary, #6b7280);
+  color: var(--dashboard-text-secondary);
 }
 
 .dateInputs {
@@ -200,8 +205,8 @@
 .dateInputs span {
   display: flex;
   align-items: center;
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
   white-space: nowrap;
 }
 
@@ -209,18 +214,18 @@
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .interestGroup label {
   font-size: 12px;
   font-weight: 500;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
 }
 
 .interestGroup .input,
 .interestGroup .select {
-  width: 100px;
+  width: 110px;
 }
 
 .checkboxLabel {
@@ -229,7 +234,7 @@
   gap: 8px;
   padding-top: 0;
   font-size: 13px;
-  color: var(--dashboard-text);
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
 }
 
@@ -248,17 +253,18 @@
 }
 
 .cancelBtn {
-  padding: 8px 16px;
-  border: 1px solid var(--dashboard-border);
+  padding: 8px 14px;
+  border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
   font-size: 13px;
   cursor: pointer;
+  transition: color 0.15s;
 }
 
 .cancelBtn:hover {
-  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text);
 }
 
 .submitBtn {
@@ -270,6 +276,7 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  transition: opacity 0.15s;
 }
 
 .submitBtn:hover {
@@ -278,7 +285,7 @@
 
 /* 리스트 섹션 */
 .listSection {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .listSection:last-child {
@@ -295,28 +302,18 @@
 }
 
 .emptyState {
-  padding: 32px 24px;
+  padding: 24px 0;
   text-align: center;
   color: var(--dashboard-text-muted);
   font-size: 13px;
-  background: none;
-  border-radius: 0;
 }
 
 .listItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 12px;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  margin-bottom: 2px;
+  padding: 10px 0;
   transition: background 0.15s;
-}
-
-.listItem:hover {
-  background: var(--dashboard-hover-bg);
 }
 
 .listItem:last-child {
@@ -326,7 +323,7 @@
 .listItemInfo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .listItemName {
@@ -340,14 +337,14 @@
 
 .listItemMeta {
   font-size: 12px;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
 }
 
 .defaultBadge {
-  padding: 2px 6px;
+  padding: 1px 6px;
   background: rgba(22, 163, 74, 0.1);
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: #16a34a;
 }
@@ -356,15 +353,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 .linkedPaymentBadge {
-  padding: 2px 8px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 4px;
   font-size: 11px;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
 }
 
 .listItemActions {
@@ -389,9 +383,32 @@
   background: transparent;
   color: var(--dashboard-text-muted);
   cursor: pointer;
+  transition: color 0.15s;
 }
 
 .actionBtn:hover {
-  background: var(--dashboard-hover-bg);
   color: var(--dashboard-text-secondary);
+}
+
+/* 섹션 추가 버튼 */
+.addSectionButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: none;
+  border: 1px dashed var(--dashboard-border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.addSectionButton:hover {
+  color: var(--dashboard-text);
+  border-color: var(--dashboard-text-muted);
 }

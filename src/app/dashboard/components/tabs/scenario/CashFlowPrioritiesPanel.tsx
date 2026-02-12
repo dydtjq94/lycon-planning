@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, GripVertical, Pin } from "lucide-react";
 import type {
   CashFlowPriorities,
   CashFlowAccountCategory,
@@ -420,7 +420,7 @@ export function CashFlowPrioritiesPanel({
                     onDragEnd={handleSurplusDragEnd}
                   >
                     <div className={styles.dragHandle}>
-                      <GripVertical size={16} />
+                      <GripVertical size={14} />
                     </div>
                     <div className={styles.priorityBadge}>{rule.priority}</div>
                     <div className={styles.ruleName}>{rule.targetName}</div>
@@ -520,7 +520,7 @@ export function CashFlowPrioritiesPanel({
               disabled={isLoading || availableSurplusAccounts.length === 0}
               type="button"
             >
-              <Plus size={16} />
+              <Plus size={14} />
               추가
             </button>
           )}
@@ -549,7 +549,7 @@ export function CashFlowPrioritiesPanel({
                   onDragEnd={handleWithdrawalDragEnd}
                 >
                   <div className={styles.dragHandle}>
-                    <GripVertical size={16} />
+                    <GripVertical size={14} />
                   </div>
                   <div className={styles.priorityBadge}>{rule.priority}</div>
                   <div className={styles.ruleName}>{rule.targetName}</div>
@@ -566,10 +566,16 @@ export function CashFlowPrioritiesPanel({
               ))}
             {/* 마이너스 통장 - 항상 마지막 고정 */}
             <div className={styles.ruleRowFixed}>
+              <div className={styles.pinHandle}>
+                <Pin size={14} />
+              </div>
               <div className={styles.priorityBadge}>{priorities.withdrawalRules.length + 1}</div>
               <div className={styles.ruleName}>마이너스 통장</div>
             </div>
           </div>
+          <p className={styles.fixedHint}>
+            모든 계좌에서 인출해도 부족하면 마이너스 통장으로 자동 충당됩니다.
+          </p>
 
           {priorities.withdrawalRules.length === 0 && !addingWithdrawal && (
             <div className={styles.emptyHint}>
@@ -612,7 +618,7 @@ export function CashFlowPrioritiesPanel({
               disabled={isLoading || availableWithdrawalAccounts.length === 0}
               type="button"
             >
-              <Plus size={16} />
+              <Plus size={14} />
               추가
             </button>
           )}

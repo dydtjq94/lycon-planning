@@ -91,9 +91,6 @@ export async function createPhysicalAsset(input: PhysicalAssetInput): Promise<Ph
 
   if (error) throw error
 
-  // 연동 항목 생성 (DB 원 단위 데이터로)
-  await syncLinkedDebt(data)
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, PHYSICAL_ASSET_MONEY_FIELDS)
 }
@@ -119,18 +116,12 @@ export async function updatePhysicalAsset(
 
   if (error) throw error
 
-  // 연동 항목 재동기화 (DB 원 단위 데이터로)
-  await syncLinkedDebt(data)
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, PHYSICAL_ASSET_MONEY_FIELDS)
 }
 
 export async function deletePhysicalAsset(id: string): Promise<void> {
   const supabase = createClient()
-
-  // 연동된 부채 먼저 삭제
-  await deleteLinkedDebt(id)
 
   // 실물자산 삭제 (soft delete)
   const { error } = await supabase
@@ -139,27 +130,6 @@ export async function deletePhysicalAsset(id: string): Promise<void> {
     .eq('id', id)
 
   if (error) throw error
-}
-
-// ============================================
-// 연동 부채 관리
-// ============================================
-
-async function syncLinkedDebt(asset: PhysicalAsset): Promise<void> {
-  // 기존 연동 부채 삭제
-  await deleteLinkedDebt(asset.id)
-
-  // 연동 부채 생성은 엔진에서 처리
-}
-
-async function deleteLinkedDebt(assetId: string): Promise<void> {
-  const supabase = createClient()
-
-  await supabase
-    .from('debts')
-    .update({ is_active: false, updated_at: new Date().toISOString() })
-    .eq('source_type', 'physical_asset')
-    .eq('source_id', assetId)
 }
 
 // ============================================

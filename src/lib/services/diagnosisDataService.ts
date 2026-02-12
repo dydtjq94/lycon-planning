@@ -32,7 +32,6 @@ interface FinancialAssetItem {
   currentBalance: number;
 }
 
-
 interface DebtItem {
   type: string;
   principal: number;
@@ -62,7 +61,12 @@ interface ExpenseFormData {
     leisure?: number;
     other?: number;
   };
-  fixedExpenses: Array<{ type: string; title: string; amount: number; frequency: "monthly" | "yearly" }>;
+  fixedExpenses: Array<{
+    type: string;
+    title: string;
+    amount: number;
+    frequency: "monthly" | "yearly";
+  }>;
 }
 
 interface NationalPensionData {
@@ -127,7 +131,7 @@ export interface ChildInfo {
   name: string;
   age: number;
   gender: "male" | "female" | null;
-  birthDate: string | null;  // YYYY-MM-DD 형식
+  birthDate: string | null; // YYYY-MM-DD 형식
 }
 
 export interface DiagnosisData {
@@ -202,28 +206,27 @@ interface ProfileData {
  * prep_data를 DiagnosisData로 변환
  */
 export function convertPrepDataToDiagnosisData(
-  profile: ProfileData
+  profile: ProfileData,
 ): DiagnosisData {
   const prepData = (profile.prep_data || {}) as PrepDataStore;
 
   // 기본 정보 - 만 나이 계산
-  const currentAge = profile.birth_date
-    ? calculateAge(profile.birth_date)
-    : 40; // 생년월일 없으면 기본 40세
+  const currentAge = profile.birth_date ? calculateAge(profile.birth_date) : 40; // 생년월일 없으면 기본 40세
 
   // 배우자 만 나이 (prep_data.family에서 추출)
   const spouse = prepData.family?.find((m) => m.relationship === "spouse");
-  const spouseAge = spouse?.birth_date
-    ? calculateAge(spouse.birth_date)
-    : null;
+  const spouseAge = spouse?.birth_date ? calculateAge(spouse.birth_date) : null;
 
   // 자녀 정보 추출 (relationship이 "child"로 저장됨)
   const children: ChildInfo[] = (prepData.family || [])
     .filter((m) => m.relationship === "child")
     .map((child, idx) => {
       const gender: "male" | "female" | null =
-        child.gender === "male" ? "male" :
-        child.gender === "female" ? "female" : null;
+        child.gender === "male"
+          ? "male"
+          : child.gender === "female"
+            ? "female"
+            : null;
       return {
         name: child.name || `자녀${idx + 1}`,
         age: child.birth_date ? calculateAge(child.birth_date) : 0,
@@ -241,10 +244,19 @@ export function convertPrepDataToDiagnosisData(
   const incomeData = prepData.income;
   let monthlyIncome = 0;
   if (incomeData) {
-    monthlyIncome += toMonthly(incomeData.selfLaborIncome || 0, incomeData.selfLaborFrequency || "monthly");
-    monthlyIncome += toMonthly(incomeData.spouseLaborIncome || 0, incomeData.spouseLaborFrequency || "monthly");
+    monthlyIncome += toMonthly(
+      incomeData.selfLaborIncome || 0,
+      incomeData.selfLaborFrequency || "monthly",
+    );
+    monthlyIncome += toMonthly(
+      incomeData.spouseLaborIncome || 0,
+      incomeData.spouseLaborFrequency || "monthly",
+    );
     for (const additional of incomeData.additionalIncomes || []) {
-      monthlyIncome += toMonthly(additional.amount || 0, additional.frequency || "monthly");
+      monthlyIncome += toMonthly(
+        additional.amount || 0,
+        additional.frequency || "monthly",
+      );
     }
   }
 
@@ -267,7 +279,10 @@ export function convertPrepDataToDiagnosisData(
   if (expenseData) {
     // 고정 지출
     for (const fixed of expenseData.fixedExpenses || []) {
-      monthlyFixedExpense += toMonthly(fixed.amount || 0, fixed.frequency || "monthly");
+      monthlyFixedExpense += toMonthly(
+        fixed.amount || 0,
+        fixed.frequency || "monthly",
+      );
     }
 
     // 변동 생활비 세부 항목
@@ -278,15 +293,25 @@ export function convertPrepDataToDiagnosisData(
       expenseShopping = details.shopping || 0;
       expenseLeisure = details.leisure || 0;
       expenseOther = details.other || 0;
-      monthlyLivingExpense = expenseFood + expenseTransport + expenseShopping + expenseLeisure + expenseOther;
+      monthlyLivingExpense =
+        expenseFood +
+        expenseTransport +
+        expenseShopping +
+        expenseLeisure +
+        expenseOther;
     } else {
       // livingExpenseDetails가 없으면 livingExpense를 비율로 분배
       monthlyLivingExpense = expenseData.livingExpense || 0;
       expenseFood = Math.round(monthlyLivingExpense * 0.35);
       expenseTransport = Math.round(monthlyLivingExpense * 0.15);
-      expenseShopping = Math.round(monthlyLivingExpense * 0.20);
+      expenseShopping = Math.round(monthlyLivingExpense * 0.2);
       expenseLeisure = Math.round(monthlyLivingExpense * 0.15);
-      expenseOther = monthlyLivingExpense - expenseFood - expenseTransport - expenseShopping - expenseLeisure;
+      expenseOther =
+        monthlyLivingExpense -
+        expenseFood -
+        expenseTransport -
+        expenseShopping -
+        expenseLeisure;
     }
   }
 
@@ -298,7 +323,10 @@ export function convertPrepDataToDiagnosisData(
   if (housingData) {
     if (housingData.housingType === "자가") {
       realEstateAsset = (housingData.currentValue || 0) / 10000;
-    } else if (housingData.housingType === "전세" || housingData.housingType === "월세") {
+    } else if (
+      housingData.housingType === "전세" ||
+      housingData.housingType === "월세"
+    ) {
       depositAsset = (housingData.deposit || 0) / 10000;
     }
   }
@@ -306,9 +334,10 @@ export function convertPrepDataToDiagnosisData(
   // 현금성 자산 (억원) - prep_data.savings (보증금 제외)
   const savingsData = prepData.savings || [];
   const cashTypes = ["checking", "savings", "deposit"];
-  const cashAsset = savingsData
-    .filter((s) => cashTypes.includes(s.type))
-    .reduce((sum, s) => sum + (s.currentBalance || 0), 0) / 10000;
+  const cashAsset =
+    savingsData
+      .filter((s) => cashTypes.includes(s.type))
+      .reduce((sum, s) => sum + (s.currentBalance || 0), 0) / 10000;
 
   // 투자 자산 (억원) - prep_data.investment (배열 또는 객체 형식 지원)
   const investmentData = prepData.investment;
@@ -316,11 +345,15 @@ export function convertPrepDataToDiagnosisData(
 
   if (Array.isArray(investmentData)) {
     // 새 배열 형식: [{type, currentBalance, ...}, ...]
-    investmentAsset = investmentData.reduce((sum, i) => sum + (i.currentBalance || 0), 0) / 10000;
+    investmentAsset =
+      investmentData.reduce((sum, i) => sum + (i.currentBalance || 0), 0) /
+      10000;
   } else if (investmentData && typeof investmentData === "object") {
     // 구 객체 형식: {gold: {balance: 1100}, stock: {balance: 1050}, ...}
     for (const key of Object.keys(investmentData)) {
-      const item = (investmentData as Record<string, { balance?: number }>)[key];
+      const item = (investmentData as Record<string, { balance?: number }>)[
+        key
+      ];
       investmentAsset += (item?.balance || 0) / 10000;
     }
   }
@@ -334,7 +367,8 @@ export function convertPrepDataToDiagnosisData(
     pensionAsset += (retirementData.selfBalance || 0) / 10000;
     pensionAsset += (retirementData.spouseBalance || 0) / 10000;
   }
-  pensionAsset += personalPensions.reduce((sum, p) => sum + (p.balance || 0), 0) / 10000;
+  pensionAsset +=
+    personalPensions.reduce((sum, p) => sum + (p.balance || 0), 0) / 10000;
 
   // 부채 분류 - prep_data.debt + prep_data.housing 대출
   const debtData = prepData.debt || [];
@@ -347,19 +381,32 @@ export function convertPrepDataToDiagnosisData(
     mortgageRate = housingData.loanRate || 4.5;
   }
   const mortgageDebts = debtData.filter((d) => d.type === "mortgage");
-  mortgageAmount += mortgageDebts.reduce((sum, d) => sum + (d.currentBalance || d.principal || 0), 0);
+  mortgageAmount += mortgageDebts.reduce(
+    (sum, d) => sum + (d.currentBalance || d.principal || 0),
+    0,
+  );
   if (mortgageDebts.length > 0) {
     mortgageRate = mortgageDebts[0].interestRate || 4.5;
   }
 
   // 신용대출
-  const creditDebts = debtData.filter((d) => d.type === "credit" || d.type === "credit_line");
-  const creditLoanAmount = creditDebts.reduce((sum, d) => sum + (d.currentBalance || d.principal || 0), 0);
+  const creditDebts = debtData.filter(
+    (d) => d.type === "credit" || d.type === "credit_line",
+  );
+  const creditLoanAmount = creditDebts.reduce(
+    (sum, d) => sum + (d.currentBalance || d.principal || 0),
+    0,
+  );
   const creditLoanRate = creditDebts[0]?.interestRate || 6.8;
 
   // 기타 부채
-  const otherDebts = debtData.filter((d) => !["mortgage", "credit", "credit_line"].includes(d.type));
-  const otherDebtAmount = otherDebts.reduce((sum, d) => sum + (d.currentBalance || d.principal || 0), 0);
+  const otherDebts = debtData.filter(
+    (d) => !["mortgage", "credit", "credit_line"].includes(d.type),
+  );
+  const otherDebtAmount = otherDebts.reduce(
+    (sum, d) => sum + (d.currentBalance || d.principal || 0),
+    0,
+  );
   const otherDebtRate = otherDebts[0]?.interestRate || 5.0;
 
   // 국민연금 - prep_data.nationalPension
@@ -368,7 +415,10 @@ export function convertPrepDataToDiagnosisData(
   const nationalPensionSpouse = nationalPensionData?.spouseExpectedAmount || 0;
 
   // 은퇴까지 남은 기간 (미래가치 계산용)
-  const targetRetirementAge = prepData.retirementGoals?.targetRetirementAge || profile.target_retirement_age || 60;
+  const targetRetirementAge =
+    prepData.retirementGoals?.targetRetirementAge ||
+    profile.target_retirement_age ||
+    60;
   const yearsToRetirement = Math.max(0, targetRetirementAge - currentAge);
 
   // 연금 성장률 및 퇴직연금 적립률
@@ -376,18 +426,28 @@ export function convertPrepDataToDiagnosisData(
   const retirementContributionRate = 0.0833; // 월급의 8.33% (연봉의 1/12)
 
   // 퇴직연금 은퇴시점 예상 잔액 계산 (현재잔액 + 추가적립 + 수익률)
-  const calculateFutureRetirementPension = (currentBalance: number, monthlyIncome: number, years: number) => {
+  const calculateFutureRetirementPension = (
+    currentBalance: number,
+    monthlyIncome: number,
+    years: number,
+  ) => {
     if (years <= 0) return currentBalance;
     // 현재 잔액의 미래가치
-    const currentBalanceFV = currentBalance * Math.pow(1 + pensionGrowthRate, years);
+    const currentBalanceFV =
+      currentBalance * Math.pow(1 + pensionGrowthRate, years);
     // 추가 적립금의 미래가치 (매년 적립 가정)
     const annualContribution = monthlyIncome * retirementContributionRate * 12;
-    const contributionFV = annualContribution * ((Math.pow(1 + pensionGrowthRate, years) - 1) / pensionGrowthRate);
+    const contributionFV =
+      annualContribution *
+      ((Math.pow(1 + pensionGrowthRate, years) - 1) / pensionGrowthRate);
     return Math.round(currentBalanceFV + contributionFV);
   };
 
   // 개인연금 은퇴시점 예상 잔액 계산 (현재잔액 + 수익률, 추가납입 없음)
-  const calculateFuturePersonalPension = (currentBalance: number, years: number) => {
+  const calculateFuturePersonalPension = (
+    currentBalance: number,
+    years: number,
+  ) => {
     if (years <= 0) return currentBalance;
     return Math.round(currentBalance * Math.pow(1 + pensionGrowthRate, years));
   };
@@ -403,38 +463,62 @@ export function convertPrepDataToDiagnosisData(
 
   // 퇴직연금 은퇴시점 예상 잔액
   const retirementPensionBalanceAtRetire = retirementData?.selfBalance
-    ? calculateFutureRetirementPension(retirementData.selfBalance, monthlyIncome, yearsToRetirement)
+    ? calculateFutureRetirementPension(
+        retirementData.selfBalance,
+        monthlyIncome,
+        yearsToRetirement,
+      )
     : 0;
   const retirementPensionSpouseBalanceAtRetire = retirementData?.spouseBalance
-    ? calculateFutureRetirementPension(retirementData.spouseBalance, monthlyIncome * 0.5, yearsToRetirement) // 배우자는 소득의 50% 가정
+    ? calculateFutureRetirementPension(
+        retirementData.spouseBalance,
+        monthlyIncome * 0.5,
+        yearsToRetirement,
+      ) // 배우자는 소득의 50% 가정
     : 0;
 
   // 퇴직연금 월수령액 (은퇴시점 예상잔액 기준)
-  const retirementPensionPersonal = retirementPensionBalanceAtRetire > 0
-    ? calculateMonthlyPension(retirementPensionBalanceAtRetire, retirementWithdrawalYears)
-    : 0;
-  const retirementPensionSpouse = retirementPensionSpouseBalanceAtRetire > 0
-    ? calculateMonthlyPension(retirementPensionSpouseBalanceAtRetire, retirementData?.spouseWithdrawalPeriod || retirementWithdrawalYears)
-    : 0;
+  const retirementPensionPersonal =
+    retirementPensionBalanceAtRetire > 0
+      ? calculateMonthlyPension(
+          retirementPensionBalanceAtRetire,
+          retirementWithdrawalYears,
+        )
+      : 0;
+  const retirementPensionSpouse =
+    retirementPensionSpouseBalanceAtRetire > 0
+      ? calculateMonthlyPension(
+          retirementPensionSpouseBalanceAtRetire,
+          retirementData?.spouseWithdrawalPeriod || retirementWithdrawalYears,
+        )
+      : 0;
 
   // 개인연금 월수령액 (은퇴시점 예상잔액 기준)
-  const selfPersonalPensions = personalPensions.filter((p) => p.owner === "self");
-  const spousePersonalPensions = personalPensions.filter((p) => p.owner === "spouse");
+  const selfPersonalPensions = personalPensions.filter(
+    (p) => p.owner === "self",
+  );
+  const spousePersonalPensions = personalPensions.filter(
+    (p) => p.owner === "spouse",
+  );
 
-  const privatePensionPersonal = selfPersonalPensions.reduce(
-    (sum, p) => {
-      const futureBalance = calculateFuturePersonalPension(p.balance || 0, yearsToRetirement);
-      return sum + calculateMonthlyPension(futureBalance, p.withdrawalPeriod || 20);
-    },
-    0
-  );
-  const privatePensionSpouse = spousePersonalPensions.reduce(
-    (sum, p) => {
-      const futureBalance = calculateFuturePersonalPension(p.balance || 0, yearsToRetirement);
-      return sum + calculateMonthlyPension(futureBalance, p.withdrawalPeriod || 20);
-    },
-    0
-  );
+  const privatePensionPersonal = selfPersonalPensions.reduce((sum, p) => {
+    const futureBalance = calculateFuturePersonalPension(
+      p.balance || 0,
+      yearsToRetirement,
+    );
+    return (
+      sum + calculateMonthlyPension(futureBalance, p.withdrawalPeriod || 20)
+    );
+  }, 0);
+  const privatePensionSpouse = spousePersonalPensions.reduce((sum, p) => {
+    const futureBalance = calculateFuturePersonalPension(
+      p.balance || 0,
+      yearsToRetirement,
+    );
+    return (
+      sum + calculateMonthlyPension(futureBalance, p.withdrawalPeriod || 20)
+    );
+  }, 0);
 
   // 기대수명 (prep_data.retirementGoals에서 가져오거나 기본 90세)
   const lifeExpectancy = prepData.retirementGoals?.lifeExpectancy || 90;
@@ -444,11 +528,19 @@ export function convertPrepDataToDiagnosisData(
 
   // 월세 추가
   if (monthlyRent > 0) {
-    fixedExpenseItems.push({ type: "housing", title: "월세", amount: monthlyRent });
+    fixedExpenseItems.push({
+      type: "housing",
+      title: "월세",
+      amount: monthlyRent,
+    });
   }
   // 관리비 추가
   if (maintenanceFee > 0) {
-    fixedExpenseItems.push({ type: "housing", title: "관리비", amount: maintenanceFee });
+    fixedExpenseItems.push({
+      type: "housing",
+      title: "관리비",
+      amount: maintenanceFee,
+    });
   }
   // 사용자 입력 고정비 추가
   if (expenseData?.fixedExpenses) {
@@ -463,7 +555,9 @@ export function convertPrepDataToDiagnosisData(
 
   // 개인연금 가입 상태 (IRP, 연금저축, ISA)
   const irpPensions = personalPensions.filter((p) => p.type === "irp");
-  const pensionSavingsPensions = personalPensions.filter((p) => p.type === "pension_savings");
+  const pensionSavingsPensions = personalPensions.filter(
+    (p) => p.type === "pension_savings",
+  );
   const isaPensions = personalPensions.filter((p) => p.type === "isa");
 
   const personalPensionStatus: PersonalPensionStatus = {
@@ -473,7 +567,10 @@ export function convertPrepDataToDiagnosisData(
     },
     pensionSavings: {
       enrolled: pensionSavingsPensions.length > 0,
-      balance: pensionSavingsPensions.reduce((sum, p) => sum + (p.balance || 0), 0),
+      balance: pensionSavingsPensions.reduce(
+        (sum, p) => sum + (p.balance || 0),
+        0,
+      ),
     },
     isa: {
       enrolled: isaPensions.length > 0,
@@ -484,9 +581,21 @@ export function convertPrepDataToDiagnosisData(
   // 개별 자산 항목 목록 생성
   const assetItems: AssetItem[] = [];
   const assetColors = [
-    "#1a365d", "#2c5282", "#3182ce", "#4299e1", "#63b3ed",
-    "#805ad5", "#9f7aea", "#b794f4", "#38a169", "#48bb78",
-    "#ed8936", "#f6ad55", "#e53e3e", "#fc8181", "#4a5568",
+    "#1a365d",
+    "#2c5282",
+    "#3182ce",
+    "#4299e1",
+    "#63b3ed",
+    "#805ad5",
+    "#9f7aea",
+    "#b794f4",
+    "#38a169",
+    "#48bb78",
+    "#ed8936",
+    "#f6ad55",
+    "#e53e3e",
+    "#fc8181",
+    "#4a5568",
   ];
   let colorIndex = 0;
   const getNextColor = () => assetColors[colorIndex++ % assetColors.length];
@@ -506,10 +615,20 @@ export function convertPrepDataToDiagnosisData(
 
   // 1. 부동산/보증금
   if (realEstateAsset > 0) {
-    assetItems.push({ key: "realestate", label: "부동산", amount: realEstateAsset, color: getNextColor() });
+    assetItems.push({
+      key: "realestate",
+      label: "부동산",
+      amount: realEstateAsset,
+      color: getNextColor(),
+    });
   }
   if (depositAsset > 0) {
-    assetItems.push({ key: "deposit", label: "보증금", amount: depositAsset, color: getNextColor() });
+    assetItems.push({
+      key: "deposit",
+      label: "보증금",
+      amount: depositAsset,
+      color: getNextColor(),
+    });
   }
 
   // 2. 저축 계좌 (개별 항목)
@@ -554,7 +673,9 @@ export function convertPrepDataToDiagnosisData(
   } else if (investmentData && typeof investmentData === "object") {
     // 구 객체 형식: {gold: {balance: 1100}, stock: {balance: 1050}, ...}
     for (const key of Object.keys(investmentData)) {
-      const item = (investmentData as Record<string, { balance?: number }>)[key];
+      const item = (investmentData as Record<string, { balance?: number }>)[
+        key
+      ];
       const balance = item?.balance || 0;
       if (balance > 0) {
         const label = investmentTypeLabels[key] || key;
@@ -612,7 +733,10 @@ export function convertPrepDataToDiagnosisData(
     currentAge,
     spouseAge,
     lifeExpectancy,
-    targetRetirementAge: prepData.retirementGoals?.targetRetirementAge || profile.target_retirement_age || 60,
+    targetRetirementAge:
+      prepData.retirementGoals?.targetRetirementAge ||
+      profile.target_retirement_age ||
+      60,
     // 자녀 정보
     children,
     // 연금 (만원/월)
@@ -624,7 +748,8 @@ export function convertPrepDataToDiagnosisData(
     retirementPensionBalanceSelf: retirementData?.selfBalance || 0,
     retirementPensionBalanceSpouse: retirementData?.spouseBalance || 0,
     retirementPensionBalanceAtRetireSelf: retirementPensionBalanceAtRetire,
-    retirementPensionBalanceAtRetireSpouse: retirementPensionSpouseBalanceAtRetire,
+    retirementPensionBalanceAtRetireSpouse:
+      retirementPensionSpouseBalanceAtRetire,
     privatePensionPersonal,
     privatePensionSpouse,
     otherIncomePersonal: 0,
@@ -772,12 +897,12 @@ export interface DiagnosisMetrics {
 
 // 커스텀 계산 파라미터 인터페이스
 export interface CalculationParams {
-  retirementAgeOffset: number;      // 은퇴 나이 조정 (-5, 0, +5)
-  livingExpenseRatio: number;       // 생활비 비율 (0.7, 1.0, 1.2)
-  inflationRate: number;            // 물가상승률 (0.01, 0.02, 0.04)
-  incomeGrowthRate: number;         // 소득상승률 (0.01, 0.02, 0.04)
-  financialGrowthRate: number;      // 금융자산 수익률 (0.02, 0.05, 0.07, 0.10)
-  lifeExpectancy: number | null;    // 기대수명 (null이면 데이터 값 사용)
+  retirementAgeOffset: number; // 은퇴 나이 조정 (-5, 0, +5)
+  livingExpenseRatio: number; // 생활비 비율 (0.7, 1.0, 1.2)
+  inflationRate: number; // 물가 상승률 (0.01, 0.02, 0.04)
+  incomeGrowthRate: number; // 소득 상승률 (0.01, 0.02, 0.04)
+  financialGrowthRate: number; // 금융자산 수익률 (0.02, 0.05, 0.07, 0.10)
+  lifeExpectancy: number | null; // 기대수명 (null이면 데이터 값 사용)
 }
 
 // 기본 계산 파라미터
@@ -796,68 +921,103 @@ export const DEFAULT_CALC_PARAMS: CalculationParams = {
  */
 export function calculateAllDiagnosisMetrics(
   data: DiagnosisData,
-  customParams?: Partial<CalculationParams>
+  customParams?: Partial<CalculationParams>,
 ): DiagnosisMetrics {
   const params = { ...DEFAULT_CALC_PARAMS, ...customParams };
   const inflationRate = params.inflationRate;
   const growthRate = 0.025;
 
   // === 기본 자산/부채 계산 ===
-  const financialAsset = Math.round((data.cashAsset + data.investmentAsset) * 100) / 100;
+  const financialAsset =
+    Math.round((data.cashAsset + data.investmentAsset) * 100) / 100;
   // 총자산에 보증금 포함 (보증금은 별도 추적하여 성장률 0% 적용)
-  const totalAsset = Math.round((data.realEstateAsset + financialAsset + data.depositAsset + data.pensionAsset) * 100) / 100;
-  const totalDebt = data.mortgageAmount + data.creditLoanAmount + data.otherDebtAmount;
+  const totalAsset =
+    Math.round(
+      (data.realEstateAsset +
+        financialAsset +
+        data.depositAsset +
+        data.pensionAsset) *
+        100,
+    ) / 100;
+  const totalDebt =
+    data.mortgageAmount + data.creditLoanAmount + data.otherDebtAmount;
   const netWorth = Math.round((totalAsset - totalDebt / 10000) * 100) / 100;
 
   // === 생활비/지출 계산 ===
   const livingExpense =
-    data.expenseFood + data.expenseTransport + data.expenseShopping + data.expenseLeisure + data.expenseOther;
+    data.expenseFood +
+    data.expenseTransport +
+    data.expenseShopping +
+    data.expenseLeisure +
+    data.expenseOther;
 
   const monthlyInterest = Math.round(
     (data.mortgageAmount * data.mortgageRate) / 100 / 12 +
-    (data.creditLoanAmount * data.creditLoanRate) / 100 / 12 +
-    (data.otherDebtAmount * data.otherDebtRate) / 100 / 12
+      (data.creditLoanAmount * data.creditLoanRate) / 100 / 12 +
+      (data.otherDebtAmount * data.otherDebtRate) / 100 / 12,
   );
 
-  const currentExpenseBase = data.monthlyFixedExpense + livingExpense + monthlyInterest;
+  const currentExpenseBase =
+    data.monthlyFixedExpense + livingExpense + monthlyInterest;
   const currentMonthlyExpense = currentExpenseBase;
   const currentMonthlyGap = data.monthlyIncome - currentMonthlyExpense;
-  const savingsRate = data.monthlyIncome > 0 ? (currentMonthlyGap / data.monthlyIncome) * 100 : 0;
+  const savingsRate =
+    data.monthlyIncome > 0 ? (currentMonthlyGap / data.monthlyIncome) * 100 : 0;
 
   // === 자산 비율 ===
-  const realEstateRatio = totalAsset > 0 ? Math.round((data.realEstateAsset / totalAsset) * 100) : 0;
-  const depositRatio = totalAsset > 0 ? Math.round((data.depositAsset / totalAsset) * 100) : 0;
-  const cashRatio = totalAsset > 0 ? Math.round((data.cashAsset / totalAsset) * 100) : 0;
-  const investmentRatio = totalAsset > 0 ? Math.round((data.investmentAsset / totalAsset) * 100) : 0;
-  const pensionRatio = 100 - realEstateRatio - depositRatio - cashRatio - investmentRatio;
+  const realEstateRatio =
+    totalAsset > 0 ? Math.round((data.realEstateAsset / totalAsset) * 100) : 0;
+  const depositRatio =
+    totalAsset > 0 ? Math.round((data.depositAsset / totalAsset) * 100) : 0;
+  const cashRatio =
+    totalAsset > 0 ? Math.round((data.cashAsset / totalAsset) * 100) : 0;
+  const investmentRatio =
+    totalAsset > 0 ? Math.round((data.investmentAsset / totalAsset) * 100) : 0;
+  const pensionRatio =
+    100 - realEstateRatio - depositRatio - cashRatio - investmentRatio;
 
   // === 부채 비율 ===
-  const mortgageRatio = totalDebt > 0 ? Math.round((data.mortgageAmount / totalDebt) * 100) : 0;
-  const creditRatio = totalDebt > 0 ? Math.round((data.creditLoanAmount / totalDebt) * 100) : 0;
+  const mortgageRatio =
+    totalDebt > 0 ? Math.round((data.mortgageAmount / totalDebt) * 100) : 0;
+  const creditRatio =
+    totalDebt > 0 ? Math.round((data.creditLoanAmount / totalDebt) * 100) : 0;
   const otherDebtRatio = 100 - mortgageRatio - creditRatio;
   const isMortgageRateGood = data.mortgageRate <= 4.5;
   const isCreditRateGood = data.creditLoanRate <= 7.0;
   const annualInterest = monthlyInterest * 12;
   const annualIncomeCalc = data.monthlyIncome * 12;
-  const interestToIncome = annualIncomeCalc > 0 ? Math.round((annualInterest / annualIncomeCalc) * 100) : 0;
+  const interestToIncome =
+    annualIncomeCalc > 0
+      ? Math.round((annualInterest / annualIncomeCalc) * 100)
+      : 0;
 
   // === 지출 분석 ===
   const fixedExpense = data.monthlyFixedExpense + monthlyInterest;
   const variableExpense = livingExpense;
   const totalAllExpense = fixedExpense + variableExpense;
-  const fixedRatio = totalAllExpense > 0 ? Math.round((fixedExpense / totalAllExpense) * 100) : 0;
+  const fixedRatio =
+    totalAllExpense > 0
+      ? Math.round((fixedExpense / totalAllExpense) * 100)
+      : 0;
   const variableRatio = 100 - fixedRatio;
 
   // === 은퇴 시점 계산 (물가 반영) ===
-  const effectiveRetirementAge = data.targetRetirementAge + params.retirementAgeOffset;
+  const effectiveRetirementAge =
+    data.targetRetirementAge + params.retirementAgeOffset;
   const effectiveLifeExpectancy = params.lifeExpectancy ?? data.lifeExpectancy;
-  const yearsToRetirement = Math.max(0, effectiveRetirementAge - data.currentAge);
-  const retirementYears = Math.max(0, effectiveLifeExpectancy - effectiveRetirementAge);
+  const yearsToRetirement = Math.max(
+    0,
+    effectiveRetirementAge - data.currentAge,
+  );
+  const retirementYears = Math.max(
+    0,
+    effectiveLifeExpectancy - effectiveRetirementAge,
+  );
 
-  // 국민연금 물가상승률 반영
+  // 국민연금 물가 상승률 반영
   const nationalPensionInflated = Math.round(
     (data.nationalPensionPersonal + data.nationalPensionSpouse) *
-    Math.pow(1 + inflationRate, yearsToRetirement)
+      Math.pow(1 + inflationRate, yearsToRetirement),
   );
 
   const monthlyPension =
@@ -871,17 +1031,25 @@ export function calculateAllDiagnosisMetrics(
 
   // 은퇴 시점 예상 지출 (물가상승 반영, 커스텀 비율 적용)
   const monthlyExpense = Math.round(
-    currentExpenseBase * Math.pow(1 + inflationRate, yearsToRetirement) * params.livingExpenseRatio
+    currentExpenseBase *
+      Math.pow(1 + inflationRate, yearsToRetirement) *
+      params.livingExpenseRatio,
   );
   const monthlyGap = monthlyPension - monthlyExpense;
-  const pensionCoverageRate = monthlyExpense > 0 ? Math.round((monthlyPension / monthlyExpense) * 100) : 0;
+  const pensionCoverageRate =
+    monthlyExpense > 0
+      ? Math.round((monthlyPension / monthlyExpense) * 100)
+      : 0;
 
   // === 현재 유동자산 ===
-  const liquidAsset = Math.round((financialAsset + data.depositAsset + data.pensionAsset) * 100) / 100;
+  const liquidAsset =
+    Math.round((financialAsset + data.depositAsset + data.pensionAsset) * 100) /
+    100;
 
   // === 은퇴 시점 예상 자산 (먼저 계산) ===
   // 저축률 유지 + 소득 상승 방식 (savingsRate는 위에서 이미 계산됨 - 퍼센트)
-  const initialAnnualSavings = currentMonthlyGap > 0 ? (currentMonthlyGap * 12) / 10000 : 0;
+  const initialAnnualSavings =
+    currentMonthlyGap > 0 ? (currentMonthlyGap * 12) / 10000 : 0;
   const incomeGrowthRate = params.incomeGrowthRate; // 소득 상승률
   const realEstateGrowth = 0.02;
   const financialGrowth = params.financialGrowthRate; // 금융자산 수익률
@@ -890,29 +1058,57 @@ export function calculateAllDiagnosisMetrics(
 
   // 소득 상승에 따른 저축 증가를 반영한 미래가치 계산
   // FV = S0 * ((1+r)^n - (1+g)^n) / (r - g) (r ≠ g일 때)
-  const calculateSavingsFV = (initialSavings: number, years: number, returnRate: number, growthRate: number) => {
+  const calculateSavingsFV = (
+    initialSavings: number,
+    years: number,
+    returnRate: number,
+    growthRate: number,
+  ) => {
     if (years <= 0 || initialSavings <= 0) return 0;
     if (Math.abs(returnRate - growthRate) < 0.001) {
       // r ≈ g인 경우: S0 * n * (1+r)^(n-1)
       return initialSavings * years * Math.pow(1 + returnRate, years - 1);
     }
-    return initialSavings * (Math.pow(1 + returnRate, years) - Math.pow(1 + growthRate, years)) / (returnRate - growthRate);
+    return (
+      (initialSavings *
+        (Math.pow(1 + returnRate, years) - Math.pow(1 + growthRate, years))) /
+      (returnRate - growthRate)
+    );
   };
 
   const realEstateAtRetirement =
-    Math.round(data.realEstateAsset * Math.pow(1 + realEstateGrowth, yearsToRetirement) * 10) / 10;
+    Math.round(
+      data.realEstateAsset *
+        Math.pow(1 + realEstateGrowth, yearsToRetirement) *
+        10,
+    ) / 10;
   const depositAtRetirement =
-    Math.round(data.depositAsset * Math.pow(1 + depositGrowth, yearsToRetirement) * 10) / 10;
+    Math.round(
+      data.depositAsset * Math.pow(1 + depositGrowth, yearsToRetirement) * 10,
+    ) / 10;
   const financialAtRetirement =
     Math.round(
       (financialAsset * Math.pow(1 + financialGrowth, yearsToRetirement) +
-        calculateSavingsFV(initialAnnualSavings, yearsToRetirement, financialGrowth, incomeGrowthRate)) *
-      10
+        calculateSavingsFV(
+          initialAnnualSavings,
+          yearsToRetirement,
+          financialGrowth,
+          incomeGrowthRate,
+        )) *
+        10,
     ) / 10;
   const pensionAtRetirement =
-    Math.round(data.pensionAsset * Math.pow(1 + pensionGrowth, yearsToRetirement) * 10) / 10;
+    Math.round(
+      data.pensionAsset * Math.pow(1 + pensionGrowth, yearsToRetirement) * 10,
+    ) / 10;
   const totalAtRetirement =
-    Math.round((realEstateAtRetirement + depositAtRetirement + financialAtRetirement + pensionAtRetirement) * 10) / 10;
+    Math.round(
+      (realEstateAtRetirement +
+        depositAtRetirement +
+        financialAtRetirement +
+        pensionAtRetirement) *
+        10,
+    ) / 10;
 
   const debtAtRetirement = Math.round(totalDebt * 0.5);
   const netWorthAtRetirement =
@@ -921,9 +1117,12 @@ export function calculateAllDiagnosisMetrics(
   // === 유동자산/지속성 (화면 표시 값과 일치) ===
   // 유동자산 = 금융자산 + 보증금 + 연금자산 (부동산 제외)
   const liquidAssetAtRetirement =
-    Math.round((financialAtRetirement + depositAtRetirement + pensionAtRetirement) * 100) / 100;
+    Math.round(
+      (financialAtRetirement + depositAtRetirement + pensionAtRetirement) * 100,
+    ) / 100;
 
-  const annualShortfall = monthlyGap < 0 ? (Math.abs(monthlyGap) * 12) / 10000 : 0;
+  const annualShortfall =
+    monthlyGap < 0 ? (Math.abs(monthlyGap) * 12) / 10000 : 0;
   const yearsOfWithdrawal =
     liquidAssetAtRetirement <= 0
       ? 0
@@ -931,18 +1130,28 @@ export function calculateAllDiagnosisMetrics(
         ? Math.round((liquidAssetAtRetirement / annualShortfall) * 10) / 10
         : 999;
 
-  const rawDepletionAge = effectiveRetirementAge + Math.floor(yearsOfWithdrawal);
-  const assetDepletionAge = Math.min(rawDepletionAge, effectiveLifeExpectancy + 1);
+  const rawDepletionAge =
+    effectiveRetirementAge + Math.floor(yearsOfWithdrawal);
+  const assetDepletionAge = Math.min(
+    rawDepletionAge,
+    effectiveLifeExpectancy + 1,
+  );
   const isAssetSustainable = rawDepletionAge > effectiveLifeExpectancy;
 
   // === 은퇴 판정 ===
   const isRetirementPossible = monthlyGap >= 0;
   const coverageGap = monthlyExpense - monthlyPension;
   const requiredAdditionalAsset =
-    coverageGap > 0 ? Math.round(((coverageGap * 12 * retirementYears) / 10000) * 10) / 10 : 0;
+    coverageGap > 0
+      ? Math.round(((coverageGap * 12 * retirementYears) / 10000) * 10) / 10
+      : 0;
   const hasEnoughAsset = liquidAssetAtRetirement >= requiredAdditionalAsset;
 
-  let retirementVerdict: { status: RetirementVerdictStatus; label: string; message: string };
+  let retirementVerdict: {
+    status: RetirementVerdictStatus;
+    label: string;
+    message: string;
+  };
   if (isRetirementPossible) {
     retirementVerdict = {
       status: "possible",
@@ -964,26 +1173,53 @@ export function calculateAllDiagnosisMetrics(
   }
 
   // === 자금 수급 ===
-  const totalDemand = Math.round(((retirementYears * monthlyExpense * 12) / 10000) * 100) / 100;
+  const totalDemand =
+    Math.round(((retirementYears * monthlyExpense * 12) / 10000) * 100) / 100;
 
   // 현재~사망까지 총 생활비 (현재 소비 습관 유지 기준)
-  const preRetirementLivingCost = Math.round(((yearsToRetirement * currentExpenseBase * 12) / 10000) * 100) / 100;
-  const postRetirementLivingCost = Math.round(((retirementYears * currentExpenseBase * 12) / 10000) * 100) / 100;
-  const lifetimeLivingCost = Math.round((preRetirementLivingCost + postRetirementLivingCost) * 100) / 100;
+  const preRetirementLivingCost =
+    Math.round(((yearsToRetirement * currentExpenseBase * 12) / 10000) * 100) /
+    100;
+  const postRetirementLivingCost =
+    Math.round(((retirementYears * currentExpenseBase * 12) / 10000) * 100) /
+    100;
+  const lifetimeLivingCost =
+    Math.round((preRetirementLivingCost + postRetirementLivingCost) * 100) /
+    100;
 
-  const totalPensionSupply = Math.round(((retirementYears * monthlyPension * 12) / 10000) * 100) / 100;
-  const totalSupply = Math.round((totalPensionSupply + Math.max(0, liquidAssetAtRetirement)) * 100) / 100;
+  const totalPensionSupply =
+    Math.round(((retirementYears * monthlyPension * 12) / 10000) * 100) / 100;
+  const totalSupply =
+    Math.round(
+      (totalPensionSupply + Math.max(0, liquidAssetAtRetirement)) * 100,
+    ) / 100;
   const supplyDeficit = Math.round((totalDemand - totalSupply) * 100) / 100;
-  const supplyRatio = totalDemand > 0 ? Math.round((totalSupply / totalDemand) * 100) : 0;
+  const supplyRatio =
+    totalDemand > 0 ? Math.round((totalSupply / totalDemand) * 100) : 0;
 
   // === 은퇴 시점 자산 비율 ===
-  const realEstateRatioAtRetirement = totalAtRetirement > 0 ? Math.round((realEstateAtRetirement / totalAtRetirement) * 100) : 0;
-  const depositRatioAtRetirement = totalAtRetirement > 0 ? Math.round((depositAtRetirement / totalAtRetirement) * 100) : 0;
-  const financialRatioAtRetirement = totalAtRetirement > 0 ? Math.round((financialAtRetirement / totalAtRetirement) * 100) : 0;
-  const pensionRatioAtRetirement = 100 - realEstateRatioAtRetirement - depositRatioAtRetirement - financialRatioAtRetirement;
+  const realEstateRatioAtRetirement =
+    totalAtRetirement > 0
+      ? Math.round((realEstateAtRetirement / totalAtRetirement) * 100)
+      : 0;
+  const depositRatioAtRetirement =
+    totalAtRetirement > 0
+      ? Math.round((depositAtRetirement / totalAtRetirement) * 100)
+      : 0;
+  const financialRatioAtRetirement =
+    totalAtRetirement > 0
+      ? Math.round((financialAtRetirement / totalAtRetirement) * 100)
+      : 0;
+  const pensionRatioAtRetirement =
+    100 -
+    realEstateRatioAtRetirement -
+    depositRatioAtRetirement -
+    financialRatioAtRetirement;
 
   // === 은퇴 시나리오 계산 함수 ===
-  const calculateRetirementScenario = (retireAge: number): RetirementScenario => {
+  const calculateRetirementScenario = (
+    retireAge: number,
+  ): RetirementScenario => {
     const yearsToRetire = Math.max(0, retireAge - data.currentAge);
     const retireYears = Math.max(0, effectiveLifeExpectancy - retireAge);
 
@@ -991,16 +1227,29 @@ export function calculateAllDiagnosisMetrics(
     // 저축률 유지 + 소득 상승 방식
     const financialAtRetire =
       financialAsset * Math.pow(1 + financialGrowth, yearsToRetire) +
-      calculateSavingsFV(initialAnnualSavings, yearsToRetire, financialGrowth, incomeGrowthRate);
-    const pensionAtRetireAsset = data.pensionAsset * Math.pow(1 + pensionGrowth, yearsToRetire);
+      calculateSavingsFV(
+        initialAnnualSavings,
+        yearsToRetire,
+        financialGrowth,
+        incomeGrowthRate,
+      );
+    const pensionAtRetireAsset =
+      data.pensionAsset * Math.pow(1 + pensionGrowth, yearsToRetire);
     // 보증금은 성장률 0%
-    const assetAtRetire = Math.round((financialAtRetire + pensionAtRetireAsset + data.depositAsset) * 100) / 100;
+    const assetAtRetire =
+      Math.round(
+        (financialAtRetire + pensionAtRetireAsset + data.depositAsset) * 100,
+      ) / 100;
 
-    const expenseAtRetire = Math.round(currentExpenseBase * Math.pow(1 + inflationRate, yearsToRetire) * params.livingExpenseRatio);
+    const expenseAtRetire = Math.round(
+      currentExpenseBase *
+        Math.pow(1 + inflationRate, yearsToRetire) *
+        params.livingExpenseRatio,
+    );
     const pensionAtRetire =
       Math.round(
         (data.nationalPensionPersonal + data.nationalPensionSpouse) *
-        Math.pow(1 + inflationRate, yearsToRetire)
+          Math.pow(1 + inflationRate, yearsToRetire),
       ) +
       data.retirementPensionPersonal +
       data.retirementPensionSpouse +
@@ -1010,7 +1259,8 @@ export function calculateAllDiagnosisMetrics(
       data.otherIncomeSpouse;
 
     const gapAtRetire = pensionAtRetire - expenseAtRetire;
-    const shortfallAtRetire = gapAtRetire < 0 ? (Math.abs(gapAtRetire) * 12) / 10000 : 0;
+    const shortfallAtRetire =
+      gapAtRetire < 0 ? (Math.abs(gapAtRetire) * 12) / 10000 : 0;
 
     const yearsOfWithdraw =
       assetAtRetire <= 0
@@ -1027,13 +1277,19 @@ export function calculateAllDiagnosisMetrics(
     };
   };
 
-  const earlyRetirement = calculateRetirementScenario(effectiveRetirementAge - 5);
+  const earlyRetirement = calculateRetirementScenario(
+    effectiveRetirementAge - 5,
+  );
   const normalRetirement = calculateRetirementScenario(effectiveRetirementAge);
-  const lateRetirement = calculateRetirementScenario(effectiveRetirementAge + 5);
+  const lateRetirement = calculateRetirementScenario(
+    effectiveRetirementAge + 5,
+  );
 
   // === 노후생활비 기준 (KB금융 2025) ===
   const minLivingCost = Math.round(248 * Math.pow(1.03, yearsToRetirement));
-  const adequateLivingCost = Math.round(350 * Math.pow(1.03, yearsToRetirement));
+  const adequateLivingCost = Math.round(
+    350 * Math.pow(1.03, yearsToRetirement),
+  );
 
   return {
     // 기본 자산/부채
@@ -1136,14 +1392,14 @@ export function calculateAllDiagnosisMetrics(
 // 자녀 교육비 연도별 비용 (만원, 2025년 기준)
 // 일반 경로 vs 프리미엄 경로
 const EDUCATION_COST_BY_STAGE = {
-  infant: { normal: 150, premium: 1000 },       // 영아 (0-2세): 어린이집 150만/년 vs 1,000만/년
-  toddler: { normal: 200, premium: 1200 },      // 유아 (3세): 어린이집 200만/년 vs 1,200만/년
-  preschool: { normal: 450, premium: 1800 },    // 유치원 (4-6세): 450만/년 vs 1,800만/년
-  elementary: { normal: 1000, premium: 2500 },   // 초등학교 (7-12세): 1,000만/년 vs 2,500만/년
-  middle: { normal: 1500, premium: 4000 },       // 중학교 (13-15세): 1,500만/년 vs 4,000만/년
-  high: { normal: 2000, premium: 5000 },         // 고등학교 (16-18세): 2,000만/년 vs 5,000만/년
-  university: { normal: 3000, premium: 7000 },   // 대학교 (19-22세): 3,000만/년 vs 7,000만/년
-  wedding: { normal: 10000, premium: 50000 },    // 결혼자금: 1억 vs 5억
+  infant: { normal: 150, premium: 1000 }, // 영아 (0-2세): 어린이집 150만/년 vs 1,000만/년
+  toddler: { normal: 200, premium: 1200 }, // 유아 (3세): 어린이집 200만/년 vs 1,200만/년
+  preschool: { normal: 450, premium: 1800 }, // 유치원 (4-6세): 450만/년 vs 1,800만/년
+  elementary: { normal: 1000, premium: 2500 }, // 초등학교 (7-12세): 1,000만/년 vs 2,500만/년
+  middle: { normal: 1500, premium: 4000 }, // 중학교 (13-15세): 1,500만/년 vs 4,000만/년
+  high: { normal: 2000, premium: 5000 }, // 고등학교 (16-18세): 2,000만/년 vs 5,000만/년
+  university: { normal: 3000, premium: 7000 }, // 대학교 (19-22세): 3,000만/년 vs 7,000만/년
+  wedding: { normal: 10000, premium: 50000 }, // 결혼자금: 1억 vs 5억
 };
 
 // 교육 단계 라벨
@@ -1159,7 +1415,9 @@ const EDUCATION_STAGE_LABELS: Record<string, string> = {
 };
 
 // 자녀 교육 단계 판별
-function getEducationStage(age: number): keyof typeof EDUCATION_COST_BY_STAGE | null {
+function getEducationStage(
+  age: number,
+): keyof typeof EDUCATION_COST_BY_STAGE | null {
   if (age >= 0 && age <= 2) return "infant";
   if (age === 3) return "toddler";
   if (age >= 4 && age <= 6) return "preschool";
@@ -1176,9 +1434,9 @@ export interface EducationStageDetail {
   stageKey: string;
   ageRange: string;
   years: number;
-  normalCost: number;      // 일반 경로 총 비용
-  premiumCost: number;     // 프리미엄 경로 총 비용
-  premiumLabel: string;    // 프리미엄 옵션 설명
+  normalCost: number; // 일반 경로 총 비용
+  premiumCost: number; // 프리미엄 경로 총 비용
+  premiumLabel: string; // 프리미엄 옵션 설명
 }
 
 // 자녀별 교육비 연도별 계산
@@ -1187,10 +1445,10 @@ export interface ChildEducationCost {
   childAge: number;
   gender: "male" | "female" | null;
   stageDetails: EducationStageDetail[]; // 단계별 상세
-  totalNormal: number;      // 일반 경로 총 비용
-  totalPremium: number;     // 프리미엄 경로 총 비용
-  weddingNormal: number;    // 결혼자금 (일반)
-  weddingPremium: number;   // 결혼자금 (프리미엄)
+  totalNormal: number; // 일반 경로 총 비용
+  totalPremium: number; // 프리미엄 경로 총 비용
+  weddingNormal: number; // 결혼자금 (일반)
+  weddingPremium: number; // 결혼자금 (프리미엄)
 }
 
 // 프리미엄 옵션 설명
@@ -1209,7 +1467,7 @@ export function calculateChildEducationCosts(
   children: ChildInfo[],
   currentAge: number,
   targetRetirementAge: number,
-  inflationRate: number = 0.02
+  inflationRate: number = 0.02,
 ): ChildEducationCost[] {
   return children.map((child) => {
     const stageDetails: EducationStageDetail[] = [];
@@ -1217,7 +1475,12 @@ export function calculateChildEducationCosts(
     let totalPremium = 0;
 
     // 각 교육 단계별 계산
-    const stages: { key: keyof typeof EDUCATION_COST_BY_STAGE; minAge: number; maxAge: number; ageRange: string }[] = [
+    const stages: {
+      key: keyof typeof EDUCATION_COST_BY_STAGE;
+      minAge: number;
+      maxAge: number;
+      ageRange: string;
+    }[] = [
       { key: "infant", minAge: 0, maxAge: 2, ageRange: "0~2세" },
       { key: "toddler", minAge: 3, maxAge: 3, ageRange: "3세" },
       { key: "preschool", minAge: 4, maxAge: 6, ageRange: "4~6세" },
@@ -1265,8 +1528,12 @@ export function calculateChildEducationCosts(
     // 결혼자금 (자녀 30세 가정)
     const weddingYearOffset = Math.max(0, 30 - child.age);
     const weddingInflation = Math.pow(1 + inflationRate, weddingYearOffset);
-    const weddingNormal = Math.round(EDUCATION_COST_BY_STAGE.wedding.normal * weddingInflation);
-    const weddingPremium = Math.round(EDUCATION_COST_BY_STAGE.wedding.premium * weddingInflation);
+    const weddingNormal = Math.round(
+      EDUCATION_COST_BY_STAGE.wedding.normal * weddingInflation,
+    );
+    const weddingPremium = Math.round(
+      EDUCATION_COST_BY_STAGE.wedding.premium * weddingInflation,
+    );
 
     return {
       childName: child.name,
@@ -1301,7 +1568,7 @@ export function calculateMedicalCosts(
   currentAge: number,
   spouseAge: number | null,
   lifeExpectancy: number,
-  inflationRate: number = 0.02
+  inflationRate: number = 0.02,
 ): MedicalCostResult {
   // 연령대별 연간 의료비 (만원, 현재 기준)
   const medicalCostByAge = [
@@ -1326,9 +1593,11 @@ export function calculateMedicalCosts(
 
       if (yearsInRange <= 0) continue;
 
-      // 해당 구간 시작 시점까지의 물가상승률 반영
+      // 해당 구간 시작 시점까지의 물가 상승률 반영
       const yearsToStart = Math.max(0, startAge - personAge);
-      const inflatedCost = Math.round(bracket.baseCost * Math.pow(1 + inflationRate, yearsToStart));
+      const inflatedCost = Math.round(
+        bracket.baseCost * Math.pow(1 + inflationRate, yearsToStart),
+      );
 
       results.push({
         ageRange: `${bracket.minAge}~${bracket.maxAge}세`,
@@ -1369,7 +1638,7 @@ export function calculateLeisureCosts(
   currentAge: number,
   targetRetirementAge: number,
   lifeExpectancy: number,
-  inflationRate: number = 0.02
+  inflationRate: number = 0.02,
 ): LeisureCostOption[] {
   const yearsToRetirement = Math.max(0, targetRetirementAge - currentAge);
   const retirementYears = lifeExpectancy - targetRetirementAge;
@@ -1384,13 +1653,21 @@ export function calculateLeisureCosts(
     // 은퇴 전까지 비용 (물가상승 반영한 합계)
     let totalUntilRetirement = 0;
     for (let i = 0; i < yearsToRetirement; i++) {
-      totalUntilRetirement += Math.round(opt.annualCost * Math.pow(1 + inflationRate, i));
+      totalUntilRetirement += Math.round(
+        opt.annualCost * Math.pow(1 + inflationRate, i),
+      );
     }
 
     // 은퇴 후 비용 (매년 물가상승 반영, 은퇴 전 대비 50% 지출)
     let totalAfterRetirement = 0;
-    for (let i = yearsToRetirement; i < yearsToRetirement + retirementYears; i++) {
-      totalAfterRetirement += Math.round(opt.annualCost * 0.5 * Math.pow(1 + inflationRate, i));
+    for (
+      let i = yearsToRetirement;
+      i < yearsToRetirement + retirementYears;
+      i++
+    ) {
+      totalAfterRetirement += Math.round(
+        opt.annualCost * 0.5 * Math.pow(1 + inflationRate, i),
+      );
     }
 
     return {
@@ -1403,12 +1680,12 @@ export function calculateLeisureCosts(
 
 // 소비재 비용 옵션 (자동차, 가전, 가구 등)
 export interface ConsumerGoodsCostOption {
-  level: string;          // 검소, 보통, 여유
+  level: string; // 검소, 보통, 여유
   description: string;
-  annualCost: number;     // 연간 비용 (만원)
+  annualCost: number; // 연간 비용 (만원)
   breakdown: {
-    car: string;          // 자동차 설명
-    appliances: string;   // 가전/가구 설명
+    car: string; // 자동차 설명
+    appliances: string; // 가전/가구 설명
   };
   totalUntilLifeExpectancy: number;
 }
@@ -1417,17 +1694,19 @@ export function calculateConsumerGoodsCosts(
   currentAge: number,
   lifeExpectancy: number,
   inflationRate: number = 0.02,
-  targetRetirementAge?: number
+  targetRetirementAge?: number,
 ): ConsumerGoodsCostOption[] {
   const yearsLeft = lifeExpectancy - currentAge;
-  const yearsToRetirement = targetRetirementAge ? Math.max(0, targetRetirementAge - currentAge) : yearsLeft;
+  const yearsToRetirement = targetRetirementAge
+    ? Math.max(0, targetRetirementAge - currentAge)
+    : yearsLeft;
 
   // 연간 소비재 비용 (자동차 감가+유지비 + 가전/가구 교체비)
   const options = [
     {
       level: "검소",
       description: "필요한 것만, 오래 사용",
-      annualCost: 500,  // 연 500만원
+      annualCost: 500, // 연 500만원
       breakdown: {
         car: "소형차 10년 사용, 중고차 활용",
         appliances: "가전 고장 시에만 교체",
@@ -1436,7 +1715,7 @@ export function calculateConsumerGoodsCosts(
     {
       level: "보통",
       description: "적당한 소비, 7년 주기 교체",
-      annualCost: 1100,  // 연 1,100만원
+      annualCost: 1100, // 연 1,100만원
       breakdown: {
         car: "중형차 7년 사용",
         appliances: "가전/가구 주기적 교체",
@@ -1461,7 +1740,9 @@ export function calculateConsumerGoodsCosts(
     }
     // 은퇴 후 비용 (물가상승 반영, 은퇴 전 대비 50% 지출)
     for (let i = yearsToRetirement; i < yearsLeft; i++) {
-      total += Math.round(opt.annualCost * 0.5 * Math.pow(1 + inflationRate, i));
+      total += Math.round(
+        opt.annualCost * 0.5 * Math.pow(1 + inflationRate, i),
+      );
     }
 
     return {
@@ -1548,16 +1829,16 @@ export function getHousingOptions(): HousingCostOption[] {
 export interface AdditionalCostsSummary {
   childEducation: {
     details: ChildEducationCost[];
-    totalNormal: number;       // 일반 경로 교육비 총합
-    totalPremium: number;      // 프리미엄 경로 교육비 총합
+    totalNormal: number; // 일반 경로 교육비 총합
+    totalPremium: number; // 프리미엄 경로 교육비 총합
     totalWeddingNormal: number;
     totalWeddingPremium: number;
-    grandTotalNormal: number;  // 교육비 + 결혼 (일반)
+    grandTotalNormal: number; // 교육비 + 결혼 (일반)
     grandTotalPremium: number; // 교육비 + 결혼 (프리미엄)
   };
   medical: MedicalCostResult;
   leisure: LeisureCostOption[];
-  consumerGoods: ConsumerGoodsCostOption[];  // 소비재 (자동차+가전 등)
+  consumerGoods: ConsumerGoodsCostOption[]; // 소비재 (자동차+가전 등)
   housing: HousingCostOption[];
   totalMinimum: number; // 최소 추정 (검소)
   totalMaximum: number; // 최대 추정 (사치)
@@ -1565,37 +1846,70 @@ export interface AdditionalCostsSummary {
 
 export function calculateAdditionalCosts(
   data: DiagnosisData,
-  customParams?: Partial<CalculationParams>
+  customParams?: Partial<CalculationParams>,
 ): AdditionalCostsSummary {
   const params = { ...DEFAULT_CALC_PARAMS, ...customParams };
-  const effectiveRetirementAge = data.targetRetirementAge + params.retirementAgeOffset;
+  const effectiveRetirementAge =
+    data.targetRetirementAge + params.retirementAgeOffset;
   const effectiveLifeExpectancy = params.lifeExpectancy ?? data.lifeExpectancy;
 
   const childEducation = calculateChildEducationCosts(
     data.children,
     data.currentAge,
     effectiveRetirementAge,
-    params.inflationRate
+    params.inflationRate,
   );
 
   const totalNormal = childEducation.reduce((sum, c) => sum + c.totalNormal, 0);
-  const totalPremium = childEducation.reduce((sum, c) => sum + c.totalPremium, 0);
-  const totalWeddingNormal = childEducation.reduce((sum, c) => sum + c.weddingNormal, 0);
-  const totalWeddingPremium = childEducation.reduce((sum, c) => sum + c.weddingPremium, 0);
+  const totalPremium = childEducation.reduce(
+    (sum, c) => sum + c.totalPremium,
+    0,
+  );
+  const totalWeddingNormal = childEducation.reduce(
+    (sum, c) => sum + c.weddingNormal,
+    0,
+  );
+  const totalWeddingPremium = childEducation.reduce(
+    (sum, c) => sum + c.weddingPremium,
+    0,
+  );
 
-  const medical = calculateMedicalCosts(data.currentAge, data.spouseAge, effectiveLifeExpectancy, params.inflationRate);
-  const leisure = calculateLeisureCosts(data.currentAge, effectiveRetirementAge, effectiveLifeExpectancy, params.inflationRate);
-  const consumerGoods = calculateConsumerGoodsCosts(data.currentAge, effectiveLifeExpectancy, params.inflationRate, effectiveRetirementAge);
+  const medical = calculateMedicalCosts(
+    data.currentAge,
+    data.spouseAge,
+    effectiveLifeExpectancy,
+    params.inflationRate,
+  );
+  const leisure = calculateLeisureCosts(
+    data.currentAge,
+    effectiveRetirementAge,
+    effectiveLifeExpectancy,
+    params.inflationRate,
+  );
+  const consumerGoods = calculateConsumerGoodsCosts(
+    data.currentAge,
+    effectiveLifeExpectancy,
+    params.inflationRate,
+    effectiveRetirementAge,
+  );
   const housing = getHousingOptions();
 
   // 최소 추정 (검소: 자녀교육 일반 + 의료 + 여행(기본) + 소비재(검소))
-  const totalMinimum = (totalNormal + totalWeddingNormal) + medical.grandTotal +
-    (leisure[0]?.totalUntilRetirement || 0) + (leisure[0]?.totalAfterRetirement || 0) +
+  const totalMinimum =
+    totalNormal +
+    totalWeddingNormal +
+    medical.grandTotal +
+    (leisure[0]?.totalUntilRetirement || 0) +
+    (leisure[0]?.totalAfterRetirement || 0) +
     (consumerGoods[0]?.totalUntilLifeExpectancy || 0);
 
   // 최대 추정 (사치: 자녀교육 프리미엄 + 의료 + 여행(여유) + 소비재(사치))
-  const totalMaximum = (totalPremium + totalWeddingPremium) + medical.grandTotal +
-    (leisure[2]?.totalUntilRetirement || 0) + (leisure[2]?.totalAfterRetirement || 0) +
+  const totalMaximum =
+    totalPremium +
+    totalWeddingPremium +
+    medical.grandTotal +
+    (leisure[2]?.totalUntilRetirement || 0) +
+    (leisure[2]?.totalAfterRetirement || 0) +
     (consumerGoods[2]?.totalUntilLifeExpectancy || 0);
 
   return {

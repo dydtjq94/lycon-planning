@@ -219,71 +219,91 @@
 .editItem {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px 0;
+  gap: 10px;
+  padding: 14px 0;
   border-bottom: 1px solid var(--dashboard-border);
 }
 
 .editRow {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  gap: 8px;
+}
+
+.editRowSpread {
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
 
-.editLabel {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--dashboard-text);
-  min-width: 50px;
-  padding-top: 8px;
+.editLeft {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.editRight {
+  width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.typeBadge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+}
+
+.amountGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
 }
 
 .editLabelInput {
-  width: 120px;
+  width: 100%;
+  padding: 5px 8px;
   font-size: 13px;
-  font-weight: 500;
   color: var(--dashboard-text);
-  padding: 6px 0;
-  border: none;
-  border-bottom: 1px solid var(--dashboard-border);
+  background-color: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 6px;
   outline: none;
-  background: transparent;
+  transition: border-color 0.2s;
 }
 
 .editLabelInput:focus {
-  border-bottom-color: var(--accent-color, #007aff);
+  border-color: var(--accent-color, #007aff);
 }
 
-.editRowLabel {
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
-  width: 40px;
-  flex-shrink: 0;
-  padding-top: 8px;
-}
-
-.editField {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.editLabelInput:hover {
+  border-color: var(--dashboard-text-muted);
 }
 
 .editInput {
-  width: 100px;
-  padding: 8px 0;
-  font-size: 14px;
-  font-weight: 500;
+  flex: 1;
+  min-width: 60px;
+  padding: 5px 8px;
+  font-size: 13px;
   color: var(--dashboard-text);
-  border: none;
-  border-bottom: 1px solid var(--dashboard-border);
+  background-color: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 6px;
   outline: none;
-  background: transparent;
   text-align: right;
+  transition: border-color 0.2s;
 }
 
 .editInput:focus {
-  border-bottom-color: var(--accent-color, #007aff);
+  border-color: var(--accent-color, #007aff);
+}
+
+.editInput:hover {
+  border-color: var(--dashboard-text-muted);
 }
 
 .editInput::-webkit-outer-spin-button,
@@ -292,144 +312,114 @@
   margin: 0;
 }
 
+.editInput[type="number"] {
+  -moz-appearance: textfield;
+}
+
 .editUnit {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--dashboard-text-secondary);
 }
 
-.editYearInput {
-  width: 60px;
-  padding: 6px 0;
-  font-size: 14px;
-  color: var(--dashboard-text);
-  border: none;
-  border-bottom: 1px solid var(--dashboard-border);
-  outline: none;
-  background: transparent;
-  text-align: center;
-}
-
-.editYearInput:focus {
-  border-bottom-color: var(--accent-color, #007aff);
-}
-
-.editYearInput::-webkit-outer-spin-button,
-.editYearInput::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.editMonthInput {
-  width: 40px;
-  padding: 6px 0;
-  font-size: 14px;
-  color: var(--dashboard-text);
-  border: none;
-  border-bottom: 1px solid var(--dashboard-border);
-  outline: none;
-  background: transparent;
-  text-align: center;
-}
-
-.editMonthInput:focus {
-  border-bottom-color: var(--accent-color, #007aff);
-}
-
-.editMonthInput::-webkit-outer-spin-button,
-.editMonthInput::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.editSeparator {
-  font-size: 14px;
-  color: var(--dashboard-text-secondary);
-}
-
-/* 종료 타입 버튼 */
-.endTypeButtons {
-  display: flex;
-  gap: 6px;
-}
-
-.endTypeBtn {
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--dashboard-text);
-  background: var(--dashboard-bg);
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.endTypeBtn:hover {
-  background: var(--dashboard-hover-bg);
-}
-
-.endTypeBtn.active {
-  background: var(--dashboard-text);
-  color: var(--dashboard-card-bg);
-}
-
-/* 상승률 버튼 */
-.rateButtons {
+/* 기간 드롭다운 */
+.periodRow {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
 }
 
-.rateBtn {
-  padding: 6px 12px;
+.periodSelect {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
   font-size: 13px;
-  font-weight: 400;
   color: var(--dashboard-text);
-  background: var(--dashboard-bg);
-  border: none;
+  background-color: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
   border-radius: 6px;
+  outline: none;
   cursor: pointer;
+  transition: border-color 0.2s;
 }
 
-.rateBtn:hover {
-  background: var(--dashboard-hover-bg);
+.periodSelect:focus {
+  border-color: var(--accent-color, #007aff);
 }
 
-.rateBtn.active {
-  background: var(--dashboard-text);
-  color: var(--dashboard-card-bg);
+.periodSelect:hover {
+  border-color: var(--dashboard-text-muted);
 }
 
-.customRateGroup {
+.periodSeparator {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
+}
+
+/* 상승률 토글 */
+.rateValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+}
+
+.rateToggle {
+  display: flex;
+  gap: 4px;
+  background: var(--dashboard-bg);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.rateToggleBtn {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rateToggleBtn:hover {
+  color: var(--dashboard-text);
+}
+
+.rateToggleBtn.active {
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.rateCustomInput {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
-.customRateLabel {
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
-}
-
+/* 상승률 직접 입력 */
 .customRateInput {
   width: 50px;
-  padding: 6px 8px;
+  padding: 5px 8px;
   font-size: 13px;
   color: var(--dashboard-text);
-  border: 1px solid var(--dashboard-border);
+  background-color: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
   border-radius: 6px;
   outline: none;
-  background: transparent;
-  text-align: center;
+  text-align: right;
+  transition: border-color 0.2s;
 }
 
 .customRateInput:focus {
   border-color: var(--accent-color, #007aff);
 }
 
-.customRateInput.active {
-  border-color: var(--dashboard-text);
-  background: var(--dashboard-bg);
+.customRateInput:hover {
+  border-color: var(--dashboard-text-muted);
 }
 
 .customRateInput::-webkit-outer-spin-button,
@@ -438,8 +428,12 @@
   margin: 0;
 }
 
+.customRateInput[type="number"] {
+  -moz-appearance: textfield;
+}
+
 .rateUnit {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--dashboard-text-secondary);
 }
 
@@ -447,13 +441,13 @@
 .editActions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  padding-top: 8px;
+  gap: 6px;
+  padding-top: 2px;
 }
 
 .cancelBtn {
-  padding: 8px 16px;
-  font-size: 13px;
+  padding: 6px 14px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--dashboard-text-secondary);
   background: transparent;
@@ -466,8 +460,8 @@
 }
 
 .saveBtn {
-  padding: 8px 20px;
-  font-size: 13px;
+  padding: 6px 16px;
+  font-size: 12px;
   font-weight: 500;
   color: #fff;
   background: var(--accent-color, #007aff);
@@ -502,18 +496,23 @@
 /* 주체 선택 버튼 */
 .ownerButtons {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+  background: var(--dashboard-bg);
+  border-radius: 6px;
+  padding: 2px;
+  flex-shrink: 0;
 }
 
 .ownerBtn {
-  padding: 6px 14px;
-  font-size: 13px;
+  padding: 5px 12px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--dashboard-text-secondary);
-  background: var(--dashboard-bg);
+  background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .ownerBtn:hover {
@@ -521,8 +520,9 @@
 }
 
 .ownerBtn.active {
-  background: var(--dashboard-text);
-  color: var(--dashboard-card-bg);
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .inlineAddForm {
@@ -602,15 +602,16 @@
 
 .frequencyButtons {
   display: flex;
+  gap: 4px;
   background: var(--dashboard-bg);
   border-radius: 6px;
   padding: 2px;
-  margin-left: 8px;
+  flex-shrink: 0;
 }
 
 .freqBtn {
-  padding: 6px 12px;
-  font-size: 13px;
+  padding: 5px 10px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--dashboard-text-secondary);
   background: transparent;
@@ -736,18 +737,12 @@
 
 /* 반응형 */
 @media (max-width: 600px) {
-  .editField {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .endTypeButtons {
+  .editRowSpread {
     flex-wrap: wrap;
   }
 
-  .rateButtons {
-    width: 100%;
+  .periodRow {
+    flex-wrap: wrap;
   }
 
   .inlineAddForm {

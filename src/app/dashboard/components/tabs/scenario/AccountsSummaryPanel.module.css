@@ -1,13 +1,14 @@
 .panel {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  padding-bottom: 12px;
+  padding-bottom: 8px;
 }
 
 .headerToggle {
@@ -24,6 +25,7 @@
 .title {
   font-size: 14px;
   font-weight: 600;
+  color: var(--dashboard-text);
 }
 
 .count {
@@ -34,19 +36,20 @@
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .syncIconButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: 2px;
   background: none;
   border: none;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
   cursor: pointer;
   border-radius: 4px;
+  transition: color 0.15s;
 }
 
 .syncIconButton:hover {
@@ -59,14 +62,14 @@
 }
 
 .totalAmount {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--accent-color, #007aff);
 }
 
 .syncTime {
   font-size: 10px;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
 }
 
 .syncingText {
@@ -93,7 +96,12 @@
 }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--dashboard-hover-bg) 25%, var(--dashboard-border) 50%, var(--dashboard-hover-bg) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--dashboard-hover-bg) 25%,
+    var(--dashboard-border) 50%,
+    var(--dashboard-hover-bg) 75%
+  );
   background-size: 400px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
@@ -103,114 +111,109 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 16px;
+  padding-bottom: 8px;
 }
 
 .skeletonHeaderLeft {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .skeletonIcon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 4px;
 }
 
 .skeletonTitle {
   width: 40px;
-  height: 18px;
+  height: 16px;
 }
 
 .skeletonCount {
-  width: 30px;
-  height: 16px;
+  width: 28px;
+  height: 14px;
 }
 
 .skeletonAmount {
   width: 80px;
-  height: 18px;
+  height: 16px;
 }
 
 .skeletonGroup {
-  padding-top: 8px;
+  padding-top: 4px;
 }
 
 .skeletonGroupHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 0;
+  gap: 6px;
+  padding: 4px 0;
 }
 
 .skeletonGroupIcon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 4px;
 }
 
 .skeletonGroupLabel {
-  width: 40px;
-  height: 14px;
+  width: 36px;
+  height: 12px;
 }
 
 .skeletonGroupTotal {
   margin-left: auto;
-  width: 70px;
-  height: 14px;
+  width: 60px;
+  height: 12px;
 }
 
 .skeletonItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--dashboard-border);
-}
-
-.skeletonItem:last-child {
-  border-bottom: none;
+  padding: 6px 0;
 }
 
 .skeletonItemLeft {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .skeletonItemName {
-  width: 100px;
-  height: 16px;
+  width: 90px;
+  height: 14px;
 }
 
 .skeletonItemType {
-  width: 60px;
-  height: 12px;
+  width: 50px;
+  height: 10px;
 }
 
 .skeletonItemRight {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 3px;
 }
 
 .skeletonItemRate {
-  width: 30px;
-  height: 12px;
+  width: 28px;
+  height: 10px;
 }
 
 .skeletonItemBalance {
-  width: 70px;
-  height: 16px;
+  width: 60px;
+  height: 14px;
 }
 
 .emptyState {
-  padding: 16px 0;
+  padding: 12px 0;
   text-align: center;
-  color: var(--dashboard-text-secondary);
-  font-size: 13px;
+  color: var(--dashboard-text-muted);
+  font-size: 12px;
 }
 
 .accountList {
@@ -224,23 +227,23 @@
 }
 
 .accountGroup + .accountGroup {
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .groupHeader {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 0;
-  font-size: 12px;
+  gap: 5px;
+  padding: 4px 0;
+  font-size: 11px;
   font-weight: 500;
-  color: var(--dashboard-text-secondary);
+  color: var(--dashboard-text-muted);
 }
 
 .groupTotal {
   margin-left: auto;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--dashboard-text);
 }
 
@@ -248,32 +251,32 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 0;
+  padding: 5px 0;
 }
 
 .accountMain {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .brokerLogo {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 4px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
 .brokerLogoPlaceholder {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 4px;
   background: var(--dashboard-hover-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   color: var(--dashboard-text-secondary);
   flex-shrink: 0;
@@ -282,11 +285,11 @@
 .accountInfo {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .accountName {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--dashboard-text);
 }
@@ -294,10 +297,8 @@
 .ownerBadge {
   font-size: 10px;
   font-weight: 400;
-  padding: 1px 4px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 3px;
-  color: var(--dashboard-text-secondary);
+  padding: 0 3px;
+  color: var(--dashboard-text-muted);
 }
 
 .brokerBadge {
@@ -305,8 +306,8 @@
 }
 
 .accountType {
-  font-size: 11px;
-  color: var(--dashboard-text-secondary);
+  font-size: 10px;
+  color: var(--dashboard-text-muted);
 }
 
 .accountMeta {
@@ -316,12 +317,12 @@
 }
 
 .accountRate {
-  font-size: 11px;
-  color: var(--dashboard-text-secondary);
+  font-size: 10px;
+  color: var(--dashboard-text-muted);
 }
 
 .accountBalance {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--dashboard-text);
 }
@@ -329,23 +330,24 @@
 .syncButton {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 16px;
+  gap: 4px;
+  margin-top: 8px;
   padding: 0;
   background: none;
   border: none;
-  color: var(--accent-color, #007aff);
-  font-size: 14px;
+  color: var(--dashboard-text-muted);
+  font-size: 12px;
   font-weight: 400;
   cursor: pointer;
+  transition: color 0.15s;
 }
 
 .syncButton:hover {
-  filter: brightness(0.85);
+  color: var(--dashboard-text);
 }
 
 .syncButton:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -353,21 +355,22 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 12px 0;
+  padding: 8px 0;
   background: none;
   border: none;
-  color: var(--accent-color, #007aff);
-  font-size: 14px;
+  color: var(--dashboard-text-muted);
+  font-size: 12px;
   font-weight: 400;
   cursor: pointer;
+  transition: color 0.15s;
 }
 
 .resyncButton:hover {
-  filter: brightness(0.85);
+  color: var(--dashboard-text);
 }
 
 .resyncButton:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 

@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
 }
 
 .header {
@@ -34,6 +35,30 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.labelGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.iconBtn:hover {
+  opacity: 0.7;
 }
 
 .label {
@@ -83,7 +108,95 @@
   color: var(--dashboard-text-secondary);
 }
 
+.yearHint {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+  margin-left: 2px;
+  min-width: 40px;
+}
+
 .divider {
   height: 1px;
   background-color: var(--dashboard-border);
+}
+
+/* 아이콘/색상 피커 */
+.picker {
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 4px;
+  animation: pickerEnter 0.2s ease-out;
+}
+
+@keyframes pickerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pickerSection {
+  padding: 2px 0;
+}
+
+.pickerGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+}
+
+.pickerIconItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--dashboard-text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.pickerIconItem:hover {
+  color: var(--dashboard-text);
+}
+
+.pickerItemActive {
+  background: var(--dashboard-hover-bg);
+}
+
+.pickerDivider {
+  height: 1px;
+  background: var(--dashboard-border);
+  margin: 6px 0;
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  justify-items: center;
+}
+
+.colorItem {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.colorItem:hover {
+  transform: scale(1.15);
+}
+
+.colorItemActive {
+  border-color: var(--dashboard-text);
 }

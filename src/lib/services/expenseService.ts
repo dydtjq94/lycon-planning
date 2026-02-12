@@ -91,19 +91,6 @@ export async function deleteExpense(id: string): Promise<void> {
   if (error) throw error
 }
 
-// 연동된 지출 삭제 (source_type + source_id로)
-export async function deleteLinkedExpenses(sourceType: string, sourceId: string): Promise<void> {
-  const supabase = createClient()
-
-  const { error } = await supabase
-    .from('expenses')
-    .delete()
-    .eq('source_type', sourceType)
-    .eq('source_id', sourceId)
-
-  if (error) throw error
-}
-
 // 지출 타입별 라벨
 export const EXPENSE_TYPE_LABELS: Record<ExpenseType, string> = {
   living: '생활비',
@@ -136,20 +123,6 @@ export const EXPENSE_TYPE_DEFAULTS: Record<ExpenseType, { rateCategory: RateCate
   travel: { rateCategory: 'inflation', growthRate: 2.5 },
   wedding: { rateCategory: 'fixed', growthRate: 0 },
   other: { rateCategory: 'inflation', growthRate: 2.5 },
-}
-
-// 연동 소스 라벨
-export function getExpenseSourceLabel(sourceType: string | null): string | null {
-  if (!sourceType) return null
-
-  switch (sourceType) {
-    case 'debt':
-      return '부채'
-    case 'real_estate':
-      return '부동산'
-    default:
-      return sourceType
-  }
 }
 
 // UI 타입 (DashboardExpenseType)
@@ -223,6 +196,16 @@ export interface DashboardExpense {
 }
 
 export function toDashboardExpense(expense: Expense): DashboardExpense {
+  // Inline sourceLabel logic
+  let sourceLabel: string | null = null
+  if (expense.source_type === 'debt') {
+    sourceLabel = '부채'
+  } else if (expense.source_type === 'real_estate') {
+    sourceLabel = '부동산'
+  } else if (expense.source_type) {
+    sourceLabel = expense.source_type
+  }
+
   return {
     id: expense.id,
     type: expense.type,
@@ -239,7 +222,7 @@ export function toDashboardExpense(expense: Expense): DashboardExpense {
     rateCategory: expense.rate_category,
     isLinked: expense.source_type !== null,
     sourceType: expense.source_type,
-    sourceLabel: getExpenseSourceLabel(expense.source_type),
+    sourceLabel,
   }
 }
 

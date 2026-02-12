@@ -13,15 +13,15 @@
   flex-shrink: 0;
 }
 
-/* sm: 20px (AccountsSummaryPanel) */
+/* sm: 18px (AccountsSummaryPanel) */
 .sm .logo,
 .sm .placeholder {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 4px;
 }
 .sm .placeholder {
-  font-size: 10px;
+  font-size: 9px;
 }
 
 /* md: 24px (CurrentAssetTab) */

@@ -159,6 +159,8 @@ export function ScenarioTab({
       if (dropdownRef.current?.contains(target)) return;
       // 카테고리 탭 버튼 클릭 → handleCategoryClick이 처리하므로 무시
       if (categoryTabsRef.current?.contains(target)) return;
+      // 카테고리 탭 내부 포탈 (타입 선택 드롭다운 등) 클릭 → 무시
+      if ((target as HTMLElement).closest?.('[data-scenario-dropdown-portal]')) return;
       // 그 외 영역 클릭 → 닫기
       setActiveCategoryTab(null);
     };

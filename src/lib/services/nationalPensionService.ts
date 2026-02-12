@@ -10,7 +10,6 @@
 
 import { createClient } from '@/lib/supabase/client'
 import type { NationalPension, NationalPensionInput, Owner } from '@/types/tables'
-import { createIncome, deleteLinkedIncomes } from './incomeService'
 import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
 
 // 금액 필드 목록
@@ -65,9 +64,6 @@ export async function createNationalPension(
 
   if (error) throw error
 
-  // 소득 테이블에 연동 항목 생성 (만원 변환 후)
-  await createLinkedIncome(convertFromWon(data, NATIONAL_PENSION_MONEY_FIELDS), birthYear)
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, NATIONAL_PENSION_MONEY_FIELDS)
 }
@@ -92,20 +88,13 @@ export async function updateNationalPension(
 
   if (error) throw error
 
-  // 기존 연동 소득 삭제 후 재생성 (만원 변환 후)
-  await deleteLinkedIncomes('national_pension', id)
-  await createLinkedIncome(convertFromWon(data, NATIONAL_PENSION_MONEY_FIELDS), birthYear)
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, NATIONAL_PENSION_MONEY_FIELDS)
 }
 
-// 국민연금 삭제 + 연동 소득 삭제
+// 국민연금 삭제
 export async function deleteNationalPension(id: string): Promise<void> {
   const supabase = createClient()
-
-  // 연동된 소득 먼저 삭제
-  await deleteLinkedIncomes('national_pension', id)
 
   const { error } = await supabase
     .from('national_pensions')
@@ -113,32 +102,6 @@ export async function deleteNationalPension(id: string): Promise<void> {
     .eq('id', id)
 
   if (error) throw error
-}
-
-// 연동 소득 생성 (국민연금 → 소득)
-async function createLinkedIncome(pension: NationalPension, birthYear: number): Promise<void> {
-  const startYear = birthYear + pension.start_age
-  const endYear = pension.end_age ? birthYear + pension.end_age : birthYear + 100
-
-  const ownerLabel = pension.owner === 'self' ? '본인' : '배우자'
-
-  await createIncome({
-    simulation_id: pension.simulation_id,
-    type: 'pension',
-    title: `${ownerLabel} 국민연금`,
-    owner: pension.owner,
-    amount: pension.expected_monthly_amount,
-    frequency: 'monthly',
-    start_year: startYear,
-    start_month: 1,
-    end_year: endYear,
-    end_month: 12,
-    is_fixed_to_retirement: false,
-    growth_rate: 0,
-    rate_category: 'fixed',
-    source_type: 'national_pension',
-    source_id: pension.id,
-  })
 }
 
 // owner별 국민연금 조회

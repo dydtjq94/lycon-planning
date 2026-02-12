@@ -450,7 +450,9 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
 
       {/* 필요 자금 탭 설정 바 */}
       {activeTab === "retirement" && (
-        <div className={`${styles.settingsBarWrapper} ${isSettingsBarHidden ? styles.settingsBarWrapperHidden : ""}`}>
+        <div
+          className={`${styles.settingsBarWrapper} ${isSettingsBarHidden ? styles.settingsBarWrapperHidden : ""}`}
+        >
           <div
             className={`${styles.settingsBar} ${isSettingsBarHidden ? styles.settingsBarHidden : ""}`}
           >
@@ -1308,7 +1310,7 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                     costOptions.housing.tierIndex
                   ]?.price || 0
                 : 0;
-              // 은퇴 시점 주거비 = 현재 가격 * 물가상승률
+              // 은퇴 시점 주거비 = 현재 가격 * 물가 상승률
               const housingInflationFactor = Math.pow(
                 1 + calcParams.inflationRate,
                 m.yearsToRetirement,
@@ -1374,11 +1376,14 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                     // Rate adjustment for retirement pension (pre-calculated at 5%)
                     const baseRate = 0.05;
                     const selectedRate = calcParams.financialGrowthRate || 0.05;
-                    const rateAdjustment = Math.pow(1 + selectedRate, m.yearsToRetirement) / Math.pow(1 + baseRate, m.yearsToRetirement);
+                    const rateAdjustment =
+                      Math.pow(1 + selectedRate, m.yearsToRetirement) /
+                      Math.pow(1 + baseRate, m.yearsToRetirement);
 
                     const retirementPensionAtRetire =
                       (data.retirementPensionBalanceAtRetireSelf +
-                      data.retirementPensionBalanceAtRetireSpouse) * rateAdjustment;
+                        data.retirementPensionBalanceAtRetireSpouse) *
+                      rateAdjustment;
                     const personalPensionAtRetire =
                       (data.personalPensionStatus.irp.balance +
                         data.personalPensionStatus.pensionSavings.balance) *
@@ -1409,7 +1414,7 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                       monthlyExpenseTotal,
                     );
 
-                    // 현재 가치로 환산 (물가상승률 역산)
+                    // 현재 가치로 환산 (물가 상승률 역산)
                     const presentValueCashflow = Math.round(
                       monthlyCashflow /
                         Math.pow(
@@ -1547,11 +1552,14 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                     // Rate adjustment for retirement pension (pre-calculated at 5%)
                     const baseRate = 0.05;
                     const selectedRate = calcParams.financialGrowthRate || 0.05;
-                    const rateAdjustment = Math.pow(1 + selectedRate, m.yearsToRetirement) / Math.pow(1 + baseRate, m.yearsToRetirement);
+                    const rateAdjustment =
+                      Math.pow(1 + selectedRate, m.yearsToRetirement) /
+                      Math.pow(1 + baseRate, m.yearsToRetirement);
 
                     const retirementPensionAtRetire =
                       (data.retirementPensionBalanceAtRetireSelf +
-                      data.retirementPensionBalanceAtRetireSpouse) * rateAdjustment;
+                        data.retirementPensionBalanceAtRetireSpouse) *
+                      rateAdjustment;
                     const personalPensionAtRetire =
                       (data.personalPensionStatus.irp.balance +
                         data.personalPensionStatus.pensionSavings.balance) *
@@ -1669,7 +1677,7 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                                   </span>
                                 </div>
                                 <div className={styles.goalExplanationNote}>
-                                  {m.yearsToRetirement}년간 물가상승률{" "}
+                                  {m.yearsToRetirement}년간 물가 상승률{" "}
                                   {calcParams.inflationRate * 100}% 역산
                                 </div>
                               </div>
@@ -1717,7 +1725,7 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
                                   </span>
                                 </div>
                                 <div className={styles.goalExplanationNote}>
-                                  {m.yearsToRetirement}년간 물가상승률{" "}
+                                  {m.yearsToRetirement}년간 물가 상승률{" "}
                                   {calcParams.inflationRate * 100}% 역산
                                 </div>
                               </div>
@@ -3139,9 +3147,9 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
             </div>
           </div>
 
-          {/* 물가상승률 */}
+          {/* 물가 상승률 */}
           <div className={styles.calcSettingRow}>
-            <span className={styles.calcSettingLabel}>물가상승률</span>
+            <span className={styles.calcSettingLabel}>물가 상승률</span>
             <div className={styles.calcSettingOptions}>
               {[
                 { value: 0.045, label: "4.5%", desc: "비관" },
@@ -3163,9 +3171,9 @@ export function ReportTabs({ data, opinion }: ReportTabsProps) {
             </div>
           </div>
 
-          {/* 소득상승률 */}
+          {/* 소득 상승률 */}
           <div className={styles.calcSettingRow}>
-            <span className={styles.calcSettingLabel}>소득상승률</span>
+            <span className={styles.calcSettingLabel}>소득 상승률</span>
             <div className={styles.calcSettingOptions}>
               {[
                 { value: 0.02, label: "2%", desc: "비관" },

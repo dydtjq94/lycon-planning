@@ -34,7 +34,7 @@ const onboardingTimeline = [
     duration: "30분",
     items: [
       "현재 데이터 기반 시나리오 설명",
-      "기본 가정 (물가상승률, 투자수익률 등)",
+      "기본 가정 (물가 상승률, 투자수익률 등)",
       "반영된 미래 이벤트 소개/조정",
       "부족하여 대비 필요한 구간 설명",
       "현재 포트폴리오 분석 및 투자 성향 파악",
@@ -100,7 +100,11 @@ const regularManagement = [
     count: "12회",
     type: "온라인 + 서면 보고서",
     title: "월간 점검",
-    items: ["소득/지출 점검", "투자 관련 소식 및 정보 안내", "월간 리포트 전송"],
+    items: [
+      "소득/지출 점검",
+      "투자 관련 소식 및 정보 안내",
+      "월간 리포트 전송",
+    ],
     icon: BarChart3,
   },
   {
@@ -122,7 +126,11 @@ const regularManagement = [
     count: "1회",
     type: "미팅",
     title: "연말정산 세제혜택 점검",
-    items: ["소득공제/세액공제 최적화", "연금저축/IRP 납입 점검", "환급 극대화 전략"],
+    items: [
+      "소득공제/세액공제 최적화",
+      "연금저축/IRP 납입 점검",
+      "환급 극대화 전략",
+    ],
     icon: Wallet,
   },
   {
@@ -130,7 +138,11 @@ const regularManagement = [
     count: "1회",
     type: "미팅",
     title: "연간 시나리오 재정리",
-    items: ["목표 대비 진행도 종합 점검", "시나리오 전면 재검토", "다음 해 로드맵 수립"],
+    items: [
+      "목표 대비 진행도 종합 점검",
+      "시나리오 전면 재검토",
+      "다음 해 로드맵 수립",
+    ],
     icon: Target,
   },
 ];
@@ -215,13 +227,41 @@ const faqData = [
 
 // 비교 테이블 데이터
 const comparisonData = [
-  { feature: "혼자 하면", alone: "가계부 3일 만에 포기", withLycon: "매주 자동 리마인드 + 전문가 점검" },
-  { feature: "", alone: "투자 앱 깔고 방치", withLycon: "분기마다 포트폴리오 리밸런싱" },
-  { feature: "", alone: '"장투하자" → 3일 만에 손절', withLycon: "시나리오 기반 흔들리지 않는 장기 투자" },
-  { feature: "", alone: "막연한 은퇴 불안", withLycon: "숫자로 검증된 은퇴 로드맵" },
-  { feature: "", alone: "연말정산 환급 놓침", withLycon: "연말 세제혜택 점검 미팅" },
-  { feature: "", alone: "연금저축? IRP? 뭔지는 알지만 개설 안 함", withLycon: "온보딩 때 계좌 개설/등록 완료" },
-  { feature: "", alone: "포트폴리오 리밸런싱? 그게 뭔데?", withLycon: "분기마다 전문가가 리밸런싱" },
+  {
+    feature: "혼자 하면",
+    alone: "가계부 3일 만에 포기",
+    withLycon: "매주 자동 리마인드 + 전문가 점검",
+  },
+  {
+    feature: "",
+    alone: "투자 앱 깔고 방치",
+    withLycon: "분기마다 포트폴리오 리밸런싱",
+  },
+  {
+    feature: "",
+    alone: '"장투하자" → 3일 만에 손절',
+    withLycon: "시나리오 기반 흔들리지 않는 장기 투자",
+  },
+  {
+    feature: "",
+    alone: "막연한 은퇴 불안",
+    withLycon: "숫자로 검증된 은퇴 로드맵",
+  },
+  {
+    feature: "",
+    alone: "연말정산 환급 놓침",
+    withLycon: "연말 세제혜택 점검 미팅",
+  },
+  {
+    feature: "",
+    alone: "연금저축? IRP? 뭔지는 알지만 개설 안 함",
+    withLycon: "온보딩 때 계좌 개설/등록 완료",
+  },
+  {
+    feature: "",
+    alone: "포트폴리오 리밸런싱? 그게 뭔데?",
+    withLycon: "분기마다 전문가가 리밸런싱",
+  },
 ];
 
 export default function SubscriptionPage() {
@@ -310,7 +350,9 @@ export default function SubscriptionPage() {
           <div className={styles.problemCard}>
             <div className={styles.problemNumber}>01</div>
             <h3 className={styles.problemTitle}>자녀 교육비 집중</h3>
-            <p className={styles.problemDesc}>초중고~대학까지, 은퇴 준비가 계속 뒤로 밀림</p>
+            <p className={styles.problemDesc}>
+              초중고~대학까지, 은퇴 준비가 계속 뒤로 밀림
+            </p>
           </div>
           <div className={styles.problemCard}>
             <div className={styles.problemNumber}>02</div>
@@ -325,12 +367,16 @@ export default function SubscriptionPage() {
           <div className={styles.problemCard}>
             <div className={styles.problemNumber}>04</div>
             <h3 className={styles.problemTitle}>샌드위치 세대</h3>
-            <p className={styles.problemDesc}>부모 부양 시작, 예상치 못한 지출 발생</p>
+            <p className={styles.problemDesc}>
+              부모 부양 시작, 예상치 못한 지출 발생
+            </p>
           </div>
           <div className={styles.problemCard}>
             <div className={styles.problemNumber}>05</div>
             <h3 className={styles.problemTitle}>은퇴까지 15~20년</h3>
-            <p className={styles.problemDesc}>&quot;아직 시간 있다&quot;는 착각</p>
+            <p className={styles.problemDesc}>
+              &quot;아직 시간 있다&quot;는 착각
+            </p>
           </div>
         </div>
       </section>
@@ -339,9 +385,7 @@ export default function SubscriptionPage() {
       <section className={styles.sectionDark}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabelLight}>비교</span>
-          <h2 className={styles.sectionTitleLight}>
-            혼자 vs Lycon과 함께
-          </h2>
+          <h2 className={styles.sectionTitleLight}>혼자 vs Lycon과 함께</h2>
         </div>
         <div className={styles.comparisonTable}>
           <div className={styles.comparisonHeader}>
@@ -364,9 +408,7 @@ export default function SubscriptionPage() {
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>Lycon의 약속</span>
-          <h2 className={styles.sectionTitle}>
-            우리가 드리는 약속
-          </h2>
+          <h2 className={styles.sectionTitle}>우리가 드리는 약속</h2>
         </div>
         <div className={styles.promiseGrid}>
           <div className={styles.promiseCard}>
@@ -375,7 +417,9 @@ export default function SubscriptionPage() {
           </div>
           <div className={styles.promiseCard}>
             <Check size={24} className={styles.promiseIcon} />
-            <p>안 되는 건 <strong>단호하게</strong> 안 된다고 말합니다</p>
+            <p>
+              안 되는 건 <strong>단호하게</strong> 안 된다고 말합니다
+            </p>
           </div>
           <div className={styles.promiseCard}>
             <Check size={24} className={styles.promiseIcon} />
@@ -383,7 +427,10 @@ export default function SubscriptionPage() {
           </div>
           <div className={styles.promiseCard}>
             <Check size={24} className={styles.promiseIcon} />
-            <p>가장 못하는 장기 투자, 우리와 함께라면 <strong>무조건 성공</strong>합니다</p>
+            <p>
+              가장 못하는 장기 투자, 우리와 함께라면{" "}
+              <strong>무조건 성공</strong>합니다
+            </p>
           </div>
         </div>
       </section>
@@ -392,9 +439,7 @@ export default function SubscriptionPage() {
       <section className={styles.sectionAlt}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>구독 혜택</span>
-          <h2 className={styles.sectionTitle}>
-            구독하면 받는 것
-          </h2>
+          <h2 className={styles.sectionTitle}>구독하면 받는 것</h2>
         </div>
         <div className={styles.benefitGrid}>
           <div className={styles.benefitCard}>
@@ -402,35 +447,45 @@ export default function SubscriptionPage() {
               <Users size={28} />
             </div>
             <h3 className={styles.benefitTitle}>1:1 전담 전문가</h3>
-            <p className={styles.benefitDesc}>담당 자산관리 전문가가 1년간 함께합니다</p>
+            <p className={styles.benefitDesc}>
+              담당 자산관리 전문가가 1년간 함께합니다
+            </p>
           </div>
           <div className={styles.benefitCard}>
             <div className={styles.benefitIcon}>
               <Calendar size={28} />
             </div>
             <h3 className={styles.benefitTitle}>첫 1개월 집중 세팅</h3>
-            <p className={styles.benefitDesc}>4회 미팅 + 계좌 세팅 + 시나리오 설계 + 로드맵 완성</p>
+            <p className={styles.benefitDesc}>
+              4회 미팅 + 계좌 세팅 + 시나리오 설계 + 로드맵 완성
+            </p>
           </div>
           <div className={styles.benefitCard}>
             <div className={styles.benefitIcon}>
               <CalendarCheck size={28} />
             </div>
             <h3 className={styles.benefitTitle}>연간 정기 관리</h3>
-            <p className={styles.benefitDesc}>주간 가계부 + 월간 점검 + 분기 리밸런싱 + 연말정산</p>
+            <p className={styles.benefitDesc}>
+              주간 가계부 + 월간 점검 + 분기 리밸런싱 + 연말정산
+            </p>
           </div>
           <div className={styles.benefitCard}>
             <div className={styles.benefitIcon}>
               <BarChart3 size={28} />
             </div>
             <h3 className={styles.benefitTitle}>전용 대시보드</h3>
-            <p className={styles.benefitDesc}>가계부 / 포트폴리오 / 자산 현황 / 시뮬레이션 통합 관리</p>
+            <p className={styles.benefitDesc}>
+              가계부 / 포트폴리오 / 자산 현황 / 시뮬레이션 통합 관리
+            </p>
           </div>
           <div className={styles.benefitCard}>
             <div className={styles.benefitIcon}>
               <Shield size={28} />
             </div>
             <h3 className={styles.benefitTitle}>전문가 네트워크</h3>
-            <p className={styles.benefitDesc}>세무사, 부동산, 변호사, CFP, 노무사 할인 연결</p>
+            <p className={styles.benefitDesc}>
+              세무사, 부동산, 변호사, CFP, 노무사 할인 연결
+            </p>
           </div>
         </div>
       </section>
@@ -439,13 +494,12 @@ export default function SubscriptionPage() {
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>온보딩</span>
-          <h2 className={styles.sectionTitle}>
-            첫 1개월 집중 세팅
-          </h2>
+          <h2 className={styles.sectionTitle}>첫 1개월 집중 세팅</h2>
           <p className={styles.sectionDesc}>
             구독 후 첫 1개월은 가장 중요한 시간입니다.
             <br />
-            재무 상태 완벽히 파악 / 목표 시나리오 설계 / 모든 계좌와 대시보드 세팅
+            재무 상태 완벽히 파악 / 목표 시나리오 설계 / 모든 계좌와 대시보드
+            세팅
           </p>
         </div>
 
@@ -493,7 +547,9 @@ export default function SubscriptionPage() {
                 <div className={styles.timelineTitle}>
                   <span>{item.title}</span>
                   {item.duration && (
-                    <span className={styles.timelineDuration}>{item.duration}</span>
+                    <span className={styles.timelineDuration}>
+                      {item.duration}
+                    </span>
                   )}
                 </div>
                 {expandedTimeline === idx ? (
@@ -530,7 +586,8 @@ export default function SubscriptionPage() {
           <div className={styles.accountNote}>
             <strong>통장 분할 개념:</strong> 계좌 자체를 목적별로 재세팅
             <br />
-            급여 통장 / 생활비 통장 / 저축 통장 / 투자 통장 분리 + 자동이체 설정으로 자동화
+            급여 통장 / 생활비 통장 / 저축 통장 / 투자 통장 분리 + 자동이체
+            설정으로 자동화
           </div>
         </div>
       </section>
@@ -539,9 +596,7 @@ export default function SubscriptionPage() {
       <section className={styles.sectionAlt}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>정기 관리</span>
-          <h2 className={styles.sectionTitle}>
-            연간 정기 관리
-          </h2>
+          <h2 className={styles.sectionTitle}>연간 정기 관리</h2>
           <p className={styles.sectionDesc}>
             온보딩 이후 11개월 동안 지속적으로 관리.
             <br />
@@ -576,26 +631,33 @@ export default function SubscriptionPage() {
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>Progress-based Motivation</span>
-          <h2 className={styles.sectionTitle}>
-            행동을 유도하는 시스템
-          </h2>
+          <h2 className={styles.sectionTitle}>행동을 유도하는 시스템</h2>
         </div>
         <div className={styles.progressGrid}>
           <div className={styles.progressStep}>
             <div className={styles.progressNumber}>1</div>
-            <p>대시보드에서 <strong>과제가 주어짐</strong></p>
+            <p>
+              대시보드에서 <strong>과제가 주어짐</strong>
+            </p>
           </div>
           <div className={styles.progressStep}>
             <div className={styles.progressNumber}>2</div>
-            <p>과제를 완료해야 <strong>다음 미션이 해금</strong></p>
+            <p>
+              과제를 완료해야 <strong>다음 미션이 해금</strong>
+            </p>
           </div>
           <div className={styles.progressStep}>
             <div className={styles.progressNumber}>3</div>
-            <p><strong>목표 달성률(%)</strong>이 실시간으로 업데이트</p>
+            <p>
+              <strong>목표 달성률(%)</strong>이 실시간으로 업데이트
+            </p>
           </div>
           <div className={styles.progressStep}>
             <div className={styles.progressNumber}>4</div>
-            <p>분기마다 <strong>자산 스냅샷</strong>이 저장되어 성장을 눈으로 확인</p>
+            <p>
+              분기마다 <strong>자산 스냅샷</strong>이 저장되어 성장을 눈으로
+              확인
+            </p>
           </div>
         </div>
       </section>
@@ -604,9 +666,7 @@ export default function SubscriptionPage() {
       <section className={styles.sectionDark}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabelLight}>대시보드</span>
-          <h2 className={styles.sectionTitleLight}>
-            Lycon 전용 대시보드
-          </h2>
+          <h2 className={styles.sectionTitleLight}>Lycon 전용 대시보드</h2>
         </div>
         <div className={styles.dashboardFeatures}>
           <div className={styles.dashboardMenu}>
@@ -615,58 +675,82 @@ export default function SubscriptionPage() {
                 <BarChart3 size={18} />
               </span>
               <span className={styles.menuLabel}>대시보드</span>
-              <span className={styles.menuDesc}>전체 자산 현황, 목표 달성률, 할 일 목록</span>
+              <span className={styles.menuDesc}>
+                전체 자산 현황, 목표 달성률, 할 일 목록
+              </span>
             </div>
             <div className={styles.menuItem}>
               <span className={styles.menuIcon}>
                 <Receipt size={18} />
               </span>
               <span className={styles.menuLabel}>가계부</span>
-              <span className={styles.menuDesc}>수입/지출 기록, 계좌별 잔액, 월별 현금흐름</span>
+              <span className={styles.menuDesc}>
+                수입/지출 기록, 계좌별 잔액, 월별 현금흐름
+              </span>
             </div>
             <div className={styles.menuItem}>
               <span className={styles.menuIcon}>
                 <PiggyBank size={18} />
               </span>
               <span className={styles.menuLabel}>정기 예금/적금</span>
-              <span className={styles.menuDesc}>보유 예적금 현황, 예상 이자, 만기일 관리</span>
+              <span className={styles.menuDesc}>
+                보유 예적금 현황, 예상 이자, 만기일 관리
+              </span>
             </div>
             <div className={styles.menuItem}>
               <span className={styles.menuIcon}>
                 <TrendingUp size={18} />
               </span>
               <span className={styles.menuLabel}>투자 포트폴리오</span>
-              <span className={styles.menuDesc}>계좌별 보유 종목, 평가금액, 손익 차트</span>
+              <span className={styles.menuDesc}>
+                계좌별 보유 종목, 평가금액, 손익 차트
+              </span>
             </div>
             <div className={styles.menuItem}>
               <span className={styles.menuIcon}>
                 <Wallet size={18} />
               </span>
               <span className={styles.menuLabel}>현재 자산</span>
-              <span className={styles.menuDesc}>순자산, 자산/부채 구성, 저축/투자/부동산 분류</span>
+              <span className={styles.menuDesc}>
+                순자산, 자산/부채 구성, 저축/투자/부동산 분류
+              </span>
             </div>
             <div className={styles.menuItem}>
               <span className={styles.menuIcon}>
                 <Target size={18} />
               </span>
               <span className={styles.menuLabel}>시뮬레이션</span>
-              <span className={styles.menuDesc}>은퇴까지 자산 시뮬레이션, 현금흐름/부동산/부채/연금</span>
+              <span className={styles.menuDesc}>
+                은퇴까지 자산 시뮬레이션, 현금흐름/부동산/부채/연금
+              </span>
             </div>
             <div className={styles.menuItem}>
               <span className={styles.menuIcon}>
                 <MessageCircle size={18} />
               </span>
               <span className={styles.menuLabel}>채팅/상담</span>
-              <span className={styles.menuDesc}>담당 전문가와 1:1 메시지, 미팅 예약</span>
+              <span className={styles.menuDesc}>
+                담당 전문가와 1:1 메시지, 미팅 예약
+              </span>
             </div>
           </div>
           <div className={styles.dashboardValue}>
             <h3>대시보드 핵심 가치</h3>
             <ul>
-              <li>혼자 채우는 게 아니라, <strong>전문가가 함께 관리</strong></li>
-              <li>분기마다 자동으로 <strong>자산 스냅샷</strong>이 찍혀서 성장을 눈으로 확인</li>
-              <li>시뮬레이션이 <strong>내 실제 데이터 기반</strong>으로 업데이트됨</li>
-              <li>앱 열 때마다 <strong>&apos;담당: OOO 전문가&apos;</strong>가 보여서 관리받는 느낌</li>
+              <li>
+                혼자 채우는 게 아니라, <strong>전문가가 함께 관리</strong>
+              </li>
+              <li>
+                분기마다 자동으로 <strong>자산 스냅샷</strong>이 찍혀서 성장을
+                눈으로 확인
+              </li>
+              <li>
+                시뮬레이션이 <strong>내 실제 데이터 기반</strong>으로 업데이트됨
+              </li>
+              <li>
+                앱 열 때마다 <strong>&apos;담당: OOO 전문가&apos;</strong>가
+                보여서 관리받는 느낌
+              </li>
             </ul>
           </div>
         </div>
@@ -676,9 +760,7 @@ export default function SubscriptionPage() {
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>전문가 네트워크</span>
-          <h2 className={styles.sectionTitle}>
-            추가 전문 상담이 필요할 때
-          </h2>
+          <h2 className={styles.sectionTitle}>추가 전문 상담이 필요할 때</h2>
           <p className={styles.sectionDesc}>
             Lycon 네트워크를 통해 할인된 가격으로 연결
           </p>
@@ -693,7 +775,9 @@ export default function SubscriptionPage() {
               <p className={styles.expertDesc}>{expert.description}</p>
               <div className={styles.expertBenefit}>{expert.benefit}</div>
               <div className={styles.expertPrice}>
-                <span className={styles.priceStrike}>{expert.originalPrice}</span>
+                <span className={styles.priceStrike}>
+                  {expert.originalPrice}
+                </span>
                 <span className={styles.priceNew}>{expert.discountPrice}</span>
               </div>
             </div>
@@ -719,9 +803,7 @@ export default function SubscriptionPage() {
       <section className={styles.sectionPricing}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabelLight}>가격</span>
-          <h2 className={styles.sectionTitleLight}>
-            투자 대비 확실한 가치
-          </h2>
+          <h2 className={styles.sectionTitleLight}>투자 대비 확실한 가치</h2>
         </div>
         <div className={styles.pricingCards}>
           <div className={styles.pricingCard}>
@@ -732,7 +814,9 @@ export default function SubscriptionPage() {
             </div>
             <div className={styles.pricingAnnual}>연간 1,188,000원</div>
           </div>
-          <div className={`${styles.pricingCard} ${styles.pricingCardFeatured}`}>
+          <div
+            className={`${styles.pricingCard} ${styles.pricingCardFeatured}`}
+          >
             <div className={styles.pricingBadge}>초기 고객 특별가</div>
             <div className={styles.pricingLabel}>50% 할인</div>
             <div className={styles.pricingAmount}>
@@ -761,7 +845,9 @@ export default function SubscriptionPage() {
               <span>재무설계사 상담</span>
               <span>회당 30~50만원 (일회성)</span>
             </div>
-            <div className={`${styles.pricingComparisonRow} ${styles.highlight}`}>
+            <div
+              className={`${styles.pricingComparisonRow} ${styles.highlight}`}
+            >
               <span>Lycon (초기)</span>
               <span>약 60만원 (Facet의 1/6)</span>
             </div>
@@ -776,7 +862,9 @@ export default function SubscriptionPage() {
             </div>
             <div className={styles.includesItem}>
               <Check size={18} />
-              <span>첫 1개월 온보딩 (4회 미팅 + 계좌 세팅 + 시나리오 설계)</span>
+              <span>
+                첫 1개월 온보딩 (4회 미팅 + 계좌 세팅 + 시나리오 설계)
+              </span>
             </div>
             <div className={styles.includesItem}>
               <Check size={18} />
@@ -810,9 +898,7 @@ export default function SubscriptionPage() {
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>비교 분석</span>
-          <h2 className={styles.sectionTitle}>
-            Facet vs Lycon
-          </h2>
+          <h2 className={styles.sectionTitle}>Facet vs Lycon</h2>
         </div>
         <div className={styles.facetTable}>
           <div className={styles.facetHeader}>
@@ -828,7 +914,9 @@ export default function SubscriptionPage() {
           <div className={styles.facetRow}>
             <div className={styles.facetCell}>핵심</div>
             <div className={styles.facetCell}>CFP + 종합 플래닝</div>
-            <div className={styles.facetCell}>은퇴 시나리오 + 로드맵 트래킹</div>
+            <div className={styles.facetCell}>
+              은퇴 시나리오 + 로드맵 트래킹
+            </div>
           </div>
           <div className={styles.facetRow}>
             <div className={styles.facetCell}>온보딩</div>
@@ -848,7 +936,9 @@ export default function SubscriptionPage() {
           <div className={styles.facetRow}>
             <div className={styles.facetCell}>대시보드</div>
             <div className={styles.facetCell}>자산 현황 중심</div>
-            <div className={styles.facetCellHighlight}>목표 달성률 + 미션 시스템</div>
+            <div className={styles.facetCellHighlight}>
+              목표 달성률 + 미션 시스템
+            </div>
           </div>
           <div className={styles.facetRow}>
             <div className={styles.facetCell}>가격</div>
@@ -862,9 +952,7 @@ export default function SubscriptionPage() {
       <section className={styles.sectionAlt}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>FAQ</span>
-          <h2 className={styles.sectionTitle}>
-            자주 묻는 질문
-          </h2>
+          <h2 className={styles.sectionTitle}>자주 묻는 질문</h2>
         </div>
         <div className={styles.faqList}>
           {faqData.map((faq, idx) => (
@@ -898,9 +986,7 @@ export default function SubscriptionPage() {
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>핵심 서비스</span>
-          <h2 className={styles.sectionTitle}>
-            5가지 핵심 서비스
-          </h2>
+          <h2 className={styles.sectionTitle}>5가지 핵심 서비스</h2>
         </div>
         <div className={styles.coreServices}>
           <div className={styles.coreService}>

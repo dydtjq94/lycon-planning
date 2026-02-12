@@ -16,7 +16,6 @@ import type {
   LoanRepaymentType,
   RateType,
 } from '@/types/tables'
-import { createExpense, deleteLinkedExpenses } from './expenseService'
 import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
 
 // 금액 필드 목록
@@ -89,12 +88,6 @@ export async function createDebt(input: DebtInput): Promise<Debt> {
 
   if (error) throw error
 
-  // 연동된 부채가 아닌 경우에만 연동 지출 생성
-  // (부동산/실물자산에서 온 부채는 해당 서비스에서 지출을 생성함)
-  if (!data.source_type) {
-    await createLinkedExpensesForDebt(convertFromWon(data, DEBT_MONEY_FIELDS))
-  }
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, DEBT_MONEY_FIELDS)
 }
@@ -120,21 +113,12 @@ export async function updateDebt(
 
   if (error) throw error
 
-  // 연동된 부채가 아닌 경우에만 연동 지출 재생성
-  if (!data.source_type) {
-    await deleteLinkedExpenses('debt', id)
-    await createLinkedExpensesForDebt(convertFromWon(data, DEBT_MONEY_FIELDS))
-  }
-
   // DB(원) -> 클라이언트(만원) 변환
   return convertFromWon(data, DEBT_MONEY_FIELDS)
 }
 
 export async function deleteDebt(id: string): Promise<void> {
   const supabase = createClient()
-
-  // 연동된 지출 먼저 삭제
-  await deleteLinkedExpenses('debt', id)
 
   const { error } = await supabase
     .from('debts')
@@ -344,61 +328,3 @@ export function getDefaultMaturity(): { year: number; month: number } {
   return { year: endYear, month: endMonth }
 }
 
-// ============================================
-// 연동 지출 생성 (부채 → 지출)
-// ============================================
-
-async function createLinkedExpensesForDebt(debt: Debt): Promise<void> {
-  const startYear = debt.start_year || new Date().getFullYear()
-  const startMonth = debt.start_month || 1
-  const maturityYear = debt.maturity_year || startYear + 5
-  const maturityMonth = debt.maturity_month || 12
-
-  // 월 이자 계산 (원금 * 연이율 / 12)
-  const monthlyInterest = Math.round(debt.principal * (debt.interest_rate / 100) / 12)
-
-  // 1. 이자 지출 (모든 상환유형)
-  if (monthlyInterest > 0) {
-    await createExpense({
-      simulation_id: debt.simulation_id,
-      type: 'interest',
-      title: `${debt.title} 이자`,
-      amount: monthlyInterest,
-      frequency: 'monthly',
-      start_year: startYear,
-      start_month: startMonth,
-      end_year: maturityYear,
-      end_month: maturityMonth,
-      is_fixed_to_retirement: false,
-      growth_rate: 0,
-      rate_category: 'fixed',
-      source_type: 'debt',
-      source_id: debt.id,
-    })
-  }
-
-  // 2. 원금상환 지출 (만기일시상환 제외)
-  if (debt.repayment_type !== '만기일시상환') {
-    const totalMonths = ((maturityYear - startYear) * 12) + (maturityMonth - startMonth)
-    const monthlyPrincipal = Math.round(debt.principal / Math.max(totalMonths, 1))
-
-    if (monthlyPrincipal > 0) {
-      await createExpense({
-        simulation_id: debt.simulation_id,
-        type: 'principal',
-        title: `${debt.title} 원금상환`,
-        amount: monthlyPrincipal,
-        frequency: 'monthly',
-        start_year: startYear,
-        start_month: startMonth,
-        end_year: maturityYear,
-        end_month: maturityMonth,
-        is_fixed_to_retirement: false,
-        growth_rate: 0,
-        rate_category: 'fixed',
-        source_type: 'debt',
-        source_id: debt.id,
-      })
-    }
-  }
-}

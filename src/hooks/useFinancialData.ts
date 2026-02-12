@@ -10,7 +10,6 @@ import { getIncomes } from '@/lib/services/incomeService'
 import { getExpenses } from '@/lib/services/expenseService'
 import { getSavings } from '@/lib/services/savingsService'
 import { getDebts } from '@/lib/services/debtService'
-import { getInsurances } from '@/lib/services/insuranceService'
 import { getPhysicalAssets } from '@/lib/services/physicalAssetService'
 import { getRealEstates } from '@/lib/services/realEstateService'
 import { getNationalPensions } from '@/lib/services/nationalPensionService'
@@ -42,7 +41,6 @@ export const financialKeys = {
   expenses: (simulationId: string) => [...financialKeys.all, 'expenses', simulationId] as const,
   savings: (simulationId: string) => [...financialKeys.all, 'savings', simulationId] as const,
   debts: (simulationId: string) => [...financialKeys.all, 'debts', simulationId] as const,
-  insurances: (simulationId: string) => [...financialKeys.all, 'insurances', simulationId] as const,
   physicalAssets: (simulationId: string) => [...financialKeys.all, 'physicalAssets', simulationId] as const,
   realEstates: (simulationId: string) => [...financialKeys.all, 'realEstates', simulationId] as const,
   nationalPensions: (simulationId: string) => [...financialKeys.all, 'nationalPensions', simulationId] as const,
@@ -56,19 +54,15 @@ export const financialKeys = {
 
 /**
  * 데이터 수정 시 함께 무효화해야 할 캐시 목록
- * - 부동산 → 부채, 소득, 지출 연동
- * - 부채 → 지출 연동
- * - 연금 → 소득 연동
- * - 실물자산 → 부채 연동
+ * V2 엔진이 각 테이블에서 직접 계산하므로 연동 없음
  */
 const INVALIDATION_MAP = {
-  realEstates: ['realEstates', 'debts', 'incomes', 'expenses', 'items'],
-  debts: ['debts', 'expenses', 'items'],
-  insurances: ['insurances', 'expenses', 'items'],
-  nationalPensions: ['nationalPensions', 'incomes', 'items'],
-  retirementPensions: ['retirementPensions', 'incomes', 'items'],
-  personalPensions: ['personalPensions', 'incomes', 'items'],
-  physicalAssets: ['physicalAssets', 'debts', 'items'],
+  realEstates: ['realEstates', 'items'],
+  debts: ['debts', 'items'],
+  nationalPensions: ['nationalPensions', 'items'],
+  retirementPensions: ['retirementPensions', 'items'],
+  personalPensions: ['personalPensions', 'items'],
+  physicalAssets: ['physicalAssets', 'items'],
   savings: ['savings', 'items'],
   incomes: ['incomes', 'items'],
   expenses: ['expenses', 'items'],
@@ -148,7 +142,6 @@ export function usePrefetchAllFinancialData(simulationId: string) {
   useExpenses(simulationId)
   useSavingsData(simulationId)
   useDebts(simulationId)
-  useInsurances(simulationId)
   usePhysicalAssets(simulationId)
   useRealEstates(simulationId)
   useNationalPensions(simulationId)
@@ -238,17 +231,6 @@ export function useDebts(simulationId: string, enabled: boolean = true) {
   return useQuery({
     queryKey: financialKeys.debts(simulationId),
     queryFn: () => getDebts(simulationId),
-    enabled: enabled && !!simulationId,
-  })
-}
-
-/**
- * 보험 데이터 로드 훅
- */
-export function useInsurances(simulationId: string, enabled: boolean = true) {
-  return useQuery({
-    queryKey: financialKeys.insurances(simulationId),
-    queryFn: () => getInsurances(simulationId),
     enabled: enabled && !!simulationId,
   })
 }

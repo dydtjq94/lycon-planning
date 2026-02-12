@@ -608,6 +608,7 @@ export function DebtTab({ simulationId }: DebtTabProps) {
       {showTypeMenu && addButtonRef.current && createPortal(
         <div
           className={styles.typeMenu}
+          data-scenario-dropdown-portal
           style={{
             position: 'fixed',
             top: addButtonRef.current.getBoundingClientRect().bottom + 6,

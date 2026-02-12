@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Edit2, Trash2 } from "lucide-react";
+import { X, Edit2, Trash2, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Account, AccountType, AccountInput, PaymentMethod, PaymentMethodType, PaymentMethodInput, Owner } from "@/types/tables";
 
@@ -78,6 +78,10 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
   const [accountFormData, setAccountFormData] = useState<AccountFormData>({});
   const [editingPaymentMethodId, setEditingPaymentMethodId] = useState<string | null>(null);
   const [paymentMethodFormData, setPaymentMethodFormData] = useState<Partial<PaymentMethodInput>>({});
+
+  // 폼 표시 상태
+  const [showAccountForm, setShowAccountForm] = useState(false);
+  const [showPaymentMethodForm, setShowPaymentMethodForm] = useState(false);
 
   // 데이터 로드
   useEffect(() => {
@@ -226,6 +230,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
         : new Date().toISOString().split("T")[0],
     });
     setEditingAccountId(account.id);
+    setShowAccountForm(true);
   };
 
   const handleDeleteAccount = async (id: string) => {
@@ -256,6 +261,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
       balance_date: now.toISOString().split("T")[0],
     });
     setEditingAccountId(null);
+    setShowAccountForm(false);
   };
 
   // 결제수단 저장
@@ -291,6 +297,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
       card_company: pm.card_company || "",
     });
     setEditingPaymentMethodId(pm.id);
+    setShowPaymentMethodForm(true);
   };
 
   const handleDeletePaymentMethod = async (id: string) => {
@@ -307,6 +314,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
       card_company: "",
     });
     setEditingPaymentMethodId(null);
+    setShowPaymentMethodForm(false);
   };
 
   // 탭 변경 시 폼 리셋
@@ -387,7 +395,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
         <div className={styles.modalHeader}>
           <h3>계좌 관리</h3>
           <button className={styles.modalCloseBtn} onClick={onClose}>
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -414,9 +422,64 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
         </div>
 
         <div className={styles.modalContent}>
-          {/* 계좌 추가/수정 폼 */}
-          <div className={styles.formSection}>
-            <h4>{editingAccountId ? "계좌 수정" : "새 계좌 추가"}</h4>
+          {/* 등록된 계좌 목록 - FIRST */}
+          <div className={styles.listSection}>
+            <h4>등록된 계좌</h4>
+            {getCurrentAccounts().length === 0 ? (
+              <div className={styles.emptyState}>등록된 계좌가 없습니다.</div>
+            ) : (
+              getCurrentAccounts().map((account) => {
+                const linkedPayments = activeTab === "checking"
+                  ? paymentMethods.filter(pm => pm.account_id === account.id)
+                  : [];
+                return (
+                  <div key={account.id} className={styles.listItem}>
+                    <div className={styles.listItemInfo}>
+                      <div className={styles.listItemName}>
+                        {account.name}
+                        {account.is_default && <span className={styles.defaultBadge}>기본</span>}
+                      </div>
+                      <div className={styles.listItemMeta}>
+                        {getAccountTypeLabel(account.account_type || "")}
+                        {" · "}{account.broker_name}
+                        {isMarried && ` · ${account.owner === "spouse" ? "배우자" : "본인"}`}
+                      </div>
+                      {(account.start_year || account.interest_rate || (account.current_balance !== null && account.current_balance > 0) || account.monthly_contribution || account.maturity_year || account.is_tax_free) && (
+                        <div className={styles.listItemMeta}>
+                          {account.start_year && `${account.start_year}.${String(account.start_month || 1).padStart(2, "0")}.${String(account.start_day || 1).padStart(2, "0")} 가입`}
+                          {account.interest_rate && `${account.start_year ? " · " : ""}${account.interest_rate}% (${account.interest_type === 'simple' ? '단리' : account.interest_type === 'monthly_compound' ? '월복리' : '년복리'})`}
+                          {account.current_balance !== null && account.current_balance > 0 && `${account.start_year || account.interest_rate ? " · " : ""}${formatWon(account.current_balance)}`}
+                          {account.monthly_contribution && ` · 월 ${formatWon(account.monthly_contribution)}`}
+                          {account.maturity_year && ` · ${account.maturity_year}.${String(account.maturity_month || 1).padStart(2, "0")}.${String(account.maturity_day || 1).padStart(2, "0")} 만기`}
+                          {account.is_tax_free && " · 비과세"}
+                        </div>
+                      )}
+                      {linkedPayments.length > 0 && (
+                        <div className={styles.linkedPayments}>
+                          {linkedPayments.map(pm => (
+                            <span key={pm.id} className={styles.linkedPaymentBadge}>{pm.name}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.listItemActions}>
+                      <button onClick={() => handleEditAccount(account)} className={styles.actionBtn}>
+                        <Edit2 size={14} />
+                      </button>
+                      <button onClick={() => handleDeleteAccount(account.id)} className={styles.actionBtn}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* 새 계좌 추가 버튼 or 폼 */}
+          {showAccountForm || editingAccountId ? (
+            <div className={styles.formSection}>
+              <h4>{editingAccountId ? "계좌 수정" : "새 계좌 추가"}</h4>
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label>소유자</label>
@@ -697,68 +760,54 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                 </button>
               </div>
             </div>
-          </div>
+            </div>
+          ) : (
+            <button
+              className={styles.addSectionButton}
+              onClick={() => { resetAccountForm(); setShowAccountForm(true); }}
+              type="button"
+            >
+              <Plus size={16} />
+              새 계좌 추가
+            </button>
+          )}
 
-          {/* 계좌 목록 */}
-          <div className={styles.listSection}>
-            <h4>등록된 계좌</h4>
-            {getCurrentAccounts().length === 0 ? (
-              <div className={styles.emptyState}>등록된 계좌가 없습니다.</div>
-            ) : (
-              getCurrentAccounts().map((account) => {
-                const linkedPayments = activeTab === "checking"
-                  ? paymentMethods.filter(pm => pm.account_id === account.id)
-                  : [];
-                return (
-                  <div key={account.id} className={styles.listItem}>
-                    <div className={styles.listItemInfo}>
-                      <div className={styles.listItemName}>
-                        {account.name}
-                        {account.is_default && <span className={styles.defaultBadge}>기본</span>}
-                      </div>
-                      <div className={styles.listItemMeta}>
-                        {getAccountTypeLabel(account.account_type || "")}
-                        {" · "}{account.broker_name}
-                        {isMarried && ` · ${account.owner === "spouse" ? "배우자" : "본인"}`}
-                      </div>
-                      {(account.start_year || account.interest_rate || (account.current_balance !== null && account.current_balance > 0) || account.monthly_contribution || account.maturity_year || account.is_tax_free) && (
-                        <div className={styles.listItemMeta}>
-                          {account.start_year && `${account.start_year}.${String(account.start_month || 1).padStart(2, "0")}.${String(account.start_day || 1).padStart(2, "0")} 가입`}
-                          {account.interest_rate && `${account.start_year ? " · " : ""}${account.interest_rate}% (${account.interest_type === 'simple' ? '단리' : account.interest_type === 'monthly_compound' ? '월복리' : '년복리'})`}
-                          {account.current_balance !== null && account.current_balance > 0 && `${account.start_year || account.interest_rate ? " · " : ""}${formatWon(account.current_balance)}`}
-                          {account.monthly_contribution && ` · 월 ${formatWon(account.monthly_contribution)}`}
-                          {account.maturity_year && ` · ${account.maturity_year}.${String(account.maturity_month || 1).padStart(2, "0")}.${String(account.maturity_day || 1).padStart(2, "0")} 만기`}
-                          {account.is_tax_free && " · 비과세"}
-                        </div>
-                      )}
-                      {linkedPayments.length > 0 && (
-                        <div className={styles.linkedPayments}>
-                          {linkedPayments.map(pm => (
-                            <span key={pm.id} className={styles.linkedPaymentBadge}>{pm.name}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className={styles.listItemActions}>
-                      <button onClick={() => handleEditAccount(account)} className={styles.actionBtn}>
-                        <Edit2 size={14} />
-                      </button>
-                      <button onClick={() => handleDeleteAccount(account.id)} className={styles.actionBtn}>
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* 입출금 탭에서만 결제수단 관리 */}
+          {/* 입출금 탭: 결제수단 목록 + 추가 버튼 */}
           {activeTab === "checking" && (
             <>
+              {paymentMethods.length > 0 && (
+                <div className={styles.listSection}>
+                  <h4>등록된 결제수단</h4>
+                  {paymentMethods.map((pm) => {
+                    const linkedAccount = checkingAccounts.find(a => a.id === pm.account_id);
+                    return (
+                      <div key={pm.id} className={styles.listItem}>
+                        <div className={styles.listItemInfo}>
+                          <div className={styles.listItemName}>{pm.name}</div>
+                          <div className={styles.listItemMeta}>
+                            {PAYMENT_METHOD_TYPE_OPTIONS.find(opt => opt.value === pm.type)?.label || "체크카드"}
+                            {pm.card_company && ` · ${pm.card_company}`}
+                            {linkedAccount && ` → ${linkedAccount.name}`}
+                          </div>
+                        </div>
+                        <div className={styles.listItemActions}>
+                          <button onClick={() => handleEditPaymentMethod(pm)} className={styles.actionBtn}>
+                            <Edit2 size={14} />
+                          </button>
+                          <button onClick={() => handleDeletePaymentMethod(pm.id)} className={styles.actionBtn}>
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {checkingAccounts.length > 0 && (
-                <div className={styles.formSection}>
-                  <h4>{editingPaymentMethodId ? "결제수단 수정" : "카드/페이 추가"}</h4>
+                showPaymentMethodForm || editingPaymentMethodId ? (
+                  <div className={styles.formSection}>
+                    <h4>{editingPaymentMethodId ? "결제수단 수정" : "카드/페이 추가"}</h4>
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
                       <label>유형</label>
@@ -821,36 +870,17 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
-
-              {paymentMethods.length > 0 && (
-                <div className={styles.listSection}>
-                  <h4>등록된 결제수단</h4>
-                  {paymentMethods.map((pm) => {
-                    const linkedAccount = checkingAccounts.find(a => a.id === pm.account_id);
-                    return (
-                      <div key={pm.id} className={styles.listItem}>
-                        <div className={styles.listItemInfo}>
-                          <div className={styles.listItemName}>{pm.name}</div>
-                          <div className={styles.listItemMeta}>
-                            {PAYMENT_METHOD_TYPE_OPTIONS.find(opt => opt.value === pm.type)?.label || "체크카드"}
-                            {pm.card_company && ` · ${pm.card_company}`}
-                            {linkedAccount && ` → ${linkedAccount.name}`}
-                          </div>
-                        </div>
-                        <div className={styles.listItemActions}>
-                          <button onClick={() => handleEditPaymentMethod(pm)} className={styles.actionBtn}>
-                            <Edit2 size={14} />
-                          </button>
-                          <button onClick={() => handleDeletePaymentMethod(pm.id)} className={styles.actionBtn}>
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                  </div>
+                ) : (
+                  <button
+                    className={styles.addSectionButton}
+                    onClick={() => { resetPaymentMethodForm(); setShowPaymentMethodForm(true); }}
+                    type="button"
+                  >
+                    <Plus size={16} />
+                    카드/페이 추가
+                  </button>
+                )
               )}
             </>
           )}
