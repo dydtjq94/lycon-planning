@@ -1,13 +1,21 @@
 'use client'
 
-import { useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { Pencil, Trash2, X } from 'lucide-react'
 import type { NationalPension, Owner } from '@/types/tables'
 import { formatMoney } from '@/lib/utils'
 import {
   upsertNationalPension,
   deleteNationalPension,
 } from '@/lib/services/nationalPensionService'
+import { useChartTheme } from '@/hooks/useChartTheme'
+import {
+  formatPeriodDisplay,
+  toPeriodRaw,
+  isPeriodValid,
+  handlePeriodTextChange,
+} from '@/lib/utils/periodInput'
 import styles from '../PensionTab.module.css'
 
 interface NationalPensionSectionProps {
@@ -29,25 +37,50 @@ export function NationalPensionSection({
 }: NationalPensionSectionProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
+  const [startDateText, setStartDateText] = useState('')
+  const [endDateText, setEndDateText] = useState('')
+  const [endMode, setEndMode] = useState<'none' | 'custom'>('none')
   const [isSaving, setIsSaving] = useState(false)
+  const { isDark } = useChartTheme()
 
   const startEdit = () => {
     setIsEditing(true)
     const startAge = pension?.start_age || 65
     const endAge = pension?.end_age || null
+    const startYear = birthYear + startAge
+    const endYear = endAge ? birthYear + endAge : null
+
     setEditValues({
       amount: pension?.expected_monthly_amount?.toString() || '',
-      startYear: String(birthYear + startAge),
+      startYear: String(startYear),
       startMonth: '1',
-      endYear: endAge ? String(birthYear + endAge) : '',
-      endMonth: endAge ? '12' : '',
+      endYear: endYear ? String(endYear) : '',
+      endMonth: endYear ? '12' : '',
     })
+    setStartDateText(toPeriodRaw(startYear, 1))
+    setEndDateText(endYear ? toPeriodRaw(endYear, 12) : '')
+    setEndMode(endAge ? 'custom' : 'none')
   }
 
   const cancelEdit = () => {
     setIsEditing(false)
     setEditValues({})
+    setStartDateText('')
+    setEndDateText('')
+    setEndMode('none')
   }
+
+  // ESC 키로 모달 닫기
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isEditing) {
+        cancelEdit()
+        e.stopPropagation()
+      }
+    }
+    window.addEventListener('keydown', handleEsc, true)
+    return () => window.removeEventListener('keydown', handleEsc, true)
+  }, [isEditing])
 
   const saveEdit = async () => {
     if (!editValues.amount) return
@@ -80,7 +113,6 @@ export function NationalPensionSection({
 
   const handleDelete = async () => {
     if (!pension) return
-    if (!confirm('국민연금 정보를 삭제하시겠습니까?')) return
 
     setIsSaving(true)
     try {
@@ -93,112 +125,132 @@ export function NationalPensionSection({
     }
   }
 
-  if (isEditing) {
-    return (
-      <div className={styles.editItem}>
-        <div className={styles.editRow}>
-          <span className={styles.editRowLabel}>금액</span>
-          <div className={styles.editField}>
-            <input
-              type="number"
-              className={styles.editInput}
-              value={editValues.amount || ''}
-              onChange={e => setEditValues({ ...editValues, amount: e.target.value })}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              placeholder="0"
-              autoFocus
-            />
-            <span className={styles.editUnit}>만원/월</span>
-          </div>
-        </div>
-        <div className={styles.editRow}>
-          <span className={styles.editRowLabel}>수령시작</span>
-          <div className={styles.editField}>
-            <input
-              type="number"
-              className={styles.editInputSmall}
-              value={editValues.startYear || ''}
-              onChange={e => setEditValues({ ...editValues, startYear: e.target.value })}
-              onWheel={e => (e.target as HTMLElement).blur()}
-            />
-            <span className={styles.editUnit}>년</span>
-            <input
-              type="number"
-              className={styles.editInputSmall}
-              value={editValues.startMonth || ''}
-              onChange={e => setEditValues({ ...editValues, startMonth: e.target.value })}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              min={1}
-              max={12}
-              placeholder="1"
-            />
-            <span className={styles.editUnit}>월</span>
-          </div>
-        </div>
-        <div className={styles.editRow}>
-          <span className={styles.editRowLabel}>수령종료</span>
-          <div className={styles.editField}>
-            <input
-              type="number"
-              className={styles.editInputSmall}
-              value={editValues.endYear || ''}
-              onChange={e => setEditValues({ ...editValues, endYear: e.target.value })}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              placeholder=""
-            />
-            <span className={styles.editUnit}>년</span>
-            <input
-              type="number"
-              className={styles.editInputSmall}
-              value={editValues.endMonth || ''}
-              onChange={e => setEditValues({ ...editValues, endMonth: e.target.value })}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              min={1}
-              max={12}
-              placeholder="12"
-            />
-            <span className={styles.editUnit}>월</span>
-          </div>
-        </div>
-        <div className={styles.editActions}>
-          <button className={styles.cancelBtn} onClick={cancelEdit} disabled={isSaving}>
-            취소
-          </button>
-          <button className={styles.saveBtn} onClick={saveEdit} disabled={isSaving}>
-            {isSaving ? '저장 중...' : '저장'}
-          </button>
-        </div>
-      </div>
-    )
-  }
-
+  // 읽기 뷰
   if (pension) {
     return (
-      <div className={styles.pensionItem}>
-        <div className={styles.itemInfo}>
-          <span className={styles.itemName}>{ownerLabel} 국민연금</span>
-          <span className={styles.itemMeta}>
-            {birthYear + pension.start_age}년부터 수령{pension.end_age ? ` ~ ${birthYear + pension.end_age}년` : ''}
-          </span>
-        </div>
-        <div className={styles.itemRight}>
-          <span className={styles.itemAmount}>{formatMoney(pension.expected_monthly_amount)}/월</span>
-          <div className={styles.itemActions}>
-            <button className={styles.editBtn} onClick={startEdit}>
-              <Pencil size={16} />
-            </button>
-            <button className={styles.deleteBtn} onClick={handleDelete} disabled={isSaving}>
-              <Trash2 size={16} />
-            </button>
+      <>
+        <div className={styles.pensionItem}>
+          <div className={styles.itemInfo}>
+            <span className={styles.itemName}>{ownerLabel} 국민연금</span>
+            <span className={styles.itemMeta}>
+              {birthYear + pension.start_age}년부터 수령{pension.end_age ? ` ~ ${birthYear + pension.end_age}년` : ''}
+            </span>
+          </div>
+          <div className={styles.itemRight}>
+            <span className={styles.itemAmount}>{formatMoney(pension.expected_monthly_amount)}/월</span>
+            <div className={styles.itemActions}>
+              <button className={styles.editBtn} onClick={startEdit}>
+                <Pencil size={16} />
+              </button>
+              <button className={styles.deleteBtn} onClick={handleDelete} disabled={isSaving}>
+                <Trash2 size={16} />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+
+        {/* 편집 모달 */}
+        {isEditing && createPortal(
+          <div
+            className={styles.typeModalOverlay}
+            data-scenario-dropdown-portal="true"
+            onClick={cancelEdit}
+          >
+            <div
+              className={styles.typeModal}
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              }}
+            >
+              <div className={styles.typeModalHeader}>
+                <span className={styles.stepLabel}>{ownerLabel} 국민연금 수정</span>
+                <button className={styles.typeModalClose} onClick={cancelEdit} type="button">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className={styles.modalFormBody}>
+                <div className={styles.modalFormRow}>
+                  <span className={styles.modalFormLabel}>금액</span>
+                  <input
+                    type="number"
+                    className={styles.modalFormInput}
+                    value={editValues.amount || ''}
+                    onChange={e => setEditValues({ ...editValues, amount: e.target.value })}
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    placeholder="0"
+                    autoFocus
+                  />
+                  <span className={styles.modalFormUnit}>만원/월</span>
+                </div>
+                <div className={styles.modalFormRow}>
+                  <span className={styles.modalFormLabel}>수령시작</span>
+                  <input
+                    type="text"
+                    className={`${styles.periodInput} ${startDateText.length === 6 && !isPeriodValid(startDateText) ? styles.invalid : ''}`}
+                    value={formatPeriodDisplay(startDateText)}
+                    onChange={e => handlePeriodTextChange(
+                      e,
+                      setStartDateText,
+                      y => setEditValues({ ...editValues, startYear: String(y) }),
+                      m => setEditValues({ ...editValues, startMonth: String(m) })
+                    )}
+                    placeholder="YYYY.MM"
+                  />
+                </div>
+                <div className={styles.modalFormRow}>
+                  <span className={styles.modalFormLabel}>수령종료</span>
+                  <div className={styles.fieldContent}>
+                    <select
+                      className={styles.periodSelect}
+                      value={endMode}
+                      onChange={e => {
+                        const mode = e.target.value as 'none' | 'custom'
+                        setEndMode(mode)
+                        if (mode === 'none') {
+                          setEditValues({ ...editValues, endYear: '', endMonth: '' })
+                          setEndDateText('')
+                        }
+                      }}
+                    >
+                      <option value="none">종료 없음 (평생)</option>
+                      <option value="custom">직접 입력</option>
+                    </select>
+                    {endMode === 'custom' && (
+                      <input
+                        type="text"
+                        className={`${styles.periodInput} ${endDateText.length === 6 && !isPeriodValid(endDateText) ? styles.invalid : ''}`}
+                        value={formatPeriodDisplay(endDateText)}
+                        onChange={e => handlePeriodTextChange(
+                          e,
+                          setEndDateText,
+                          y => setEditValues({ ...editValues, endYear: String(y) }),
+                          m => setEditValues({ ...editValues, endMonth: String(m) })
+                        )}
+                        placeholder="YYYY.MM"
+                      />
+                    )}
+                  </div>
+                </div>
+                <div className={styles.modalFormActions}>
+                  <button className={styles.modalCancelBtn} onClick={cancelEdit} disabled={isSaving}>
+                    취소
+                  </button>
+                  <button className={styles.modalAddBtn} onClick={saveEdit} disabled={isSaving}>
+                    {isSaving ? '저장 중...' : '저장'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      </>
     )
   }
 
-  return (
-    <button className={styles.addBtn} onClick={startEdit}>
-      + {ownerLabel} 국민연금 추가
-    </button>
-  )
+  return null
 }

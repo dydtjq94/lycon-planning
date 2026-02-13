@@ -10,6 +10,8 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  X,
+  ArrowLeft,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -38,6 +40,12 @@ import {
   getDefaultRateCategory,
   getEffectiveRate,
 } from "@/lib/utils";
+import {
+  formatPeriodDisplay,
+  toPeriodRaw,
+  isPeriodValid,
+  handlePeriodTextChange,
+} from "@/lib/utils/periodInput";
 import { CHART_COLORS, categorizeExpense } from "@/lib/utils/tooltipCategories";
 import { useExpenses, useInvalidateByCategory } from "@/hooks/useFinancialData";
 import {
@@ -209,6 +217,10 @@ export function ExpenseTab({
   // 편집 중인 항목 ID
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<ExpenseItem | null>(null);
+  const [editStartType, setEditStartType] = useState<'current' | 'self-retirement' | 'spouse-retirement' | 'year'>('current');
+  const [editStartDateText, setEditStartDateText] = useState("");
+  const [editEndType, setEditEndType] = useState<'self-retirement' | 'spouse-retirement' | 'year'>('self-retirement');
+  const [editEndDateText, setEditEndDateText] = useState("");
   const [isCustomRateMode, setIsCustomRateMode] = useState(false);
   const [customRateInput, setCustomRateInput] = useState("");
 
@@ -219,6 +231,17 @@ export function ExpenseTab({
   const [newFrequency, setNewFrequency] = useState<ExpenseFrequency>("monthly");
   const [newOnetimeYear, setNewOnetimeYear] = useState(currentYear);
   const [newOnetimeMonth, setNewOnetimeMonth] = useState(currentMonth);
+  const [newOnetimeDateText, setNewOnetimeDateText] = useState(toPeriodRaw(currentYear, currentMonth));
+  const [newStartType, setNewStartType] = useState<'current' | 'self-retirement' | 'spouse-retirement' | 'year'>('current');
+  const [newStartYear, setNewStartYear] = useState(currentYear);
+  const [newStartMonth, setNewStartMonth] = useState(currentMonth);
+  const [newStartDateText, setNewStartDateText] = useState(toPeriodRaw(currentYear, currentMonth));
+  const [newEndType, setNewEndType] = useState<'self-retirement' | 'spouse-retirement' | 'year'>('self-retirement');
+  const [newEndYear, setNewEndYear] = useState(selfRetirementYear);
+  const [newEndMonth, setNewEndMonth] = useState(12);
+  const [newEndDateText, setNewEndDateText] = useState(toPeriodRaw(selfRetirementYear, 12));
+  const [newRateCategory, setNewRateCategory] = useState<'inflation' | 'income' | 'investment' | 'realEstate' | 'fixed'>('inflation');
+  const [newCustomRate, setNewCustomRate] = useState("");
 
   // 타입 선택 드롭다운
   const [showTypeMenu, setShowTypeMenu] = useState(false);
@@ -722,8 +745,19 @@ export function ExpenseTab({
     if (!addingType || !newAmount || !simulationId) return;
 
     const isOnetime = addingType === "onetime";
-    // 지출은 기본적으로 본인 은퇴까지
-    const retirementLink = isOnetime ? null : "self";
+
+    // retirement_link 결정
+    let retirementLink: string | null = null;
+    if (!isOnetime) {
+      if (newEndType === 'self-retirement') retirementLink = 'self';
+      else if (newEndType === 'spouse-retirement') retirementLink = 'spouse';
+    }
+
+    // growth_rate 결정
+    const growthRate = isOnetime ? 0
+      : newRateCategory === 'fixed'
+        ? (newCustomRate === '' ? 0 : parseFloat(newCustomRate))
+        : globalSettings.inflationRate;
 
     try {
       await createExpense({
@@ -732,15 +766,15 @@ export function ExpenseTab({
         title: newLabel || getDefaultLabel(addingType),
         amount: parseFloat(newAmount),
         frequency: isOnetime ? "monthly" : newFrequency,
-        start_year: isOnetime ? newOnetimeYear : currentYear,
-        start_month: isOnetime ? newOnetimeMonth : currentMonth,
+        start_year: isOnetime ? newOnetimeYear : newStartYear,
+        start_month: isOnetime ? newOnetimeMonth : newStartMonth,
         // retirement_link가 있으면 end_year는 null - 시뮬레이션 시점에 동적 계산
-        end_year: isOnetime ? newOnetimeYear : null,
-        end_month: isOnetime ? newOnetimeMonth : null,
-        is_fixed_to_retirement: !isOnetime,
-        retirement_link: retirementLink,
-        growth_rate: isOnetime ? 0 : DEFAULT_GLOBAL_SETTINGS.inflationRate,
-        rate_category: getDefaultRateCategory(addingType),
+        end_year: isOnetime ? newOnetimeYear : (retirementLink ? null : newEndYear),
+        end_month: isOnetime ? newOnetimeMonth : (retirementLink ? null : newEndMonth),
+        is_fixed_to_retirement: !isOnetime && retirementLink !== null,
+        retirement_link: retirementLink as 'self' | 'spouse' | null,
+        growth_rate: growthRate,
+        rate_category: newRateCategory as any,
       });
       invalidate("expenses");
       resetAddForm();
@@ -765,12 +799,24 @@ export function ExpenseTab({
   };
 
   const resetAddForm = () => {
+    setShowTypeMenu(false);
     setAddingType(null);
     setNewLabel("");
     setNewAmount("");
     setNewFrequency("monthly");
     setNewOnetimeYear(currentYear);
     setNewOnetimeMonth(currentMonth);
+    setNewOnetimeDateText(toPeriodRaw(currentYear, currentMonth));
+    setNewStartType('current');
+    setNewStartYear(currentYear);
+    setNewStartMonth(currentMonth);
+    setNewStartDateText(toPeriodRaw(currentYear, currentMonth));
+    setNewEndType('self-retirement');
+    setNewEndYear(selfRetirementYear);
+    setNewEndMonth(12);
+    setNewEndDateText(toPeriodRaw(selfRetirementYear, 12));
+    setNewRateCategory('inflation');
+    setNewCustomRate("");
   };
 
   // 항목 삭제 (DB)
@@ -797,59 +843,81 @@ export function ExpenseTab({
       rateCategory: item.rateCategory || getDefaultRateCategory(item.type),
     };
     setEditForm(itemWithCategory);
-    const isCustom = !isPresetRate(item.growthRate);
-    setIsCustomRateMode(isCustom);
-    setCustomRateInput(isCustom ? String(item.growthRate) : "");
+    // startType 결정
+    if (item.startYear === currentYear && item.startMonth === currentMonth) {
+      setEditStartType('current');
+    } else if (item.startYear === selfRetirementYear && item.startMonth === 12) {
+      setEditStartType('self-retirement');
+    } else if (hasSpouse && item.startYear === spouseRetirementYear && item.startMonth === 12) {
+      setEditStartType('spouse-retirement');
+    } else {
+      setEditStartType('year');
+    }
+    setEditStartDateText(toPeriodRaw(item.startYear, item.startMonth));
+    // endType 결정
+    if (item.endType === 'self-retirement') {
+      setEditEndType('self-retirement');
+    } else if (item.endType === 'spouse-retirement') {
+      setEditEndType('spouse-retirement');
+    } else {
+      setEditEndType('year');
+    }
+    setEditEndDateText(toPeriodRaw(item.endYear || currentYear, item.endMonth || 12));
+    if (itemWithCategory.rateCategory === 'fixed') {
+      setCustomRateInput(String(item.growthRate));
+    } else {
+      setCustomRateInput("");
+    }
   };
 
   // 편집 취소
   const cancelEdit = () => {
     setEditingId(null);
     setEditForm(null);
-    setIsCustomRateMode(false);
+    setEditStartType('current');
+    setEditEndType('self-retirement');
     setCustomRateInput("");
   };
 
   // 편집 저장 (DB)
   const saveEdit = async () => {
     if (!editForm) return;
-    const finalForm = isCustomRateMode
-      ? {
-          ...editForm,
-          growthRate: customRateInput === "" ? 0 : parseFloat(customRateInput),
-        }
-      : editForm;
+
+    // If fixed mode, use customRateInput; otherwise growthRate doesn't matter (engine uses rateCategory)
+    const finalGrowthRate = editForm.rateCategory === 'fixed'
+      ? (customRateInput === "" ? 0 : parseFloat(customRateInput))
+      : editForm.growthRate;
 
     const isFixedToRetirement =
-      finalForm.endType === "self-retirement" ||
-      finalForm.endType === "spouse-retirement";
+      editForm.endType === "self-retirement" ||
+      editForm.endType === "spouse-retirement";
 
     // retirement_link 결정: endType에 따라 'self', 'spouse', null
     const retirementLink =
-      finalForm.endType === "self-retirement"
+      editForm.endType === "self-retirement"
         ? "self"
-        : finalForm.endType === "spouse-retirement"
+        : editForm.endType === "spouse-retirement"
           ? "spouse"
           : null;
 
     // retirement_link가 있으면 end_year는 null - 시뮬레이션 시점에 동적 계산
-    const endYearToSave = retirementLink ? null : finalForm.endYear;
-    const endMonthToSave = retirementLink ? null : finalForm.endMonth;
+    const endYearToSave = retirementLink ? null : editForm.endYear;
+    const endMonthToSave = retirementLink ? null : editForm.endMonth;
 
     try {
-      await updateExpense(finalForm.id, {
-        type: uiTypeToDBType(finalForm.type),
-        title: finalForm.label,
-        amount: finalForm.amount,
-        frequency: finalForm.frequency,
-        start_year: finalForm.startYear,
-        start_month: finalForm.startMonth,
+      await updateExpense(editForm.id, {
+        type: uiTypeToDBType(editForm.type),
+        title: editForm.label,
+        amount: editForm.amount,
+        frequency: editForm.frequency,
+        start_year: editForm.startYear,
+        start_month: editForm.startMonth,
         end_year: endYearToSave,
         end_month: endMonthToSave,
         is_fixed_to_retirement: isFixedToRetirement,
         retirement_link: retirementLink,
-        growth_rate: finalForm.growthRate,
-        rate_category: finalForm.rateCategory,
+        growth_rate: finalGrowthRate,
+        rate_category: editForm.rateCategory as any,
       });
       invalidate("expenses");
       cancelEdit();
@@ -888,385 +956,40 @@ export function ExpenseTab({
   const isPresetRate = (rate: number) =>
     GROWTH_PRESETS.some((p) => p.value === rate);
 
-  // ESC 키로 드롭다운 닫기
+  // ESC 키로 모달 닫기
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && showTypeMenu) {
-        setShowTypeMenu(false);
+      if (e.key === "Escape") {
+        if (editingId) {
+          cancelEdit();
+          e.stopPropagation();
+        } else if (showTypeMenu) {
+          resetAddForm();
+          e.stopPropagation();
+        }
       }
     };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [showTypeMenu]);
-
-  // 드롭다운 외부 클릭으로 닫기
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        showTypeMenu &&
-        addButtonRef.current &&
-        !addButtonRef.current.contains(e.target as Node) &&
-        !(e.target as HTMLElement).closest(`.${styles.typeMenu}`)
-      ) {
-        setShowTypeMenu(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showTypeMenu]);
+    window.addEventListener("keydown", handleEsc, true);
+    return () => window.removeEventListener("keydown", handleEsc, true);
+  }, [showTypeMenu, editingId]);
 
   const handleTypeSelect = (type: ExpenseType) => {
     setAddingType(type);
-    setShowTypeMenu(false);
+    // 기본값 초기화
+    setNewStartType('current');
+    setNewStartYear(currentYear);
+    setNewStartMonth(currentMonth);
+    setNewEndType('self-retirement');
+    setNewEndYear(selfRetirementYear);
+    setNewEndMonth(12);
+    setNewRateCategory(getDefaultRateCategory(type));
+    setNewCustomRate("");
+    // DON'T close showTypeMenu - stay in modal for step 2
   };
 
-  // 아이템 렌더링 함수 (개별 항목)
+  // 아이템 렌더링 함수 (개별 항목) - 항상 읽기 모드
   const renderItem = (item: DisplayItem) => {
-    const isEditing = editingId === item.id;
-
-    if (isEditing && editForm) {
-      // 일시적 지출 편집
-      if (item.type === "onetime") {
-        return (
-          <div key={item.id} className={styles.editItem}>
-            <div className={styles.editRow}>
-              <span className={styles.editRowLabel}>항목</span>
-              <input
-                type="text"
-                className={styles.editLabelInput}
-                value={editForm.label}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, label: e.target.value })
-                }
-                placeholder="항목명"
-              />
-            </div>
-
-            <div className={styles.editRow}>
-              <span className={styles.editRowLabel}>금액</span>
-              <div className={styles.editField}>
-                <input
-                  type="number"
-                  className={styles.editInput}
-                  value={editForm.amount || ""}
-                  onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      amount: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.editUnit}>만원</span>
-              </div>
-            </div>
-
-            <div className={styles.editRow}>
-              <span className={styles.editRowLabel}>지출</span>
-              <div className={styles.editField}>
-                <input
-                  type="number"
-                  className={styles.editYearInput}
-                  min={1900}
-                  max={2200}
-                  value={editForm.startYear}
-                  onChange={(e) => {
-                    const year = parseInt(e.target.value) || currentYear;
-                    setEditForm({
-                      ...editForm,
-                      startYear: year,
-                      endYear: year,
-                    });
-                  }}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.editUnit}>년</span>
-                <input
-                  type="number"
-                  className={styles.editMonthInput}
-                  value={editForm.startMonth}
-                  min={1}
-                  max={12}
-                  onChange={(e) => {
-                    const month = Math.min(
-                      12,
-                      Math.max(1, parseInt(e.target.value) || 1),
-                    );
-                    setEditForm({
-                      ...editForm,
-                      startMonth: month,
-                      endMonth: month,
-                    });
-                  }}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.editUnit}>월</span>
-              </div>
-            </div>
-
-            <div className={styles.editActions}>
-              <button className={styles.cancelBtn} onClick={cancelEdit}>
-                취소
-              </button>
-              <button className={styles.saveBtn} onClick={saveEdit}>
-                저장
-              </button>
-            </div>
-          </div>
-        );
-      }
-
-      // 일반 지출 편집
-      return (
-        <div key={item.id} className={styles.editItem}>
-          <div className={styles.editRow}>
-            <span className={styles.editRowLabel}>항목</span>
-            <input
-              type="text"
-              className={styles.editLabelInput}
-              value={editForm.label}
-              onChange={(e) =>
-                setEditForm({ ...editForm, label: e.target.value })
-              }
-              placeholder="항목명"
-            />
-          </div>
-
-          <div className={styles.editRow}>
-            <span className={styles.editRowLabel}>금액</span>
-            <div className={styles.editField}>
-              <input
-                type="number"
-                className={styles.editInput}
-                value={editForm.amount || ""}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    amount: parseFloat(e.target.value) || 0,
-                  })
-                }
-              />
-              <span className={styles.editUnit}>만원</span>
-              <div className={styles.frequencyButtons}>
-                <button
-                  type="button"
-                  className={`${styles.freqBtn} ${
-                    editForm.frequency === "monthly" ? styles.active : ""
-                  }`}
-                  onClick={() =>
-                    setEditForm({ ...editForm, frequency: "monthly" })
-                  }
-                >
-                  /월
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.freqBtn} ${
-                    editForm.frequency === "yearly" ? styles.active : ""
-                  }`}
-                  onClick={() =>
-                    setEditForm({ ...editForm, frequency: "yearly" })
-                  }
-                >
-                  /년
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.editRow}>
-            <span className={styles.editRowLabel}>시작</span>
-            <div className={styles.editField}>
-              <input
-                type="number"
-                className={styles.editYearInput}
-                min={1900}
-                max={2200}
-                value={editForm.startYear}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    startYear: parseInt(e.target.value) || currentYear,
-                  })
-                }
-                onWheel={(e) => (e.target as HTMLElement).blur()}
-              />
-              <span className={styles.editUnit}>년</span>
-              <input
-                type="number"
-                className={styles.editMonthInput}
-                value={editForm.startMonth}
-                min={1}
-                max={12}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    startMonth: Math.min(
-                      12,
-                      Math.max(1, parseInt(e.target.value) || 1),
-                    ),
-                  })
-                }
-                onWheel={(e) => (e.target as HTMLElement).blur()}
-              />
-              <span className={styles.editUnit}>월</span>
-            </div>
-          </div>
-
-          <div className={styles.editRow}>
-            <span className={styles.editRowLabel}>종료</span>
-            <div className={styles.editField}>
-              <div className={styles.endTypeButtons}>
-                <button
-                  type="button"
-                  className={`${styles.endTypeBtn} ${
-                    editForm.endType === "self-retirement" ? styles.active : ""
-                  }`}
-                  onClick={() =>
-                    setEditForm({
-                      ...editForm,
-                      endType: "self-retirement",
-                    })
-                  }
-                >
-                  본인 은퇴
-                </button>
-                {hasSpouse && (
-                  <button
-                    type="button"
-                    className={`${styles.endTypeBtn} ${
-                      editForm.endType === "spouse-retirement"
-                        ? styles.active
-                        : ""
-                    }`}
-                    onClick={() =>
-                      setEditForm({
-                        ...editForm,
-                        endType: "spouse-retirement",
-                      })
-                    }
-                  >
-                    배우자 은퇴
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className={`${styles.endTypeBtn} ${
-                    editForm.endType === "custom" ? styles.active : ""
-                  }`}
-                  onClick={() =>
-                    setEditForm({
-                      ...editForm,
-                      endType: "custom",
-                      endYear: editForm.endYear || selfRetirementYear,
-                      endMonth: editForm.endMonth || 12,
-                    })
-                  }
-                >
-                  직접 입력
-                </button>
-              </div>
-              {editForm.endType === "custom" && (
-                <>
-                  <input
-                    type="number"
-                    className={styles.editYearInput}
-                    min={1900}
-                    max={2200}
-                    value={editForm.endYear || ""}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        endYear: parseInt(e.target.value) || null,
-                      })
-                    }
-                    onWheel={(e) => (e.target as HTMLElement).blur()}
-                  />
-                  <span className={styles.editUnit}>년</span>
-                  <input
-                    type="number"
-                    className={styles.editMonthInput}
-                    value={editForm.endMonth || ""}
-                    min={1}
-                    max={12}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        endMonth: Math.min(
-                          12,
-                          Math.max(1, parseInt(e.target.value) || 12),
-                        ),
-                      })
-                    }
-                    onWheel={(e) => (e.target as HTMLElement).blur()}
-                  />
-                  <span className={styles.editUnit}>월</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className={styles.editRow}>
-            <span className={styles.editRowLabel}>상승률</span>
-            <div className={styles.rateButtons}>
-              <div className={styles.customRateGroup}>
-                <span className={styles.customRateLabel}>직접 입력</span>
-                <input
-                  type="number"
-                  className={`${styles.customRateInput} ${
-                    isCustomRateMode ? styles.active : ""
-                  }`}
-                  value={customRateInput}
-                  onFocus={() => {
-                    setIsCustomRateMode(true);
-                    if (customRateInput === "") {
-                      setCustomRateInput(String(editForm.growthRate));
-                    }
-                  }}
-                  onChange={(e) => setCustomRateInput(e.target.value)}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                  placeholder="0"
-                  step="0.5"
-                />
-                <span className={styles.rateUnit}>%</span>
-              </div>
-              {GROWTH_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  className={`${styles.rateBtn} ${
-                    !isCustomRateMode && editForm.growthRate === preset.value
-                      ? styles.active
-                      : ""
-                  }`}
-                  onClick={() => {
-                    setIsCustomRateMode(false);
-                    setCustomRateInput("");
-                    setEditForm({
-                      ...editForm,
-                      growthRate: preset.value,
-                    });
-                  }}
-                >
-                  {preset.value}%
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.editActions}>
-            <button className={styles.cancelBtn} onClick={cancelEdit}>
-              취소
-            </button>
-            <button className={styles.saveBtn} onClick={saveEdit}>
-              저장
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    // 읽기 모드 - displayGrowthRate 사용 (이미 시나리오 적용됨)
+    // Always render read mode - editing is done in modal
     return (
       <div key={item.id} className={styles.expenseItem}>
         <div className={styles.itemInfo}>
@@ -1964,63 +1687,534 @@ export function ExpenseTab({
         </div>
       </div>
 
-      {/* 타입 선택 드롭다운 - portal로 body에 렌더 */}
-      {showTypeMenu &&
-        addButtonRef.current &&
-        createPortal(
-          <div
-            className={styles.typeMenu}
-            data-scenario-dropdown-portal
-            style={{
-              position: "fixed",
-              top: addButtonRef.current.getBoundingClientRect().bottom + 6,
-              left: addButtonRef.current.getBoundingClientRect().right - 150,
-              background: isDark
-                ? "rgba(34, 37, 41, 0.6)"
-                : "rgba(255, 255, 255, 0.6)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
-            }}
-          >
-            <button
-              className={styles.typeMenuItem}
-              onClick={() => handleTypeSelect("fixed")}
-            >
-              고정 지출
-            </button>
-            <button
-              className={styles.typeMenuItem}
-              onClick={() => handleTypeSelect("variable")}
-            >
-              변동 지출
-            </button>
-            <button
-              className={styles.typeMenuItem}
-              onClick={() => handleTypeSelect("onetime")}
-            >
-              일시적 지출
-            </button>
-            <button
-              className={styles.typeMenuItem}
-              onClick={() => handleTypeSelect("medical")}
-            >
-              의료비
-            </button>
-          </div>,
-          document.body,
-        )}
+      {/* 타입 선택 모달 (2-step) */}
+      {showTypeMenu && createPortal(
+        <div className={styles.typeModalOverlay} data-scenario-dropdown-portal="true" onClick={resetAddForm}>
+          <div className={styles.typeModal} onClick={e => e.stopPropagation()} style={{
+            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }}>
+            {!addingType ? (
+              // Step 1: type selection grid
+              <>
+                <div className={styles.typeModalHeader}>
+                  <span className={styles.typeModalTitle}>지출 추가</span>
+                  <button className={styles.typeModalClose} onClick={resetAddForm}><X size={18} /></button>
+                </div>
+                <div className={styles.typeGrid}>
+                  <button className={styles.typeCard} onClick={() => handleTypeSelect('fixed')}>
+                    <span className={styles.typeCardName}>고정 지출</span>
+                    <span className={styles.typeCardDesc}>보험, 구독, 관리비 등</span>
+                  </button>
+                  <button className={styles.typeCard} onClick={() => handleTypeSelect('variable')}>
+                    <span className={styles.typeCardName}>변동 지출</span>
+                    <span className={styles.typeCardDesc}>식비, 교통, 여가 등</span>
+                  </button>
+                  <button className={styles.typeCard} onClick={() => handleTypeSelect('onetime')}>
+                    <span className={styles.typeCardName}>일시적 지출</span>
+                    <span className={styles.typeCardDesc}>여행, 경조사 등</span>
+                  </button>
+                  <button className={styles.typeCard} onClick={() => handleTypeSelect('medical')}>
+                    <span className={styles.typeCardName}>의료비</span>
+                    <span className={styles.typeCardDesc}>건강, 치료 등</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              // Step 2: form inside modal
+              <>
+                <div className={styles.typeModalHeader}>
+                  <div className={styles.headerLeft}>
+                    <button className={styles.backButton} onClick={() => setAddingType(null)}><ArrowLeft size={18} /></button>
+                    <span className={styles.stepLabel}>{getDefaultLabel(addingType)} 추가</span>
+                  </div>
+                  <button className={styles.typeModalClose} onClick={resetAddForm}><X size={18} /></button>
+                </div>
+                <div className={styles.modalFormBody}>
+                  {/* 항목명 */}
+                  <div className={styles.modalFormRow}>
+                    <span className={styles.modalFormLabel}>항목명</span>
+                    <input
+                      type="text"
+                      className={styles.modalFormInput}
+                      value={newLabel}
+                      onChange={(e) => setNewLabel(e.target.value)}
+                      placeholder={getDefaultLabel(addingType)}
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* 금액 + 주기 */}
+                  <div className={styles.modalFormRow}>
+                    <span className={styles.modalFormLabel}>금액</span>
+                    <input
+                      type="number"
+                      className={styles.modalFormInput}
+                      value={newAmount}
+                      onChange={(e) => setNewAmount(e.target.value)}
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                      placeholder="0"
+                    />
+                    <span className={styles.modalFormUnit}>만원</span>
+                    {addingType !== 'onetime' && (
+                      <div className={styles.frequencyButtons}>
+                        <button
+                          type="button"
+                          className={`${styles.freqBtn} ${newFrequency === 'monthly' ? styles.active : ''}`}
+                          onClick={() => setNewFrequency('monthly')}
+                        >
+                          /월
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.freqBtn} ${newFrequency === 'yearly' ? styles.active : ''}`}
+                          onClick={() => setNewFrequency('yearly')}
+                        >
+                          /년
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 기간 */}
+                  {addingType === 'onetime' ? (
+                    <div className={styles.modalFormRow}>
+                      <span className={styles.modalFormLabel}>지출시점</span>
+                      <div className={styles.fieldContent}>
+                        <input
+                          type="text"
+                          className={`${styles.periodInput}${newOnetimeDateText.length > 0 && !isPeriodValid(newOnetimeDateText) ? ` ${styles.invalid}` : ''}`}
+                          value={formatPeriodDisplay(newOnetimeDateText)}
+                          onChange={(e) => handlePeriodTextChange(e, setNewOnetimeDateText, setNewOnetimeYear, setNewOnetimeMonth)}
+                          placeholder="2026.01"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className={styles.modalFormRow}>
+                        <span className={styles.modalFormLabel}>시작일</span>
+                        <div className={styles.fieldContent}>
+                          <select
+                            className={styles.periodSelect}
+                            value={newStartType}
+                            onChange={(e) => {
+                              const val = e.target.value as typeof newStartType;
+                              setNewStartType(val);
+                              if (val === 'current') {
+                                setNewStartYear(currentYear);
+                                setNewStartMonth(currentMonth);
+                                setNewStartDateText(toPeriodRaw(currentYear, currentMonth));
+                              } else if (val === 'self-retirement') {
+                                setNewStartYear(selfRetirementYear);
+                                setNewStartMonth(12);
+                                setNewStartDateText(toPeriodRaw(selfRetirementYear, 12));
+                              } else if (val === 'spouse-retirement') {
+                                setNewStartYear(spouseRetirementYear);
+                                setNewStartMonth(12);
+                                setNewStartDateText(toPeriodRaw(spouseRetirementYear, 12));
+                              }
+                            }}
+                          >
+                            <option value="current">현재</option>
+                            <option value="self-retirement">본인 은퇴</option>
+                            {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+                            <option value="year">직접 입력</option>
+                          </select>
+                          {newStartType === 'year' && (
+                            <input
+                              type="text"
+                              className={`${styles.periodInput}${newStartDateText.length > 0 && !isPeriodValid(newStartDateText) ? ` ${styles.invalid}` : ''}`}
+                              value={formatPeriodDisplay(newStartDateText)}
+                              onChange={(e) => handlePeriodTextChange(e, setNewStartDateText, setNewStartYear, setNewStartMonth)}
+                              placeholder="2026.01"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div className={styles.modalFormRow}>
+                        <span className={styles.modalFormLabel}>종료일</span>
+                        <div className={styles.fieldContent}>
+                          <select
+                            className={styles.periodSelect}
+                            value={newEndType}
+                            onChange={(e) => {
+                              const val = e.target.value as typeof newEndType;
+                              setNewEndType(val);
+                              if (val === 'self-retirement') {
+                                setNewEndYear(selfRetirementYear);
+                                setNewEndMonth(12);
+                                setNewEndDateText(toPeriodRaw(selfRetirementYear, 12));
+                              } else if (val === 'spouse-retirement') {
+                                setNewEndYear(spouseRetirementYear);
+                                setNewEndMonth(12);
+                                setNewEndDateText(toPeriodRaw(spouseRetirementYear, 12));
+                              }
+                            }}
+                          >
+                            <option value="self-retirement">본인 은퇴</option>
+                            {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+                            <option value="year">직접 입력</option>
+                          </select>
+                          {newEndType === 'year' && (
+                            <input
+                              type="text"
+                              className={`${styles.periodInput}${newEndDateText.length > 0 && !isPeriodValid(newEndDateText) ? ` ${styles.invalid}` : ''}`}
+                              value={formatPeriodDisplay(newEndDateText)}
+                              onChange={(e) => handlePeriodTextChange(e, setNewEndDateText, setNewEndYear, setNewEndMonth)}
+                              placeholder="2030.12"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* 상승률 (onetime 제외) */}
+                  {addingType !== 'onetime' && (() => {
+                    const defaultRate = globalSettings.inflationRate;
+                    const addEffectiveRate = getEffectiveRate(
+                      defaultRate,
+                      newRateCategory,
+                      globalSettings.scenarioMode,
+                      globalSettings
+                    );
+                    return (
+                      <div className={styles.modalFormRow}>
+                        <span className={styles.modalFormLabel}>상승률</span>
+                        <div className={styles.fieldContent}>
+                          {newRateCategory !== 'fixed' && (
+                            <span className={styles.rateValue}>{addEffectiveRate}%</span>
+                          )}
+                          {newRateCategory === 'fixed' && (
+                            <>
+                              <input
+                                type="number"
+                                className={styles.customRateInput}
+                                value={newCustomRate}
+                                onChange={(e) => setNewCustomRate(e.target.value)}
+                                onWheel={(e) => (e.target as HTMLElement).blur()}
+                                placeholder="0"
+                                step="0.5"
+                              />
+                              <span className={styles.rateUnit}>%</span>
+                            </>
+                          )}
+                          <div className={styles.rateToggle}>
+                            <button
+                              type="button"
+                              className={`${styles.rateToggleBtn} ${newRateCategory !== 'fixed' ? styles.active : ''}`}
+                              onClick={() => {
+                                setNewRateCategory(getDefaultRateCategory(addingType));
+                                setNewCustomRate("");
+                              }}
+                            >
+                              시뮬레이션 가정
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.rateToggleBtn} ${newRateCategory === 'fixed' ? styles.active : ''}`}
+                              onClick={() => {
+                                setNewRateCategory('fixed');
+                                if (newCustomRate === '') setNewCustomRate("0");
+                              }}
+                            >
+                              직접 입력
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 하단 버튼 */}
+                  <div className={styles.modalFormActions}>
+                    <button className={styles.modalCancelBtn} onClick={resetAddForm}>
+                      취소
+                    </button>
+                    <button
+                      className={styles.modalAddBtn}
+                      onClick={handleAdd}
+                      disabled={
+                        !newAmount ||
+                        (addingType === 'onetime' && !isPeriodValid(newOnetimeDateText)) ||
+                        (addingType !== 'onetime' && (
+                          (newStartType === 'year' && !isPeriodValid(newStartDateText)) ||
+                          (newEndType === 'year' && !isPeriodValid(newEndDateText))
+                        ))
+                      }
+                    >
+                      추가
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 편집 모달 */}
+      {editingId && editForm && createPortal(
+        <div className={styles.typeModalOverlay} data-scenario-dropdown-portal="true" onClick={cancelEdit}>
+          <div className={styles.typeModal} onClick={e => e.stopPropagation()} style={{
+            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }}>
+            <div className={styles.typeModalHeader}>
+              <span className={styles.stepLabel}>{getDefaultLabel(editForm.type)} 수정</span>
+              <button className={styles.typeModalClose} onClick={cancelEdit}><X size={18} /></button>
+            </div>
+            <div className={styles.modalFormBody}>
+              {/* 항목명 */}
+              <div className={styles.modalFormRow}>
+                <span className={styles.modalFormLabel}>항목명</span>
+                <input
+                  type="text"
+                  className={styles.modalFormInput}
+                  value={editForm.label}
+                  onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
+                  placeholder="항목명"
+                />
+              </div>
+
+              {/* 금액 + 주기 */}
+              <div className={styles.modalFormRow}>
+                <span className={styles.modalFormLabel}>금액</span>
+                <input
+                  type="number"
+                  className={styles.modalFormInput}
+                  value={editForm.amount || ''}
+                  onChange={(e) => setEditForm({ ...editForm, amount: parseFloat(e.target.value) || 0 })}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
+                />
+                <span className={styles.modalFormUnit}>만원</span>
+                {editForm.type !== 'onetime' && (
+                  <div className={styles.frequencyButtons}>
+                    <button
+                      type="button"
+                      className={`${styles.freqBtn} ${editForm.frequency === 'monthly' ? styles.active : ''}`}
+                      onClick={() => setEditForm({ ...editForm, frequency: 'monthly' })}
+                    >
+                      /월
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.freqBtn} ${editForm.frequency === 'yearly' ? styles.active : ''}`}
+                      onClick={() => setEditForm({ ...editForm, frequency: 'yearly' })}
+                    >
+                      /년
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 기간 */}
+              {editForm.type === 'onetime' ? (
+                <div className={styles.modalFormRow}>
+                  <span className={styles.modalFormLabel}>지출시점</span>
+                  <div className={styles.fieldContent}>
+                    <input
+                      type="text"
+                      className={`${styles.periodInput}${editStartDateText.length > 0 && !isPeriodValid(editStartDateText) ? ` ${styles.invalid}` : ''}`}
+                      value={formatPeriodDisplay(editStartDateText)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setEditStartDateText(raw);
+                        if (raw.length >= 4) {
+                          const y = parseInt(raw.slice(0, 4));
+                          if (!isNaN(y)) setEditForm({ ...editForm, startYear: y, endYear: y });
+                        }
+                        if (raw.length >= 5) {
+                          const m = parseInt(raw.slice(4));
+                          if (!isNaN(m) && m >= 1 && m <= 12) setEditForm({ ...editForm, startMonth: m, endMonth: m });
+                        }
+                      }}
+                      placeholder="2026.01"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className={styles.modalFormRow}>
+                    <span className={styles.modalFormLabel}>시작일</span>
+                    <div className={styles.fieldContent}>
+                      <select
+                        className={styles.periodSelect}
+                        value={editStartType}
+                        onChange={(e) => {
+                          const val = e.target.value as typeof editStartType;
+                          setEditStartType(val);
+                          if (val === 'current') {
+                            setEditForm({ ...editForm, startYear: currentYear, startMonth: currentMonth });
+                            setEditStartDateText(toPeriodRaw(currentYear, currentMonth));
+                          } else if (val === 'self-retirement') {
+                            setEditForm({ ...editForm, startYear: selfRetirementYear, startMonth: 12 });
+                            setEditStartDateText(toPeriodRaw(selfRetirementYear, 12));
+                          } else if (val === 'spouse-retirement') {
+                            setEditForm({ ...editForm, startYear: spouseRetirementYear, startMonth: 12 });
+                            setEditStartDateText(toPeriodRaw(spouseRetirementYear, 12));
+                          }
+                        }}
+                      >
+                        <option value="current">현재</option>
+                        <option value="self-retirement">본인 은퇴</option>
+                        {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+                        <option value="year">직접 입력</option>
+                      </select>
+                      {editStartType === 'year' && (
+                        <input
+                          type="text"
+                          className={`${styles.periodInput}${editStartDateText.length > 0 && !isPeriodValid(editStartDateText) ? ` ${styles.invalid}` : ''}`}
+                          value={formatPeriodDisplay(editStartDateText)}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/\D/g, '').slice(0, 6);
+                            setEditStartDateText(raw);
+                            if (raw.length >= 4) {
+                              const y = parseInt(raw.slice(0, 4));
+                              if (!isNaN(y)) setEditForm({ ...editForm, startYear: y });
+                            }
+                            if (raw.length >= 5) {
+                              const m = parseInt(raw.slice(4));
+                              if (!isNaN(m) && m >= 1 && m <= 12) setEditForm({ ...editForm, startMonth: m });
+                            }
+                          }}
+                          placeholder="2026.01"
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className={styles.modalFormRow}>
+                    <span className={styles.modalFormLabel}>종료일</span>
+                    <div className={styles.fieldContent}>
+                      <select
+                        className={styles.periodSelect}
+                        value={editEndType}
+                        onChange={(e) => {
+                          const val = e.target.value as typeof editEndType;
+                          setEditEndType(val);
+                          if (val === 'self-retirement') {
+                            setEditForm({ ...editForm, endYear: selfRetirementYear, endMonth: 12 });
+                            setEditEndDateText(toPeriodRaw(selfRetirementYear, 12));
+                          } else if (val === 'spouse-retirement') {
+                            setEditForm({ ...editForm, endYear: spouseRetirementYear, endMonth: 12 });
+                            setEditEndDateText(toPeriodRaw(spouseRetirementYear, 12));
+                          }
+                        }}
+                      >
+                        <option value="self-retirement">본인 은퇴</option>
+                        {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+                        <option value="year">직접 입력</option>
+                      </select>
+                      {editEndType === 'year' && (
+                        <input
+                          type="text"
+                          className={`${styles.periodInput}${editEndDateText.length > 0 && !isPeriodValid(editEndDateText) ? ` ${styles.invalid}` : ''}`}
+                          value={formatPeriodDisplay(editEndDateText)}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/\D/g, '').slice(0, 6);
+                            setEditEndDateText(raw);
+                            if (raw.length >= 4) {
+                              const y = parseInt(raw.slice(0, 4));
+                              if (!isNaN(y)) setEditForm({ ...editForm, endYear: y });
+                            }
+                            if (raw.length >= 5) {
+                              const m = parseInt(raw.slice(4));
+                              if (!isNaN(m) && m >= 1 && m <= 12) setEditForm({ ...editForm, endMonth: m });
+                            }
+                          }}
+                          placeholder="2030.12"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 상승률 (onetime 제외) */}
+              {editForm.type !== 'onetime' && (() => {
+                const defaultRate = globalSettings.inflationRate;
+                const editEffectiveRate = getEffectiveRate(
+                  defaultRate,
+                  editForm.rateCategory,
+                  globalSettings.scenarioMode,
+                  globalSettings
+                );
+                return (
+                  <div className={styles.modalFormRow}>
+                    <span className={styles.modalFormLabel}>상승률</span>
+                    <div className={styles.fieldContent}>
+                      {editForm.rateCategory !== 'fixed' && (
+                        <span className={styles.rateValue}>{editEffectiveRate}%</span>
+                      )}
+                      {editForm.rateCategory === 'fixed' && (
+                        <>
+                          <input
+                            type="number"
+                            className={styles.customRateInput}
+                            value={editForm.growthRate ?? ''}
+                            onChange={(e) => setEditForm({ ...editForm, growthRate: parseFloat(e.target.value) || 0 })}
+                            onWheel={(e) => (e.target as HTMLElement).blur()}
+                            placeholder="0"
+                            step="0.5"
+                          />
+                          <span className={styles.rateUnit}>%</span>
+                        </>
+                      )}
+                      <div className={styles.rateToggle}>
+                        <button
+                          type="button"
+                          className={`${styles.rateToggleBtn} ${editForm.rateCategory !== 'fixed' ? styles.active : ''}`}
+                          onClick={() => {
+                            setEditForm({ ...editForm, rateCategory: getDefaultRateCategory(editForm.type) });
+                          }}
+                        >
+                          시뮬레이션 가정
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.rateToggleBtn} ${editForm.rateCategory === 'fixed' ? styles.active : ''}`}
+                          onClick={() => {
+                            setEditForm({ ...editForm, rateCategory: 'fixed' });
+                          }}
+                        >
+                          직접 입력
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 하단 버튼 */}
+              <div className={styles.modalFormActions}>
+                <button className={styles.modalCancelBtn} onClick={cancelEdit}>
+                  취소
+                </button>
+                <button className={styles.modalAddBtn} onClick={saveEdit}>
+                  저장
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {isExpanded && (
         <>
           <div className={styles.flatList}>
-            {displayItems.length === 0 && !addingType && (
+            {displayItems.length === 0 && (
               <p className={styles.emptyHint}>
                 아직 등록된 지출이 없습니다. 오른쪽 + 버튼으로 추가하세요.
               </p>
             )}
             {displayItems.map((item) => renderItem(item))}
-            {renderInlineAddForm()}
           </div>
 
           <div className={styles.expenseSection}>
@@ -2079,117 +2273,40 @@ export function ExpenseTab({
                   </div>
                 ) : (
                   <>
-                    {medicalItems.map((item) => {
-                      if (editingId === item.id && editForm) {
-                        return (
-                          <div key={item.id} className={styles.expenseItem}>
-                            <div className={styles.editMode}>
-                              <div className={styles.editRow}>
-                                <span className={styles.editRowLabel}>
-                                  항목명
-                                </span>
-                                <input
-                                  type="text"
-                                  className={styles.editLabelInput}
-                                  value={editForm.label}
-                                  onChange={(e) =>
-                                    setEditForm({
-                                      ...editForm,
-                                      label: e.target.value,
-                                    })
-                                  }
-                                />
-                              </div>
-                              <div className={styles.editRow}>
-                                <span className={styles.editRowLabel}>
-                                  금액
-                                </span>
-                                <div className={styles.editField}>
-                                  <input
-                                    type="number"
-                                    className={styles.editAmountInput}
-                                    value={editForm.amount}
-                                    onChange={(e) =>
-                                      setEditForm({
-                                        ...editForm,
-                                        amount: parseInt(e.target.value) || 0,
-                                      })
-                                    }
-                                    onWheel={(e) =>
-                                      (e.target as HTMLElement).blur()
-                                    }
-                                  />
-                                  <span className={styles.editUnit}>만원</span>
-                                  <select
-                                    className={styles.editSelect}
-                                    value={editForm.frequency}
-                                    onChange={(e) =>
-                                      setEditForm({
-                                        ...editForm,
-                                        frequency: e.target
-                                          .value as ExpenseFrequency,
-                                      })
-                                    }
-                                  >
-                                    <option value="monthly">월</option>
-                                    <option value="yearly">년</option>
-                                  </select>
-                                </div>
-                              </div>
-                              <div className={styles.editActions}>
-                                <button
-                                  className={styles.saveBtn}
-                                  onClick={saveEdit}
-                                >
-                                  저장
-                                </button>
-                                <button
-                                  className={styles.cancelBtn}
-                                  onClick={() => setEditingId(null)}
-                                >
-                                  취소
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div key={item.id} className={styles.expenseItem}>
-                          <div className={styles.itemInfo}>
-                            <span className={styles.itemName}>
-                              {item.label}
+                    {medicalItems.map((item) => (
+                      <div key={item.id} className={styles.expenseItem}>
+                        <div className={styles.itemInfo}>
+                          <span className={styles.itemName}>
+                            {item.label}
+                          </span>
+                          <span className={styles.itemMeta}>
+                            {`${item.startYear}년 ~ ${item.endYear}년 | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
+                          </span>
+                        </div>
+                        <div className={styles.itemRight}>
+                          <span className={styles.itemAmount}>
+                            {formatMoney(item.amount)}
+                            <span className={styles.itemFrequency}>
+                              /{item.frequency === "monthly" ? "월" : "년"}
                             </span>
-                            <span className={styles.itemMeta}>
-                              {`${item.startYear}년 ~ ${item.endYear}년 | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
-                            </span>
-                          </div>
-                          <div className={styles.itemRight}>
-                            <span className={styles.itemAmount}>
-                              {formatMoney(item.amount)}
-                              <span className={styles.itemFrequency}>
-                                /{item.frequency === "monthly" ? "월" : "년"}
-                              </span>
-                            </span>
-                            <div className={styles.itemActions}>
-                              <button
-                                className={styles.editBtn}
-                                onClick={() => startEdit(item)}
-                              >
-                                <Pencil size={14} />
-                              </button>
-                              <button
-                                className={styles.deleteBtn}
-                                onClick={() => handleDelete(item.id)}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
+                          </span>
+                          <div className={styles.itemActions}>
+                            <button
+                              className={styles.editBtn}
+                              onClick={() => startEdit(item)}
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              className={styles.deleteBtn}
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </div>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
 
                     <div className={styles.medicalActions}>
                       <button

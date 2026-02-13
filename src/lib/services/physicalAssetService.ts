@@ -72,6 +72,7 @@ export async function createPhysicalAsset(input: PhysicalAssetInput): Promise<Ph
       purchase_year: convertedInput.purchase_year,
       purchase_month: convertedInput.purchase_month,
       annual_rate: convertedInput.annual_rate ?? 0,
+      rate_category: convertedInput.rate_category || 'inflation',
       has_loan: convertedInput.has_loan ?? false,
       financing_type: convertedInput.financing_type,
       loan_amount: convertedInput.loan_amount,

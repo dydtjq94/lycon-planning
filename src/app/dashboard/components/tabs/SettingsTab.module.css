@@ -1,29 +1,182 @@
+/* Settings Layout - Sidebar + Content Panel */
 .container {
-  padding: 32px;
+  height: calc(100vh - 48px);
+  margin: -24px 0;
+  overflow: hidden;
+}
+
+.settingsLayout {
+  display: flex;
   height: 100%;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--dashboard-border);
+  background: var(--dashboard-card-bg);
   overflow-y: auto;
 }
 
-.content {
+.sidebarTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+  padding: 24px 20px 16px;
+  margin: 0;
+}
+
+.sidebarMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px;
+  flex: 1;
+}
+
+.sidebarItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
   width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1.5fr;
-  gap: 32px;
-  align-items: start;
 }
 
-.leftColumn {
+.sidebarItem:hover {
+  background: var(--dashboard-hover-bg);
+}
+
+.sidebarItemActive {
+  background: color-mix(in srgb, var(--accent-color, #007aff) 12%, transparent);
+  color: var(--accent-color, #007aff);
+}
+
+.sidebarItemActive:hover {
+  background: color-mix(in srgb, var(--accent-color, #007aff) 16%, transparent);
+}
+
+.sidebarItemIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* Sidebar bottom - version + logout */
+.sidebarBottom {
+  margin-top: auto;
+  border-top: 1px solid var(--dashboard-border);
+  padding: 8px;
+}
+
+.sidebarVersion {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+  padding: 6px 12px;
+  text-align: center;
+}
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ef4444;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: left;
+}
+
+.logoutButton:hover {
+  background: color-mix(in srgb, #ef4444 10%, var(--dashboard-card-bg));
+}
+
+:global(.dark) .logoutButton:hover {
+  background: color-mix(in srgb, #ef4444 15%, var(--dashboard-card-bg));
+}
+
+/* Content Panel */
+.contentPanel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+.contentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  max-width: 640px;
+}
+
+.contentTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+  margin: 0;
+}
+
+.ownerToggle {
+  display: flex;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ownerToggleBtn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  border-right: 1px solid var(--dashboard-border);
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ownerToggleBtn:last-child {
+  border-right: none;
+}
+
+.ownerToggleBtn:hover {
+  background: var(--dashboard-hover-bg);
+}
+
+.ownerToggleBtnActive {
+  background: color-mix(in srgb, var(--accent-color, #007aff) 12%, transparent);
+  color: var(--accent-color, #007aff);
+}
+
+.contentBody {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  max-width: 640px;
 }
 
-.rightColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
+/* Section (reused within content panels) */
 .section {
   display: flex;
   flex-direction: column;
@@ -45,77 +198,50 @@
   overflow: hidden;
 }
 
-.menuItem {
+/* Profile info row */
+.profileRow {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  padding: 16px;
-  background: none;
-  border: none;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--dashboard-border);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s;
-  color: var(--dashboard-text-secondary);
 }
 
-.menuItem:last-child {
+.profileRow:last-child {
   border-bottom: none;
 }
 
-.menuItem:hover {
-  background: var(--dashboard-hover-bg);
+.profileLabel {
+  font-size: 14px;
+  color: var(--dashboard-text-secondary);
+  width: 80px;
+  flex-shrink: 0;
 }
 
-.menuInfo {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.menuLabel {
-  font-size: 15px;
-  font-weight: 500;
+.profileValue {
+  font-size: 14px;
   color: var(--dashboard-text);
 }
 
-.menuValue {
-  font-size: 13px;
+.profileEditBtn {
+  margin-left: auto;
+  background: none;
+  border: none;
   color: var(--dashboard-text-muted);
-}
-
-.chevron {
-  color: var(--dashboard-text-muted);
-}
-
-.logoutButton {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 16px;
-  background: none;
-  border: none;
-  font-size: 15px;
-  font-weight: 500;
-  color: #ef4444;
-  cursor: pointer;
-  transition: background 0.15s;
-  border-radius: 12px;
+  flex-shrink: 0;
 }
 
-.logoutButton:hover {
-  background: color-mix(in srgb, #ef4444 10%, var(--dashboard-card-bg));
+.profileEditBtn:hover {
+  color: var(--dashboard-text-secondary);
 }
 
-:global(.dark) .logoutButton:hover {
-  background: color-mix(in srgb, #ef4444 15%, var(--dashboard-card-bg));
-}
-
-/* 색상 모드 토글 */
+/* Color mode toggle */
 .colorModeContainer {
   display: flex;
   gap: 12px;
@@ -149,7 +275,7 @@
   color: var(--accent-color, #007aff);
 }
 
-/* 액센트 색상 - 5x2 카드 그리드 (차트 색상과 동일 패턴) */
+/* Accent color grid */
 .accentGrid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -189,7 +315,7 @@
   color: var(--dashboard-text-secondary);
 }
 
-/* 차트 색상 - 리스트형 (겹치는 동그라미) */
+/* Chart theme grid */
 .chartList {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -237,11 +363,6 @@
 }
 
 /* Family members */
-.familySection {
-  display: flex;
-  flex-direction: column;
-}
-
 .memberRow {
   display: flex;
   align-items: center;
@@ -414,15 +535,247 @@
   padding: 8px 16px 4px;
 }
 
-/* Responsive */
-@media (max-width: 1100px) {
-  .content {
-    grid-template-columns: 1fr;
-  }
+/* Account management */
+.accountSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
+.accountSectionDesc {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+}
+
+.accountSectionHeader .accountAddBtn {
+  margin-left: auto;
+}
+
+.accountAddBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  background: none;
+  border: 1px dashed var(--dashboard-border);
+  border-radius: 6px;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.accountAddBtn:hover {
+  border-color: var(--accent-color, #007aff);
+  color: var(--accent-color, #007aff);
+}
+
+.accountRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--dashboard-border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.accountRow:last-child {
+  border-bottom: none;
+}
+
+.accountRowNoBottomBorder {
+  border-bottom: none;
+}
+
+.accountRow:hover {
+  background: var(--dashboard-hover-bg);
+}
+
+.accountLogo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.accountLogoPlaceholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--dashboard-hover-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
+}
+
+.accountInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.accountName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--dashboard-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.accountDefaultBadge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent-color, #007aff) 12%, transparent);
+  color: var(--accent-color, #007aff);
+  font-weight: 600;
+}
+
+.accountMeta {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  margin-top: 2px;
+}
+
+.accountBalance {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  white-space: nowrap;
+}
+
+.linkedPayments {
+  padding: 0 16px 12px 28px;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.linkedPaymentRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.treeLine {
+  width: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.treeTee,
+.treeCorner {
+  display: block;
+  width: 12px;
+  height: 20px;
+  border-left: 1px solid var(--dashboard-border);
+  border-bottom: 1px solid var(--dashboard-border);
+  border-radius: 0 0 0 4px;
+}
+
+.treeCorner {
+  height: 14px;
+}
+
+.linkedPaymentLogo {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.linkedPaymentLogoPlaceholder {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--dashboard-hover-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
+}
+
+.linkedPaymentName {
+  font-size: 12px;
+  color: var(--dashboard-text-secondary);
+}
+
+.linkedPaymentType {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+  padding: 1px 6px;
+  background: var(--dashboard-hover-bg);
+  border-radius: 4px;
+}
+
+.accountEmptyRow {
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--dashboard-text-muted);
+}
+
+/* Placeholder content */
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--dashboard-text-muted);
+  font-size: 14px;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .container {
+  .settingsLayout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--dashboard-border);
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .sidebarTitle {
+    display: none;
+  }
+
+  .sidebarMenu {
+    flex-direction: row;
+    gap: 0;
+    padding: 8px;
+  }
+
+  .sidebarItem {
+    white-space: nowrap;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .sidebarBottom {
+    border-top: none;
+    border-left: 1px solid var(--dashboard-border);
+    padding: 8px;
+    display: flex;
+    align-items: center;
+  }
+
+  .contentPanel {
     padding: 24px;
   }
 }

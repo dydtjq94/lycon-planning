@@ -217,6 +217,7 @@ export interface RetirementPension {
   start_age: number | null
   receiving_years: number | null
   return_rate: number
+  rate_category: RateCategory
   memo: string | null
   is_active: boolean
   created_at: string
@@ -235,6 +236,7 @@ export interface RetirementPensionInput {
   start_age?: number | null
   receiving_years?: number | null
   return_rate?: number
+  rate_category?: RateCategory
   memo?: string | null
 }
 
@@ -260,6 +262,7 @@ export interface PersonalPension {
   start_age: number | null
   receiving_years: number | null
   return_rate: number
+  rate_category: RateCategory
   isa_maturity_year: number | null
   isa_maturity_month: number | null
   isa_maturity_strategy: IsaMaturityStrategy | null
@@ -283,6 +286,7 @@ export interface PersonalPensionInput {
   start_age?: number | null
   receiving_years?: number | null
   return_rate?: number
+  rate_category?: RateCategory
   isa_maturity_year?: number | null
   isa_maturity_month?: number | null
   isa_maturity_strategy?: IsaMaturityStrategy | null
@@ -406,6 +410,7 @@ export interface PhysicalAsset {
   purchase_year: number | null
   purchase_month: number | null
   annual_rate: number  // +상승, -감가
+  rate_category: RateCategory
 
   // 대출/할부
   has_loan: boolean
@@ -439,6 +444,7 @@ export interface PhysicalAssetInput {
   purchase_year?: number | null
   purchase_month?: number | null
   annual_rate?: number
+  rate_category?: RateCategory
   has_loan?: boolean
   financing_type?: FinancingType | null
   loan_amount?: number | null
@@ -523,6 +529,7 @@ export interface Debt {
   simulation_id: string
   type: DebtType
   title: string
+  owner: Owner
   principal: number  // 원 (서비스에서 만원으로 변환)
   current_balance: number | null
   interest_rate: number
@@ -547,6 +554,7 @@ export interface DebtInput {
   simulation_id: string
   type: DebtType
   title: string
+  owner?: Owner
   principal: number
   current_balance?: number | null
   interest_rate: number

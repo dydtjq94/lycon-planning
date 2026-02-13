@@ -2067,14 +2067,15 @@ function SearchResultChart({
 }
 
 // 기간 옵션
-type ChartPeriod = "1M" | "3M" | "6M" | "1Y" | "3Y" | "ALL";
+type ChartPeriod = "ALL" | "1M" | "3M" | "1Y" | "3Y" | "5Y" | "10Y";
 const PERIOD_OPTIONS: { value: ChartPeriod; label: string; days: number }[] = [
+  { value: "ALL", label: "전체", days: 0 },
   { value: "1M", label: "1개월", days: 30 },
   { value: "3M", label: "3개월", days: 90 },
-  { value: "6M", label: "6개월", days: 180 },
   { value: "1Y", label: "1년", days: 365 },
   { value: "3Y", label: "3년", days: 1095 },
-  { value: "ALL", label: "전체", days: 0 },
+  { value: "5Y", label: "5년", days: 1825 },
+  { value: "10Y", label: "10년", days: 3650 },
 ];
 
 // 스파크라인 미니 차트
@@ -2186,7 +2187,7 @@ function PortfolioValueChart({
   chartScaleColors: { gridColor: string; tickColor: string; textColor: string; textSecondary: string; tooltipBg: string; tooltipBorder: string; tooltipText: string; doughnutBorder: string; emptyState: string };
   toRgba: (hex: string, alpha: number) => string;
 }) {
-  const [period, setPeriod] = useState<ChartPeriod>("3M");
+  const [period, setPeriod] = useState<ChartPeriod>("ALL");
   const [chartReady, setChartReady] = useState(false);
   const loading = priceCacheLoading;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2433,10 +2434,13 @@ function PortfolioValueChart({
     .map((tx, i) => (tx && tx.length > 0 ? i : -1))
     .filter((i) => i >= 0);
 
+  // ref로 최신 txIndices를 유지 (Chart.js 플러그인 stale 클로저 방지)
+  const txIndicesRef = useRef(txIndices);
+  txIndicesRef.current = txIndices;
 
-  // 거래일 세로 점선 플러그인
+  // 거래일 세로 점선 플러그인 (ref 참조로 항상 최신 인덱스 사용)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const txVerticalLinePlugin: any = {
+  const txVerticalLinePlugin = useRef<any>({
     id: "txVerticalLines",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     afterDatasetsDraw: (chart: any) => {
@@ -2444,7 +2448,7 @@ function PortfolioValueChart({
       if (!chartArea || !scales?.x) return;
 
       const xScale = scales.x;
-      const dataLength = chartData.labels.length;
+      const dataLength = chart.data.labels?.length || 0;
       if (dataLength <= 1) return;
 
       ctx.save();
@@ -2452,8 +2456,7 @@ function PortfolioValueChart({
       ctx.strokeStyle = "rgba(156, 163, 175, 0.5)";
       ctx.lineWidth = 1;
 
-      txIndices.forEach((idx: number) => {
-        // 카테고리 스케일의 실제 픽셀 위치 계산 (스케일 패딩 고려)
+      txIndicesRef.current.forEach((idx: number) => {
         const x = xScale.getPixelForValue(idx);
         ctx.beginPath();
         ctx.moveTo(x, chartArea.top);
@@ -2463,7 +2466,7 @@ function PortfolioValueChart({
 
       ctx.restore();
     },
-  };
+  }).current;
 
   const zeroPlData = chartReady ? plData : plData.map(() => 0);
   const zeroValueData = chartReady ? chartData.value : chartData.value.map(() => 0);

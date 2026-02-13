@@ -198,119 +198,6 @@
   color: #ff3b30;
 }
 
-/* ========== 편집 모드 ========== */
-.editItem {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px 0;
-  border-bottom: 1px solid var(--dashboard-border);
-}
-
-.editRow {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.editRowLabel {
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
-  width: 50px;
-  flex-shrink: 0;
-  padding-top: 8px;
-}
-
-.editField {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.editInput {
-  width: 120px;
-  padding: 8px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-  border: none;
-  border-bottom: 1px solid var(--dashboard-border);
-  outline: none;
-  background: transparent;
-  text-align: right;
-}
-
-.editInput:focus {
-  border-bottom-color: var(--accent-color, #007aff);
-}
-
-.editInput::-webkit-outer-spin-button,
-.editInput::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.editInputSmall {
-  width: 60px;
-  padding: 8px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-  border: none;
-  border-bottom: 1px solid var(--dashboard-border);
-  outline: none;
-  background: transparent;
-  text-align: center;
-}
-
-.editInputSmall:focus {
-  border-bottom-color: var(--accent-color, #007aff);
-}
-
-.editInputSmall::-webkit-outer-spin-button,
-.editInputSmall::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.editUnit {
-  font-size: 14px;
-  color: var(--dashboard-text-secondary);
-}
-
-.editInputWide {
-  width: 200px;
-  padding: 8px 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-  border: none;
-  border-bottom: 1px solid var(--dashboard-border);
-  outline: none;
-  background: transparent;
-}
-
-.editInputWide:focus {
-  border-bottom-color: var(--accent-color, #007aff);
-}
-
-.editSelect {
-  padding: 8px 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-  background: var(--dashboard-hover-bg);
-  border: none;
-  border-radius: 6px;
-  outline: none;
-  cursor: pointer;
-}
-
-.editSelect:focus {
-  background: var(--dashboard-active-bg);
-}
-
 /* 유형 선택 버튼 */
 .typeButtons {
   display: flex;
@@ -336,43 +223,6 @@
 .typeBtn.active {
   background: var(--dashboard-text);
   color: var(--dashboard-bg);
-}
-
-/* 편집 액션 */
-.editActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 8px;
-}
-
-.cancelBtn {
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--dashboard-text-secondary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-.cancelBtn:hover {
-  color: var(--dashboard-text);
-}
-
-.saveBtn {
-  padding: 8px 20px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #fff;
-  background: var(--accent-color, #007aff);
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.saveBtn:hover {
-  filter: brightness(0.9);
 }
 
 /* 추가 버튼 */
@@ -439,30 +289,23 @@
   font-size: 14px;
 }
 
-/* 타입 선택 드롭다운 */
-.typeMenu {
-  border-radius: 10px;
-  z-index: 300;
-  padding: 6px;
-  min-width: 150px;
-  animation: glassEnter 0.2s ease-out;
-}
-
-.typeMenuItem {
-  display: block;
-  width: 100%;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--dashboard-text);
+/* 타입 선택 모달 */
+.typeModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  text-align: left;
 }
 
-.typeMenuItem:hover {
-  background: var(--dashboard-hover-bg);
+.typeModal {
+  width: 90%;
+  max-width: 480px;
+  border-radius: 16px;
+  padding: 20px 24px 24px;
+  animation: glassEnter 0.2s ease-out;
 }
 
 @keyframes glassEnter {
@@ -474,6 +317,242 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.typeModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.typeModalTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stepLabel {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--dashboard-text-muted);
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.backButton:hover {
+  color: var(--dashboard-text);
+}
+
+.typeModalClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.typeModalClose:hover {
+  color: var(--dashboard-text);
+}
+
+.typeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.typeCard {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  background: var(--dashboard-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.typeCard:hover {
+  border-color: var(--accent-color, #007aff);
+}
+
+.typeCardName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text);
+}
+
+.typeCardDesc {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+}
+
+/* 모달 내 폼 (step 2) */
+.modalFormBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 4px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.modalFormRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modalFormLabel {
+  width: 50px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--dashboard-text-secondary);
+}
+
+.modalFormInput {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--dashboard-text);
+  background-color: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.modalFormInput:focus {
+  border-color: var(--accent-color, #007aff);
+}
+
+.modalFormInput::-webkit-outer-spin-button,
+.modalFormInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.modalFormInput[type="number"] {
+  -moz-appearance: textfield;
+  text-align: right;
+}
+
+.modalFormInputSmall {
+  width: 60px;
+  padding: 8px 6px;
+  font-size: 13px;
+  color: var(--dashboard-text);
+  background-color: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 8px;
+  outline: none;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.modalFormInputSmall:focus {
+  border-color: var(--accent-color, #007aff);
+}
+
+.modalFormInputSmall::-webkit-outer-spin-button,
+.modalFormInputSmall::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.modalFormInputSmall[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.modalFormUnit {
+  font-size: 12px;
+  color: var(--dashboard-text-secondary);
+  flex-shrink: 0;
+}
+
+.modalFormSelect {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.modalFormSelect:focus {
+  border-color: var(--accent-color, #007aff);
+}
+
+.modalFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.modalCancelBtn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--dashboard-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.modalCancelBtn:hover {
+  color: var(--dashboard-text);
+}
+
+.modalAddBtn {
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--accent-color, #007aff);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.modalAddBtn:hover {
+  filter: brightness(0.9);
+}
+
+.modalAddBtn:disabled {
+  background: var(--dashboard-text-secondary);
+  cursor: not-allowed;
 }
 
 /* 플랫 리스트 */
@@ -492,11 +571,190 @@
   margin: 0;
 }
 
+/* 기간 선택 드롭다운 */
+.periodSelect {
+  width: 120px;
+  padding: 5px 8px;
+  font-size: 13px;
+  color: var(--dashboard-text);
+  background-color: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.periodSelect:focus {
+  border-color: var(--accent-color, #007aff);
+}
+
+.periodSelect:hover {
+  border-color: var(--dashboard-text-muted);
+}
+
+/* YYYYMM 텍스트 입력 */
+.periodInput {
+  width: 80px;
+  padding: 5px 8px;
+  font-size: 13px;
+  color: var(--dashboard-text);
+  background-color: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.periodInput:focus {
+  border-color: var(--accent-color, #007aff);
+}
+
+.periodInput:hover {
+  border-color: var(--dashboard-text-muted);
+}
+
+.periodInput::placeholder {
+  color: var(--dashboard-text-muted);
+}
+
+.periodInput.invalid {
+  border-color: #ff3b30;
+}
+
+.periodInput.invalid:focus {
+  border-color: #ff3b30;
+}
+
+.periodSeparator {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
+}
+
+.fieldContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 상승률 토글 */
+.rateValue {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+}
+
+.rateToggle {
+  display: flex;
+  gap: 4px;
+  background: var(--dashboard-bg);
+  border-radius: 6px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.rateToggleBtn {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rateToggleBtn:hover {
+  color: var(--dashboard-text);
+}
+
+.rateToggleBtn.active {
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 상승률 직접 입력 */
+.customRateInput {
+  flex: 1;
+  min-width: 40px;
+  padding: 5px 8px;
+  font-size: 13px;
+  color: var(--dashboard-text);
+  background-color: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 6px;
+  outline: none;
+  text-align: right;
+  transition: border-color 0.2s;
+}
+
+.customRateInput:focus {
+  border-color: var(--accent-color, #007aff);
+}
+
+.customRateInput:hover {
+  border-color: var(--dashboard-text-muted);
+}
+
+.customRateInput::-webkit-outer-spin-button,
+.customRateInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.customRateInput[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.rateUnit {
+  font-size: 12px;
+  color: var(--dashboard-text-secondary);
+}
+
+/* 소유자 버튼 */
+.ownerButtons {
+  display: flex;
+  gap: 4px;
+  background: var(--dashboard-bg);
+  border-radius: 6px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.ownerBtn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ownerBtn:hover {
+  color: var(--dashboard-text);
+}
+
+.ownerBtn.active {
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 /* 반응형 */
 @media (max-width: 600px) {
-  .editField {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+  .modalFormRow {
+    flex-wrap: wrap;
   }
 }

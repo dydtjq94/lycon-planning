@@ -54,11 +54,11 @@ export default function AdminLayout({
   const [searchQuery, setSearchQuery] = useState("");
   const [addingCustomer, setAddingCustomer] = useState<string | null>(null);
 
-  // 데이터 로딩 (한 번만 실행)
+  // 데이터 로딩
   useEffect(() => {
-    const loadData = async () => {
-      const supabase = createClient();
+    const supabase = createClient();
 
+    const loadData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
@@ -143,6 +143,21 @@ export default function AdminLayout({
     };
 
     loadData();
+
+    // 로그인/로그아웃 시 데이터 다시 로드
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") {
+        setLoading(true);
+        loadData();
+      } else if (event === "SIGNED_OUT") {
+        setExpert(null);
+        setCustomers([]);
+        conversationsRef.current = [];
+        setConversationsLoaded(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // 인증 체크 및 리다이렉트 (pathname 변경 시에만)

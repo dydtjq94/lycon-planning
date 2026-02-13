@@ -67,6 +67,7 @@ export async function createDebt(input: DebtInput): Promise<Debt> {
       simulation_id: convertedInput.simulation_id,
       type: convertedInput.type,
       title: convertedInput.title,
+      owner: convertedInput.owner,
       principal: convertedInput.principal,
       current_balance: convertedInput.current_balance ?? convertedInput.principal,
       interest_rate: convertedInput.interest_rate,

@@ -375,13 +375,10 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
 
   if (triggerRect) {
     const modalWidth = 700;
-    // Try to align left edge with button left edge
     let left = triggerRect.left;
-    // If overflows right, push left
     if (left + modalWidth > window.innerWidth - 16) {
       left = window.innerWidth - modalWidth - 16;
     }
-    // If overflows left, push right
     if (left < 16) left = 16;
 
     modalStyle.position = 'fixed';
@@ -389,8 +386,14 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
     modalStyle.left = left;
   }
 
+  const isCentered = !triggerRect;
+
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
+    <div
+      className={styles.modalOverlay}
+      onClick={onClose}
+      style={isCentered ? { display: 'flex', alignItems: 'center', justifyContent: 'center', paddingLeft: 276 } : undefined}
+    >
       <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={modalStyle}>
         <div className={styles.modalHeader}>
           <h3>계좌 관리</h3>

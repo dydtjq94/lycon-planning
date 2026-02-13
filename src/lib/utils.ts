@@ -196,6 +196,24 @@ export function getDefaultRateCategory(
       return 'realEstate'
     case 'interest':
       return 'fixed'
+    // 저축/투자
+    case 'savings_deposit':
+      return 'fixed'        // 예금/적금 금리는 고정
+    case 'investment':
+    case 'isa':
+      return 'investment'    // 주식/펀드/ISA → 투자수익률
+    // 부동산
+    case 'real_estate':
+      return 'realEstate'
+    // 실물 자산
+    case 'car':
+    case 'precious_metal':
+    case 'custom_asset':
+      return 'inflation'
+    // 연금
+    case 'retirement_pension':
+    case 'personal_pension':
+      return 'investment'
     default:
       return 'inflation'
   }

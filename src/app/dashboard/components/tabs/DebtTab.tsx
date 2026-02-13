@@ -2,9 +2,11 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Pencil, X, Plus } from 'lucide-react'
-import type { Debt, DebtInput, LoanRepaymentType, RateType } from '@/types/tables'
+import { Pencil, X, Plus, ArrowLeft } from 'lucide-react'
+import type { Debt, DebtInput, LoanRepaymentType, RateType, Owner } from '@/types/tables'
+import type { GlobalSettings } from '@/types'
 import { formatMoney } from '@/lib/utils'
+import { formatPeriodDisplay, toPeriodRaw, isPeriodValid, restorePeriodCursor } from '@/lib/utils/periodInput'
 import { useDebts, useInvalidateByCategory } from '@/hooks/useFinancialData'
 import {
   createDebt,
@@ -24,6 +26,12 @@ import styles from './DebtTab.module.css'
 
 interface DebtTabProps {
   simulationId: string
+  birthYear: number
+  spouseBirthYear?: number | null
+  retirementAge: number
+  spouseRetirementAge?: number
+  isMarried: boolean
+  globalSettings?: GlobalSettings
 }
 
 interface EditingDebt {
@@ -41,6 +49,7 @@ interface EditingDebt {
   repaymentType: LoanRepaymentType
   graceEndYear: string
   graceEndMonth: string
+  owner: Owner
 }
 
 const initialEditingDebt: EditingDebt = {
@@ -58,6 +67,7 @@ const initialEditingDebt: EditingDebt = {
   repaymentType: '원리금균등상환',
   graceEndYear: '',
   graceEndMonth: '',
+  owner: 'self',
 }
 
 // 부채 + 계산 정보
@@ -66,10 +76,28 @@ interface DebtWithPayment extends Debt {
   totalInterest: number
 }
 
-export function DebtTab({ simulationId }: DebtTabProps) {
+export function DebtTab({
+  simulationId,
+  birthYear,
+  spouseBirthYear,
+  retirementAge,
+  spouseRetirementAge,
+  isMarried,
+  globalSettings,
+}: DebtTabProps) {
   const { isDark } = useChartTheme()
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth() + 1
+
+  // 나이 및 은퇴 연도 계산
+  const currentAge = currentYear - birthYear
+  const selfRetirementYear = currentYear + (retirementAge - currentAge)
+  const spouseCurrentAge = spouseBirthYear ? currentYear - spouseBirthYear : null
+  const spouseRetirementYear = useMemo(() => {
+    if (!spouseBirthYear || spouseCurrentAge === null) return selfRetirementYear
+    return currentYear + ((spouseRetirementAge || 60) - spouseCurrentAge)
+  }, [spouseBirthYear, currentYear, selfRetirementYear, spouseCurrentAge, spouseRetirementAge])
+  const hasSpouse = isMarried && spouseBirthYear
 
   // React Query로 데이터 로드 (캐시에서 즉시 가져옴)
   const { data: debts = [], isLoading } = useDebts(simulationId)
@@ -80,8 +108,17 @@ export function DebtTab({ simulationId }: DebtTabProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(true)
 
+  // Period text inputs
+  const [startDateText, setStartDateText] = useState('')
+  const [maturityDateText, setMaturityDateText] = useState('')
+  const [graceEndDateText, setGraceEndDateText] = useState('')
+  const [startType, setStartType] = useState<'current' | 'self-retirement' | 'spouse-retirement' | 'year'>('current')
+  const [maturityType, setMaturityType] = useState<'self-retirement' | 'spouse-retirement' | 'year'>('self-retirement')
+  const [graceEndType, setGraceEndType] = useState<'self-retirement' | 'spouse-retirement' | 'year'>('year')
+
   // 타입 선택 드롭다운
   const [showTypeMenu, setShowTypeMenu] = useState(false)
+  const [addingCategory, setAddingCategory] = useState<UIDebtCategory | null>(null)
   const addButtonRef = useRef<HTMLButtonElement>(null)
 
   // 부채에 월 상환액 정보 추가
@@ -177,6 +214,7 @@ export function DebtTab({ simulationId }: DebtTabProps) {
   // 부채 추가 시작
   const startAddDebt = (category: 'credit' | 'other') => {
     const defaultMat = getDefaultMaturity()
+    setAddingCategory(category)
     setEditingDebt({
       ...initialEditingDebt,
       category,
@@ -185,8 +223,29 @@ export function DebtTab({ simulationId }: DebtTabProps) {
       startMonth: String(currentMonth),
       maturityYear: String(defaultMat.year),
       maturityMonth: String(defaultMat.month),
+      owner: 'self',
     })
+    // Initialize period inputs
+    setStartType('current')
+    setMaturityType('self-retirement')
+    setGraceEndType('year')
+    setStartDateText(toPeriodRaw(currentYear, currentMonth))
+    setMaturityDateText(toPeriodRaw(defaultMat.year, defaultMat.month))
+    setGraceEndDateText('')
+    // Keep showTypeMenu open for step 2
+  }
+
+  // 추가 폼 리셋
+  const resetAddForm = () => {
     setShowTypeMenu(false)
+    setAddingCategory(null)
+    setEditingDebt(null)
+    setStartDateText('')
+    setMaturityDateText('')
+    setGraceEndDateText('')
+    setStartType('current')
+    setMaturityType('self-retirement')
+    setGraceEndType('year')
   }
 
   // 부채 편집 시작
@@ -199,6 +258,9 @@ export function DebtTab({ simulationId }: DebtTabProps) {
     const graceEndTotal = sYear * 12 + (sMonth - 1) + graceMonths
     const gEndYear = Math.floor(graceEndTotal / 12)
     const gEndMonth = (graceEndTotal % 12) + 1
+    const mYear = debt.maturity_year || defaultMat.year
+    const mMonth = debt.maturity_month || defaultMat.month
+
     setEditingDebt({
       id: debt.id,
       category,
@@ -209,12 +271,49 @@ export function DebtTab({ simulationId }: DebtTabProps) {
       spread: debt.spread?.toString() || '1.5',
       startYear: sYear.toString(),
       startMonth: sMonth.toString(),
-      maturityYear: debt.maturity_year?.toString() || String(defaultMat.year),
-      maturityMonth: debt.maturity_month?.toString() || String(defaultMat.month),
+      maturityYear: mYear.toString(),
+      maturityMonth: mMonth.toString(),
       repaymentType: debt.repayment_type || '원리금균등상환',
       graceEndYear: graceMonths > 0 ? String(gEndYear) : '',
       graceEndMonth: graceMonths > 0 ? String(gEndMonth) : '',
+      owner: debt.owner || 'self',
     })
+
+    // Determine types and initialize text
+    if (sYear === currentYear && sMonth === currentMonth) {
+      setStartType('current')
+    } else if (sYear === selfRetirementYear && sMonth === 12) {
+      setStartType('self-retirement')
+    } else if (hasSpouse && sYear === spouseRetirementYear && sMonth === 12) {
+      setStartType('spouse-retirement')
+    } else {
+      setStartType('year')
+    }
+
+    if (mYear === selfRetirementYear && mMonth === 12) {
+      setMaturityType('self-retirement')
+    } else if (hasSpouse && mYear === spouseRetirementYear && mMonth === 12) {
+      setMaturityType('spouse-retirement')
+    } else {
+      setMaturityType('year')
+    }
+
+    if (graceMonths > 0) {
+      if (gEndYear === selfRetirementYear && gEndMonth === 12) {
+        setGraceEndType('self-retirement')
+      } else if (hasSpouse && gEndYear === spouseRetirementYear && gEndMonth === 12) {
+        setGraceEndType('spouse-retirement')
+      } else {
+        setGraceEndType('year')
+      }
+      setGraceEndDateText(toPeriodRaw(gEndYear, gEndMonth))
+    } else {
+      setGraceEndType('year')
+      setGraceEndDateText('')
+    }
+
+    setStartDateText(toPeriodRaw(sYear, sMonth))
+    setMaturityDateText(toPeriodRaw(mYear, mMonth))
   }
 
   // 부채 저장
@@ -254,16 +353,18 @@ export function DebtTab({ simulationId }: DebtTabProps) {
         start_month: startMonth,
         maturity_year: maturityYear,
         maturity_month: maturityMonth,
+        owner: editingDebt.owner,
       }
 
       if (editingDebt.id) {
         await updateDebt(editingDebt.id, input)
+        setEditingDebt(null)
       } else {
         await createDebt(input)
+        resetAddForm()
       }
 
       invalidate('debts')
-      setEditingDebt(null)
     } catch (error) {
       console.error('Failed to save debt:', error)
     }
@@ -279,144 +380,236 @@ export function DebtTab({ simulationId }: DebtTabProps) {
     }
   }
 
-  // 편집 폼 렌더링
+  // 편집 폼 렌더링 (모달 안에서 사용)
   const renderEditForm = () => {
     if (!editingDebt) return null
 
+    const isEditMode = !!editingDebt.id
+
     return (
-      <div className={styles.editForm}>
-        <div className={styles.editRow}>
-          <label className={styles.editLabel}>이름</label>
+      <>
+        {/* 이름 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>이름</span>
           <input
             type="text"
-            className={styles.editInput}
+            className={styles.modalFormInput}
             value={editingDebt.name}
             onChange={e => setEditingDebt({ ...editingDebt, name: e.target.value })}
             placeholder={editingDebt.category === 'credit' ? '신용대출' : '부채명'}
+            autoFocus={!isEditMode}
           />
         </div>
 
-        <div className={styles.editRow}>
-          <label className={styles.editLabel}>금액</label>
-          <div className={styles.editField}>
-            <input
-              type="number"
-              className={styles.editInputNumber}
-              value={editingDebt.amount}
-              onChange={e => setEditingDebt({ ...editingDebt, amount: e.target.value })}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              placeholder="0"
-            />
-            <span className={styles.editUnit}>만원</span>
-          </div>
-        </div>
-
-        <div className={styles.editRow}>
-          <label className={styles.editLabel}>금리</label>
-          <div className={styles.editField}>
-            <div className={styles.repaymentButtons}>
+        {/* 소유자 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>소유자</span>
+          <div className={styles.ownerButtons}>
+            <button
+              type="button"
+              className={`${styles.ownerBtn} ${editingDebt.owner === 'self' ? styles.active : ''}`}
+              onClick={() => setEditingDebt({ ...editingDebt, owner: 'self' })}
+            >
+              본인
+            </button>
+            {hasSpouse && (
               <button
                 type="button"
-                className={`${styles.repaymentBtn} ${editingDebt.rateType === 'fixed' ? styles.active : ''}`}
-                onClick={() => setEditingDebt({ ...editingDebt, rateType: 'fixed' })}
+                className={`${styles.ownerBtn} ${editingDebt.owner === 'spouse' ? styles.active : ''}`}
+                onClick={() => setEditingDebt({ ...editingDebt, owner: 'spouse' })}
               >
-                고정
+                배우자
               </button>
-              <button
-                type="button"
-                className={`${styles.repaymentBtn} ${editingDebt.rateType === 'floating' ? styles.active : ''}`}
-                onClick={() => setEditingDebt({ ...editingDebt, rateType: 'floating' })}
-              >
-                변동
-              </button>
-            </div>
-            {editingDebt.rateType === 'fixed' ? (
-              <>
-                <input
-                  type="number"
-                  className={styles.editInputSmall}
-                  value={editingDebt.rate}
-                  onChange={e => setEditingDebt({ ...editingDebt, rate: e.target.value })}
-                  onWheel={e => (e.target as HTMLElement).blur()}
-                  placeholder="0"
-                  step="0.1"
-                />
-                <span className={styles.editUnit}>%</span>
-              </>
-            ) : (
-              <>
-                <span className={styles.editUnit}>기준금리 +</span>
-                <input
-                  type="number"
-                  className={styles.editInputSmall}
-                  value={editingDebt.spread}
-                  onChange={e => setEditingDebt({ ...editingDebt, spread: e.target.value })}
-                  onWheel={e => (e.target as HTMLElement).blur()}
-                  placeholder="1.5"
-                  step="0.1"
-                />
-                <span className={styles.editUnit}>%</span>
-              </>
             )}
           </div>
         </div>
 
-        <div className={styles.editRow}>
-          <label className={styles.editLabel}>시작일</label>
-          <div className={styles.editField}>
-            <input
-              type="number"
-              className={styles.editInputSmall}
-              value={editingDebt.startYear}
-              onChange={e => setEditingDebt({ ...editingDebt, startYear: e.target.value })}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              placeholder={String(currentYear)}
-            />
-            <span className={styles.editUnit}>년</span>
-            <input
-              type="number"
-              className={styles.editInputSmall}
-              value={editingDebt.startMonth}
-              onChange={e => setEditingDebt({ ...editingDebt, startMonth: e.target.value })}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              placeholder={String(currentMonth)}
-              min={1}
-              max={12}
-            />
-            <span className={styles.editUnit}>월</span>
+        {/* 금액 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>금액</span>
+          <input
+            type="number"
+            className={styles.modalFormInput}
+            value={editingDebt.amount}
+            onChange={e => setEditingDebt({ ...editingDebt, amount: e.target.value })}
+            onWheel={e => (e.target as HTMLElement).blur()}
+            placeholder="0"
+          />
+          <span className={styles.modalFormUnit}>만원</span>
+        </div>
+
+        {/* 금리 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>금리</span>
+          <div className={styles.repaymentButtons}>
+            <button
+              type="button"
+              className={`${styles.repaymentBtn} ${editingDebt.rateType === 'fixed' ? styles.active : ''}`}
+              onClick={() => setEditingDebt({ ...editingDebt, rateType: 'fixed' })}
+            >
+              고정
+            </button>
+            <button
+              type="button"
+              className={`${styles.repaymentBtn} ${editingDebt.rateType === 'floating' ? styles.active : ''}`}
+              onClick={() => setEditingDebt({ ...editingDebt, rateType: 'floating' })}
+            >
+              변동
+            </button>
           </div>
         </div>
 
-        <div className={styles.editRow}>
-          <label className={styles.editLabel}>만기</label>
-          <div className={styles.editField}>
+        {editingDebt.rateType === 'fixed' ? (
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}></span>
             <input
               type="number"
-              className={styles.editInputSmall}
-              value={editingDebt.maturityYear}
-              onChange={e => setEditingDebt({ ...editingDebt, maturityYear: e.target.value })}
+              className={styles.modalFormInput}
+              value={editingDebt.rate}
+              onChange={e => setEditingDebt({ ...editingDebt, rate: e.target.value })}
               onWheel={e => (e.target as HTMLElement).blur()}
-              placeholder={String(currentYear + 3)}
-              min={currentYear}
-              max={currentYear + 50}
+              placeholder="0"
+              step="0.1"
             />
-            <span className={styles.editUnit}>년</span>
+            <span className={styles.modalFormUnit}>%</span>
+          </div>
+        ) : (
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}></span>
+            <span className={styles.modalFormUnit}>기준금리 +</span>
             <input
               type="number"
-              className={styles.editInputSmall}
-              value={editingDebt.maturityMonth}
-              onChange={e => setEditingDebt({ ...editingDebt, maturityMonth: e.target.value })}
+              className={styles.modalFormInput}
+              value={editingDebt.spread}
+              onChange={e => setEditingDebt({ ...editingDebt, spread: e.target.value })}
               onWheel={e => (e.target as HTMLElement).blur()}
-              placeholder="12"
-              min={1}
-              max={12}
+              placeholder="1.5"
+              step="0.1"
             />
-            <span className={styles.editUnit}>월</span>
+            <span className={styles.modalFormUnit}>%</span>
+          </div>
+        )}
+
+        {/* 시작일 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>시작일</span>
+          <div className={styles.fieldContent}>
+            <select
+              className={styles.periodSelect}
+              value={startType}
+              onChange={(e) => {
+                const val = e.target.value
+                if (val === 'current') {
+                  setStartType('current')
+                  setEditingDebt({ ...editingDebt, startYear: String(currentYear), startMonth: String(currentMonth) })
+                  setStartDateText(toPeriodRaw(currentYear, currentMonth))
+                } else if (val === 'self-retirement') {
+                  setStartType('self-retirement')
+                  setEditingDebt({ ...editingDebt, startYear: String(selfRetirementYear), startMonth: '12' })
+                  setStartDateText(toPeriodRaw(selfRetirementYear, 12))
+                } else if (val === 'spouse-retirement') {
+                  setStartType('spouse-retirement')
+                  setEditingDebt({ ...editingDebt, startYear: String(spouseRetirementYear), startMonth: '12' })
+                  setStartDateText(toPeriodRaw(spouseRetirementYear, 12))
+                } else {
+                  setStartType('year')
+                  const y = parseInt(editingDebt.startYear) || currentYear
+                  const m = parseInt(editingDebt.startMonth) || currentMonth
+                  setStartDateText(toPeriodRaw(y, m))
+                }
+              }}
+            >
+              <option value="current">현재</option>
+              <option value="self-retirement">본인 은퇴</option>
+              {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+              <option value="year">직접 입력</option>
+            </select>
+            {startType === 'year' && (
+              <input
+                type="text"
+                className={`${styles.periodInput}${startDateText.length > 0 && !isPeriodValid(startDateText) ? ` ${styles.invalid}` : ''}`}
+                value={formatPeriodDisplay(startDateText)}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
+                  restorePeriodCursor(e.target as HTMLInputElement, raw)
+                  setStartDateText(raw)
+                  let y = parseInt(editingDebt.startYear) || currentYear
+                  let m = parseInt(editingDebt.startMonth) || currentMonth
+                  if (raw.length >= 4) {
+                    const py = parseInt(raw.slice(0, 4))
+                    if (!isNaN(py)) y = py
+                  }
+                  if (raw.length >= 5) {
+                    const pm = parseInt(raw.slice(4))
+                    if (!isNaN(pm) && pm >= 1 && pm <= 12) m = pm
+                  }
+                  setEditingDebt({ ...editingDebt, startYear: String(y), startMonth: String(m) })
+                }}
+                placeholder="2026.01"
+              />
+            )}
           </div>
         </div>
 
-        <div className={styles.editRow}>
-          <label className={styles.editLabel}>상환</label>
+        {/* 만기 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>만기</span>
+          <div className={styles.fieldContent}>
+            <select
+              className={styles.periodSelect}
+              value={maturityType}
+              onChange={(e) => {
+                const val = e.target.value
+                if (val === 'self-retirement') {
+                  setMaturityType('self-retirement')
+                  setEditingDebt({ ...editingDebt, maturityYear: String(selfRetirementYear), maturityMonth: '12' })
+                  setMaturityDateText(toPeriodRaw(selfRetirementYear, 12))
+                } else if (val === 'spouse-retirement') {
+                  setMaturityType('spouse-retirement')
+                  setEditingDebt({ ...editingDebt, maturityYear: String(spouseRetirementYear), maturityMonth: '12' })
+                  setMaturityDateText(toPeriodRaw(spouseRetirementYear, 12))
+                } else {
+                  setMaturityType('year')
+                  const y = parseInt(editingDebt.maturityYear) || currentYear + 5
+                  const m = parseInt(editingDebt.maturityMonth) || 12
+                  setMaturityDateText(toPeriodRaw(y, m))
+                }
+              }}
+            >
+              <option value="self-retirement">본인 은퇴</option>
+              {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+              <option value="year">직접 입력</option>
+            </select>
+            {maturityType === 'year' && (
+              <input
+                type="text"
+                className={`${styles.periodInput}${maturityDateText.length > 0 && !isPeriodValid(maturityDateText) ? ` ${styles.invalid}` : ''}`}
+                value={formatPeriodDisplay(maturityDateText)}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
+                  restorePeriodCursor(e.target as HTMLInputElement, raw)
+                  setMaturityDateText(raw)
+                  let y = parseInt(editingDebt.maturityYear) || currentYear + 5
+                  let m = parseInt(editingDebt.maturityMonth) || 12
+                  if (raw.length >= 4) {
+                    const py = parseInt(raw.slice(0, 4))
+                    if (!isNaN(py)) y = py
+                  }
+                  if (raw.length >= 5) {
+                    const pm = parseInt(raw.slice(4))
+                    if (!isNaN(pm) && pm >= 1 && pm <= 12) m = pm
+                  }
+                  setEditingDebt({ ...editingDebt, maturityYear: String(y), maturityMonth: String(m) })
+                }}
+                placeholder="2031.12"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* 상환방식 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>상환</span>
           <div className={styles.repaymentButtons}>
             {REPAYMENT_OPTIONS.map(opt => (
               <button
@@ -432,30 +625,61 @@ export function DebtTab({ simulationId }: DebtTabProps) {
           </div>
         </div>
 
+        {/* 거치종료 (거치식상환일 때만) */}
         {editingDebt.repaymentType === '거치식상환' && (
-          <div className={styles.editRow}>
-            <label className={styles.editLabel}>거치종료</label>
-            <div className={styles.editField}>
-              <input
-                type="number"
-                className={styles.editInputSmall}
-                value={editingDebt.graceEndYear}
-                onChange={e => setEditingDebt({ ...editingDebt, graceEndYear: e.target.value })}
-                onWheel={e => (e.target as HTMLElement).blur()}
-                placeholder={String(currentYear + 1)}
-              />
-              <span className={styles.editUnit}>년</span>
-              <input
-                type="number"
-                className={styles.editInputSmall}
-                value={editingDebt.graceEndMonth}
-                onChange={e => setEditingDebt({ ...editingDebt, graceEndMonth: e.target.value })}
-                onWheel={e => (e.target as HTMLElement).blur()}
-                placeholder="12"
-                min={1}
-                max={12}
-              />
-              <span className={styles.editUnit}>월</span>
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}>거치종료</span>
+            <div className={styles.fieldContent}>
+              <select
+                className={styles.periodSelect}
+                value={graceEndType}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === 'self-retirement') {
+                    setGraceEndType('self-retirement')
+                    setEditingDebt({ ...editingDebt, graceEndYear: String(selfRetirementYear), graceEndMonth: '12' })
+                    setGraceEndDateText(toPeriodRaw(selfRetirementYear, 12))
+                  } else if (val === 'spouse-retirement') {
+                    setGraceEndType('spouse-retirement')
+                    setEditingDebt({ ...editingDebt, graceEndYear: String(spouseRetirementYear), graceEndMonth: '12' })
+                    setGraceEndDateText(toPeriodRaw(spouseRetirementYear, 12))
+                  } else {
+                    setGraceEndType('year')
+                    const sY = parseInt(editingDebt.startYear) || currentYear
+                    const sM = parseInt(editingDebt.startMonth) || currentMonth
+                    setGraceEndDateText(toPeriodRaw(sY, sM))
+                    setEditingDebt({ ...editingDebt, graceEndYear: String(sY), graceEndMonth: String(sM) })
+                  }
+                }}
+              >
+                <option value="self-retirement">본인 은퇴</option>
+                {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+                <option value="year">직접 입력</option>
+              </select>
+              {graceEndType === 'year' && (
+                <input
+                  type="text"
+                  className={`${styles.periodInput}${graceEndDateText.length > 0 && !isPeriodValid(graceEndDateText) ? ` ${styles.invalid}` : ''}`}
+                  value={formatPeriodDisplay(graceEndDateText)}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
+                    restorePeriodCursor(e.target as HTMLInputElement, raw)
+                    setGraceEndDateText(raw)
+                    let y = parseInt(editingDebt.graceEndYear) || currentYear
+                    let m = parseInt(editingDebt.graceEndMonth) || currentMonth
+                    if (raw.length >= 4) {
+                      const py = parseInt(raw.slice(0, 4))
+                      if (!isNaN(py)) y = py
+                    }
+                    if (raw.length >= 5) {
+                      const pm = parseInt(raw.slice(4))
+                      if (!isNaN(pm) && pm >= 1 && pm <= 12) m = pm
+                    }
+                    setEditingDebt({ ...editingDebt, graceEndYear: String(y), graceEndMonth: String(m) })
+                  }}
+                  placeholder="2027.06"
+                />
+              )}
             </div>
           </div>
         )}
@@ -492,31 +716,40 @@ export function DebtTab({ simulationId }: DebtTabProps) {
           </div>
         )}
 
-        <div className={styles.editActions}>
-          <button className={styles.cancelBtn} onClick={() => setEditingDebt(null)}>취소</button>
-          <button className={styles.saveBtn} onClick={handleSaveDebt}>저장</button>
+        {/* 하단 버튼 */}
+        <div className={styles.modalFormActions}>
+          <button
+            className={styles.modalCancelBtn}
+            onClick={isEditMode ? () => setEditingDebt(null) : resetAddForm}
+          >
+            취소
+          </button>
+          <button
+            className={styles.modalAddBtn}
+            onClick={handleSaveDebt}
+            disabled={!editingDebt.amount}
+          >
+            {isEditMode ? '저장' : '추가'}
+          </button>
         </div>
-      </div>
+      </>
     )
   }
 
-  // 부채 항목 렌더링
+  // 부채 항목 렌더링 (항상 읽기 모드)
   const renderDebtItem = (
     debt: DebtWithPayment,
     category: 'credit' | 'other'
   ) => {
-    const isEditing = editingDebt?.id === debt.id
-
-    if (isEditing) {
-      return <div key={debt.id}>{renderEditForm()}</div>
-    }
-
     const maturityStr = `${debt.maturity_year}.${String(debt.maturity_month).padStart(2, '0')}`
+    const ownerLabel = debt.owner === 'spouse' ? '배우자' : '본인'
 
     return (
       <div key={debt.id} className={styles.debtItem}>
         <div className={styles.itemInfo}>
-          <span className={styles.itemName}>{debt.title}</span>
+          <span className={styles.itemName}>
+            {debt.title} | {ownerLabel}
+          </span>
           <span className={styles.itemMeta}>
             {debt.rate_type === 'floating'
               ? `변동 ${debt.spread || 0}%`
@@ -542,32 +775,22 @@ export function DebtTab({ simulationId }: DebtTabProps) {
     )
   }
 
-  // ESC 키로 드롭다운 닫기
+  // ESC 키로 모달 닫기
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showTypeMenu) {
-        setShowTypeMenu(false)
+      if (e.key === 'Escape') {
+        if (editingDebt?.id) {
+          setEditingDebt(null)
+          e.stopPropagation()
+        } else if (showTypeMenu) {
+          resetAddForm()
+          e.stopPropagation()
+        }
       }
     }
-    window.addEventListener('keydown', handleEsc)
-    return () => window.removeEventListener('keydown', handleEsc)
-  }, [showTypeMenu])
-
-  // 드롭다운 외부 클릭으로 닫기
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        showTypeMenu &&
-        addButtonRef.current &&
-        !addButtonRef.current.contains(e.target as Node) &&
-        !(e.target as HTMLElement).closest(`.${styles.typeMenu}`)
-      ) {
-        setShowTypeMenu(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showTypeMenu])
+    window.addEventListener('keydown', handleEsc, true)
+    return () => window.removeEventListener('keydown', handleEsc, true)
+  }, [showTypeMenu, editingDebt])
 
   if (isLoading && debts.length === 0) {
     return (
@@ -604,40 +827,121 @@ export function DebtTab({ simulationId }: DebtTabProps) {
         </div>
       </div>
 
-      {/* 타입 선택 드롭다운 - portal로 body에 렌더 */}
-      {showTypeMenu && addButtonRef.current && createPortal(
+      {/* 타입 선택 모달 (2-step) */}
+      {showTypeMenu && createPortal(
         <div
-          className={styles.typeMenu}
-          data-scenario-dropdown-portal
-          style={{
-            position: 'fixed',
-            top: addButtonRef.current.getBoundingClientRect().bottom + 6,
-            left: addButtonRef.current.getBoundingClientRect().right - 150,
-            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-          }}
+          className={styles.typeModalOverlay}
+          data-scenario-dropdown-portal="true"
+          onClick={resetAddForm}
         >
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => startAddDebt('credit')}
+          <div
+            className={styles.typeModal}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            }}
           >
-            신용대출
-          </button>
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => startAddDebt('other')}
+            {!addingCategory ? (
+              <>
+                {/* Step 1: 타입 선택 */}
+                <div className={styles.typeModalHeader}>
+                  <span className={styles.typeModalTitle}>부채 추가</span>
+                  <button
+                    className={styles.typeModalClose}
+                    onClick={resetAddForm}
+                    type="button"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className={styles.typeGrid}>
+                  <button className={styles.typeCard} onClick={() => startAddDebt('credit')}>
+                    <span className={styles.typeCardName}>신용대출</span>
+                    <span className={styles.typeCardDesc}>신용카드, 마이너스통장 등</span>
+                  </button>
+                  <button className={styles.typeCard} onClick={() => startAddDebt('other')}>
+                    <span className={styles.typeCardName}>기타부채</span>
+                    <span className={styles.typeCardDesc}>학자금, 개인 등</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Step 2: 입력 폼 */}
+                <div className={styles.typeModalHeader}>
+                  <div className={styles.headerLeft}>
+                    <button
+                      className={styles.backButton}
+                      onClick={() => setAddingCategory(null)}
+                      type="button"
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <span className={styles.stepLabel}>
+                      {addingCategory === 'credit' ? '신용대출' : '기타부채'} 추가
+                    </span>
+                  </div>
+                  <button
+                    className={styles.typeModalClose}
+                    onClick={resetAddForm}
+                    type="button"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className={styles.modalFormBody}>
+                  {renderEditForm()}
+                </div>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 편집 모달 */}
+      {editingDebt && editingDebt.id && createPortal(
+        <div
+          className={styles.typeModalOverlay}
+          data-scenario-dropdown-portal="true"
+          onClick={() => setEditingDebt(null)}
+        >
+          <div
+            className={styles.typeModal}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            }}
           >
-            기타부채
-          </button>
+            <div className={styles.typeModalHeader}>
+              <span className={styles.stepLabel}>
+                {editingDebt.category === 'credit' ? '신용대출' : '기타부채'} 수정
+              </span>
+              <button
+                className={styles.typeModalClose}
+                onClick={() => setEditingDebt(null)}
+                type="button"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className={styles.modalFormBody}>
+              {renderEditForm()}
+            </div>
+          </div>
         </div>,
         document.body
       )}
 
       {isExpanded && (
         <div className={styles.flatList}>
-          {allDebts.length === 0 && !editingDebt && (
+          {allDebts.length === 0 && (
             <p className={styles.emptyHint}>
               아직 등록된 부채가 없습니다. 오른쪽 + 버튼으로 추가하세요.
             </p>
@@ -647,7 +951,6 @@ export function DebtTab({ simulationId }: DebtTabProps) {
             if (category !== 'credit' && category !== 'other') return null
             return renderDebtItem(debt, category)
           })}
-          {editingDebt && !editingDebt.id && renderEditForm()}
         </div>
       )}
     </div>

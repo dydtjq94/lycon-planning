@@ -279,14 +279,47 @@ export function ScenarioTab({
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
             retirementAge={profile.target_retirement_age}
+            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            isMarried={isMarried}
+            globalSettings={globalSettings ?? undefined}
           />
         );
       case "asset":
-        return <AssetTab simulationId={simulationId} />;
+        return (
+          <AssetTab
+            simulationId={simulationId}
+            birthYear={simulationProfile.birthYear}
+            spouseBirthYear={simulationProfile.spouseBirthYear}
+            retirementAge={profile.target_retirement_age}
+            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            isMarried={isMarried}
+            globalSettings={globalSettings ?? undefined}
+          />
+        );
       case "debt":
-        return <DebtTab simulationId={simulationId} />;
+        return (
+          <DebtTab
+            simulationId={simulationId}
+            birthYear={simulationProfile.birthYear}
+            spouseBirthYear={simulationProfile.spouseBirthYear}
+            retirementAge={profile.target_retirement_age}
+            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            isMarried={isMarried}
+            globalSettings={globalSettings ?? undefined}
+          />
+        );
       case "realEstate":
-        return <RealEstateTab simulationId={simulationId} />;
+        return (
+          <RealEstateTab
+            simulationId={simulationId}
+            birthYear={simulationProfile.birthYear}
+            spouseBirthYear={simulationProfile.spouseBirthYear}
+            retirementAge={profile.target_retirement_age}
+            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            isMarried={isMarried}
+            globalSettings={globalSettings ?? undefined}
+          />
+        );
       case "pension":
         return (
           <PensionTab

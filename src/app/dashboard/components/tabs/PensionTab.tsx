@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus } from 'lucide-react'
+import { Plus, ArrowLeft, X } from 'lucide-react'
 import type { GlobalSettings } from '@/types'
+import type { RetirementPensionType, ReceiveType, PersonalPensionType } from '@/types/tables'
 import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
 import {
   NationalPensionSection,
@@ -17,6 +18,9 @@ import {
   usePersonalPensions,
   useInvalidateByCategory,
 } from '@/hooks/useFinancialData'
+import { upsertNationalPension } from '@/lib/services/nationalPensionService'
+import { upsertRetirementPension } from '@/lib/services/retirementPensionService'
+import { upsertPersonalPension } from '@/lib/services/personalPensionService'
 import { useChartTheme } from '@/hooks/useChartTheme'
 import { TabSkeleton } from './shared/TabSkeleton'
 import styles from './PensionTab.module.css'
@@ -60,11 +64,16 @@ export function PensionTab({
   const isLoading = nationalLoading || retirementLoading || personalLoading
   const [isExpanded, setIsExpanded] = useState(true)
 
-  // 타입 선택 드롭다운
+  // 타입 선택 모달
   const [showTypeMenu, setShowTypeMenu] = useState(false)
-  const [selectedPensionType, setSelectedPensionType] = useState<'national' | 'retirement' | 'personal' | null>(null)
-  const addButtonRef = useRef<HTMLButtonElement>(null)
+  const [addingType, setAddingType] = useState<'national' | 'retirement' | 'personal' | null>(null)
+  const [addOwner, setAddOwner] = useState<'self' | 'spouse'>('self')
+  const [addValues, setAddValues] = useState<Record<string, string>>({})
+  const [isSaving, setIsSaving] = useState(false)
   const { isDark } = useChartTheme()
+
+  // 실제 배우자 생년 (없으면 본인과 동일)
+  const effectiveSpouseBirthYear = spouseBirthYear || birthYear
 
   // 모든 연금 데이터 캐시 무효화
   const loadPensions = () => {
@@ -111,47 +120,538 @@ export function PensionTab({
     } : null,
   }
 
-  // 실제 배우자 생년 (없으면 본인과 동일)
-  const effectiveSpouseBirthYear = spouseBirthYear || birthYear
-
   // 모든 데이터가 없는 경우에만 로딩 표시
   const hasNoData = dbNationalPensions.length === 0 && dbRetirementPensions.length === 0 && dbPersonalPensions.length === 0
 
   // 총 연금 개수 및 합계
   const totalPensionCount = dbNationalPensions.length + dbRetirementPensions.length + dbPersonalPensions.length
 
-  // ESC 키로 드롭다운 닫기
+  // 추가 폼 리셋
+  const resetAddForm = () => {
+    setShowTypeMenu(false)
+    setAddingType(null)
+    setAddValues({})
+    setAddOwner('self')
+  }
+
+  // ESC 키로 모달 닫기
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && showTypeMenu) {
-        setShowTypeMenu(false)
+        resetAddForm()
+        e.stopPropagation()
       }
     }
-    window.addEventListener('keydown', handleEsc)
-    return () => window.removeEventListener('keydown', handleEsc)
-  }, [showTypeMenu])
-
-  // 드롭다운 외부 클릭으로 닫기
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        showTypeMenu &&
-        addButtonRef.current &&
-        !addButtonRef.current.contains(e.target as Node) &&
-        !(e.target as HTMLElement).closest(`.${styles.typeMenu}`)
-      ) {
-        setShowTypeMenu(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    window.addEventListener('keydown', handleEsc, true)
+    return () => window.removeEventListener('keydown', handleEsc, true)
   }, [showTypeMenu])
 
   const handleTypeSelect = (type: 'national' | 'retirement' | 'personal') => {
-    setSelectedPensionType(type)
-    setShowTypeMenu(false)
-    // Trigger add mode for the selected pension type by triggering edit mode on the corresponding sub-component
-    // This will be handled by passing a flag to each sub-component
+    setAddingType(type)
+    setAddOwner('self')
+    if (type === 'national') {
+      const startYear = birthYear + 65
+      setAddValues({
+        amount: '',
+        startYear: String(startYear),
+        startMonth: '1',
+        endYear: '',
+        endMonth: '',
+      })
+    } else if (type === 'retirement') {
+      const startYear = birthYear + 56
+      setAddValues({
+        type: '',
+        years: '',
+        balance: '',
+        receiveType: 'annuity',
+        startYear: String(startYear),
+        startMonth: '1',
+        endYear: String(startYear + 10),
+        endMonth: '12',
+      })
+    } else {
+      // personal
+      const startYear = birthYear + 56
+      setAddValues({
+        pensionType: 'pension_savings',
+        balance: '',
+        monthly: '',
+        startYear: String(startYear),
+        startMonth: '1',
+        endYear: String(startYear + 20),
+        endMonth: '12',
+      })
+    }
+  }
+
+  // 소유자별 birthYear
+  const getBirthYearForOwner = () => {
+    return addOwner === 'self' ? birthYear : effectiveSpouseBirthYear
+  }
+
+  // 국민연금 저장
+  const handleSaveNationalPension = async () => {
+    if (!addValues.amount) return
+
+    setIsSaving(true)
+    try {
+      const ownerBirthYear = getBirthYearForOwner()
+      const startYear = parseInt(addValues.startYear) || (ownerBirthYear + 65)
+      const startAge = startYear - ownerBirthYear
+      const endYear = addValues.endYear ? parseInt(addValues.endYear) : null
+      const endAge = endYear ? endYear - ownerBirthYear : null
+
+      await upsertNationalPension(
+        simulationId,
+        addOwner,
+        {
+          expected_monthly_amount: parseFloat(addValues.amount),
+          start_age: startAge,
+          end_age: endAge,
+        },
+        ownerBirthYear
+      )
+      loadPensions()
+      resetAddForm()
+    } catch (error) {
+      console.error('Failed to save national pension:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // 퇴직연금 저장
+  const handleSaveRetirementPension = async () => {
+    if (!addValues.type) return
+
+    setIsSaving(true)
+    try {
+      const ownerBirthYear = getBirthYearForOwner()
+      const startYear = parseInt(addValues.startYear) || (ownerBirthYear + 56)
+      const endYear = parseInt(addValues.endYear) || (startYear + 10)
+      const validatedStartAge = Math.max(56, startYear - ownerBirthYear)
+      const receivingYears = Math.max(1, endYear - startYear)
+      const pensionType: RetirementPensionType = addValues.type === 'DB' ? 'db' : 'dc'
+      const receiveType = addValues.receiveType as ReceiveType
+
+      await upsertRetirementPension(
+        simulationId,
+        addOwner,
+        {
+          pension_type: pensionType,
+          current_balance: addValues.type === 'DC' && addValues.balance ? parseFloat(addValues.balance) : null,
+          years_of_service: addValues.type === 'DB' && addValues.years ? parseInt(addValues.years) : null,
+          receive_type: receiveType,
+          start_age: receiveType === 'annuity' ? validatedStartAge : null,
+          receiving_years: receiveType === 'annuity' ? receivingYears : null,
+          return_rate: 5,
+        },
+        ownerBirthYear,
+        retirementAge,
+        0
+      )
+      loadPensions()
+      resetAddForm()
+    } catch (error) {
+      console.error('Failed to save retirement pension:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // 개인연금 저장
+  const handleSavePersonalPension = async () => {
+    setIsSaving(true)
+    try {
+      const ownerBirthYear = getBirthYearForOwner()
+      const pensionType = addValues.pensionType as PersonalPensionType
+      const startYear = parseInt(addValues.startYear) || (ownerBirthYear + 56)
+      const endYear = parseInt(addValues.endYear) || (startYear + 20)
+      const validatedStartAge = Math.max(56, startYear - ownerBirthYear)
+      const receivingYears = Math.max(1, endYear - startYear)
+
+      await upsertPersonalPension(
+        simulationId,
+        addOwner,
+        pensionType,
+        {
+          current_balance: addValues.balance ? parseFloat(addValues.balance) : 0,
+          monthly_contribution: addValues.monthly ? parseFloat(addValues.monthly) : null,
+          is_contribution_fixed_to_retirement: true,
+          start_age: validatedStartAge,
+          receiving_years: receivingYears,
+          return_rate: 5,
+        },
+        ownerBirthYear,
+        retirementAge
+      )
+      loadPensions()
+      resetAddForm()
+    } catch (error) {
+      console.error('Failed to save personal pension:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // 추가 폼 렌더링
+  const renderAddForm = () => {
+    if (addingType === 'national') {
+      return (
+        <div className={styles.modalFormBody}>
+          {isMarried && (
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>소유자</span>
+              <div className={styles.typeButtons}>
+                <button type="button" className={`${styles.typeBtn} ${addOwner === 'self' ? styles.active : ''}`}
+                  onClick={() => setAddOwner('self')}>본인</button>
+                <button type="button" className={`${styles.typeBtn} ${addOwner === 'spouse' ? styles.active : ''}`}
+                  onClick={() => setAddOwner('spouse')}>배우자</button>
+              </div>
+            </div>
+          )}
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}>금액</span>
+            <input
+              type="number"
+              className={styles.modalFormInput}
+              value={addValues.amount || ''}
+              onChange={e => setAddValues({ ...addValues, amount: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              placeholder="0"
+              autoFocus
+            />
+            <span className={styles.modalFormUnit}>만원/월</span>
+          </div>
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}>수령시작</span>
+            <div className={styles.modalDateGroup}>
+              <input
+                type="number"
+                className={styles.modalYearInput}
+                value={addValues.startYear || ''}
+                onChange={e => setAddValues({ ...addValues, startYear: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+              />
+              <span className={styles.modalFormUnit}>년</span>
+              <input
+                type="number"
+                className={styles.modalMonthInput}
+                value={addValues.startMonth || ''}
+                onChange={e => setAddValues({ ...addValues, startMonth: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                min={1}
+                max={12}
+                placeholder="1"
+              />
+              <span className={styles.modalFormUnit}>월</span>
+            </div>
+          </div>
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}>수령종료</span>
+            <div className={styles.modalDateGroup}>
+              <input
+                type="number"
+                className={styles.modalYearInput}
+                value={addValues.endYear || ''}
+                onChange={e => setAddValues({ ...addValues, endYear: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                placeholder=""
+              />
+              <span className={styles.modalFormUnit}>년</span>
+              <input
+                type="number"
+                className={styles.modalMonthInput}
+                value={addValues.endMonth || ''}
+                onChange={e => setAddValues({ ...addValues, endMonth: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                min={1}
+                max={12}
+                placeholder="12"
+              />
+              <span className={styles.modalFormUnit}>월</span>
+            </div>
+          </div>
+          <div className={styles.modalFormActions}>
+            <button className={styles.modalCancelBtn} onClick={resetAddForm}>취소</button>
+            <button className={styles.modalAddBtn} onClick={handleSaveNationalPension} disabled={isSaving || !addValues.amount}>
+              {isSaving ? '저장 중...' : '추가'}
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    if (addingType === 'retirement') {
+      return (
+        <div className={styles.modalFormBody}>
+          {isMarried && (
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>소유자</span>
+              <div className={styles.typeButtons}>
+                <button type="button" className={`${styles.typeBtn} ${addOwner === 'self' ? styles.active : ''}`}
+                  onClick={() => setAddOwner('self')}>본인</button>
+                <button type="button" className={`${styles.typeBtn} ${addOwner === 'spouse' ? styles.active : ''}`}
+                  onClick={() => setAddOwner('spouse')}>배우자</button>
+              </div>
+            </div>
+          )}
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}>유형</span>
+            <div className={styles.typeButtons}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${addValues.type === 'DB' ? styles.active : ''}`}
+                onClick={() => setAddValues({ ...addValues, type: 'DB', balance: '' })}
+              >
+                DB형/퇴직금
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${addValues.type === 'DC' ? styles.active : ''}`}
+                onClick={() => setAddValues({ ...addValues, type: 'DC' })}
+              >
+                DC형/기업IRP
+              </button>
+            </div>
+          </div>
+
+          {addValues.type === 'DB' && (
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>근속</span>
+              <input
+                type="number"
+                className={styles.modalFormInput}
+                value={addValues.years || ''}
+                onChange={e => setAddValues({ ...addValues, years: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                min={0}
+                max={50}
+                placeholder="0"
+              />
+              <span className={styles.modalFormUnit}>년</span>
+            </div>
+          )}
+
+          {addValues.type === 'DC' && (
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>잔액</span>
+              <input
+                type="number"
+                className={styles.modalFormInput}
+                value={addValues.balance || ''}
+                onChange={e => setAddValues({ ...addValues, balance: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                placeholder="0"
+              />
+              <span className={styles.modalFormUnit}>만원</span>
+            </div>
+          )}
+
+          {addValues.type && (
+            <>
+              <div className={styles.modalFormRow}>
+                <span className={styles.modalFormLabel}>수령</span>
+                <div className={styles.typeButtons}>
+                  <button
+                    type="button"
+                    className={`${styles.typeBtn} ${addValues.receiveType === 'annuity' ? styles.active : ''}`}
+                    onClick={() => setAddValues({ ...addValues, receiveType: 'annuity' })}
+                  >
+                    연금 수령
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.typeBtn} ${addValues.receiveType === 'lump_sum' ? styles.active : ''}`}
+                    onClick={() => setAddValues({ ...addValues, receiveType: 'lump_sum' })}
+                  >
+                    일시금 수령
+                  </button>
+                </div>
+              </div>
+
+              {addValues.receiveType === 'annuity' && (
+                <>
+                  <div className={styles.modalFormRow}>
+                    <span className={styles.modalFormLabel}>수령시작</span>
+                    <div className={styles.modalDateGroup}>
+                      <input
+                        type="number"
+                        className={styles.modalYearInput}
+                        value={addValues.startYear || ''}
+                        onChange={e => setAddValues({ ...addValues, startYear: e.target.value })}
+                        onWheel={e => (e.target as HTMLElement).blur()}
+                      />
+                      <span className={styles.modalFormUnit}>년</span>
+                      <input
+                        type="number"
+                        className={styles.modalMonthInput}
+                        value={addValues.startMonth || ''}
+                        onChange={e => setAddValues({ ...addValues, startMonth: e.target.value })}
+                        onWheel={e => (e.target as HTMLElement).blur()}
+                        min={1}
+                        max={12}
+                        placeholder="1"
+                      />
+                      <span className={styles.modalFormUnit}>월</span>
+                    </div>
+                  </div>
+                  <div className={styles.modalFormRow}>
+                    <span className={styles.modalFormLabel}>수령종료</span>
+                    <div className={styles.modalDateGroup}>
+                      <input
+                        type="number"
+                        className={styles.modalYearInput}
+                        value={addValues.endYear || ''}
+                        onChange={e => setAddValues({ ...addValues, endYear: e.target.value })}
+                        onWheel={e => (e.target as HTMLElement).blur()}
+                      />
+                      <span className={styles.modalFormUnit}>년</span>
+                      <input
+                        type="number"
+                        className={styles.modalMonthInput}
+                        value={addValues.endMonth || ''}
+                        onChange={e => setAddValues({ ...addValues, endMonth: e.target.value })}
+                        onWheel={e => (e.target as HTMLElement).blur()}
+                        min={1}
+                        max={12}
+                        placeholder="12"
+                      />
+                      <span className={styles.modalFormUnit}>월</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          <div className={styles.modalFormActions}>
+            <button className={styles.modalCancelBtn} onClick={resetAddForm}>취소</button>
+            <button className={styles.modalAddBtn} onClick={handleSaveRetirementPension} disabled={isSaving || !addValues.type}>
+              {isSaving ? '저장 중...' : '추가'}
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    if (addingType === 'personal') {
+      return (
+        <div className={styles.modalFormBody}>
+          {isMarried && (
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>소유자</span>
+              <div className={styles.typeButtons}>
+                <button type="button" className={`${styles.typeBtn} ${addOwner === 'self' ? styles.active : ''}`}
+                  onClick={() => setAddOwner('self')}>본인</button>
+                <button type="button" className={`${styles.typeBtn} ${addOwner === 'spouse' ? styles.active : ''}`}
+                  onClick={() => setAddOwner('spouse')}>배우자</button>
+              </div>
+            </div>
+          )}
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}>유형</span>
+            <div className={styles.typeButtons}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${addValues.pensionType === 'pension_savings' ? styles.active : ''}`}
+                onClick={() => setAddValues({ ...addValues, pensionType: 'pension_savings' })}
+              >
+                연금저축
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${addValues.pensionType === 'irp' ? styles.active : ''}`}
+                onClick={() => setAddValues({ ...addValues, pensionType: 'irp' })}
+              >
+                IRP
+              </button>
+            </div>
+          </div>
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}>잔액</span>
+            <input
+              type="number"
+              className={styles.modalFormInput}
+              value={addValues.balance || ''}
+              onChange={e => setAddValues({ ...addValues, balance: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              placeholder="0"
+            />
+            <span className={styles.modalFormUnit}>만원</span>
+          </div>
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}>납입</span>
+            <input
+              type="number"
+              className={styles.modalFormInput}
+              value={addValues.monthly || ''}
+              onChange={e => setAddValues({ ...addValues, monthly: e.target.value })}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              placeholder="0"
+            />
+            <span className={styles.modalFormUnit}>만원/월</span>
+          </div>
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}>수령시작</span>
+            <div className={styles.modalDateGroup}>
+              <input
+                type="number"
+                className={styles.modalYearInput}
+                value={addValues.startYear || ''}
+                onChange={e => setAddValues({ ...addValues, startYear: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+              />
+              <span className={styles.modalFormUnit}>년</span>
+              <input
+                type="number"
+                className={styles.modalMonthInput}
+                value={addValues.startMonth || ''}
+                onChange={e => setAddValues({ ...addValues, startMonth: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                min={1}
+                max={12}
+                placeholder="1"
+              />
+              <span className={styles.modalFormUnit}>월</span>
+            </div>
+          </div>
+          <div className={styles.modalFormRow}>
+            <span className={styles.modalFormLabel}>수령종료</span>
+            <div className={styles.modalDateGroup}>
+              <input
+                type="number"
+                className={styles.modalYearInput}
+                value={addValues.endYear || ''}
+                onChange={e => setAddValues({ ...addValues, endYear: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+              />
+              <span className={styles.modalFormUnit}>년</span>
+              <input
+                type="number"
+                className={styles.modalMonthInput}
+                value={addValues.endMonth || ''}
+                onChange={e => setAddValues({ ...addValues, endMonth: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                min={1}
+                max={12}
+                placeholder="12"
+              />
+              <span className={styles.modalFormUnit}>월</span>
+            </div>
+          </div>
+          <div className={styles.modalFormActions}>
+            <button className={styles.modalCancelBtn} onClick={resetAddForm}>취소</button>
+            <button className={styles.modalAddBtn} onClick={handleSavePersonalPension} disabled={isSaving}>
+              {isSaving ? '저장 중...' : '추가'}
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return null
   }
 
   if (isLoading && hasNoData) {
@@ -171,7 +671,6 @@ export function PensionTab({
         </button>
         <div className={styles.headerRight}>
           <button
-            ref={addButtonRef}
             className={styles.addIconBtn}
             onClick={() => setShowTypeMenu(!showTypeMenu)}
             type="button"
@@ -181,39 +680,67 @@ export function PensionTab({
         </div>
       </div>
 
-      {/* 타입 선택 드롭다운 - portal로 body에 렌더 */}
-      {showTypeMenu && addButtonRef.current && createPortal(
+      {/* 타입 선택 모달 (2-step) */}
+      {showTypeMenu && createPortal(
         <div
-          className={styles.typeMenu}
-          data-scenario-dropdown-portal
-          style={{
-            position: 'fixed',
-            top: addButtonRef.current.getBoundingClientRect().bottom + 6,
-            left: addButtonRef.current.getBoundingClientRect().right - 150,
-            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-          }}
+          className={styles.typeModalOverlay}
+          data-scenario-dropdown-portal="true"
+          onClick={() => resetAddForm()}
         >
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => handleTypeSelect('national')}
+          <div
+            className={styles.typeModal}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            }}
           >
-            국민연금
-          </button>
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => handleTypeSelect('retirement')}
-          >
-            퇴직연금
-          </button>
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => handleTypeSelect('personal')}
-          >
-            개인연금
-          </button>
+            {!addingType ? (
+              <>
+                {/* Step 1: 타입 선택 */}
+                <div className={styles.typeModalHeader}>
+                  <span className={styles.typeModalTitle}>연금 추가</span>
+                  <button className={styles.typeModalClose} onClick={() => resetAddForm()} type="button">
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className={styles.typeGrid}>
+                  <button className={styles.typeCard} onClick={() => handleTypeSelect('national')}>
+                    <span className={styles.typeCardName}>국민연금</span>
+                    <span className={styles.typeCardDesc}>예상 수령액 등록</span>
+                  </button>
+                  <button className={styles.typeCard} onClick={() => handleTypeSelect('retirement')}>
+                    <span className={styles.typeCardName}>퇴직연금</span>
+                    <span className={styles.typeCardDesc}>DB/DC, 수령방식</span>
+                  </button>
+                  <button className={styles.typeCard} onClick={() => handleTypeSelect('personal')}>
+                    <span className={styles.typeCardName}>개인연금</span>
+                    <span className={styles.typeCardDesc}>연금저축, IRP</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Step 2: 입력 폼 */}
+                <div className={styles.typeModalHeader}>
+                  <div className={styles.headerLeft}>
+                    <button className={styles.backButton} onClick={() => setAddingType(null)} type="button">
+                      <ArrowLeft size={18} />
+                    </button>
+                    <span className={styles.stepLabel}>
+                      {addingType === 'national' ? '국민연금 추가' : addingType === 'retirement' ? '퇴직연금 추가' : '개인연금 추가'}
+                    </span>
+                  </div>
+                  <button className={styles.typeModalClose} onClick={() => resetAddForm()} type="button">
+                    <X size={18} />
+                  </button>
+                </div>
+                {renderAddForm()}
+              </>
+            )}
+          </div>
         </div>,
         document.body
       )}
@@ -257,6 +784,7 @@ export function PensionTab({
             yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
             birthYear={birthYear}
             retirementAge={retirementAge}
+            globalSettings={settings}
             onSave={loadPensions}
           />
           {isMarried && (
@@ -270,6 +798,7 @@ export function PensionTab({
               yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
               birthYear={effectiveSpouseBirthYear}
               retirementAge={retirementAge}
+              globalSettings={settings}
               onSave={loadPensions}
             />
           )}
@@ -282,6 +811,7 @@ export function PensionTab({
             ownerLabel="본인"
             birthYear={birthYear}
             retirementAge={retirementAge}
+            globalSettings={settings}
             onSave={loadPensions}
           />
           {isMarried && (
@@ -292,6 +822,7 @@ export function PensionTab({
               ownerLabel="배우자"
               birthYear={effectiveSpouseBirthYear}
               retirementAge={retirementAge}
+              globalSettings={settings}
               onSave={loadPensions}
             />
           )}

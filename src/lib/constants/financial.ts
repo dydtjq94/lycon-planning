@@ -106,10 +106,32 @@ export function getBrokerLogo(brokerName: string | null): string | null {
   return BROKER_LOGO_MAP[brokerName] || null
 }
 
+// 카드사/페이 로고 매핑
+export const CARD_LOGO_MAP: Record<string, string> = {
+  "신한카드": "/logos/cards/shinhan.png",
+  "삼성카드": "/logos/cards/samsung.png",
+  "현대카드": "/logos/cards/hyundai.png",
+  "KB국민카드": "/logos/cards/kb.png",
+  "NH농협카드": "/logos/cards/nh.png",
+  "롯데카드": "/logos/cards/lotte.png",
+  "우리카드": "/logos/cards/woori.png",
+  "하나카드": "/logos/cards/hana.png",
+  "BC카드": "/logos/cards/bc.png",
+  "아멕스": "/logos/cards/amex.png",
+  "카카오뱅크카드": "/logos/cards/kakaobank.png",
+  "케이뱅크카드": "/logos/cards/kbank.png",
+  "토스뱅크카드": "/logos/cards/tossbank.png",
+}
+
+export function getCardLogo(cardCompany: string | null): string | null {
+  if (!cardCompany) return null
+  return CARD_LOGO_MAP[cardCompany] || null
+}
+
 // 모듈 로드 시점에 모든 로고를 브라우저 캐시에 미리 로드
 if (typeof window !== 'undefined') {
   const preloaded = new Set<string>()
-  Object.values(BROKER_LOGO_MAP).forEach(src => {
+  ;[...Object.values(BROKER_LOGO_MAP), ...Object.values(CARD_LOGO_MAP)].forEach(src => {
     if (!preloaded.has(src)) {
       const img = new Image()
       img.src = src

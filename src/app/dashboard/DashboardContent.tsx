@@ -1007,14 +1007,47 @@ export function DashboardContent() {
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
             retirementAge={profile.target_retirement_age}
+            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            isMarried={isMarried}
+            globalSettings={globalSettings}
           />
         );
       case "asset":
-        return <AssetTab simulationId={simulation.id} />;
+        return (
+          <AssetTab
+            simulationId={simulation.id}
+            birthYear={simulationProfile.birthYear}
+            spouseBirthYear={simulationProfile.spouseBirthYear}
+            retirementAge={profile.target_retirement_age}
+            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            isMarried={isMarried}
+            globalSettings={globalSettings}
+          />
+        );
       case "debt":
-        return <DebtTab simulationId={simulation.id} />;
+        return (
+          <DebtTab
+            simulationId={simulation.id}
+            birthYear={simulationProfile.birthYear}
+            spouseBirthYear={simulationProfile.spouseBirthYear}
+            retirementAge={profile.target_retirement_age}
+            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            isMarried={isMarried}
+            globalSettings={globalSettings}
+          />
+        );
       case "realEstate":
-        return <RealEstateTab simulationId={simulation.id} />;
+        return (
+          <RealEstateTab
+            simulationId={simulation.id}
+            birthYear={simulationProfile.birthYear}
+            spouseBirthYear={simulationProfile.spouseBirthYear}
+            retirementAge={profile.target_retirement_age}
+            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            isMarried={isMarried}
+            globalSettings={globalSettings}
+          />
+        );
       case "pension":
         return (
           <PensionTab

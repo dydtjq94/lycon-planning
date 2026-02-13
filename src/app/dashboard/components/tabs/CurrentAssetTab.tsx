@@ -3,10 +3,6 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import {
   Plus, Trash2, Link2, User, Users, Baby, Target, Settings, X, ChevronRight,
-  Building2, Home, Building, MapPin, Store, MoreHorizontal,
-  Car, Gem, Palette, Package,
-  CreditCard, GraduationCap, Wallet, ShoppingCart, Landmark,
-  Coins, Briefcase, TrendingUp, CircleDollarSign
 } from "lucide-react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
@@ -171,51 +167,46 @@ type ModalCategory = "investment" | "realEstate" | "realAsset" | "debt";
 interface ModalItemConfig {
   value: string;
   label: string;
-  icon: React.ReactNode;
 }
 
-const MODAL_ITEMS: Record<ModalCategory, { title: string; color: string; items: ModalItemConfig[] }> = {
+const MODAL_ITEMS: Record<ModalCategory, { title: string; items: ModalItemConfig[] }> = {
   investment: {
     title: "투자",
-    color: "#22c55e",
     items: [
-      { value: "gold", label: "실물 금", icon: <Coins size={20} /> },
-      { value: "fund", label: "펀드", icon: <TrendingUp size={20} /> },
-      { value: "bond", label: "채권", icon: <Landmark size={20} /> },
-      { value: "crypto", label: "암호화폐", icon: <CircleDollarSign size={20} /> },
-      { value: "other", label: "기타", icon: <MoreHorizontal size={20} /> },
+      { value: "gold", label: "실물 금" },
+      { value: "fund", label: "펀드" },
+      { value: "bond", label: "채권" },
+      { value: "crypto", label: "암호화폐" },
+      { value: "other", label: "기타" },
     ],
   },
   realEstate: {
     title: "투자용 부동산",
-    color: "#8b5cf6",
     items: [
-      { value: "apartment", label: "아파트", icon: <Building2 size={20} /> },
-      { value: "house", label: "주택", icon: <Home size={20} /> },
-      { value: "officetel", label: "오피스텔", icon: <Building size={20} /> },
-      { value: "land", label: "토지", icon: <MapPin size={20} /> },
-      { value: "commercial", label: "상가", icon: <Store size={20} /> },
-      { value: "other", label: "기타", icon: <MoreHorizontal size={20} /> },
+      { value: "apartment", label: "아파트" },
+      { value: "house", label: "주택" },
+      { value: "officetel", label: "오피스텔" },
+      { value: "land", label: "토지" },
+      { value: "commercial", label: "상가" },
+      { value: "other", label: "기타" },
     ],
   },
   realAsset: {
     title: "실물 자산",
-    color: "#f59e0b",
     items: [
-      { value: "car", label: "자동차", icon: <Car size={20} /> },
-      { value: "precious_metal", label: "귀금속", icon: <Gem size={20} /> },
-      { value: "art", label: "미술품", icon: <Palette size={20} /> },
-      { value: "other", label: "기타", icon: <Package size={20} /> },
+      { value: "car", label: "자동차" },
+      { value: "precious_metal", label: "귀금속" },
+      { value: "art", label: "미술품" },
+      { value: "other", label: "기타" },
     ],
   },
   debt: {
     title: "금융 부채",
-    color: "#94a3b8",
     items: [
-      { value: "credit", label: "신용대출", icon: <Wallet size={20} /> },
-      { value: "student", label: "학자금대출", icon: <GraduationCap size={20} /> },
-      { value: "card", label: "카드대출", icon: <CreditCard size={20} /> },
-      { value: "other", label: "기타", icon: <MoreHorizontal size={20} /> },
+      { value: "credit", label: "신용대출" },
+      { value: "student", label: "학자금대출" },
+      { value: "card", label: "카드대출" },
+      { value: "other", label: "기타" },
     ],
   },
 };
@@ -1804,7 +1795,7 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
 export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps) {
   const [activeTab, setActiveTab] = useState<TabType>("savings");
   const supabase = createClient();
-  const { categoryColors, categoryShades, chartScaleColors } = useChartTheme();
+  const { isDark, categoryColors, categoryShades, chartScaleColors } = useChartTheme();
 
   // 스냅샷 데이터 (항상 오늘)
   const { data: todaySnapshot, isLoading: isSnapshotLoading } = useTodaySnapshot(profileId);
@@ -1925,6 +1916,18 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
 
   // 가계/개인 모드 전환 모달
   const [showPlanningModeModal, setShowPlanningModeModal] = useState(false);
+
+  // ESC 키로 모달 닫기
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (addModalCategory) setAddModalCategory(null);
+        if (showPlanningModeModal) setShowPlanningModeModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [addModalCategory, showPlanningModeModal]);
 
   // 가계/개인 모드 전환 실행
   const confirmPlanningModeChange = async () => {
@@ -3871,7 +3874,14 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
                   {/* 계획 단위 변경 모달 */}
                   {showPlanningModeModal && (
                     <div className={styles.planningModeModal}>
-                      <div className={styles.planningModeModalContent}>
+                      <div className={styles.planningModeModalContent}
+                        style={{
+                          background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+                          backdropFilter: 'blur(8px)',
+                          WebkitBackdropFilter: 'blur(8px)',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                        }}
+                      >
                         <div className={styles.planningModeModalHeader}>
                           <span>계획 단위 선택</span>
                           <button onClick={() => setShowPlanningModeModal(false)}>
@@ -4221,7 +4231,14 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       {/* 추가 모달 */}
       {addModalCategory && (
         <div className={styles.modalOverlay} onClick={() => setAddModalCategory(null)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}
+            style={{
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            }}
+          >
             <div className={styles.modalHeader}>
               <span className={styles.modalTitle}>{MODAL_ITEMS[addModalCategory].title} 추가</span>
               <button className={styles.modalCloseBtn} onClick={() => setAddModalCategory(null)}>
@@ -4236,12 +4253,6 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
                     className={styles.modalItem}
                     onClick={() => handleModalSelect(item.value)}
                   >
-                    <div
-                      className={styles.modalItemIcon}
-                      style={{ backgroundColor: MODAL_ITEMS[addModalCategory].color }}
-                    >
-                      {item.icon}
-                    </div>
                     <span className={styles.modalItemLabel}>{item.label}</span>
                   </button>
                 ))}

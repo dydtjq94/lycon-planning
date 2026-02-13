@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Pencil, Trash2, Building2, Plus } from 'lucide-react'
+import { Pencil, Trash2, Building2, Plus, X, ArrowLeft } from 'lucide-react'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -11,7 +11,9 @@ import {
 } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
 import type { RealEstate, RealEstateType, HousingType, LoanRepaymentType } from '@/types/tables'
-import { formatMoney } from '@/lib/utils'
+import type { GlobalSettings } from '@/types'
+import { formatMoney, getDefaultRateCategory, getEffectiveRate } from '@/lib/utils'
+import { formatPeriodDisplay, toPeriodRaw, isPeriodValid, restorePeriodCursor, handlePeriodTextChange } from '@/lib/utils/periodInput'
 import { useRealEstates, useInvalidateByCategory } from '@/hooks/useFinancialData'
 import {
   createRealEstate,
@@ -30,6 +32,12 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 
 interface RealEstateTabProps {
   simulationId: string
+  birthYear: number
+  spouseBirthYear?: number | null
+  retirementAge: number
+  spouseRetirementAge?: number
+  isMarried: boolean
+  globalSettings?: GlobalSettings
 }
 
 // 색상
@@ -40,10 +48,34 @@ const USAGE_COLORS: Record<Exclude<RealEstateType, 'residence'>, string> = {
   land: '#ff9500',
 }
 
-export function RealEstateTab({ simulationId }: RealEstateTabProps) {
+const TYPE_LABELS: Record<RealEstateType, string> = {
+  residence: '거주용',
+  investment: '투자용',
+  rental: '임대용',
+  land: '토지',
+}
+
+export function RealEstateTab({
+  simulationId,
+  birthYear,
+  spouseBirthYear,
+  retirementAge,
+  spouseRetirementAge,
+  isMarried,
+  globalSettings,
+}: RealEstateTabProps) {
   const { isDark } = useChartTheme()
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth() + 1
+  const currentAge = currentYear - birthYear
+  const selfRetirementYear = currentYear + (retirementAge - currentAge)
+  const spouseCurrentAge = spouseBirthYear ? currentYear - spouseBirthYear : null
+  const spouseRetirementYear = useMemo(() => {
+    if (!spouseBirthYear || spouseCurrentAge === null) return selfRetirementYear
+    return currentYear + ((spouseRetirementAge || 60) - spouseCurrentAge)
+  }, [spouseBirthYear, currentYear, selfRetirementYear, spouseCurrentAge, spouseRetirementAge])
+  const hasSpouse = isMarried && spouseBirthYear
+
 
   // React Query로 데이터 로드 (캐시에서 즉시 가져옴)
   const { data: dbRealEstates = [], isLoading } = useRealEstates(simulationId)
@@ -56,8 +88,24 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
 
+  // Rate category and owner state
+  const [editRateCategory, setEditRateCategory] = useState<string>('realEstate')
+  const [editCustomRate, setEditCustomRate] = useState("")
+  const [editOwner, setEditOwner] = useState<'self' | 'spouse' | 'common'>('self')
+
+  // Period text states
+  const [purchaseDateText, setPurchaseDateText] = useState('')
+  const [loanStartDateText, setLoanStartDateText] = useState('')
+  const [loanMaturityDateText, setLoanMaturityDateText] = useState('')
+  const [graceEndDateText, setGraceEndDateText] = useState('')
+
+  // Preset types
+  const [purchaseType, setPurchaseType] = useState<'current' | 'year'>('current')
+  const [loanStartType, setLoanStartType] = useState<'current' | 'year'>('current')
+
   // 타입 선택 드롭다운
   const [showTypeMenu, setShowTypeMenu] = useState(false)
+  const [addingType, setAddingType] = useState<RealEstateType | null>(null)
   const addButtonRef = useRef<HTMLButtonElement>(null)
 
   // 타입별 분류
@@ -132,20 +180,57 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
     ? (totalRealEstateValue / netRealEstateValue).toFixed(1)
     : '1.0'
 
-  // 편집 시작 (거주용)
-  const startEditResidence = () => {
+  // 추가 폼 리셋
+  const resetAddForm = () => {
+    setShowTypeMenu(false)
+    setAddingType(null)
+    setEditingProperty(null)
+    setEditValues({})
+    setEditBooleans({ hasRentalIncome: false, hasLoan: false })
+    setPurchaseDateText('')
+    setLoanStartDateText('')
+    setLoanMaturityDateText('')
+    setGraceEndDateText('')
+    setPurchaseType('current')
+    setLoanStartType('current')
+  }
+
+  // 편집 시작 (거주용) - for step 2 in add modal or edit modal
+  const initResidenceValues = () => {
     const prop = residenceProperty
-    let maturityYear = ''
-    let maturityMonth = ''
-    if (prop?.loan_maturity_year && prop?.loan_maturity_month) {
-      maturityYear = prop.loan_maturity_year.toString()
-      maturityMonth = prop.loan_maturity_month.toString()
-    }
-    const startYear = prop?.loan_start_year?.toString() || ''
-    const startMonth = prop?.loan_start_month?.toString() || ''
 
     setEditingProperty({ type: 'residence', id: prop?.id || null })
     setEditBooleans({ hasRentalIncome: false, hasLoan: prop?.has_loan || false })
+
+    // Initialize period text states
+    if (prop?.purchase_year && prop?.purchase_month) {
+      setPurchaseDateText(toPeriodRaw(prop.purchase_year, prop.purchase_month))
+      setPurchaseType('year')
+    } else {
+      setPurchaseDateText('')
+      setPurchaseType('current')
+    }
+
+    if (prop?.loan_start_year && prop?.loan_start_month) {
+      setLoanStartDateText(toPeriodRaw(prop.loan_start_year, prop.loan_start_month))
+      setLoanStartType('year')
+    } else {
+      setLoanStartDateText('')
+      setLoanStartType('current')
+    }
+
+    if (prop?.loan_maturity_year && prop?.loan_maturity_month) {
+      setLoanMaturityDateText(toPeriodRaw(prop.loan_maturity_year, prop.loan_maturity_month))
+    } else {
+      setLoanMaturityDateText('')
+    }
+
+    if (prop?.grace_end_year && prop?.grace_end_month) {
+      setGraceEndDateText(toPeriodRaw(prop.grace_end_year, prop.grace_end_month))
+    } else {
+      setGraceEndDateText('')
+    }
+
     setEditValues({
       housingType: prop?.housing_type || '',
       currentValue: prop?.current_value?.toString() || '',
@@ -156,20 +241,32 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
       maintenanceFee: prop?.maintenance_fee?.toString() || '',
       loanAmount: prop?.loan_amount?.toString() || '',
       loanRate: prop?.loan_rate?.toString() || '',
-      loanStartYear: startYear,
-      loanStartMonth: startMonth,
-      loanMaturityYear: maturityYear,
-      loanMaturityMonth: maturityMonth,
+      loanStartYear: prop?.loan_start_year?.toString() || '',
+      loanStartMonth: prop?.loan_start_month?.toString() || '',
+      loanMaturityYear: prop?.loan_maturity_year?.toString() || '',
+      loanMaturityMonth: prop?.loan_maturity_month?.toString() || '',
       loanRepaymentType: prop?.loan_repayment_type || '',
       graceEndYear: prop?.grace_end_year?.toString() || '',
       graceEndMonth: prop?.grace_end_month?.toString() || '',
     })
   }
 
-  // 편집 시작 (추가 부동산)
-  const startAddProperty = (type: Exclude<RealEstateType, 'residence'>) => {
+  // 편집 시작 (추가 부동산) - for step 2 in add modal
+  const initPropertyValues = (type: Exclude<RealEstateType, 'residence'>) => {
     setEditingProperty({ type, id: null })
     setEditBooleans({ hasRentalIncome: false, hasLoan: false })
+    setEditRateCategory('realEstate')
+    setEditCustomRate('')
+    setEditOwner('self')
+
+    // Initialize period text states to empty (will use presets)
+    setPurchaseDateText('')
+    setLoanStartDateText('')
+    setLoanMaturityDateText('')
+    setGraceEndDateText('')
+    setPurchaseType('current')
+    setLoanStartType('current')
+
     setEditValues({
       title: '',
       currentValue: '',
@@ -187,46 +284,105 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
       graceEndYear: '',
       graceEndMonth: '',
     })
-    setShowTypeMenu(false)
   }
 
   const startEditProperty = (property: RealEstate) => {
     setEditingProperty({ type: property.type, id: property.id })
 
-    let maturityYear = ''
-    let maturityMonth = ''
-    if (property.loan_maturity_year && property.loan_maturity_month) {
-      maturityYear = property.loan_maturity_year.toString()
-      maturityMonth = property.loan_maturity_month.toString()
+    // Set rate category and owner
+    const rateCategory = (property as any).rate_category || 'realEstate'
+    setEditRateCategory(rateCategory)
+    if (rateCategory === 'fixed') {
+      setEditCustomRate(property.growth_rate?.toString() || '')
+    } else {
+      setEditCustomRate('')
+    }
+    setEditOwner(property.owner || 'self')
+
+    // Initialize period text states
+    if (property.purchase_year && property.purchase_month) {
+      setPurchaseDateText(toPeriodRaw(property.purchase_year, property.purchase_month))
+      setPurchaseType('year')
+    } else {
+      setPurchaseDateText('')
+      setPurchaseType('current')
     }
 
-    setEditBooleans({
-      hasRentalIncome: property.has_rental_income || false,
-      hasLoan: property.has_loan || false,
-    })
-    setEditValues({
-      title: property.title,
-      currentValue: property.current_value.toString(),
-      purchaseYear: property.purchase_year?.toString() || '',
-      purchaseMonth: property.purchase_month?.toString() || '',
-      rentalMonthly: property.rental_monthly?.toString() || '',
-      rentalDeposit: property.rental_deposit?.toString() || '',
-      loanAmount: property.loan_amount?.toString() || '',
-      loanRate: property.loan_rate?.toString() || '',
-      loanStartYear: property.loan_start_year?.toString() || '',
-      loanStartMonth: property.loan_start_month?.toString() || '',
-      loanMaturityYear: maturityYear,
-      loanMaturityMonth: maturityMonth,
-      loanRepaymentType: property.loan_repayment_type || '',
-      graceEndYear: property.grace_end_year?.toString() || '',
-      graceEndMonth: property.grace_end_month?.toString() || '',
-    })
+    if (property.loan_start_year && property.loan_start_month) {
+      setLoanStartDateText(toPeriodRaw(property.loan_start_year, property.loan_start_month))
+      setLoanStartType('year')
+    } else {
+      setLoanStartDateText('')
+      setLoanStartType('current')
+    }
+
+    if (property.loan_maturity_year && property.loan_maturity_month) {
+      setLoanMaturityDateText(toPeriodRaw(property.loan_maturity_year, property.loan_maturity_month))
+    } else {
+      setLoanMaturityDateText('')
+    }
+
+    if (property.grace_end_year && property.grace_end_month) {
+      setGraceEndDateText(toPeriodRaw(property.grace_end_year, property.grace_end_month))
+    } else {
+      setGraceEndDateText('')
+    }
+
+    if (property.type === 'residence') {
+      setEditBooleans({ hasRentalIncome: false, hasLoan: property.has_loan || false })
+      setEditValues({
+        housingType: property.housing_type || '',
+        currentValue: property.current_value?.toString() || '',
+        purchaseYear: property.purchase_year?.toString() || '',
+        purchaseMonth: property.purchase_month?.toString() || '',
+        purchasePrice: property.purchase_price?.toString() || '',
+        monthlyRent: property.monthly_rent?.toString() || '',
+        maintenanceFee: property.maintenance_fee?.toString() || '',
+        loanAmount: property.loan_amount?.toString() || '',
+        loanRate: property.loan_rate?.toString() || '',
+        loanStartYear: property.loan_start_year?.toString() || '',
+        loanStartMonth: property.loan_start_month?.toString() || '',
+        loanMaturityYear: property.loan_maturity_year?.toString() || '',
+        loanMaturityMonth: property.loan_maturity_month?.toString() || '',
+        loanRepaymentType: property.loan_repayment_type || '',
+        graceEndYear: property.grace_end_year?.toString() || '',
+        graceEndMonth: property.grace_end_month?.toString() || '',
+      })
+    } else {
+      setEditBooleans({
+        hasRentalIncome: property.has_rental_income || false,
+        hasLoan: property.has_loan || false,
+      })
+      setEditValues({
+        title: property.title,
+        currentValue: property.current_value.toString(),
+        purchaseYear: property.purchase_year?.toString() || '',
+        purchaseMonth: property.purchase_month?.toString() || '',
+        rentalMonthly: property.rental_monthly?.toString() || '',
+        rentalDeposit: property.rental_deposit?.toString() || '',
+        loanAmount: property.loan_amount?.toString() || '',
+        loanRate: property.loan_rate?.toString() || '',
+        loanStartYear: property.loan_start_year?.toString() || '',
+        loanStartMonth: property.loan_start_month?.toString() || '',
+        loanMaturityYear: property.loan_maturity_year?.toString() || '',
+        loanMaturityMonth: property.loan_maturity_month?.toString() || '',
+        loanRepaymentType: property.loan_repayment_type || '',
+        graceEndYear: property.grace_end_year?.toString() || '',
+        graceEndMonth: property.grace_end_month?.toString() || '',
+      })
+    }
   }
 
   const cancelEdit = () => {
     setEditingProperty(null)
     setEditValues({})
     setEditBooleans({ hasRentalIncome: false, hasLoan: false })
+    setPurchaseDateText('')
+    setLoanStartDateText('')
+    setLoanMaturityDateText('')
+    setGraceEndDateText('')
+    setPurchaseType('current')
+    setLoanStartType('current')
   }
 
   // 저장 (거주용)
@@ -237,28 +393,68 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
     try {
       const housingType = editValues.housingType as HousingType | null
 
+      // Parse purchase date
+      let purchaseYear: number | null = null
+      let purchaseMonth: number | null = null
+      if (purchaseType === 'current') {
+        purchaseYear = currentYear
+        purchaseMonth = currentMonth
+      } else if (purchaseDateText.length === 6 && isPeriodValid(purchaseDateText)) {
+        purchaseYear = parseInt(purchaseDateText.slice(0, 4))
+        purchaseMonth = parseInt(purchaseDateText.slice(4))
+      }
+
+      // Parse loan start date
+      let loanStartYear: number | null = null
+      let loanStartMonth: number | null = null
+      if (editBooleans.hasLoan) {
+        if (loanStartType === 'current') {
+          loanStartYear = currentYear
+          loanStartMonth = currentMonth
+        } else if (loanStartDateText.length === 6 && isPeriodValid(loanStartDateText)) {
+          loanStartYear = parseInt(loanStartDateText.slice(0, 4))
+          loanStartMonth = parseInt(loanStartDateText.slice(4))
+        }
+      }
+
+      // Parse loan maturity date
+      let loanMaturityYear: number | null = null
+      let loanMaturityMonth: number | null = null
+      if (editBooleans.hasLoan && loanMaturityDateText.length === 6 && isPeriodValid(loanMaturityDateText)) {
+        loanMaturityYear = parseInt(loanMaturityDateText.slice(0, 4))
+        loanMaturityMonth = parseInt(loanMaturityDateText.slice(4))
+      }
+
+      // Parse grace end date
+      let graceEndYear: number | null = null
+      let graceEndMonth: number | null = null
+      if (editBooleans.hasLoan && editValues.loanRepaymentType === '거치식상환' && graceEndDateText.length === 6 && isPeriodValid(graceEndDateText)) {
+        graceEndYear = parseInt(graceEndDateText.slice(0, 4))
+        graceEndMonth = parseInt(graceEndDateText.slice(4))
+      }
+
       await upsertResidenceRealEstate(simulationId, {
         housing_type: housingType,
         current_value: editValues.currentValue ? parseFloat(editValues.currentValue) : 0,
         purchase_price: editValues.purchasePrice ? parseFloat(editValues.purchasePrice) : null,
-        purchase_year: editValues.purchaseYear ? parseInt(editValues.purchaseYear) : null,
-        purchase_month: editValues.purchaseMonth ? parseInt(editValues.purchaseMonth) : null,
+        purchase_year: purchaseYear,
+        purchase_month: purchaseMonth,
         monthly_rent: editValues.monthlyRent ? parseFloat(editValues.monthlyRent) : null,
         maintenance_fee: editValues.maintenanceFee ? parseFloat(editValues.maintenanceFee) : null,
         has_loan: editBooleans.hasLoan,
         loan_amount: editValues.loanAmount ? parseFloat(editValues.loanAmount) : null,
         loan_rate: editValues.loanRate ? parseFloat(editValues.loanRate) : null,
-        loan_start_year: editValues.loanStartYear ? parseInt(editValues.loanStartYear) : null,
-        loan_start_month: editValues.loanStartMonth ? parseInt(editValues.loanStartMonth) : null,
-        loan_maturity_year: editValues.loanMaturityYear ? parseInt(editValues.loanMaturityYear) : null,
-        loan_maturity_month: editValues.loanMaturityMonth ? parseInt(editValues.loanMaturityMonth) : null,
+        loan_start_year: loanStartYear,
+        loan_start_month: loanStartMonth,
+        loan_maturity_year: loanMaturityYear,
+        loan_maturity_month: loanMaturityMonth,
         loan_repayment_type: editValues.loanRepaymentType as LoanRepaymentType | null,
-        grace_end_year: editValues.loanRepaymentType === '거치식상환' && editValues.graceEndYear ? parseInt(editValues.graceEndYear) : null,
-        grace_end_month: editValues.loanRepaymentType === '거치식상환' && editValues.graceEndMonth ? parseInt(editValues.graceEndMonth) : null,
+        grace_end_year: graceEndYear,
+        grace_end_month: graceEndMonth,
       })
 
       invalidate('realEstates')
-      cancelEdit()
+      resetAddForm()
     } catch (error) {
       console.error('Failed to save residence:', error)
     } finally {
@@ -272,13 +468,66 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
     setIsSaving(true)
 
     try {
+      // Compute growth_rate based on rate category
+      let growthRate: number | undefined
+      if (editRateCategory === 'fixed') {
+        growthRate = editCustomRate ? parseFloat(editCustomRate) : 0
+      } else {
+        const scenarioMode = globalSettings?.scenarioMode || 'average'
+        const settings = globalSettings || { scenarioMode: 'average' as const, rates: {} }
+        growthRate = getEffectiveRate(0, 'realEstate', scenarioMode, settings as any)
+      }
+
+      // Parse purchase date
+      let purchaseYear: number | null = null
+      let purchaseMonth: number | null = null
+      if (purchaseType === 'current') {
+        purchaseYear = currentYear
+        purchaseMonth = currentMonth
+      } else if (purchaseDateText.length === 6 && isPeriodValid(purchaseDateText)) {
+        purchaseYear = parseInt(purchaseDateText.slice(0, 4))
+        purchaseMonth = parseInt(purchaseDateText.slice(4))
+      }
+
+      // Parse loan start date
+      let loanStartYear: number | null = null
+      let loanStartMonth: number | null = null
+      if (editBooleans.hasLoan) {
+        if (loanStartType === 'current') {
+          loanStartYear = currentYear
+          loanStartMonth = currentMonth
+        } else if (loanStartDateText.length === 6 && isPeriodValid(loanStartDateText)) {
+          loanStartYear = parseInt(loanStartDateText.slice(0, 4))
+          loanStartMonth = parseInt(loanStartDateText.slice(4))
+        }
+      }
+
+      // Parse loan maturity date
+      let loanMaturityYear: number | null = null
+      let loanMaturityMonth: number | null = null
+      if (editBooleans.hasLoan && loanMaturityDateText.length === 6 && isPeriodValid(loanMaturityDateText)) {
+        loanMaturityYear = parseInt(loanMaturityDateText.slice(0, 4))
+        loanMaturityMonth = parseInt(loanMaturityDateText.slice(4))
+      }
+
+      // Parse grace end date
+      let graceEndYear: number | null = null
+      let graceEndMonth: number | null = null
+      if (editBooleans.hasLoan && editValues.loanRepaymentType === '거치식상환' && graceEndDateText.length === 6 && isPeriodValid(graceEndDateText)) {
+        graceEndYear = parseInt(graceEndDateText.slice(0, 4))
+        graceEndMonth = parseInt(graceEndDateText.slice(4))
+      }
+
       const input = {
         simulation_id: simulationId,
         type: editingProperty.type,
         title: editValues.title,
+        owner: editOwner,
         current_value: parseFloat(editValues.currentValue) || 0,
-        purchase_year: editValues.purchaseYear ? parseInt(editValues.purchaseYear) : null,
-        purchase_month: editValues.purchaseMonth ? parseInt(editValues.purchaseMonth) : null,
+        purchase_year: purchaseYear,
+        purchase_month: purchaseMonth,
+        growth_rate: growthRate,
+        rate_category: editRateCategory,
         has_rental_income: editBooleans.hasRentalIncome,
         rental_monthly: editBooleans.hasRentalIncome && editValues.rentalMonthly ? parseFloat(editValues.rentalMonthly) : null,
         rental_deposit: editBooleans.hasRentalIncome && editValues.rentalDeposit ? parseFloat(editValues.rentalDeposit) : null,
@@ -287,18 +536,16 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
         has_loan: editBooleans.hasLoan,
         loan_amount: editBooleans.hasLoan && editValues.loanAmount ? parseFloat(editValues.loanAmount) : null,
         loan_rate: editBooleans.hasLoan && editValues.loanRate ? parseFloat(editValues.loanRate) : null,
-        loan_start_year: editBooleans.hasLoan && editValues.loanStartYear ? parseInt(editValues.loanStartYear) : null,
-        loan_start_month: editBooleans.hasLoan && editValues.loanStartMonth ? parseInt(editValues.loanStartMonth) : null,
-        loan_maturity_year: editBooleans.hasLoan && editValues.loanMaturityYear ? parseInt(editValues.loanMaturityYear) : null,
-        loan_maturity_month: editBooleans.hasLoan && editValues.loanMaturityMonth ? parseInt(editValues.loanMaturityMonth) : null,
+        loan_start_year: loanStartYear,
+        loan_start_month: loanStartMonth,
+        loan_maturity_year: loanMaturityYear,
+        loan_maturity_month: loanMaturityMonth,
         loan_repayment_type: editBooleans.hasLoan && editValues.loanRepaymentType
           ? editValues.loanRepaymentType as LoanRepaymentType
           : null,
-        grace_end_year: editBooleans.hasLoan && editValues.loanRepaymentType === '거치식상환' && editValues.graceEndYear
-          ? parseInt(editValues.graceEndYear) : null,
-        grace_end_month: editBooleans.hasLoan && editValues.loanRepaymentType === '거치식상환' && editValues.graceEndMonth
-          ? parseInt(editValues.graceEndMonth) : null,
-      }
+        grace_end_year: graceEndYear,
+        grace_end_month: graceEndMonth,
+      } as any
 
       if (editingProperty.id) {
         await updateRealEstate(editingProperty.id, input)
@@ -307,7 +554,7 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
       }
 
       invalidate('realEstates')
-      cancelEdit()
+      resetAddForm()
     } catch (error) {
       console.error('Failed to save property:', error)
     } finally {
@@ -316,7 +563,6 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('이 부동산을 삭제하시겠습니까?')) return
     setIsSaving(true)
 
     try {
@@ -329,15 +575,165 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
     }
   }
 
-  // 거주용 편집 폼
-  const renderResidenceEditForm = () => {
+
+  // 대출 폼 공통 (모달용)
+  const renderLoanFields = () => {
+    const hasLoan = editBooleans.hasLoan
+    return (
+      <>
+        {hasLoan && (
+          <>
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>대출금액</span>
+              <input
+                type="number"
+                className={styles.modalFormInput}
+                value={editValues.loanAmount || ''}
+                onChange={e => setEditValues({ ...editValues, loanAmount: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                placeholder="0"
+              />
+              <span className={styles.modalFormUnit}>만원</span>
+            </div>
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>금리</span>
+              <input
+                type="number"
+                className={styles.modalFormInputSmall}
+                value={editValues.loanRate || ''}
+                onChange={e => setEditValues({ ...editValues, loanRate: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                step="0.1"
+                placeholder="3.5"
+              />
+              <span className={styles.modalFormUnit}>%</span>
+            </div>
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>대출시작</span>
+              <div className={styles.fieldContent}>
+                <select
+                  className={styles.periodSelect}
+                  value={loanStartType}
+                  onChange={(e) => {
+                    const type = e.target.value as 'current' | 'year'
+                    setLoanStartType(type)
+                    if (type === 'current') {
+                      setLoanStartDateText('')
+                      setEditValues({ ...editValues, loanStartYear: currentYear.toString(), loanStartMonth: currentMonth.toString() })
+                    }
+                  }}
+                >
+                  <option value="current">현재</option>
+                  <option value="year">직접 입력</option>
+                </select>
+                {loanStartType === 'year' && (
+                  <input
+                    type="text"
+                    className={`${styles.periodInput}${loanStartDateText.length > 0 && !isPeriodValid(loanStartDateText) ? ` ${styles.invalid}` : ''}`}
+                    value={formatPeriodDisplay(loanStartDateText)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
+                      restorePeriodCursor(e.target, raw)
+                      setLoanStartDateText(raw)
+                      if (raw.length >= 4) {
+                        const y = parseInt(raw.slice(0, 4))
+                        if (!isNaN(y)) setEditValues({ ...editValues, loanStartYear: y.toString() })
+                      }
+                      if (raw.length >= 5) {
+                        const m = parseInt(raw.slice(4))
+                        if (!isNaN(m) && m >= 1 && m <= 12) setEditValues({ ...editValues, loanStartMonth: m.toString() })
+                      }
+                    }}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                    placeholder="2026.01"
+                  />
+                )}
+              </div>
+            </div>
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>만기</span>
+              <div className={styles.fieldContent}>
+                <input
+                  type="text"
+                  className={`${styles.periodInput}${loanMaturityDateText.length > 0 && !isPeriodValid(loanMaturityDateText) ? ` ${styles.invalid}` : ''}`}
+                  value={formatPeriodDisplay(loanMaturityDateText)}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
+                    restorePeriodCursor(e.target, raw)
+                    setLoanMaturityDateText(raw)
+                    if (raw.length >= 4) {
+                      const y = parseInt(raw.slice(0, 4))
+                      if (!isNaN(y)) setEditValues({ ...editValues, loanMaturityYear: y.toString() })
+                    }
+                    if (raw.length >= 5) {
+                      const m = parseInt(raw.slice(4))
+                      if (!isNaN(m) && m >= 1 && m <= 12) setEditValues({ ...editValues, loanMaturityMonth: m.toString() })
+                    }
+                  }}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
+                  placeholder="2030.12"
+                />
+              </div>
+            </div>
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>상환</span>
+              <div className={styles.repaymentButtons}>
+                {(['원리금균등상환', '원금균등상환', '만기일시상환', '거치식상환'] as const).map(repType => (
+                  <button
+                    key={repType}
+                    type="button"
+                    className={`${styles.repaymentBtn} ${editValues.loanRepaymentType === repType ? styles.active : ''}`}
+                    onClick={() => setEditValues({ ...editValues, loanRepaymentType: repType })}
+                  >
+                    {REPAYMENT_TYPE_LABELS[repType]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {editValues.loanRepaymentType === '거치식상환' && (
+              <div className={styles.modalFormRow}>
+                <span className={styles.modalFormLabel}>거치종료</span>
+                <div className={styles.fieldContent}>
+                  <input
+                    type="text"
+                    className={`${styles.periodInput}${graceEndDateText.length > 0 && !isPeriodValid(graceEndDateText) ? ` ${styles.invalid}` : ''}`}
+                    value={formatPeriodDisplay(graceEndDateText)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
+                      restorePeriodCursor(e.target, raw)
+                      setGraceEndDateText(raw)
+                      if (raw.length >= 4) {
+                        const y = parseInt(raw.slice(0, 4))
+                        if (!isNaN(y)) setEditValues({ ...editValues, graceEndYear: y.toString() })
+                      }
+                      if (raw.length >= 5) {
+                        const m = parseInt(raw.slice(4))
+                        if (!isNaN(m) && m >= 1 && m <= 12) setEditValues({ ...editValues, graceEndMonth: m.toString() })
+                      }
+                    }}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                    placeholder="2028.06"
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </>
+    )
+  }
+
+  // 거주용 모달 폼
+  const renderResidenceModalForm = () => {
     const housingType = editValues.housingType
     const hasLoan = editBooleans.hasLoan
+    const isEditMode = !!(editingProperty?.id)
 
     return (
-      <div className={styles.editItem}>
-        <div className={styles.editRow}>
-          <span className={styles.editRowLabel}>거주형태</span>
+      <>
+        {/* 거주형태 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>거주형태</span>
           <div className={styles.typeButtons}>
             {(['자가', '전세', '월세'] as const).map(type => (
               <button
@@ -354,266 +750,158 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
 
         {housingType && (
           <>
-            <div className={styles.editRow}>
-              <span className={styles.editRowLabel}>
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>
                 {housingType === '자가' ? '시세' : '보증금'}
               </span>
-              <div className={styles.editField}>
-                <input
-                  type="number"
-                  className={styles.editInput}
-                  value={editValues.currentValue || ''}
-                  onChange={e => setEditValues({ ...editValues, currentValue: e.target.value })}
-                  onWheel={e => (e.target as HTMLElement).blur()}
-                  placeholder="0"
-                />
-                <span className={styles.editUnit}>만원</span>
-              </div>
+              <input
+                type="number"
+                className={styles.modalFormInput}
+                value={editValues.currentValue || ''}
+                onChange={e => setEditValues({ ...editValues, currentValue: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                placeholder="0"
+              />
+              <span className={styles.modalFormUnit}>만원</span>
             </div>
 
             {housingType === '자가' && (
               <>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>취득일자</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInputSmall}
-                      value={editValues.purchaseYear || ''}
-                      onChange={e => setEditValues({ ...editValues, purchaseYear: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      placeholder={String(currentYear)}
-                    />
-                    <span className={styles.editUnit}>년</span>
-                    <input
-                      type="number"
-                      className={styles.editInputSmall}
-                      value={editValues.purchaseMonth || ''}
-                      onChange={e => setEditValues({ ...editValues, purchaseMonth: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      min={1}
-                      max={12}
-                      placeholder={String(currentMonth)}
-                    />
-                    <span className={styles.editUnit}>월</span>
+                <div className={styles.modalFormRow}>
+                  <span className={styles.modalFormLabel}>취득일자</span>
+                  <div className={styles.fieldContent}>
+                    <select
+                      className={styles.periodSelect}
+                      value={purchaseType}
+                      onChange={(e) => {
+                        const type = e.target.value as 'current' | 'year'
+                        setPurchaseType(type)
+                        if (type === 'current') {
+                          setPurchaseDateText('')
+                          setEditValues({ ...editValues, purchaseYear: currentYear.toString(), purchaseMonth: currentMonth.toString() })
+                        }
+                      }}
+                    >
+                      <option value="current">현재</option>
+                      <option value="year">직접 입력</option>
+                    </select>
+                    {purchaseType === 'year' && (
+                      <input
+                        type="text"
+                        className={`${styles.periodInput}${purchaseDateText.length > 0 && !isPeriodValid(purchaseDateText) ? ` ${styles.invalid}` : ''}`}
+                        value={formatPeriodDisplay(purchaseDateText)}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
+                          restorePeriodCursor(e.target, raw)
+                          setPurchaseDateText(raw)
+                          if (raw.length >= 4) {
+                            const y = parseInt(raw.slice(0, 4))
+                            if (!isNaN(y)) setEditValues({ ...editValues, purchaseYear: y.toString() })
+                          }
+                          if (raw.length >= 5) {
+                            const m = parseInt(raw.slice(4))
+                            if (!isNaN(m) && m >= 1 && m <= 12) setEditValues({ ...editValues, purchaseMonth: m.toString() })
+                          }
+                        }}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
+                        placeholder="2026.01"
+                      />
+                    )}
                   </div>
                 </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>취득가</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInput}
-                      value={editValues.purchasePrice || ''}
-                      onChange={e => setEditValues({ ...editValues, purchasePrice: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      placeholder="0"
-                    />
-                    <span className={styles.editUnit}>만원</span>
-                  </div>
+                <div className={styles.modalFormRow}>
+                  <span className={styles.modalFormLabel}>취득가</span>
+                  <input
+                    type="number"
+                    className={styles.modalFormInput}
+                    value={editValues.purchasePrice || ''}
+                    onChange={e => setEditValues({ ...editValues, purchasePrice: e.target.value })}
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    placeholder="0"
+                  />
+                  <span className={styles.modalFormUnit}>만원</span>
                 </div>
               </>
             )}
 
             {housingType === '월세' && (
-              <div className={styles.editRow}>
-                <span className={styles.editRowLabel}>월세</span>
-                <div className={styles.editField}>
-                  <input
-                    type="number"
-                    className={styles.editInput}
-                    value={editValues.monthlyRent || ''}
-                    onChange={e => setEditValues({ ...editValues, monthlyRent: e.target.value })}
-                    onWheel={e => (e.target as HTMLElement).blur()}
-                    placeholder="0"
-                  />
-                  <span className={styles.editUnit}>만원</span>
-                </div>
-              </div>
-            )}
-
-            <div className={styles.editRow}>
-              <span className={styles.editRowLabel}>관리비</span>
-              <div className={styles.editField}>
+              <div className={styles.modalFormRow}>
+                <span className={styles.modalFormLabel}>월세</span>
                 <input
                   type="number"
-                  className={styles.editInput}
-                  value={editValues.maintenanceFee || ''}
-                  onChange={e => setEditValues({ ...editValues, maintenanceFee: e.target.value })}
+                  className={styles.modalFormInput}
+                  value={editValues.monthlyRent || ''}
+                  onChange={e => setEditValues({ ...editValues, monthlyRent: e.target.value })}
                   onWheel={e => (e.target as HTMLElement).blur()}
                   placeholder="0"
                 />
-                <span className={styles.editUnit}>만원/월</span>
+                <span className={styles.modalFormUnit}>만원</span>
+              </div>
+            )}
+
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>관리비</span>
+              <input
+                type="number"
+                className={styles.modalFormInput}
+                value={editValues.maintenanceFee || ''}
+                onChange={e => setEditValues({ ...editValues, maintenanceFee: e.target.value })}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                placeholder="0"
+              />
+              <span className={styles.modalFormUnit}>만원/월</span>
+            </div>
+
+            <div className={styles.modalDivider} />
+
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>
+                {housingType === '자가' ? '주담대' : '전월세대출'}
+              </span>
+              <div className={styles.typeButtons}>
+                <button
+                  type="button"
+                  className={`${styles.typeBtn} ${!hasLoan ? styles.active : ''}`}
+                  onClick={() => setEditBooleans({ ...editBooleans, hasLoan: false })}
+                >
+                  없음
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.typeBtn} ${hasLoan ? styles.active : ''}`}
+                  onClick={() => setEditBooleans({ ...editBooleans, hasLoan: true })}
+                >
+                  있음
+                </button>
               </div>
             </div>
 
-            {housingType && (
-              <>
-                <div className={styles.editDivider} />
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>
-                    {housingType === '자가' ? '주담대' : '전월세 보증금 대출'}
-                  </span>
-                  <div className={styles.typeButtons}>
-                    <button
-                      type="button"
-                      className={`${styles.typeBtn} ${!hasLoan ? styles.active : ''}`}
-                      onClick={() => setEditBooleans({ ...editBooleans, hasLoan: false })}
-                    >
-                      없음
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.typeBtn} ${hasLoan ? styles.active : ''}`}
-                      onClick={() => setEditBooleans({ ...editBooleans, hasLoan: true })}
-                    >
-                      있음
-                    </button>
-                  </div>
-                </div>
-
-                {hasLoan && (
-                  <>
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>대출금액</span>
-                      <div className={styles.editField}>
-                        <input
-                          type="number"
-                          className={styles.editInput}
-                          value={editValues.loanAmount || ''}
-                          onChange={e => setEditValues({ ...editValues, loanAmount: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          placeholder="0"
-                        />
-                        <span className={styles.editUnit}>만원</span>
-                      </div>
-                    </div>
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>금리</span>
-                      <div className={styles.editField}>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.loanRate || ''}
-                          onChange={e => setEditValues({ ...editValues, loanRate: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          step="0.1"
-                          placeholder="3.5"
-                        />
-                        <span className={styles.editUnit}>%</span>
-                      </div>
-                    </div>
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>대출시작</span>
-                      <div className={styles.editField}>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.loanStartYear || ''}
-                          onChange={e => setEditValues({ ...editValues, loanStartYear: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          placeholder={String(currentYear)}
-                        />
-                        <span className={styles.editUnit}>년</span>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.loanStartMonth || ''}
-                          onChange={e => setEditValues({ ...editValues, loanStartMonth: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          min={1}
-                          max={12}
-                          placeholder="1"
-                        />
-                        <span className={styles.editUnit}>월</span>
-                      </div>
-                    </div>
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>만기</span>
-                      <div className={styles.editField}>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.loanMaturityYear || ''}
-                          onChange={e => setEditValues({ ...editValues, loanMaturityYear: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          placeholder={String(currentYear + 20)}
-                        />
-                        <span className={styles.editUnit}>년</span>
-                        <input
-                          type="number"
-                          className={styles.editInputSmall}
-                          value={editValues.loanMaturityMonth || ''}
-                          onChange={e => setEditValues({ ...editValues, loanMaturityMonth: e.target.value })}
-                          onWheel={e => (e.target as HTMLElement).blur()}
-                          min={1}
-                          max={12}
-                          placeholder="12"
-                        />
-                        <span className={styles.editUnit}>월</span>
-                      </div>
-                    </div>
-                    <div className={styles.editRow}>
-                      <span className={styles.editRowLabel}>상환방식</span>
-                      <div className={styles.typeButtons}>
-                        {(['원리금균등상환', '원금균등상환', '만기일시상환', '거치식상환'] as const).map(repType => (
-                          <button
-                            key={repType}
-                            type="button"
-                            className={`${styles.typeBtn} ${editValues.loanRepaymentType === repType ? styles.active : ''}`}
-                            onClick={() => setEditValues({ ...editValues, loanRepaymentType: repType })}
-                          >
-                            {REPAYMENT_TYPE_LABELS[repType]}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {editValues.loanRepaymentType === '거치식상환' && (
-                      <div className={styles.editRow}>
-                        <span className={styles.editRowLabel}>거치종료</span>
-                        <div className={styles.editField}>
-                          <input
-                            type="number"
-                            className={styles.editInputSmall}
-                            value={editValues.graceEndYear || ''}
-                            onChange={e => setEditValues({ ...editValues, graceEndYear: e.target.value })}
-                            onWheel={e => (e.target as HTMLElement).blur()}
-                            placeholder={String(currentYear + 1)}
-                          />
-                          <span className={styles.editUnit}>년</span>
-                          <input
-                            type="number"
-                            className={styles.editInputSmall}
-                            value={editValues.graceEndMonth || ''}
-                            onChange={e => setEditValues({ ...editValues, graceEndMonth: e.target.value })}
-                            onWheel={e => (e.target as HTMLElement).blur()}
-                            min={1}
-                            max={12}
-                            placeholder="12"
-                          />
-                          <span className={styles.editUnit}>월</span>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </>
-            )}
+            {renderLoanFields()}
           </>
         )}
 
-        <div className={styles.editActions}>
-          <button className={styles.cancelBtn} onClick={cancelEdit} disabled={isSaving}>취소</button>
-          <button className={styles.saveBtn} onClick={saveResidence} disabled={isSaving}>
-            {isSaving ? '저장 중...' : '저장'}
+        <div className={styles.modalFormActions}>
+          <button
+            className={styles.modalCancelBtn}
+            onClick={isEditMode ? cancelEdit : resetAddForm}
+            disabled={isSaving}
+          >
+            취소
+          </button>
+          <button
+            className={styles.modalAddBtn}
+            onClick={saveResidence}
+            disabled={isSaving}
+          >
+            {isSaving ? '저장 중...' : (isEditMode ? '저장' : '추가')}
           </button>
         </div>
-      </div>
+      </>
     )
   }
 
-  // 추가 부동산 편집 폼
-  const renderPropertyEditForm = (type: Exclude<RealEstateType, 'residence'>) => {
+  // 추가 부동산 모달 폼
+  const renderPropertyModalForm = (type: Exclude<RealEstateType, 'residence'>) => {
     const namePlaceholder = type === 'investment'
       ? '예: 판교 아파트, 분당 빌라'
       : type === 'rental'
@@ -623,70 +911,173 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
     const hasRentalIncome = editBooleans.hasRentalIncome
     const hasLoan = editBooleans.hasLoan
     const showRentalOption = type === 'rental' || type === 'investment'
+    const isEditMode = !!(editingProperty?.id)
 
     return (
-      <div className={styles.editItem}>
-        <div className={styles.editRow}>
-          <span className={styles.editRowLabel}>부동산명</span>
-          <div className={styles.editField}>
-            <input
-              type="text"
-              className={styles.editInputWide}
-              value={editValues.title || ''}
-              onChange={e => setEditValues({ ...editValues, title: e.target.value })}
-              placeholder={namePlaceholder}
-              autoFocus
-            />
+      <>
+        {/* 부동산명 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>부동산명</span>
+          <input
+            type="text"
+            className={styles.modalFormInput}
+            value={editValues.title || ''}
+            onChange={e => setEditValues({ ...editValues, title: e.target.value })}
+            placeholder={namePlaceholder}
+            autoFocus={!isEditMode}
+          />
+        </div>
+
+        {/* 소유자 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>소유자</span>
+          <div className={styles.ownerButtons}>
+            <button
+              type="button"
+              className={`${styles.ownerBtn} ${editOwner === 'self' ? styles.active : ''}`}
+              onClick={() => setEditOwner('self')}
+            >
+              본인
+            </button>
+            {hasSpouse && (
+              <button
+                type="button"
+                className={`${styles.ownerBtn} ${editOwner === 'spouse' ? styles.active : ''}`}
+                onClick={() => setEditOwner('spouse')}
+              >
+                배우자
+              </button>
+            )}
           </div>
         </div>
-        <div className={styles.editRow}>
-          <span className={styles.editRowLabel}>시세</span>
-          <div className={styles.editField}>
-            <input
-              type="number"
-              className={styles.editInput}
-              value={editValues.currentValue || ''}
-              onChange={e => setEditValues({ ...editValues, currentValue: e.target.value })}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              placeholder="0"
-            />
-            <span className={styles.editUnit}>만원</span>
+
+        {/* 시세 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>시세</span>
+          <input
+            type="number"
+            className={styles.modalFormInput}
+            value={editValues.currentValue || ''}
+            onChange={e => setEditValues({ ...editValues, currentValue: e.target.value })}
+            onWheel={e => (e.target as HTMLElement).blur()}
+            placeholder="0"
+          />
+          <span className={styles.modalFormUnit}>만원</span>
+        </div>
+
+        {/* 취득일 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>취득일</span>
+          <div className={styles.fieldContent}>
+            <select
+              className={styles.periodSelect}
+              value={purchaseType}
+              onChange={(e) => {
+                const type = e.target.value as 'current' | 'year'
+                setPurchaseType(type)
+                if (type === 'current') {
+                  setPurchaseDateText('')
+                  setEditValues({ ...editValues, purchaseYear: currentYear.toString(), purchaseMonth: currentMonth.toString() })
+                }
+              }}
+            >
+              <option value="current">현재</option>
+              <option value="year">직접 입력</option>
+            </select>
+            {purchaseType === 'year' && (
+              <input
+                type="text"
+                className={`${styles.periodInput}${purchaseDateText.length > 0 && !isPeriodValid(purchaseDateText) ? ` ${styles.invalid}` : ''}`}
+                value={formatPeriodDisplay(purchaseDateText)}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
+                  restorePeriodCursor(e.target, raw)
+                  setPurchaseDateText(raw)
+                  if (raw.length >= 4) {
+                    const y = parseInt(raw.slice(0, 4))
+                    if (!isNaN(y)) setEditValues({ ...editValues, purchaseYear: y.toString() })
+                  }
+                  if (raw.length >= 5) {
+                    const m = parseInt(raw.slice(4))
+                    if (!isNaN(m) && m >= 1 && m <= 12) setEditValues({ ...editValues, purchaseMonth: m.toString() })
+                  }
+                }}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
+                placeholder="2026.01"
+              />
+            )}
           </div>
         </div>
-        <div className={styles.editRow}>
-          <span className={styles.editRowLabel}>취득일</span>
-          <div className={styles.editField}>
-            <input
-              type="number"
-              className={styles.editInputSmall}
-              value={editValues.purchaseYear || ''}
-              onChange={e => setEditValues({ ...editValues, purchaseYear: e.target.value })}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              min={1990}
-              max={currentYear}
-              placeholder={String(currentYear)}
-            />
-            <span className={styles.editUnit}>년</span>
-            <input
-              type="number"
-              className={styles.editInputSmall}
-              value={editValues.purchaseMonth || ''}
-              onChange={e => setEditValues({ ...editValues, purchaseMonth: e.target.value })}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              min={1}
-              max={12}
-              placeholder={String(currentMonth)}
-            />
-            <span className={styles.editUnit}>월</span>
+
+        {/* 부동산 상승률 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>상승률</span>
+          <div className={styles.fieldContent}>
+            {editRateCategory !== 'fixed' ? (
+              <>
+                <span className={styles.rateValue}>
+                  {(() => {
+                    const scenarioMode = globalSettings?.scenarioMode || 'average'
+                    const settings = globalSettings || { scenarioMode: 'average' as const, rates: {} }
+                    return getEffectiveRate(0, 'realEstate', scenarioMode, settings as any).toFixed(1)
+                  })()}%
+                </span>
+                <div className={styles.rateToggle}>
+                  <button
+                    type="button"
+                    className={`${styles.rateToggleBtn} ${editRateCategory !== 'fixed' ? styles.active : ''}`}
+                    onClick={() => setEditRateCategory('realEstate')}
+                  >
+                    시뮬레이션 가정
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.rateToggleBtn} ${editRateCategory === 'fixed' ? styles.active : ''}`}
+                    onClick={() => setEditRateCategory('fixed')}
+                  >
+                    직접 입력
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <input
+                  type="number"
+                  className={styles.customRateInput}
+                  value={editCustomRate}
+                  onChange={(e) => setEditCustomRate(e.target.value)}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
+                  step="0.1"
+                  placeholder="0"
+                />
+                <span className={styles.rateUnit}>%</span>
+                <div className={styles.rateToggle}>
+                  <button
+                    type="button"
+                    className={`${styles.rateToggleBtn} ${editRateCategory !== 'fixed' ? styles.active : ''}`}
+                    onClick={() => setEditRateCategory('realEstate')}
+                  >
+                    시뮬레이션 가정
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.rateToggleBtn} ${editRateCategory === 'fixed' ? styles.active : ''}`}
+                    onClick={() => setEditRateCategory('fixed')}
+                  >
+                    직접 입력
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* 임대 수익 (투자용/임대용만) */}
         {showRentalOption && (
           <>
-            <div className={styles.editDivider} />
-            <div className={styles.editRow}>
-              <span className={styles.editRowLabel}>임대 수익</span>
+            <div className={styles.modalDivider} />
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>임대수익</span>
               <div className={styles.typeButtons}>
                 <button
                   type="button"
@@ -707,33 +1098,29 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
 
             {hasRentalIncome && (
               <>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>월 임대료</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInput}
-                      value={editValues.rentalMonthly || ''}
-                      onChange={e => setEditValues({ ...editValues, rentalMonthly: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      placeholder="0"
-                    />
-                    <span className={styles.editUnit}>만원</span>
-                  </div>
+                <div className={styles.modalFormRow}>
+                  <span className={styles.modalFormLabel}>월임대료</span>
+                  <input
+                    type="number"
+                    className={styles.modalFormInput}
+                    value={editValues.rentalMonthly || ''}
+                    onChange={e => setEditValues({ ...editValues, rentalMonthly: e.target.value })}
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    placeholder="0"
+                  />
+                  <span className={styles.modalFormUnit}>만원</span>
                 </div>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>보증금</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInput}
-                      value={editValues.rentalDeposit || ''}
-                      onChange={e => setEditValues({ ...editValues, rentalDeposit: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      placeholder="0"
-                    />
-                    <span className={styles.editUnit}>만원</span>
-                  </div>
+                <div className={styles.modalFormRow}>
+                  <span className={styles.modalFormLabel}>보증금</span>
+                  <input
+                    type="number"
+                    className={styles.modalFormInput}
+                    value={editValues.rentalDeposit || ''}
+                    onChange={e => setEditValues({ ...editValues, rentalDeposit: e.target.value })}
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    placeholder="0"
+                  />
+                  <span className={styles.modalFormUnit}>만원</span>
                 </div>
               </>
             )}
@@ -741,9 +1128,9 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
         )}
 
         {/* 대출 정보 */}
-        <div className={styles.editDivider} />
-        <div className={styles.editRow}>
-          <span className={styles.editRowLabel}>대출</span>
+        <div className={styles.modalDivider} />
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>대출</span>
           <div className={styles.typeButtons}>
             <button
               type="button"
@@ -762,149 +1149,53 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
           </div>
         </div>
 
-        {hasLoan && (
-          <>
-            <div className={styles.editRow}>
-              <span className={styles.editRowLabel}>대출금액</span>
-              <div className={styles.editField}>
-                <input
-                  type="number"
-                  className={styles.editInput}
-                  value={editValues.loanAmount || ''}
-                  onChange={e => setEditValues({ ...editValues, loanAmount: e.target.value })}
-                  onWheel={e => (e.target as HTMLElement).blur()}
-                  placeholder="0"
-                />
-                <span className={styles.editUnit}>만원</span>
-              </div>
-            </div>
-            <div className={styles.editRow}>
-              <span className={styles.editRowLabel}>금리</span>
-              <div className={styles.editField}>
-                <input
-                  type="number"
-                  className={styles.editInputSmall}
-                  value={editValues.loanRate || ''}
-                  onChange={e => setEditValues({ ...editValues, loanRate: e.target.value })}
-                  onWheel={e => (e.target as HTMLElement).blur()}
-                  step="0.1"
-                  placeholder="4.0"
-                />
-                <span className={styles.editUnit}>%</span>
-              </div>
-            </div>
-            <div className={styles.editRow}>
-              <span className={styles.editRowLabel}>대출시작</span>
-              <div className={styles.editField}>
-                <input
-                  type="number"
-                  className={styles.editInputSmall}
-                  value={editValues.loanStartYear || ''}
-                  onChange={e => setEditValues({ ...editValues, loanStartYear: e.target.value })}
-                  onWheel={e => (e.target as HTMLElement).blur()}
-                  placeholder={String(currentYear)}
-                />
-                <span className={styles.editUnit}>년</span>
-                <input
-                  type="number"
-                  className={styles.editInputSmall}
-                  value={editValues.loanStartMonth || ''}
-                  onChange={e => setEditValues({ ...editValues, loanStartMonth: e.target.value })}
-                  onWheel={e => (e.target as HTMLElement).blur()}
-                  min={1}
-                  max={12}
-                  placeholder="1"
-                />
-                <span className={styles.editUnit}>월</span>
-              </div>
-            </div>
-            <div className={styles.editRow}>
-              <span className={styles.editRowLabel}>만기</span>
-              <div className={styles.editField}>
-                <input
-                  type="number"
-                  className={styles.editInputSmall}
-                  value={editValues.loanMaturityYear || ''}
-                  onChange={e => setEditValues({ ...editValues, loanMaturityYear: e.target.value })}
-                  onWheel={e => (e.target as HTMLElement).blur()}
-                  placeholder={String(currentYear + 20)}
-                />
-                <span className={styles.editUnit}>년</span>
-                <input
-                  type="number"
-                  className={styles.editInputSmall}
-                  value={editValues.loanMaturityMonth || ''}
-                  onChange={e => setEditValues({ ...editValues, loanMaturityMonth: e.target.value })}
-                  onWheel={e => (e.target as HTMLElement).blur()}
-                  min={1}
-                  max={12}
-                  placeholder="12"
-                />
-                <span className={styles.editUnit}>월</span>
-              </div>
-            </div>
-            <div className={styles.editRow}>
-              <span className={styles.editRowLabel}>상환방식</span>
-              <div className={styles.typeButtons}>
-                {(['원리금균등상환', '원금균등상환', '만기일시상환', '거치식상환'] as const).map(repType => (
-                  <button
-                    key={repType}
-                    type="button"
-                    className={`${styles.typeBtn} ${editValues.loanRepaymentType === repType ? styles.active : ''}`}
-                    onClick={() => setEditValues({ ...editValues, loanRepaymentType: repType })}
-                  >
-                    {REPAYMENT_TYPE_LABELS[repType]}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {editValues.loanRepaymentType === '거치식상환' && (
-              <div className={styles.editRow}>
-                <span className={styles.editRowLabel}>거치종료</span>
-                <div className={styles.editField}>
-                  <input
-                    type="number"
-                    className={styles.editInputSmall}
-                    value={editValues.graceEndYear || ''}
-                    onChange={e => setEditValues({ ...editValues, graceEndYear: e.target.value })}
-                    onWheel={e => (e.target as HTMLElement).blur()}
-                    placeholder={String(currentYear + 1)}
-                  />
-                  <span className={styles.editUnit}>년</span>
-                  <input
-                    type="number"
-                    className={styles.editInputSmall}
-                    value={editValues.graceEndMonth || ''}
-                    onChange={e => setEditValues({ ...editValues, graceEndMonth: e.target.value })}
-                    onWheel={e => (e.target as HTMLElement).blur()}
-                    min={1}
-                    max={12}
-                    placeholder="12"
-                  />
-                  <span className={styles.editUnit}>월</span>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+        {renderLoanFields()}
 
-        <div className={styles.editActions}>
-          <button className={styles.cancelBtn} onClick={cancelEdit} disabled={isSaving}>취소</button>
-          <button className={styles.saveBtn} onClick={saveProperty} disabled={isSaving}>
-            {isSaving ? '저장 중...' : '저장'}
+        <div className={styles.modalFormActions}>
+          <button
+            className={styles.modalCancelBtn}
+            onClick={isEditMode ? cancelEdit : resetAddForm}
+            disabled={isSaving}
+          >
+            취소
+          </button>
+          <button
+            className={styles.modalAddBtn}
+            onClick={saveProperty}
+            disabled={isSaving || !editValues.title || !editValues.currentValue}
+          >
+            {isSaving ? '저장 중...' : (isEditMode ? '저장' : '추가')}
           </button>
         </div>
-      </div>
+      </>
     )
   }
 
-  // 부동산 아이템 렌더링
+  // 부동산 아이템 렌더링 (항상 읽기 모드)
   const renderPropertyItem = (property: RealEstate) => {
     // 메타 정보 구성
     const metaParts = []
 
+    // 소유자
+    if (property.owner === 'spouse') {
+      metaParts.push('배우자')
+    } else {
+      metaParts.push('본인')
+    }
+
     if (property.purchase_year) {
       metaParts.push(`${property.purchase_year}년${property.purchase_month ? ` ${property.purchase_month}월` : ''} 취득`)
+    }
+
+    // 상승률
+    const rateCategory = (property as any).rate_category || 'realEstate'
+    if (rateCategory === 'fixed') {
+      metaParts.push(`상승률 ${property.growth_rate}%`)
+    } else {
+      const scenarioMode = globalSettings?.scenarioMode || 'average'
+      const settings = globalSettings || { scenarioMode: 'average' as const, rates: {} }
+      const effectiveRate = getEffectiveRate(0, 'realEstate', scenarioMode, settings as any)
+      metaParts.push(`상승률 ${effectiveRate.toFixed(1)}% (시뮬)`)
     }
 
     if (property.has_rental_income && property.rental_monthly) {
@@ -1001,32 +1292,23 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
 
   const hasData = totalRealEstateValue > 0 || !!residenceProperty
 
-  // ESC 키로 드롭다운 닫기
+  // ESC 키로 모달 닫기
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showTypeMenu) {
-        setShowTypeMenu(false)
+      if (e.key === 'Escape') {
+        if (editingProperty && !showTypeMenu) {
+          cancelEdit()
+          e.stopPropagation()
+        } else if (showTypeMenu) {
+          resetAddForm()
+          e.stopPropagation()
+        }
       }
     }
-    window.addEventListener('keydown', handleEsc)
-    return () => window.removeEventListener('keydown', handleEsc)
-  }, [showTypeMenu])
+    window.addEventListener('keydown', handleEsc, true)
+    return () => window.removeEventListener('keydown', handleEsc, true)
+  }, [showTypeMenu, editingProperty])
 
-  // 드롭다운 외부 클릭으로 닫기
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        showTypeMenu &&
-        addButtonRef.current &&
-        !addButtonRef.current.contains(e.target as Node) &&
-        !(e.target as HTMLElement).closest(`.${styles.typeMenu}`)
-      ) {
-        setShowTypeMenu(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showTypeMenu])
 
   if (isLoading && dbRealEstates.length === 0) {
     return (
@@ -1057,61 +1339,154 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
         </div>
       </div>
 
-      {/* 타입 선택 드롭다운 - portal로 body에 렌더 */}
-      {showTypeMenu && addButtonRef.current && createPortal(
+      {/* 타입 선택 모달 (2-step) */}
+      {showTypeMenu && createPortal(
         <div
-          className={styles.typeMenu}
-          data-scenario-dropdown-portal
-          style={{
-            position: 'fixed',
-            top: addButtonRef.current.getBoundingClientRect().bottom + 6,
-            left: addButtonRef.current.getBoundingClientRect().right - 150,
-            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-          }}
+          className={styles.typeModalOverlay}
+          data-scenario-dropdown-portal="true"
+          onClick={resetAddForm}
         >
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => startEditResidence()}
+          <div
+            className={styles.typeModal}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            }}
           >
-            거주용
-          </button>
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => startAddProperty('investment')}
+            {!addingType ? (
+              <>
+                {/* Step 1: 타입 선택 */}
+                <div className={styles.typeModalHeader}>
+                  <span className={styles.typeModalTitle}>부동산 추가</span>
+                  <button
+                    className={styles.typeModalClose}
+                    onClick={resetAddForm}
+                    type="button"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className={styles.typeGrid}>
+                  <button className={styles.typeCard} onClick={() => {
+                    setAddingType('residence')
+                    initResidenceValues()
+                  }}>
+                    <span className={styles.typeCardName}>거주용</span>
+                    <span className={styles.typeCardDesc}>내 집, 아파트 등</span>
+                  </button>
+                  <button className={styles.typeCard} onClick={() => {
+                    setAddingType('investment')
+                    initPropertyValues('investment')
+                  }}>
+                    <span className={styles.typeCardName}>투자용</span>
+                    <span className={styles.typeCardDesc}>시세 차익 목적</span>
+                  </button>
+                  <button className={styles.typeCard} onClick={() => {
+                    setAddingType('rental')
+                    initPropertyValues('rental')
+                  }}>
+                    <span className={styles.typeCardName}>임대용</span>
+                    <span className={styles.typeCardDesc}>임대 수익 목적</span>
+                  </button>
+                  <button className={styles.typeCard} onClick={() => {
+                    setAddingType('land')
+                    initPropertyValues('land')
+                  }}>
+                    <span className={styles.typeCardName}>토지</span>
+                    <span className={styles.typeCardDesc}>농지, 대지 등</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Step 2: 입력 폼 */}
+                <div className={styles.typeModalHeader}>
+                  <div className={styles.headerLeft}>
+                    <button
+                      className={styles.backButton}
+                      onClick={() => setAddingType(null)}
+                      type="button"
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <span className={styles.stepLabel}>
+                      {TYPE_LABELS[addingType]} 추가
+                    </span>
+                  </div>
+                  <button
+                    className={styles.typeModalClose}
+                    onClick={resetAddForm}
+                    type="button"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className={styles.modalFormBody}>
+                  {addingType === 'residence'
+                    ? renderResidenceModalForm()
+                    : renderPropertyModalForm(addingType as Exclude<RealEstateType, 'residence'>)
+                  }
+                </div>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 편집 모달 (기존 아이템 수정) */}
+      {editingProperty && editingProperty.id && !showTypeMenu && createPortal(
+        <div
+          className={styles.typeModalOverlay}
+          data-scenario-dropdown-portal="true"
+          onClick={cancelEdit}
+        >
+          <div
+            className={styles.typeModal}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            }}
           >
-            투자용
-          </button>
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => startAddProperty('rental')}
-          >
-            임대용
-          </button>
-          <button
-            className={styles.typeMenuItem}
-            onClick={() => startAddProperty('land')}
-          >
-            토지
-          </button>
+            <div className={styles.typeModalHeader}>
+              <span className={styles.stepLabel}>
+                {TYPE_LABELS[editingProperty.type]} 수정
+              </span>
+              <button
+                className={styles.typeModalClose}
+                onClick={cancelEdit}
+                type="button"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className={styles.modalFormBody}>
+              {editingProperty.type === 'residence'
+                ? renderResidenceModalForm()
+                : renderPropertyModalForm(editingProperty.type as Exclude<RealEstateType, 'residence'>)
+              }
+            </div>
+          </div>
         </div>,
         document.body
       )}
 
       {isExpanded && (
         <div className={styles.flatList}>
-          {dbRealEstates.length === 0 && !editingProperty && (
+          {dbRealEstates.length === 0 && (
             <p className={styles.emptyHint}>
               아직 등록된 부동산이 없습니다. 오른쪽 + 버튼으로 추가하세요.
             </p>
           )}
 
           {/* 거주용 */}
-          {editingProperty?.type === 'residence' ? (
-            renderResidenceEditForm()
-          ) : residenceProperty ? (
+          {residenceProperty && (
             <div className={styles.assetItem}>
               <div className={styles.itemInfo}>
                 <span className={styles.itemName}>{residenceProperty.housing_type}</span>
@@ -1158,39 +1533,22 @@ export function RealEstateTab({ simulationId }: RealEstateTabProps) {
                     : `보증금 ${formatMoney(residenceProperty.current_value)}`}
                 </span>
                 <div className={styles.itemActions}>
-                  <button className={styles.editBtn} onClick={startEditResidence}>
+                  <button className={styles.editBtn} onClick={() => startEditProperty(residenceProperty)}>
                     <Pencil size={16} />
                   </button>
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
 
           {/* 투자용 */}
-          {investmentProperties.map(property => (
-            editingProperty?.type === 'investment' && editingProperty.id === property.id
-              ? <div key={property.id}>{renderPropertyEditForm('investment')}</div>
-              : renderPropertyItem(property)
-          ))}
+          {investmentProperties.map(property => renderPropertyItem(property))}
 
           {/* 임대용 */}
-          {rentalProperties.map(property => (
-            editingProperty?.type === 'rental' && editingProperty.id === property.id
-              ? <div key={property.id}>{renderPropertyEditForm('rental')}</div>
-              : renderPropertyItem(property)
-          ))}
+          {rentalProperties.map(property => renderPropertyItem(property))}
 
           {/* 토지 */}
-          {landProperties.map(property => (
-            editingProperty?.type === 'land' && editingProperty.id === property.id
-              ? <div key={property.id}>{renderPropertyEditForm('land')}</div>
-              : renderPropertyItem(property)
-          ))}
-
-          {/* 추가 폼 (+ 드롭다운에서 선택 시) */}
-          {editingProperty && editingProperty.id === null && editingProperty.type !== 'residence' && (
-            renderPropertyEditForm(editingProperty.type as Exclude<typeof editingProperty.type, 'residence'>)
-          )}
+          {landProperties.map(property => renderPropertyItem(property))}
         </div>
       )}
     </div>
