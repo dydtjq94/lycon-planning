@@ -195,7 +195,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     const queryString = params.toString();
     const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
     window.history.pushState(null, "", newUrl);
-  }, [pathname]);
+  }, [pathname, adminView]);
 
   // 섹션 변경 핸들러
   const handleSectionChange = useCallback((section: string) => {
@@ -470,8 +470,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   }, []);
 
   // 시뮬레이션(시나리오) 목록 조회
-  const { data: simulations = [] } = useSimulations();
-  const createSimulation = useCreateSimulation();
+  const { data: simulations = [] } = useSimulations(profile.id);
+  const createSimulation = useCreateSimulation(adminView ? profile.id : undefined);
   const updateSimulation = useUpdateSimulation();
 
   // 선택된 시뮬레이션 계산

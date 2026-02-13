@@ -45,8 +45,6 @@ function DashboardPageInner() {
           .eq("user_id", user.id)
           .single();
 
-        console.log("[Dashboard viewAs] Expert check:", { expert, expertError, userId: user.id });
-
         if (!expert) {
           router.replace("/dashboard");
           return;
@@ -59,8 +57,6 @@ function DashboardPageInner() {
           .eq("expert_id", expert.id)
           .eq("user_id", viewAs)
           .maybeSingle();
-
-        console.log("[Dashboard viewAs] Conversation check:", { conversation, convError, expertId: expert.id, viewAs });
 
         if (!conversation) {
           router.replace("/admin");

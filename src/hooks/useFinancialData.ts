@@ -622,10 +622,10 @@ export const simulationKeys = {
 /**
  * 사용자의 모든 시뮬레이션(시나리오) 목록 로드 훅
  */
-export function useSimulations(enabled: boolean = true) {
+export function useSimulations(profileId?: string, enabled: boolean = true) {
   return useQuery({
-    queryKey: simulationKeys.list(),
-    queryFn: () => simulationService.getAll(),
+    queryKey: [...simulationKeys.list(), profileId],
+    queryFn: () => simulationService.getAll(profileId),
     enabled,
   })
 }
@@ -633,7 +633,7 @@ export function useSimulations(enabled: boolean = true) {
 /**
  * 시뮬레이션 생성 훅
  */
-export function useCreateSimulation() {
+export function useCreateSimulation(profileId?: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -641,6 +641,7 @@ export function useCreateSimulation() {
       simulationService.create({
         title: input.title,
         description: input.description,
+        ...(profileId ? { profile_id: profileId } : {}),
       }),
     onSuccess: async () => {
       // 시뮬레이션 목록 새로고침 (refetch 완료까지 대기)

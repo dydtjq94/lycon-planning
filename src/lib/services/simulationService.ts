@@ -39,15 +39,20 @@ const ACCOUNT_TO_PENSION_TYPE: Partial<Record<AccountType, string>> = {
  */
 export const simulationService = {
   // 사용자의 모든 시뮬레이션 조회
-  async getAll(): Promise<Simulation[]> {
+  async getAll(profileId?: string): Promise<Simulation[]> {
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('User not authenticated')
+
+    let userId = profileId
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+      userId = user.id
+    }
 
     const { data, error } = await supabase
       .from('simulations')
       .select('*')
-      .eq('profile_id', user.id)
+      .eq('profile_id', userId)
       .order('sort_order', { ascending: true })
 
     if (error) throw error
