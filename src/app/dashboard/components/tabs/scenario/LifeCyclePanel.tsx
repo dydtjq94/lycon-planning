@@ -43,6 +43,7 @@ export function LifeCyclePanel({
   onLifeCycleChange,
 }: LifeCyclePanelProps) {
   const { isDark } = useChartTheme()
+  const [isDirty, setIsDirty] = useState(false)
   // 문자열 기반 로컬 state (자유 입력 → blur 시 저장)
   const [selfRetirement, setSelfRetirement] = useState(String(lifeCycleSettings.selfRetirementAge))
   const [selfLife, setSelfLife] = useState(String(lifeCycleSettings.selfLifeExpectancy))
@@ -109,7 +110,6 @@ export function LifeCyclePanel({
   ) => {
     const value = parseAge(raw, fallback)
     setter(String(value))
-    onLifeCycleChange({ ...lifeCycleSettings, [key]: value })
   }
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -120,33 +120,27 @@ export function LifeCyclePanel({
   const handleIconChange = (iconId: string) => {
     if (pickerTarget === 'retirement') {
       setRetirementIcon(iconId)
-      onLifeCycleChange({ ...lifeCycleSettings, retirementIcon: iconId })
     } else if (pickerTarget === 'lifeExpectancy') {
       setLifeIcon(iconId)
-      onLifeCycleChange({ ...lifeCycleSettings, lifeExpectancyIcon: iconId })
     } else if (pickerTarget === 'spouseRetirement') {
       setSpRetirementIcon(iconId)
-      onLifeCycleChange({ ...lifeCycleSettings, spouseRetirementIcon: iconId })
     } else if (pickerTarget === 'spouseLifeExpectancy') {
       setSpLifeIcon(iconId)
-      onLifeCycleChange({ ...lifeCycleSettings, spouseLifeExpectancyIcon: iconId })
     }
+    setIsDirty(true)
   }
 
   const handleColorChange = (color: string) => {
     if (pickerTarget === 'retirement') {
       setRetirementColor(color)
-      onLifeCycleChange({ ...lifeCycleSettings, retirementColor: color })
     } else if (pickerTarget === 'lifeExpectancy') {
       setLifeColor(color)
-      onLifeCycleChange({ ...lifeCycleSettings, lifeExpectancyColor: color })
     } else if (pickerTarget === 'spouseRetirement') {
       setSpRetirementColor(color)
-      onLifeCycleChange({ ...lifeCycleSettings, spouseRetirementColor: color })
     } else if (pickerTarget === 'spouseLifeExpectancy') {
       setSpLifeColor(color)
-      onLifeCycleChange({ ...lifeCycleSettings, spouseLifeExpectancyColor: color })
     }
+    setIsDirty(true)
   }
 
   // 현재 피커 대상의 아이콘/색상
@@ -170,10 +164,37 @@ export function LifeCyclePanel({
     setPickerTarget(pickerTarget === target ? null : target)
   }
 
+  const handleSave = () => {
+    onLifeCycleChange({
+      ...lifeCycleSettings,
+      selfRetirementAge: parseAge(selfRetirement, lifeCycleSettings.selfRetirementAge),
+      selfLifeExpectancy: parseAge(selfLife, lifeCycleSettings.selfLifeExpectancy),
+      spouseRetirementAge: parseAge(spouseRetirement, lifeCycleSettings.spouseRetirementAge ?? 65),
+      spouseLifeExpectancy: parseAge(spouseLife, lifeCycleSettings.spouseLifeExpectancy ?? lifeCycleSettings.selfLifeExpectancy),
+      retirementIcon,
+      lifeExpectancyIcon: lifeIcon,
+      retirementColor,
+      lifeExpectancyColor: lifeColor,
+      spouseRetirementIcon: spRetirementIcon,
+      spouseLifeExpectancyIcon: spLifeIcon,
+      spouseRetirementColor: spRetirementColor,
+      spouseLifeExpectancyColor: spLifeColor,
+    })
+    setIsDirty(false)
+  }
+
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
         <span className={styles.title}>생애 주기</span>
+        <button
+          type="button"
+          className={`${styles.saveButton}${!isDirty ? ` ${styles.saveButtonDisabled}` : ''}`}
+          onClick={handleSave}
+          disabled={!isDirty}
+        >
+          저장
+        </button>
       </div>
 
       {/* 본인 */}
@@ -197,7 +218,7 @@ export function LifeCyclePanel({
             <input
               type="number"
               value={selfRetirement}
-              onChange={(e) => setSelfRetirement(e.target.value)}
+              onChange={(e) => { setSelfRetirement(e.target.value); setIsDirty(true); }}
               onBlur={() => handleAgeBlur('selfRetirementAge', selfRetirement, lifeCycleSettings.selfRetirementAge, setSelfRetirement)}
               onKeyDown={handleKey}
               onWheel={preventScroll}
@@ -223,7 +244,7 @@ export function LifeCyclePanel({
             <input
               type="number"
               value={selfLife}
-              onChange={(e) => setSelfLife(e.target.value)}
+              onChange={(e) => { setSelfLife(e.target.value); setIsDirty(true); }}
               onBlur={() => handleAgeBlur('selfLifeExpectancy', selfLife, lifeCycleSettings.selfLifeExpectancy, setSelfLife)}
               onKeyDown={handleKey}
               onWheel={preventScroll}
@@ -259,7 +280,7 @@ export function LifeCyclePanel({
                 <input
                   type="number"
                   value={spouseRetirement}
-                  onChange={(e) => setSpouseRetirement(e.target.value)}
+                  onChange={(e) => { setSpouseRetirement(e.target.value); setIsDirty(true); }}
                   onBlur={() => handleAgeBlur('spouseRetirementAge', spouseRetirement, lifeCycleSettings.spouseRetirementAge ?? 65, setSpouseRetirement)}
                   onKeyDown={handleKey}
                   onWheel={preventScroll}
@@ -285,7 +306,7 @@ export function LifeCyclePanel({
                 <input
                   type="number"
                   value={spouseLife}
-                  onChange={(e) => setSpouseLife(e.target.value)}
+                  onChange={(e) => { setSpouseLife(e.target.value); setIsDirty(true); }}
                   onBlur={() => handleAgeBlur('spouseLifeExpectancy', spouseLife, lifeCycleSettings.spouseLifeExpectancy ?? lifeCycleSettings.selfLifeExpectancy, setSpouseLife)}
                   onKeyDown={handleKey}
                   onWheel={preventScroll}

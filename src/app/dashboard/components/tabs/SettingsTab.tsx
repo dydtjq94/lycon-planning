@@ -11,6 +11,8 @@ import { formatWon } from "@/lib/utils";
 import { getBrokerLogo, getCardLogo } from "@/lib/constants/financial";
 import type { Account, PaymentMethod } from "@/types/tables";
 import { AccountManagementModal } from "../AccountManagementModal";
+import ReactMarkdown from "react-markdown";
+import { CURRENT_VERSION, VERSION_HISTORY } from "@/lib/constants/versionHistory";
 import styles from "./SettingsTab.module.css";
 type ChartThemeId = "default" | "pastel" | "mono" | "vivid" | "ocean" | "sunset" | "forest" | "neon" | "retro" | "candy";
 
@@ -92,8 +94,6 @@ const chartThemes: ChartTheme[] = [
   },
 ];
 
-const APP_VERSION = "1.0.0";
-
 const RELATIONSHIP_LABELS: Record<string, string> = {
   self: "본인",
   spouse: "배우자",
@@ -118,7 +118,7 @@ const menuItems: MenuItem[] = [
   { id: "security", label: "보안", icon: <Shield size={18} /> },
   { id: "contact", label: "문의하기", icon: <MessageCircle size={18} /> },
   { id: "help", label: "더보기", icon: <HelpCircle size={18} /> },
-  { id: "version", label: `v${APP_VERSION}`, icon: <Info size={18} /> },
+  { id: "version", label: `v${CURRENT_VERSION}`, icon: <Info size={18} /> },
 ];
 
 const menuTitles: Record<MenuId, string> = {
@@ -130,7 +130,7 @@ const menuTitles: Record<MenuId, string> = {
   security: "보안",
   contact: "문의하기",
   help: "더보기",
-  version: `v${APP_VERSION}`,
+  version: `v${CURRENT_VERSION}`,
 };
 
 interface SettingsTabProps {
@@ -776,19 +776,22 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
 
   const renderVersionContent = () => (
     <div className={styles.contentBody}>
-      <section className={styles.section}>
-        <div className={styles.menuList}>
-          <div className={styles.versionEntry}>
-            <div className={styles.versionHeader}>
-              <span className={styles.versionTag}>v1.0.0</span>
-              <span className={styles.versionDate}>2026.02.13</span>
-            </div>
-            <ul className={styles.versionChanges}>
-              <li>서비스 오픈</li>
-            </ul>
+      {VERSION_HISTORY.map((entry) => (
+        <section key={entry.version} className={styles.section}>
+          <div className={styles.versionHeader}>
+            <span className={styles.versionTag}>v{entry.version}</span>
+            <span className={styles.versionDate}>{entry.date}</span>
+            {!entry.summary && (
+              <span className={styles.versionDevBadge}>개발 중</span>
+            )}
           </div>
-        </div>
-      </section>
+          {entry.summary && (
+            <div className={styles.versionSummary}>
+              <ReactMarkdown>{entry.summary}</ReactMarkdown>
+            </div>
+          )}
+        </section>
+      ))}
     </div>
   );
 

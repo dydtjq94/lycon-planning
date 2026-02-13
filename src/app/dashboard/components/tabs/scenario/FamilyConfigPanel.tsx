@@ -52,6 +52,7 @@ export function FamilyConfigPanel({ profile, familyMembers: initial, selfConfig,
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<"name" | "birth_date" | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [isDirty, setIsDirty] = useState(false);
 
   // 아이콘 로컬 state
   const selfDefault = FAMILY_DEFAULTS.self;
@@ -92,33 +93,13 @@ export function FamilyConfigPanel({ profile, familyMembers: initial, selfConfig,
     return () => window.removeEventListener("keydown", handleEsc);
   }, [pickerTargetId]);
 
-  const updateAndSave = (next: SimFamilyMember[], selfEntry?: SimFamilyMember | null) => {
+  const updateLocal = (next: SimFamilyMember[]) => {
     setMembers(next);
-    onFamilyChange(next, selfEntry);
+    setIsDirty(true);
   };
 
-  // 본인 아이콘 변경
-  const handleSelfIconChange = (iconId: string) => {
-    setSelfIcon(iconId);
-    const entry: SimFamilyMember = {
-      id: "self",
-      relationship: "self",
-      name: profile.name,
-      birth_date: profile.birth_date,
-      gender: profile.gender,
-      is_dependent: false,
-      is_working: true,
-      retirement_age: null,
-      monthly_income: null,
-      icon: iconId,
-      iconColor: selfIconColor,
-    };
-    onFamilyChange(members, entry);
-  };
-
-  const handleSelfColorChange = (color: string) => {
-    setSelfIconColor(color);
-    const entry: SimFamilyMember = {
+  const handleSave = () => {
+    const selfEntry: SimFamilyMember = {
       id: "self",
       relationship: "self",
       name: profile.name,
@@ -129,9 +110,21 @@ export function FamilyConfigPanel({ profile, familyMembers: initial, selfConfig,
       retirement_age: null,
       monthly_income: null,
       icon: selfIcon,
-      iconColor: color,
+      iconColor: selfIconColor,
     };
-    onFamilyChange(members, entry);
+    onFamilyChange(members, selfEntry);
+    setIsDirty(false);
+  };
+
+  // 본인 아이콘 변경
+  const handleSelfIconChange = (iconId: string) => {
+    setSelfIcon(iconId);
+    setIsDirty(true);
+  };
+
+  const handleSelfColorChange = (color: string) => {
+    setSelfIconColor(color);
+    setIsDirty(true);
   };
 
   // 구성원 아이콘 변경
@@ -140,7 +133,7 @@ export function FamilyConfigPanel({ profile, familyMembers: initial, selfConfig,
       m.id === memberId ? { ...m, icon: iconId } : m
     );
     setMembers(next);
-    onFamilyChange(next);
+    setIsDirty(true);
   };
 
   const handleMemberColorChange = (memberId: string, color: string) => {
@@ -148,7 +141,7 @@ export function FamilyConfigPanel({ profile, familyMembers: initial, selfConfig,
       m.id === memberId ? { ...m, iconColor: color } : m
     );
     setMembers(next);
-    onFamilyChange(next);
+    setIsDirty(true);
   };
 
   // 피커 아이콘/색상 핸들러
@@ -188,13 +181,13 @@ export function FamilyConfigPanel({ profile, familyMembers: initial, selfConfig,
     const next = members.map((m) =>
       m.id === id ? { ...m, [field]: value || null } : m
     );
-    updateAndSave(next);
+    updateLocal(next);
     setEditingId(null);
     setEditingField(null);
   };
 
   const handleDelete = (id: string) => {
-    updateAndSave(members.filter((m) => m.id !== id));
+    updateLocal(members.filter((m) => m.id !== id));
   };
 
   const handleAdd = (
@@ -224,7 +217,7 @@ export function FamilyConfigPanel({ profile, familyMembers: initial, selfConfig,
       icon: def.icon,
       iconColor: def.color,
     };
-    updateAndSave([...members, newMember]);
+    updateLocal([...members, newMember]);
   };
 
   const startEdit = (id: string, field: "name" | "birth_date", currentValue: string) => {
@@ -255,6 +248,14 @@ export function FamilyConfigPanel({ profile, familyMembers: initial, selfConfig,
       <div className={styles.header}>
         <span className={styles.title}>가족 구성</span>
         <span className={styles.count}>{totalCount}명</span>
+        <button
+          type="button"
+          className={`${styles.saveButton}${!isDirty ? ` ${styles.saveButtonDisabled}` : ''}`}
+          onClick={handleSave}
+          disabled={!isDirty}
+        >
+          저장
+        </button>
       </div>
 
       <div className={styles.memberList}>

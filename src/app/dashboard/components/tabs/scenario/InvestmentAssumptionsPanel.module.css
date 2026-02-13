@@ -17,6 +17,32 @@
   color: var(--dashboard-text);
 }
 
+.saveButton {
+  margin-left: auto;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  background-color: var(--accent-color, #007aff);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.saveButton:hover {
+  opacity: 0.85;
+}
+
+.saveButtonDisabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.saveButtonDisabled:hover {
+  opacity: 0.4;
+}
+
 .rateList {
   display: flex;
   flex-direction: column;

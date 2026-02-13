@@ -211,7 +211,7 @@ export async function copySnapshotToSimulation(
         } else {
           result.copiedItems.realEstates = realEstateItems.length
 
-          // 부동산 연동 항목 생성 (대출→부채, 임대→소득, 월세→지출, 관리비→지출)
+          // 부동산 연동 항목 생성 (대출→부채, 임대→소득)
           if (insertedRealEstates) {
             for (const re of insertedRealEstates) {
               await createLinkedItemsForRealEstate(re, supabase)
@@ -489,37 +489,5 @@ async function createLinkedItemsForRealEstate(realEstate: any, supabase: any): P
     })
   }
 
-  // 월세 거주 → 지출
-  if (realEstate.type === 'residence' && realEstate.housing_type === '월세' && realEstate.monthly_rent) {
-    await supabase.from('expenses').insert({
-      simulation_id: realEstate.simulation_id,
-      type: 'housing',
-      title: `${realEstate.title} 월세`,
-      amount: realEstate.monthly_rent,
-      frequency: 'monthly',
-      start_year: currentYear,
-      start_month: currentMonth,
-      growth_rate: 2,
-      rate_category: 'realEstate',
-      source_type: 'real_estate',
-      source_id: realEstate.id,
-    })
-  }
-
-  // 관리비 → 지출
-  if (realEstate.maintenance_fee) {
-    await supabase.from('expenses').insert({
-      simulation_id: realEstate.simulation_id,
-      type: 'housing',
-      title: `${realEstate.title} 관리비`,
-      amount: realEstate.maintenance_fee,
-      frequency: 'monthly',
-      start_year: currentYear,
-      start_month: currentMonth,
-      growth_rate: 2,
-      rate_category: 'inflation',
-      source_type: 'real_estate',
-      source_id: realEstate.id,
-    })
-  }
+  // 월세/관리비는 V2 엔진이 부동산 데이터에서 직접 계산하므로 별도 지출 항목 생성하지 않음
 }

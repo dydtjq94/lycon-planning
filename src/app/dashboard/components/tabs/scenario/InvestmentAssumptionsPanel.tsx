@@ -83,6 +83,7 @@ export function InvestmentAssumptionsPanel({
   isLoading = false,
 }: InvestmentAssumptionsPanelProps) {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isDirty, setIsDirty] = useState(false);
 
   // 로컬 input state (문자열로 관리 → blur 시 저장)
   const [localRates, setLocalRates] = useState<Record<string, string>>(() => {
@@ -102,16 +103,26 @@ export function InvestmentAssumptionsPanel({
 
   const handleLocalChange = (key: string, raw: string) => {
     setLocalRates((prev) => ({ ...prev, [key]: raw }));
+    setIsDirty(true);
   };
 
   const handleBlur = (key: keyof InvestmentRates, defaultValue: number) => {
     const parsed = parseFloat(localRates[key]);
     const value = isNaN(parsed) ? defaultValue : parsed;
     setLocalRates((prev) => ({ ...prev, [key]: String(value) }));
+  };
+
+  const handleSave = () => {
+    const newRates: Record<string, number> = {};
+    RATE_FIELDS.forEach((field) => {
+      const parsed = parseFloat(localRates[field.key]);
+      newRates[field.key] = isNaN(parsed) ? field.defaultValue : parsed;
+    });
     onChange({
       ...assumptions,
-      rates: { ...assumptions.rates, [key]: value },
+      rates: { ...assumptions.rates, ...newRates } as InvestmentRates,
     });
+    setIsDirty(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -166,6 +177,14 @@ export function InvestmentAssumptionsPanel({
     <div className={styles.panel}>
       <div className={styles.header}>
         <span className={styles.title}>시뮬레이션 가정</span>
+        <button
+          type="button"
+          className={`${styles.saveButton}${!isDirty ? ` ${styles.saveButtonDisabled}` : ''}`}
+          onClick={handleSave}
+          disabled={!isDirty}
+        >
+          저장
+        </button>
       </div>
 
       <div className={styles.rateList}>

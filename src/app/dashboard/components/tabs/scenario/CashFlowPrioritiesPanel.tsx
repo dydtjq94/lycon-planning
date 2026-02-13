@@ -38,6 +38,18 @@ export function CashFlowPrioritiesPanel({
     useSimulationV2Data(simulationId);
   const isLoading = externalLoading || dataLoading;
 
+  // Local state for priorities
+  const [localPriorities, setLocalPriorities] = useState<CashFlowPriorities>(priorities);
+
+  // Dirty state tracking
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Sync local state when props change
+  useEffect(() => {
+    setLocalPriorities(priorities);
+    setIsDirty(false);
+  }, [priorities]);
+
   // Tab state
   const [activeTab, setActiveTab] = useState<"surplus" | "withdrawal">("surplus");
 
@@ -124,7 +136,7 @@ export function CashFlowPrioritiesPanel({
 
   // Auto-populate default rules when not initialized and accounts are available
   useEffect(() => {
-    if (priorities._initialized || availableAccounts.length === 0 || dataLoading) return;
+    if (localPriorities._initialized || availableAccounts.length === 0 || dataLoading) return;
 
     const surplusRules: SurplusAllocationRule[] = [];
     const withdrawalRules: WithdrawalOrderRule[] = [];
@@ -174,25 +186,31 @@ export function CashFlowPrioritiesPanel({
       withdrawalRules,
       _initialized: true,
     });
-  }, [priorities._initialized, availableAccounts, dataLoading, onChange]);
+  }, [localPriorities._initialized, availableAccounts, dataLoading, onChange]);
 
   // Filter out already-used accounts for each section
   const availableSurplusAccounts = useMemo(() => {
     const usedIds = new Set(
-      priorities.surplusRules.map((r) => r.targetId)
+      localPriorities.surplusRules.map((r) => r.targetId)
     );
     return availableAccounts.filter((a) => !usedIds.has(a.id));
-  }, [availableAccounts, priorities.surplusRules]);
+  }, [availableAccounts, localPriorities.surplusRules]);
 
   const availableWithdrawalAccounts = useMemo(() => {
     const usedIds = new Set(
-      priorities.withdrawalRules.map((r) => r.targetId)
+      localPriorities.withdrawalRules.map((r) => r.targetId)
     );
     return availableAccounts.filter((a) => !usedIds.has(a.id));
-  }, [availableAccounts, priorities.withdrawalRules]);
+  }, [availableAccounts, localPriorities.withdrawalRules]);
 
   // Calculate total rule count
-  const totalRuleCount = priorities.surplusRules.length + priorities.withdrawalRules.length;
+  const totalRuleCount = localPriorities.surplusRules.length + localPriorities.withdrawalRules.length;
+
+  // Save handler
+  const handleSave = () => {
+    onChange(localPriorities);
+    setIsDirty(false);
+  };
 
   // ======== Surplus Rule Handlers ========
 
@@ -206,36 +224,39 @@ export function CashFlowPrioritiesPanel({
         targetId: account.id,
         targetCategory: account.category,
         targetName: account.name,
-        priority: priorities.surplusRules.length + 1,
+        priority: localPriorities.surplusRules.length + 1,
       };
 
-      onChange({
-        ...priorities,
-        surplusRules: [...priorities.surplusRules, newRule],
+      setLocalPriorities({
+        ...localPriorities,
+        surplusRules: [...localPriorities.surplusRules, newRule],
       });
+      setIsDirty(true);
       setAddingSurplus(false);
     },
-    [availableAccounts, priorities, onChange]
+    [availableAccounts, localPriorities]
   );
 
   const handleDeleteSurplusRule = useCallback(
     (id: string) => {
-      const filtered = priorities.surplusRules.filter((r) => r.id !== id);
+      const filtered = localPriorities.surplusRules.filter((r) => r.id !== id);
       const reordered = filtered.map((r, i) => ({ ...r, priority: i + 1 }));
-      onChange({ ...priorities, surplusRules: reordered });
+      setLocalPriorities({ ...localPriorities, surplusRules: reordered });
+      setIsDirty(true);
     },
-    [priorities, onChange]
+    [localPriorities]
   );
 
   const handleUpdateSurplusLimit = useCallback(
     (id: string, value: string) => {
       const numericValue = value === "" ? undefined : parseInt(value) || 0;
-      const updated = priorities.surplusRules.map((r) =>
+      const updated = localPriorities.surplusRules.map((r) =>
         r.id === id ? { ...r, annualLimit: numericValue } : r
       );
-      onChange({ ...priorities, surplusRules: updated });
+      setLocalPriorities({ ...localPriorities, surplusRules: updated });
+      setIsDirty(true);
     },
-    [priorities, onChange]
+    [localPriorities]
   );
 
   // Surplus drag handlers
@@ -253,14 +274,15 @@ export function CashFlowPrioritiesPanel({
     e.preventDefault();
     if (!draggedSurplusId || draggedSurplusId === targetId) return;
 
-    const list = [...priorities.surplusRules];
+    const list = [...localPriorities.surplusRules];
     const draggedIdx = list.findIndex((r) => r.id === draggedSurplusId);
     const targetIdx = list.findIndex((r) => r.id === targetId);
     const [removed] = list.splice(draggedIdx, 1);
     list.splice(targetIdx, 0, removed);
 
     const reordered = list.map((r, i) => ({ ...r, priority: i + 1 }));
-    onChange({ ...priorities, surplusRules: reordered });
+    setLocalPriorities({ ...localPriorities, surplusRules: reordered });
+    setIsDirty(true);
     setDraggedSurplusId(null);
   };
 
@@ -280,25 +302,27 @@ export function CashFlowPrioritiesPanel({
         targetId: account.id,
         targetCategory: account.category,
         targetName: account.name,
-        priority: priorities.withdrawalRules.length + 1,
+        priority: localPriorities.withdrawalRules.length + 1,
       };
 
-      onChange({
-        ...priorities,
-        withdrawalRules: [...priorities.withdrawalRules, newRule],
+      setLocalPriorities({
+        ...localPriorities,
+        withdrawalRules: [...localPriorities.withdrawalRules, newRule],
       });
+      setIsDirty(true);
       setAddingWithdrawal(false);
     },
-    [availableAccounts, priorities, onChange]
+    [availableAccounts, localPriorities]
   );
 
   const handleDeleteWithdrawalRule = useCallback(
     (id: string) => {
-      const filtered = priorities.withdrawalRules.filter((r) => r.id !== id);
+      const filtered = localPriorities.withdrawalRules.filter((r) => r.id !== id);
       const reordered = filtered.map((r, i) => ({ ...r, priority: i + 1 }));
-      onChange({ ...priorities, withdrawalRules: reordered });
+      setLocalPriorities({ ...localPriorities, withdrawalRules: reordered });
+      setIsDirty(true);
     },
-    [priorities, onChange]
+    [localPriorities]
   );
 
   // Withdrawal drag handlers
@@ -316,14 +340,15 @@ export function CashFlowPrioritiesPanel({
     e.preventDefault();
     if (!draggedWithdrawalId || draggedWithdrawalId === targetId) return;
 
-    const list = [...priorities.withdrawalRules];
+    const list = [...localPriorities.withdrawalRules];
     const draggedIdx = list.findIndex((r) => r.id === draggedWithdrawalId);
     const targetIdx = list.findIndex((r) => r.id === targetId);
     const [removed] = list.splice(draggedIdx, 1);
     list.splice(targetIdx, 0, removed);
 
     const reordered = list.map((r, i) => ({ ...r, priority: i + 1 }));
-    onChange({ ...priorities, withdrawalRules: reordered });
+    setLocalPriorities({ ...localPriorities, withdrawalRules: reordered });
+    setIsDirty(true);
     setDraggedWithdrawalId(null);
   };
 
@@ -378,6 +403,14 @@ export function CashFlowPrioritiesPanel({
       <div className={styles.header}>
         <span className={styles.title}>현금흐름 우선순위</span>
         <span className={styles.count}>{totalRuleCount}개</span>
+        <button
+          type="button"
+          className={`${styles.saveButton}${!isDirty ? ` ${styles.saveButtonDisabled}` : ''}`}
+          onClick={handleSave}
+          disabled={!isDirty}
+        >
+          저장
+        </button>
       </div>
 
       <div className={styles.tabBar}>
@@ -403,9 +436,9 @@ export function CashFlowPrioritiesPanel({
             연간 잉여금을 아래 순서대로 배분합니다.
           </p>
 
-          {priorities.surplusRules.length > 0 && (
+          {localPriorities.surplusRules.length > 0 && (
             <div className={styles.ruleList}>
-              {priorities.surplusRules
+              {localPriorities.surplusRules
                 .sort((a, b) => a.priority - b.priority)
                 .map((rule) => (
                   <div
@@ -476,7 +509,7 @@ export function CashFlowPrioritiesPanel({
             </div>
           )}
 
-          {priorities.surplusRules.length === 0 && !addingSurplus && (
+          {localPriorities.surplusRules.length === 0 && !addingSurplus && (
             <div className={styles.emptyState}>
               <p>설정된 규칙이 없습니다</p>
               <p className={styles.emptyHint}>
@@ -534,7 +567,7 @@ export function CashFlowPrioritiesPanel({
           </p>
 
           <div className={styles.ruleList}>
-            {priorities.withdrawalRules
+            {localPriorities.withdrawalRules
               .sort((a, b) => a.priority - b.priority)
               .map((rule) => (
                 <div
@@ -569,7 +602,7 @@ export function CashFlowPrioritiesPanel({
               <div className={styles.pinHandle}>
                 <Pin size={14} />
               </div>
-              <div className={styles.priorityBadge}>{priorities.withdrawalRules.length + 1}</div>
+              <div className={styles.priorityBadge}>{localPriorities.withdrawalRules.length + 1}</div>
               <div className={styles.ruleName}>마이너스 통장</div>
             </div>
           </div>
@@ -577,7 +610,7 @@ export function CashFlowPrioritiesPanel({
             모든 계좌에서 인출해도 부족하면 마이너스 통장으로 자동 충당됩니다.
           </p>
 
-          {priorities.withdrawalRules.length === 0 && !addingWithdrawal && (
+          {localPriorities.withdrawalRules.length === 0 && !addingWithdrawal && (
             <div className={styles.emptyHint}>
               규칙을 추가하지 않으면 기본 순서로 인출됩니다
             </div>
