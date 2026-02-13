@@ -19,6 +19,42 @@
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* 관리자 모드 배너 */
+.adminBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  background-color: #007aff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.adminBannerBack {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: #fff;
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+
+.adminBannerBack:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.adminBannerText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* 헤더 - 사이드바와 동일한 스타일 */
 .header {
   position: sticky;

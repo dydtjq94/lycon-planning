@@ -117,7 +117,14 @@ function getSimulationIcon(iconId?: string): LucideIcon {
   return found?.icon || Star;
 }
 
-export function DashboardContent() {
+interface DashboardContentProps {
+  adminView?: {
+    targetUserId: string;
+    targetUserName: string;
+  };
+}
+
+export function DashboardContent({ adminView }: DashboardContentProps) {
   const { isDark } = useChartTheme();
   // URL pathname
   const pathname = usePathname();
@@ -174,6 +181,10 @@ export function DashboardContent() {
   // URL 업데이트 함수 (pushState 직접 사용으로 즉시 반응)
   const updateUrl = useCallback((section: string, simId: string) => {
     const params = new URLSearchParams();
+    // 관리자 모드: viewAs 파라미터 보존
+    if (adminView) {
+      params.set("viewAs", adminView.targetUserId);
+    }
     if (section !== "dashboard") {
       params.set("section", section);
     }
@@ -794,7 +805,7 @@ export function DashboardContent() {
                 ? laborData.amount / 12
                 : laborData.amount;
             const currentAge = currentYear - ownerBirthYear;
-            const retirementAge = profile.target_retirement_age || 60;
+            const retirementAge = lifeCycleSettings.selfRetirementAge;
             const yearsOfService = pensionData.yearsOfService || 0;
             const yearsUntilRetirement = Math.max(
               0,
@@ -883,7 +894,7 @@ export function DashboardContent() {
             simulationId={simulation.id}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear ?? null}
-            retirementAge={profile.target_retirement_age}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
             globalSettings={globalSettings}
             unreadMessageCount={unreadMessageCount}
             onNavigate={handleSectionChange}
@@ -957,8 +968,8 @@ export function DashboardContent() {
             simulationId={simulation.id}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             globalSettings={globalSettings}
           />
         );
@@ -968,8 +979,8 @@ export function DashboardContent() {
             simulationId={simulation.id}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             globalSettings={globalSettings}
           />
         );
@@ -980,8 +991,8 @@ export function DashboardContent() {
             simulationId={simulation.id}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings}
             simulationResult={simulationResult}
@@ -993,8 +1004,8 @@ export function DashboardContent() {
             simulationId={simulation.id}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings}
             simulationResult={simulationResult}
@@ -1006,8 +1017,8 @@ export function DashboardContent() {
             simulationId={simulation.id}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings}
           />
@@ -1018,8 +1029,8 @@ export function DashboardContent() {
             simulationId={simulation.id}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings}
           />
@@ -1030,8 +1041,8 @@ export function DashboardContent() {
             simulationId={simulation.id}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings}
           />
@@ -1042,8 +1053,8 @@ export function DashboardContent() {
             simulationId={simulation.id}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings}
           />
@@ -1054,7 +1065,7 @@ export function DashboardContent() {
             simulationId={simulation.id}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings}
           />
@@ -1078,6 +1089,19 @@ export function DashboardContent() {
       />
 
       <main className={styles.main}>
+        {adminView && (
+          <div className={styles.adminBanner}>
+            <a
+              href={`/admin/users/${adminView.targetUserId}`}
+              className={styles.adminBannerBack}
+            >
+              <ChevronLeft size={16} />
+            </a>
+            <span className={styles.adminBannerText}>
+              {adminView.targetUserName}님의 대시보드 (관리자)
+            </span>
+          </div>
+        )}
         <header className={styles.header}>
           <div className={styles.headerInner}>
             {currentSection === "simulation" && selectedSim ? (

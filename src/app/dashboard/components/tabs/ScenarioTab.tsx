@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   Home,
@@ -93,6 +93,16 @@ export function ScenarioTab({
   isSyncingPrices,
 }: ScenarioTabProps) {
   const { isDark, chartScaleColors } = useChartTheme();
+
+  // 시뮬레이션별 은퇴 나이 (life_cycle_settings에서 가져오고, 없으면 프로필 기본값)
+  const lifeCycleSettings = useMemo(() => {
+    const saved = simulation.life_cycle_settings as { selfRetirementAge?: number; spouseRetirementAge?: number } | null;
+    return {
+      selfRetirementAge: saved?.selfRetirementAge ?? profile.target_retirement_age,
+      spouseRetirementAge: saved?.spouseRetirementAge ?? spouseMember?.retirement_age ?? 65,
+    };
+  }, [simulation.life_cycle_settings, profile.target_retirement_age, spouseMember?.retirement_age]);
+
   const [activeTopTab, setActiveTopTab] = useState<"plan" | "cashflow">("plan");
   const [activeCategoryTab, setActiveCategoryTab] = useState<string | null>(null);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
@@ -206,7 +216,7 @@ export function ScenarioTab({
           simulationId={simulationId}
           birthYear={simulationProfile.birthYear}
           spouseBirthYear={simulationProfile.spouseBirthYear}
-          retirementAge={profile.target_retirement_age}
+          retirementAge={lifeCycleSettings.selfRetirementAge}
           globalSettings={globalSettings ?? undefined}
           isInitializing={isInitializing}
           timeRange={sharedTimeRange}
@@ -226,7 +236,7 @@ export function ScenarioTab({
           birthYear={simulationProfile.birthYear}
           spouseBirthYear={simulationProfile.spouseBirthYear}
           isInitializing={isInitializing}
-          retirementAge={profile.target_retirement_age}
+          retirementAge={lifeCycleSettings.selfRetirementAge}
           globalSettings={globalSettings ?? undefined}
           timeRange={sharedTimeRange}
           onTimeRangeChange={setSharedTimeRange}
@@ -252,8 +262,8 @@ export function ScenarioTab({
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings}
             simulationResult={simulationResult}
@@ -265,8 +275,8 @@ export function ScenarioTab({
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings}
             simulationResult={simulationResult}
@@ -278,8 +288,8 @@ export function ScenarioTab({
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings ?? undefined}
           />
@@ -290,8 +300,8 @@ export function ScenarioTab({
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings ?? undefined}
           />
@@ -302,8 +312,8 @@ export function ScenarioTab({
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings ?? undefined}
           />
@@ -314,8 +324,8 @@ export function ScenarioTab({
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
-            spouseRetirementAge={spouseMember?.retirement_age || 60}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings ?? undefined}
           />
@@ -326,7 +336,7 @@ export function ScenarioTab({
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={profile.target_retirement_age}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
             isMarried={isMarried}
             globalSettings={globalSettings ?? undefined}
           />

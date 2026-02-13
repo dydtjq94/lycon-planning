@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Send,
+  LayoutDashboard,
   Sparkles,
   Pencil,
   Trash2,
@@ -1865,6 +1866,15 @@ export default function UserDetailPage() {
               Gemini
             </button>
           )}
+
+          {/* 대시보드로 이동 버튼 */}
+          <a
+            href={`/dashboard?viewAs=${params.id}`}
+            className={styles.dashboardButton}
+          >
+            <LayoutDashboard size={16} />
+            대시보드
+          </a>
 
           {/* SMS 발송 버튼 */}
           <button

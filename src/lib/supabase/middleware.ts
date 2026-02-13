@@ -61,9 +61,11 @@ export async function updateSession(request: NextRequest) {
     }
 
     // 전문가가 일반 사용자 페이지 접근 시 → /admin으로
+    // 단, viewAs 파라미터가 있으면 고객 대시보드 관리자 모드이므로 허용
     const userOnlyPaths = ['/onboarding', '/waiting', '/dashboard']
     const isUserOnlyPath = userOnlyPaths.some(path => request.nextUrl.pathname.startsWith(path))
-    if (expert && isUserOnlyPath) {
+    const hasViewAs = request.nextUrl.searchParams.has('viewAs')
+    if (expert && isUserOnlyPath && !hasViewAs) {
       const url = request.nextUrl.clone()
       url.pathname = '/admin'
       return NextResponse.redirect(url)

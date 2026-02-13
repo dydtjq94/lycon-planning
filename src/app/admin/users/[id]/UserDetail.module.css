@@ -167,6 +167,26 @@
   background: #3367d6;
 }
 
+.dashboardButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: #007aff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.dashboardButton:hover {
+  background: #0062d1;
+}
+
 .smsButton {
   display: flex;
   align-items: center;

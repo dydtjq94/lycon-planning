@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { FinancialProvider, type ProfileBasics, type FamilyMember } from "@/contexts/FinancialContext";
 import type { Simulation } from "@/types";
@@ -13,10 +13,16 @@ interface DashboardData {
   simulation: Simulation;
   profile: ProfileBasics;
   familyMembers: FamilyMember[];
+  adminView?: {
+    targetUserId: string;
+    targetUserName: string;
+  };
 }
 
-export default function DashboardPage() {
+function DashboardPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const viewAs = searchParams.get("viewAs");
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DashboardData | null>(null);
 
@@ -30,7 +36,96 @@ export default function DashboardPage() {
         return;
       }
 
-      // PIN 설정 및 인증 시간 확인
+      // Admin viewAs 모드: expert가 고객 대시보드를 보는 경우
+      if (viewAs) {
+        // 현재 로그인 사용자가 expert인지 확인
+        const { data: expert, error: expertError } = await supabase
+          .from("experts")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+        console.log("[Dashboard viewAs] Expert check:", { expert, expertError, userId: user.id });
+
+        if (!expert) {
+          router.replace("/dashboard");
+          return;
+        }
+
+        // 해당 고객이 담당 고객인지 확인
+        const { data: conversation, error: convError } = await supabase
+          .from("conversations")
+          .select("id")
+          .eq("expert_id", expert.id)
+          .eq("user_id", viewAs)
+          .maybeSingle();
+
+        console.log("[Dashboard viewAs] Conversation check:", { conversation, convError, expertId: expert.id, viewAs });
+
+        if (!conversation) {
+          router.replace("/admin");
+          return;
+        }
+
+        // 대상 유저의 프로필, 시뮬레이션, 가족구성원 로드
+        const [profileResult, simulationResult, familyResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", viewAs)
+            .single(),
+          supabase
+            .from("simulations")
+            .select("*")
+            .eq("profile_id", viewAs)
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from("family_members")
+            .select("*")
+            .eq("user_id", viewAs),
+        ]);
+
+        if (!profileResult.data) {
+          router.replace("/admin");
+          return;
+        }
+
+        let simulation = simulationResult.data;
+
+        // 시뮬레이션이 없으면 생성
+        if (!simulation) {
+          const { data: newSimulation } = await supabase
+            .from("simulations")
+            .insert({
+              profile_id: viewAs,
+              title: "은퇴",
+              is_default: true,
+            })
+            .select()
+            .single();
+
+          if (!newSimulation) {
+            router.replace("/admin");
+            return;
+          }
+          simulation = newSimulation;
+        }
+
+        setData({
+          simulation,
+          profile: profileResult.data as ProfileBasics,
+          familyMembers: (familyResult.data || []) as FamilyMember[],
+          adminView: {
+            targetUserId: viewAs,
+            targetUserName: profileResult.data.name || "이름 없음",
+          },
+        });
+        setLoading(false);
+        return;
+      }
+
+      // 일반 사용자 모드
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -95,7 +190,7 @@ export default function DashboardPage() {
     };
 
     checkAuthAndLoadData();
-  }, [router]);
+  }, [router, viewAs]);
 
   if (loading || !data) {
     return (
@@ -120,7 +215,19 @@ export default function DashboardPage() {
       profile={data.profile}
       familyMembers={data.familyMembers}
     >
-      <DashboardContent />
+      <DashboardContent adminView={data.adminView} />
     </FinancialProvider>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#f5f5f7", color: "#666" }}>
+        로딩 중...
+      </div>
+    }>
+      <DashboardPageInner />
+    </Suspense>
   );
 }

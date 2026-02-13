@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { LogOut, User, Sun, Moon, Monitor, Bell, Shield, HelpCircle, Palette, CreditCard, X, Plus, Crown, MessageCircle, FileText, Lock, Pencil, Check } from "lucide-react";
+import { LogOut, User, Sun, Moon, Monitor, Bell, Shield, HelpCircle, Palette, CreditCard, X, Plus, Crown, MessageCircle, FileText, Lock, Pencil, Check, Info } from "lucide-react";
 import { useTheme, type ColorMode, type AccentColor } from "@/contexts/ThemeContext";
 import { ProfileBasics, FamilyMember } from "@/contexts/FinancialContext";
 import { createFamilyMember, updateFamilyMember, deleteFamilyMember } from "@/lib/services/familyService";
@@ -92,6 +92,8 @@ const chartThemes: ChartTheme[] = [
   },
 ];
 
+const APP_VERSION = "1.0.0";
+
 const RELATIONSHIP_LABELS: Record<string, string> = {
   self: "본인",
   spouse: "배우자",
@@ -99,7 +101,7 @@ const RELATIONSHIP_LABELS: Record<string, string> = {
   parent: "부양가족",
 };
 
-type MenuId = "profile" | "account" | "subscription" | "appearance" | "notifications" | "security" | "help" | "contact" | "terms" | "privacy";
+type MenuId = "profile" | "account" | "subscription" | "appearance" | "notifications" | "security" | "help" | "contact" | "version";
 
 interface MenuItem {
   id: MenuId;
@@ -116,8 +118,7 @@ const menuItems: MenuItem[] = [
   { id: "security", label: "보안", icon: <Shield size={18} /> },
   { id: "contact", label: "문의하기", icon: <MessageCircle size={18} /> },
   { id: "help", label: "더보기", icon: <HelpCircle size={18} /> },
-  { id: "terms", label: "이용약관", icon: <FileText size={18} /> },
-  { id: "privacy", label: "개인정보처리방침", icon: <Lock size={18} /> },
+  { id: "version", label: `v${APP_VERSION}`, icon: <Info size={18} /> },
 ];
 
 const menuTitles: Record<MenuId, string> = {
@@ -129,11 +130,8 @@ const menuTitles: Record<MenuId, string> = {
   security: "보안",
   contact: "문의하기",
   help: "더보기",
-  terms: "이용약관",
-  privacy: "개인정보처리방침",
+  version: `v${APP_VERSION}`,
 };
-
-const APP_VERSION = "1.0.0";
 
 interface SettingsTabProps {
   profile: ProfileBasics;
@@ -776,6 +774,41 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
     );
   };
 
+  const renderVersionContent = () => (
+    <div className={styles.contentBody}>
+      <section className={styles.section}>
+        <div className={styles.menuList}>
+          <div className={styles.versionEntry}>
+            <div className={styles.versionHeader}>
+              <span className={styles.versionTag}>v1.0.0</span>
+              <span className={styles.versionDate}>2026.02.13</span>
+            </div>
+            <ul className={styles.versionChanges}>
+              <li>서비스 오픈</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+
+  const renderHelpContent = () => (
+    <div className={styles.contentBody}>
+      <section className={styles.section}>
+        <div className={styles.menuList}>
+          <button className={styles.helpRow}>
+            <FileText size={16} />
+            <span>이용약관</span>
+          </button>
+          <button className={styles.helpRow}>
+            <Lock size={16} />
+            <span>개인정보처리방침</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+
   const renderPlaceholderContent = () => (
     <div className={styles.contentBody}>
       <div className={styles.placeholder}>준비 중입니다</div>
@@ -790,13 +823,14 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
         return renderAccountContent();
       case "appearance":
         return renderAppearanceContent();
+      case "help":
+        return renderHelpContent();
+      case "version":
+        return renderVersionContent();
       case "subscription":
       case "notifications":
       case "security":
-      case "help":
       case "contact":
-      case "terms":
-      case "privacy":
         return renderPlaceholderContent();
     }
   };
@@ -820,7 +854,6 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
             ))}
           </div>
           <div className={styles.sidebarBottom}>
-            <div className={styles.sidebarVersion}>v{APP_VERSION}</div>
             <button className={styles.logoutButton} onClick={handleLogout}>
               <LogOut size={18} />
               <span>로그아웃</span>
