@@ -2,9 +2,9 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { ChevronDown } from 'lucide-react'
-import type { GlobalSettings, InvestmentAssumptions, CashFlowPriorities } from '@/types'
-import type { MonthlySnapshot } from '@/lib/services/simulationEngine'
-import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_INVESTMENT_ASSUMPTIONS } from '@/types'
+import type { SimulationAssumptions, CashFlowPriorities } from '@/types'
+import type { MonthlySnapshot } from '@/lib/services/simulationTypes'
+import { DEFAULT_SIMULATION_ASSUMPTIONS } from '@/types'
 import { runSimulationV2 } from '@/lib/services/simulationEngineV2'
 import { useSimulationV2Data } from '@/hooks/useFinancialData'
 import { calculateEndYear } from '@/lib/utils/chartDataTransformer'
@@ -20,13 +20,12 @@ interface NetWorthTabProps {
   spouseBirthYear?: number | null
   retirementAge: number
   spouseRetirementAge?: number
-  globalSettings?: GlobalSettings
   isInitializing?: boolean
   timeRange?: 'next3m' | 'next5m' | 'next5' | 'next10' | 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full'
   onTimeRangeChange?: (range: 'next3m' | 'next5m' | 'next5' | 'next10' | 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full') => void
   selectedYear?: number
   onSelectedYearChange?: (year: number) => void
-  investmentAssumptions?: InvestmentAssumptions
+  simulationAssumptions?: SimulationAssumptions
   cashFlowPriorities?: CashFlowPriorities
 }
 
@@ -52,13 +51,12 @@ export function NetWorthTab({
   spouseBirthYear,
   retirementAge,
   spouseRetirementAge = 60,
-  globalSettings,
   isInitializing = false,
   timeRange: propTimeRange,
   onTimeRangeChange,
   selectedYear: propSelectedYear,
   onSelectedYearChange,
-  investmentAssumptions,
+  simulationAssumptions,
   cashFlowPriorities,
 }: NetWorthTabProps) {
   const currentYear = new Date().getFullYear()
@@ -109,7 +107,6 @@ export function NetWorthTab({
 
   // 시뮬레이션 실행
   const simulationResult = useMemo(() => {
-    const gs = globalSettings || DEFAULT_GLOBAL_SETTINGS
     return runSimulationV2(
       v2Data,
       {
@@ -117,12 +114,11 @@ export function NetWorthTab({
         retirementAge,
         spouseBirthYear: spouseBirthYear || undefined,
       },
-      gs,
       yearsToSimulate,
-      investmentAssumptions || DEFAULT_INVESTMENT_ASSUMPTIONS,
+      simulationAssumptions || DEFAULT_SIMULATION_ASSUMPTIONS,
       cashFlowPriorities
     )
-  }, [v2Data, birthYear, retirementAge, spouseBirthYear, globalSettings, yearsToSimulate, investmentAssumptions, cashFlowPriorities])
+  }, [v2Data, birthYear, retirementAge, spouseBirthYear, yearsToSimulate, simulationAssumptions, cashFlowPriorities])
 
   // 기간에 따른 표시 범위 계산
   const displayRange = useMemo(() => {

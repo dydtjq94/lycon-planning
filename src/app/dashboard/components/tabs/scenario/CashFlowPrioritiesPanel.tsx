@@ -134,59 +134,37 @@ export function CashFlowPrioritiesPanel({
     return accounts;
   }, [v2Data]);
 
-  // Auto-populate default rules when not initialized and accounts are available
+  // 초기화 플래그만 설정 (자동 규칙 생성 없음 - 사용자가 직접 추가)
   useEffect(() => {
-    if (localPriorities._initialized || availableAccounts.length === 0 || dataLoading) return;
-
-    const surplusRules: SurplusAllocationRule[] = [];
-    const withdrawalRules: WithdrawalOrderRule[] = [];
-    let surplusPriority = 1;
-    let withdrawalPriority = 1;
-
-    // Savings accounts (excluding checking - checking is managed as currentCash)
-    const savingsAccounts = availableAccounts.filter(a => a.category === 'savings');
-    for (const account of savingsAccounts) {
-      surplusRules.push({
-        id: generateId(),
-        targetId: account.id,
-        targetCategory: account.category,
-        targetName: account.name,
-        priority: surplusPriority++,
-      });
-      withdrawalRules.push({
-        id: generateId(),
-        targetId: account.id,
-        targetCategory: account.category,
-        targetName: account.name,
-        priority: withdrawalPriority++,
-      });
-    }
-
-    // Pension accounts (IRP, ISA, 연금저축)
-    const pensionAccounts = availableAccounts.filter(a => a.category === 'pension');
-    for (const account of pensionAccounts) {
-      surplusRules.push({
-        id: generateId(),
-        targetId: account.id,
-        targetCategory: account.category,
-        targetName: account.name,
-        priority: surplusPriority++,
-      });
-      withdrawalRules.push({
-        id: generateId(),
-        targetId: account.id,
-        targetCategory: account.category,
-        targetName: account.name,
-        priority: withdrawalPriority++,
-      });
-    }
+    if (localPriorities._initialized || dataLoading) return;
 
     onChange({
-      surplusRules,
-      withdrawalRules,
+      surplusRules: [],
+      withdrawalRules: [],
       _initialized: true,
     });
-  }, [localPriorities._initialized, availableAccounts, dataLoading, onChange]);
+  }, [localPriorities._initialized, dataLoading, onChange]);
+
+  // 삭제된 계좌 자동 정리: 존재하지 않는 targetId를 가진 규칙 제거
+  useEffect(() => {
+    if (!localPriorities._initialized || availableAccounts.length === 0 || dataLoading) return;
+
+    const validIds = new Set(availableAccounts.map(a => a.id));
+    const filteredSurplus = localPriorities.surplusRules.filter(r => validIds.has(r.targetId));
+    const filteredWithdrawal = localPriorities.withdrawalRules.filter(r => validIds.has(r.targetId));
+
+    const surplusRemoved = filteredSurplus.length !== localPriorities.surplusRules.length;
+    const withdrawalRemoved = filteredWithdrawal.length !== localPriorities.withdrawalRules.length;
+
+    if (surplusRemoved || withdrawalRemoved) {
+      const cleaned: CashFlowPriorities = {
+        ...localPriorities,
+        surplusRules: filteredSurplus.map((r, i) => ({ ...r, priority: i + 1 })),
+        withdrawalRules: filteredWithdrawal.map((r, i) => ({ ...r, priority: i + 1 })),
+      };
+      onChange(cleaned);
+    }
+  }, [localPriorities._initialized, availableAccounts, dataLoading, localPriorities.surplusRules, localPriorities.withdrawalRules, onChange]);
 
   // Filter out already-used accounts for each section
   const availableSurplusAccounts = useMemo(() => {
@@ -404,10 +382,10 @@ export function CashFlowPrioritiesPanel({
         <span className={styles.title}>현금흐름 우선순위</span>
         <span className={styles.count}>{totalRuleCount}개</span>
         <button
-          type="button"
-          className={`${styles.saveButton}${!isDirty ? ` ${styles.saveButtonDisabled}` : ''}`}
+          className={styles.saveButton}
           onClick={handleSave}
-          disabled={!isDirty}
+          type="button"
+          disabled={isLoading || !isDirty}
         >
           저장
         </button>
@@ -509,14 +487,20 @@ export function CashFlowPrioritiesPanel({
             </div>
           )}
 
-          {localPriorities.surplusRules.length === 0 && !addingSurplus && (
-            <div className={styles.emptyState}>
-              <p>설정된 규칙이 없습니다</p>
-              <p className={styles.emptyHint}>
-                규칙을 추가하지 않으면 잉여금이 현금으로 누적됩니다
-              </p>
+          {/* 유동 현금 - 항상 마지막 고정 */}
+          <div className={styles.ruleList}>
+            <div className={styles.ruleRowFixed}>
+              <div className={styles.pinHandle}>
+                <Pin size={14} />
+              </div>
+              <div className={styles.priorityBadge}>{localPriorities.surplusRules.length + 1}</div>
+              <div className={styles.ruleName}>유동 현금</div>
+              <span className={styles.remainderBadge}>나머지</span>
             </div>
-          )}
+          </div>
+          <p className={styles.fixedHint}>
+            배분 규칙을 모두 채운 뒤 남은 잉여금은 유동 현금으로 보관됩니다.
+          </p>
 
           {addingSurplus ? (
             <div className={styles.addRow}>

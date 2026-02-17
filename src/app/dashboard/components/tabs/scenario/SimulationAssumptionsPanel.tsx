@@ -2,18 +2,18 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { TrendingUp, Landmark, Home, Percent, Wallet } from "lucide-react";
-import type { InvestmentAssumptions, InvestmentRates } from "@/types";
-import styles from "./InvestmentAssumptionsPanel.module.css";
+import type { SimulationAssumptions, SimulationRates } from "@/types";
+import styles from "./SimulationAssumptionsPanel.module.css";
 
-interface InvestmentAssumptionsPanelProps {
-  assumptions: InvestmentAssumptions;
-  onChange: (assumptions: InvestmentAssumptions) => void;
+interface SimulationAssumptionsPanelProps {
+  assumptions: SimulationAssumptions;
+  onChange: (assumptions: SimulationAssumptions) => void;
   isLoading?: boolean;
 }
 
 // 각 수익률 필드 설정
 const RATE_FIELDS: {
-  key: keyof InvestmentRates;
+  key: keyof SimulationRates;
   label: string;
   icon: React.ReactNode;
   min: number;
@@ -77,11 +77,11 @@ const RATE_FIELDS: {
   },
 ];
 
-export function InvestmentAssumptionsPanel({
+export function SimulationAssumptionsPanel({
   assumptions,
   onChange,
   isLoading = false,
-}: InvestmentAssumptionsPanelProps) {
+}: SimulationAssumptionsPanelProps) {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
 
@@ -106,7 +106,7 @@ export function InvestmentAssumptionsPanel({
     setIsDirty(true);
   };
 
-  const handleBlur = (key: keyof InvestmentRates, defaultValue: number) => {
+  const handleBlur = (key: keyof SimulationRates, defaultValue: number) => {
     const parsed = parseFloat(localRates[key]);
     const value = isNaN(parsed) ? defaultValue : parsed;
     setLocalRates((prev) => ({ ...prev, [key]: String(value) }));
@@ -120,7 +120,7 @@ export function InvestmentAssumptionsPanel({
     });
     onChange({
       ...assumptions,
-      rates: { ...assumptions.rates, ...newRates } as InvestmentRates,
+      rates: { ...assumptions.rates, ...newRates } as SimulationRates,
     });
     setIsDirty(false);
   };

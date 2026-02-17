@@ -9,7 +9,7 @@ import {
   Legend,
 } from "chart.js";
 import { SankeyController, Flow } from "chartjs-chart-sankey";
-import type { SimulationResult } from "@/lib/services/simulationEngine";
+import type { SimulationResult } from "@/lib/services/simulationTypes";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import {
   CHART_COLORS,

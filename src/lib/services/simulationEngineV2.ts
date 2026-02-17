@@ -20,25 +20,22 @@ import type {
 } from "@/types/tables";
 
 import type {
-  GlobalSettings,
-  InvestmentAssumptions,
+  SimulationAssumptions,
   CashFlowPriorities,
-  RateCategory,
-  InvestmentRates,
+  SimulationRates,
   CashFlowItem,
 } from "@/types";
 
 import {
-  DEFAULT_GLOBAL_SETTINGS,
-  DEFAULT_INVESTMENT_ASSUMPTIONS,
+  DEFAULT_SIMULATION_ASSUMPTIONS,
 } from "@/types";
 import type {
   YearlySnapshot,
   MonthlySnapshot,
   SimulationResult,
   SimulationProfile,
-} from "./simulationEngine";
-import { getEffectiveRate, getDefaultRateCategory } from "../utils";
+} from "./simulationTypes";
+import { getDefaultRateCategory } from "../utils";
 import { getEffectiveDebtRate } from "../utils/loanCalculator";
 import {
   calculateInterestIncomeTax,
@@ -74,6 +71,7 @@ interface SavingsItemState {
   isTaxFree: boolean;
   isMatured: boolean;
   isActive: boolean;
+  isVirtual?: boolean;
 }
 
 interface PensionItemState {
@@ -329,10 +327,10 @@ function calculatePMT(
 }
 
 function getRateForYear(
-  rateKey: keyof InvestmentRates,
+  rateKey: keyof SimulationRates,
   year: number,
   startYear: number,
-  assumptions: InvestmentAssumptions,
+  assumptions: SimulationAssumptions,
 ): number {
   if (assumptions.mode !== "historical" || !assumptions.historicalConfig) {
     return assumptions.rates[rateKey] ?? 0;
@@ -353,7 +351,7 @@ function getRateForYear(
 function initializeState(
   data: SimulationV2Input,
   profile: SimulationProfile,
-  gs: GlobalSettings,
+  rates: SimulationRates,
 ): SimulationState {
   const state: SimulationState = {
     currentCash: 0,
@@ -389,6 +387,30 @@ function initializeState(
       isActive: true,
     });
   }
+
+  // 유동 현금 항상 생성: 잉여금/부족분의 최종 수용처
+  state.savings.push({
+    id: '__default_checking__',
+    title: '유동 현금',
+    owner: 'self',
+    type: 'checking',
+    balance: 0,
+    totalPrincipal: 0,
+    monthlyContribution: null,
+    contributionStartYear: null,
+    contributionStartMonth: null,
+    contributionEndYear: null,
+    contributionEndMonth: null,
+    isContributionFixedToRetirement: false,
+    interestRate: null,
+    expectedReturn: null,
+    maturityYear: null,
+    maturityMonth: null,
+    isTaxFree: false,
+    isMatured: false,
+    isActive: true,
+    isVirtual: true,
+  });
 
   // 국민연금 초기화
   for (const p of data.nationalPensions) {
@@ -477,7 +499,7 @@ function initializeState(
     if (!d.is_active) continue;
     const effectiveRate = getEffectiveDebtRate(
       { rate: d.interest_rate, rateType: d.rate_type, spread: d.spread || 0 },
-      gs,
+      rates,
     );
     const monthlyRate = effectiveRate / 100 / 12;
     const totalMonths =
@@ -609,9 +631,8 @@ function initializeState(
 export function runSimulationV2(
   data: SimulationV2Input,
   profile: SimulationProfile,
-  globalSettings?: GlobalSettings,
   yearsToSimulate: number = 50,
-  assumptions?: InvestmentAssumptions,
+  assumptions?: SimulationAssumptions,
   priorities?: CashFlowPriorities,
 ): SimulationResult {
   const currentYear = new Date().getFullYear();
@@ -619,12 +640,11 @@ export function runSimulationV2(
   const retirementYear = birthYear + retirementAge;
   const endYear = currentYear + yearsToSimulate;
 
-  const gs = globalSettings || DEFAULT_GLOBAL_SETTINGS;
-  const effectiveAssumptions: InvestmentAssumptions =
-    assumptions || DEFAULT_INVESTMENT_ASSUMPTIONS;
+  const effectiveAssumptions: SimulationAssumptions =
+    assumptions || DEFAULT_SIMULATION_ASSUMPTIONS;
 
   // State 초기화
-  const state = initializeState(data, profile, gs);
+  const state = initializeState(data, profile, effectiveAssumptions.rates);
 
   const snapshots: YearlySnapshot[] = [];
   const monthlySnapshots: MonthlySnapshot[] = [];
@@ -685,6 +705,20 @@ export function runSimulationV2(
       currentYear,
       effectiveAssumptions,
     );
+    const incomeGrowthPct = getRateForYear(
+      "incomeGrowth",
+      year,
+      currentYear,
+      effectiveAssumptions,
+    );
+
+    // rateCategory별 assumptions 비율 매핑
+    const assumptionRateByCategory: Record<string, number> = {
+      income: incomeGrowthPct,
+      inflation: inflationPct,
+      investment: investmentReturnPct,
+      realEstate: realEstateGrowthPct,
+    };
 
     const incomeBreakdown: { title: string; amount: number; type?: string }[] =
       [];
@@ -786,13 +820,9 @@ export function runSimulationV2(
 
         const rateCategory =
           income.rate_category || getDefaultRateCategory(income.type);
-        const baseRate = income.growth_rate ?? gs.incomeGrowthRate;
-        const effectiveRate = getEffectiveRate(
-          baseRate,
-          rateCategory as RateCategory,
-          gs.scenarioMode,
-          gs,
-        );
+        const effectiveRate = rateCategory === 'fixed'
+          ? (income.growth_rate ?? 0)
+          : (assumptionRateByCategory[rateCategory] ?? income.growth_rate ?? 0);
         const monthlyRate = Math.pow(1 + effectiveRate / 100, 1 / 12) - 1;
 
         const monthsFromStart =
@@ -843,21 +873,20 @@ export function runSimulationV2(
 
         const rateCategory =
           expense.rate_category || getDefaultRateCategory(expense.type);
-        const baseRate = expense.growth_rate ?? gs.inflationRate;
-        const effectiveRate = getEffectiveRate(
-          baseRate,
-          rateCategory as RateCategory,
-          gs.scenarioMode,
-          gs,
-        );
+        const effectiveRate = rateCategory === 'fixed'
+          ? (expense.growth_rate ?? 0)
+          : (assumptionRateByCategory[rateCategory] ?? expense.growth_rate ?? 0);
         const monthlyRate = Math.pow(1 + effectiveRate / 100, 1 / 12) - 1;
 
-        const monthsFromStart =
-          (year - expense.start_year) * 12 + (month - expense.start_month);
+        // amount_base_year가 있으면 기준년도부터 복리, 없으면 시작년도부터
+        const growthBaseYear = expense.amount_base_year ?? expense.start_year;
+        const growthBaseMonth = expense.amount_base_year ? 1 : expense.start_month;
+        const monthsFromBase =
+          (year - growthBaseYear) * 12 + (month - growthBaseMonth);
         const baseAmount =
           expense.frequency === "yearly" ? expense.amount / 12 : expense.amount;
         const amount =
-          baseAmount * Math.pow(1 + monthlyRate, Math.max(0, monthsFromStart));
+          baseAmount * Math.pow(1 + monthlyRate, Math.max(0, monthsFromBase));
 
         state.currentCash -= amount;
         yearlyExpense += amount;
@@ -1162,7 +1191,7 @@ export function runSimulationV2(
         )
           continue;
 
-        const loanRate = re.loanRate || gs.debtInterestRate;
+        const loanRate = re.loanRate || (effectiveAssumptions.rates.debtDefault ?? 3.5);
         const loanMonthlyRate = loanRate / 100 / 12;
         const totalLoanMonths =
           ((re.loanMaturityYear || 0) - (re.loanStartYear || 0)) * 12 +
@@ -1299,7 +1328,7 @@ export function runSimulationV2(
         )
           continue;
 
-        const assetLoanRate = asset.loanRate || gs.debtInterestRate;
+        const assetLoanRate = asset.loanRate || (effectiveAssumptions.rates.debtDefault ?? 3.5);
         const assetMonthlyRate = assetLoanRate / 100 / 12;
         const totalAssetLoanMonths =
           ((asset.loanMaturityYear || 0) - (asset.loanStartYear || 0)) * 12 +
@@ -1800,14 +1829,9 @@ export function runSimulationV2(
       // 부동산 가치 성장
       for (const re of state.realEstates) {
         if (re.isSold) continue;
-        const effectiveRate = getEffectiveRate(
-          re.growthRate,
-          "realEstate" as RateCategory,
-          gs.scenarioMode,
-          gs,
-        );
-        if (effectiveRate !== 0) {
-          const monthlyRate = Math.pow(1 + effectiveRate / 100, 1 / 12) - 1;
+        const reRate = re.growthRate ?? realEstateGrowthPct;
+        if (reRate !== 0) {
+          const monthlyRate = Math.pow(1 + reRate / 100, 1 / 12) - 1;
           re.currentValue *= 1 + monthlyRate;
         }
       }
@@ -1927,7 +1951,6 @@ export function runSimulationV2(
         // 2단계: 폴백 (유동성 순서)
         if (state.currentCash < 0) {
           const fallbackOrder = [
-            "checking",
             "savings",
             "deposit",
             "housing",
@@ -1937,6 +1960,7 @@ export function runSimulationV2(
             "bond",
             "crypto",
             "other",
+            "checking",  // 유동 현금은 최후순위
           ];
 
           for (const type of fallbackOrder) {
@@ -2055,45 +2079,43 @@ export function runSimulationV2(
         }
       }
 
-      // A15 폴백: surplusRules 없을 때 자동 잉여금 배분 (유동성 역순 - 안전자산 우선)
-      if (state.currentCash > 0 && !priorities?.surplusRules?.length) {
-        const fallbackOrder = [
-          "checking",
-          "savings",
-          "deposit",
-          "housing",
-          "domestic_stock",
-          "foreign_stock",
-          "fund",
-          "bond",
-          "crypto",
-          "other",
-        ];
+      // A15 폴백: surplusRules 없을 때 → 유동 현금으로만 흡수 (아래 월말 처리에서 처리)
 
-        for (const type of fallbackOrder) {
-          if (state.currentCash <= 0) break;
-          const items = state.savings
-            .filter((s) => s.type === type && !s.isMatured && s.isActive)
-            .sort((a, b) => b.balance - a.balance);
-
-          for (const item of items) {
-            if (state.currentCash <= 0) break;
-            const allocation = state.currentCash;
-            item.balance += allocation;
-            item.totalPrincipal += allocation;
-            state.currentCash -= allocation;
+      // 월말 잔여 currentCash → 유동 현금(__default_checking__)에 흡수 (마이너스 가능)
+      if (state.currentCash !== 0) {
+        const defaultChecking = state.savings.find(
+          s => s.id === '__default_checking__' && s.isActive
+        );
+        if (defaultChecking) {
+          const amount = state.currentCash;
+          defaultChecking.balance += amount;
+          defaultChecking.totalPrincipal += amount;
+          if (amount > 0) {
             surplusInvestments.push({
-              title: item.title || "저축",
-              amount: allocation,
-              category: "savings",
-              id: item.id,
+              title: '유동 현금',
+              amount,
+              category: 'savings',
+              id: '__default_checking__',
             });
             monthSurplus.push({
-              title: `${item.title || "저축"} 적립`,
-              amount: allocation,
-              category: "savings",
+              title: '유동 현금 적립',
+              amount,
+              category: 'savings',
+            });
+          } else {
+            deficitWithdrawals.push({
+              title: '유동 현금',
+              amount: -amount,
+              category: 'savings',
+              id: '__default_checking__',
+            });
+            monthWithdrawals.push({
+              title: '유동 현금 인출',
+              amount: -amount,
+              category: 'savings',
             });
           }
+          state.currentCash = 0;
         }
       }
 
@@ -2333,12 +2355,12 @@ export function runSimulationV2(
     // ==============================
 
     // 항목별 연간 소득/지출을 다시 계산하여 breakdown 생성
-    const incomeBrkDown = buildIncomeBreakdown(data.incomes, year, profile, gs);
+    const incomeBrkDown = buildIncomeBreakdown(data.incomes, year, profile, assumptionRateByCategory);
     const expenseBrkDown = buildExpenseBreakdown(
       data.expenses,
       year,
       profile,
-      gs,
+      assumptionRateByCategory,
     );
 
     // 직접 계산된 부채 상환액을 지출 breakdown에 추가
@@ -2895,7 +2917,7 @@ function buildIncomeBreakdown(
   incomes: Income[],
   year: number,
   profile: SimulationProfile,
-  gs: GlobalSettings,
+  assumptionRates: Record<string, number>,
 ): { title: string; amount: number; type?: string }[] {
   const result: { title: string; amount: number; type?: string }[] = [];
 
@@ -2931,13 +2953,9 @@ function buildIncomeBreakdown(
 
     const rateCategory =
       income.rate_category || getDefaultRateCategory(income.type);
-    const baseRate = income.growth_rate ?? gs.incomeGrowthRate;
-    const effectiveRate = getEffectiveRate(
-      baseRate,
-      rateCategory as RateCategory,
-      gs.scenarioMode,
-      gs,
-    );
+    const effectiveRate = rateCategory === 'fixed'
+      ? (income.growth_rate ?? 0)
+      : (assumptionRates[rateCategory] ?? income.growth_rate ?? 0);
     const monthlyRate = Math.pow(1 + effectiveRate / 100, 1 / 12) - 1;
 
     let yearTotal = 0;
@@ -2980,7 +2998,7 @@ function buildExpenseBreakdown(
   expenses: Expense[],
   year: number,
   profile: SimulationProfile,
-  gs: GlobalSettings,
+  assumptionRates: Record<string, number>,
 ): { title: string; amount: number; type?: string }[] {
   const result: { title: string; amount: number; type?: string }[] = [];
 
@@ -3002,13 +3020,9 @@ function buildExpenseBreakdown(
 
     const rateCategory =
       expense.rate_category || getDefaultRateCategory(expense.type);
-    const baseRate = expense.growth_rate ?? gs.inflationRate;
-    const effectiveRate = getEffectiveRate(
-      baseRate,
-      rateCategory as RateCategory,
-      gs.scenarioMode,
-      gs,
-    );
+    const effectiveRate = rateCategory === 'fixed'
+      ? (expense.growth_rate ?? 0)
+      : (assumptionRates[rateCategory] ?? expense.growth_rate ?? 0);
     const monthlyRate = Math.pow(1 + effectiveRate / 100, 1 / 12) - 1;
 
     let yearTotal = 0;
@@ -3024,12 +3038,15 @@ function buildExpenseBreakdown(
         )
       )
         continue;
-      const monthsFromStart =
-        (year - expense.start_year) * 12 + (month - expense.start_month);
+      // amount_base_year가 있으면 기준년도부터 복리
+      const growthBaseYear = expense.amount_base_year ?? expense.start_year;
+      const growthBaseMonth = expense.amount_base_year ? 1 : expense.start_month;
+      const monthsFromBase =
+        (year - growthBaseYear) * 12 + (month - growthBaseMonth);
       const baseAmount =
         expense.frequency === "yearly" ? expense.amount / 12 : expense.amount;
       yearTotal +=
-        baseAmount * Math.pow(1 + monthlyRate, Math.max(0, monthsFromStart));
+        baseAmount * Math.pow(1 + monthlyRate, Math.max(0, monthsFromBase));
     }
 
     if (yearTotal > 0) {

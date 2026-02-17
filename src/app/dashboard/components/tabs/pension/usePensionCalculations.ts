@@ -1,10 +1,8 @@
 import { useMemo } from 'react'
-import type { OnboardingData, GlobalSettings } from '@/types'
-import { DEFAULT_GLOBAL_SETTINGS, SCENARIO_PRESETS } from '@/types'
+import type { OnboardingData } from '@/types'
 
 interface PensionCalculationsProps {
   data: OnboardingData
-  globalSettings?: GlobalSettings
 }
 
 // PMT 계산: 수령 중에도 수익률 적용
@@ -32,30 +30,14 @@ export function calculateFutureValue(
   return Math.round(futureValue)
 }
 
-// 시나리오 모드에 따른 투자 수익률 가져오기
-export function getInvestmentReturnRate(globalSettings: GlobalSettings): number {
-  const mode = globalSettings.scenarioMode
-
-  if (mode === 'individual' || mode === 'custom') {
-    return globalSettings.investmentReturnRate / 100
-  }
-
-  // 프리셋 모드
-  const preset = SCENARIO_PRESETS[mode as 'optimistic' | 'average' | 'pessimistic']
-  return preset.investmentReturnRate / 100
+// 투자 수익률 (기본값 5%)
+export function getInvestmentReturnRate(): number {
+  return 5 / 100
 }
 
-// 시나리오 모드에 따른 소득 상승률 가져오기
-export function getIncomeGrowthRate(globalSettings: GlobalSettings): number {
-  const mode = globalSettings.scenarioMode
-
-  if (mode === 'individual' || mode === 'custom') {
-    return globalSettings.incomeGrowthRate / 100
-  }
-
-  // 프리셋 모드
-  const preset = SCENARIO_PRESETS[mode as 'optimistic' | 'average' | 'pessimistic']
-  return preset.incomeGrowthRate / 100
+// 소득 상승률 (기본값 3%)
+export function getIncomeGrowthRate(): number {
+  return 3 / 100
 }
 
 export interface RetirementPensionProjection {
@@ -124,13 +106,12 @@ export interface TotalPensionProjection {
   grandTotal: number
 }
 
-export function usePensionCalculations({ data, globalSettings }: PensionCalculationsProps) {
+export function usePensionCalculations({ data }: PensionCalculationsProps) {
   const currentYear = new Date().getFullYear()
-  const settings = globalSettings || DEFAULT_GLOBAL_SETTINGS
 
-  // 시나리오 적용된 수익률
-  const investmentReturnRate = getInvestmentReturnRate(settings)
-  const incomeGrowthRate = getIncomeGrowthRate(settings)
+  // 기본 수익률
+  const investmentReturnRate = getInvestmentReturnRate()
+  const incomeGrowthRate = getIncomeGrowthRate()
 
   // 현재 나이 계산
   const currentAge = useMemo(() => {
@@ -484,13 +465,13 @@ export function usePensionCalculations({ data, globalSettings }: PensionCalculat
     // 본인 국민연금
     const nationalPensionMonthly = data.nationalPension || 0
     const nationalPensionStartAge = data.nationalPensionStartAge || 65
-    const nationalPensionYears = Math.max(0, (settings.lifeExpectancy || 100) - nationalPensionStartAge)
+    const nationalPensionYears = Math.max(0, 100 - nationalPensionStartAge)
     const nationalPensionTotal = nationalPensionMonthly * 12 * nationalPensionYears
 
     // 배우자 국민연금
     const spouseNationalPensionMonthly = data.spouseNationalPension || 0
     const spouseNationalPensionStartAge = data.spouseNationalPensionStartAge || 65
-    const spouseNationalPensionYears = Math.max(0, (settings.lifeExpectancy || 100) - spouseNationalPensionStartAge)
+    const spouseNationalPensionYears = Math.max(0, 100 - spouseNationalPensionStartAge)
     const spouseNationalPensionTotal = spouseNationalPensionMonthly * 12 * spouseNationalPensionYears
 
     // 퇴직연금
@@ -523,7 +504,7 @@ export function usePensionCalculations({ data, globalSettings }: PensionCalculat
       },
       grandTotal: nationalPensionTotal + spouseNationalPensionTotal + retirementTotal + personalTotal,
     }
-  }, [data, settings.lifeExpectancy, retirementPensionProjection, spouseRetirementPensionProjection, personalPensionProjection, spousePersonalPensionProjection])
+  }, [data, retirementPensionProjection, spouseRetirementPensionProjection, personalPensionProjection, spousePersonalPensionProjection])
 
   return {
     currentYear,
@@ -537,7 +518,6 @@ export function usePensionCalculations({ data, globalSettings }: PensionCalculat
     spouseMonthlyIncome,
     investmentReturnRate,
     incomeGrowthRate,
-    settings,
     retirementPensionProjection,
     spouseRetirementPensionProjection,
     personalPensionProjection,

@@ -1,7 +1,7 @@
 'use client'
 
 import { X } from 'lucide-react'
-import type { YearlySnapshot } from '@/lib/services/simulationEngine'
+import type { YearlySnapshot } from '@/lib/services/simulationTypes'
 import styles from './YearCashFlowPanel.module.css'
 
 interface YearCashFlowPanelProps {

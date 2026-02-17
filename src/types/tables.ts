@@ -138,6 +138,7 @@ export interface Expense {
   retirement_link: RetirementLink  // 어떤 은퇴년도에 연동: 'self' | 'spouse' | null
   growth_rate: number
   rate_category: RateCategory
+  amount_base_year: number | null  // 금액 기준년도 (현재가치 기반 항목용, null이면 start_year 기준)
   source_type: ExpenseSourceType
   source_id: string | null
   memo: string | null
@@ -161,6 +162,7 @@ export interface ExpenseInput {
   retirement_link?: RetirementLink  // 어떤 은퇴년도에 연동: 'self' | 'spouse' | null
   growth_rate?: number
   rate_category?: RateCategory
+  amount_base_year?: number | null  // 금액 기준년도 (현재가치 기반 항목용)
   source_type?: ExpenseSourceType
   source_id?: string | null
   memo?: string | null

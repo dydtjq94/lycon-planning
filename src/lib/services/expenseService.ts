@@ -91,6 +91,36 @@ export async function deleteExpense(id: string): Promise<void> {
   if (error) throw error
 }
 
+// 지출 일괄 생성 (배치)
+export async function createExpensesBatch(inputs: ExpenseInput[]): Promise<Expense[]> {
+  if (inputs.length === 0) return []
+  const supabase = createClient()
+
+  const convertedInputs = inputs.map(input => convertToWon(input, EXPENSE_MONEY_FIELDS))
+
+  const { data, error } = await supabase
+    .from('expenses')
+    .insert(convertedInputs)
+    .select()
+
+  if (error) throw error
+  return convertArrayFromWon(data || [], EXPENSE_MONEY_FIELDS)
+}
+
+// 타입별 지출 일괄 삭제 (연동 항목 제외)
+export async function deleteExpensesByType(simulationId: string, type: ExpenseType): Promise<void> {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('expenses')
+    .delete()
+    .eq('simulation_id', simulationId)
+    .eq('type', type)
+    .is('source_type', null)
+
+  if (error) throw error
+}
+
 // 지출 타입별 라벨
 export const EXPENSE_TYPE_LABELS: Record<ExpenseType, string> = {
   living: '생활비',

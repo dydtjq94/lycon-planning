@@ -11,8 +11,7 @@ import {
 } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
 import type { RealEstate, RealEstateType, HousingType, LoanRepaymentType } from '@/types/tables'
-import type { GlobalSettings } from '@/types'
-import { formatMoney, getDefaultRateCategory, getEffectiveRate } from '@/lib/utils'
+import { formatMoney, getDefaultRateCategory } from '@/lib/utils'
 import { formatPeriodDisplay, toPeriodRaw, isPeriodValid, restorePeriodCursor, handlePeriodTextChange } from '@/lib/utils/periodInput'
 import { useRealEstates, useInvalidateByCategory } from '@/hooks/useFinancialData'
 import {
@@ -37,7 +36,6 @@ interface RealEstateTabProps {
   retirementAge: number
   spouseRetirementAge?: number
   isMarried: boolean
-  globalSettings?: GlobalSettings
 }
 
 // 색상
@@ -62,7 +60,6 @@ export function RealEstateTab({
   retirementAge,
   spouseRetirementAge,
   isMarried,
-  globalSettings,
 }: RealEstateTabProps) {
   const { isDark } = useChartTheme()
   const currentYear = new Date().getFullYear()
@@ -473,9 +470,7 @@ export function RealEstateTab({
       if (editRateCategory === 'fixed') {
         growthRate = editCustomRate ? parseFloat(editCustomRate) : 0
       } else {
-        const scenarioMode = globalSettings?.scenarioMode || 'average'
-        const settings = globalSettings || { scenarioMode: 'average' as const, rates: {} }
-        growthRate = getEffectiveRate(0, 'realEstate', scenarioMode, settings as any)
+        growthRate = 3.0
       }
 
       // Parse purchase date
@@ -1015,13 +1010,7 @@ export function RealEstateTab({
           <div className={styles.fieldContent}>
             {editRateCategory !== 'fixed' ? (
               <>
-                <span className={styles.rateValue}>
-                  {(() => {
-                    const scenarioMode = globalSettings?.scenarioMode || 'average'
-                    const settings = globalSettings || { scenarioMode: 'average' as const, rates: {} }
-                    return getEffectiveRate(0, 'realEstate', scenarioMode, settings as any).toFixed(1)
-                  })()}%
-                </span>
+                <span className={styles.rateValue}>시뮬레이션 가정</span>
                 <div className={styles.rateToggle}>
                   <button
                     type="button"
@@ -1192,10 +1181,7 @@ export function RealEstateTab({
     if (rateCategory === 'fixed') {
       metaParts.push(`상승률 ${property.growth_rate}%`)
     } else {
-      const scenarioMode = globalSettings?.scenarioMode || 'average'
-      const settings = globalSettings || { scenarioMode: 'average' as const, rates: {} }
-      const effectiveRate = getEffectiveRate(0, 'realEstate', scenarioMode, settings as any)
-      metaParts.push(`상승률 ${effectiveRate.toFixed(1)}% (시뮬)`)
+      metaParts.push('시뮬레이션 가정')
     }
 
     if (property.has_rental_income && property.rental_monthly) {

@@ -11,16 +11,9 @@ export {
   calculatePostRetirementExpense,
 } from './defaultItems'
 export {
-  runSimulation,
-  runSimulationFromItems,
-  calculateCurrentState,
-  calculateRetirementGoalProgress,
-  calculateMilestones,
   type YearlySnapshot,
+  type MonthlySnapshot,
   type SimulationResult,
   type SimulationProfile,
-  type CurrentFinancialState,
-  type GoalProgress,
-  type Milestone,
-} from './simulationEngine'
+} from './simulationTypes'
 export { loadFinancialItemsFromDB } from './dbToFinancialItems'

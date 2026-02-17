@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import {
   Plus,
   Trash2,
-  TrendingDown,
   Pencil,
   ChevronDown,
   ChevronUp,
@@ -25,20 +24,20 @@ import { Bar } from "react-chartjs-2";
 import type {
   DashboardExpenseItem,
   DashboardExpenseFrequency,
-  GlobalSettings,
+  SimFamilyMember,
 } from "@/types";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import type { Expense } from "@/types/tables";
-import type { SimulationResult } from "@/lib/services/simulationEngine";
+import type { SimulationResult } from "@/lib/services/simulationTypes";
 import {
-  DEFAULT_GLOBAL_SETTINGS,
   MEDICAL_EXPENSE_INFO,
   MEDICAL_EXPENSE_BY_AGE,
+  EDUCATION_EXPENSE_BY_AGE,
 } from "@/types";
 import {
   formatMoney,
   getDefaultRateCategory,
-  getEffectiveRate,
+  calculateAge,
 } from "@/lib/utils";
 import {
   formatPeriodDisplay,
@@ -50,8 +49,10 @@ import { CHART_COLORS, categorizeExpense } from "@/lib/utils/tooltipCategories";
 import { useExpenses, useInvalidateByCategory } from "@/hooks/useFinancialData";
 import {
   createExpense,
+  createExpensesBatch,
   updateExpense,
   deleteExpense,
+  deleteExpensesByType,
   dbTypeToUIType,
   uiTypeToDBType,
   type UIExpenseType,
@@ -68,17 +69,11 @@ interface ExpenseTabProps {
   retirementAge: number;
   spouseRetirementAge?: number;
   isMarried: boolean;
-  globalSettings: GlobalSettings;
+  lifeExpectancy?: number;
+  spouseLifeExpectancy?: number;
   simulationResult: SimulationResult;
+  familyMembers: SimFamilyMember[];
 }
-
-// 상승률 프리셋 (물가 상승률 기준)
-const GROWTH_PRESETS = [
-  { id: "rate-3", value: 3 },
-  { id: "rate-2.5", value: 2.5 },
-  { id: "rate-2", value: 2 },
-  { id: "rate-0", value: 0 },
-];
 
 // 로컬 타입 별칭
 type ExpenseItem = DashboardExpenseItem;
@@ -92,8 +87,10 @@ export function ExpenseTab({
   retirementAge,
   spouseRetirementAge = 60,
   isMarried,
-  globalSettings,
+  lifeExpectancy = 100,
+  spouseLifeExpectancy,
   simulationResult,
+  familyMembers,
 }: ExpenseTabProps) {
   const { chartScaleColors, isDark } = useChartTheme();
   const currentYear = new Date().getFullYear();
@@ -123,6 +120,12 @@ export function ExpenseTab({
   const hasSpouse = isMarried && spouseBirthYear;
   const currentMonth = new Date().getMonth() + 1;
 
+  // 자녀 데이터 추출
+  const children = useMemo(() =>
+    familyMembers.filter(fm => fm.relationship === 'child' && fm.birth_date),
+    [familyMembers]
+  );
+
   // 특정 연도의 나이 계산
   const getAgeAtYear = (year: number, isSelf: boolean): number | null => {
     if (isSelf) {
@@ -130,26 +133,6 @@ export function ExpenseTab({
     }
     if (spouseCurrentAge === null) return null;
     return spouseCurrentAge + (year - currentYear);
-  };
-
-  // 종료 년월 계산
-  const getEndYearMonth = (
-    item: ExpenseItem,
-  ): { year: number; month: number } => {
-    if (item.endType === "self-retirement")
-      return { year: selfRetirementYear, month: 12 };
-    if (item.endType === "spouse-retirement")
-      return { year: spouseRetirementYear, month: 12 };
-    return {
-      year: item.endYear || selfRetirementYear,
-      month: item.endMonth || 12,
-    };
-  };
-
-  // 개월 수 계산
-  const getMonthsCount = (item: ExpenseItem): number => {
-    const end = getEndYearMonth(item);
-    return (end.year - item.startYear) * 12 + (end.month - item.startMonth);
   };
 
   // React Query로 지출 데이터 로드 (캐시에서 즉시 가져옴)
@@ -186,26 +169,13 @@ export function ExpenseTab({
     });
   }, [dbExpenses]);
 
-  // 시나리오 모드 여부 (individual이 아니면 시나리오 적용 중)
-  const isScenarioMode = globalSettings.scenarioMode !== "individual";
-
   // 사용자 지출 표시용 데이터 (부채 지출은 simulationResult에서 가져옴)
   const displayItems = useMemo(() => {
-    return expenseItems.map((item) => {
-      const rateCategory =
-        item.rateCategory || getDefaultRateCategory(item.type);
-      const effectiveRate = getEffectiveRate(
-        item.growthRate,
-        rateCategory,
-        globalSettings.scenarioMode,
-        globalSettings,
-      );
-      return {
-        ...item,
-        displayGrowthRate: effectiveRate, // 현재 시나리오에서 표시할 상승률
-      };
-    });
-  }, [expenseItems, globalSettings]);
+    return expenseItems.map((item) => ({
+      ...item,
+      displayGrowthRate: item.growthRate, // fixed 모드에서만 표시
+    }));
+  }, [expenseItems]);
 
   // 확장/축소 상태
   const [isExpanded, setIsExpanded] = useState(true);
@@ -221,8 +191,6 @@ export function ExpenseTab({
   const [editStartDateText, setEditStartDateText] = useState("");
   const [editEndType, setEditEndType] = useState<'self-retirement' | 'spouse-retirement' | 'year'>('self-retirement');
   const [editEndDateText, setEditEndDateText] = useState("");
-  const [isCustomRateMode, setIsCustomRateMode] = useState(false);
-  const [customRateInput, setCustomRateInput] = useState("");
 
   // 추가 중인 타입
   const [addingType, setAddingType] = useState<ExpenseType | null>(null);
@@ -247,30 +215,28 @@ export function ExpenseTab({
   const [showTypeMenu, setShowTypeMenu] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
 
-  // 타입별 항목 (displayItems에서 필터 - 시나리오 적용된 상승률 포함)
+  // 그룹 상세 모달 (의료비/교육비)
+  const [detailGroupType, setDetailGroupType] = useState<'medical' | 'education' | null>(null);
+
   type DisplayItem = ExpenseItem & { displayGrowthRate: number };
-  const fixedItems = displayItems.filter((i) => i.type === "fixed");
-  const variableItems = displayItems.filter((i) => i.type === "variable");
-  const onetimeItems = displayItems.filter((i) => i.type === "onetime");
-  const medicalItems = displayItems.filter((i) => i.type === "medical");
 
-  // 헤더 총 개수 및 월 지출 계산
+  // 그룹 분류
+  const medicalItems = displayItems.filter(i => {
+    // DB type 'medical' maps to UI type 'medical'
+    const dbItem = dbExpenses.find(e => e.id === i.id);
+    return dbItem?.type === 'medical';
+  });
+  const educationItems = displayItems.filter(i => {
+    const dbItem = dbExpenses.find(e => e.id === i.id);
+    return dbItem?.type === 'education';
+  });
+  // Regular items: everything that's NOT medical or education in DB
+  const regularItems = displayItems.filter(i => {
+    const dbItem = dbExpenses.find(e => e.id === i.id);
+    return dbItem?.type !== 'medical' && dbItem?.type !== 'education';
+  });
+
   const totalCount = displayItems.length;
-  const totalMonthlyExpense = useMemo(() => {
-    return displayItems.reduce((sum, item) => {
-      if (item.type === "onetime") return sum;
-      if (item.frequency === "yearly")
-        return sum + Math.round(item.amount / 12);
-      return sum + item.amount;
-    }, 0);
-  }, [displayItems]);
-
-  // 월 지출로 변환 (frequency 고려)
-  const toMonthlyAmount = (item: ExpenseItem): number => {
-    if (item.type === "onetime") return 0;
-    if (item.frequency === "yearly") return item.amount / 12;
-    return item.amount;
-  };
 
   // 현재 연도에 해당하는 의료비만 필터링
   const currentMedicalItems = useMemo(() => {
@@ -281,94 +247,16 @@ export function ExpenseTab({
     });
   }, [medicalItems, currentYear]);
 
-  // 현재 연도에 해당하는 항목만 필터링 (모든 타입)
-  const isCurrentYearItem = (item: ExpenseItem): boolean => {
-    if (item.type === "onetime") {
-      return item.startYear === currentYear;
-    }
-    const endYear =
-      item.endType === "self-retirement"
-        ? selfRetirementYear
-        : item.endType === "spouse-retirement"
-          ? spouseRetirementYear
-          : item.endYear || 9999;
-    return currentYear >= item.startYear && currentYear <= endYear;
+  // 그룹의 현재 월별 총액 계산
+  const getGroupCurrentMonthly = (items: DisplayItem[]) => {
+    return items
+      .filter(item => {
+        const start = item.startYear;
+        const end = item.endYear || 9999;
+        return currentYear >= start && currentYear <= end;
+      })
+      .reduce((sum, item) => sum + (item.frequency === 'yearly' ? item.amount / 12 : item.amount), 0);
   };
-
-  // 월 지출 (현재 연도에 해당하는 항목만)
-  const monthlyExpense = useMemo(() => {
-    // 일반 지출
-    const regularExpense = displayItems
-      .filter((item) => isCurrentYearItem(item) && item.type !== "onetime")
-      .reduce((sum, item) => sum + toMonthlyAmount(item), 0);
-
-    return regularExpense;
-  }, [displayItems, currentYear, selfRetirementYear, spouseRetirementYear]);
-
-  // 은퇴까지 총 지출 (상승률 반영, 은퇴 전에 시작하는 항목만)
-  const lifetimeExpense = useMemo(() => {
-    let total = 0;
-    displayItems.forEach((item) => {
-      // 은퇴 이후에 시작하는 항목은 제외
-      if (item.startYear > selfRetirementYear) return;
-
-      if (item.type === "onetime") {
-        // 일시적 지출은 은퇴 전이면 포함
-        if (item.startYear <= selfRetirementYear) {
-          total += item.amount;
-        }
-        return;
-      }
-
-      // 종료 시점을 은퇴년도로 제한
-      const itemEnd = getEndYearMonth(item);
-      const effectiveEndYear = Math.min(itemEnd.year, selfRetirementYear);
-      const effectiveEndMonth =
-        itemEnd.year <= selfRetirementYear ? itemEnd.month : 12;
-
-      // 실제 개월 수 계산 (은퇴까지만)
-      const months =
-        (effectiveEndYear - item.startYear) * 12 +
-        (effectiveEndMonth - item.startMonth);
-      if (months <= 0) return;
-
-      // displayGrowthRate 사용 (이미 시나리오 적용됨)
-      const monthlyGrowthRate =
-        Math.pow(1 + item.displayGrowthRate / 100, 1 / 12) - 1;
-      let monthlyAmount =
-        item.frequency === "yearly" ? item.amount / 12 : item.amount;
-      for (let i = 0; i < months; i++) {
-        total += monthlyAmount;
-        monthlyAmount *= 1 + monthlyGrowthRate;
-      }
-    });
-    return Math.round(total);
-  }, [displayItems, selfRetirementYear, spouseRetirementYear]);
-
-  // 지출 유형별 월 지출 (현재 연도 해당 항목만)
-  const expenseByType = useMemo(
-    () => ({
-      fixed: fixedItems
-        .filter(isCurrentYearItem)
-        .reduce((s, i) => s + toMonthlyAmount(i), 0),
-      variable: variableItems
-        .filter(isCurrentYearItem)
-        .reduce((s, i) => s + toMonthlyAmount(i), 0),
-      onetime: onetimeItems
-        .filter(isCurrentYearItem)
-        .reduce((s, i) => s + i.amount, 0),
-      medical: currentMedicalItems.reduce((s, i) => s + toMonthlyAmount(i), 0),
-    }),
-    [
-      fixedItems,
-      variableItems,
-      onetimeItems,
-      currentMedicalItems,
-      currentYear,
-      selfRetirementYear,
-      spouseRetirementYear,
-    ],
-  );
 
   // 차트 데이터 - simulationResult에서 직접 가져옴 (Single Source of Truth)
   const projectionData = useMemo(() => {
@@ -664,7 +552,12 @@ export function ExpenseTab({
     },
   };
 
-  // 나이대별 의료비 자동 생성 (DB)
+  // 연령 구간 라벨
+  const getMedicalAgeLabel = (startAge: number, endAge: number): string => {
+    return `${startAge}~${endAge}세`;
+  };
+
+  // 나이대별 의료비 자동 생성 (배치, 연간 현재가치 + amount_base_year)
   const generateMedicalExpenses = async () => {
     if (!simulationId) return;
 
@@ -673,70 +566,118 @@ export function ExpenseTab({
       .sort((a, b) => a - b);
 
     try {
-      // 기존 의료비 항목 삭제
-      const medicalItems = dbExpenses.filter((e) => e.type === "medical");
-      for (const item of medicalItems) {
-        await deleteExpense(item.id);
-      }
+      // 기존 의료비 일괄 삭제
+      await deleteExpensesByType(simulationId, "medical");
 
-      // 본인 의료비 생성
-      for (let i = 0; i < ageKeys.length; i++) {
-        const startAge = ageKeys[i];
-        const endAge = i < ageKeys.length - 1 ? ageKeys[i + 1] - 1 : 100;
-        const startYear = birthYear + startAge;
-        const endYear = birthYear + endAge;
+      // 생성할 항목 모으기
+      const inputs: Parameters<typeof createExpensesBatch>[0] = [];
 
-        if (endYear < currentYear) continue;
+      const buildInputs = (personBirthYear: number, personLabel: string, personLifeExpectancy: number) => {
+        const maxAge = personLifeExpectancy;
 
-        const amount = MEDICAL_EXPENSE_BY_AGE[startAge];
-        await createExpense({
-          simulation_id: simulationId,
-          type: "medical",
-          title: `본인 의료비 (${startAge}대)`,
-          amount,
-          frequency: "monthly",
-          start_year: Math.max(startYear, currentYear),
-          start_month: 1,
-          end_year: endYear,
-          end_month: 12,
-          is_fixed_to_retirement: false,
-          growth_rate: 3,
-          rate_category: "inflation",
-        });
-      }
-
-      // 배우자 의료비 생성 (배우자가 있는 경우)
-      if (isMarried && spouseBirthYear) {
         for (let i = 0; i < ageKeys.length; i++) {
           const startAge = ageKeys[i];
-          const endAge = i < ageKeys.length - 1 ? ageKeys[i + 1] - 1 : 100;
-          const startYear = spouseBirthYear + startAge;
-          const endYear = spouseBirthYear + endAge;
+
+          if (startAge >= maxAge) continue;
+
+          const rawEndAge = i < ageKeys.length - 1 ? ageKeys[i + 1] - 1 : 100;
+          const endAge = Math.min(rawEndAge, maxAge);
+          const startYear = personBirthYear + startAge;
+          const endYear = personBirthYear + endAge;
 
           if (endYear < currentYear) continue;
 
-          const amount = MEDICAL_EXPENSE_BY_AGE[startAge];
-          await createExpense({
+          inputs.push({
             simulation_id: simulationId,
-            type: "medical",
-            title: `배우자 의료비 (${startAge}대)`,
-            amount,
-            frequency: "monthly",
+            type: "medical" as const,
+            title: `${personLabel} 의료비 (${getMedicalAgeLabel(startAge, endAge)})`,
+            amount: MEDICAL_EXPENSE_BY_AGE[startAge], // 현재가치 그대로 저장
+            frequency: "yearly" as const,
             start_year: Math.max(startYear, currentYear),
             start_month: 1,
             end_year: endYear,
             end_month: 12,
             is_fixed_to_retirement: false,
             growth_rate: 3,
-            rate_category: "inflation",
+            rate_category: "inflation" as const,
+            amount_base_year: currentYear, // 엔진이 현재년도부터 복리 적용
+          });
+        }
+      };
+
+      // 본인 의료비
+      const selfLifeExpectancy = lifeExpectancy;
+      buildInputs(birthYear, "본인", selfLifeExpectancy);
+
+      // 배우자 의료비
+      if (isMarried && spouseBirthYear) {
+        const spouseLifeExp = spouseLifeExpectancy ?? selfLifeExpectancy;
+        buildInputs(spouseBirthYear, "배우자", spouseLifeExp);
+      }
+
+      // 한 번에 일괄 생성
+      await createExpensesBatch(inputs);
+
+      invalidate("expenses");
+      setMedicalExpanded(true);
+      resetAddForm();
+    } catch (error) {
+      console.error("Failed to generate medical expenses:", error);
+    }
+  };
+
+  // 나이대별 교육비 자동 생성 (배치, 현재가치 + amount_base_year)
+  const generateEducationExpenses = async () => {
+    if (!simulationId || children.length === 0) return;
+
+    const ageKeys = Object.keys(EDUCATION_EXPENSE_BY_AGE).map(Number).sort((a, b) => a - b);
+
+    try {
+      // 기존 교육비 일괄 삭제
+      await deleteExpensesByType(simulationId, "education");
+
+      // 생성할 항목 모으기
+      const inputs: Parameters<typeof createExpensesBatch>[0] = [];
+
+      for (const child of children) {
+        const childBirthYear = new Date(child.birth_date!).getFullYear();
+        const childName = child.name || '자녀';
+
+        for (let i = 0; i < ageKeys.length; i++) {
+          const startAge = ageKeys[i];
+          const endAge = i < ageKeys.length - 1 ? ageKeys[i + 1] - 1 : 21;
+          const startYear = childBirthYear + startAge;
+          const endYear = childBirthYear + endAge;
+
+          if (endYear < currentYear) continue;
+
+          const { label, amount: baseAmount } = EDUCATION_EXPENSE_BY_AGE[startAge];
+
+          inputs.push({
+            simulation_id: simulationId,
+            type: 'education',
+            title: `${childName} ${label}`,
+            amount: baseAmount, // 현재가치 그대로 저장
+            frequency: 'monthly',
+            start_year: Math.max(startYear, currentYear),
+            start_month: 3,
+            end_year: endYear,
+            end_month: 2,
+            is_fixed_to_retirement: false,
+            growth_rate: 3,
+            rate_category: 'inflation',
+            amount_base_year: currentYear, // 엔진이 현재년도부터 복리 적용
           });
         }
       }
 
+      // 한 번에 일괄 생성
+      await createExpensesBatch(inputs);
+
       invalidate("expenses");
-      setMedicalExpanded(true);
+      resetAddForm();
     } catch (error) {
-      console.error("Failed to generate medical expenses:", error);
+      console.error("Failed to generate education expenses:", error);
     }
   };
 
@@ -757,7 +698,7 @@ export function ExpenseTab({
     const growthRate = isOnetime ? 0
       : newRateCategory === 'fixed'
         ? (newCustomRate === '' ? 0 : parseFloat(newCustomRate))
-        : globalSettings.inflationRate;
+        : 2.5;
 
     try {
       await createExpense({
@@ -863,11 +804,6 @@ export function ExpenseTab({
       setEditEndType('year');
     }
     setEditEndDateText(toPeriodRaw(item.endYear || currentYear, item.endMonth || 12));
-    if (itemWithCategory.rateCategory === 'fixed') {
-      setCustomRateInput(String(item.growthRate));
-    } else {
-      setCustomRateInput("");
-    }
   };
 
   // 편집 취소
@@ -876,17 +812,13 @@ export function ExpenseTab({
     setEditForm(null);
     setEditStartType('current');
     setEditEndType('self-retirement');
-    setCustomRateInput("");
   };
 
   // 편집 저장 (DB)
   const saveEdit = async () => {
     if (!editForm) return;
 
-    // If fixed mode, use customRateInput; otherwise growthRate doesn't matter (engine uses rateCategory)
-    const finalGrowthRate = editForm.rateCategory === 'fixed'
-      ? (customRateInput === "" ? 0 : parseFloat(customRateInput))
-      : editForm.growthRate;
+    const finalGrowthRate = editForm.growthRate;
 
     const isFixedToRetirement =
       editForm.endType === "self-retirement" ||
@@ -952,15 +884,14 @@ export function ExpenseTab({
     return `${formatMoney(item.amount)}${unit}`;
   };
 
-  // 상승률 프리셋 확인
-  const isPresetRate = (rate: number) =>
-    GROWTH_PRESETS.some((p) => p.value === rate);
-
   // ESC 키로 모달 닫기
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (editingId) {
+        if (detailGroupType) {
+          setDetailGroupType(null);
+          e.stopPropagation();
+        } else if (editingId) {
           cancelEdit();
           e.stopPropagation();
         } else if (showTypeMenu) {
@@ -971,7 +902,7 @@ export function ExpenseTab({
     };
     window.addEventListener("keydown", handleEsc, true);
     return () => window.removeEventListener("keydown", handleEsc, true);
-  }, [showTypeMenu, editingId]);
+  }, [showTypeMenu, editingId, detailGroupType]);
 
   const handleTypeSelect = (type: ExpenseType) => {
     setAddingType(type);
@@ -997,7 +928,7 @@ export function ExpenseTab({
           <span className={styles.itemMeta}>
             {item.type === "onetime"
               ? formatPeriod(item)
-              : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
+              : `${formatPeriod(item)} | ${item.rateCategory === 'fixed' ? `연 ${item.displayGrowthRate}% 상승` : '시뮬레이션 가정'}`}
           </span>
         </div>
         <div className={styles.itemRight}>
@@ -1019,641 +950,6 @@ export function ExpenseTab({
       </div>
     );
   };
-
-  // 인라인 추가 폼 렌더링
-  const renderInlineAddForm = () => {
-    if (!addingType) return null;
-
-    return (
-      <div className={styles.inlineAddForm}>
-        <div className={styles.addFormRow}>
-          <input
-            type="text"
-            className={styles.inlineLabelInput}
-            value={newLabel}
-            onChange={(e) => setNewLabel(e.target.value)}
-            placeholder="항목명"
-            autoFocus
-          />
-        </div>
-
-        <div className={styles.addFormRow}>
-          {addingType === "onetime" ? (
-            <>
-              <div className={styles.inlineAmountGroup}>
-                <input
-                  type="number"
-                  className={styles.inlineAmountInput}
-                  value={newAmount}
-                  onChange={(e) => setNewAmount(e.target.value)}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                  placeholder="0"
-                />
-                <span className={styles.inlineUnit}>만원</span>
-              </div>
-              <div className={styles.inlineDateGroup}>
-                <input
-                  type="number"
-                  className={styles.editYearInput}
-                  min={1900}
-                  max={2200}
-                  value={newOnetimeYear}
-                  onChange={(e) =>
-                    setNewOnetimeYear(parseInt(e.target.value) || currentYear)
-                  }
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.editUnit}>년</span>
-                <input
-                  type="number"
-                  className={styles.editMonthInput}
-                  value={newOnetimeMonth}
-                  min={1}
-                  max={12}
-                  onChange={(e) =>
-                    setNewOnetimeMonth(
-                      Math.min(12, Math.max(1, parseInt(e.target.value) || 1)),
-                    )
-                  }
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.editUnit}>월 지출</span>
-              </div>
-            </>
-          ) : (
-            <div className={styles.inlineAmountGroup}>
-              <input
-                type="number"
-                className={styles.inlineAmountInput}
-                value={newAmount}
-                onChange={(e) => setNewAmount(e.target.value)}
-                placeholder="0"
-              />
-              <span className={styles.inlineUnit}>만원</span>
-              <div className={styles.frequencyButtons}>
-                <button
-                  type="button"
-                  className={`${styles.freqBtn} ${
-                    newFrequency === "monthly" ? styles.active : ""
-                  }`}
-                  onClick={() => setNewFrequency("monthly")}
-                >
-                  /월
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.freqBtn} ${
-                    newFrequency === "yearly" ? styles.active : ""
-                  }`}
-                  onClick={() => setNewFrequency("yearly")}
-                >
-                  /년
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className={styles.inlineActions}>
-            <button className={styles.inlineCancelBtn} onClick={resetAddForm}>
-              취소
-            </button>
-            <button
-              className={styles.inlineAddBtn}
-              onClick={handleAdd}
-              disabled={!newAmount}
-            >
-              추가
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 섹션 렌더링 (items는 displayItems에서 필터된 것)
-  const renderSection = (
-    title: string,
-    type: ExpenseType,
-    items: DisplayItem[],
-    description?: string,
-    sectionBadge?: { icon: React.ReactNode; label: string },
-  ) => (
-    <div className={styles.expenseSection}>
-      <div className={styles.sectionHeader}>
-        <span className={styles.sectionTitle}>{title}</span>
-        {sectionBadge && (
-          <span className={styles.sectionBadge}>
-            {sectionBadge.icon}
-            {sectionBadge.label}
-          </span>
-        )}
-      </div>
-      {description && <p className={styles.sectionDesc}>{description}</p>}
-
-      <div className={styles.itemList}>
-        {items.map((item) => {
-          const isEditing = editingId === item.id;
-
-          if (isEditing && editForm) {
-            // 일시적 지출 편집
-            if (item.type === "onetime") {
-              return (
-                <div key={item.id} className={styles.editItem}>
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>항목</span>
-                    <input
-                      type="text"
-                      className={styles.editLabelInput}
-                      value={editForm.label}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, label: e.target.value })
-                      }
-                      placeholder="항목명"
-                    />
-                  </div>
-
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>금액</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="number"
-                        className={styles.editInput}
-                        value={editForm.amount || ""}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            amount: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                        onWheel={(e) => (e.target as HTMLElement).blur()}
-                      />
-                      <span className={styles.editUnit}>만원</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.editRow}>
-                    <span className={styles.editRowLabel}>지출</span>
-                    <div className={styles.editField}>
-                      <input
-                        type="number"
-                        className={styles.editYearInput}
-                        min={1900}
-                        max={2200}
-                        value={editForm.startYear}
-                        onChange={(e) => {
-                          const year = parseInt(e.target.value) || currentYear;
-                          setEditForm({
-                            ...editForm,
-                            startYear: year,
-                            endYear: year,
-                          });
-                        }}
-                        onWheel={(e) => (e.target as HTMLElement).blur()}
-                      />
-                      <span className={styles.editUnit}>년</span>
-                      <input
-                        type="number"
-                        className={styles.editMonthInput}
-                        value={editForm.startMonth}
-                        min={1}
-                        max={12}
-                        onChange={(e) => {
-                          const month = Math.min(
-                            12,
-                            Math.max(1, parseInt(e.target.value) || 1),
-                          );
-                          setEditForm({
-                            ...editForm,
-                            startMonth: month,
-                            endMonth: month,
-                          });
-                        }}
-                        onWheel={(e) => (e.target as HTMLElement).blur()}
-                      />
-                      <span className={styles.editUnit}>월</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.editActions}>
-                    <button className={styles.cancelBtn} onClick={cancelEdit}>
-                      취소
-                    </button>
-                    <button className={styles.saveBtn} onClick={saveEdit}>
-                      저장
-                    </button>
-                  </div>
-                </div>
-              );
-            }
-
-            // 일반 지출 편집
-            return (
-              <div key={item.id} className={styles.editItem}>
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>항목</span>
-                  <input
-                    type="text"
-                    className={styles.editLabelInput}
-                    value={editForm.label}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, label: e.target.value })
-                    }
-                    placeholder="항목명"
-                  />
-                </div>
-
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>금액</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editInput}
-                      value={editForm.amount || ""}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          amount: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                    />
-                    <span className={styles.editUnit}>만원</span>
-                    <div className={styles.frequencyButtons}>
-                      <button
-                        type="button"
-                        className={`${styles.freqBtn} ${
-                          editForm.frequency === "monthly" ? styles.active : ""
-                        }`}
-                        onClick={() =>
-                          setEditForm({ ...editForm, frequency: "monthly" })
-                        }
-                      >
-                        /월
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.freqBtn} ${
-                          editForm.frequency === "yearly" ? styles.active : ""
-                        }`}
-                        onClick={() =>
-                          setEditForm({ ...editForm, frequency: "yearly" })
-                        }
-                      >
-                        /년
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>시작</span>
-                  <div className={styles.editField}>
-                    <input
-                      type="number"
-                      className={styles.editYearInput}
-                      min={1900}
-                      max={2200}
-                      value={editForm.startYear}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          startYear: parseInt(e.target.value) || currentYear,
-                        })
-                      }
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                    />
-                    <span className={styles.editUnit}>년</span>
-                    <input
-                      type="number"
-                      className={styles.editMonthInput}
-                      value={editForm.startMonth}
-                      min={1}
-                      max={12}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          startMonth: Math.min(
-                            12,
-                            Math.max(1, parseInt(e.target.value) || 1),
-                          ),
-                        })
-                      }
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                    />
-                    <span className={styles.editUnit}>월</span>
-                  </div>
-                </div>
-
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>종료</span>
-                  <div className={styles.editField}>
-                    <div className={styles.endTypeButtons}>
-                      <button
-                        type="button"
-                        className={`${styles.endTypeBtn} ${
-                          editForm.endType === "self-retirement"
-                            ? styles.active
-                            : ""
-                        }`}
-                        onClick={() =>
-                          setEditForm({
-                            ...editForm,
-                            endType: "self-retirement",
-                          })
-                        }
-                      >
-                        본인 은퇴
-                      </button>
-                      {hasSpouse && (
-                        <button
-                          type="button"
-                          className={`${styles.endTypeBtn} ${
-                            editForm.endType === "spouse-retirement"
-                              ? styles.active
-                              : ""
-                          }`}
-                          onClick={() =>
-                            setEditForm({
-                              ...editForm,
-                              endType: "spouse-retirement",
-                            })
-                          }
-                        >
-                          배우자 은퇴
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className={`${styles.endTypeBtn} ${
-                          editForm.endType === "custom" ? styles.active : ""
-                        }`}
-                        onClick={() =>
-                          setEditForm({
-                            ...editForm,
-                            endType: "custom",
-                            endYear: editForm.endYear || selfRetirementYear,
-                            endMonth: editForm.endMonth || 12,
-                          })
-                        }
-                      >
-                        직접 입력
-                      </button>
-                    </div>
-                    {editForm.endType === "custom" && (
-                      <>
-                        <input
-                          type="number"
-                          className={styles.editYearInput}
-                          min={1900}
-                          max={2200}
-                          value={editForm.endYear || ""}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              endYear: parseInt(e.target.value) || null,
-                            })
-                          }
-                          onWheel={(e) => (e.target as HTMLElement).blur()}
-                        />
-                        <span className={styles.editUnit}>년</span>
-                        <input
-                          type="number"
-                          className={styles.editMonthInput}
-                          value={editForm.endMonth || ""}
-                          min={1}
-                          max={12}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              endMonth: Math.min(
-                                12,
-                                Math.max(1, parseInt(e.target.value) || 12),
-                              ),
-                            })
-                          }
-                          onWheel={(e) => (e.target as HTMLElement).blur()}
-                        />
-                        <span className={styles.editUnit}>월</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className={styles.editRow}>
-                  <span className={styles.editRowLabel}>상승률</span>
-                  <div className={styles.rateButtons}>
-                    <div className={styles.customRateGroup}>
-                      <span className={styles.customRateLabel}>직접 입력</span>
-                      <input
-                        type="number"
-                        className={`${styles.customRateInput} ${
-                          isCustomRateMode ? styles.active : ""
-                        }`}
-                        value={customRateInput}
-                        onFocus={() => {
-                          setIsCustomRateMode(true);
-                          if (customRateInput === "") {
-                            setCustomRateInput(String(editForm.growthRate));
-                          }
-                        }}
-                        onChange={(e) => setCustomRateInput(e.target.value)}
-                        onWheel={(e) => (e.target as HTMLElement).blur()}
-                        placeholder="0"
-                        step="0.5"
-                      />
-                      <span className={styles.rateUnit}>%</span>
-                    </div>
-                    {GROWTH_PRESETS.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        className={`${styles.rateBtn} ${
-                          !isCustomRateMode &&
-                          editForm.growthRate === preset.value
-                            ? styles.active
-                            : ""
-                        }`}
-                        onClick={() => {
-                          setIsCustomRateMode(false);
-                          setCustomRateInput("");
-                          setEditForm({
-                            ...editForm,
-                            growthRate: preset.value,
-                          });
-                        }}
-                      >
-                        {preset.value}%
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className={styles.editActions}>
-                  <button className={styles.cancelBtn} onClick={cancelEdit}>
-                    취소
-                  </button>
-                  <button className={styles.saveBtn} onClick={saveEdit}>
-                    저장
-                  </button>
-                </div>
-              </div>
-            );
-          }
-
-          // 읽기 모드 - displayGrowthRate 사용 (이미 시나리오 적용됨)
-          return (
-            <div key={item.id} className={styles.expenseItem}>
-              <div className={styles.itemInfo}>
-                <span className={styles.itemName}>{item.label}</span>
-                <span className={styles.itemMeta}>
-                  {item.type === "onetime"
-                    ? formatPeriod(item)
-                    : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
-                </span>
-              </div>
-              <div className={styles.itemRight}>
-                <span className={styles.itemAmount}>
-                  {formatAmountWithFreq(item)}
-                </span>
-                <div className={styles.itemActions}>
-                  <button
-                    className={styles.editBtn}
-                    onClick={() => startEdit(item)}
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    className={styles.deleteBtn}
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* 추가 폼 */}
-        {addingType === type ? (
-          <div className={styles.inlineAddForm}>
-            <div className={styles.addFormRow}>
-              <input
-                type="text"
-                className={styles.inlineLabelInput}
-                value={newLabel}
-                onChange={(e) => setNewLabel(e.target.value)}
-                placeholder="항목명"
-                autoFocus
-              />
-            </div>
-
-            <div className={styles.addFormRow}>
-              {type === "onetime" ? (
-                <>
-                  <div className={styles.inlineAmountGroup}>
-                    <input
-                      type="number"
-                      className={styles.inlineAmountInput}
-                      value={newAmount}
-                      onChange={(e) => setNewAmount(e.target.value)}
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                      placeholder="0"
-                    />
-                    <span className={styles.inlineUnit}>만원</span>
-                  </div>
-                  <div className={styles.inlineDateGroup}>
-                    <input
-                      type="number"
-                      className={styles.editYearInput}
-                      min={1900}
-                      max={2200}
-                      value={newOnetimeYear}
-                      onChange={(e) =>
-                        setNewOnetimeYear(
-                          parseInt(e.target.value) || currentYear,
-                        )
-                      }
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                    />
-                    <span className={styles.editUnit}>년</span>
-                    <input
-                      type="number"
-                      className={styles.editMonthInput}
-                      value={newOnetimeMonth}
-                      min={1}
-                      max={12}
-                      onChange={(e) =>
-                        setNewOnetimeMonth(
-                          Math.min(
-                            12,
-                            Math.max(1, parseInt(e.target.value) || 1),
-                          ),
-                        )
-                      }
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                    />
-                    <span className={styles.editUnit}>월 지출</span>
-                  </div>
-                </>
-              ) : (
-                <div className={styles.inlineAmountGroup}>
-                  <input
-                    type="number"
-                    className={styles.inlineAmountInput}
-                    value={newAmount}
-                    onChange={(e) => setNewAmount(e.target.value)}
-                    placeholder="0"
-                  />
-                  <span className={styles.inlineUnit}>만원</span>
-                  <div className={styles.frequencyButtons}>
-                    <button
-                      type="button"
-                      className={`${styles.freqBtn} ${
-                        newFrequency === "monthly" ? styles.active : ""
-                      }`}
-                      onClick={() => setNewFrequency("monthly")}
-                    >
-                      /월
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.freqBtn} ${
-                        newFrequency === "yearly" ? styles.active : ""
-                      }`}
-                      onClick={() => setNewFrequency("yearly")}
-                    >
-                      /년
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className={styles.inlineActions}>
-                <button
-                  className={styles.inlineCancelBtn}
-                  onClick={resetAddForm}
-                >
-                  취소
-                </button>
-                <button
-                  className={styles.inlineAddBtn}
-                  onClick={handleAdd}
-                  disabled={!newAmount}
-                >
-                  추가
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <button className={styles.addBtn} onClick={() => setAddingType(type)}>
-            <Plus size={16} />
-            추가
-          </button>
-        )}
-      </div>
-    </div>
-  );
 
   // 캐시된 데이터가 없고 로딩 중일 때만 스켈레톤 표시
   if (isLoading && dbExpenses.length === 0) {
@@ -1716,10 +1012,33 @@ export function ExpenseTab({
                     <span className={styles.typeCardName}>일시적 지출</span>
                     <span className={styles.typeCardDesc}>여행, 경조사 등</span>
                   </button>
-                  <button className={styles.typeCard} onClick={() => handleTypeSelect('medical')}>
-                    <span className={styles.typeCardName}>의료비</span>
-                    <span className={styles.typeCardDesc}>건강, 치료 등</span>
-                  </button>
+                </div>
+
+                {/* Auto-generation presets section */}
+                <div className={styles.presetSection}>
+                  <span className={styles.presetLabel}>자동 생성</span>
+                  <div className={styles.presetList}>
+                    <button className={styles.presetCard} onClick={() => { generateMedicalExpenses(); }}>
+                      <div className={styles.presetInfo}>
+                        <span className={styles.presetName}>의료비</span>
+                        <span className={styles.presetDesc}>
+                          {isMarried && spouseBirthYear ? '본인 + 배우자 나이대별' : '본인 나이대별'}
+                        </span>
+                      </div>
+                      <Plus size={16} className={styles.presetIcon} />
+                    </button>
+                    {children.length > 0 && (
+                      <button className={styles.presetCard} onClick={() => { generateEducationExpenses(); }}>
+                        <div className={styles.presetInfo}>
+                          <span className={styles.presetName}>교육비</span>
+                          <span className={styles.presetDesc}>
+                            {children.map(c => c.name || '자녀').join(', ')} 기반
+                          </span>
+                        </div>
+                        <Plus size={16} className={styles.presetIcon} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </>
             ) : (
@@ -1874,19 +1193,12 @@ export function ExpenseTab({
 
                   {/* 상승률 (onetime 제외) */}
                   {addingType !== 'onetime' && (() => {
-                    const defaultRate = globalSettings.inflationRate;
-                    const addEffectiveRate = getEffectiveRate(
-                      defaultRate,
-                      newRateCategory,
-                      globalSettings.scenarioMode,
-                      globalSettings
-                    );
                     return (
                       <div className={styles.modalFormRow}>
                         <span className={styles.modalFormLabel}>상승률</span>
                         <div className={styles.fieldContent}>
                           {newRateCategory !== 'fixed' && (
-                            <span className={styles.rateValue}>{addEffectiveRate}%</span>
+                            <span className={styles.rateValue}>시뮬레이션 가정</span>
                           )}
                           {newRateCategory === 'fixed' && (
                             <>
@@ -2138,19 +1450,12 @@ export function ExpenseTab({
 
               {/* 상승률 (onetime 제외) */}
               {editForm.type !== 'onetime' && (() => {
-                const defaultRate = globalSettings.inflationRate;
-                const editEffectiveRate = getEffectiveRate(
-                  defaultRate,
-                  editForm.rateCategory,
-                  globalSettings.scenarioMode,
-                  globalSettings
-                );
                 return (
                   <div className={styles.modalFormRow}>
                     <span className={styles.modalFormLabel}>상승률</span>
                     <div className={styles.fieldContent}>
                       {editForm.rateCategory !== 'fixed' && (
-                        <span className={styles.rateValue}>{editEffectiveRate}%</span>
+                        <span className={styles.rateValue}>시뮬레이션 가정</span>
                       )}
                       {editForm.rateCategory === 'fixed' && (
                         <>
@@ -2214,129 +1519,126 @@ export function ExpenseTab({
                 아직 등록된 지출이 없습니다. 오른쪽 + 버튼으로 추가하세요.
               </p>
             )}
-            {displayItems.map((item) => renderItem(item))}
+            {regularItems.map((item) => renderItem(item))}
           </div>
 
-          <div className={styles.expenseSection}>
-            <div
-              className={styles.sectionHeader}
-              style={{ cursor: "pointer" }}
-              onClick={() => setMedicalExpanded(!medicalExpanded)}
-            >
-              <div className={styles.sectionTitleGroup}>
-                <span className={styles.sectionTitle}>의료비</span>
-                <button
-                  className={styles.infoBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMedicalInfo(!showMedicalInfo);
-                  }}
-                  title="의료비 안내"
-                >
-                  <Info size={14} />
-                </button>
+          {/* Auto-generated group summary items */}
+          {medicalItems.length > 0 && (
+            <div className={styles.expenseItem}>
+              <div className={styles.itemInfo}>
+                <span className={styles.itemName}>의료비</span>
+                <span className={styles.itemMeta}>
+                  {medicalItems.length}개 항목 | 현재 월 {formatMoney(getGroupCurrentMonthly(medicalItems))}
+                </span>
               </div>
-              <div className={styles.sectionToggle}>
-                {medicalExpanded ? (
-                  <ChevronUp size={18} />
-                ) : (
-                  <ChevronDown size={18} />
-                )}
+              <div className={styles.itemRight}>
+                <div className={styles.itemActions}>
+                  <button className={styles.editBtn} onClick={() => setDetailGroupType('medical')}>
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={async () => {
+                      await deleteExpensesByType(simulationId, 'medical');
+                      invalidate("expenses");
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
-
-            {showMedicalInfo && (
-              <div className={styles.medicalInfoBox}>
-                <p className={styles.medicalInfoText}>{MEDICAL_EXPENSE_INFO}</p>
-                <button
-                  className={styles.medicalInfoClose}
-                  onClick={() => setShowMedicalInfo(false)}
-                >
-                  닫기
-                </button>
+          )}
+          {educationItems.length > 0 && (
+            <div className={styles.expenseItem}>
+              <div className={styles.itemInfo}>
+                <span className={styles.itemName}>교육비</span>
+                <span className={styles.itemMeta}>
+                  {educationItems.length}개 항목 | 현재 월 {formatMoney(getGroupCurrentMonthly(educationItems))}
+                </span>
               </div>
-            )}
+              <div className={styles.itemRight}>
+                <div className={styles.itemActions}>
+                  <button className={styles.editBtn} onClick={() => setDetailGroupType('education')}>
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={async () => {
+                      await deleteExpensesByType(simulationId, 'education');
+                      invalidate("expenses");
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
-            {medicalExpanded && (
-              <div className={styles.sectionContent}>
-                {medicalItems.length === 0 ? (
-                  <div className={styles.emptyMedical}>
-                    <p className={styles.emptyMedicalText}>
-                      나이대별 의료비를 자동으로 생성할 수 있습니다.
-                    </p>
-                    <button
-                      className={styles.generateMedicalBtn}
-                      onClick={generateMedicalExpenses}
-                    >
-                      나이대별 의료비 자동 생성
-                    </button>
+      {/* Group detail modal (medical/education) */}
+      {detailGroupType && createPortal(
+        <div className={styles.typeModalOverlay} data-scenario-dropdown-portal="true" onClick={() => setDetailGroupType(null)}>
+          <div className={styles.groupDetailModal} onClick={e => e.stopPropagation()} style={{
+            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          }}>
+            <div className={styles.typeModalHeader}>
+              <span className={styles.typeModalTitle}>
+                {detailGroupType === 'medical' ? '의료비' : '교육비'} 관리
+              </span>
+              <button className={styles.typeModalClose} onClick={() => setDetailGroupType(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className={styles.groupDetailList}>
+              {(detailGroupType === 'medical' ? medicalItems : educationItems).map((item) => (
+                <div key={item.id} className={styles.groupDetailItem}>
+                  <div className={styles.itemInfo}>
+                    <span className={styles.itemName}>{item.label}</span>
+                    <span className={styles.itemMeta}>
+                      {formatPeriod(item)} | {item.rateCategory === 'fixed' ? `연 ${item.displayGrowthRate}% 상승` : '시뮬레이션 가정'}
+                    </span>
                   </div>
-                ) : (
-                  <>
-                    {medicalItems.map((item) => (
-                      <div key={item.id} className={styles.expenseItem}>
-                        <div className={styles.itemInfo}>
-                          <span className={styles.itemName}>
-                            {item.label}
-                          </span>
-                          <span className={styles.itemMeta}>
-                            {`${item.startYear}년 ~ ${item.endYear}년 | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
-                          </span>
-                        </div>
-                        <div className={styles.itemRight}>
-                          <span className={styles.itemAmount}>
-                            {formatMoney(item.amount)}
-                            <span className={styles.itemFrequency}>
-                              /{item.frequency === "monthly" ? "월" : "년"}
-                            </span>
-                          </span>
-                          <div className={styles.itemActions}>
-                            <button
-                              className={styles.editBtn}
-                              onClick={() => startEdit(item)}
-                            >
-                              <Pencil size={14} />
-                            </button>
-                            <button
-                              className={styles.deleteBtn}
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    <div className={styles.medicalActions}>
-                      <button
-                        className={styles.regenerateMedicalBtn}
-                        onClick={generateMedicalExpenses}
-                      >
-                        나이대별 의료비 다시 생성
+                  <div className={styles.itemRight}>
+                    <span className={styles.itemAmount}>
+                      {formatAmountWithFreq(item)}
+                    </span>
+                    <div className={styles.itemActions}>
+                      <button className={styles.editBtn} onClick={() => { setDetailGroupType(null); startEdit(item); }}>
+                        <Pencil size={14} />
+                      </button>
+                      <button className={styles.deleteBtn} onClick={() => handleDelete(item.id)}>
+                        <Trash2 size={14} />
                       </button>
                     </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {!medicalExpanded && medicalItems.length > 0 && (
-              <div className={styles.collapsedSummary}>
-                {medicalItems.length}개 항목 (현재 적용:{" "}
-                {currentMedicalItems.length}개), 월{" "}
-                {formatMoney(
-                  currentMedicalItems.reduce(
-                    (sum, i) =>
-                      sum +
-                      (i.frequency === "yearly" ? i.amount / 12 : i.amount),
-                    0,
-                  ),
-                )}
-              </div>
-            )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className={styles.groupDetailActions}>
+              <button
+                className={styles.regenerateBtn}
+                onClick={() => {
+                  if (detailGroupType === 'medical') {
+                    generateMedicalExpenses();
+                    setDetailGroupType(null);
+                  } else {
+                    generateEducationExpenses();
+                    setDetailGroupType(null);
+                  }
+                }}
+              >
+                다시 생성
+              </button>
+            </div>
           </div>
-        </>
+        </div>,
+        document.body
       )}
     </div>
   );

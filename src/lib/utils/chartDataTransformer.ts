@@ -2,7 +2,7 @@
  * 시뮬레이션 결과를 Chart.js 데이터 형식으로 변환
  */
 
-import type { YearlySnapshot, SimulationResult, MonthlySnapshot } from '@/lib/services/simulationEngine'
+import type { YearlySnapshot, SimulationResult, MonthlySnapshot } from '@/lib/services/simulationTypes'
 import type { CashFlowItem } from '@/types'
 import { CHART_COLORS } from './tooltipCategories'
 

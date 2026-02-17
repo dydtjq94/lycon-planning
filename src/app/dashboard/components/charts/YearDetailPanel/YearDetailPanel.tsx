@@ -1,7 +1,7 @@
 'use client'
 
 import { X } from 'lucide-react'
-import type { YearlySnapshot } from '@/lib/services/simulationEngine'
+import type { YearlySnapshot } from '@/lib/services/simulationTypes'
 import { getYearDetail, formatTooltipValue, ASSET_COLORS } from '@/lib/utils/chartDataTransformer'
 import { categorizeAsset } from '@/lib/utils/tooltipCategories'
 import styles from './YearDetailPanel.module.css'

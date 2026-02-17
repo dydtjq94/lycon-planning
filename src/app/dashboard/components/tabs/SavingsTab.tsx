@@ -11,8 +11,7 @@ import {
 } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
 import type { Savings, SavingsInput, PersonalPension, PersonalPensionInput, Owner, CurrencyType } from '@/types/tables'
-import type { GlobalSettings } from '@/types'
-import { formatMoney, getDefaultRateCategory, getEffectiveRate } from '@/lib/utils'
+import { formatMoney, getDefaultRateCategory } from '@/lib/utils'
 import { CHART_COLORS } from '@/lib/utils/tooltipCategories'
 import { formatPeriodDisplay, toPeriodRaw, isPeriodValid, handlePeriodTextChange } from '@/lib/utils/periodInput'
 import { useSavingsData, usePersonalPensions, useInvalidateByCategory } from '@/hooks/useFinancialData'
@@ -45,7 +44,6 @@ interface SavingsTabProps {
   retirementAge?: number
   spouseRetirementAge?: number
   isMarried?: boolean
-  globalSettings?: GlobalSettings
 }
 
 // ISA 만기 전략 라벨
@@ -76,8 +74,7 @@ export function SavingsTab({
   spouseBirthYear = null,
   retirementAge = 60,
   spouseRetirementAge = 60,
-  isMarried = false,
-  globalSettings
+  isMarried = false
 }: SavingsTabProps) {
   const { isDark } = useChartTheme()
   const currentYear = new Date().getFullYear()
@@ -100,9 +97,6 @@ export function SavingsTab({
   }, [spouseBirthYear, currentYear, selfRetirementYear, spouseCurrentAge, spouseRetirementAge])
   const hasSpouse = (isMarried ?? false) && spouseBirthYear
 
-
-  // 시나리오 모드 여부 (individual이 아니면 시나리오 적용 중)
-  const scenarioMode = globalSettings?.scenarioMode || 'individual'
 
   // 저축 계좌와 투자 계좌 분리 (useMemo로 필터링)
   const savingsAccounts = useMemo(
@@ -812,14 +806,7 @@ export function SavingsTab({
           <span className={styles.modalFormLabel}>수익률</span>
           <div className={styles.fieldContent}>
             {editValues.rateCategory !== 'fixed' && (
-              <span className={styles.rateValue}>
-                {globalSettings ? getEffectiveRate(
-                  globalSettings.investmentReturnRate || 5,
-                  'investment',
-                  scenarioMode,
-                  globalSettings
-                ) : 5}%
-              </span>
+              <span className={styles.rateValue}>시뮬레이션 가정</span>
             )}
             {editValues.rateCategory === 'fixed' && (
               <>
@@ -962,14 +949,7 @@ export function SavingsTab({
           <span className={styles.modalFormLabel}>수익률</span>
           <div className={styles.fieldContent}>
             {isaEditValues.rateCategory !== 'fixed' && (
-              <span className={styles.rateValue}>
-                {globalSettings ? getEffectiveRate(
-                  globalSettings.investmentReturnRate || 5,
-                  'investment',
-                  scenarioMode,
-                  globalSettings
-                ) : 5}%
-              </span>
+              <span className={styles.rateValue}>시뮬레이션 가정</span>
             )}
             {isaEditValues.rateCategory === 'fixed' && (
               <>
@@ -1235,18 +1215,23 @@ export function SavingsTab({
           {allItems.map((item) => {
             if (item.type === 'isa') {
               const isa = item.data as PersonalPension
+              const metaParts: string[] = ['ISA']
+              if (isa.monthly_contribution) metaParts.push(`월 ${formatMoney(isa.monthly_contribution)} 납입`)
+              if (isa.isa_maturity_year) {
+                const padMonth = String(isa.isa_maturity_month || 12).padStart(2, '0')
+                const strategyLabel = ISA_STRATEGY_LABELS[isa.isa_maturity_strategy as keyof typeof ISA_STRATEGY_LABELS] || '연금저축 전환'
+                metaParts.push(`~${isa.isa_maturity_year}.${padMonth} 만기 → ${strategyLabel}`)
+              }
+
               return (
                 <div key={isa.id} className={styles.assetItem}>
                   <div className={styles.itemInfo}>
                     <span className={styles.itemName}>
                       {isa.title || 'ISA'}
-                      {isa.broker_name && <span className={styles.brokerTag}>{isa.broker_name}</span>}
                       {isa.owner === 'spouse' && <span className={styles.ownerBadge}>배우자</span>}
                     </span>
                     <span className={styles.itemMeta}>
-                      ISA
-                      {isa.monthly_contribution && ` | 월 ${formatMoney(isa.monthly_contribution)} 납입`}
-                      {isa.isa_maturity_year && ` | ${isa.isa_maturity_year}년 ${isa.isa_maturity_month || 12}월 만기 -> ${ISA_STRATEGY_LABELS[isa.isa_maturity_strategy as keyof typeof ISA_STRATEGY_LABELS] || '연금저축 전환'}`}
+                      {metaParts.join(' · ')}
                     </span>
                   </div>
                   <div className={styles.itemRight}>
@@ -1269,19 +1254,31 @@ export function SavingsTab({
             const account = item.data as Savings
             const section = item.type
 
+            // Build meta parts
+            const metaParts: string[] = []
+            if (section === 'savings') {
+              metaParts.push(SAVINGS_TYPE_LABELS[account.type as UISavingsType] || account.type)
+              if (account.interest_rate) metaParts.push(`금리 ${account.interest_rate}%`)
+              if (account.monthly_contribution) metaParts.push(`월 ${formatMoney(account.monthly_contribution)} 적립`)
+              if (account.maturity_year) metaParts.push(`~${account.maturity_year}.${String(account.maturity_month || 12).padStart(2, '0')} 만기`)
+            } else {
+              metaParts.push(INVESTMENT_TYPE_LABELS[account.type as UIInvestmentType] || account.type)
+              metaParts.push(account.expected_return ? `수익률 ${account.expected_return}%` : `수익률 시뮬레이션 가정`)
+              if (account.monthly_contribution) metaParts.push(`월 ${formatMoney(account.monthly_contribution)} 적립`)
+              if (account.contribution_start_year && account.contribution_end_year) {
+                metaParts.push(`${account.contribution_start_year}.${String(account.contribution_start_month || 1).padStart(2, '0')} ~ ${account.contribution_end_year}.${String(account.contribution_end_month || 12).padStart(2, '0')}`)
+              }
+            }
+
             return (
               <div key={account.id} className={styles.assetItem}>
                 <div className={styles.itemInfo}>
                   <span className={styles.itemName}>
                     {account.title}
-                    {account.broker_name && <span className={styles.brokerTag}>{account.broker_name}</span>}
                     {account.owner === 'spouse' && <span className={styles.ownerBadge}>배우자</span>}
                   </span>
                   <span className={styles.itemMeta}>
-                    {section === 'savings'
-                      ? `${SAVINGS_TYPE_LABELS[account.type as UISavingsType] || account.type}${account.interest_rate ? ` | 금리 ${account.interest_rate}%` : ''}${account.maturity_year ? ` | ${account.maturity_year}년 ${account.maturity_month || 12}월 만기` : ''}`
-                      : `${INVESTMENT_TYPE_LABELS[account.type as UIInvestmentType] || account.type}${account.expected_return ? ` | 예상 수익률 ${account.expected_return}%` : ''}`
-                    }
+                    {metaParts.join(' · ')}
                   </span>
                 </div>
                 <div className={styles.itemRight}>

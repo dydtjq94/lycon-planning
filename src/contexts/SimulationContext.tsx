@@ -12,13 +12,11 @@ import {
 } from "react";
 import type {
   Simulation,
-  InvestmentAssumptions,
+  SimulationAssumptions,
   CashFlowPriorities,
-  GlobalSettings,
-  DEFAULT_INVESTMENT_ASSUMPTIONS,
 } from "@/types";
-import { DEFAULT_GLOBAL_SETTINGS, normalizePriorities } from "@/types";
-import type { SimulationResult, SimulationProfile } from "@/lib/services/simulationEngine";
+import { DEFAULT_SIMULATION_ASSUMPTIONS, normalizePriorities } from "@/types";
+import type { SimulationResult, SimulationProfile } from "@/lib/services/simulationTypes";
 import { runSimulationV2 } from "@/lib/services/simulationEngineV2";
 import { getIncomes } from "@/lib/services/incomeService";
 import { getExpenses } from "@/lib/services/expenseService";
@@ -48,17 +46,13 @@ interface SimulationContextValue {
   isCalculating: boolean;
   lastCalculatedAt: Date | null;
 
-  // Investment Assumptions
-  investmentAssumptions: InvestmentAssumptions;
-  setInvestmentAssumptions: (assumptions: InvestmentAssumptions) => void;
+  // Simulation Assumptions
+  simulationAssumptions: SimulationAssumptions;
+  setSimulationAssumptions: (assumptions: SimulationAssumptions) => void;
 
   // Cash Flow Priorities
   cashFlowPriorities: CashFlowPriorities;
   setCashFlowPriorities: (priorities: CashFlowPriorities) => void;
-
-  // Global Settings (기존 호환)
-  globalSettings: GlobalSettings;
-  setGlobalSettings: (settings: GlobalSettings) => void;
 
   // Actions
   recalculate: () => Promise<void>;
@@ -71,7 +65,7 @@ const SimulationContext = createContext<SimulationContextValue | undefined>(unde
 // 기본값
 // ============================================
 
-const DEFAULT_ASSUMPTIONS: InvestmentAssumptions = {
+const DEFAULT_ASSUMPTIONS: SimulationAssumptions = {
   mode: "fixed",
   rates: {
     savings: 3.0,
@@ -104,18 +98,15 @@ export function SimulationProvider({
   const [isCalculating, setIsCalculating] = useState(false);
   const [lastCalculatedAt, setLastCalculatedAt] = useState<Date | null>(null);
 
-  // Investment Assumptions (시뮬레이션에서 로드 또는 기본값)
-  const [investmentAssumptions, setInvestmentAssumptionsState] = useState<InvestmentAssumptions>(
-    currentSimulation?.investment_assumptions || DEFAULT_ASSUMPTIONS
+  // Simulation Assumptions (시뮬레이션에서 로드 또는 기본값)
+  const [simulationAssumptions, setSimulationAssumptionsState] = useState<SimulationAssumptions>(
+    currentSimulation?.simulation_assumptions || DEFAULT_ASSUMPTIONS
   );
 
   // Cash Flow Priorities (시뮬레이션에서 로드 또는 빈 배열)
   const [cashFlowPriorities, setCashFlowPrioritiesState] = useState<CashFlowPriorities>(
     normalizePriorities(currentSimulation?.cash_flow_priorities)
   );
-
-  // Global Settings
-  const [globalSettings, setGlobalSettingsState] = useState<GlobalSettings>(DEFAULT_GLOBAL_SETTINGS);
 
   // Debounce용 ref
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -124,8 +115,8 @@ export function SimulationProvider({
   // 시뮬레이션 변경 시 설정 동기화
   useEffect(() => {
     if (currentSimulation) {
-      setInvestmentAssumptionsState(
-        currentSimulation.investment_assumptions || DEFAULT_ASSUMPTIONS
+      setSimulationAssumptionsState(
+        currentSimulation.simulation_assumptions || DEFAULT_ASSUMPTIONS
       );
       setCashFlowPrioritiesState(normalizePriorities(currentSimulation.cash_flow_priorities));
     }
@@ -191,9 +182,8 @@ export function SimulationProvider({
           physicalAssets,
         },
         profile,
-        globalSettings,
         50, // 50년 시뮬레이션
-        investmentAssumptions,
+        simulationAssumptions,
         cashFlowPriorities
       );
 
@@ -219,7 +209,7 @@ export function SimulationProvider({
         setIsCalculating(false);
       }
     }
-  }, [currentSimulation, profile, globalSettings, investmentAssumptions, cashFlowPriorities]);
+  }, [currentSimulation, profile, simulationAssumptions, cashFlowPriorities]);
 
   // Debounced 재계산 트리거
   const triggerRecalculation = useCallback(() => {
@@ -232,9 +222,9 @@ export function SimulationProvider({
   }, [recalculate]);
 
   // 설정 변경 시 재계산 트리거
-  const setInvestmentAssumptions = useCallback(
-    (assumptions: InvestmentAssumptions) => {
-      setInvestmentAssumptionsState(assumptions);
+  const setSimulationAssumptions = useCallback(
+    (assumptions: SimulationAssumptions) => {
+      setSimulationAssumptionsState(assumptions);
       invalidateCache();
       triggerRecalculation();
     },
@@ -244,15 +234,6 @@ export function SimulationProvider({
   const setCashFlowPriorities = useCallback(
     (priorities: CashFlowPriorities) => {
       setCashFlowPrioritiesState(priorities);
-      invalidateCache();
-      triggerRecalculation();
-    },
-    [invalidateCache, triggerRecalculation]
-  );
-
-  const setGlobalSettings = useCallback(
-    (settings: GlobalSettings) => {
-      setGlobalSettingsState(settings);
       invalidateCache();
       triggerRecalculation();
     },
@@ -285,12 +266,10 @@ export function SimulationProvider({
       result,
       isCalculating,
       lastCalculatedAt,
-      investmentAssumptions,
-      setInvestmentAssumptions,
+      simulationAssumptions,
+      setSimulationAssumptions,
       cashFlowPriorities,
       setCashFlowPriorities,
-      globalSettings,
-      setGlobalSettings,
       recalculate,
       invalidateCache,
     }),
@@ -300,12 +279,10 @@ export function SimulationProvider({
       result,
       isCalculating,
       lastCalculatedAt,
-      investmentAssumptions,
-      setInvestmentAssumptions,
+      simulationAssumptions,
+      setSimulationAssumptions,
       cashFlowPriorities,
       setCashFlowPriorities,
-      globalSettings,
-      setGlobalSettings,
       recalculate,
       invalidateCache,
     ]

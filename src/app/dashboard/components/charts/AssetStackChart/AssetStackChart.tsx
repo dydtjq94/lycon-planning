@@ -12,7 +12,7 @@ import {
   Tooltip,
 } from 'chart.js'
 import annotationPlugin from 'chartjs-plugin-annotation'
-import type { SimulationResult, MonthlySnapshot } from '@/lib/services/simulationEngine'
+import type { SimulationResult, MonthlySnapshot } from '@/lib/services/simulationTypes'
 import {
   transformSimulationToChartData,
   formatChartValue,

@@ -8,7 +8,6 @@ import {
   Legend,
 } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
-import type { GlobalSettings } from '@/types'
 import { formatMoney } from '@/lib/utils'
 import type {
   RetirementPensionProjection,
@@ -20,7 +19,6 @@ import styles from '../PensionTab.module.css'
 ChartJS.register(ArcElement, Tooltip, Legend)
 
 interface PensionSummaryProps {
-  settings: GlobalSettings
   retirementPensionProjection: RetirementPensionProjection | null
   spouseRetirementPensionProjection: RetirementPensionProjection | null
   personalPensionProjection: PersonalPensionProjection | null
@@ -35,7 +33,6 @@ interface PensionSummaryProps {
 }
 
 export function PensionSummary({
-  settings,
   retirementPensionProjection,
   spouseRetirementPensionProjection,
   personalPensionProjection,
@@ -567,15 +564,7 @@ export function PensionSummary({
       <div className={styles.assumptionsCard}>
         <h4 className={styles.cardTitle}>계산 가정</h4>
         <ul className={styles.assumptionsList}>
-          <li>시나리오: {
-            settings.scenarioMode === 'optimistic' ? '낙관적' :
-            settings.scenarioMode === 'average' ? '평균' :
-            settings.scenarioMode === 'pessimistic' ? '비관적' :
-            settings.scenarioMode === 'custom' ? '커스텀' : '개별'
-          }</li>
-          <li>임금상승률: 연 {settings.incomeGrowthRate}%</li>
-          <li>투자수익률: 연 {settings.investmentReturnRate}%</li>
-          <li>예상 수명: {settings.lifeExpectancy}세</li>
+          <li>시나리오에 설정된 가정 값 적용</li>
           <li>PMT 방식: 수령 중에도 잔액에 수익률 적용</li>
         </ul>
       </div>

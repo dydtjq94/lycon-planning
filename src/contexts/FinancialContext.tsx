@@ -12,9 +12,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import type {
   Simulation,
   FinancialItem,
-  GlobalSettings,
 } from '@/types'
-import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
 import { loadFinancialItemsFromDB, type SimulationProfile } from '@/lib/services/dbToFinancialItems'
 import { financialKeys } from '@/hooks/useFinancialData'
 
@@ -84,10 +82,6 @@ interface FinancialContextValue {
   // 시뮬레이션 프로필 (계산된 값)
   simulationProfile: SimulationProfile
 
-  // 글로벌 설정
-  globalSettings: GlobalSettings
-  updateGlobalSettings: (updates: Partial<GlobalSettings>) => void
-
   // 재무 데이터 로드 (시뮬레이션용) - 레거시, useFinancialItems 훅 사용 권장
   loadItems: () => Promise<FinancialItem[]>
 
@@ -119,7 +113,6 @@ interface FinancialProviderProps {
   simulation: Simulation
   profile: ProfileBasics
   familyMembers: FamilyMember[]
-  initialGlobalSettings?: GlobalSettings
 }
 
 // ============================================
@@ -131,7 +124,6 @@ export function FinancialProvider({
   simulation,
   profile: initialProfile,
   familyMembers: initialFamilyMembers,
-  initialGlobalSettings,
 }: FinancialProviderProps) {
   // React Query Client
   const queryClient = useQueryClient()
@@ -147,19 +139,9 @@ export function FinancialProvider({
     setProfile((prev) => ({ ...prev, ...updates }))
   }, [])
 
-  // 글로벌 설정 상태
-  const [globalSettings, setGlobalSettings] = useState<GlobalSettings>(
-    () => initialGlobalSettings || DEFAULT_GLOBAL_SETTINGS
-  )
-
   // 리프레시 트리거 상태 (레거시 호환용)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
-
-  // 글로벌 설정 업데이트 (로컬 상태만 변경 - 생애주기는 시뮬레이션별 저장)
-  const updateGlobalSettings = useCallback((updates: Partial<GlobalSettings>) => {
-    setGlobalSettings((prev) => ({ ...prev, ...updates }))
-  }, [])
 
   // React Query 캐시 무효화
   const invalidateFinancialData = useCallback(() => {
@@ -242,10 +224,6 @@ export function FinancialProvider({
       // 시뮬레이션 프로필
       simulationProfile,
 
-      // 글로벌 설정
-      globalSettings,
-      updateGlobalSettings,
-
       // 재무 데이터 로드
       loadItems,
 
@@ -272,8 +250,6 @@ export function FinancialProvider({
       setFamilyMembers,
       updateProfile,
       simulationProfile,
-      globalSettings,
-      updateGlobalSettings,
       loadItems,
       invalidateFinancialData,
       refreshTrigger,
@@ -303,12 +279,6 @@ export function useFinancialContext(): FinancialContextValue {
     throw new Error('useFinancialContext must be used within a FinancialProvider')
   }
   return context
-}
-
-// 글로벌 설정 훅
-export function useGlobalSettings() {
-  const { globalSettings, updateGlobalSettings } = useFinancialContext()
-  return { globalSettings, updateGlobalSettings }
 }
 
 // 프로필 정보 훅

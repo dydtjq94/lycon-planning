@@ -3,9 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Plus, ArrowLeft, X } from 'lucide-react'
-import type { GlobalSettings } from '@/types'
 import type { RetirementPensionType, ReceiveType, PersonalPensionType } from '@/types/tables'
-import { DEFAULT_GLOBAL_SETTINGS } from '@/types'
 import {
   NationalPensionSection,
   RetirementPensionSection,
@@ -31,7 +29,6 @@ interface PensionTabProps {
   spouseBirthYear?: number | null
   retirementAge: number
   isMarried: boolean
-  globalSettings?: GlobalSettings
 }
 
 export function PensionTab({
@@ -40,9 +37,7 @@ export function PensionTab({
   spouseBirthYear,
   retirementAge,
   isMarried,
-  globalSettings,
 }: PensionTabProps) {
-  const settings = globalSettings || DEFAULT_GLOBAL_SETTINGS
   const currentYear = new Date().getFullYear()
   const currentAge = currentYear - birthYear
 
@@ -784,7 +779,6 @@ export function PensionTab({
             yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
             birthYear={birthYear}
             retirementAge={retirementAge}
-            globalSettings={settings}
             onSave={loadPensions}
           />
           {isMarried && (
@@ -798,7 +792,6 @@ export function PensionTab({
               yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
               birthYear={effectiveSpouseBirthYear}
               retirementAge={retirementAge}
-              globalSettings={settings}
               onSave={loadPensions}
             />
           )}
@@ -811,7 +804,6 @@ export function PensionTab({
             ownerLabel="본인"
             birthYear={birthYear}
             retirementAge={retirementAge}
-            globalSettings={settings}
             onSave={loadPensions}
           />
           {isMarried && (
@@ -822,7 +814,6 @@ export function PensionTab({
               ownerLabel="배우자"
               birthYear={effectiveSpouseBirthYear}
               retirementAge={retirementAge}
-              globalSettings={settings}
               onSave={loadPensions}
             />
           )}

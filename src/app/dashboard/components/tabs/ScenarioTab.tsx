@@ -11,9 +11,9 @@ import {
   LineChart,
   Landmark,
 } from "lucide-react";
-import type { Simulation, GlobalSettings, InvestmentAssumptions, CashFlowPriorities, SimFamilyMember } from "@/types";
+import type { Simulation, SimulationAssumptions, CashFlowPriorities, SimFamilyMember } from "@/types";
 import { normalizePriorities } from "@/types";
-import type { SimulationResult } from "@/lib/services/simulationEngine";
+import type { SimulationResult } from "@/lib/services/simulationTypes";
 import type { SimulationProfile } from "@/lib/services/dbToFinancialItems";
 import type { ProfileBasics } from "@/contexts/FinancialContext";
 import { useChartTheme } from "@/hooks/useChartTheme";
@@ -34,12 +34,11 @@ interface ScenarioTabProps {
   profile: ProfileBasics;
   simulationProfile: SimulationProfile;
   familyMembers: SimFamilyMember[];
-  globalSettings: GlobalSettings | null;
   simulationResult: SimulationResult;
   isMarried: boolean;
   spouseMember?: SimFamilyMember;
-  investmentAssumptions?: InvestmentAssumptions;
-  onInvestmentAssumptionsChange?: (assumptions: InvestmentAssumptions) => void;
+  simulationAssumptions?: SimulationAssumptions;
+  onSimulationAssumptionsChange?: (assumptions: SimulationAssumptions) => void;
   cashFlowPriorities?: CashFlowPriorities;
   onCashFlowPrioritiesChange?: (priorities: CashFlowPriorities) => void;
   isInitializing?: boolean;
@@ -63,8 +62,8 @@ const CATEGORY_TABS = [
   { id: "debt", label: "부채", icon: CreditCard },
 ] as const;
 
-// 기본 Investment Assumptions
-const DEFAULT_ASSUMPTIONS: InvestmentAssumptions = {
+// 기본 Simulation Assumptions
+const DEFAULT_ASSUMPTIONS: SimulationAssumptions = {
   mode: "fixed",
   rates: {
     savings: 3.0,
@@ -81,12 +80,11 @@ export function ScenarioTab({
   profile,
   simulationProfile,
   familyMembers,
-  globalSettings,
   simulationResult,
   isMarried,
   spouseMember,
-  investmentAssumptions: propAssumptions,
-  onInvestmentAssumptionsChange,
+  simulationAssumptions: propAssumptions,
+  onSimulationAssumptionsChange,
   cashFlowPriorities: propPriorities,
   onCashFlowPrioritiesChange,
   isInitializing,
@@ -94,12 +92,14 @@ export function ScenarioTab({
 }: ScenarioTabProps) {
   const { isDark, chartScaleColors } = useChartTheme();
 
-  // 시뮬레이션별 은퇴 나이 (life_cycle_settings에서 가져오고, 없으면 프로필 기본값)
+  // 시뮬레이션별 은퇴 나이 + 기대수명 (life_cycle_settings에서 가져오고, 없으면 프로필 기본값)
   const lifeCycleSettings = useMemo(() => {
-    const saved = simulation.life_cycle_settings as { selfRetirementAge?: number; spouseRetirementAge?: number } | null;
+    const saved = simulation.life_cycle_settings as { selfRetirementAge?: number; spouseRetirementAge?: number; selfLifeExpectancy?: number; spouseLifeExpectancy?: number } | null;
     return {
       selfRetirementAge: saved?.selfRetirementAge ?? profile.target_retirement_age,
       spouseRetirementAge: saved?.spouseRetirementAge ?? spouseMember?.retirement_age ?? 65,
+      selfLifeExpectancy: saved?.selfLifeExpectancy ?? 100,
+      spouseLifeExpectancy: saved?.spouseLifeExpectancy ?? saved?.selfLifeExpectancy ?? 100,
     };
   }, [simulation.life_cycle_settings, profile.target_retirement_age, spouseMember?.retirement_age]);
 
@@ -179,8 +179,8 @@ export function ScenarioTab({
   }, [activeCategoryTab]);
 
   // 로컬 state (props가 없으면 시뮬레이션에서 로드하거나 기본값 사용)
-  const [localAssumptions, setLocalAssumptions] = useState<InvestmentAssumptions>(
-    propAssumptions || simulation.investment_assumptions || DEFAULT_ASSUMPTIONS
+  const [localAssumptions, setLocalAssumptions] = useState<SimulationAssumptions>(
+    propAssumptions || simulation.simulation_assumptions || DEFAULT_ASSUMPTIONS
   );
   const [localPriorities, setLocalPriorities] = useState<CashFlowPriorities>(
     propPriorities || normalizePriorities(simulation.cash_flow_priorities)
@@ -191,9 +191,9 @@ export function ScenarioTab({
   const priorities = propPriorities || localPriorities;
 
   // assumptions 변경 핸들러
-  const handleAssumptionsChange = (newAssumptions: InvestmentAssumptions) => {
-    if (onInvestmentAssumptionsChange) {
-      onInvestmentAssumptionsChange(newAssumptions);
+  const handleAssumptionsChange = (newAssumptions: SimulationAssumptions) => {
+    if (onSimulationAssumptionsChange) {
+      onSimulationAssumptionsChange(newAssumptions);
     } else {
       setLocalAssumptions(newAssumptions);
     }
@@ -217,13 +217,12 @@ export function ScenarioTab({
           birthYear={simulationProfile.birthYear}
           spouseBirthYear={simulationProfile.spouseBirthYear}
           retirementAge={lifeCycleSettings.selfRetirementAge}
-          globalSettings={globalSettings ?? undefined}
           isInitializing={isInitializing}
           timeRange={sharedTimeRange}
           onTimeRangeChange={setSharedTimeRange}
           selectedYear={sharedSelectedYear}
           onSelectedYearChange={setSharedSelectedYear}
-          investmentAssumptions={assumptions}
+          simulationAssumptions={assumptions}
           cashFlowPriorities={priorities}
         />
       );
@@ -237,12 +236,11 @@ export function ScenarioTab({
           spouseBirthYear={simulationProfile.spouseBirthYear}
           isInitializing={isInitializing}
           retirementAge={lifeCycleSettings.selfRetirementAge}
-          globalSettings={globalSettings ?? undefined}
           timeRange={sharedTimeRange}
           onTimeRangeChange={setSharedTimeRange}
           selectedYear={sharedSelectedYear}
           onSelectedYearChange={setSharedSelectedYear}
-          investmentAssumptions={assumptions}
+          simulationAssumptions={assumptions}
           cashFlowPriorities={priorities}
         />
       );
@@ -257,7 +255,7 @@ export function ScenarioTab({
 
     switch (activeCategoryTab) {
       case "income":
-        return globalSettings ? (
+        return (
           <IncomeTab
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
@@ -265,12 +263,11 @@ export function ScenarioTab({
             retirementAge={lifeCycleSettings.selfRetirementAge}
             spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
-            globalSettings={globalSettings}
             simulationResult={simulationResult}
           />
-        ) : null;
+        );
       case "expense":
-        return globalSettings ? (
+        return (
           <ExpenseTab
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
@@ -278,10 +275,12 @@ export function ScenarioTab({
             retirementAge={lifeCycleSettings.selfRetirementAge}
             spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
-            globalSettings={globalSettings}
+            lifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
+            spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
             simulationResult={simulationResult}
+            familyMembers={familyMembers}
           />
-        ) : null;
+        );
       case "savings":
         return (
           <SavingsTab
@@ -291,7 +290,6 @@ export function ScenarioTab({
             retirementAge={lifeCycleSettings.selfRetirementAge}
             spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
-            globalSettings={globalSettings ?? undefined}
           />
         );
       case "asset":
@@ -303,7 +301,6 @@ export function ScenarioTab({
             retirementAge={lifeCycleSettings.selfRetirementAge}
             spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
-            globalSettings={globalSettings ?? undefined}
           />
         );
       case "debt":
@@ -315,7 +312,6 @@ export function ScenarioTab({
             retirementAge={lifeCycleSettings.selfRetirementAge}
             spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
-            globalSettings={globalSettings ?? undefined}
           />
         );
       case "realEstate":
@@ -327,7 +323,6 @@ export function ScenarioTab({
             retirementAge={lifeCycleSettings.selfRetirementAge}
             spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
-            globalSettings={globalSettings ?? undefined}
           />
         );
       case "pension":
@@ -338,7 +333,6 @@ export function ScenarioTab({
             spouseBirthYear={simulationProfile.spouseBirthYear}
             retirementAge={lifeCycleSettings.selfRetirementAge}
             isMarried={isMarried}
-            globalSettings={globalSettings ?? undefined}
           />
         );
       default:

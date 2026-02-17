@@ -1705,14 +1705,14 @@ function SimulationSection({
         </span>
       </div>
 
-      {/* Investment assumptions */}
-      {simulation.investment_assumptions && (
-        <CollapsibleSubSection title="투자 가정" defaultOpen={false}>
-          {isJsonObject(simulation.investment_assumptions) ? (
-            <KVList data={simulation.investment_assumptions} />
+      {/* Simulation assumptions */}
+      {simulation.simulation_assumptions && (
+        <CollapsibleSubSection title="시뮬레이션 가정" defaultOpen={false}>
+          {isJsonObject(simulation.simulation_assumptions) ? (
+            <KVList data={simulation.simulation_assumptions!} />
           ) : (
             <div className={styles.jsonBlock}>
-              {JSON.stringify(simulation.investment_assumptions, null, 2)}
+              {JSON.stringify(simulation.simulation_assumptions, null, 2)}
             </div>
           )}
         </CollapsibleSubSection>

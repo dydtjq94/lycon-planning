@@ -35,17 +35,13 @@
   transition: opacity 0.2s;
 }
 
-.saveButton:hover {
+.saveButton:hover:not(:disabled) {
   opacity: 0.85;
 }
 
-.saveButtonDisabled {
+.saveButton:disabled {
   opacity: 0.4;
   cursor: default;
-}
-
-.saveButtonDisabled:hover {
-  opacity: 0.4;
 }
 
 /* Tab bar */

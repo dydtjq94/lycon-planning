@@ -4,7 +4,6 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Pencil, X, Plus, ArrowLeft } from 'lucide-react'
 import type { Debt, DebtInput, LoanRepaymentType, RateType, Owner } from '@/types/tables'
-import type { GlobalSettings } from '@/types'
 import { formatMoney } from '@/lib/utils'
 import { formatPeriodDisplay, toPeriodRaw, isPeriodValid, restorePeriodCursor } from '@/lib/utils/periodInput'
 import { useDebts, useInvalidateByCategory } from '@/hooks/useFinancialData'
@@ -31,7 +30,6 @@ interface DebtTabProps {
   retirementAge: number
   spouseRetirementAge?: number
   isMarried: boolean
-  globalSettings?: GlobalSettings
 }
 
 interface EditingDebt {
@@ -83,7 +81,6 @@ export function DebtTab({
   retirementAge,
   spouseRetirementAge,
   isMarried,
-  globalSettings,
 }: DebtTabProps) {
   const { isDark } = useChartTheme()
   const currentYear = new Date().getFullYear()

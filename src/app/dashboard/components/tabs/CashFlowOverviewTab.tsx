@@ -2,10 +2,10 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { ChevronDown } from 'lucide-react'
-import type { GlobalSettings, InvestmentAssumptions, CashFlowPriorities } from '@/types'
-import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_INVESTMENT_ASSUMPTIONS } from '@/types'
+import type { SimulationAssumptions, CashFlowPriorities } from '@/types'
+import { DEFAULT_SIMULATION_ASSUMPTIONS } from '@/types'
 import { runSimulationV2 } from '@/lib/services/simulationEngineV2'
-import type { MonthlySnapshot } from '@/lib/services/simulationEngine'
+import type { MonthlySnapshot } from '@/lib/services/simulationTypes'
 import { useSimulationV2Data } from '@/hooks/useFinancialData'
 import { calculateEndYear } from '@/lib/utils/chartDataTransformer'
 import { formatMoney } from '@/lib/utils'
@@ -20,8 +20,7 @@ interface CashFlowOverviewTabProps {
   spouseBirthYear?: number | null
   retirementAge: number
   spouseRetirementAge?: number
-  globalSettings?: GlobalSettings
-  investmentAssumptions?: InvestmentAssumptions
+  simulationAssumptions?: SimulationAssumptions
   cashFlowPriorities?: CashFlowPriorities
   isInitializing?: boolean
   timeRange?: 'next3m' | 'next5m' | 'next5' | 'next10' | 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full'
@@ -52,8 +51,7 @@ export function CashFlowOverviewTab({
   spouseBirthYear,
   retirementAge,
   spouseRetirementAge = 60,
-  globalSettings,
-  investmentAssumptions,
+  simulationAssumptions,
   cashFlowPriorities,
   isInitializing = false,
   timeRange: propTimeRange,
@@ -128,8 +126,6 @@ export function CashFlowOverviewTab({
 
   // 시뮬레이션 실행
   const simulationResult = useMemo(() => {
-    const gs = globalSettings || DEFAULT_GLOBAL_SETTINGS
-
     return runSimulationV2(
       v2Data,
       {
@@ -137,12 +133,11 @@ export function CashFlowOverviewTab({
         retirementAge,
         spouseBirthYear: spouseBirthYear || undefined,
       },
-      gs,
       yearsToSimulate,
-      investmentAssumptions || DEFAULT_INVESTMENT_ASSUMPTIONS,
+      simulationAssumptions || DEFAULT_SIMULATION_ASSUMPTIONS,
       cashFlowPriorities
     )
-  }, [v2Data, birthYear, retirementAge, spouseBirthYear, globalSettings, yearsToSimulate, investmentAssumptions, cashFlowPriorities])
+  }, [v2Data, birthYear, retirementAge, spouseBirthYear, yearsToSimulate, simulationAssumptions, cashFlowPriorities])
 
   // 필터링된 시뮬레이션 결과 (기간 선택에 따라)
   const filteredSimulationResult = useMemo(() => ({

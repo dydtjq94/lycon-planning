@@ -11,8 +11,7 @@ import {
 } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
 import type { PhysicalAsset, FinancingType, LoanRepaymentType } from '@/types/tables'
-import type { GlobalSettings } from '@/types'
-import { formatMoney, getDefaultRateCategory, getEffectiveRate } from '@/lib/utils'
+import { formatMoney, getDefaultRateCategory } from '@/lib/utils'
 import { usePhysicalAssets, useInvalidateByCategory } from '@/hooks/useFinancialData'
 import {
   createPhysicalAsset,
@@ -39,7 +38,6 @@ interface AssetTabProps {
   retirementAge: number
   spouseRetirementAge?: number
   isMarried: boolean
-  globalSettings?: GlobalSettings
 }
 
 // 색상
@@ -55,8 +53,7 @@ export function AssetTab({
   spouseBirthYear,
   retirementAge,
   spouseRetirementAge = 60,
-  isMarried,
-  globalSettings
+  isMarried
 }: AssetTabProps) {
   const { isDark } = useChartTheme()
   const currentYear = new Date().getFullYear()
@@ -189,7 +186,7 @@ export function AssetTab({
       // annual_rate 결정
       const annualRate = editValues.rateCategory === 'fixed'
         ? (editValues.annualRate ? parseFloat(editValues.annualRate) : 0)
-        : (globalSettings?.inflationRate || 0)
+        : 2.5
 
       const input = {
         simulation_id: simulationId,
@@ -262,14 +259,6 @@ export function AssetTab({
 
     // Rate calculation
     const rateCategory = editValues.rateCategory || 'inflation'
-    const effectiveRate = globalSettings
-      ? getEffectiveRate(
-          parseFloat(editValues.annualRate || '0'),
-          rateCategory as any,
-          globalSettings.scenarioMode,
-          globalSettings
-        )
-      : parseFloat(editValues.annualRate || '0')
 
     return (
       <>
@@ -350,7 +339,7 @@ export function AssetTab({
           <span className={styles.modalFormLabel}>상승률</span>
           <div className={styles.fieldContent}>
             {rateCategory !== 'fixed' && (
-              <span className={styles.rateValue}>{effectiveRate}%</span>
+              <span className={styles.rateValue}>시뮬레이션 가정</span>
             )}
             {rateCategory === 'fixed' && (
               <>
@@ -514,6 +503,12 @@ export function AssetTab({
 
     if (asset.purchase_year) {
       metaParts.push(`${asset.purchase_year}년${asset.purchase_month ? ` ${asset.purchase_month}월` : ''} 취득`)
+    }
+
+    if (asset.rate_category === 'fixed') {
+      if (asset.annual_rate !== 0) metaParts.push(`상승률 ${asset.annual_rate}%`)
+    } else {
+      metaParts.push('시뮬레이션 가정')
     }
 
     if (hasFinancing && asset.loan_amount) {

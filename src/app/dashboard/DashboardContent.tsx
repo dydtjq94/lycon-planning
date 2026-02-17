@@ -15,7 +15,7 @@ import {
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { AccountManagementModal } from "./components/AccountManagementModal";
 import { CategoryManagementModal } from "./components/CategoryManagementModal";
-import { AccountsSummaryPanel, InvestmentAssumptionsPanel, CashFlowPrioritiesPanel, FamilyConfigPanel, LifeCyclePanel } from "./components/tabs/scenario";
+import { AccountsSummaryPanel, SimulationAssumptionsPanel, CashFlowPrioritiesPanel, FamilyConfigPanel, LifeCyclePanel } from "./components/tabs/scenario";
 import { useFinancialContext, type FamilyMember } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
@@ -28,38 +28,30 @@ import {
   useSnapshots,
   financialKeys,
 } from "@/hooks/useFinancialData";
+import type { SimulationResult } from "@/lib/services/simulationTypes";
 import type {
   FinancialItem,
   IncomeData,
   PensionData,
   LifeCycleSettings,
   SimFamilyMember,
+  CashFlowPriorities,
+  SimulationAssumptions,
 } from "@/types";
-import type { SimulationResult } from "@/lib/services/simulationEngine";
 import { runSimulationV2 } from "@/lib/services/simulationEngineV2";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
 import { simulationService } from "@/lib/services/simulationService";
 import { calculateEndYear } from "@/lib/utils/chartDataTransformer";
-import { DEFAULT_GLOBAL_SETTINGS, DEFAULT_SETTINGS, DEFAULT_INVESTMENT_ASSUMPTIONS, normalizePriorities } from "@/types";
+import { DEFAULT_SIMULATION_ASSUMPTIONS, normalizePriorities } from "@/types";
 import { Sidebar } from "./components";
 import {
-  OverviewTab,
   MessagesTab,
-  NetWorthTab,
-  CashFlowOverviewTab,
   CurrentAssetTab,
   AssetRecordTab,
   PortfolioTab,
   BudgetTab,
   CheckingAccountTab,
   SavingsDepositsTab,
-  IncomeTab,
-  ExpenseTab,
-  SavingsTab,
-  AssetTab,
-  DebtTab,
-  RealEstateTab,
-  PensionTab,
   DashboardTab,
   ScenarioTab,
   SettingsTab,
@@ -137,7 +129,6 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     setFamilyMembers,
     updateProfile,
     simulationProfile,
-    globalSettings,
   } = useFinancialContext();
 
   const queryClient = useQueryClient();
@@ -560,10 +551,21 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   // 레거시 pension sync용으로만 V1 items 유지
   const { data: items = [], isLoading } = useFinancialItems(simulation.id, simulationProfile);
 
-  // 투자 가정 및 캐시플로우 우선순위 (선택된 시뮬레이션 기준)
+  // 시뮬레이션 가정 및 캐시플로우 우선순위 (선택된 시뮬레이션 기준)
   const activeSim = selectedSim || simulation;
-  const investmentAssumptions = activeSim.investment_assumptions || DEFAULT_INVESTMENT_ASSUMPTIONS;
-  const cashFlowPriorities = normalizePriorities(activeSim.cash_flow_priorities);
+  // 시뮬레이션 가정: 로컬 override로 즉시 반영
+  const [assumptionsOverride, setAssumptionsOverride] = useState<SimulationAssumptions | null>(null);
+  const simulationAssumptions = assumptionsOverride ?? activeSim.simulation_assumptions ?? DEFAULT_SIMULATION_ASSUMPTIONS;
+
+  // 캐시플로우 우선순위: 로컬 override로 즉시 반영
+  const [prioritiesOverride, setPrioritiesOverride] = useState<CashFlowPriorities | null>(null);
+  const prevSimIdRef = useRef(activeSim.id);
+  if (prevSimIdRef.current !== activeSim.id) {
+    prevSimIdRef.current = activeSim.id;
+    setAssumptionsOverride(null);
+    setPrioritiesOverride(null);
+  }
+  const cashFlowPriorities = useMemo(() => normalizePriorities(prioritiesOverride ?? activeSim.cash_flow_priorities), [activeSim.cash_flow_priorities, prioritiesOverride]);
 
   // 시뮬레이션별 가족 구성 (없으면 프로필의 가족 사용, self 제외)
   const simFamilyMembers: SimFamilyMember[] = useMemo(() => {
@@ -597,9 +599,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     const saved = activeSim.life_cycle_settings;
     return {
       selfRetirementAge: saved?.selfRetirementAge ?? profile.target_retirement_age,
-      selfLifeExpectancy: saved?.selfLifeExpectancy ?? globalSettings.lifeExpectancy,
+      selfLifeExpectancy: saved?.selfLifeExpectancy ?? 100,
       spouseRetirementAge: saved?.spouseRetirementAge ?? spouseMember?.retirement_age ?? 65,
-      spouseLifeExpectancy: saved?.spouseLifeExpectancy ?? saved?.selfLifeExpectancy ?? globalSettings.lifeExpectancy,
+      spouseLifeExpectancy: saved?.spouseLifeExpectancy ?? saved?.selfLifeExpectancy ?? 100,
       retirementIcon: saved?.retirementIcon,
       retirementColor: saved?.retirementColor,
       lifeExpectancyIcon: saved?.lifeExpectancyIcon,
@@ -609,20 +611,22 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       spouseLifeExpectancyIcon: saved?.spouseLifeExpectancyIcon,
       spouseLifeExpectancyColor: saved?.spouseLifeExpectancyColor,
     };
-  }, [activeSim.life_cycle_settings, profile.target_retirement_age, globalSettings.lifeExpectancy, spouseMember?.retirement_age]);
+  }, [activeSim.life_cycle_settings, profile.target_retirement_age, spouseMember?.retirement_age]);
 
-  // 투자 가정 변경 핸들러
-  const handleInvestmentAssumptionsChange = useCallback((newAssumptions: any) => {
+  // 시뮬레이션 가정 변경 핸들러
+  const handleSimulationAssumptionsChange = useCallback((newAssumptions: SimulationAssumptions) => {
+    setAssumptionsOverride(newAssumptions);
     if (selectedSim) {
       updateSimulation.mutate({
         id: selectedSim.id,
-        updates: { investment_assumptions: newAssumptions }
+        updates: { simulation_assumptions: newAssumptions }
       });
     }
   }, [selectedSim, updateSimulation]);
 
   // 현금 흐름 우선순위 변경 핸들러
-  const handleCashFlowPrioritiesChange = useCallback((newPriorities: any) => {
+  const handleCashFlowPrioritiesChange = useCallback((newPriorities: CashFlowPriorities) => {
+    setPrioritiesOverride(newPriorities);
     if (selectedSim) {
       updateSimulation.mutate({
         id: selectedSim.id,
@@ -682,19 +686,11 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
         spouseBirthYear: simulationProfile.spouseBirthYear ?? undefined,
         spouseRetirementAge: lifeCycleSettings.spouseRetirementAge,
       },
-      {
-        ...(globalSettings || DEFAULT_GLOBAL_SETTINGS),
-        lifeExpectancy: lifeCycleSettings.selfLifeExpectancy,
-        spouseLifeExpectancy: lifeCycleSettings.spouseLifeExpectancy,
-      },
       yearsToSimulate,
-      investmentAssumptions,
+      simulationAssumptions,
       cashFlowPriorities
     );
-  }, [v2Data, simulationProfile, globalSettings, lifeCycleSettings, investmentAssumptions, cashFlowPriorities]);
-
-  // 기본 설정
-  const settings = DEFAULT_SETTINGS;
+  }, [v2Data, simulationProfile, lifeCycleSettings, simulationAssumptions, cashFlowPriorities]);
 
   // 레거시 CRUD 스텁 함수 (실제 업데이트는 개별 서비스 사용)
   const addItem = useCallback(
@@ -725,9 +721,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       const spouseBirthYear = spouseMemberLocal?.birth_date
         ? parseInt(spouseMemberLocal.birth_date.split("-")[0])
         : birthYear;
-      const lifeExpectancy = globalSettings?.lifeExpectancy ?? 100;
+      const lifeExpectancy = 100;
       const investmentReturnRate =
-        (globalSettings?.investmentReturnRate ?? 5) / 100;
+        (simulationAssumptions.rates.investment ?? 7) / 100;
 
       // PMT 계산 함수
       const calculatePMT = (
@@ -752,7 +748,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
         (i) =>
           i.category === "income" && i.type === "labor" && i.owner === "spouse"
       );
-      const incomeGrowthRate = (globalSettings?.incomeGrowthRate ?? 3) / 100;
+      const incomeGrowthRate = (simulationAssumptions.rates.incomeGrowth ?? 3) / 100;
       const currentYear = new Date().getFullYear();
 
       for (const pensionItem of pensionItems) {
@@ -867,7 +863,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             data: {
               amount: monthlyAmount,
               frequency: "monthly",
-              growthRate: globalSettings?.inflationRate ?? 2,
+              growthRate: simulationAssumptions.rates.inflation ?? 2.5,
               rateCategory: "inflation",
             } as IncomeData,
           });
@@ -883,7 +879,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     };
 
     syncPensionToIncome();
-  }, [items, isLoading, profile, familyMembers, globalSettings, addItem]);
+  }, [items, isLoading, profile, familyMembers, simulationAssumptions, addItem]);
 
   const renderContent = () => {
     switch (currentSection) {
@@ -895,7 +891,6 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             birthYear={simulationProfile.birthYear}
             spouseBirthYear={simulationProfile.spouseBirthYear ?? null}
             retirementAge={lifeCycleSettings.selfRetirementAge}
-            globalSettings={globalSettings}
             unreadMessageCount={unreadMessageCount}
             onNavigate={handleSectionChange}
             profileId={profile.id}
@@ -952,124 +947,16 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             profile={profile}
             simulationProfile={simulationProfile}
             familyMembers={simFamilyMembers}
-            globalSettings={globalSettings}
             simulationResult={simulationResult}
             isMarried={isMarried}
             spouseMember={spouseMember}
             isInitializing={initializingSimulationId === selectedSimulationId}
             isSyncingPrices={syncingPricesSimulationId === selectedSimulationId}
+            simulationAssumptions={simulationAssumptions}
+            cashFlowPriorities={cashFlowPriorities}
           />
         );
       }
-      // Legacy - 이전 직접 접근용 (나중에 제거)
-      case "networth":
-        return (
-          <NetWorthTab
-            simulationId={simulation.id}
-            birthYear={simulationProfile.birthYear}
-            spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={lifeCycleSettings.selfRetirementAge}
-            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
-            globalSettings={globalSettings}
-          />
-        );
-      case "cashflow-overview":
-        return (
-          <CashFlowOverviewTab
-            simulationId={simulation.id}
-            birthYear={simulationProfile.birthYear}
-            spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={lifeCycleSettings.selfRetirementAge}
-            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
-            globalSettings={globalSettings}
-          />
-        );
-      // Finance tabs (나의 재무)
-      case "income":
-        return (
-          <IncomeTab
-            simulationId={simulation.id}
-            birthYear={simulationProfile.birthYear}
-            spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={lifeCycleSettings.selfRetirementAge}
-            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
-            isMarried={isMarried}
-            globalSettings={globalSettings}
-            simulationResult={simulationResult}
-          />
-        );
-      case "expense":
-        return (
-          <ExpenseTab
-            simulationId={simulation.id}
-            birthYear={simulationProfile.birthYear}
-            spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={lifeCycleSettings.selfRetirementAge}
-            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
-            isMarried={isMarried}
-            globalSettings={globalSettings}
-            simulationResult={simulationResult}
-          />
-        );
-      case "savings":
-        return (
-          <SavingsTab
-            simulationId={simulation.id}
-            birthYear={simulationProfile.birthYear}
-            spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={lifeCycleSettings.selfRetirementAge}
-            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
-            isMarried={isMarried}
-            globalSettings={globalSettings}
-          />
-        );
-      case "asset":
-        return (
-          <AssetTab
-            simulationId={simulation.id}
-            birthYear={simulationProfile.birthYear}
-            spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={lifeCycleSettings.selfRetirementAge}
-            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
-            isMarried={isMarried}
-            globalSettings={globalSettings}
-          />
-        );
-      case "debt":
-        return (
-          <DebtTab
-            simulationId={simulation.id}
-            birthYear={simulationProfile.birthYear}
-            spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={lifeCycleSettings.selfRetirementAge}
-            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
-            isMarried={isMarried}
-            globalSettings={globalSettings}
-          />
-        );
-      case "realEstate":
-        return (
-          <RealEstateTab
-            simulationId={simulation.id}
-            birthYear={simulationProfile.birthYear}
-            spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={lifeCycleSettings.selfRetirementAge}
-            spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
-            isMarried={isMarried}
-            globalSettings={globalSettings}
-          />
-        );
-      case "pension":
-        return (
-          <PensionTab
-            simulationId={simulation.id}
-            birthYear={simulationProfile.birthYear}
-            spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={lifeCycleSettings.selfRetirementAge}
-            isMarried={isMarried}
-            globalSettings={globalSettings}
-          />
-        );
       default:
         return null;
     }
@@ -1440,9 +1327,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
               zIndex: 200,
             }}
           >
-            <InvestmentAssumptionsPanel
-              assumptions={investmentAssumptions}
-              onChange={handleInvestmentAssumptionsChange}
+            <SimulationAssumptionsPanel
+              assumptions={simulationAssumptions}
+              onChange={handleSimulationAssumptionsChange}
             />
           </div>
         )}

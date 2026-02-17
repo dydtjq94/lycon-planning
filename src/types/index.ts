@@ -341,9 +341,6 @@ export interface OnboardingData {
   // 지출 항목 (대시보드용 상세 데이터)
   expenseItems?: DashboardExpenseItem[];
 
-  // 글로벌 설정 (시나리오, 성장률 등)
-  globalSettings?: GlobalSettings;
-
   // 지출
   livingExpenses: number | null; // 생활비
   livingExpensesFrequency: "monthly" | "yearly"; // 생활비 주기
@@ -526,115 +523,6 @@ export interface DashboardSummary {
   scores: Scores;
 }
 
-// 시나리오 모드 타입: 낙관, 평균, 비관, 커스텀(직접입력), 개별(항목별)
-export type ScenarioMode =
-  | "optimistic"
-  | "average"
-  | "pessimistic"
-  | "custom"
-  | "individual";
-
-// 시나리오별 성장률 프리셋
-export interface ScenarioRates {
-  inflationRate: number; // 물가 상승률 (%)
-  incomeGrowthRate: number; // 소득 증가율 (%)
-  investmentReturnRate: number; // 투자 수익률 (%)
-  realEstateGrowthRate: number; // 부동산 상승률 (%)
-  baseRate: number; // 기준금리 (%) - 변동금리 대출에 적용
-}
-
-// 시나리오 프리셋 상수 (낙관/평균/비관만 해당)
-export const SCENARIO_PRESETS: Record<
-  "optimistic" | "average" | "pessimistic",
-  ScenarioRates
-> = {
-  optimistic: {
-    inflationRate: 2.0,
-    incomeGrowthRate: 5.0,
-    investmentReturnRate: 8.0,
-    realEstateGrowthRate: 4.0,
-    baseRate: 2.5, // 기준금리 낮음
-  },
-  average: {
-    inflationRate: 2.5,
-    incomeGrowthRate: 3.0,
-    investmentReturnRate: 5.0,
-    realEstateGrowthRate: 2.5,
-    baseRate: 3.5, // 기준금리 보통
-  },
-  pessimistic: {
-    inflationRate: 4.0,
-    incomeGrowthRate: 1.0,
-    investmentReturnRate: 2.0,
-    realEstateGrowthRate: 0.5,
-    baseRate: 5.0, // 기준금리 높음
-  },
-};
-
-// 글로벌 설정 (시뮬레이션 전역)
-export interface GlobalSettings {
-  // 시나리오 모드
-  scenarioMode: ScenarioMode;
-
-  // 물가/인플레이션
-  inflationRate: number; // 물가 상승률 (%) - 지출, 국민연금에 적용
-
-  // 소득 관련
-  incomeGrowthRate: number; // 소득 증가율 (%) - 근로/사업소득에 적용
-
-  // 투자 관련
-  investmentReturnRate: number; // 투자 수익률 (%) - 저축/투자, 퇴직/개인연금에 적용
-  savingsGrowthRate: number; // 저축 증가율 (%) - 적립금 증가에 적용
-
-  // 부동산 관련
-  realEstateGrowthRate: number; // 부동산 상승률 (%)
-
-  // 부채 관련
-  debtInterestRate: number; // 부채 기본 금리 (%) - 신규 대출 기본값
-  baseRate: number; // 기준금리 (%) - 변동금리 대출에 적용
-
-  // 수명
-  lifeExpectancy: number; // 본인 예상 수명 (세)
-  spouseLifeExpectancy?: number; // 배우자 예상 수명 (세)
-
-  // 커스텀 모드 저장값 (다른 모드 갔다가 돌아올 때 복원용)
-  customRates: ScenarioRates;
-}
-
-// 기본 글로벌 설정
-export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
-  scenarioMode: "individual",
-  inflationRate: 2.5,
-  incomeGrowthRate: 3.3,
-  investmentReturnRate: 5,
-  savingsGrowthRate: 2.5,
-  realEstateGrowthRate: 2.4,
-  debtInterestRate: 3.5,
-  baseRate: 3.5,
-  lifeExpectancy: 100,
-  customRates: {
-    inflationRate: 2.5,
-    incomeGrowthRate: 3.3,
-    investmentReturnRate: 5,
-    realEstateGrowthRate: 2.4,
-    baseRate: 3.5,
-  },
-};
-
-// 시뮬레이션 설정 (deprecated - GlobalSettings 사용)
-export interface SimulationSettings {
-  inflationRate: number; // 물가 상승률 (%)
-  investmentReturn: number; // 투자 수익률 (%)
-  lifeExpectancy: number; // 예상 수명 (세)
-}
-
-// 기본 시뮬레이션 설정 (deprecated)
-export const DEFAULT_SETTINGS: SimulationSettings = {
-  inflationRate: 2.5,
-  investmentReturn: 5,
-  lifeExpectancy: 100,
-};
-
 // 은퇴 시뮬레이션 데이터 포인트
 export interface SimulationDataPoint {
   age: number;
@@ -666,29 +554,31 @@ export interface ChartData {
 
 import type { HistoricalIndex } from "../lib/data/historicalRates";
 
-export type InvestmentAssumptionsMode = "fixed" | "historical" | "advanced";
+export type SimulationAssumptionsMode = "fixed" | "historical" | "advanced";
 
-export interface InvestmentRates {
+export interface SimulationRates {
   savings: number; // 예금/적금 이율 (%)
   investment: number; // 투자 수익률 (%)
   pension: number; // 연금 수익률 (%)
   realEstate: number; // 부동산 상승률 (%)
   inflation: number; // 물가 상승률 (%)
   incomeGrowth?: number; // 소득 상승률 (%)
+  baseRate?: number; // 기준금리 (%) - 변동금리 대출에 사용
+  debtDefault?: number; // 부채 기본이자 (%) - 이자율 미입력 시 폴백
 }
 
 export interface HistoricalRateConfig {
-  indexMapping: Record<keyof InvestmentRates, HistoricalIndex>;
+  indexMapping: Record<keyof SimulationRates, HistoricalIndex>;
   startOffset: number;
 }
 
-export interface InvestmentAssumptions {
-  mode: InvestmentAssumptionsMode;
-  rates: InvestmentRates;
+export interface SimulationAssumptions {
+  mode: SimulationAssumptionsMode;
+  rates: SimulationRates;
   historicalConfig?: HistoricalRateConfig;
 }
 
-export const DEFAULT_INVESTMENT_ASSUMPTIONS: InvestmentAssumptions = {
+export const DEFAULT_SIMULATION_ASSUMPTIONS: SimulationAssumptions = {
   mode: "fixed",
   rates: {
     savings: 3.0,
@@ -697,6 +587,8 @@ export const DEFAULT_INVESTMENT_ASSUMPTIONS: InvestmentAssumptions = {
     realEstate: 3.0,
     inflation: 2.5,
     incomeGrowth: 3.0,
+    baseRate: 3.5,
+    debtDefault: 3.5,
   },
 };
 
@@ -781,7 +673,7 @@ export interface Simulation {
   is_default: boolean;
   sort_order: number;
   // 새 필드
-  investment_assumptions?: InvestmentAssumptions;
+  simulation_assumptions?: SimulationAssumptions;
   cash_flow_priorities?: CashFlowPriorities;
   life_cycle_settings?: LifeCycleSettings;
   family_config?: SimFamilyMember[];
@@ -1050,7 +942,7 @@ export interface SimulationInput {
   is_default?: boolean;
   sort_order?: number;
   // 새 필드
-  investment_assumptions?: InvestmentAssumptions;
+  simulation_assumptions?: SimulationAssumptions;
   cash_flow_priorities?: CashFlowPriorities;
   life_cycle_settings?: LifeCycleSettings;
   family_config?: SimFamilyMember[];
@@ -1194,33 +1086,42 @@ export interface MonthlySnapshot {
 }
 
 // ============================================
-// 나이대별 의료비 기본값 (월 만원 단위)
+// 나이대별 의료비 기본값 (인당 연간 만원 단위, 현재 화폐가치)
 // ============================================
 
-// 나이대별 월 의료비 (보수적 예산 기준)
+// 나이대별 연간 의료비 (현재 화폐가치 기준, 물가상승률로 미래 조정)
 // 출처: 건강보험통계연보, 국민건강보험공단
 export const MEDICAL_EXPENSE_BY_AGE: Record<number, number> = {
-  20: 5, // 20대: 월 5만원
-  30: 10, // 30대: 월 10만원
-  40: 15, // 40대: 월 15만원
-  50: 25, // 50대: 월 25만원
-  60: 35, // 60-64세: 월 35만원
-  65: 45, // 65-69세: 월 45만원
-  70: 60, // 70-74세: 월 60만원
-  75: 85, // 75-79세: 월 85만원
-  80: 130, // 80-84세: 월 130만원
-  85: 180, // 85-89세: 월 180만원
-  90: 230, // 90-94세: 월 230만원
-  95: 280, // 95-99세: 월 280만원
-  100: 300, // 100세+: 월 300만원
+  0: 60, // 0~59세: 연 60만원
+  60: 180, // 60~69세: 연 180만원
+  70: 350, // 70~79세: 연 350만원
+  80: 780, // 80~89세: 연 780만원
+  90: 950, // 90~100세: 연 950만원
 };
 
-// 나이에 해당하는 의료비 반환
-export function getMedicalExpenseByAge(age: number): number {
-  if (age < 20) return 5;
-  if (age >= 100) return 300;
+// 나이대별 교육비 (만원/월, 사교육 포함 평균)
+export const EDUCATION_EXPENSE_BY_AGE: Record<number, { label: string; amount: number }> = {
+  3: { label: '유치원', amount: 40 },
+  6: { label: '초등학교', amount: 50 },
+  12: { label: '중학교', amount: 70 },
+  15: { label: '고등학교', amount: 90 },
+  18: { label: '대학교', amount: 120 },
+};
 
-  // 5년 단위로 반올림하여 해당 구간의 값 반환
+export const EDUCATION_EXPENSE_INFO = `한국 평균 사교육비 포함 교육비 (통계청, 교육부 자료 기반)
+
+- 유치원 (3~5세): 월 40만원
+- 초등학교 (6~11세): 월 50만원
+- 중학교 (12~14세): 월 70만원
+- 고등학교 (15~17세): 월 90만원
+- 대학교 (18~21세): 월 120만원
+
+※ 지역, 학교 유형, 사교육 규모에 따라 크게 다를 수 있습니다.`;
+
+// 나이에 해당하는 연간 의료비 반환
+export function getMedicalExpenseByAge(age: number): number {
+  if (age >= 90) return 950;
+
   const ageKeys = Object.keys(MEDICAL_EXPENSE_BY_AGE)
     .map(Number)
     .sort((a, b) => a - b);
@@ -1231,16 +1132,18 @@ export function getMedicalExpenseByAge(age: number): number {
     }
   }
 
-  return 5; // 기본값
+  return 60; // 기본값
 }
 
 // 의료비 안내 메시지
-export const MEDICAL_EXPENSE_INFO = `대한민국 나이대별 본인부담 의료비 분석 자료 기반 (건강보험통계연보, 국민건강보험공단)
+export const MEDICAL_EXPENSE_INFO = `대한민국 나이대별 인당 연간 의료비 (현재 화폐가치 기준, 건강보험통계연보)
 
-- 20대: 월 5만원 → 90대: 월 300만원 (60배 증가)
-- 65세 이상이 전체 의료비의 44% 사용
-- 80대 이후 간병비 포함 시 월 200~400만원 가능
+- 0~59세: 연 60만원
+- 60~69세: 연 180만원
+- 70~79세: 연 350만원
+- 80~89세: 연 780만원
+- 90~100세: 연 950만원
 
-포함 항목: 건강보험 본인부담금, 비급여, 간병비, 보조기구
+물가상승률이 자동 적용되어 미래 시점의 실제 비용으로 계산됩니다.
 
 ※ 개인 건강 상태에 따라 실제 비용은 크게 다를 수 있습니다.`;

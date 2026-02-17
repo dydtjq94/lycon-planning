@@ -15,12 +15,10 @@ import { Bar } from "react-chartjs-2";
 import type {
   DashboardIncomeItem,
   DashboardIncomeFrequency,
-  GlobalSettings,
 } from "@/types";
-import type { SimulationResult } from "@/lib/services/simulationEngine";
+import type { SimulationResult } from "@/lib/services/simulationTypes";
 import type { Income, IncomeInput, IncomeType as DBIncomeType } from "@/types/tables";
-import { DEFAULT_GLOBAL_SETTINGS } from "@/types";
-import { formatMoney, getDefaultRateCategory, getEffectiveRate } from "@/lib/utils";
+import { formatMoney, getDefaultRateCategory } from "@/lib/utils";
 import { formatPeriodDisplay, toPeriodRaw, isPeriodValid, restorePeriodCursor, handlePeriodTextChange } from "@/lib/utils/periodInput";
 import { CHART_COLORS, categorizeIncome } from "@/lib/utils/tooltipCategories";
 import { useIncomes, useInvalidateByCategory } from "@/hooks/useFinancialData";
@@ -45,7 +43,6 @@ interface IncomeTabProps {
   retirementAge: number;
   spouseRetirementAge?: number;
   isMarried: boolean;
-  globalSettings: GlobalSettings;
   simulationResult: SimulationResult;
 }
 
@@ -72,7 +69,6 @@ export function IncomeTab({
   retirementAge,
   spouseRetirementAge = 60,
   isMarried,
-  globalSettings,
   simulationResult,
 }: IncomeTabProps) {
   const { chartScaleColors, isDark } = useChartTheme();
@@ -180,23 +176,12 @@ export function IncomeTab({
 
   // DB에서 직접 관리하므로 더 이상 onUpdateData로 저장하지 않음
 
-  // 시나리오 모드 여부 (individual이 아니면 시나리오 적용 중)
-  const isScenarioMode = globalSettings.scenarioMode !== "individual";
   const displayItems = useMemo(() => {
-    return incomeItems.map((item) => {
-      const rateCategory = item.rateCategory || getDefaultRateCategory(item.type);
-      const effectiveRate = getEffectiveRate(
-        item.growthRate,
-        rateCategory,
-        globalSettings.scenarioMode,
-        globalSettings
-      );
-      return {
-        ...item,
-        displayGrowthRate: effectiveRate, // 현재 시나리오에서 표시할 상승률
-      };
-    });
-  }, [incomeItems, globalSettings]);
+    return incomeItems.map((item) => ({
+      ...item,
+      displayGrowthRate: item.growthRate, // fixed 모드에서만 표시
+    }));
+  }, [incomeItems]);
 
   // 확장/축소 상태
   const [isExpanded, setIsExpanded] = useState(true);
@@ -698,7 +683,7 @@ export function IncomeTab({
     const growthRate = isOnetime ? 0
       : newRateCategory === 'fixed'
         ? (newCustomRate === '' ? 0 : parseFloat(newCustomRate))
-        : globalSettings.incomeGrowthRate;
+        : 3.0;
 
     const incomeInput: IncomeInput = {
       simulation_id: simulationId,
@@ -927,7 +912,7 @@ export function IncomeTab({
           <span className={styles.itemMeta}>
             {item.type === "onetime"
               ? formatPeriod(item)
-              : `${formatPeriod(item)} | 연 ${item.displayGrowthRate}% 상승${isScenarioMode ? " (시나리오)" : ""}`}
+              : `${formatPeriod(item)} | ${item.rateCategory === 'fixed' ? `연 ${item.displayGrowthRate}% 상승` : '시뮬레이션 가정'}`}
           </span>
         </div>
         <div className={styles.itemRight}>
@@ -1373,19 +1358,12 @@ export function IncomeTab({
 
                   {/* 상승률 (일시적 소득 제외) */}
                   {addingType !== 'onetime' && (() => {
-                    const defaultRate = globalSettings.incomeGrowthRate;
-                    const addEffectiveRate = getEffectiveRate(
-                      defaultRate,
-                      newRateCategory,
-                      globalSettings.scenarioMode,
-                      globalSettings
-                    );
                     return (
                       <div className={styles.modalFormRow}>
                         <span className={styles.modalFormLabel}>상승률</span>
                         <div className={styles.fieldContent}>
                           {newRateCategory !== 'fixed' && (
-                            <span className={styles.rateValue}>{addEffectiveRate}%</span>
+                            <span className={styles.rateValue}>시뮬레이션 가정</span>
                           )}
                           {newRateCategory === 'fixed' && (
                             <>
@@ -1689,18 +1667,12 @@ export function IncomeTab({
 
               {/* 상승률 (일시적 소득 제외) */}
               {editForm.type !== 'onetime' && (() => {
-                const editEffectiveRate = getEffectiveRate(
-                  editForm.growthRate,
-                  editForm.rateCategory || getDefaultRateCategory(editForm.type),
-                  globalSettings.scenarioMode,
-                  globalSettings
-                );
                 return (
                   <div className={styles.modalFormRow}>
                     <span className={styles.modalFormLabel}>상승률</span>
                     <div className={styles.fieldContent}>
                       {editForm.rateCategory !== 'fixed' && (
-                        <span className={styles.rateValue}>{editEffectiveRate}%</span>
+                        <span className={styles.rateValue}>시뮬레이션 가정</span>
                       )}
                       {editForm.rateCategory === 'fixed' && (
                         <>

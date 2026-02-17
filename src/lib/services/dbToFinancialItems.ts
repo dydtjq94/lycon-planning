@@ -35,6 +35,8 @@ import type {
   AssetLoanRepaymentType,
 } from '@/types'
 
+import type { SimulationProfile } from './simulationTypes'
+
 import { getIncomes } from './incomeService'
 import { getExpenses } from './expenseService'
 import { getSavings } from './savingsService'
@@ -49,12 +51,7 @@ import { getPhysicalAssets } from './physicalAssetService'
 // 메인 함수
 // ============================================
 
-export interface SimulationProfile {
-  birthYear: number
-  retirementAge: number
-  spouseBirthYear?: number | null
-  spouseRetirementAge?: number
-}
+export type { SimulationProfile } from './simulationTypes'
 
 /**
  * DB에서 모든 재무 데이터를 로드하여 FinancialItem[]으로 변환

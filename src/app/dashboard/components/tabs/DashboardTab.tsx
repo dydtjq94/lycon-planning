@@ -35,7 +35,6 @@ interface DashboardTabProps {
   birthYear: number;
   spouseBirthYear: number | null;
   retirementAge: number | null;
-  globalSettings: unknown;
   unreadMessageCount: number;
   onNavigate: (section: string) => void;
   profileId?: string;

@@ -3,7 +3,7 @@
  * 모든 대출 관련 계산을 한 곳에서 관리
  */
 
-import type { DebtInput, DebtData, GlobalSettings, RateType } from '@/types'
+import type { DebtInput, DebtData, SimulationRates, RateType } from '@/types'
 
 // 상환방식 타입
 export type RepaymentType = '만기일시상환' | '원리금균등상환' | '원금균등상환' | '거치식상환'
@@ -24,23 +24,23 @@ export interface BalanceResult {
 /**
  * 변동/고정 금리에 따른 실효 금리 계산
  * @param debt 부채 정보 (DebtInput 또는 DebtData)
- * @param globalSettings 글로벌 설정 (기준금리 포함)
+ * @param rates 시뮬레이션 금리 설정 (기준금리 포함)
  * @returns 실효 금리 (%)
  */
 export function getEffectiveDebtRate(
   debt: { rate?: number | null; rateType?: RateType; spread?: number },
-  globalSettings: GlobalSettings
+  rates: Pick<SimulationRates, 'baseRate' | 'debtDefault'>
 ): number {
   const rateType = debt.rateType || 'fixed'
 
   if (rateType === 'floating') {
     // 변동금리: 기준금리 + 스프레드
     const spread = debt.spread || 0
-    return globalSettings.baseRate + spread
+    return (rates.baseRate ?? 3.5) + spread
   }
 
   // 고정금리: 입력된 금리 그대로 사용
-  return debt.rate || globalSettings.debtInterestRate
+  return debt.rate || (rates.debtDefault ?? 3.5)
 }
 
 /**

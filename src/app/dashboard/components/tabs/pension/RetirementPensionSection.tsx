@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Pencil, Trash2, X } from 'lucide-react'
 import type { RetirementPension, Owner, RetirementPensionType, ReceiveType, RateCategory } from '@/types/tables'
-import type { GlobalSettings } from '@/types'
-import { formatMoney, getEffectiveRate, getDefaultRateCategory } from '@/lib/utils'
+import { formatMoney, getDefaultRateCategory } from '@/lib/utils'
 import {
   upsertRetirementPension,
   deleteRetirementPension,
@@ -30,7 +29,6 @@ interface RetirementPensionSectionProps {
   yearsUntilRetirement: number
   birthYear: number
   retirementAge: number
-  globalSettings: GlobalSettings
   onSave: () => void
 }
 
@@ -44,7 +42,6 @@ export function RetirementPensionSection({
   yearsUntilRetirement,
   birthYear,
   retirementAge,
-  globalSettings,
   onSave,
 }: RetirementPensionSectionProps) {
   const [isEditing, setIsEditing] = useState(false)
@@ -322,7 +319,7 @@ export function RetirementPensionSection({
                           </>
                         ) : (
                           <span className={styles.rateValue}>
-                            {getEffectiveRate(parseFloat(editValues.returnRate) || 5, 'investment', globalSettings.scenarioMode, globalSettings).toFixed(1)}%
+                            시뮬레이션 가정
                           </span>
                         )}
                       </div>
