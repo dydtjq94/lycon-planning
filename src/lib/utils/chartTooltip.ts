@@ -168,13 +168,30 @@ export function formatMoneyWithUnit(amount: number): string {
 export function getAgeText(
   year: number,
   birthYear?: number,
-  spouseBirthYear?: number | null
+  spouseBirthYear?: number | null,
+  selfLifeExpectancy?: number,
+  spouseLifeExpectancy?: number | null
 ): string {
   if (!birthYear) return ''
   const selfAge = year - birthYear
+  const selfAlive = !selfLifeExpectancy || selfAge <= selfLifeExpectancy
+
   if (spouseBirthYear) {
     const spouseAge = year - spouseBirthYear
-    return `본인 ${selfAge}세 \u00B7 배우자 ${spouseAge}세`
+    const spouseAlive = !spouseLifeExpectancy || spouseAge <= spouseLifeExpectancy
+
+    if (selfAlive && spouseAlive) {
+      return `본인 ${selfAge}세 \u00B7 배우자 ${spouseAge}세`
+    }
+    if (selfAlive) {
+      return `본인 ${selfAge}세`
+    }
+    if (spouseAlive) {
+      return `배우자 ${spouseAge}세`
+    }
+    return ''
   }
-  return `${selfAge}세`
+
+  if (selfAlive) return `${selfAge}세`
+  return ''
 }

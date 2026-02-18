@@ -82,6 +82,31 @@ interface PortfolioTabProps {
   onSearchTrigger?: (fn: () => void) => void;
 }
 
+// 거래 행 타입 (배치 추가용)
+interface FormRow {
+  id: string;
+  type: PortfolioTransactionType;
+  trade_date: string;
+  quantity?: number;
+  price?: number;
+  exchange_rate?: number;
+  fee?: number;
+  usdPrice: string;
+}
+
+function createEmptyRow(type: PortfolioTransactionType = "buy"): FormRow {
+  return {
+    id: Math.random().toString(36).slice(2),
+    type,
+    trade_date: "",
+    quantity: undefined,
+    price: undefined,
+    exchange_rate: undefined,
+    fee: 0,
+    usdPrice: "",
+  };
+}
+
 // 증권사/은행 목록
 const BROKER_OPTIONS = [
   "키움증권",
@@ -265,16 +290,19 @@ export function PortfolioTab({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showAddForm]);
 
-  // 폼 상태
-  const [formData, setFormData] = useState<Partial<PortfolioTransactionInput>>({
-    type: "buy",
-    asset_type: "domestic_stock",
-    fee: 0,
-    account_id: null,
+  // 거래 폼 - 공통 필드
+  const [formCommon, setFormCommon] = useState({
+    asset_type: "domestic_stock" as PortfolioAssetType,
+    ticker: "",
+    name: "",
+    account_id: null as string | null,
   });
 
-  // 달러 단가 입력용 (별도 관리)
-  const [usdPriceInput, setUsdPriceInput] = useState("");
+  // 거래 폼 - 개별 거래 행
+  const [formRows, setFormRows] = useState<FormRow[]>([createEmptyRow()]);
+
+  // 해외 여부
+  const isForeignForm = formCommon.asset_type === "foreign_stock" || formCommon.asset_type === "foreign_etf";
 
   const supabase = createClient();
 
@@ -555,7 +583,6 @@ export function PortfolioTab({
     );
 
     if (searchResult.symbol.endsWith(".KS") || searchResult.symbol.endsWith(".KQ")) {
-      // 국내: ETF인지 주식인지 구분
       if (stockInfo?.market === "ETF") {
         assetType = "domestic_etf";
       } else {
@@ -564,7 +591,6 @@ export function PortfolioTab({
     } else if (searchResult.symbol.includes("-USD") || searchResult.symbol.includes("-KRW")) {
       assetType = "crypto";
     } else {
-      // 해외: ETF인지 주식인지 구분
       if (stockInfo?.market === "ETF") {
         assetType = "foreign_etf";
       } else {
@@ -573,41 +599,33 @@ export function PortfolioTab({
     }
 
     const stockName = stockInfo?.name || searchResult.symbol.split(".")[0];
-
-    // 기본 계좌 찾기
     const defaultAccount = accounts.find((a) => a.is_default);
-
-    // 국내 vs 해외 구분
     const isKorean = assetType === "domestic_stock" || assetType === "domestic_etf";
 
+    setFormCommon({
+      asset_type: assetType,
+      ticker: searchResult.symbol,
+      name: stockName,
+      account_id: defaultAccount?.id || null,
+    });
+
     if (isKorean) {
-      // 국내: 원화 가격 그대로 입력
-      setFormData({
-        ...formData,
-        ticker: searchResult.symbol,
-        name: stockName,
+      setFormRows([{
+        ...createEmptyRow(),
         price: searchResult.price,
-        asset_type: assetType,
-        account_id: defaultAccount?.id || null,
-      });
-      setUsdPriceInput("");
+      }]);
     } else {
-      // 해외: 달러 가격 입력, 최신 환율 적용 (없으면 1450)
       let defaultExchangeRate = 1450;
       if (priceCache?.exchangeRateMap.size) {
         const sortedFxDates = Array.from(priceCache.exchangeRateMap.keys()).sort();
         defaultExchangeRate = Math.round((priceCache.exchangeRateMap.get(sortedFxDates[sortedFxDates.length - 1]) || 1450) * 100) / 100;
       }
-      setUsdPriceInput(searchResult.price.toFixed(2));
-      setFormData({
-        ...formData,
-        ticker: searchResult.symbol,
-        name: stockName,
+      setFormRows([{
+        ...createEmptyRow(),
         price: Math.round(searchResult.price * defaultExchangeRate),
         exchange_rate: defaultExchangeRate,
-        asset_type: assetType,
-        account_id: defaultAccount?.id || null,
-      });
+        usdPrice: searchResult.price.toFixed(2),
+      }]);
     }
 
     setShowAddForm(true);
@@ -696,15 +714,13 @@ export function PortfolioTab({
   const openSellForm = useCallback((holding: PortfolioHolding) => {
     closeHoldingPanel();
     setTimeout(() => {
-      // 해당 종목이 속한 계좌 확인
       const accountIds = tickerAccountMap.get(holding.ticker);
       const autoAccountId = accountIds && accountIds.size === 1
         ? Array.from(accountIds)[0]
         : null;
 
-      // 해외주식인 경우 환율과 달러 단가 계산
       const isForeign = holding.asset_type === "foreign_stock" || holding.asset_type === "foreign_etf";
-      let exchangeRate = 1450; // 기본값
+      let exchangeRate = 1450;
 
       if (isForeign && priceCache?.exchangeRateMap.size) {
         const sortedFxDates = Array.from(priceCache.exchangeRateMap.keys()).sort();
@@ -712,7 +728,6 @@ export function PortfolioTab({
         exchangeRate = Math.round((priceCache.exchangeRateMap.get(latestFxDate) || 1450) * 100) / 100;
       }
 
-      // 현재 시장가가 있으면 시장가, 없으면 평단가 사용
       let currentMarketPrice = 0;
       const tickerPrices = priceCache?.priceDataMap.get(holding.ticker);
       if (tickerPrices && tickerPrices.size > 0) {
@@ -726,24 +741,27 @@ export function PortfolioTab({
       const usdPrice = isForeign
         ? (sellPrice / exchangeRate).toFixed(2)
         : "";
-      setUsdPriceInput(usdPrice);
 
-      // 오늘 날짜 (YYYY-MM-DD)
       const today = new Date().toISOString().split("T")[0];
 
-      setFormData({
-        type: "sell",
+      setFormCommon({
+        asset_type: holding.asset_type,
         ticker: holding.ticker,
         name: holding.name,
-        asset_type: holding.asset_type,
-        currency: holding.currency,
+        account_id: autoAccountId,
+      });
+
+      setFormRows([{
+        id: Math.random().toString(36).slice(2),
+        type: "sell",
+        trade_date: today,
         quantity: holding.quantity,
         price: sellPrice,
         exchange_rate: isForeign ? exchangeRate : undefined,
         fee: 0,
-        account_id: autoAccountId,
-        trade_date: today,
-      });
+        usdPrice: usdPrice,
+      }]);
+
       setShowAddForm(true);
       setEditingId(null);
     }, 300);
@@ -909,62 +927,86 @@ export function PortfolioTab({
     });
   }, [holdings, holdingSort, holdingValues, latestTradeDateMap]);
 
-  // 매도 시 보유 수량 검증용
+  // 매도 시 보유 수량 검증용 (기존 보유 + 배치 내 매수 수량 합산)
   const sellHoldingQuantity = useMemo(() => {
-    if (formData.type !== "sell" || !formData.ticker) return null;
-    const holding = holdings.find((h) => h.ticker === formData.ticker);
-    return holding?.quantity || 0;
-  }, [formData.type, formData.ticker, holdings]);
+    const hasSellRow = formRows.some(row => row.type === "sell");
+    if (!hasSellRow || !formCommon.ticker) return null;
+    const holding = holdings.find((h) => h.ticker === formCommon.ticker);
+    const existing = holding?.quantity || 0;
+    const batchBuyQty = formRows
+      .filter(row => row.type === "buy")
+      .reduce((sum, row) => sum + (row.quantity || 0), 0);
+    return existing + batchBuyQty;
+  }, [formRows, formCommon.ticker, holdings]);
 
-  const isSellQuantityExceeded = formData.type === "sell" &&
+  const totalSellQuantity = formRows.filter(row => row.type === "sell").reduce((sum, row) => sum + (row.quantity || 0), 0);
+
+  const isSellQuantityExceeded = totalSellQuantity > 0 &&
     sellHoldingQuantity !== null &&
-    formData.quantity !== undefined &&
-    formData.quantity > sellHoldingQuantity;
+    totalSellQuantity > sellHoldingQuantity;
+
+  // 거래 총액 계산
+  const grandTotal = formRows.reduce((sum, row) => sum + ((row.quantity || 0) * (row.price || 0)), 0);
+  const grandTotalUsd = isForeignForm ? formRows.reduce((sum, row) => {
+    const usd = row.usdPrice ? parseFloat(row.usdPrice) : 0;
+    return sum + ((row.quantity || 0) * usd);
+  }, 0) : 0;
 
   // 폼 제출
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.ticker || !formData.name || !formData.quantity || !formData.price || !formData.trade_date) {
-      alert("필수 항목을 입력해주세요.");
+    if (!formCommon.ticker || !formCommon.name) {
+      alert("종목 정보를 입력해주세요.");
       return;
     }
 
-    // 매도 시 보유 수량 초과 검증
-    if (formData.type === "sell") {
-      const holding = holdings.find((h) => h.ticker === formData.ticker);
-      const currentQuantity = holding?.quantity || 0;
-      if (formData.quantity > currentQuantity) {
-        alert(`보유 수량(${currentQuantity}주)보다 많이 매도할 수 없습니다.`);
+    // 행별 필수 항목 검증
+    for (const row of formRows) {
+      if (!row.quantity || !row.price || !row.trade_date) {
+        alert("모든 거래 행의 필수 항목을 입력해주세요.");
         return;
       }
     }
 
-    // 총액 계산 (원 단위로 저장)
-    const totalAmount = Math.round(formData.quantity * formData.price);
+    // 매도 시 보유 수량 초과 검증 (기존 보유 + 배치 내 매수 수량 합산)
+    const sellRows = formRows.filter(row => row.type === "sell");
+    if (sellRows.length > 0) {
+      const totalSellQty = sellRows.reduce((sum, row) => sum + (row.quantity || 0), 0);
+      const totalBuyQty = formRows.filter(row => row.type === "buy").reduce((sum, row) => sum + (row.quantity || 0), 0);
+      const holding = holdings.find((h) => h.ticker === formCommon.ticker);
+      const availableQuantity = (holding?.quantity || 0) + totalBuyQty;
+      if (totalSellQty > availableQuantity) {
+        alert(`매도 가능 수량(${availableQuantity}주)을 초과했습니다.`);
+        return;
+      }
+    }
 
-    // 해외주식/해외ETF면 USD, 아니면 KRW
-    const isForeign = formData.asset_type === "foreign_stock" || formData.asset_type === "foreign_etf";
-    const currency = isForeign && formData.exchange_rate && formData.exchange_rate > 1 ? "USD" : "KRW";
-
-    const payload: PortfolioTransactionInput = {
-      profile_id: profileId,
-      account_id: formData.account_id || null,
-      type: formData.type as PortfolioTransactionType,
-      asset_type: formData.asset_type as PortfolioAssetType,
-      ticker: formData.ticker,
-      name: formData.name,
-      quantity: formData.quantity,
-      price: formData.price, // 원화 환산 단가
-      total_amount: totalAmount,
-      currency: currency as PortfolioCurrency,
-      exchange_rate: formData.exchange_rate || 1,
-      fee: formData.fee || 0,
-      trade_date: formData.trade_date,
-      memo: formData.memo || null,
-    };
+    const isForeign = formCommon.asset_type === "foreign_stock" || formCommon.asset_type === "foreign_etf";
 
     if (editingId) {
+      // 수정: 단일 거래
+      const row = formRows[0];
+      const totalAmount = Math.round((row.quantity || 0) * (row.price || 0));
+      const currency = isForeign && row.exchange_rate && row.exchange_rate > 1 ? "USD" : "KRW";
+
+      const payload: PortfolioTransactionInput = {
+        profile_id: profileId,
+        account_id: formCommon.account_id || null,
+        type: row.type,
+        asset_type: formCommon.asset_type,
+        ticker: formCommon.ticker,
+        name: formCommon.name,
+        quantity: row.quantity!,
+        price: row.price!,
+        total_amount: totalAmount,
+        currency: currency as PortfolioCurrency,
+        exchange_rate: row.exchange_rate || 1,
+        fee: row.fee || 0,
+        trade_date: row.trade_date,
+        memo: null,
+      };
+
       const { error } = await supabase
         .from("portfolio_transactions")
         .update(payload)
@@ -976,9 +1018,32 @@ export function PortfolioTab({
         loadTransactions();
       }
     } else {
+      // 추가: 다중 거래
+      const payloads: PortfolioTransactionInput[] = formRows.map((row) => {
+        const totalAmount = Math.round((row.quantity || 0) * (row.price || 0));
+        const currency = isForeign && row.exchange_rate && row.exchange_rate > 1 ? "USD" : "KRW";
+
+        return {
+          profile_id: profileId,
+          account_id: formCommon.account_id || null,
+          type: row.type,
+          asset_type: formCommon.asset_type,
+          ticker: formCommon.ticker,
+          name: formCommon.name,
+          quantity: row.quantity!,
+          price: row.price!,
+          total_amount: totalAmount,
+          currency: currency as PortfolioCurrency,
+          exchange_rate: row.exchange_rate || 1,
+          fee: row.fee || 0,
+          trade_date: row.trade_date,
+          memo: null,
+        };
+      });
+
       const { error } = await supabase
         .from("portfolio_transactions")
-        .insert(payload);
+        .insert(payloads);
 
       if (!error) {
         setShowAddForm(false);
@@ -989,35 +1054,32 @@ export function PortfolioTab({
   };
 
   const resetForm = () => {
-    setFormData({
-      type: "buy",
+    setFormCommon({
       asset_type: "domestic_stock",
-      fee: 0,
+      ticker: "",
+      name: "",
       account_id: selectedAccountIds.length === 1 ? selectedAccountIds[0] : null,
     });
-    setUsdPriceInput("");
+    setFormRows([createEmptyRow()]);
   };
 
   const handleEdit = (tx: PortfolioTransaction) => {
-    setFormData({
-      type: tx.type as PortfolioTransactionType,
+    setFormCommon({
       asset_type: tx.asset_type as PortfolioAssetType,
       ticker: tx.ticker,
       name: tx.name,
-      quantity: tx.quantity,
-      price: tx.price,
-      exchange_rate: tx.exchange_rate || 1,
-      fee: tx.fee,
-      trade_date: tx.trade_date,
-      memo: tx.memo || undefined,
       account_id: tx.account_id,
     });
-    // USD 단가 복원
-    if (tx.exchange_rate && tx.exchange_rate > 1) {
-      setUsdPriceInput((tx.price / tx.exchange_rate).toFixed(2));
-    } else {
-      setUsdPriceInput("");
-    }
+    setFormRows([{
+      id: Math.random().toString(36).slice(2),
+      type: tx.type as PortfolioTransactionType,
+      trade_date: tx.trade_date,
+      quantity: tx.quantity,
+      price: tx.price,
+      exchange_rate: tx.exchange_rate || undefined,
+      fee: tx.fee,
+      usdPrice: tx.exchange_rate && tx.exchange_rate > 1 ? (tx.price / tx.exchange_rate).toFixed(2) : "",
+    }]);
     setEditingId(tx.id);
     setShowAddForm(true);
   };
@@ -1043,6 +1105,26 @@ export function PortfolioTab({
       resetForm();
       setIsModalClosing(false);
     }, 200);
+  };
+
+  // 거래 행 헬퍼
+  const updateRow = (index: number, updates: Partial<FormRow>) => {
+    setFormRows(prev => prev.map((row, i) => i === index ? { ...row, ...updates } : row));
+  };
+
+  const addRow = () => {
+    const lastRow = formRows[formRows.length - 1];
+    setFormRows(prev => [...prev, {
+      ...createEmptyRow(),
+      exchange_rate: lastRow?.exchange_rate,
+    }]);
+  };
+
+  const removeRow = (index: number) => {
+    setFormRows(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length === 0 ? [createEmptyRow()] : next;
+    });
   };
 
   // 거래 내역 로딩 중이거나 가격 데이터 로딩 중이거나 테마 로딩 중일 때 전체 스켈레톤 표시
@@ -1440,32 +1522,21 @@ export function PortfolioTab({
 
             <div className={styles.modalContent}>
               <form onSubmit={handleSubmit} className={styles.form}>
+                {/* 공통: 자산 유형 + 증권 계좌 */}
                 <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label>거래 유형</label>
-                    <div className={styles.toggleGroup}>
-                      <button
-                        type="button"
-                        className={`${styles.toggleBtn} ${formData.type === "buy" ? styles.active : ""}`}
-                        onClick={() => setFormData({ ...formData, type: "buy" })}
-                      >
-                        매수
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.toggleBtn} ${formData.type === "sell" ? styles.activeSell : ""}`}
-                        onClick={() => setFormData({ ...formData, type: "sell" })}
-                      >
-                        매도
-                      </button>
-                    </div>
-                  </div>
-
                   <div className={styles.formGroup}>
                     <label>자산 유형</label>
                     <select
-                      value={formData.asset_type}
-                      onChange={(e) => setFormData({ ...formData, asset_type: e.target.value as PortfolioAssetType })}
+                      value={formCommon.asset_type}
+                      onChange={(e) => {
+                        const newType = e.target.value as PortfolioAssetType;
+                        const wasForeign = isForeignForm;
+                        const nowForeign = newType === "foreign_stock" || newType === "foreign_etf";
+                        setFormCommon({ ...formCommon, asset_type: newType });
+                        if (wasForeign !== nowForeign) {
+                          setFormRows(prev => prev.map(row => ({ ...row, price: undefined, exchange_rate: undefined, usdPrice: "" })));
+                        }
+                      }}
                       className={styles.select}
                     >
                       {Object.entries(ASSET_TYPE_LABELS).map(([value, label]) => (
@@ -1473,67 +1544,12 @@ export function PortfolioTab({
                       ))}
                     </select>
                   </div>
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label>거래일</label>
-                    <div className={styles.dateInputGroup}>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="YYYY"
-                        maxLength={4}
-                        value={formData.trade_date?.split("-")[0] || ""}
-                        onChange={(e) => {
-                          const year = e.target.value.replace(/\D/g, "").slice(0, 4);
-                          const parts = (formData.trade_date || "--").split("-");
-                          setFormData({ ...formData, trade_date: `${year}-${parts[1] || ""}-${parts[2] || ""}` });
-                          if (year.length === 4) {
-                            (e.target.nextElementSibling?.nextElementSibling as HTMLInputElement)?.focus();
-                          }
-                        }}
-                        className={styles.dateInput}
-                      />
-                      <span className={styles.dateSeparator}>-</span>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="MM"
-                        maxLength={2}
-                        value={formData.trade_date?.split("-")[1] || ""}
-                        onChange={(e) => {
-                          const month = e.target.value.replace(/\D/g, "").slice(0, 2);
-                          const parts = (formData.trade_date || "--").split("-");
-                          setFormData({ ...formData, trade_date: `${parts[0] || ""}-${month}-${parts[2] || ""}` });
-                          if (month.length === 2) {
-                            (e.target.nextElementSibling?.nextElementSibling as HTMLInputElement)?.focus();
-                          }
-                        }}
-                        className={styles.dateInput}
-                      />
-                      <span className={styles.dateSeparator}>-</span>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="DD"
-                        maxLength={2}
-                        value={formData.trade_date?.split("-")[2] || ""}
-                        onChange={(e) => {
-                          const day = e.target.value.replace(/\D/g, "").slice(0, 2);
-                          const parts = (formData.trade_date || "--").split("-");
-                          setFormData({ ...formData, trade_date: `${parts[0] || ""}-${parts[1] || ""}-${day}` });
-                        }}
-                        className={styles.dateInput}
-                      />
-                    </div>
-                  </div>
 
                   <div className={styles.formGroup}>
                     <label>증권 계좌</label>
                     <select
-                      value={formData.account_id || ""}
-                      onChange={(e) => setFormData({ ...formData, account_id: e.target.value || null })}
+                      value={formCommon.account_id || ""}
+                      onChange={(e) => setFormCommon({ ...formCommon, account_id: e.target.value || null })}
                       className={styles.select}
                     >
                       <option value="">계좌 미지정</option>
@@ -1546,14 +1562,15 @@ export function PortfolioTab({
                   </div>
                 </div>
 
+                {/* 공통: 종목코드 + 종목명 */}
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label>종목코드 (티커)</label>
                     <input
                       type="text"
                       placeholder="005930.KS, AAPL"
-                      value={formData.ticker || ""}
-                      onChange={(e) => setFormData({ ...formData, ticker: e.target.value })}
+                      value={formCommon.ticker}
+                      onChange={(e) => setFormCommon({ ...formCommon, ticker: e.target.value })}
                       className={styles.input}
                     />
                   </div>
@@ -1563,185 +1580,156 @@ export function PortfolioTab({
                     <input
                       type="text"
                       placeholder="삼성전자, Apple"
-                      value={formData.name || ""}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      value={formCommon.name}
+                      onChange={(e) => setFormCommon({ ...formCommon, name: e.target.value })}
                       className={styles.input}
                     />
                   </div>
                 </div>
 
-                {/* 해외주식/ETF: 달러 단가 + 환율 */}
-                {(formData.asset_type === "foreign_stock" || formData.asset_type === "foreign_etf") ? (
-                  <>
-                    <div className={styles.formRow}>
-                      <div className={styles.formGroup}>
-                        <label>
-                          수량
-                          {formData.type === "sell" && sellHoldingQuantity !== null && (
-                            <span className={styles.holdingHint}> (보유: {sellHoldingQuantity})</span>
-                          )}
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="10"
-                          value={formData.quantity ?? ""}
-                          onChange={(e) => setFormData({ ...formData, quantity: e.target.value ? parseFloat(e.target.value) : undefined })}
-                          onWheel={(e) => (e.target as HTMLElement).blur()}
-                          className={`${styles.input} ${isSellQuantityExceeded ? styles.inputError : ""}`}
-                        />
-                        {isSellQuantityExceeded && (
-                          <span className={styles.errorHint}>보유 수량 초과</span>
-                        )}
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>단가 ($)</label>
-                        <input
-                          type="number"
-                          placeholder="68.50"
-                          step="0.01"
-                          value={usdPriceInput}
-                          onChange={(e) => {
-                            setUsdPriceInput(e.target.value);
-                            const usdPrice = e.target.value ? parseFloat(e.target.value) : 0;
-                            const rate = formData.exchange_rate || 1450;
-                            setFormData({ ...formData, price: usdPrice ? Math.round(usdPrice * rate) : undefined, exchange_rate: rate });
-                          }}
-                          onWheel={(e) => (e.target as HTMLElement).blur()}
-                          className={styles.input}
-                        />
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>환율 (원/$)</label>
-                        <input
-                          type="number"
-                          placeholder="1450"
-                          value={formData.exchange_rate ?? ""}
-                          onChange={(e) => {
-                            const newRate = e.target.value ? parseFloat(e.target.value) : undefined;
-                            const usdPrice = usdPriceInput ? parseFloat(usdPriceInput) : 0;
-                            setFormData({
-                              ...formData,
-                              exchange_rate: newRate,
-                              price: newRate && usdPrice ? Math.round(usdPrice * newRate) : undefined
-                            });
-                          }}
-                          onWheel={(e) => (e.target as HTMLElement).blur()}
-                          className={styles.input}
-                        />
-                      </div>
-                    </div>
-
-                    <div className={styles.formRow}>
-                      <div className={styles.formGroup}>
-                        <label>원화 환산 단가</label>
-                        <input
-                          type="text"
-                          value={formData.price ? `${Math.round(formData.price).toLocaleString()}원` : ""}
-                          readOnly
-                          className={styles.input}
-                          style={{ background: "var(--dashboard-hover-bg)" }}
-                        />
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>수수료 (원)</label>
-                        <input
-                          type="number"
-                          placeholder="0"
-                          value={formData.fee ?? ""}
-                          onChange={(e) => setFormData({ ...formData, fee: e.target.value ? parseFloat(e.target.value) : undefined })}
-                          onWheel={(e) => (e.target as HTMLElement).blur()}
-                          className={styles.input}
-                        />
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>메모 (선택)</label>
-                        <input
-                          type="text"
-                          placeholder="메모"
-                          value={formData.memo || ""}
-                          onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
-                          className={styles.input}
-                        />
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {/* 국내주식/암호화폐: 원화 단가 */}
-                    <div className={styles.formRow}>
-                      <div className={styles.formGroup}>
-                        <label>
-                          수량
-                          {formData.type === "sell" && sellHoldingQuantity !== null && (
-                            <span className={styles.holdingHint}> (보유: {sellHoldingQuantity})</span>
-                          )}
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="10"
-                          value={formData.quantity ?? ""}
-                          onChange={(e) => setFormData({ ...formData, quantity: e.target.value ? parseFloat(e.target.value) : undefined })}
-                          onWheel={(e) => (e.target as HTMLElement).blur()}
-                          className={`${styles.input} ${isSellQuantityExceeded ? styles.inputError : ""}`}
-                        />
-                        {isSellQuantityExceeded && (
-                          <span className={styles.errorHint}>보유 수량 초과</span>
-                        )}
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>단가 (원)</label>
-                        <input
-                          type="number"
-                          placeholder="70000"
-                          value={formData.price ?? ""}
-                          onChange={(e) => setFormData({ ...formData, price: e.target.value ? parseFloat(e.target.value) : undefined })}
-                          onWheel={(e) => (e.target as HTMLElement).blur()}
-                          className={styles.input}
-                        />
-                      </div>
-                    </div>
-
-                    <div className={styles.formRow}>
-                      <div className={styles.formGroup}>
-                        <label>수수료 (원)</label>
-                        <input
-                          type="number"
-                          placeholder="0"
-                          value={formData.fee ?? ""}
-                          onChange={(e) => setFormData({ ...formData, fee: e.target.value ? parseFloat(e.target.value) : undefined })}
-                          onWheel={(e) => (e.target as HTMLElement).blur()}
-                          className={styles.input}
-                        />
-                      </div>
-
-                      <div className={styles.formGroup} style={{ flex: 2 }}>
-                        <label>메모 (선택)</label>
-                        <input
-                          type="text"
-                          placeholder="메모"
-                          value={formData.memo || ""}
-                          onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
-                          className={styles.input}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* 총액 미리보기 */}
-                {formData.quantity && formData.price && (
-                  <div className={styles.totalPreview}>
-                    총 거래금액: {Math.round(formData.quantity * formData.price).toLocaleString()}원
-                    {(formData.asset_type === "foreign_stock" || formData.asset_type === "foreign_etf") && formData.exchange_rate && formData.exchange_rate > 1 && (
-                      <span className={styles.usdAmount}>
-                        {" "}(${(formData.quantity * formData.price / formData.exchange_rate).toFixed(2)})
-                      </span>
+                {/* 거래 행 리스트 */}
+                <div className={styles.txRowList}>
+                  {/* 헤더 */}
+                  <div className={styles.txRowHeader}>
+                    <span className={`${styles.txRowHeaderCell} ${styles.colType}`}>유형</span>
+                    <span className={`${styles.txRowHeaderCell} ${styles.colDate}`}>거래일</span>
+                    <span className={`${styles.txRowHeaderCell} ${styles.colQty}`}>
+                      수량
+                      {sellHoldingQuantity !== null && (
+                        <span className={styles.holdingHint}> (보유: {sellHoldingQuantity})</span>
+                      )}
+                    </span>
+                    {isForeignForm ? (
+                      <>
+                        <span className={`${styles.txRowHeaderCell} ${styles.colPrice}`}>단가 ($)</span>
+                        <span className={`${styles.txRowHeaderCell} ${styles.colFx}`}>환율</span>
+                      </>
+                    ) : (
+                      <span className={`${styles.txRowHeaderCell} ${styles.colPrice}`}>단가 (원)</span>
                     )}
+                    <span className={`${styles.txRowHeaderCell} ${styles.colFee}`}>수수료</span>
+                    <span className={styles.colAction}></span>
+                  </div>
+
+                  {/* 행들 */}
+                  {formRows.map((row, index) => (
+                    <div key={row.id} className={styles.txRowItem}>
+                      <div className={styles.colType}>
+                        <div className={styles.typeToggle}>
+                          <button
+                            type="button"
+                            className={`${styles.typeToggleBtn} ${row.type === "buy" ? styles.typeToggleBuyActive : ""}`}
+                            onClick={() => updateRow(index, { type: "buy" })}
+                          >
+                            매수
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.typeToggleBtn} ${row.type === "sell" ? styles.typeToggleSellActive : ""}`}
+                            onClick={() => updateRow(index, { type: "sell" })}
+                          >
+                            매도
+                          </button>
+                        </div>
+                      </div>
+                      <div className={styles.colDate}>
+                        <input
+                          type="date"
+                          value={row.trade_date}
+                          onChange={(e) => updateRow(index, { trade_date: e.target.value })}
+                          className={styles.txRowInput}
+                        />
+                      </div>
+                      <div className={styles.colQty}>
+                        <input
+                          type="number"
+                          placeholder="10"
+                          value={row.quantity ?? ""}
+                          onChange={(e) => updateRow(index, { quantity: e.target.value ? parseFloat(e.target.value) : undefined })}
+                          onWheel={(e) => (e.target as HTMLElement).blur()}
+                          className={styles.txRowInput}
+                        />
+                      </div>
+                      {isForeignForm ? (
+                        <>
+                          <div className={styles.colPrice}>
+                            <input
+                              type="number"
+                              placeholder="68.50"
+                              step="0.01"
+                              value={row.usdPrice}
+                              onChange={(e) => {
+                                const usdVal = e.target.value ? parseFloat(e.target.value) : 0;
+                                const rate = row.exchange_rate || 1450;
+                                updateRow(index, {
+                                  usdPrice: e.target.value,
+                                  price: usdVal ? Math.round(usdVal * rate) : undefined,
+                                });
+                              }}
+                              onWheel={(e) => (e.target as HTMLElement).blur()}
+                              className={styles.txRowInput}
+                            />
+                          </div>
+                          <div className={styles.colFx}>
+                            <input
+                              type="number"
+                              placeholder="1450"
+                              value={row.exchange_rate ?? ""}
+                              onChange={(e) => {
+                                const newRate = e.target.value ? parseFloat(e.target.value) : undefined;
+                                const usdVal = row.usdPrice ? parseFloat(row.usdPrice) : 0;
+                                updateRow(index, {
+                                  exchange_rate: newRate,
+                                  price: newRate && usdVal ? Math.round(usdVal * newRate) : undefined,
+                                });
+                              }}
+                              onWheel={(e) => (e.target as HTMLElement).blur()}
+                              className={styles.txRowInput}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <div className={styles.colPrice}>
+                          <input
+                            type="number"
+                            placeholder="70000"
+                            value={row.price ?? ""}
+                            onChange={(e) => updateRow(index, { price: e.target.value ? parseFloat(e.target.value) : undefined })}
+                            onWheel={(e) => (e.target as HTMLElement).blur()}
+                            className={styles.txRowInput}
+                          />
+                        </div>
+                      )}
+                      <div className={styles.colFee}>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          value={row.fee ?? ""}
+                          onChange={(e) => updateRow(index, { fee: e.target.value ? parseFloat(e.target.value) : undefined })}
+                          onWheel={(e) => (e.target as HTMLElement).blur()}
+                          className={styles.txRowInput}
+                        />
+                      </div>
+                      <div className={styles.colAction}>
+                        <button type="button" onClick={() => removeRow(index)} className={styles.removeRowBtn}>
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* 행 추가 버튼 (수정 모드가 아닐 때만) */}
+                  {!editingId && (
+                    <button type="button" onClick={addRow} className={styles.addRowBtn}>
+                      + 거래 추가
+                    </button>
+                  )}
+                </div>
+
+                {/* 매도 시 보유 수량 초과 경고 */}
+                {isSellQuantityExceeded && (
+                  <div className={styles.errorHint} style={{ textAlign: "center" }}>
+                    매도 가능 수량({sellHoldingQuantity}주)을 초과했습니다.
                   </div>
                 )}
 

@@ -576,6 +576,17 @@
   height: 100%;
 }
 
+/* 가계부 등 전체 높이 사용 */
+.fullHeight {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 가계부 등 스크롤 없이 전체 높이 사용 */
+.noScroll {
+  overflow: hidden !important;
+}
+
 /* 핵심 지표 카드 */
 .metricsGrid {
   display: grid;

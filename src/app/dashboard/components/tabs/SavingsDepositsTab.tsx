@@ -226,12 +226,6 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
   if (isLoading) {
     return (
       <div className={styles.container}>
-        {/* 계좌 바 스켈레톤 */}
-        <div className={styles.accountBar}>
-          {[1, 2, 3].map((i) => (
-            <div key={i} className={`${styles.skeleton} ${styles.skeletonAccountItem}`} />
-          ))}
-        </div>
         {/* 요약 헤더 스켈레톤 */}
         <div className={styles.summaryHeader}>
           <div className={styles.mainMetric}>
@@ -263,38 +257,6 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
 
   return (
     <div className={styles.container}>
-      {/* 상단 계좌 바 */}
-      <div className={styles.accountBar}>
-        {/* 전체 */}
-        <button className={`${styles.accountItem} ${styles.accountItemSelected}`}>
-          <span className={styles.accountItemName}>전체</span>
-          <div className={styles.accountItemValues}>
-            <span className={styles.accountItemBalance}>{formatWon(totalCurrentValue)}</span>
-            <span className={`${styles.accountItemChange} ${styles.positive}`}>
-              +{formatWon(totalInterest)}
-            </span>
-          </div>
-        </button>
-        <div className={styles.accountDivider} />
-        {/* 개별 계좌들 */}
-        {accounts.length === 0 ? (
-          <span className={styles.noAccountsText}>등록된 예적금 없음</span>
-        ) : (
-          accounts.map((account) => {
-            const interest = calculateTermDepositValue(account) - getTermDepositPrincipal(account);
-            return (
-              <div key={account.id} className={styles.accountItem}>
-                <span className={styles.accountItemName}>{account.name}</span>
-                <div className={styles.accountItemValues}>
-                  <span className={styles.accountItemBalance}>{formatWon(calculateTermDepositValue(account))}</span>
-                  <span className={`${styles.accountItemChange} ${styles.positive}`}>+{formatWon(interest)}</span>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-
       {/* 요약 헤더 */}
       <div className={styles.summaryHeader}>
         <div className={styles.mainMetric}>

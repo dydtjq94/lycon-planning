@@ -180,6 +180,8 @@ export async function upsertResidenceRealEstate(
     loan_repayment_type?: LoanRepaymentType | null
     grace_end_year?: number | null
     grace_end_month?: number | null
+    sell_year?: number | null
+    sell_month?: number | null
   }
 ): Promise<RealEstate | null> {
   const supabase = createClient()
@@ -233,6 +235,8 @@ export async function upsertResidenceRealEstate(
     loan_repayment_type: input.loan_repayment_type,
     grace_end_year: input.grace_end_year,
     grace_end_month: input.grace_end_month,
+    sell_year: input.sell_year,
+    sell_month: input.sell_month,
   }
 
   if (existing) {

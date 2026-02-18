@@ -9,13 +9,13 @@ import {
   Landmark, Home, Briefcase, GraduationCap, Plane, Heart,
   TrendingUp, Wallet, PiggyBank, Shield, Target, Umbrella,
   Baby, Car, Gem, Building2, Palmtree, Rocket, Star, Coffee,
-  ListOrdered, Percent, Users, CalendarClock,
+  ListOrdered, Percent, Users, CalendarClock, Play,
   type LucideIcon,
 } from "lucide-react";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { AccountManagementModal } from "./components/AccountManagementModal";
 import { CategoryManagementModal } from "./components/CategoryManagementModal";
-import { AccountsSummaryPanel, SimulationAssumptionsPanel, CashFlowPrioritiesPanel, FamilyConfigPanel, LifeCyclePanel } from "./components/tabs/scenario";
+import { SimulationAssumptionsPanel, CashFlowPrioritiesPanel, FamilyConfigPanel, LifeCyclePanel, StartPointPanel } from "./components/tabs/scenario";
 import { useFinancialContext, type FamilyMember } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
@@ -144,10 +144,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   const [editSimTitle, setEditSimTitle] = useState("");
   const [showIconPicker, setShowIconPicker] = useState(false);
   const iconPickerRef = useRef<HTMLDivElement>(null);
-  const [showAccountsPanel, setShowAccountsPanel] = useState(false);
-  const [accountsPanelRect, setAccountsPanelRect] = useState<{ top: number; left: number } | null>(null);
-  const accountsPanelBtnRef = useRef<HTMLButtonElement>(null);
-  const accountsPanelRef = useRef<HTMLDivElement>(null);
+  const [showStartPointPanel, setShowStartPointPanel] = useState(false);
+  const [startPointRect, setStartPointRect] = useState<{ top: number; left: number } | null>(null);
+  const startPointBtnRef = useRef<HTMLButtonElement>(null);
+  const startPointRef = useRef<HTMLDivElement>(null);
 
   const [showAssumptionsPanel, setShowAssumptionsPanel] = useState(false);
   const [assumptionsPanelRect, setAssumptionsPanelRect] = useState<{ top: number; left: number } | null>(null);
@@ -320,19 +320,19 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Accounts panel click-outside handler
+  // Start point panel click-outside handler
   useEffect(() => {
-    if (!showAccountsPanel) return;
+    if (!showStartPointPanel) return;
     const handleClick = (e: MouseEvent) => {
       if (
-        accountsPanelRef.current && !accountsPanelRef.current.contains(e.target as Node) &&
-        accountsPanelBtnRef.current && !accountsPanelBtnRef.current.contains(e.target as Node)
+        startPointRef.current && !startPointRef.current.contains(e.target as Node) &&
+        startPointBtnRef.current && !startPointBtnRef.current.contains(e.target as Node)
       ) {
-        setShowAccountsPanel(false);
+        setShowStartPointPanel(false);
       }
     };
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowAccountsPanel(false);
+      if (e.key === "Escape") setShowStartPointPanel(false);
     };
     document.addEventListener("mousedown", handleClick);
     document.addEventListener("keydown", handleEsc);
@@ -340,7 +340,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       document.removeEventListener("mousedown", handleClick);
       document.removeEventListener("keydown", handleEsc);
     };
-  }, [showAccountsPanel]);
+  }, [showStartPointPanel]);
 
   // Assumptions panel click-outside handler
   useEffect(() => {
@@ -675,9 +675,12 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   const simulationResult: SimulationResult = useMemo(() => {
     const simulationEndYear = calculateEndYear(
       simulationProfile.birthYear,
-      simulationProfile.spouseBirthYear
+      simulationProfile.spouseBirthYear,
+      lifeCycleSettings.selfLifeExpectancy,
+      lifeCycleSettings.spouseLifeExpectancy
     );
-    const yearsToSimulate = simulationEndYear - new Date().getFullYear();
+    const simStartYear = activeSim.start_year || new Date().getFullYear();
+    const yearsToSimulate = simulationEndYear - simStartYear;
     return runSimulationV2(
       v2Data,
       {
@@ -688,9 +691,11 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       },
       yearsToSimulate,
       simulationAssumptions,
-      cashFlowPriorities
+      cashFlowPriorities,
+      activeSim.start_year,
+      activeSim.start_month,
     );
-  }, [v2Data, simulationProfile, lifeCycleSettings, simulationAssumptions, cashFlowPriorities]);
+  }, [v2Data, simulationProfile, lifeCycleSettings, simulationAssumptions, cashFlowPriorities, activeSim.start_year, activeSim.start_month]);
 
   // 레거시 CRUD 스텁 함수 (실제 업데이트는 개별 서비스 사용)
   const addItem = useCallback(
@@ -1096,19 +1101,19 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                 </button>
                 <div className={styles.simHeaderDivider} />
                 <button
-                  ref={accountsPanelBtnRef}
+                  ref={startPointBtnRef}
                   className={styles.simHeaderAction}
                   onClick={() => {
-                    if (accountsPanelBtnRef.current) {
-                      const rect = accountsPanelBtnRef.current.getBoundingClientRect();
-                      setAccountsPanelRect({ top: rect.bottom + 6, left: rect.left });
+                    if (startPointBtnRef.current) {
+                      const rect = startPointBtnRef.current.getBoundingClientRect();
+                      setStartPointRect({ top: rect.bottom + 6, left: rect.left });
                     }
-                    setShowAccountsPanel(!showAccountsPanel);
+                    setShowStartPointPanel(!showStartPointPanel);
                   }}
                   type="button"
-                  data-tooltip={showAccountsPanel ? undefined : "계좌"}
+                  data-tooltip={showStartPointPanel ? undefined : "시작 시점"}
                 >
-                  <Wallet size={15} />
+                  <Play size={15} />
                 </button>
                 <button
                   ref={assumptionsPanelBtnRef}
@@ -1287,27 +1292,37 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           </div>
         </header>
 
-        {showAccountsPanel && accountsPanelRect && currentSection === "simulation" && selectedSim && (
+        {showStartPointPanel && startPointRect && currentSection === "simulation" && selectedSim && (
           <div
-            ref={accountsPanelRef}
+            ref={startPointRef}
             className={styles.accountsPanelDropdown}
             style={{
               position: 'fixed',
-              top: accountsPanelRect.top,
-              left: accountsPanelRect.left,
+              top: startPointRect.top,
+              left: startPointRect.left,
               background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
               backdropFilter: 'blur(8px)',
               WebkitBackdropFilter: 'blur(8px)',
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
               zIndex: 200,
+              width: 260,
             }}
           >
-            <AccountsSummaryPanel
-              simulationId={selectedSimulationId}
-              profileId={profile.id}
-              isMarried={isMarried}
-              isInitializing={initializingSimulationId === selectedSimulationId}
-              isSyncingPrices={syncingPricesSimulationId === selectedSimulationId}
+            <StartPointPanel
+              startYear={selectedSim.start_year ?? null}
+              startMonth={selectedSim.start_month ?? null}
+              onSave={async (year: number | null, month: number | null) => {
+                try {
+                  await simulationService.update(selectedSim.id, {
+                    start_year: year,
+                    start_month: month,
+                  });
+                  await queryClient.invalidateQueries({ queryKey: ["simulations"] });
+                  setShowStartPointPanel(false);
+                } catch (err) {
+                  console.error('Failed to update start point:', err);
+                }
+              }}
             />
           </div>
         )}
@@ -1405,8 +1420,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           </div>
         )}
 
-        <div className={`${styles.content} ${currentSection === "simulation" ? styles.noPadding : ""}`}>
-          <div key={currentSection} className={`${styles.contentInner} ${currentSection === "simulation" ? styles.fullWidth : ""}`}>{renderContent()}</div>
+        <div className={`${styles.content} ${currentSection === "simulation" ? styles.noPadding : ""} ${currentSection === "household-budget" ? `${styles.noPadding} ${styles.noScroll}` : ""}`}>
+          <div key={currentSection} className={`${styles.contentInner} ${currentSection === "simulation" || currentSection === "household-budget" ? styles.fullWidth : ""} ${currentSection === "household-budget" ? styles.fullHeight : ""}`}>{renderContent()}</div>
         </div>
       </main>
 

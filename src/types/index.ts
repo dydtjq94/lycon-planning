@@ -7,6 +7,7 @@ export type CashFlowType =
   | "savings_interest" // 저축 이자/배당 수익
   | "pension_contribution" // 연금 적립
   | "pension_withdrawal" // 연금 수령
+  | "pension_lump_sum" // 연금/퇴직금 일시금 수령
   | "debt_interest" // 대출 이자
   | "debt_principal" // 원금 상환
   | "real_estate_purchase" // 부동산 구매
@@ -116,6 +117,8 @@ export type DashboardIncomeType =
 export type DashboardEndType =
   | "self-retirement"
   | "spouse-retirement"
+  | "self-life-expectancy"
+  | "spouse-life-expectancy"
   | "custom";
 export type DashboardIncomeFrequency = "monthly" | "yearly";
 
@@ -187,6 +190,7 @@ export interface DashboardExpenseItem {
   label: string;
   amount: number; // 만원 (frequency에 따라 월/년)
   frequency: DashboardExpenseFrequency; // 지출 주기 (월/년)
+  owner: 'self' | 'spouse' | 'common';
   startYear: number;
   startMonth: number; // 1-12
   endType: DashboardEndType;
@@ -598,14 +602,29 @@ export const DEFAULT_SIMULATION_ASSUMPTIONS: SimulationAssumptions = {
 
 export type CashFlowAccountCategory = "savings" | "pension" | "debt";
 
+// 잉여금 배분 모드
+export type SurplusAllocationMode = "allocate" | "maintain_balance";
+
 // 잉여금 배분 규칙 (특정 계좌 단위)
 export interface SurplusAllocationRule {
   id: string;
   targetId: string; // DB row ID (savings.id, pensions.id, debts.id)
   targetCategory: CashFlowAccountCategory;
   targetName: string; // UI 표시용
-  annualLimit?: number; // 연간 최대 한도 (만원). undefined = 나머지 전부
   priority: number; // 낮을수록 먼저 (1, 2, 3...)
+  mode: SurplusAllocationMode; // 적립 or 잔액유지
+
+  // 적립 모드 (allocate)
+  annualLimit?: number; // 연간 최대 한도 (만원). undefined = 나머지 전부
+
+  // 잔액 유지 모드 (maintain_balance)
+  targetBalance?: number; // 목표 잔액 (만원). 이 금액 이하면 채움
+
+  // 기간 설정 (optional - 미설정 시 항상 적용)
+  startYear?: number;
+  startMonth?: number; // 1-12
+  endYear?: number;
+  endMonth?: number; // 1-12
 }
 
 // 인출 순서 규칙 (특정 계좌 단위)
@@ -677,6 +696,8 @@ export interface Simulation {
   cash_flow_priorities?: CashFlowPriorities;
   life_cycle_settings?: LifeCycleSettings;
   family_config?: SimFamilyMember[];
+  start_year?: number | null;
+  start_month?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -946,6 +967,8 @@ export interface SimulationInput {
   cash_flow_priorities?: CashFlowPriorities;
   life_cycle_settings?: LifeCycleSettings;
   family_config?: SimFamilyMember[];
+  start_year?: number | null;
+  start_month?: number | null;
 }
 
 // ============================================

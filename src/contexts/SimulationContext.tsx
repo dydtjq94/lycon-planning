@@ -184,7 +184,9 @@ export function SimulationProvider({
         profile,
         50, // 50년 시뮬레이션
         simulationAssumptions,
-        cashFlowPriorities
+        cashFlowPriorities,
+        currentSimulation.start_year,
+        currentSimulation.start_month,
       );
 
       // 요청이 취소되었는지 확인

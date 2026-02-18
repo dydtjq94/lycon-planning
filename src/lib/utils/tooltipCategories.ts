@@ -118,7 +118,7 @@ export const INCOME_CATEGORIES: IncomeCategory[] = [
     id: 'pension',
     label: '연금소득',
     color: CHART_COLORS.income.pension,
-    keywords: ['연금', '국민연금', '퇴직연금', '개인연금', '공무원연금'],
+    keywords: ['연금', '공적연금', '국민연금', '퇴직연금', '개인연금', '공무원연금', '군인연금', '사학연금'],
   },
   {
     id: 'rental',
@@ -647,7 +647,7 @@ export interface CashFlowCategory {
 
 export const INFLOW_CATEGORIES: CashFlowCategory[] = [
   { id: 'income', label: '소득', color: CHART_COLORS.income.labor, flowTypes: ['income'] },
-  { id: 'pension_withdrawal', label: '연금 수령', color: CHART_COLORS.asset.pension, flowTypes: ['pension_withdrawal'] },
+  { id: 'pension_withdrawal', label: '연금 수령', color: CHART_COLORS.asset.pension, flowTypes: ['pension_withdrawal', 'pension_lump_sum'] },
   { id: 'savings_withdrawal', label: '저축/투자 인출', color: CHART_COLORS.asset.savings, flowTypes: ['savings_withdrawal', 'savings_interest'] },
   { id: 'real_estate', label: '부동산', color: CHART_COLORS.asset.realEstate, flowTypes: ['real_estate_sale', 'rental_income'] },
   { id: 'asset_sale', label: '자산 매각', color: CHART_COLORS.asset.tangible, flowTypes: ['asset_sale'] },

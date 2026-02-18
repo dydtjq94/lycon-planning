@@ -54,6 +54,8 @@ interface AssetStackChartProps {
   selectedYear?: number | null
   headerAction?: React.ReactNode
   monthlySnapshots?: MonthlySnapshot[]
+  selfLifeExpectancy?: number
+  spouseLifeExpectancy?: number
 }
 
 
@@ -68,6 +70,8 @@ export function AssetStackChart({
   selectedYear,
   headerAction,
   monthlySnapshots,
+  selfLifeExpectancy,
+  spouseLifeExpectancy,
 }: AssetStackChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<ChartJS | null>(null)
@@ -153,7 +157,7 @@ export function AssetStackChart({
       const netColor = netWorth >= 0 ? '#10b981' : '#ef4444'
       const netPrefix = netWorth >= 0 ? '' : '-'
       const totalAssets = ms.financialAssets + ms.realEstateValue + ms.pensionAssets + (ms.physicalAssetValue || 0)
-      const ageText = getAgeText(ms.year, birthYear, spouseBirthYear)
+      const ageText = getAgeText(ms.year, birthYear, spouseBirthYear, selfLifeExpectancy, spouseLifeExpectancy)
 
       // 자산 카테고리별 그룹핑 (연간 모드와 동일)
       const allAssetItems = [
@@ -236,7 +240,7 @@ export function AssetStackChart({
     const totalAssets = snapshot.financialAssets + snapshot.realEstateValue + snapshot.pensionAssets + (snapshot.physicalAssetValue || 0)
 
     // 나이 텍스트
-    const ageText = getAgeText(snapshot.year, birthYear, spouseBirthYear)
+    const ageText = getAgeText(snapshot.year, birthYear, spouseBirthYear, selfLifeExpectancy, spouseLifeExpectancy)
 
     // 자산 카테고리별 그룹핑 (assetBreakdown + pensionBreakdown 합쳐서)
     const allAssetItems = [...snapshot.assetBreakdown, ...snapshot.pensionBreakdown]
@@ -294,7 +298,7 @@ export function AssetStackChart({
     `
 
     positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
-  }, [chartData.snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlyChartData])
+  }, [chartData.snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlyChartData, selfLifeExpectancy, spouseLifeExpectancy])
 
   // 마우스 추적 + 호버 라인 + 언마운트 정리
   useEffect(() => {
@@ -433,6 +437,34 @@ export function AssetStackChart({
           content: '배우자 은퇴',
           position: 'start' as const,
           backgroundColor: 'rgba(148, 163, 184, 0.8)',
+          color: '#fff',
+          font: { size: 10, weight: 'bold' as const },
+          padding: { x: 5, y: 3 },
+          borderRadius: 4,
+        },
+      }
+    }
+
+    // 금융자산 소진 (마이너스 통장 시작) 라인
+    const overdraftStartIndex = isMonthlyMode && monthlyChartData
+      ? monthlyChartData.snapshots.findIndex(ms =>
+          ms.debtBreakdown?.some(d => d.title === '마이너스 통장'))
+      : chartData.snapshots.findIndex(s =>
+          s.debtBreakdown?.some(d => d.title === '마이너스 통장'))
+
+    if (overdraftStartIndex >= 0) {
+      annotationsConfig.overdraftLine = {
+        type: 'line',
+        xMin: overdraftStartIndex,
+        xMax: overdraftStartIndex,
+        borderColor: 'rgba(239, 68, 68, 0.6)',
+        borderWidth: 1.5,
+        borderDash: [4, 4],
+        label: {
+          display: true,
+          content: '금융자산 소진',
+          position: 'end' as const,
+          backgroundColor: 'rgba(239, 68, 68, 0.8)',
           color: '#fff',
           font: { size: 10, weight: 'bold' as const },
           padding: { x: 5, y: 3 },

@@ -54,7 +54,7 @@ export function PensionSummary({
         // 국민연금 (65세 이상)
         if (age >= nationalPensionData.self.startAge) {
           monthly += nationalPensionData.self.monthly
-          if (nationalPensionData.self.monthly > 0) sources.push('국민연금')
+          if (nationalPensionData.self.monthly > 0) sources.push('공적연금')
         }
         if (nationalPensionData.spouse && age >= nationalPensionData.spouse.startAge) {
           monthly += nationalPensionData.spouse.monthly
@@ -129,7 +129,7 @@ export function PensionSummary({
     if (totalPensionProjection) {
       const nationalTotal = totalPensionProjection.nationalPension.monthly
       if (nationalTotal > 0) {
-        data.push({ label: '국민연금', value: nationalTotal, color: '#5856d6' })
+        data.push({ label: '공적연금', value: nationalTotal, color: '#5856d6' })
       }
 
       const retirementMonthly = totalPensionProjection.retirement.isAnnuity
@@ -146,10 +146,10 @@ export function PensionSummary({
     } else {
       // fallback: nationalPensionData 사용
       if (nationalPensionData.self.monthly > 0) {
-        data.push({ label: '국민연금', value: nationalPensionData.self.monthly, color: '#5856d6' })
+        data.push({ label: '공적연금', value: nationalPensionData.self.monthly, color: '#5856d6' })
       }
       if (nationalPensionData.spouse && nationalPensionData.spouse.monthly > 0) {
-        data.push({ label: '배우자 국민연금', value: nationalPensionData.spouse.monthly, color: '#8e8ee5' })
+        data.push({ label: '배우자 공적연금', value: nationalPensionData.spouse.monthly, color: '#8e8ee5' })
       }
     }
 
@@ -275,7 +275,7 @@ export function PensionSummary({
         </div>
         <div className={styles.subValues}>
           <div className={styles.subValueItem}>
-            <span className={styles.subLabel}>국민연금</span>
+            <span className={styles.subLabel}>공적연금</span>
             <span className={styles.subValue}>{formatMoney(totalPensionProjection?.nationalPension.monthly || (nationalPensionData.self.monthly + (nationalPensionData.spouse?.monthly || 0)))}/월</span>
           </div>
           {totalPensionProjection?.retirement.isAnnuity && (
@@ -295,13 +295,13 @@ export function PensionSummary({
       <div className={styles.breakdownCard}>
         <h4 className={styles.cardTitle}>연금 상세</h4>
         <div className={styles.breakdownList}>
-          {/* 본인 국민연금 */}
+          {/* 본인 공적연금 */}
           {nationalPensionData.self.monthly > 0 && (
             <>
               <div className={styles.breakdownItem}>
                 <div className={styles.breakdownInfo}>
                   <span className={styles.breakdownDot} style={{ background: '#5856d6' }}></span>
-                  <span className={styles.breakdownLabel}>본인 국민연금</span>
+                  <span className={styles.breakdownLabel}>본인 공적연금</span>
                 </div>
                 <div className={styles.breakdownValues}>
                   <span className={styles.breakdownAmount}>{formatMoney(nationalPensionData.self.monthly)}/월</span>
@@ -313,13 +313,13 @@ export function PensionSummary({
             </>
           )}
 
-          {/* 배우자 국민연금 */}
+          {/* 배우자 공적연금 */}
           {nationalPensionData.spouse && nationalPensionData.spouse.monthly > 0 && (
             <>
               <div className={styles.breakdownItem}>
                 <div className={styles.breakdownInfo}>
                   <span className={styles.breakdownDot} style={{ background: '#8e8ee5' }}></span>
-                  <span className={styles.breakdownLabel}>배우자 국민연금</span>
+                  <span className={styles.breakdownLabel}>배우자 공적연금</span>
                 </div>
                 <div className={styles.breakdownValues}>
                   <span className={styles.breakdownAmount}>{formatMoney(nationalPensionData.spouse.monthly)}/월</span>

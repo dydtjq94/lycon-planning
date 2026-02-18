@@ -42,18 +42,20 @@ export const ASSET_LABELS = {
 } as const
 
 /**
- * 시뮬레이션 종료 연도 계산 (본인/배우자 100세 중 늦은 것)
+ * 시뮬레이션 종료 연도 계산 (본인/배우자 기대수명 중 늦은 것)
  */
 export function calculateEndYear(
   birthYear: number,
-  spouseBirthYear?: number | null
+  spouseBirthYear?: number | null,
+  selfLifeExpectancy: number = 100,
+  spouseLifeExpectancy?: number | null
 ): number {
-  const selfAge100Year = birthYear + 100
+  const selfEndYear = birthYear + selfLifeExpectancy
   if (spouseBirthYear) {
-    const spouseAge100Year = spouseBirthYear + 100
-    return Math.max(selfAge100Year, spouseAge100Year)
+    const spouseEnd = spouseBirthYear + (spouseLifeExpectancy ?? selfLifeExpectancy)
+    return Math.max(selfEndYear, spouseEnd)
   }
-  return selfAge100Year
+  return selfEndYear
 }
 
 /**

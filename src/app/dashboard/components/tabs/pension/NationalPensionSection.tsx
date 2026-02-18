@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Pencil, Trash2, X } from 'lucide-react'
+import { Trash2, X } from 'lucide-react'
 import type { NationalPension, Owner } from '@/types/tables'
 import { formatMoney } from '@/lib/utils'
 import {
@@ -129,23 +129,15 @@ export function NationalPensionSection({
   if (pension) {
     return (
       <>
-        <div className={styles.pensionItem}>
+        <div className={styles.pensionItem} onClick={startEdit} style={{ cursor: 'pointer' }}>
           <div className={styles.itemInfo}>
-            <span className={styles.itemName}>{ownerLabel} 국민연금</span>
+            <span className={styles.itemName}>{ownerLabel} 공적연금</span>
             <span className={styles.itemMeta}>
               {birthYear + pension.start_age}년부터 수령{pension.end_age ? ` ~ ${birthYear + pension.end_age}년` : ''}
             </span>
           </div>
           <div className={styles.itemRight}>
             <span className={styles.itemAmount}>{formatMoney(pension.expected_monthly_amount)}/월</span>
-            <div className={styles.itemActions}>
-              <button className={styles.editBtn} onClick={startEdit}>
-                <Pencil size={16} />
-              </button>
-              <button className={styles.deleteBtn} onClick={handleDelete} disabled={isSaving}>
-                <Trash2 size={16} />
-              </button>
-            </div>
           </div>
         </div>
 
@@ -167,10 +159,26 @@ export function NationalPensionSection({
               }}
             >
               <div className={styles.typeModalHeader}>
-                <span className={styles.stepLabel}>{ownerLabel} 국민연금 수정</span>
-                <button className={styles.typeModalClose} onClick={cancelEdit} type="button">
-                  <X size={18} />
-                </button>
+                <span className={styles.stepLabel}>{ownerLabel} 공적연금 수정</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <button
+                    className={styles.typeModalClose}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (window.confirm('이 항목을 삭제하시겠습니까?')) {
+                        handleDelete()
+                      }
+                    }}
+                    type="button"
+                    disabled={isSaving}
+                    style={{ color: 'var(--dashboard-text-secondary)' }}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                  <button className={styles.typeModalClose} onClick={cancelEdit} type="button">
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
               <div className={styles.modalFormBody}>
                 <div className={styles.modalFormRow}>

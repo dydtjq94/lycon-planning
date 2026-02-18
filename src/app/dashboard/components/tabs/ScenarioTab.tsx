@@ -224,6 +224,10 @@ export function ScenarioTab({
           onSelectedYearChange={setSharedSelectedYear}
           simulationAssumptions={assumptions}
           cashFlowPriorities={priorities}
+          selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
+          spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
+          simulationStartYear={simulation.start_year}
+          simulationStartMonth={simulation.start_month}
         />
       );
     }
@@ -242,6 +246,10 @@ export function ScenarioTab({
           onSelectedYearChange={setSharedSelectedYear}
           simulationAssumptions={assumptions}
           cashFlowPriorities={priorities}
+          selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
+          spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
+          simulationStartYear={simulation.start_year}
+          simulationStartMonth={simulation.start_month}
         />
       );
     }
@@ -264,6 +272,8 @@ export function ScenarioTab({
             spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
             simulationResult={simulationResult}
+            selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
+            spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
           />
         );
       case "expense":
@@ -312,6 +322,8 @@ export function ScenarioTab({
             retirementAge={lifeCycleSettings.selfRetirementAge}
             spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
+            selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
+            spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
           />
         );
       case "realEstate":

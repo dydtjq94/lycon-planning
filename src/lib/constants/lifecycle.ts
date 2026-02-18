@@ -40,21 +40,21 @@ export const LIFECYCLE_COLORS: { id: string; color: string }[] = [
 export const LIFECYCLE_DEFAULTS = {
   retirement: {
     icon: 'landmark',
-    color: '#f59e0b',
+    color: '#ec4899',
     label: '은퇴',
   },
   lifeExpectancy: {
-    icon: 'hourglass',
-    color: '#8b5cf6',
+    icon: 'sparkles',
+    color: '#6366f1',
     label: '기대 수명',
   },
   spouseRetirement: {
     icon: 'landmark',
-    color: '#f97316',
+    color: '#ec4899',
     label: '배우자 은퇴',
   },
   spouseLifeExpectancy: {
-    icon: 'hourglass',
+    icon: 'sparkles',
     color: '#6366f1',
     label: '배우자 기대 수명',
   },

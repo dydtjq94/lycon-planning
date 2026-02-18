@@ -47,12 +47,14 @@
   height: 32px;
   background: transparent;
   border: none;
-  color: var(--accent-color, #007aff);
+  color: var(--dashboard-text-secondary);
   cursor: pointer;
+  border-radius: 6px;
 }
 
 .addIconBtn:hover {
-  filter: brightness(0.85);
+  color: var(--accent-color, #007aff);
+  background: var(--dashboard-hover-bg);
 }
 
 .totalAmount {
@@ -108,10 +110,15 @@
 
 .debtItem {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 8px 0;
   border-bottom: 1px solid var(--dashboard-border);
+  cursor: pointer;
+}
+
+.debtItem:hover {
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.08);
 }
 
 .debtItem:last-of-type {
@@ -121,14 +128,14 @@
 .itemInfo {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
 }
 
 .itemName {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--dashboard-text);
 }
 
@@ -145,7 +152,7 @@
 }
 
 .debtAmount {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #ff3b30;
 }
@@ -349,53 +356,33 @@
 /* 상환방식 버튼 */
 .repaymentButtons {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 4px;
+  background: var(--dashboard-bg);
+  border-radius: 6px;
+  padding: 2px;
+  flex-shrink: 0;
 }
 
 .repaymentBtn {
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--dashboard-text);
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .repaymentBtn:hover {
-  border-color: var(--accent-color, #007aff);
-  color: var(--accent-color, #007aff);
+  color: var(--dashboard-text);
 }
 
 .repaymentBtn.active {
-  background: var(--accent-color, #007aff);
-  border-color: var(--accent-color, #007aff);
-  color: #fff;
-}
-
-/* 예상 상환액 미리보기 */
-.paymentPreview {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 8px;
-  margin-top: 8px;
-}
-
-.previewLabel {
-  font-size: 13px;
-  color: var(--accent-color, #007aff);
-}
-
-.previewValue {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent-color, #007aff);
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .editActions {
@@ -850,13 +837,55 @@
   cursor: not-allowed;
 }
 
+/* 그룹 리스트 */
+.groupedList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 8px;
+}
+
+.sectionGroup {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.sectionGroup:last-child {
+  border-bottom: none;
+}
+
+.sectionGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.sectionTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sectionGroupTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dashboard-text-secondary);
+}
+
+.sectionCount {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+}
+
+.sectionItems {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 @media (max-width: 1024px) {
   .repaymentButtons {
     flex-wrap: wrap;
-  }
-
-  .repaymentBtn {
-    flex: 1 1 calc(50% - 3px);
-    min-width: 80px;
   }
 }

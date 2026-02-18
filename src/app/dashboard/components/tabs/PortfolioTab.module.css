@@ -145,7 +145,7 @@
 .modal {
   border-radius: 16px;
   width: 100%;
-  max-width: 640px;
+  max-width: 780px;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
@@ -907,33 +907,37 @@
 .periodSelector {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
+  background: var(--dashboard-bg);
+  border-radius: 6px;
+  padding: 2px;
 }
 
 .periodBtn {
-  padding: 8px 16px;
-  background: none;
+  padding: 5px 10px;
+  background: transparent;
   border: none;
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--dashboard-text-secondary);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
 }
 
 .periodBtn:hover {
-  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text);
 }
 
 .periodBtnActive {
-  background: var(--dashboard-text);
-  color: var(--dashboard-bg);
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .periodBtnActive:hover {
-  background: var(--dashboard-text);
-  color: var(--dashboard-bg);
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
 }
 
 /* 스켈레톤 shimmer 애니메이션 */
@@ -1845,6 +1849,164 @@
 .actionBtn:hover {
   background: var(--dashboard-hover-bg);
   color: var(--dashboard-text-secondary);
+}
+
+/* 거래 행 리스트 */
+.txRowList {
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.txRowHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--dashboard-bg-secondary);
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.txRowHeaderCell {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+}
+
+.txRowItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dashboard-border-light);
+}
+
+.txRowItem:last-child {
+  border-bottom: none;
+}
+
+.txRowInput {
+  width: 100%;
+  padding: 8px 8px;
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
+}
+
+.txRowInput:focus {
+  outline: none;
+  border-color: var(--accent-color, #007aff);
+  background: var(--dashboard-card-bg);
+}
+
+.txRowInput::placeholder {
+  color: var(--dashboard-text-muted);
+}
+
+.txRowInput[type="number"]::-webkit-outer-spin-button,
+.txRowInput[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.txRowInput[type="date"] {
+  font-family: inherit;
+}
+
+.txRowInputError {
+  border-color: #ef4444;
+}
+
+.txRowInputError:focus {
+  border-color: #ef4444;
+}
+
+.removeRowBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.removeRowBtn:hover {
+  color: #ef4444;
+  background: var(--dashboard-hover-bg);
+}
+
+.addRowBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-top: 1px dashed var(--dashboard-border);
+  color: var(--dashboard-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.addRowBtn:hover {
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-hover-bg);
+}
+
+/* Column widths for transaction rows */
+.colType { width: 90px; min-width: 90px; flex-shrink: 0; }
+.colDate { width: 130px; min-width: 120px; }
+.colQty { flex: 1; min-width: 70px; }
+.colPrice { flex: 1.2; min-width: 90px; }
+.colFx { flex: 1; min-width: 80px; }
+.colFee { flex: 1; min-width: 70px; }
+.colAction { width: 28px; min-width: 28px; flex-shrink: 0; }
+
+.typeToggle {
+  display: flex;
+  gap: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--dashboard-input-border);
+}
+
+.typeToggleBtn {
+  flex: 1;
+  padding: 5px 0;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  background: var(--dashboard-input-bg);
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.typeToggleBtn:first-child {
+  border-right: 1px solid var(--dashboard-input-border);
+}
+
+.typeToggleBuyActive {
+  background: #ef4444;
+  color: #fff;
+  font-weight: 600;
+}
+
+.typeToggleSellActive {
+  background: #3b82f6;
+  color: #fff;
+  font-weight: 600;
 }
 
 /* 반응형 */

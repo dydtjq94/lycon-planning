@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Trash2, TrendingUp, Pencil, X, Check, ExternalLink, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, TrendingUp, X, Check, ExternalLink, ArrowLeft } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -44,6 +44,8 @@ interface IncomeTabProps {
   spouseRetirementAge?: number;
   isMarried: boolean;
   simulationResult: SimulationResult;
+  selfLifeExpectancy?: number;
+  spouseLifeExpectancy?: number;
 }
 
 // 로컬 타입 별칭 (기존 코드 호환)
@@ -70,6 +72,8 @@ export function IncomeTab({
   spouseRetirementAge = 60,
   isMarried,
   simulationResult,
+  selfLifeExpectancy,
+  spouseLifeExpectancy,
 }: IncomeTabProps) {
   const { chartScaleColors, isDark } = useChartTheme();
   const currentYear = new Date().getFullYear();
@@ -93,6 +97,12 @@ export function IncomeTab({
 
   const hasSpouse = isMarried && spouseBirthYear;
 
+  // 기대수명 연도 계산
+  const selfLifeExpectancyYear = birthYear + (selfLifeExpectancy || 100);
+  const spouseLifeExpectancyYear = spouseBirthYear
+    ? spouseBirthYear + (spouseLifeExpectancy || selfLifeExpectancy || 100)
+    : selfLifeExpectancyYear;
+
   // 특정 연도의 나이 계산
   const getAgeAtYear = (year: number, isSelf: boolean): number | null => {
     if (isSelf) {
@@ -111,6 +121,10 @@ export function IncomeTab({
       return { year: selfRetirementYear, month: 12 };
     if (item.endType === "spouse-retirement")
       return { year: spouseRetirementYear, month: 12 };
+    if (item.endType === "self-life-expectancy")
+      return { year: selfLifeExpectancyYear, month: 12 };
+    if (item.endType === "spouse-life-expectancy")
+      return { year: spouseLifeExpectancyYear, month: 12 };
     return {
       year: item.endYear || selfRetirementYear,
       month: item.endMonth || 12,
@@ -190,7 +204,7 @@ export function IncomeTab({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<IncomeItem | null>(null);
   const [editStartType, setEditStartType] = useState<'current' | 'self-retirement' | 'spouse-retirement' | 'year'>('current');
-  const [editEndType, setEditEndType] = useState<'self-retirement' | 'spouse-retirement' | 'year'>('self-retirement');
+  const [editEndType, setEditEndType] = useState<'self-retirement' | 'spouse-retirement' | 'self-life-expectancy' | 'spouse-life-expectancy' | 'year'>('self-retirement');
   const [customRateInput, setCustomRateInput] = useState("");
 
   // 추가 중인 타입
@@ -204,7 +218,7 @@ export function IncomeTab({
   const [newStartType, setNewStartType] = useState<'current' | 'self-retirement' | 'spouse-retirement' | 'year'>('current');
   const [newStartYear, setNewStartYear] = useState(currentYear);
   const [newStartMonth, setNewStartMonth] = useState(currentMonth);
-  const [newEndType, setNewEndType] = useState<'self-retirement' | 'spouse-retirement' | 'year'>('self-retirement');
+  const [newEndType, setNewEndType] = useState<'self-retirement' | 'spouse-retirement' | 'self-life-expectancy' | 'spouse-life-expectancy' | 'year'>('self-retirement');
   const [newEndYear, setNewEndYear] = useState(selfRetirementYear);
   const [newEndMonth, setNewEndMonth] = useState(12);
   const [newRateCategory, setNewRateCategory] = useState<'inflation' | 'income' | 'investment' | 'realEstate' | 'fixed'>('income');
@@ -252,7 +266,11 @@ export function IncomeTab({
       ? selfRetirementYear
       : item.endType === "spouse-retirement"
         ? spouseRetirementYear
-        : item.endYear || 9999;
+        : item.endType === "self-life-expectancy"
+          ? selfLifeExpectancyYear
+          : item.endType === "spouse-life-expectancy"
+            ? spouseLifeExpectancyYear
+            : item.endYear || 9999;
     return currentYear >= item.startYear && currentYear <= endYear;
   };
 
@@ -679,6 +697,16 @@ export function IncomeTab({
 
     const isFixedToRetirement = retirementLink !== null;
 
+    // 기대수명 종료 연도 계산
+    const resolvedEndYear = newEndType === 'self-life-expectancy'
+      ? selfLifeExpectancyYear
+      : newEndType === 'spouse-life-expectancy'
+        ? spouseLifeExpectancyYear
+        : newEndYear;
+    const resolvedEndMonth = (newEndType === 'self-life-expectancy' || newEndType === 'spouse-life-expectancy')
+      ? 12
+      : newEndMonth;
+
     // growth_rate 결정
     const growthRate = isOnetime ? 0
       : newRateCategory === 'fixed'
@@ -694,8 +722,8 @@ export function IncomeTab({
       frequency: isOnetime ? "monthly" : newFrequency,
       start_year: isOnetime ? newOnetimeYear : newStartYear,
       start_month: isOnetime ? newOnetimeMonth : newStartMonth,
-      end_year: isOnetime ? newOnetimeYear : (retirementLink ? null : newEndYear),
-      end_month: isOnetime ? newOnetimeMonth : (retirementLink ? null : newEndMonth),
+      end_year: isOnetime ? newOnetimeYear : (retirementLink ? null : resolvedEndYear),
+      end_month: isOnetime ? newOnetimeMonth : (retirementLink ? null : resolvedEndMonth),
       is_fixed_to_retirement: isFixedToRetirement,
       retirement_link: retirementLink as any,
       growth_rate: growthRate,
@@ -750,6 +778,10 @@ export function IncomeTab({
       setEditEndType('self-retirement');
     } else if (item.endType === 'spouse-retirement') {
       setEditEndType('spouse-retirement');
+    } else if (item.endType === 'self-life-expectancy') {
+      setEditEndType('self-life-expectancy');
+    } else if (item.endType === 'spouse-life-expectancy') {
+      setEditEndType('spouse-life-expectancy');
     } else {
       setEditEndType('year');
     }
@@ -792,9 +824,19 @@ export function IncomeTab({
           ? 'spouse'
           : null;
 
+      // 기대수명 종료 연도 계산 (actual year saved, no retirement_link)
+      const resolvedEditEndYear = editForm.endType === 'self-life-expectancy'
+        ? selfLifeExpectancyYear
+        : editForm.endType === 'spouse-life-expectancy'
+          ? spouseLifeExpectancyYear
+          : editForm.endYear;
+      const resolvedEditEndMonth = (editForm.endType === 'self-life-expectancy' || editForm.endType === 'spouse-life-expectancy')
+        ? 12
+        : editForm.endMonth;
+
       // retirement_link가 있으면 end_year는 null - 시뮬레이션 시점에 동적 계산
-      const endYearToSave = retirementLink ? null : editForm.endYear;
-      const endMonthToSave = retirementLink ? null : editForm.endMonth;
+      const endYearToSave = retirementLink ? null : resolvedEditEndYear;
+      const endMonthToSave = retirementLink ? null : resolvedEditEndMonth;
 
       await updateIncome(editForm.id, {
         type: uiTypeToDbType(editForm.type),
@@ -842,6 +884,12 @@ export function IncomeTab({
     if (item.endType === "spouse-retirement") {
       return `${startStr} ~ 배우자 은퇴`;
     }
+    if (item.endType === "self-life-expectancy") {
+      return `${startStr} ~ 본인 기대수명`;
+    }
+    if (item.endType === "spouse-life-expectancy") {
+      return `${startStr} ~ 배우자 기대수명`;
+    }
 
     // 종료일이 없으면 "시작일 ~" 형식으로 표시
     if (!item.endYear) return `${startStr} ~`;
@@ -863,6 +911,8 @@ export function IncomeTab({
   const getEndTypeLabel = (item: IncomeItem): string => {
     if (item.endType === "self-retirement") return `본인 은퇴`;
     if (item.endType === "spouse-retirement") return `배우자 은퇴`;
+    if (item.endType === "self-life-expectancy") return `본인 기대수명`;
+    if (item.endType === "spouse-life-expectancy") return `배우자 기대수명`;
     return `직접 입력`;
   };
 
@@ -901,38 +951,31 @@ export function IncomeTab({
     // Don't close showTypeMenu - stay in modal for step 2
   };
 
-  // 아이템 렌더링 함수 (개별 항목) - 항상 읽기 모드
+  // 아이템 렌더링 함수 (개별 항목) - 클릭 시 편집 모달
   const renderItem = (item: DisplayItem) => {
     return (
-      <div key={item.id} className={styles.incomeItem}>
+      <div key={item.id} className={styles.incomeItem} onClick={() => startEdit(item)}>
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>
             {item.label} | {item.owner === "spouse" ? "배우자" : "본인"}
           </span>
-          <span className={styles.itemMeta}>
-            {item.type === "onetime"
-              ? formatPeriod(item)
-              : `${formatPeriod(item)} | ${item.rateCategory === 'fixed' ? `연 ${item.displayGrowthRate}% 상승` : '시뮬레이션 가정'}`}
-          </span>
+          {item.type === "onetime" ? (
+            <span className={styles.itemMeta}>{formatPeriod(item)}</span>
+          ) : (
+            <>
+              <span className={styles.itemMeta}>{formatPeriod(item)}</span>
+              <span className={styles.itemMeta}>
+                {item.rateCategory === 'fixed'
+                  ? `연 ${item.displayGrowthRate}% 상승`
+                  : `시뮬레이션 가정 (${item.rateCategory === 'income' ? '소득 상승률' : item.rateCategory === 'inflation' ? '물가 상승률' : item.rateCategory === 'realEstate' ? '부동산 상승률' : '투자 수익률'})`}
+              </span>
+            </>
+          )}
         </div>
         <div className={styles.itemRight}>
           <span className={styles.itemAmount}>
             {formatAmountWithFreq(item)}
           </span>
-          <div className={styles.itemActions}>
-            <button
-              className={styles.editBtn}
-              onClick={() => startEdit(item)}
-            >
-              <Pencil size={16} />
-            </button>
-            <button
-              className={styles.deleteBtn}
-              onClick={() => handleDelete(item.id)}
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -1332,6 +1375,10 @@ export function IncomeTab({
                                 setNewEndType('self-retirement');
                               } else if (val === 'spouse-retirement') {
                                 setNewEndType('spouse-retirement');
+                              } else if (val === 'self-life-expectancy') {
+                                setNewEndType('self-life-expectancy');
+                              } else if (val === 'spouse-life-expectancy') {
+                                setNewEndType('spouse-life-expectancy');
                               } else {
                                 setNewEndType('year');
                                 setNewEndDateText(toPeriodRaw(newEndYear, newEndMonth));
@@ -1340,6 +1387,8 @@ export function IncomeTab({
                           >
                             <option value="self-retirement">본인 은퇴</option>
                             {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+                            <option value="self-life-expectancy">본인 기대수명</option>
+                            {hasSpouse && <option value="spouse-life-expectancy">배우자 기대수명</option>}
                             <option value="year">직접 입력</option>
                           </select>
                           {newEndType === 'year' && (
@@ -1454,13 +1503,26 @@ export function IncomeTab({
               <span className={styles.stepLabel}>
                 {UI_TYPE_LABELS[editForm.type]} 수정
               </span>
-              <button
-                className={styles.typeModalClose}
-                onClick={cancelEdit}
-                type="button"
-              >
-                <X size={18} />
-              </button>
+              <div className={styles.modalHeaderActions}>
+                <button
+                  className={styles.modalDeleteBtn}
+                  onClick={() => {
+                    if (window.confirm('이 항목을 삭제하시겠습니까?')) {
+                      handleDelete(editForm.id);
+                    }
+                  }}
+                  type="button"
+                >
+                  <Trash2 size={18} />
+                </button>
+                <button
+                  className={styles.typeModalClose}
+                  onClick={cancelEdit}
+                  type="button"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
             <div className={styles.modalFormBody}>
               {/* 항목명 */}
@@ -1626,6 +1688,12 @@ export function IncomeTab({
                           } else if (val === 'spouse-retirement') {
                             setEditEndType('spouse-retirement');
                             setEditForm({ ...editForm, endType: 'spouse-retirement' });
+                          } else if (val === 'self-life-expectancy') {
+                            setEditEndType('self-life-expectancy');
+                            setEditForm({ ...editForm, endType: 'self-life-expectancy' });
+                          } else if (val === 'spouse-life-expectancy') {
+                            setEditEndType('spouse-life-expectancy');
+                            setEditForm({ ...editForm, endType: 'spouse-life-expectancy' });
                           } else {
                             setEditEndType('year');
                             setEditEndDateText(toPeriodRaw(editForm.endYear || selfRetirementYear, editForm.endMonth || 12));
@@ -1635,6 +1703,8 @@ export function IncomeTab({
                       >
                         <option value="self-retirement">본인 은퇴</option>
                         {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+                        <option value="self-life-expectancy">본인 기대수명</option>
+                        {hasSpouse && <option value="spouse-life-expectancy">배우자 기대수명</option>}
                         <option value="year">직접 입력</option>
                       </select>
                       {editEndType === 'year' && (
@@ -1738,13 +1808,68 @@ export function IncomeTab({
       )}
 
       {isExpanded && (
-        <div className={styles.flatList}>
+        <div className={styles.groupedList}>
           {displayItems.length === 0 && (
             <p className={styles.emptyHint}>
               아직 등록된 소득이 없습니다. 오른쪽 + 버튼으로 추가하세요.
             </p>
           )}
-          {displayItems.map((item) => renderItem(item))}
+
+          {laborItems.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>근로 소득</span>
+                  <span className={styles.sectionCount}>{laborItems.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {laborItems.map(item => renderItem(item))}
+              </div>
+            </div>
+          )}
+
+          {businessItems.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>사업 소득</span>
+                  <span className={styles.sectionCount}>{businessItems.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {businessItems.map(item => renderItem(item))}
+              </div>
+            </div>
+          )}
+
+          {regularItems.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>정기 소득</span>
+                  <span className={styles.sectionCount}>{regularItems.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {regularItems.map(item => renderItem(item))}
+              </div>
+            </div>
+          )}
+
+          {onetimeItems.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>일시 소득</span>
+                  <span className={styles.sectionCount}>{onetimeItems.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {onetimeItems.map(item => renderItem(item))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

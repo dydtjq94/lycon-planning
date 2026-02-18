@@ -204,6 +204,7 @@ export function convertToExpenseItems(data: OnboardingData): DashboardExpenseIte
         ? Math.round(data.livingExpenses / 12)
         : data.livingExpenses,
       frequency: 'monthly',
+      owner: 'common',
       startYear: currentYear,
       startMonth: currentMonth,
       endType: 'custom',
@@ -222,6 +223,7 @@ export function convertToExpenseItems(data: OnboardingData): DashboardExpenseIte
       label: '월세',
       amount: data.housingRent,
       frequency: 'monthly',
+      owner: 'common',
       startYear: currentYear,
       startMonth: currentMonth,
       endType: 'custom',
@@ -241,6 +243,7 @@ export function convertToExpenseItems(data: OnboardingData): DashboardExpenseIte
       label: '관리비',
       amount: data.housingMaintenance,
       frequency: 'monthly',
+      owner: 'common',
       startYear: currentYear,
       startMonth: currentMonth,
       endType: 'custom',

@@ -42,6 +42,8 @@ interface CashFlowChartProps {
   headerAction?: React.ReactNode
   monthlySnapshots?: MonthlySnapshot[]
   hideLegend?: boolean
+  selfLifeExpectancy?: number
+  spouseLifeExpectancy?: number
 }
 
 // Y축 포맷팅
@@ -65,6 +67,8 @@ export function CashFlowChart({
   headerAction,
   monthlySnapshots,
   hideLegend,
+  selfLifeExpectancy,
+  spouseLifeExpectancy,
 }: CashFlowChartProps) {
   const { chartLineColors, chartScaleColors, categoryColors, isDark, toRgba } = useChartTheme()
   const chartRef = useRef<HTMLCanvasElement>(null)
@@ -115,7 +119,7 @@ export function CashFlowChart({
       const textColor = isDark ? '#ffffff' : '#1d1d1f'
       const textSecondary = isDark ? '#a1a1aa' : '#86868b'
       const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
-      const ageText = getAgeText(ms.year, birthYear, spouseBirthYear)
+      const ageText = getAgeText(ms.year, birthYear, spouseBirthYear, selfLifeExpectancy, spouseLifeExpectancy)
       const netCashFlow = ms.netCashFlow
       const netColor = netCashFlow >= 0 ? '#10b981' : '#ef4444'
       const netPrefix = netCashFlow >= 0 ? '+' : '-'
@@ -179,7 +183,7 @@ export function CashFlowChart({
     const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
 
     // 나이 텍스트
-    const ageText = getAgeText(snapshot.year, birthYear, spouseBirthYear)
+    const ageText = getAgeText(snapshot.year, birthYear, spouseBirthYear, selfLifeExpectancy, spouseLifeExpectancy)
 
     // 소득/지출 breakdown
     let incomeItemsHtml = ''
@@ -296,7 +300,7 @@ export function CashFlowChart({
     `
 
     positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
-  }, [snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlySnapshots])
+  }, [snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlySnapshots, selfLifeExpectancy, spouseLifeExpectancy])
 
   // 마우스 추적 + 호버 라인 + 언마운트 정리
   useEffect(() => {

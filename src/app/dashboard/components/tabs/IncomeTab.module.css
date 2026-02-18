@@ -112,6 +112,28 @@
   color: var(--dashboard-text-muted);
 }
 
+.modalHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.modalDeleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+}
+
+.modalDeleteBtn:hover {
+  color: #ff3b30;
+}
+
 .typeModalClose {
   display: flex;
   align-items: center;
@@ -355,10 +377,12 @@
 /* ========== 읽기 모드 ========== */
 .incomeItem {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 8px 0;
   border-bottom: 1px solid var(--dashboard-border);
+  position: relative;
+  cursor: pointer;
 }
 
 .incomeItem:last-of-type {
@@ -368,14 +392,14 @@
 .itemInfo {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
 }
 
 .itemName {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--dashboard-text);
   display: flex;
   align-items: center;
@@ -392,7 +416,7 @@
 }
 
 .itemAmount {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--dashboard-text);
 }
@@ -404,37 +428,13 @@
 
 .itemRight {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-end;
   flex-shrink: 0;
 }
 
-.itemActions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.editBtn,
-.deleteBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: transparent;
-  border: none;
-  color: var(--dashboard-text-secondary);
-  cursor: pointer;
-}
-
-.editBtn:hover {
-  color: var(--accent-color, #007aff);
-}
-
-.deleteBtn:hover {
-  color: #ff3b30;
+.incomeItem:hover {
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.08);
 }
 
 /* 연동 배지 */
@@ -986,6 +986,53 @@
   color: var(--dashboard-text-secondary);
   margin: 0;
   line-height: 1.5;
+}
+
+/* 그룹 리스트 */
+.groupedList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 8px;
+}
+
+.sectionGroup {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.sectionGroup:last-child {
+  border-bottom: none;
+}
+
+.sectionGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.sectionTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sectionGroupTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dashboard-text-secondary);
+}
+
+.sectionCount {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+}
+
+.sectionItems {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 /* 반응형 */

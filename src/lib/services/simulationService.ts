@@ -95,6 +95,7 @@ export const simulationService = {
       profileId = user.id
     }
 
+    const now = new Date()
     const { data, error } = await supabase
       .from('simulations')
       .insert({
@@ -103,6 +104,8 @@ export const simulationService = {
         description: input.description,
         is_default: input.is_default ?? false,
         sort_order: input.sort_order ?? 0,
+        start_year: input.start_year ?? now.getFullYear(),
+        start_month: input.start_month ?? (now.getMonth() + 1),
       })
       .select()
       .single()

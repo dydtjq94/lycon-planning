@@ -13,7 +13,7 @@ import type { RetirementPension, RetirementPensionInput, Owner, RetirementPensio
 import { convertFromWon, convertToWon, convertArrayFromWon, convertPartialToWon } from './moneyConversion'
 
 // 금액 필드 목록
-const RETIREMENT_PENSION_MONEY_FIELDS = ['current_balance'] as const
+const RETIREMENT_PENSION_MONEY_FIELDS = ['current_balance', 'monthly_salary'] as const
 
 // 퇴직연금 조회 (시뮬레이션별)
 export async function getRetirementPensions(simulationId: string): Promise<RetirementPension[]> {

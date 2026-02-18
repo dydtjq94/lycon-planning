@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Plus, Trash2, GripVertical, Pin } from "lucide-react";
 import type {
   CashFlowPriorities,
   CashFlowAccountCategory,
   SurplusAllocationRule,
+  SurplusAllocationMode,
   WithdrawalOrderRule,
 } from "@/types";
 import { useSimulationV2Data } from "@/hooks/useFinancialData";
+import { formatPeriodDisplay, toPeriodRaw, restorePeriodCursor } from "@/lib/utils/periodInput";
 import styles from "./CashFlowPrioritiesPanel.module.css";
 
 interface CashFlowPrioritiesPanelProps {
@@ -62,6 +64,9 @@ export function CashFlowPrioritiesPanel({
   const [draggedWithdrawalId, setDraggedWithdrawalId] = useState<string | null>(
     null
   );
+
+  // 기간 입력 텍스트 상태 (rule.id → raw string like "202601")
+  const [periodTexts, setPeriodTexts] = useState<Record<string, { start: string; end: string }>>({});
 
   // Initial load skeleton
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -134,16 +139,63 @@ export function CashFlowPrioritiesPanel({
     return accounts;
   }, [v2Data]);
 
-  // 초기화 플래그만 설정 (자동 규칙 생성 없음 - 사용자가 직접 추가)
+  // 인출 규칙 자동 생성 방지 (사용자가 직접 전부 삭제한 경우 재생성 안 함)
+  const hasPopulatedWithdrawals = useRef(false);
+
+  // 초기화: 기본 인출 순서 자동 생성
   useEffect(() => {
-    if (localPriorities._initialized || dataLoading) return;
+    if (dataLoading || !v2Data) return;
+
+    // 이미 인출 규칙이 있으면 자동 생성 건너뛰기
+    if (localPriorities.withdrawalRules.length > 0) {
+      hasPopulatedWithdrawals.current = true;
+      if (!localPriorities._initialized) {
+        onChange({ ...localPriorities, _initialized: true });
+      }
+      return;
+    }
+
+    // 이번 세션에서 이미 자동 생성했으면 재생성 방지 (사용자가 전부 삭제한 경우)
+    if (hasPopulatedWithdrawals.current) return;
+    hasPopulatedWithdrawals.current = true;
+
+    const savingsTypeOrder: string[] = [
+      'checking', 'savings', 'deposit', 'housing',
+      'domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'other',
+    ];
+
+    const defaultRules: WithdrawalOrderRule[] = [];
+
+    // 저축 계좌 - 타입 순서대로
+    const activeSavings = v2Data.savings
+      .filter((s) => s.is_active)
+      .sort((a, b) => savingsTypeOrder.indexOf(a.type) - savingsTypeOrder.indexOf(b.type));
+
+    for (const s of activeSavings) {
+      const ownerLabel =
+        s.owner === 'spouse' ? ' (배우자)' : s.owner === 'self' ? ' (본인)' : '';
+      defaultRules.push({
+        id: generateId(),
+        targetId: s.id,
+        targetCategory: 'savings',
+        targetName: `${s.title}${ownerLabel}`,
+        priority: defaultRules.length + 1,
+      });
+    }
+
+    // 연금 계좌는 기본 인출 대상에서 제외 (중도 인출 불가)
+    // - 퇴직연금 (DB/DC/기업IRP/퇴직금): 수령 시점 전 인출 불가
+    // - 개인연금 (연금저축/IRP): 세제 패널티 있어 기본 제외
+    // 사용자가 수동으로 + 추가하면 포함 가능
 
     onChange({
-      surplusRules: [],
-      withdrawalRules: [],
+      ...localPriorities,
+      surplusRules: localPriorities._initialized ? localPriorities.surplusRules : [],
+      withdrawalRules: defaultRules,
       _initialized: true,
     });
-  }, [localPriorities._initialized, dataLoading, onChange]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localPriorities._initialized, localPriorities.withdrawalRules.length, dataLoading]);
 
   // 삭제된 계좌 자동 정리: 존재하지 않는 targetId를 가진 규칙 제거
   useEffect(() => {
@@ -203,6 +255,7 @@ export function CashFlowPrioritiesPanel({
         targetCategory: account.category,
         targetName: account.name,
         priority: localPriorities.surplusRules.length + 1,
+        mode: "allocate",
       };
 
       setLocalPriorities({
@@ -225,16 +278,95 @@ export function CashFlowPrioritiesPanel({
     [localPriorities]
   );
 
-  const handleUpdateSurplusLimit = useCallback(
-    (id: string, value: string) => {
-      const numericValue = value === "" ? undefined : parseInt(value) || 0;
+  const handleUpdateSurplusRule = useCallback(
+    (id: string, updates: Partial<SurplusAllocationRule>) => {
       const updated = localPriorities.surplusRules.map((r) =>
-        r.id === id ? { ...r, annualLimit: numericValue } : r
+        r.id === id ? { ...r, ...updates } : r
       );
       setLocalPriorities({ ...localPriorities, surplusRules: updated });
       setIsDirty(true);
     },
     [localPriorities]
+  );
+
+  const handleChangeSurplusMode = useCallback(
+    (id: string, mode: SurplusAllocationMode) => {
+      const updated = localPriorities.surplusRules.map((r) => {
+        if (r.id !== id) return r;
+        if (mode === "maintain_balance") {
+          return { ...r, mode, annualLimit: undefined, targetBalance: r.targetBalance ?? 500 };
+        }
+        return { ...r, mode, targetBalance: undefined };
+      });
+      setLocalPriorities({ ...localPriorities, surplusRules: updated });
+      setIsDirty(true);
+    },
+    [localPriorities]
+  );
+
+  // 기간 텍스트 헬퍼
+  const getPeriodText = (ruleId: string, field: 'start' | 'end', rule: SurplusAllocationRule): string => {
+    const override = periodTexts[ruleId]?.[field];
+    if (override !== undefined) return override;
+    const year = field === 'start' ? rule.startYear : rule.endYear;
+    const month = field === 'start' ? rule.startMonth : rule.endMonth;
+    if (year == null) return '';
+    return toPeriodRaw(year, month ?? (field === 'start' ? 1 : 12));
+  };
+
+  const handlePeriodChange = useCallback(
+    (ruleId: string, field: 'start' | 'end', e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value.replace(/\D/g, '').slice(0, 6);
+      restorePeriodCursor(e.target, raw);
+      setPeriodTexts(prev => ({
+        ...prev,
+        [ruleId]: { ...prev[ruleId], [field]: raw },
+      }));
+
+      // raw가 비어있으면 해제
+      if (raw === '') {
+        const updates: Partial<SurplusAllocationRule> = field === 'start'
+          ? { startYear: undefined, startMonth: undefined }
+          : { endYear: undefined, endMonth: undefined };
+        handleUpdateSurplusRule(ruleId, updates);
+        return;
+      }
+
+      // 4자리 이상이면 연도 파싱
+      if (raw.length >= 4) {
+        const y = parseInt(raw.slice(0, 4));
+        if (!isNaN(y)) {
+          const updates: Partial<SurplusAllocationRule> = field === 'start'
+            ? { startYear: y, startMonth: 1 }
+            : { endYear: y, endMonth: 12 };
+          // 5자리 이상이면 월도 파싱
+          if (raw.length >= 5) {
+            const m = parseInt(raw.slice(4));
+            if (!isNaN(m) && m >= 1 && m <= 12) {
+              if (field === 'start') updates.startMonth = m;
+              else updates.endMonth = m;
+            }
+          }
+          handleUpdateSurplusRule(ruleId, updates);
+        }
+      }
+    },
+    [handleUpdateSurplusRule]
+  );
+
+  // 기간 입력 blur 시 로컬 텍스트 정리
+  const handlePeriodBlur = useCallback(
+    (ruleId: string, field: 'start' | 'end') => {
+      setPeriodTexts(prev => {
+        const copy = { ...prev };
+        if (copy[ruleId]) {
+          const { [field]: _, ...rest } = copy[ruleId];
+          copy[ruleId] = rest as { start: string; end: string };
+        }
+        return copy;
+      });
+    },
+    []
   );
 
   // Surplus drag handlers
@@ -411,79 +543,176 @@ export function CashFlowPrioritiesPanel({
       {activeTab === "surplus" && (
         <div className={styles.tabContent}>
           <p className={styles.sectionDescription}>
-            연간 잉여금을 아래 순서대로 배분합니다.
+            잉여금을 마이너스 통장 상환 → 아래 순서 → 유동 현금으로 배분합니다.
+          </p>
+
+          {/* 마이너스 통장 - 항상 첫 번째 고정 */}
+          <div className={styles.ruleList}>
+            <div className={styles.ruleRowFixed}>
+              <div className={styles.pinHandle}>
+                <Pin size={14} />
+              </div>
+              <div className={styles.ruleName}>마이너스 통장</div>
+            </div>
+          </div>
+          <p className={styles.fixedHint}>
+            마이너스 통장이 있으면 잉여금으로 가장 먼저 상환합니다.
           </p>
 
           {localPriorities.surplusRules.length > 0 && (
             <div className={styles.ruleList}>
               {localPriorities.surplusRules
                 .sort((a, b) => a.priority - b.priority)
-                .map((rule) => (
-                  <div
-                    key={rule.id}
-                    className={`${styles.ruleRow} ${
-                      draggedSurplusId === rule.id ? styles.dragging : ""
-                    }`}
-                    draggable
-                    onDragStart={(e) => handleSurplusDragStart(e, rule.id)}
-                    onDragOver={handleSurplusDragOver}
-                    onDrop={(e) => handleSurplusDrop(e, rule.id)}
-                    onDragEnd={handleSurplusDragEnd}
-                  >
-                    <div className={styles.dragHandle}>
-                      <GripVertical size={14} />
-                    </div>
-                    <div className={styles.priorityBadge}>{rule.priority}</div>
-                    <div className={styles.ruleName}>{rule.targetName}</div>
-                    <div className={styles.limitArea}>
-                      {rule.annualLimit !== undefined ? (
-                        <div className={styles.limitInputWrap}>
-                          <span className={styles.limitUnit}>연</span>
-                          <input
-                            type="number"
-                            className={styles.limitInput}
-                            value={rule.annualLimit}
-                            onChange={(e) =>
-                              handleUpdateSurplusLimit(rule.id, e.target.value)
-                            }
-                            onWheel={(e) => (e.target as HTMLElement).blur()}
-                            disabled={isLoading}
-                          />
-                          <span className={styles.limitUnit}>만원</span>
-                        </div>
-                      ) : (
-                        <span className={styles.remainderBadge}>나머지</span>
-                      )}
-                      <button
-                        className={styles.toggleLimitButton}
-                        onClick={() =>
-                          handleUpdateSurplusLimit(
-                            rule.id,
-                            rule.annualLimit !== undefined ? "" : "0"
-                          )
-                        }
-                        type="button"
-                        title={
-                          rule.annualLimit !== undefined
-                            ? "나머지로 변경"
-                            : "한도 설정"
-                        }
-                        disabled={isLoading}
-                      >
-                        {rule.annualLimit !== undefined ? "나머지" : "한도"}
-                      </button>
-                    </div>
-                    <button
-                      className={styles.deleteButton}
-                      onClick={() => handleDeleteSurplusRule(rule.id)}
-                      disabled={isLoading}
-                      type="button"
-                      title="삭제"
+                .map((rule) => {
+                  const ruleMode = rule.mode || "allocate";
+                  return (
+                    <div
+                      key={rule.id}
+                      className={`${styles.ruleCard} ${
+                        draggedSurplusId === rule.id ? styles.dragging : ""
+                      }`}
+                      draggable
+                      onDragStart={(e) => handleSurplusDragStart(e, rule.id)}
+                      onDragOver={handleSurplusDragOver}
+                      onDrop={(e) => handleSurplusDrop(e, rule.id)}
+                      onDragEnd={handleSurplusDragEnd}
                     >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
+                      <div className={styles.ruleCardHeader}>
+                        <div className={styles.dragHandle}>
+                          <GripVertical size={14} />
+                        </div>
+                        <div className={styles.priorityBadge}>{rule.priority}</div>
+                        <div className={styles.ruleName}>{rule.targetName}</div>
+                        <button
+                          className={styles.deleteButton}
+                          onClick={() => handleDeleteSurplusRule(rule.id)}
+                          disabled={isLoading}
+                          type="button"
+                          title="삭제"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                      <div className={styles.ruleCardBody}>
+                        {/* 모드 선택 */}
+                        <div className={styles.modeSelector}>
+                          <button
+                            className={`${styles.modeButton} ${ruleMode === "allocate" ? styles.modeActive : ""}`}
+                            onClick={() => handleChangeSurplusMode(rule.id, "allocate")}
+                            type="button"
+                            disabled={isLoading}
+                          >
+                            적립
+                          </button>
+                          <button
+                            className={`${styles.modeButton} ${ruleMode === "maintain_balance" ? styles.modeActive : ""}`}
+                            onClick={() => handleChangeSurplusMode(rule.id, "maintain_balance")}
+                            type="button"
+                            disabled={isLoading}
+                          >
+                            잔액 유지
+                          </button>
+                        </div>
+
+                        {/* 적립 모드 설정 */}
+                        {ruleMode === "allocate" && (
+                          <div className={styles.ruleSettings}>
+                            <div className={styles.settingRow}>
+                              <span className={styles.settingLabel}>한도</span>
+                              <div className={styles.limitArea}>
+                                {rule.annualLimit != null ? (
+                                  <div className={styles.limitInputWrap}>
+                                    <span className={styles.limitUnit}>연</span>
+                                    <input
+                                      type="number"
+                                      className={styles.limitInput}
+                                      value={rule.annualLimit}
+                                      onChange={(e) =>
+                                        handleUpdateSurplusRule(rule.id, {
+                                          annualLimit: e.target.value === "" ? undefined : parseInt(e.target.value) || 0,
+                                        })
+                                      }
+                                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                                      disabled={isLoading}
+                                    />
+                                    <span className={styles.limitUnit}>만원</span>
+                                  </div>
+                                ) : (
+                                  <span className={styles.remainderBadge}>나머지</span>
+                                )}
+                                <button
+                                  className={styles.toggleLimitButton}
+                                  onClick={() =>
+                                    handleUpdateSurplusRule(rule.id, {
+                                      annualLimit: rule.annualLimit != null ? undefined : 0,
+                                    })
+                                  }
+                                  type="button"
+                                  disabled={isLoading}
+                                >
+                                  {rule.annualLimit != null ? "나머지" : "한도"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 잔액 유지 모드 설정 */}
+                        {ruleMode === "maintain_balance" && (
+                          <div className={styles.ruleSettings}>
+                            <div className={styles.settingRow}>
+                              <span className={styles.settingLabel}>목표</span>
+                              <div className={styles.limitInputWrap}>
+                                <input
+                                  type="number"
+                                  className={styles.limitInput}
+                                  value={rule.targetBalance ?? 0}
+                                  onChange={(e) =>
+                                    handleUpdateSurplusRule(rule.id, {
+                                      targetBalance: parseInt(e.target.value) || 0,
+                                    })
+                                  }
+                                  onWheel={(e) => (e.target as HTMLElement).blur()}
+                                  disabled={isLoading}
+                                />
+                                <span className={styles.limitUnit}>만원</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 기간 설정 */}
+                        <div className={styles.settingRow}>
+                          <span className={styles.settingLabel}>기간</span>
+                          <div className={styles.periodArea}>
+                            <input
+                              type="text"
+                              className={styles.periodInput}
+                              placeholder="2026.01"
+                              value={formatPeriodDisplay(getPeriodText(rule.id, 'start', rule))}
+                              onChange={(e) => handlePeriodChange(rule.id, 'start', e)}
+                              onBlur={() => handlePeriodBlur(rule.id, 'start')}
+                              disabled={isLoading}
+                            />
+                            <span className={styles.periodSeparator}>~</span>
+                            <input
+                              type="text"
+                              className={styles.periodInput}
+                              placeholder="2030.12"
+                              value={formatPeriodDisplay(getPeriodText(rule.id, 'end', rule))}
+                              onChange={(e) => handlePeriodChange(rule.id, 'end', e)}
+                              onBlur={() => handlePeriodBlur(rule.id, 'end')}
+                              disabled={isLoading}
+                            />
+                            {!rule.startYear && !rule.endYear && (
+                              <span className={styles.remainderBadge}>항상</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           )}
 
@@ -493,9 +722,7 @@ export function CashFlowPrioritiesPanel({
               <div className={styles.pinHandle}>
                 <Pin size={14} />
               </div>
-              <div className={styles.priorityBadge}>{localPriorities.surplusRules.length + 1}</div>
               <div className={styles.ruleName}>유동 현금</div>
-              <span className={styles.remainderBadge}>나머지</span>
             </div>
           </div>
           <p className={styles.fixedHint}>
@@ -547,7 +774,20 @@ export function CashFlowPrioritiesPanel({
       {activeTab === "withdrawal" && (
         <div className={styles.tabContent}>
           <p className={styles.sectionDescription}>
-            현금이 부족할 때 아래 순서대로 인출합니다.
+            현금이 부족할 때 유동 현금 → 아래 순서 → 마이너스 통장으로 인출합니다.
+          </p>
+
+          <div className={styles.ruleList}>
+            {/* 유동 현금 - 항상 첫 번째 고정 */}
+            <div className={styles.ruleRowFixed}>
+              <div className={styles.pinHandle}>
+                <Pin size={14} />
+              </div>
+              <div className={styles.ruleName}>유동 현금</div>
+            </div>
+          </div>
+          <p className={styles.fixedHint}>
+            유동 현금을 가장 먼저 사용한 뒤 아래 순서대로 인출합니다.
           </p>
 
           <div className={styles.ruleList}>
@@ -586,19 +826,12 @@ export function CashFlowPrioritiesPanel({
               <div className={styles.pinHandle}>
                 <Pin size={14} />
               </div>
-              <div className={styles.priorityBadge}>{localPriorities.withdrawalRules.length + 1}</div>
               <div className={styles.ruleName}>마이너스 통장</div>
             </div>
           </div>
           <p className={styles.fixedHint}>
             모든 계좌에서 인출해도 부족하면 마이너스 통장으로 자동 충당됩니다.
           </p>
-
-          {localPriorities.withdrawalRules.length === 0 && !addingWithdrawal && (
-            <div className={styles.emptyHint}>
-              규칙을 추가하지 않으면 기본 순서로 인출됩니다
-            </div>
-          )}
 
           {addingWithdrawal ? (
             <div className={styles.addRow}>

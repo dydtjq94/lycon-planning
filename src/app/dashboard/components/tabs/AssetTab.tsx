@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Pencil, Trash2, Package, Plus, X, ArrowLeft } from 'lucide-react'
+import { Trash2, Package, Plus, X, ArrowLeft } from 'lucide-react'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -87,6 +87,9 @@ export function AssetTab({
   // Period text inputs
   const [purchaseDateText, setPurchaseDateText] = useState('')
   const [loanMaturityDateText, setLoanMaturityDateText] = useState('')
+  const [sellDateText, setSellDateText] = useState('')
+  const [sellMode, setSellMode] = useState<'none' | 'custom'>('none')
+  const [includeInCashflow, setIncludeInCashflow] = useState(false)
 
   // 타입 선택 드롭다운
   const [showTypeMenu, setShowTypeMenu] = useState(false)
@@ -97,6 +100,10 @@ export function AssetTab({
   const totalAssets = useMemo(() => {
     return dbAssets.reduce((sum, a) => sum + a.current_value, 0)
   }, [dbAssets])
+
+  const carAssets = useMemo(() => dbAssets.filter(a => dbTypeToUIType(a.type) === 'car'), [dbAssets])
+  const metalAssets = useMemo(() => dbAssets.filter(a => dbTypeToUIType(a.type) === 'precious_metal'), [dbAssets])
+  const customAssets = useMemo(() => dbAssets.filter(a => dbTypeToUIType(a.type) === 'custom'), [dbAssets])
 
 
   // 편집 시작
@@ -119,6 +126,8 @@ export function AssetTab({
     })
     setPurchaseDateText(toPeriodRaw(currentYear, currentMonth))
     setLoanMaturityDateText('')
+    setSellDateText('')
+    setIncludeInCashflow(false)
   }
 
   const startEditAsset = (asset: PhysicalAsset) => {
@@ -151,6 +160,16 @@ export function AssetTab({
     } else {
       setLoanMaturityDateText('')
     }
+
+    if (asset.sell_year && asset.sell_month) {
+      setSellDateText(toPeriodRaw(asset.sell_year, asset.sell_month))
+      setSellMode('custom')
+    } else {
+      setSellDateText('')
+      setSellMode('none')
+    }
+
+    setIncludeInCashflow(asset.include_in_cashflow || false)
   }
 
   const cancelEdit = () => {
@@ -158,6 +177,8 @@ export function AssetTab({
     setEditValues({})
     setPurchaseDateText('')
     setLoanMaturityDateText('')
+    setSellDateText('')
+    setIncludeInCashflow(false)
   }
 
   const resetAddForm = () => {
@@ -167,6 +188,8 @@ export function AssetTab({
     setEditValues({})
     setPurchaseDateText('')
     setLoanMaturityDateText('')
+    setSellDateText('')
+    setIncludeInCashflow(false)
   }
 
   // 저장
@@ -188,6 +211,14 @@ export function AssetTab({
         ? (editValues.annualRate ? parseFloat(editValues.annualRate) : 0)
         : 2.5
 
+      // Parse sell date
+      let sellYear: number | null = null
+      let sellMonth: number | null = null
+      if (sellDateText.length === 6 && isPeriodValid(sellDateText)) {
+        sellYear = parseInt(sellDateText.slice(0, 4))
+        sellMonth = parseInt(sellDateText.slice(4))
+      }
+
       const input = {
         simulation_id: simulationId,
         type: uiTypeToDBType(editingAsset.type),
@@ -206,6 +237,9 @@ export function AssetTab({
         loan_maturity_year: hasFinancing && editValues.loanMaturityYear ? parseInt(editValues.loanMaturityYear) : null,
         loan_maturity_month: hasFinancing && editValues.loanMaturityMonth ? parseInt(editValues.loanMaturityMonth) : null,
         loan_repayment_type: hasFinancing ? repaymentType : null,
+        sell_year: sellYear,
+        sell_month: sellMonth,
+        include_in_cashflow: includeInCashflow,
       }
 
       if (editingAsset.id) {
@@ -334,6 +368,19 @@ export function AssetTab({
           </div>
         </div>
 
+        {/* 현금 흐름 처리 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}></span>
+          <label className={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={includeInCashflow}
+              onChange={e => setIncludeInCashflow(e.target.checked)}
+            />
+            <span className={styles.checkboxText}>현금 흐름으로 처리</span>
+          </label>
+        </div>
+
         {/* 상승률 */}
         <div className={styles.modalFormRow}>
           <span className={styles.modalFormLabel}>상승률</span>
@@ -375,6 +422,46 @@ export function AssetTab({
                 직접 입력
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* 매각 예정 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>매각 예정</span>
+          <div className={styles.fieldContent}>
+            <div className={styles.typeButtons}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${sellMode === 'none' ? styles.active : ''}`}
+                onClick={() => { setSellMode('none'); setSellDateText('') }}
+              >
+                매각 안함
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${sellMode === 'custom' ? styles.active : ''}`}
+                onClick={() => setSellMode('custom')}
+              >
+                직접 입력
+              </button>
+            </div>
+            {sellMode === 'custom' && (
+              <input
+                type="text"
+                className={`${styles.periodInput} ${sellDateText.length === 6 && !isPeriodValid(sellDateText) ? styles.invalid : ''}`}
+                value={formatPeriodDisplay(sellDateText)}
+                onChange={(e) => {
+                  handlePeriodTextChange(
+                    e,
+                    setSellDateText,
+                    () => {},
+                    () => {}
+                  )
+                }}
+                placeholder="2030.01"
+                maxLength={7}
+              />
+            )}
           </div>
         </div>
 
@@ -501,6 +588,10 @@ export function AssetTab({
     // 메타 정보 구성
     const metaParts = []
 
+    if (asset.include_in_cashflow) {
+      metaParts.push('현금 흐름 포함')
+    }
+
     if (asset.purchase_year) {
       metaParts.push(`${asset.purchase_year}년${asset.purchase_month ? ` ${asset.purchase_month}월` : ''} 취득`)
     }
@@ -511,6 +602,7 @@ export function AssetTab({
       metaParts.push('시뮬레이션 가정')
     }
 
+    let loanLine: string | null = null
     if (hasFinancing && asset.loan_amount) {
       const loanInfo = `${financingLabel} ${formatMoney(asset.loan_amount)}`
       const loanDetails = []
@@ -518,11 +610,15 @@ export function AssetTab({
       if (asset.loan_maturity_year) {
         loanDetails.push(`${asset.loan_maturity_year}.${String(asset.loan_maturity_month || 1).padStart(2, '0')} 만기`)
       }
-      metaParts.push(loanDetails.length > 0 ? `${loanInfo} | ${loanDetails.join(' | ')}` : loanInfo)
+      loanLine = loanDetails.length > 0 ? `${loanInfo} | ${loanDetails.join(' | ')}` : loanInfo
+    }
+
+    if (asset.sell_year) {
+      metaParts.push(`매각 ${asset.sell_year}년${asset.sell_month ? ` ${asset.sell_month}월` : ''}`)
     }
 
     return (
-      <div key={asset.id} className={styles.assetItem}>
+      <div key={asset.id} className={styles.assetItem} onClick={() => startEditAsset(asset)} style={{ cursor: 'pointer' }}>
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>{asset.title} | {ownerLabel}</span>
           {metaParts.length > 0 && (
@@ -530,24 +626,12 @@ export function AssetTab({
               {metaParts.join(' | ')}
             </span>
           )}
+          {loanLine && (
+            <span className={styles.itemMeta}>{loanLine}</span>
+          )}
         </div>
         <div className={styles.itemRight}>
           <span className={styles.itemAmount}>{formatMoney(asset.current_value)}</span>
-          <div className={styles.itemActions}>
-            <button
-              className={styles.editBtn}
-              onClick={() => startEditAsset(asset)}
-            >
-              <Pencil size={16} />
-            </button>
-            <button
-              className={styles.deleteBtn}
-              onClick={() => handleDelete(asset.id)}
-              disabled={isSaving}
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
         </div>
       </div>
     )
@@ -590,6 +674,7 @@ export function AssetTab({
     })
     setPurchaseDateText(toPeriodRaw(currentYear, currentMonth))
     setLoanMaturityDateText('')
+    setSellDateText('')
     // DON'T close showTypeMenu - stay in modal for step 2
   }
 
@@ -717,13 +802,30 @@ export function AssetTab({
               <span className={styles.stepLabel}>
                 {ASSET_TYPE_LABELS[editingAsset.type]} 수정
               </span>
-              <button
-                className={styles.typeModalClose}
-                onClick={cancelEdit}
-                type="button"
-              >
-                <X size={18} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  className={styles.typeModalClose}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (window.confirm('이 항목을 삭제하시겠습니까?')) {
+                      handleDelete(editingAsset.id!)
+                      cancelEdit()
+                    }
+                  }}
+                  type="button"
+                  disabled={isSaving}
+                  style={{ color: 'var(--dashboard-text-secondary)' }}
+                >
+                  <Trash2 size={18} />
+                </button>
+                <button
+                  className={styles.typeModalClose}
+                  onClick={cancelEdit}
+                  type="button"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
             <div className={styles.modalFormBody}>
               {renderModalForm(editingAsset.type)}
@@ -734,13 +836,54 @@ export function AssetTab({
       )}
 
       {isExpanded && (
-        <div className={styles.flatList}>
+        <div className={styles.groupedList}>
           {dbAssets.length === 0 && (
             <p className={styles.emptyHint}>
               아직 등록된 실물 자산이 없습니다. 오른쪽 + 버튼으로 추가하세요.
             </p>
           )}
-          {dbAssets.map(asset => renderAssetItem(asset))}
+
+          {carAssets.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>자동차</span>
+                  <span className={styles.sectionCount}>{carAssets.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {carAssets.map(asset => renderAssetItem(asset))}
+              </div>
+            </div>
+          )}
+
+          {metalAssets.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>귀금속/금</span>
+                  <span className={styles.sectionCount}>{metalAssets.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {metalAssets.map(asset => renderAssetItem(asset))}
+              </div>
+            </div>
+          )}
+
+          {customAssets.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>기타자산</span>
+                  <span className={styles.sectionCount}>{customAssets.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {customAssets.map(asset => renderAssetItem(asset))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

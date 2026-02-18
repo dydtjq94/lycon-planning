@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Pencil, Trash2, Building2, Plus, X, ArrowLeft } from 'lucide-react'
+import { Trash2, Building2, Plus, X, ArrowLeft } from 'lucide-react'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -18,7 +18,6 @@ import {
   createRealEstate,
   updateRealEstate,
   deleteRealEstate,
-  upsertResidenceRealEstate,
   REAL_ESTATE_TYPE_LABELS,
   HOUSING_TYPE_LABELS,
   REPAYMENT_TYPE_LABELS,
@@ -81,7 +80,7 @@ export function RealEstateTab({
   // 편집 상태
   const [editingProperty, setEditingProperty] = useState<{ type: RealEstateType, id: string | null } | null>(null)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
-  const [editBooleans, setEditBooleans] = useState<{ hasRentalIncome: boolean, hasLoan: boolean }>({ hasRentalIncome: false, hasLoan: false })
+  const [editBooleans, setEditBooleans] = useState<{ hasRentalIncome: boolean, hasLoan: boolean, includeInCashflow: boolean }>({ hasRentalIncome: false, hasLoan: false, includeInCashflow: false })
   const [isSaving, setIsSaving] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
 
@@ -92,6 +91,8 @@ export function RealEstateTab({
 
   // Period text states
   const [purchaseDateText, setPurchaseDateText] = useState('')
+  const [sellDateText, setSellDateText] = useState('')
+  const [sellMode, setSellMode] = useState<'none' | 'custom'>('none')
   const [loanStartDateText, setLoanStartDateText] = useState('')
   const [loanMaturityDateText, setLoanMaturityDateText] = useState('')
   const [graceEndDateText, setGraceEndDateText] = useState('')
@@ -106,8 +107,8 @@ export function RealEstateTab({
   const addButtonRef = useRef<HTMLButtonElement>(null)
 
   // 타입별 분류
-  const residenceProperty = useMemo(
-    () => dbRealEstates.find(p => p.type === 'residence') || null,
+  const residenceProperties = useMemo(
+    () => dbRealEstates.filter(p => p.type === 'residence'),
     [dbRealEstates]
   )
   const investmentProperties = useMemo(
@@ -130,8 +131,12 @@ export function RealEstateTab({
   const additionalTotal = investmentTotal + rentalTotal + landTotal
 
   // 거주용 자산 (자가만 자산으로 계산)
-  const housingAssetValue = residenceProperty?.housing_type === '자가' ? residenceProperty.current_value : 0
-  const housingLoanAmount = residenceProperty?.has_loan ? (residenceProperty.loan_amount || 0) : 0
+  const housingAssetValue = residenceProperties
+    .filter(p => p.housing_type === '자가')
+    .reduce((sum, p) => sum + p.current_value, 0)
+  const housingLoanAmount = residenceProperties
+    .filter(p => p.has_loan)
+    .reduce((sum, p) => sum + (p.loan_amount || 0), 0)
 
   // 총 부동산 자산
   const totalRealEstateValue = housingAssetValue + additionalTotal
@@ -183,8 +188,9 @@ export function RealEstateTab({
     setAddingType(null)
     setEditingProperty(null)
     setEditValues({})
-    setEditBooleans({ hasRentalIncome: false, hasLoan: false })
+    setEditBooleans({ hasRentalIncome: false, hasLoan: false, includeInCashflow: false })
     setPurchaseDateText('')
+    setSellDateText('')
     setLoanStartDateText('')
     setLoanMaturityDateText('')
     setGraceEndDateText('')
@@ -193,11 +199,9 @@ export function RealEstateTab({
   }
 
   // 편집 시작 (거주용) - for step 2 in add modal or edit modal
-  const initResidenceValues = () => {
-    const prop = residenceProperty
-
+  const initResidenceValues = (prop?: RealEstate | null) => {
     setEditingProperty({ type: 'residence', id: prop?.id || null })
-    setEditBooleans({ hasRentalIncome: false, hasLoan: prop?.has_loan || false })
+    setEditBooleans({ hasRentalIncome: false, hasLoan: prop?.has_loan || false, includeInCashflow: prop?.include_in_cashflow || false })
 
     // Initialize period text states
     if (prop?.purchase_year && prop?.purchase_month) {
@@ -228,6 +232,10 @@ export function RealEstateTab({
       setGraceEndDateText('')
     }
 
+    const hasSell = !!(prop?.sell_year && prop?.sell_month)
+    setSellDateText(hasSell ? toPeriodRaw(prop.sell_year!, prop.sell_month!) : '')
+    setSellMode(hasSell ? 'custom' : 'none')
+
     setEditValues({
       housingType: prop?.housing_type || '',
       currentValue: prop?.current_value?.toString() || '',
@@ -251,13 +259,14 @@ export function RealEstateTab({
   // 편집 시작 (추가 부동산) - for step 2 in add modal
   const initPropertyValues = (type: Exclude<RealEstateType, 'residence'>) => {
     setEditingProperty({ type, id: null })
-    setEditBooleans({ hasRentalIncome: false, hasLoan: false })
+    setEditBooleans({ hasRentalIncome: false, hasLoan: false, includeInCashflow: false })
     setEditRateCategory('realEstate')
     setEditCustomRate('')
     setEditOwner('self')
 
     // Initialize period text states to empty (will use presets)
     setPurchaseDateText('')
+    setSellDateText('')
     setLoanStartDateText('')
     setLoanMaturityDateText('')
     setGraceEndDateText('')
@@ -325,8 +334,12 @@ export function RealEstateTab({
       setGraceEndDateText('')
     }
 
+    const hasSellEdit = !!(property.sell_year && property.sell_month)
+    setSellDateText(hasSellEdit ? toPeriodRaw(property.sell_year!, property.sell_month!) : '')
+    setSellMode(hasSellEdit ? 'custom' : 'none')
+
     if (property.type === 'residence') {
-      setEditBooleans({ hasRentalIncome: false, hasLoan: property.has_loan || false })
+      setEditBooleans({ hasRentalIncome: false, hasLoan: property.has_loan || false, includeInCashflow: property.include_in_cashflow || false })
       setEditValues({
         housingType: property.housing_type || '',
         currentValue: property.current_value?.toString() || '',
@@ -349,6 +362,7 @@ export function RealEstateTab({
       setEditBooleans({
         hasRentalIncome: property.has_rental_income || false,
         hasLoan: property.has_loan || false,
+        includeInCashflow: property.include_in_cashflow || false,
       })
       setEditValues({
         title: property.title,
@@ -373,8 +387,9 @@ export function RealEstateTab({
   const cancelEdit = () => {
     setEditingProperty(null)
     setEditValues({})
-    setEditBooleans({ hasRentalIncome: false, hasLoan: false })
+    setEditBooleans({ hasRentalIncome: false, hasLoan: false, includeInCashflow: false })
     setPurchaseDateText('')
+    setSellDateText('')
     setLoanStartDateText('')
     setLoanMaturityDateText('')
     setGraceEndDateText('')
@@ -430,12 +445,26 @@ export function RealEstateTab({
         graceEndMonth = parseInt(graceEndDateText.slice(4))
       }
 
-      await upsertResidenceRealEstate(simulationId, {
+      // Parse sell date
+      let sellYear: number | null = null
+      let sellMonth: number | null = null
+      if (sellDateText.length === 6 && isPeriodValid(sellDateText)) {
+        sellYear = parseInt(sellDateText.slice(0, 4))
+        sellMonth = parseInt(sellDateText.slice(4))
+      }
+
+      const title = housingType === '자가' ? '자가 주택' : housingType === '전세' ? '전세 주택' : '월세 주택'
+      const input = {
+        simulation_id: simulationId,
+        type: 'residence' as const,
+        title,
+        owner: 'self' as const,
         housing_type: housingType,
         current_value: editValues.currentValue ? parseFloat(editValues.currentValue) : 0,
         purchase_price: editValues.purchasePrice ? parseFloat(editValues.purchasePrice) : null,
         purchase_year: purchaseYear,
         purchase_month: purchaseMonth,
+        deposit: housingType !== '자가' ? (editValues.currentValue ? parseFloat(editValues.currentValue) : null) : null,
         monthly_rent: editValues.monthlyRent ? parseFloat(editValues.monthlyRent) : null,
         maintenance_fee: editValues.maintenanceFee ? parseFloat(editValues.maintenanceFee) : null,
         has_loan: editBooleans.hasLoan,
@@ -448,7 +477,16 @@ export function RealEstateTab({
         loan_repayment_type: editValues.loanRepaymentType as LoanRepaymentType | null,
         grace_end_year: graceEndYear,
         grace_end_month: graceEndMonth,
-      })
+        sell_year: sellYear,
+        sell_month: sellMonth,
+        include_in_cashflow: editBooleans.includeInCashflow,
+      }
+
+      if (editingProperty.id) {
+        await updateRealEstate(editingProperty.id, input)
+      } else {
+        await createRealEstate(input)
+      }
 
       invalidate('realEstates')
       resetAddForm()
@@ -513,6 +551,14 @@ export function RealEstateTab({
         graceEndMonth = parseInt(graceEndDateText.slice(4))
       }
 
+      // Parse sell date
+      let sellYear: number | null = null
+      let sellMonth: number | null = null
+      if (sellDateText.length === 6 && isPeriodValid(sellDateText)) {
+        sellYear = parseInt(sellDateText.slice(0, 4))
+        sellMonth = parseInt(sellDateText.slice(4))
+      }
+
       const input = {
         simulation_id: simulationId,
         type: editingProperty.type,
@@ -540,6 +586,9 @@ export function RealEstateTab({
           : null,
         grace_end_year: graceEndYear,
         grace_end_month: graceEndMonth,
+        sell_year: sellYear,
+        sell_month: sellMonth,
+        include_in_cashflow: editBooleans.includeInCashflow,
       } as any
 
       if (editingProperty.id) {
@@ -816,6 +865,50 @@ export function RealEstateTab({
                   />
                   <span className={styles.modalFormUnit}>만원</span>
                 </div>
+                <div className={styles.modalFormRow}>
+                  <span className={styles.modalFormLabel}></span>
+                  <label className={styles.checkboxRow}>
+                    <input
+                      type="checkbox"
+                      checked={editBooleans.includeInCashflow}
+                      onChange={e => setEditBooleans({ ...editBooleans, includeInCashflow: e.target.checked })}
+                    />
+                    <span className={styles.checkboxText}>현금 흐름으로 처리</span>
+                  </label>
+                </div>
+                <div className={styles.modalFormRow}>
+                  <span className={styles.modalFormLabel}>매각 예정</span>
+                  <div className={styles.fieldContent}>
+                    <div className={styles.typeButtons}>
+                      <button
+                        type="button"
+                        className={`${styles.typeBtn} ${sellMode === 'none' ? styles.active : ''}`}
+                        onClick={() => { setSellMode('none'); setSellDateText('') }}
+                      >
+                        매각 안함
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.typeBtn} ${sellMode === 'custom' ? styles.active : ''}`}
+                        onClick={() => setSellMode('custom')}
+                      >
+                        직접 입력
+                      </button>
+                    </div>
+                    {sellMode === 'custom' && (
+                      <input
+                        type="text"
+                        className={styles.periodInput}
+                        value={formatPeriodDisplay(sellDateText)}
+                        onChange={(e) => {
+                          handlePeriodTextChange(e, setSellDateText, () => {}, () => {})
+                        }}
+                        placeholder="2030.01"
+                        maxLength={7}
+                      />
+                    )}
+                  </div>
+                </div>
               </>
             )}
 
@@ -1004,6 +1097,19 @@ export function RealEstateTab({
           </div>
         </div>
 
+        {/* 현금 흐름 처리 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}></span>
+          <label className={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={editBooleans.includeInCashflow}
+              onChange={e => setEditBooleans({ ...editBooleans, includeInCashflow: e.target.checked })}
+            />
+            <span className={styles.checkboxText}>현금 흐름으로 처리</span>
+          </label>
+        </div>
+
         {/* 부동산 상승률 */}
         <div className={styles.modalFormRow}>
           <span className={styles.modalFormLabel}>상승률</span>
@@ -1057,6 +1163,41 @@ export function RealEstateTab({
                   </button>
                 </div>
               </>
+            )}
+          </div>
+        </div>
+
+        {/* 매각 예정 */}
+        <div className={styles.modalFormRow}>
+          <span className={styles.modalFormLabel}>매각 예정</span>
+          <div className={styles.fieldContent}>
+            <div className={styles.typeButtons}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${sellMode === 'none' ? styles.active : ''}`}
+                onClick={() => { setSellMode('none'); setSellDateText('') }}
+              >
+                매각 안함
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${sellMode === 'custom' ? styles.active : ''}`}
+                onClick={() => setSellMode('custom')}
+              >
+                직접 입력
+              </button>
+            </div>
+            {sellMode === 'custom' && (
+              <input
+                type="text"
+                className={styles.periodInput}
+                value={formatPeriodDisplay(sellDateText)}
+                onChange={(e) => {
+                  handlePeriodTextChange(e, setSellDateText, () => {}, () => {})
+                }}
+                placeholder="2030.01"
+                maxLength={7}
+              />
             )}
           </div>
         </div>
@@ -1181,7 +1322,7 @@ export function RealEstateTab({
     if (rateCategory === 'fixed') {
       metaParts.push(`상승률 ${property.growth_rate}%`)
     } else {
-      metaParts.push('시뮬레이션 가정')
+      metaParts.push('시뮬레이션 가정 (부동산 상승률)')
     }
 
     if (property.has_rental_income && property.rental_monthly) {
@@ -1193,6 +1334,7 @@ export function RealEstateTab({
       }
     }
 
+    let loanLine: string | null = null
     if (property.has_loan && property.loan_amount) {
       const loanParts = [`대출 ${formatMoney(property.loan_amount)}`]
       if (property.loan_rate) loanParts.push(`${property.loan_rate}%`)
@@ -1200,11 +1342,19 @@ export function RealEstateTab({
       if (property.loan_maturity_year) {
         loanParts.push(`${property.loan_maturity_year}.${String(property.loan_maturity_month || 1).padStart(2, '0')} 만기`)
       }
-      metaParts.push(loanParts.join(' | '))
+      loanLine = loanParts.join(' | ')
+    }
+
+    if (property.sell_year) {
+      metaParts.push(`매각 ${property.sell_year}년${property.sell_month ? ` ${property.sell_month}월` : ''}`)
+    }
+
+    if ((property as any).include_in_cashflow) {
+      metaParts.push('현금 흐름 포함')
     }
 
     return (
-      <div key={property.id} className={styles.assetItem}>
+      <div key={property.id} className={styles.assetItem} onClick={() => startEditProperty(property)} style={{ cursor: 'pointer' }}>
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>{property.title}</span>
           {metaParts.length > 0 && (
@@ -1212,17 +1362,75 @@ export function RealEstateTab({
               {metaParts.join(' | ')}
             </span>
           )}
+          {loanLine && (
+            <span className={styles.itemMeta}>{loanLine}</span>
+          )}
         </div>
         <div className={styles.itemRight}>
           <span className={styles.itemAmount}>{formatMoney(property.current_value)}</span>
-          <div className={styles.itemActions}>
-            <button className={styles.editBtn} onClick={() => startEditProperty(property)}>
-              <Pencil size={16} />
-            </button>
-            <button className={styles.deleteBtn} onClick={() => handleDelete(property.id)} disabled={isSaving}>
-              <Trash2 size={16} />
-            </button>
-          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 거주용 부동산 아이템 렌더링
+  const renderResidenceItem = (property: RealEstate) => {
+    const metaParts: string[] = []
+
+    if (property.housing_type === '자가') {
+      if (property.purchase_year && property.purchase_month) {
+        metaParts.push(`취득 ${property.purchase_year}.${String(property.purchase_month).padStart(2, '0')}`)
+      }
+      if (property.purchase_price) {
+        metaParts.push(`취득가 ${formatMoney(property.purchase_price)}`)
+      }
+    }
+
+    if (property.housing_type === '월세' && property.monthly_rent) {
+      metaParts.push(`월세 ${formatMoney(property.monthly_rent)}`)
+    }
+
+    if (property.maintenance_fee) {
+      metaParts.push(`관리비 ${formatMoney(property.maintenance_fee)}/월`)
+    }
+
+    if (property.sell_year) {
+      metaParts.push(`매각 ${property.sell_year}년${property.sell_month ? ` ${property.sell_month}월` : ''}`)
+    }
+
+    if (property.include_in_cashflow) {
+      metaParts.push('현금 흐름 포함')
+    }
+
+    let loanLine: string | null = null
+    if (property.has_loan && property.loan_amount) {
+      const loanLabel = property.housing_type === '자가' ? '주담대' : '전월세 보증금 대출'
+      const loanParts = [`${loanLabel} ${formatMoney(property.loan_amount)}`]
+      if (property.loan_rate) loanParts.push(`${property.loan_rate}%`)
+      if (property.loan_repayment_type) loanParts.push(REPAYMENT_TYPE_LABELS[property.loan_repayment_type])
+      if (property.loan_maturity_year) {
+        loanParts.push(`${property.loan_maturity_year}.${String(property.loan_maturity_month || 1).padStart(2, '0')} 만기`)
+      }
+      loanLine = loanParts.join(' | ')
+    }
+
+    return (
+      <div key={property.id} className={styles.assetItem} onClick={() => startEditProperty(property)} style={{ cursor: 'pointer' }}>
+        <div className={styles.itemInfo}>
+          <span className={styles.itemName}>{property.housing_type}</span>
+          {metaParts.length > 0 && (
+            <span className={styles.itemMeta}>{metaParts.join(' | ')}</span>
+          )}
+          {loanLine && (
+            <span className={styles.itemMeta}>{loanLine}</span>
+          )}
+        </div>
+        <div className={styles.itemRight}>
+          <span className={styles.itemAmount}>
+            {property.housing_type === '자가'
+              ? formatMoney(property.current_value)
+              : `보증금 ${formatMoney(property.current_value)}`}
+          </span>
         </div>
       </div>
     )
@@ -1235,11 +1443,13 @@ export function RealEstateTab({
     const colors: string[] = []
 
     // 거주용 (자가만 자산으로 포함)
-    if (residenceProperty?.housing_type === '자가' && housingAssetValue > 0) {
-      labels.push('거주용 부동산')
-      values.push(housingAssetValue)
-      colors.push(HOUSING_COLOR)
-    }
+    residenceProperties
+      .filter(p => p.housing_type === '자가' && p.current_value > 0)
+      .forEach(p => {
+        labels.push(p.title || '거주용 부동산')
+        values.push(p.current_value)
+        colors.push(HOUSING_COLOR)
+      })
 
     // 추가 부동산
     ;[...investmentProperties, ...rentalProperties, ...landProperties].forEach(property => {
@@ -1249,7 +1459,7 @@ export function RealEstateTab({
     })
 
     return { labels, values, colors }
-  }, [residenceProperty, housingAssetValue, investmentProperties, rentalProperties, landProperties])
+  }, [residenceProperties, investmentProperties, rentalProperties, landProperties])
 
   const doughnutData = {
     labels: chartData.labels,
@@ -1276,7 +1486,7 @@ export function RealEstateTab({
     },
   }
 
-  const hasData = totalRealEstateValue > 0 || !!residenceProperty
+  const hasData = totalRealEstateValue > 0 || residenceProperties.length > 0
 
   // ESC 키로 모달 닫기
   useEffect(() => {
@@ -1444,13 +1654,30 @@ export function RealEstateTab({
               <span className={styles.stepLabel}>
                 {TYPE_LABELS[editingProperty.type]} 수정
               </span>
-              <button
-                className={styles.typeModalClose}
-                onClick={cancelEdit}
-                type="button"
-              >
-                <X size={18} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  className={styles.typeModalClose}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (window.confirm('이 항목을 삭제하시겠습니까?')) {
+                      handleDelete(editingProperty.id!)
+                      cancelEdit()
+                    }
+                  }}
+                  type="button"
+                  disabled={isSaving}
+                  style={{ color: 'var(--dashboard-text-secondary)' }}
+                >
+                  <Trash2 size={18} />
+                </button>
+                <button
+                  className={styles.typeModalClose}
+                  onClick={cancelEdit}
+                  type="button"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
             <div className={styles.modalFormBody}>
               {editingProperty.type === 'residence'
@@ -1464,77 +1691,68 @@ export function RealEstateTab({
       )}
 
       {isExpanded && (
-        <div className={styles.flatList}>
+        <div className={styles.groupedList}>
           {dbRealEstates.length === 0 && (
             <p className={styles.emptyHint}>
               아직 등록된 부동산이 없습니다. 오른쪽 + 버튼으로 추가하세요.
             </p>
           )}
 
-          {/* 거주용 */}
-          {residenceProperty && (
-            <div className={styles.assetItem}>
-              <div className={styles.itemInfo}>
-                <span className={styles.itemName}>{residenceProperty.housing_type}</span>
-                <span className={styles.itemMeta}>
-                  {(() => {
-                    const metaParts: string[] = []
-
-                    if (residenceProperty.housing_type === '자가') {
-                      if (residenceProperty.purchase_year && residenceProperty.purchase_month) {
-                        metaParts.push(`취득 ${residenceProperty.purchase_year}.${String(residenceProperty.purchase_month).padStart(2, '0')}`)
-                      }
-                      if (residenceProperty.purchase_price) {
-                        metaParts.push(`취득가 ${formatMoney(residenceProperty.purchase_price)}`)
-                      }
-                    }
-
-                    if (residenceProperty.housing_type === '월세' && residenceProperty.monthly_rent) {
-                      metaParts.push(`월세 ${formatMoney(residenceProperty.monthly_rent)}`)
-                    }
-
-                    if (residenceProperty.maintenance_fee) {
-                      metaParts.push(`관리비 ${formatMoney(residenceProperty.maintenance_fee)}/월`)
-                    }
-
-                    if (residenceProperty.has_loan && residenceProperty.loan_amount) {
-                      const loanLabel = residenceProperty.housing_type === '자가' ? '주담대' : '전월세 보증금 대출'
-                      const loanParts = [`${loanLabel} ${formatMoney(residenceProperty.loan_amount)}`]
-                      if (residenceProperty.loan_rate) loanParts.push(`${residenceProperty.loan_rate}%`)
-                      if (residenceProperty.loan_repayment_type) loanParts.push(REPAYMENT_TYPE_LABELS[residenceProperty.loan_repayment_type])
-                      if (residenceProperty.loan_maturity_year) {
-                        loanParts.push(`${residenceProperty.loan_maturity_year}.${String(residenceProperty.loan_maturity_month || 1).padStart(2, '0')} 만기`)
-                      }
-                      metaParts.push(loanParts.join(' | '))
-                    }
-
-                    return metaParts.join(' | ')
-                  })()}
-                </span>
-              </div>
-              <div className={styles.itemRight}>
-                <span className={styles.itemAmount}>
-                  {residenceProperty.housing_type === '자가'
-                    ? formatMoney(residenceProperty.current_value)
-                    : `보증금 ${formatMoney(residenceProperty.current_value)}`}
-                </span>
-                <div className={styles.itemActions}>
-                  <button className={styles.editBtn} onClick={() => startEditProperty(residenceProperty)}>
-                    <Pencil size={16} />
-                  </button>
+          {residenceProperties.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>거주용</span>
+                  <span className={styles.sectionCount}>{residenceProperties.length}개</span>
                 </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {residenceProperties.map(property => renderResidenceItem(property))}
               </div>
             </div>
           )}
 
-          {/* 투자용 */}
-          {investmentProperties.map(property => renderPropertyItem(property))}
+          {investmentProperties.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>투자용</span>
+                  <span className={styles.sectionCount}>{investmentProperties.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {investmentProperties.map(property => renderPropertyItem(property))}
+              </div>
+            </div>
+          )}
 
-          {/* 임대용 */}
-          {rentalProperties.map(property => renderPropertyItem(property))}
+          {rentalProperties.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>임대용</span>
+                  <span className={styles.sectionCount}>{rentalProperties.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {rentalProperties.map(property => renderPropertyItem(property))}
+              </div>
+            </div>
+          )}
 
-          {/* 토지 */}
-          {landProperties.map(property => renderPropertyItem(property))}
+          {landProperties.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>토지</span>
+                  <span className={styles.sectionCount}>{landProperties.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {landProperties.map(property => renderPropertyItem(property))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

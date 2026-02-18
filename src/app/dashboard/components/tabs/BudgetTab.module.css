@@ -7,863 +7,353 @@
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow-y: auto;
+  overflow: hidden;
+  position: relative;
 }
 
-/* 상단 계좌 바 */
-.accountBar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 32px;
-  padding: 16px 24px;
-}
-
-.accountItem {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  border: none;
-  background: none;
-  padding: 8px 0;
-  border-radius: 0;
-  cursor: pointer;
-  text-align: left;
-}
-
-.accountItem .accountItemName {
-  color: var(--dashboard-text-muted);
-}
-
-.accountItem .accountItemBalance {
-  color: var(--dashboard-text-muted);
-}
-
-.accountItem .accountItemChange {
-  color: var(--dashboard-border);
-}
-
-.accountItem:hover .accountItemName,
-.accountItem:hover .accountItemBalance {
-  color: var(--dashboard-text-secondary);
-}
-
-.accountItemSelected .accountItemName {
-  color: var(--dashboard-text-secondary);
-}
-
-.accountItemSelected .accountItemBalance {
-  color: var(--dashboard-text);
-}
-
-.accountItemSelected .accountItemChange.positive {
-  color: var(--chart-profit-color, #ef4444);
-}
-
-.accountItemSelected .accountItemChange.negative {
-  color: var(--chart-loss-color, #3b82f6);
-}
-
-.accountItemName {
-  font-size: 11px;
-  font-weight: 400;
-  transition: color 0.15s;
-}
-
-.accountItemValues {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.accountItemBalance {
-  font-size: 14px;
-  font-weight: 600;
-  transition: color 0.15s;
-}
-
-.accountItemChange {
-  font-size: 11px;
-  font-weight: 500;
-  transition: color 0.15s;
-}
-
-.accountItemChange.positive {
-  color: var(--dashboard-border);
-}
-
-.accountItemChange.negative {
-  color: var(--dashboard-border);
-}
-
-.accountItemChange.zero {
-  color: var(--dashboard-border);
-}
-
-.accountDivider {
-  width: 1px;
-  height: 32px;
-  background: var(--dashboard-border);
-  flex-shrink: 0;
-}
-
-.noAccountsText {
-  font-size: 13px;
-  color: var(--dashboard-text-muted);
-  padding: 8px 0;
-}
-
-.accountTotal {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-left: auto;
-}
-
-.accountTotalLabel {
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--dashboard-text-muted);
-}
-
-.accountTotalValues {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.accountTotalValue {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--dashboard-text);
-}
-
-.accountTotalChange {
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.accountTotalChange.positive {
-  color: var(--chart-profit-color, #ef4444);
-}
-
-.accountTotalChange.negative {
-  color: var(--chart-loss-color, #3b82f6);
-}
-
-.accountTotalChange.zero {
-  color: var(--dashboard-text-muted);
-}
-
-/* 주간 달력 */
-.weekCalendar {
-  display: flex;
-  gap: 0;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--dashboard-border);
-}
-
-.weekDay {
+/* 콘텐츠 영역: 상단과 하단 네비 사이 전체 */
+.contentArea {
   flex: 1;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: 2px;
-  padding: 8px 6px;
-  border: none;
-  background: none;
-  border-radius: 0;
-  border-left: 1px solid var(--dashboard-border-light);
-  min-height: 80px;
 }
 
-.weekDay:first-child {
-  border-left: none;
-}
-
-
-.weekDayToday .weekDayNum {
-  background: var(--accent-primary, #007aff);
-  color: white;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-
-.weekDayHeader {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.weekDayName {
-  font-size: 11px;
-  color: var(--dashboard-text-muted);
-  font-weight: 400;
-}
-
-.weekDayNum {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-}
-
-.weekDayTotals {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0;
-  min-height: 24px;
-  margin-top: 2px;
-}
-
-.weekDayIncome {
-  font-size: 10px;
-  color: var(--chart-line-color);
-  font-weight: 500;
-}
-
-.weekDayExpense {
-  font-size: 10px;
-  color: var(--dashboard-text-secondary);
-  font-weight: 500;
-}
-
-.weekDayNet {
-  font-size: 10px;
-  color: var(--chart-profit-color);
-  font-weight: 600;
-}
-
-.weekDayNetNegative {
-  font-size: 10px;
-  color: var(--chart-loss-color);
-  font-weight: 600;
-}
-
-/* 수입/지출 요약 헤더 */
-.summaryHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--dashboard-border);
-}
-
-.summaryCharts {
+/* ============ 5주 달력 그리드 ============ */
+.calendarGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: auto repeat(5, 1fr);
   gap: 0;
   flex: 1;
-}
-
-.summaryChartBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 24px;
-}
-
-.summaryChartBlock:first-child {
-  border-right: 1px solid var(--dashboard-border);
-}
-
-.summaryLeft {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1;
-}
-
-.metricRow {
-  display: flex;
-  gap: 24px;
-}
-
-/* 카테고리별 막대 그래프 */
-.categoryBars {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.categoryBarRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.barLabel {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--dashboard-text-muted);
-  width: 28px;
-  flex-shrink: 0;
-}
-
-.barTrack {
-  flex: 1;
-  height: 8px;
-  background: var(--dashboard-border-light);
-  border-radius: 4px;
-  display: flex;
   overflow: hidden;
 }
 
-.barSegment {
-  height: 100%;
-  transition: width 0.3s ease;
+.calendarHeaderCell {
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  background: var(--dashboard-bg-secondary);
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
-.barSegment:first-child {
-  border-radius: 4px 0 0 4px;
+.calendarCell {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--dashboard-border);
+  border-right: 1px solid var(--dashboard-border);
 }
 
-.barSegment:last-child {
-  border-radius: 0 4px 4px 0;
+.calendarCell:nth-child(7n + 14) {
+  border-right: none;
 }
 
-.barSegment:only-child {
-  border-radius: 4px;
+/* 마지막 줄 하단 테두리 제거 */
+.calendarCell:nth-last-child(-n+7) {
+  border-bottom: none;
 }
 
-.monthSelector {
+.calendarCellCurrentWeek {
+  background: var(--dashboard-bg-secondary);
+}
+
+.calendarCellHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-start;
+  margin-bottom: 2px;
 }
 
-.monthButton {
+.calendarDayNum {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+}
+
+.calendarDayToday {
+  background: var(--accent-primary, #007aff);
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.calendarCellTotals {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.calendarIncome {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--chart-line-color, #10b981);
+}
+
+.calendarExpense {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+}
+
+/* ============ 타임라인 뷰 ============ */
+.timelineView {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.timelineGroup {
+  padding: 8px 16px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dashboard-text-muted);
+  background: var(--dashboard-bg-secondary);
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.timelineRow {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--dashboard-border);
+  cursor: pointer;
+  gap: 12px;
+}
+
+.timelineRow:hover {
+  background: var(--dashboard-hover-bg);
+}
+
+.timelineRowDate {
+  width: 48px;
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+  flex-shrink: 0;
+}
+
+.timelineRowAmount {
+  width: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.timelineRowAmountIncome {
+  color: var(--chart-line-color, #10b981);
+}
+
+.timelineRowAmountExpense {
+  color: var(--dashboard-text);
+}
+
+.timelineRowTitle {
+  flex: 1;
+  font-size: 13px;
+  color: var(--dashboard-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.timelineRowCategory {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
+}
+
+.timelineRowDelete {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
-  background: var(--dashboard-bg);
-  color: var(--dashboard-text-secondary);
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--dashboard-border);
   cursor: pointer;
-  transition: all 0.15s;
-}
-
-.monthButton:hover {
-  background: var(--dashboard-hover-bg);
-  color: var(--dashboard-text);
-}
-
-.monthLabelSmall {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  min-width: 100px;
-  text-align: center;
-}
-
-.confirmedBadge {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--chart-line-color, #10b981);
-  background: color-mix(in srgb, var(--chart-line-color, #10b981) 15%, transparent);
-  padding: 2px 6px;
   border-radius: 4px;
 }
 
-.confirmButton {
+.timelineRowDelete:hover {
+  color: #ef4444;
+}
+
+.timelineEmpty {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: var(--dashboard-bg);
-  color: var(--dashboard-text);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
+  justify-content: center;
+  flex: 1;
   font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-left: auto;
-}
-
-.confirmButton:hover {
-  background: var(--dashboard-bg-secondary);
-  border-color: var(--dashboard-text-muted);
-}
-
-.sideMetric {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.sideLabel {
-  font-size: 12px;
-  font-weight: 500;
   color: var(--dashboard-text-muted);
 }
 
-.sideValue {
-  font-size: 24px;
-  font-weight: 700;
+/* 타임라인 수정 모드 */
+.timelineEditRow {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--dashboard-border);
+  gap: 8px;
+  background: var(--dashboard-bg-secondary);
+}
+
+.timelineEditInput {
+  padding: 6px 8px;
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--dashboard-input-bg);
   color: var(--dashboard-text);
 }
 
-.incomeValue {
-  color: var(--chart-line-color, #10b981);
+.timelineEditInput:focus {
+  outline: none;
+  border-color: var(--accent-primary, #007aff);
 }
 
-.expenseValue {
+.timelineEditDayInput {
+  composes: timelineEditInput;
+  width: 48px;
+  text-align: center;
+}
+
+.timelineEditAmountInput {
+  composes: timelineEditInput;
+  width: 90px;
+  text-align: right;
+}
+
+.timelineEditTitleInput {
+  composes: timelineEditInput;
+  flex: 1;
+  min-width: 60px;
+}
+
+.timelineEditCategorySelect {
+  composes: timelineEditInput;
+  width: 80px;
+  cursor: pointer;
+  color-scheme: light dark;
+}
+
+.timelineEditAccountSelect {
+  composes: timelineEditInput;
+  width: 100px;
+  cursor: pointer;
+  color-scheme: light dark;
+}
+
+.timelineEditSaveBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--chart-line-color, #10b981);
+  cursor: pointer;
+}
+
+.timelineEditSaveBtn:hover {
+  color: #22c55e;
+}
+
+/* 숫자 입력 스핀 버튼 제거 */
+.timelineEditDayInput::-webkit-outer-spin-button,
+.timelineEditDayInput::-webkit-inner-spin-button,
+.timelineEditAmountInput::-webkit-outer-spin-button,
+.timelineEditAmountInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ============ 하단 네비게이션 바 (floating pill) ============ */
+.bottomNav {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 48px;
+  padding: 0 6px;
+  border-radius: 24px;
+  border: 1px solid var(--dashboard-border);
+  z-index: 10;
+  animation: glassEnter 0.2s ease-out;
+}
+
+@keyframes glassEnter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.bottomNavItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--dashboard-text-muted);
+  border-radius: 50%;
+  transition: color 0.15s;
+}
+
+.bottomNavItem:hover {
   color: var(--dashboard-text-secondary);
+}
+
+.bottomNavItemActive {
+  color: var(--accent-primary, #007aff);
 }
 
 .addButton {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  background: var(--accent-color, #007aff);
-  color: white;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  background: var(--accent-primary, #007aff);
+  color: white;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  margin: 0 4px;
 }
 
 .addButton:hover {
-  filter: brightness(0.9);
+  opacity: 0.9;
 }
 
-/* 콘텐츠 레이아웃: 1:1 두 컬럼 */
-.content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-  flex: 1;
-  min-height: 0;
-}
-
-/* 수입/지출 컬럼 공통 */
-.incomeColumn,
-.expenseColumn {
-  display: flex;
-  flex-direction: column;
-  padding: 24px;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.incomeColumn {
-  border-right: 1px solid var(--dashboard-border);
-}
-
-.columnLabel {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--dashboard-text-secondary);
-  margin-bottom: 12px;
-}
-
-.columnHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.columnTitle {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--dashboard-text);
-  margin: 0;
-}
-
-.columnTotal {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--dashboard-text-secondary);
-}
-
-.addInlineButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-  background: var(--dashboard-bg-secondary);
-  border: 1px dashed var(--dashboard-border);
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-bottom: 16px;
-}
-
-.addInlineButton:hover {
-  background: var(--dashboard-hover-bg);
-  border-color: var(--dashboard-text-muted);
-  color: var(--dashboard-text);
-}
-
-/* 테이블 헤더 */
-.tableHeader {
-  display: flex;
-  border-bottom: 1px solid var(--dashboard-border);
-  background: var(--dashboard-bg-secondary);
-}
-
-.headerDay {
-  width: 48px;
-  padding: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  border-right: 1px solid var(--dashboard-border);
-}
-
-.headerAmount {
-  width: 100px;
-  padding: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  border-right: 1px solid var(--dashboard-border);
-}
-
-.headerTitle {
-  flex: 1;
-  min-width: 80px;
-  padding: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  border-right: 1px solid var(--dashboard-border);
-}
-
-.headerCategory {
-  width: 90px;
-  padding: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  border-right: 1px solid var(--dashboard-border);
-}
-
-.headerAccount {
-  flex: 1;
-  min-width: 80px;
-  padding: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  border-right: 1px solid var(--dashboard-border);
-}
-
-.headerAction {
-  width: 32px;
-  flex-shrink: 0;
-}
-
-/* 인라인 입력 행 - 엑셀 스타일 */
-.inlineInputRow {
-  display: flex;
-  border-bottom: 2px solid var(--dashboard-text);
-}
-
-.inlineDayInput {
-  width: 48px;
-  padding: 8px;
-  border: none;
-  border-right: 1px solid var(--dashboard-border);
-  font-size: 13px;
-  background: transparent;
-  color: var(--dashboard-text);
-}
-
-.inlineDayInput:focus {
-  outline: none;
-  background: var(--dashboard-bg-secondary);
-}
-
-.inlineAmountInput {
-  width: 100px;
-  padding: 8px;
-  border: none;
-  border-right: 1px solid var(--dashboard-border);
-  font-size: 13px;
-  background: transparent;
-  color: var(--dashboard-text);
-}
-
-.inlineAmountInput:focus {
-  outline: none;
-  background: var(--dashboard-bg-secondary);
-}
-
-.inlineTitleInput {
-  flex: 1;
-  min-width: 80px;
-  padding: 8px;
-  border: none;
-  border-right: 1px solid var(--dashboard-border);
-  font-size: 13px;
-  background: transparent;
-  color: var(--dashboard-text);
-}
-
-.inlineTitleInput:focus {
-  outline: none;
-  background: var(--dashboard-bg-secondary);
-}
-
-.inlineCategorySelect {
-  width: 90px;
-  padding: 8px;
-  border: none;
-  border-right: 1px solid var(--dashboard-border);
-  font-size: 13px;
-  background: transparent;
-  color: var(--dashboard-text);
-  cursor: pointer;
-  color-scheme: light dark;
-}
-
-.inlineCategorySelect:focus {
-  outline: none;
-  background: var(--dashboard-bg-secondary);
-}
-
-.inlineAccountSelect {
-  flex: 1;
-  min-width: 80px;
-  padding: 8px;
-  border: none;
-  border-right: 1px solid var(--dashboard-border);
-  font-size: 13px;
-  background: transparent;
-  color: var(--dashboard-text);
-  cursor: pointer;
-  color-scheme: light dark;
-}
-
-.inlineAccountSelect:focus {
-  outline: none;
-  background: var(--dashboard-bg-secondary);
-}
-
-.inlineAddBtn {
-  width: 32px;
-  flex-shrink: 0;
-  padding: 8px;
-  background: transparent;
-  border: none;
-  font-size: 16px;
-  color: var(--dashboard-text-muted);
-  cursor: pointer;
-}
-
-.inlineAddBtn:hover:not(:disabled) {
-  color: var(--dashboard-text);
-  background: var(--dashboard-hover-bg);
-}
-
-.inlineAddBtn:disabled {
-  color: var(--dashboard-border);
-  cursor: not-allowed;
-}
-
-/* 숫자 입력 스핀 버튼 제거 */
-.inlineDayInput::-webkit-outer-spin-button,
-.inlineDayInput::-webkit-inner-spin-button,
-.inlineAmountInput::-webkit-outer-spin-button,
-.inlineAmountInput::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* 왼쪽: 요약 섹션 (기존 - 미사용) */
-.summarySection {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.summaryCard {
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.summaryTitle {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  margin: 0 0 8px 0;
-}
-
-.summaryTotal {
-  font-size: 24px;
-  font-weight: 700;
-  color: #ef4444;
-  margin-bottom: 16px;
-}
-
-.summaryTotalIncome {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--chart-line-color, #10b981);
-  margin-bottom: 16px;
-}
-
-.categoryList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.categoryRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
-}
-
-.categoryName {
-  color: var(--dashboard-text-secondary);
-}
-
-.categoryAmount {
-  color: var(--dashboard-text);
-  font-weight: 500;
-}
-
-.emptyText {
-  font-size: 13px;
-  color: var(--dashboard-text-muted);
-  text-align: center;
-  padding: 8px 0;
-}
-
-/* 카테고리 차트 */
-.categoryChart {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.chartWrapper {
-  width: 80px;
-  height: 80px;
-  flex-shrink: 0;
-}
-
-.chartLegend {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legendDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.legendLabel {
-  font-size: 13px;
-  color: var(--dashboard-text);
-  flex: 1;
-}
-
-.legendValue {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-}
-
-.legendPercent {
-  font-size: 12px;
-  color: var(--dashboard-text-muted);
-  width: 40px;
-  text-align: right;
-}
-
-.emptyLegend {
-  font-size: 13px;
-  color: var(--dashboard-text-muted);
-}
-
-.balanceCard {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--dashboard-bg-secondary);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.balanceLabel {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-}
-
-.balancePositive {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--chart-line-color, #10b981);
-}
-
-.balanceNegative {
-  font-size: 20px;
-  font-weight: 700;
-  color: #ef4444;
-}
-
-/* 오른쪽: 거래 목록 섹션 */
-.transactionSection {
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 8px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.sectionTitle {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  margin: 0 0 16px 0;
-}
-
-.transactionList {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  margin-top: 16px;
-  border-top: 1px solid var(--dashboard-border);
-}
+/* ============ 기존 유지 스타일 (거래 행, 수정, 모달 등) ============ */
 
 /* 엑셀 스타일 거래 행 */
 .transactionRow {
@@ -941,12 +431,10 @@
 
 .deleteButton:hover {
   color: #ef4444;
-  background: #fef2f2;
 }
 
 .saveButton:hover {
   color: #22c55e;
-  background: #f0fdf4;
 }
 
 /* 수정 입력 필드 */
@@ -956,7 +444,8 @@
   border: none;
   border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
-  background: #fffbeb;
+  background: var(--dashboard-bg-secondary);
+  color: var(--dashboard-text);
 }
 
 .editAmountInput {
@@ -965,7 +454,8 @@
   border: none;
   border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
-  background: #fffbeb;
+  background: var(--dashboard-bg-secondary);
+  color: var(--dashboard-text);
 }
 
 .editTitleInput {
@@ -975,7 +465,8 @@
   border: none;
   border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
-  background: #fffbeb;
+  background: var(--dashboard-bg-secondary);
+  color: var(--dashboard-text);
 }
 
 .editCategorySelect {
@@ -984,7 +475,8 @@
   border: none;
   border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
-  background: #fffbeb;
+  background: var(--dashboard-bg-secondary);
+  color: var(--dashboard-text);
   cursor: pointer;
 }
 
@@ -995,7 +487,8 @@
   border: none;
   border-right: 1px solid var(--dashboard-border);
   font-size: 12px;
-  background: #fffbeb;
+  background: var(--dashboard-bg-secondary);
+  color: var(--dashboard-text);
   cursor: pointer;
 }
 
@@ -1014,6 +507,23 @@
 .editAmountInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* ============ 공통 유틸 ============ */
+
+.incomeValue {
+  color: var(--chart-line-color, #10b981);
+}
+
+.expenseValue {
+  color: var(--dashboard-text-secondary);
+}
+
+.emptyText {
+  font-size: 13px;
+  color: var(--dashboard-text-muted);
+  text-align: center;
+  padding: 8px 0;
 }
 
 /* 빈 상태 */
@@ -1035,21 +545,7 @@
   color: var(--dashboard-text-secondary);
 }
 
-.addFirstButton {
-  padding: 8px 16px;
-  background: var(--dashboard-border-light);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
-  color: var(--dashboard-text-secondary);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.addFirstButton:hover {
-  background: var(--dashboard-border);
-}
-
-/* 모달 */
+/* ============ 모달 ============ */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -1103,7 +599,7 @@
 }
 
 .closeButton:hover {
-  background: var(--dashboard-border-light);
+  background: var(--dashboard-hover-bg);
 }
 
 .modalCloseBtn {
@@ -1123,12 +619,7 @@
   background: var(--dashboard-hover-bg);
 }
 
-.modalContent {
-  padding: 24px;
-  overflow-y: auto;
-}
-
-/* 폼 */
+/* ============ 폼 ============ */
 .form {
   padding: 20px;
 }
@@ -1191,7 +682,7 @@
 
 .input:focus {
   outline: none;
-  border-color: var(--accent-color, #007aff);
+  border-color: var(--accent-primary, #007aff);
   background: var(--dashboard-bg);
 }
 
@@ -1206,7 +697,7 @@
 
 .select:focus {
   outline: none;
-  border-color: var(--accent-color, #007aff);
+  border-color: var(--accent-primary, #007aff);
   background: var(--dashboard-bg);
 }
 
@@ -1331,156 +822,366 @@
 }
 
 .submitButton:disabled {
-  background: #d6d3d1;
+  background: var(--dashboard-border);
   cursor: not-allowed;
 }
 
-/* 계좌 탭 */
-.accountTabs {
+/* ============ 일괄 입력 폼 (가계부 작성) ============ */
+.batchModal {
+  background: var(--dashboard-bg);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.batchBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.batchHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 16px 24px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--dashboard-border);
-  flex-wrap: wrap;
+  background: var(--dashboard-bg-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
 }
 
-.accountTab {
+.batchColDay {
+  width: 50px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.batchColType {
+  width: 96px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.batchColCategory {
+  width: 90px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.batchColTitle {
+  flex: 1;
+  min-width: 80px;
+  padding-left: 8px;
+}
+
+.batchColAmount {
+  width: 100px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.batchColAccount {
+  width: 100px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.batchColAction {
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.batchList {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  max-height: 400px;
+}
+
+/* Committed row (read-only display) */
+.batchRow {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: var(--dashboard-hover-bg);
-  border: none;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  cursor: pointer;
-  transition: all 0.15s;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--dashboard-border);
+  height: 40px;
 }
 
-.accountTab:hover {
-  background: var(--dashboard-border);
+.batchRow:hover {
+  background: var(--dashboard-hover-bg);
+}
+
+.batchCellDay {
+  width: 50px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+  flex-shrink: 0;
+}
+
+.batchCellType {
+  width: 96px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.batchCellTypeExpense {
   color: var(--dashboard-text);
 }
 
-.accountTabActive {
-  background: var(--dashboard-text);
-  color: var(--dashboard-bg);
+.batchCellTypeIncome {
+  color: var(--chart-line-color, #10b981);
 }
 
-.accountTabActive:hover {
-  background: var(--dashboard-text);
-  color: var(--dashboard-bg);
-}
-
-.defaultDot {
-  width: 6px;
-  height: 6px;
-  background: var(--chart-line-color, #10b981);
-  border-radius: 50%;
-  margin-right: 6px;
-}
-
-.accountTabActive .defaultDot {
-  background: #86efac;
-}
-
-.accountBalance {
+.batchCellCategory {
+  width: 90px;
+  text-align: center;
   font-size: 12px;
-  opacity: 0.8;
+  color: var(--dashboard-text-secondary);
+  flex-shrink: 0;
 }
 
-.accountSettingsBtn {
+.batchCellTitle {
+  flex: 1;
+  min-width: 80px;
+  padding: 0 8px;
+  font-size: 13px;
+  color: var(--dashboard-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.batchCellAmount {
+  width: 100px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text);
+  flex-shrink: 0;
+}
+
+.batchCellAccount {
+  width: 100px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.batchRowDelete {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: none;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 8px;
-  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--dashboard-border);
   cursor: pointer;
-  transition: all 0.15s;
+  border-radius: 4px;
 }
 
-.accountSettingsBtn:hover {
-  background: var(--dashboard-hover-bg);
-  color: var(--dashboard-text-secondary);
+.batchRowDelete:hover {
+  color: #ef4444;
 }
 
-/* 계좌 관리 모달 */
-.accountForm {
-  padding: 20px;
-  background: var(--dashboard-bg-secondary);
-  border-radius: 12px;
-  margin-bottom: 24px;
-}
-
-.accountForm h4 {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--dashboard-text);
-  margin: 0 0 16px 0;
-}
-
-.accountFormRow {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.accountFormRow:last-of-type {
-  margin-bottom: 0;
-}
-
-.accountFormGroup {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.accountFormGroup label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-}
-
-.checkboxLabel {
+/* Active input row */
+.batchInputRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-top: 24px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--dashboard-border);
+  height: 44px;
+  background: var(--dashboard-bg-secondary);
+  flex-shrink: 0;
+}
+
+.batchDayInput {
+  width: 50px;
+  height: 100%;
+  padding: 0 4px;
+  border: none;
+  border-right: 1px solid var(--dashboard-border);
   font-size: 13px;
+  text-align: center;
+  background: transparent;
+  color: var(--dashboard-text);
+  flex-shrink: 0;
+}
+
+.batchDayInput:focus {
+  outline: none;
+  background: var(--dashboard-input-bg);
+}
+
+.batchDayInput::-webkit-outer-spin-button,
+.batchDayInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.batchTypeToggle {
+  width: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 4px;
+  border-right: 1px solid var(--dashboard-border);
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.batchTypeBtn {
+  padding: 4px 8px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--dashboard-text-muted);
+  line-height: 1;
+}
+
+.batchTypeBtnExpense {
+  background: var(--dashboard-text);
+  color: var(--dashboard-bg);
+  border-color: var(--dashboard-text);
+}
+
+.batchTypeBtnIncome {
+  background: var(--chart-line-color, #10b981);
+  color: white;
+  border-color: var(--chart-line-color, #10b981);
+}
+
+.batchCategorySelect {
+  width: 90px;
+  height: 100%;
+  padding: 0 4px;
+  border: none;
+  border-right: 1px solid var(--dashboard-border);
+  font-size: 12px;
+  background: transparent;
   color: var(--dashboard-text);
   cursor: pointer;
+  flex-shrink: 0;
+  color-scheme: light dark;
 }
 
-.checkboxLabel input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent-color, #007aff);
+.batchCategorySelect:focus {
+  outline: none;
+  background: var(--dashboard-input-bg);
 }
 
-.defaultBadge {
-  padding: 2px 6px;
-  background: #dcfce7;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  color: #16a34a;
+.batchTitleInput {
+  flex: 1;
+  min-width: 80px;
+  height: 100%;
+  padding: 0 8px;
+  border: none;
+  border-right: 1px solid var(--dashboard-border);
+  font-size: 13px;
+  background: transparent;
+  color: var(--dashboard-text);
 }
 
-.accountFormActions {
+.batchTitleInput:focus {
+  outline: none;
+  background: var(--dashboard-input-bg);
+}
+
+.batchAmountInput {
+  width: 100px;
+  height: 100%;
+  padding: 0 8px;
+  border: none;
+  border-right: 1px solid var(--dashboard-border);
+  font-size: 13px;
+  text-align: right;
+  background: transparent;
+  color: var(--dashboard-text);
+  flex-shrink: 0;
+}
+
+.batchAmountInput:focus {
+  outline: none;
+  background: var(--dashboard-input-bg);
+}
+
+.batchAmountInput::-webkit-outer-spin-button,
+.batchAmountInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.batchAccountSelect {
+  width: 100px;
+  height: 100%;
+  padding: 0 4px;
+  border: none;
+  border-right: 1px solid var(--dashboard-border);
+  font-size: 12px;
+  background: transparent;
+  color: var(--dashboard-text);
+  cursor: pointer;
+  flex-shrink: 0;
+  color-scheme: light dark;
+}
+
+.batchAccountSelect:focus {
+  outline: none;
+  background: var(--dashboard-input-bg);
+}
+
+.batchRowAdd {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  border-radius: 4px;
 }
 
+.batchRowAdd:hover {
+  color: var(--accent-primary, #007aff);
+}
+
+.batchRowAdd:disabled {
+  color: var(--dashboard-border);
+  cursor: not-allowed;
+}
+
+.batchFooter {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--dashboard-border);
+  justify-content: flex-end;
+}
+
+/* ============ 계좌 관련 ============ */
 .cancelBtn {
   padding: 10px 20px;
   border: 1px solid var(--dashboard-border);
@@ -1499,7 +1200,7 @@
   padding: 10px 24px;
   border: none;
   border-radius: 8px;
-  background: var(--accent-color, #007aff);
+  background: var(--accent-primary, #007aff);
   color: white;
   font-size: 14px;
   font-weight: 600;
@@ -1511,97 +1212,7 @@
   filter: brightness(0.9);
 }
 
-.accountList h4 {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--dashboard-text);
-  margin: 0 0 12px 0;
-}
-
-.accountListItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  background: var(--dashboard-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 10px;
-  margin-bottom: 8px;
-}
-
-.accountListItem:last-child {
-  margin-bottom: 0;
-}
-
-.accountListItemInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.accountListItemName {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-}
-
-.accountListItemMeta {
-  font-size: 12px;
-  color: var(--dashboard-text-secondary);
-}
-
-.accountListItemActions {
-  display: flex;
-  gap: 4px;
-}
-
-.actionBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--dashboard-text-muted);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.actionBtn:hover {
-  background: var(--dashboard-hover-bg);
-  color: var(--dashboard-text-secondary);
-}
-
-.emptyState {
-  padding: 40px 24px;
-  text-align: center;
-  color: var(--dashboard-text-muted);
-  font-size: 14px;
-}
-
-.emptyStateBox {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  gap: 16px;
-  color: var(--dashboard-text-secondary);
-}
-
-/* 거래 행에 계좌 표시 */
-.transactionAccount {
-  font-size: 11px;
-  color: var(--dashboard-text-muted);
-  margin-left: 6px;
-}
-
-/* 월마감 모달 */
+/* ============ 월마감 모달 ============ */
 .confirmModal {
   background: var(--dashboard-bg);
   border-radius: 16px;
@@ -1621,72 +1232,11 @@
   line-height: 1.5;
 }
 
-.confirmSummary {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  background: var(--dashboard-bg-secondary);
-  border-radius: 10px;
-  margin-bottom: 20px;
-}
-
-.confirmRow {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  color: var(--dashboard-text-secondary);
-}
-
-.confirmRowTotal {
-  display: flex;
-  justify-content: space-between;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--dashboard-text);
-  padding-top: 12px;
-  border-top: 1px solid var(--dashboard-border);
-}
-
-.confirmInputGroup {
-  margin-bottom: 20px;
-}
-
-.confirmInputGroup label {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-  margin-bottom: 8px;
-}
-
-.confirmInput {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 8px;
-  font-size: 16px;
-  box-sizing: border-box;
-}
-
-.confirmInput:focus {
-  outline: none;
-  border-color: var(--dashboard-text);
-}
-
-.confirmHint {
-  display: block;
-  font-size: 12px;
-  color: var(--dashboard-text-muted);
-  margin-top: 6px;
-}
-
 .confirmActions {
   display: flex;
   gap: 12px;
 }
 
-/* 월마감 모달 - 계좌 목록 */
 .confirmAccountList {
   display: flex;
   flex-direction: column;
@@ -1701,7 +1251,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 0;
-  border-bottom: 1px solid var(--dashboard-border-light);
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
 .confirmAccountItem:last-child {
@@ -1759,6 +1309,7 @@
   font-weight: 500;
   text-align: right;
   background: var(--dashboard-input-bg);
+  color: var(--dashboard-text);
 }
 
 .confirmAccountInput input:focus {
@@ -1819,23 +1370,7 @@
   color: var(--dashboard-text-muted);
 }
 
-/* 연결된 결제수단 표시 */
-.linkedPayments {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
-}
-
-.linkedPaymentBadge {
-  padding: 2px 8px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 4px;
-  font-size: 11px;
-  color: var(--dashboard-text-secondary);
-}
-
-/* 스켈레톤 shimmer 애니메이션 */
+/* ============ 스켈레톤 ============ */
 @keyframes shimmer {
   0% {
     background-position: -200px 0;
@@ -1852,60 +1387,13 @@
   border-radius: 4px;
 }
 
-/* 계좌 아이템 스켈레톤 */
-.skeletonAccountItem {
-  width: 80px;
-  height: 48px;
-  border-radius: 4px;
+.skeletonCalendar {
+  flex: 1;
+  border-radius: 0;
 }
 
-/* 라벨 스켈레톤 */
-.skeletonLabel {
-  display: block;
-  width: 60px;
-  height: 14px;
-  margin-bottom: 8px;
-}
-
-/* 값 스켈레톤 */
-.skeletonValue {
-  display: block;
-  width: 100px;
-  height: 28px;
-}
-
-/* 차트 스켈레톤 */
-.skeletonChart {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-}
-
-/* 범례 아이템 스켈레톤 */
-.skeletonLegendItem {
-  width: 100px;
-  height: 16px;
-  margin-bottom: 8px;
-}
-
-/* 컬럼 라벨 스켈레톤 */
-.skeletonColumnLabel {
-  width: 60px;
-  height: 18px;
-  margin-bottom: 12px;
-}
-
-/* 테이블 헤더 스켈레톤 */
-.skeletonTableHeader {
-  width: 100%;
-  height: 36px;
-  margin-bottom: 0;
-}
-
-/* 행 스켈레톤 */
-.skeletonRow {
-  width: 100%;
-  height: 40px;
-  margin-bottom: 0;
+.skeletonBottomNav {
+  height: 56px;
+  flex-shrink: 0;
   border-radius: 0;
 }

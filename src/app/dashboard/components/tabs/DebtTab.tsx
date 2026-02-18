@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Pencil, X, Plus, ArrowLeft } from 'lucide-react'
+import { Trash2, X, Plus, ArrowLeft } from 'lucide-react'
 import type { Debt, DebtInput, LoanRepaymentType, RateType, Owner } from '@/types/tables'
 import { formatMoney } from '@/lib/utils'
 import { formatPeriodDisplay, toPeriodRaw, isPeriodValid, restorePeriodCursor } from '@/lib/utils/periodInput'
@@ -30,6 +30,8 @@ interface DebtTabProps {
   retirementAge: number
   spouseRetirementAge?: number
   isMarried: boolean
+  selfLifeExpectancy?: number
+  spouseLifeExpectancy?: number
 }
 
 interface EditingDebt {
@@ -81,6 +83,8 @@ export function DebtTab({
   retirementAge,
   spouseRetirementAge,
   isMarried,
+  selfLifeExpectancy,
+  spouseLifeExpectancy,
 }: DebtTabProps) {
   const { isDark } = useChartTheme()
   const currentYear = new Date().getFullYear()
@@ -96,6 +100,12 @@ export function DebtTab({
   }, [spouseBirthYear, currentYear, selfRetirementYear, spouseCurrentAge, spouseRetirementAge])
   const hasSpouse = isMarried && spouseBirthYear
 
+  // 기대수명 연도 계산
+  const selfLifeExpectancyYear = birthYear + (selfLifeExpectancy || 100)
+  const spouseLifeExpectancyYear = spouseBirthYear
+    ? spouseBirthYear + (spouseLifeExpectancy || selfLifeExpectancy || 100)
+    : selfLifeExpectancyYear
+
   // React Query로 데이터 로드 (캐시에서 즉시 가져옴)
   const { data: debts = [], isLoading } = useDebts(simulationId)
   const invalidate = useInvalidateByCategory(simulationId)
@@ -110,8 +120,8 @@ export function DebtTab({
   const [maturityDateText, setMaturityDateText] = useState('')
   const [graceEndDateText, setGraceEndDateText] = useState('')
   const [startType, setStartType] = useState<'current' | 'self-retirement' | 'spouse-retirement' | 'year'>('current')
-  const [maturityType, setMaturityType] = useState<'self-retirement' | 'spouse-retirement' | 'year'>('self-retirement')
-  const [graceEndType, setGraceEndType] = useState<'self-retirement' | 'spouse-retirement' | 'year'>('year')
+  const [maturityType, setMaturityType] = useState<'self-retirement' | 'spouse-retirement' | 'self-life-expectancy' | 'spouse-life-expectancy' | 'year'>('self-retirement')
+  const [graceEndType, setGraceEndType] = useState<'self-retirement' | 'spouse-retirement' | 'self-life-expectancy' | 'spouse-life-expectancy' | 'year'>('year')
 
   // 타입 선택 드롭다운
   const [showTypeMenu, setShowTypeMenu] = useState(false)
@@ -291,6 +301,10 @@ export function DebtTab({
       setMaturityType('self-retirement')
     } else if (hasSpouse && mYear === spouseRetirementYear && mMonth === 12) {
       setMaturityType('spouse-retirement')
+    } else if (mYear === selfLifeExpectancyYear && mMonth === 12) {
+      setMaturityType('self-life-expectancy')
+    } else if (hasSpouse && mYear === spouseLifeExpectancyYear && mMonth === 12) {
+      setMaturityType('spouse-life-expectancy')
     } else {
       setMaturityType('year')
     }
@@ -300,6 +314,10 @@ export function DebtTab({
         setGraceEndType('self-retirement')
       } else if (hasSpouse && gEndYear === spouseRetirementYear && gEndMonth === 12) {
         setGraceEndType('spouse-retirement')
+      } else if (gEndYear === selfLifeExpectancyYear && gEndMonth === 12) {
+        setGraceEndType('self-life-expectancy')
+      } else if (hasSpouse && gEndYear === spouseLifeExpectancyYear && gEndMonth === 12) {
+        setGraceEndType('spouse-life-expectancy')
       } else {
         setGraceEndType('year')
       }
@@ -438,17 +456,17 @@ export function DebtTab({
         {/* 금리 */}
         <div className={styles.modalFormRow}>
           <span className={styles.modalFormLabel}>금리</span>
-          <div className={styles.repaymentButtons}>
+          <div className={styles.ownerButtons}>
             <button
               type="button"
-              className={`${styles.repaymentBtn} ${editingDebt.rateType === 'fixed' ? styles.active : ''}`}
+              className={`${styles.ownerBtn} ${editingDebt.rateType === 'fixed' ? styles.active : ''}`}
               onClick={() => setEditingDebt({ ...editingDebt, rateType: 'fixed' })}
             >
               고정
             </button>
             <button
               type="button"
-              className={`${styles.repaymentBtn} ${editingDebt.rateType === 'floating' ? styles.active : ''}`}
+              className={`${styles.ownerBtn} ${editingDebt.rateType === 'floating' ? styles.active : ''}`}
               onClick={() => setEditingDebt({ ...editingDebt, rateType: 'floating' })}
             >
               변동
@@ -565,6 +583,14 @@ export function DebtTab({
                   setMaturityType('spouse-retirement')
                   setEditingDebt({ ...editingDebt, maturityYear: String(spouseRetirementYear), maturityMonth: '12' })
                   setMaturityDateText(toPeriodRaw(spouseRetirementYear, 12))
+                } else if (val === 'self-life-expectancy') {
+                  setMaturityType('self-life-expectancy')
+                  setEditingDebt({ ...editingDebt, maturityYear: String(selfLifeExpectancyYear), maturityMonth: '12' })
+                  setMaturityDateText(toPeriodRaw(selfLifeExpectancyYear, 12))
+                } else if (val === 'spouse-life-expectancy') {
+                  setMaturityType('spouse-life-expectancy')
+                  setEditingDebt({ ...editingDebt, maturityYear: String(spouseLifeExpectancyYear), maturityMonth: '12' })
+                  setMaturityDateText(toPeriodRaw(spouseLifeExpectancyYear, 12))
                 } else {
                   setMaturityType('year')
                   const y = parseInt(editingDebt.maturityYear) || currentYear + 5
@@ -575,6 +601,8 @@ export function DebtTab({
             >
               <option value="self-retirement">본인 은퇴</option>
               {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+              <option value="self-life-expectancy">본인 기대수명</option>
+              {hasSpouse && <option value="spouse-life-expectancy">배우자 기대수명</option>}
               <option value="year">직접 입력</option>
             </select>
             {maturityType === 'year' && (
@@ -640,6 +668,14 @@ export function DebtTab({
                     setGraceEndType('spouse-retirement')
                     setEditingDebt({ ...editingDebt, graceEndYear: String(spouseRetirementYear), graceEndMonth: '12' })
                     setGraceEndDateText(toPeriodRaw(spouseRetirementYear, 12))
+                  } else if (val === 'self-life-expectancy') {
+                    setGraceEndType('self-life-expectancy')
+                    setEditingDebt({ ...editingDebt, graceEndYear: String(selfLifeExpectancyYear), graceEndMonth: '12' })
+                    setGraceEndDateText(toPeriodRaw(selfLifeExpectancyYear, 12))
+                  } else if (val === 'spouse-life-expectancy') {
+                    setGraceEndType('spouse-life-expectancy')
+                    setEditingDebt({ ...editingDebt, graceEndYear: String(spouseLifeExpectancyYear), graceEndMonth: '12' })
+                    setGraceEndDateText(toPeriodRaw(spouseLifeExpectancyYear, 12))
                   } else {
                     setGraceEndType('year')
                     const sY = parseInt(editingDebt.startYear) || currentYear
@@ -651,6 +687,8 @@ export function DebtTab({
               >
                 <option value="self-retirement">본인 은퇴</option>
                 {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+                <option value="self-life-expectancy">본인 기대수명</option>
+                {hasSpouse && <option value="spouse-life-expectancy">배우자 기대수명</option>}
                 <option value="year">직접 입력</option>
               </select>
               {graceEndType === 'year' && (
@@ -681,37 +719,6 @@ export function DebtTab({
           </div>
         )}
 
-        {/* 예상 월 상환액 미리보기 */}
-        {editingDebt.amount && editingDebt.maturityYear && editingDebt.maturityMonth && (
-          <div className={styles.paymentPreview}>
-            <span className={styles.previewLabel}>
-              예상 월 상환액{editingDebt.repaymentType === '원금균등상환' ? ' (첫달)' : ''}
-            </span>
-            <span className={styles.previewValue}>
-              {(() => {
-                const sY = parseInt(editingDebt.startYear) || currentYear
-                const sM = parseInt(editingDebt.startMonth) || currentMonth
-                let gMonths = 0
-                if (editingDebt.repaymentType === '거치식상환' && editingDebt.graceEndYear && editingDebt.graceEndMonth) {
-                  gMonths = (parseInt(editingDebt.graceEndYear) - sY) * 12 + (parseInt(editingDebt.graceEndMonth) - sM)
-                  if (gMonths < 0) gMonths = 0
-                }
-                return formatMoney(
-                  calculateMonthlyPayment(
-                    parseFloat(editingDebt.amount) || 0,
-                    parseFloat(editingDebt.rate) || 0,
-                    sY,
-                    sM,
-                    parseInt(editingDebt.maturityYear) || currentYear + 5,
-                    parseInt(editingDebt.maturityMonth) || 12,
-                    editingDebt.repaymentType,
-                    gMonths
-                  ).monthlyPayment
-                )
-              })()}/월
-            </span>
-          </div>
-        )}
 
         {/* 하단 버튼 */}
         <div className={styles.modalFormActions}>
@@ -742,7 +749,7 @@ export function DebtTab({
     const ownerLabel = debt.owner === 'spouse' ? '배우자' : '본인'
 
     return (
-      <div key={debt.id} className={styles.debtItem}>
+      <div key={debt.id} className={styles.debtItem} onClick={() => startEditDebt(debt, category)} style={{ cursor: 'pointer' }}>
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>
             {debt.title} | {ownerLabel}
@@ -754,19 +761,10 @@ export function DebtTab({
             }
             {` | ${maturityStr} 만기`}
             {` | ${debt.repayment_type}`}
-            {debt.monthlyPayment > 0 && ` | 월 ${formatMoney(debt.monthlyPayment)} 상환`}
           </span>
         </div>
         <div className={styles.itemRight}>
           <span className={styles.debtAmount}>{formatMoney(debt.principal || 0)}</span>
-          <div className={styles.debtActions}>
-            <button className={styles.editBtn} onClick={() => startEditDebt(debt, category)}>
-              <Pencil size={16} />
-            </button>
-            <button className={styles.deleteBtn} onClick={() => handleDeleteDebt(debt.id)}>
-              <X size={16} />
-            </button>
-          </div>
         </div>
       </div>
     )
@@ -920,13 +918,29 @@ export function DebtTab({
               <span className={styles.stepLabel}>
                 {editingDebt.category === 'credit' ? '신용대출' : '기타부채'} 수정
               </span>
-              <button
-                className={styles.typeModalClose}
-                onClick={() => setEditingDebt(null)}
-                type="button"
-              >
-                <X size={18} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  className={styles.typeModalClose}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (window.confirm('이 항목을 삭제하시겠습니까?')) {
+                      handleDeleteDebt(editingDebt.id!)
+                      setEditingDebt(null)
+                    }
+                  }}
+                  type="button"
+                  style={{ color: 'var(--dashboard-text-secondary)' }}
+                >
+                  <Trash2 size={18} />
+                </button>
+                <button
+                  className={styles.typeModalClose}
+                  onClick={() => setEditingDebt(null)}
+                  type="button"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
             <div className={styles.modalFormBody}>
               {renderEditForm()}
@@ -937,17 +951,40 @@ export function DebtTab({
       )}
 
       {isExpanded && (
-        <div className={styles.flatList}>
+        <div className={styles.groupedList}>
           {allDebts.length === 0 && (
             <p className={styles.emptyHint}>
               아직 등록된 부채가 없습니다. 오른쪽 + 버튼으로 추가하세요.
             </p>
           )}
-          {allDebts.map(debt => {
-            const category = getCategoryFromDebt(debt)
-            if (category !== 'credit' && category !== 'other') return null
-            return renderDebtItem(debt, category)
-          })}
+
+          {categorizedDebts.credit.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>신용대출</span>
+                  <span className={styles.sectionCount}>{categorizedDebts.credit.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {categorizedDebts.credit.map(debt => renderDebtItem(debt, 'credit'))}
+              </div>
+            </div>
+          )}
+
+          {categorizedDebts.other.length > 0 && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionGroupHeader}>
+                <div className={styles.sectionTitleRow}>
+                  <span className={styles.sectionGroupTitle}>기타부채</span>
+                  <span className={styles.sectionCount}>{categorizedDebts.other.length}개</span>
+                </div>
+              </div>
+              <div className={styles.sectionItems}>
+                {categorizedDebts.other.map(debt => renderDebtItem(debt, 'other'))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

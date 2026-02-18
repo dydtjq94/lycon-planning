@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Pencil, Trash2, X } from 'lucide-react'
+import { Trash2, X } from 'lucide-react'
 import type { PersonalPension, Owner, PersonalPensionType, RateCategory } from '@/types/tables'
 import { formatMoney, getDefaultRateCategory } from '@/lib/utils'
 import {
@@ -53,6 +53,51 @@ export function PersonalPensionSection({
     () => pensions.find(p => p.pension_type === 'irp') || null,
     [pensions]
   )
+
+  // 개인연금 예상 월 수령액 계산 (FV + PMT)
+  const calcMonthlyPMT = (pension: PersonalPension | null): number | null => {
+    if (!pension) return null
+    const currentYear = new Date().getFullYear()
+    const currentAge = currentYear - birthYear
+    const startAge = pension.start_age || 56
+    const receivingYears = pension.receiving_years || 20
+    const returnRate = pension.return_rate || 5
+    const monthlyRate = Math.pow(1 + returnRate / 100, 1 / 12) - 1
+    const monthsUntilReceiving = Math.max(0, (startAge - currentAge) * 12)
+    const receivingMonths = receivingYears * 12
+
+    const balance = pension.current_balance || 0
+    const monthlyContrib = pension.monthly_contribution || 0
+
+    // 납입 기간 (퇴직까지 or 수령시작까지)
+    let contribMonths = pension.is_contribution_fixed_to_retirement
+      ? Math.max(0, (retirementAge - currentAge) * 12)
+      : monthsUntilReceiving
+    contribMonths = Math.min(contribMonths, monthsUntilReceiving)
+
+    let totalAtReceiving: number
+    if (monthlyRate > 0 && monthsUntilReceiving > 0) {
+      const fvBalance = balance * Math.pow(1 + monthlyRate, monthsUntilReceiving)
+      let fvContrib = 0
+      if (monthlyContrib > 0 && contribMonths > 0) {
+        const fvAtContribEnd = monthlyContrib * (Math.pow(1 + monthlyRate, contribMonths) - 1) / monthlyRate
+        fvContrib = fvAtContribEnd * Math.pow(1 + monthlyRate, monthsUntilReceiving - contribMonths)
+      }
+      totalAtReceiving = fvBalance + fvContrib
+    } else {
+      totalAtReceiving = balance + monthlyContrib * contribMonths
+    }
+
+    if (totalAtReceiving <= 0) return null
+
+    if (monthlyRate > 0) {
+      return totalAtReceiving * monthlyRate / (1 - Math.pow(1 + monthlyRate, -receivingMonths))
+    }
+    return totalAtReceiving / receivingMonths
+  }
+
+  const savingsPMT = useMemo(() => calcMonthlyPMT(pensionSavings), [pensionSavings, birthYear, retirementAge])
+  const irpPMT = useMemo(() => calcMonthlyPMT(irp), [irp, birthYear, retirementAge])
 
   const cancelEdit = () => {
     setEditingType(null)
@@ -189,9 +234,26 @@ export function PersonalPensionSection({
         >
           <div className={styles.typeModalHeader}>
             <span className={styles.stepLabel}>{ownerLabel} {label} 수정</span>
-            <button className={styles.typeModalClose} onClick={cancelEdit} type="button">
-              <X size={18} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                className={styles.typeModalClose}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (window.confirm('이 항목을 삭제하시겠습니까?')) {
+                    handleDelete(pensionType)
+                    cancelEdit()
+                  }
+                }}
+                type="button"
+                disabled={isSaving}
+                style={{ color: 'var(--dashboard-text-secondary)' }}
+              >
+                <Trash2 size={18} />
+              </button>
+              <button className={styles.typeModalClose} onClick={cancelEdit} type="button">
+                <X size={18} />
+              </button>
+            </div>
           </div>
           <div className={styles.modalFormBody}>
             <div className={styles.modalFormRow}>
@@ -311,70 +373,50 @@ export function PersonalPensionSection({
     <>
       {/* 연금저축 읽기 뷰 */}
       {pensionSavings && (
-        <div className={styles.pensionItem}>
+        <div className={styles.pensionItem} onClick={startEditPensionSavings} style={{ cursor: 'pointer' }}>
           <div className={styles.itemInfo}>
             <span className={styles.itemName}>
               {ownerLabel} 연금저축
               {pensionSavings.broker_name && <span className={styles.brokerName}>{pensionSavings.broker_name}</span>}
             </span>
-            {(pensionSavings.current_balance || pensionSavings.monthly_contribution) ? (
-              <span className={styles.itemMeta}>
-                {pensionSavings.monthly_contribution ? `월 ${formatMoney(pensionSavings.monthly_contribution)} 납입 | ` : ''}
-                {birthYear + (pensionSavings.start_age || 56)}년부터 {pensionSavings.receiving_years || 20}년간 수령
-              </span>
-            ) : null}
+            {pensionSavings.monthly_contribution && (
+              <span className={styles.itemMeta}>월 {formatMoney(pensionSavings.monthly_contribution)} 납입</span>
+            )}
+            <span className={styles.itemMeta}>
+              {birthYear + (pensionSavings.start_age || 56)}년부터 {pensionSavings.receiving_years || 20}년간 수령
+            </span>
           </div>
           <div className={styles.itemRight}>
             <span className={styles.itemAmount}>
-              {pensionSavings.current_balance ? formatMoney(pensionSavings.current_balance) : '0'}
+              {savingsPMT !== null
+                ? `${formatMoney(Math.round(savingsPMT))}/월`
+                : pensionSavings.current_balance ? formatMoney(pensionSavings.current_balance) : '0'}
             </span>
-            <div className={styles.itemActions}>
-              <button className={styles.editBtn} onClick={startEditPensionSavings}>
-                <Pencil size={16} />
-              </button>
-              <button
-                className={styles.deleteBtn}
-                onClick={() => handleDelete('pension_savings')}
-                disabled={isSaving}
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
           </div>
         </div>
       )}
 
       {/* IRP 읽기 뷰 */}
       {irp && (
-        <div className={styles.pensionItem}>
+        <div className={styles.pensionItem} onClick={startEditIrp} style={{ cursor: 'pointer' }}>
           <div className={styles.itemInfo}>
             <span className={styles.itemName}>
               {ownerLabel} IRP
               {irp.broker_name && <span className={styles.brokerName}>{irp.broker_name}</span>}
             </span>
-            {(irp.current_balance || irp.monthly_contribution) ? (
-              <span className={styles.itemMeta}>
-                {irp.monthly_contribution ? `월 ${formatMoney(irp.monthly_contribution)} 납입 | ` : ''}
-                {birthYear + (irp.start_age || 56)}년부터 {irp.receiving_years || 20}년간 수령
-              </span>
-            ) : null}
+            {irp.monthly_contribution && (
+              <span className={styles.itemMeta}>월 {formatMoney(irp.monthly_contribution)} 납입</span>
+            )}
+            <span className={styles.itemMeta}>
+              {birthYear + (irp.start_age || 56)}년부터 {irp.receiving_years || 20}년간 수령
+            </span>
           </div>
           <div className={styles.itemRight}>
             <span className={styles.itemAmount}>
-              {irp.current_balance ? formatMoney(irp.current_balance) : '0'}
+              {irpPMT !== null
+                ? `${formatMoney(Math.round(irpPMT))}/월`
+                : irp.current_balance ? formatMoney(irp.current_balance) : '0'}
             </span>
-            <div className={styles.itemActions}>
-              <button className={styles.editBtn} onClick={startEditIrp}>
-                <Pencil size={16} />
-              </button>
-              <button
-                className={styles.deleteBtn}
-                onClick={() => handleDelete('irp')}
-                disabled={isSaving}
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
           </div>
         </div>
       )}

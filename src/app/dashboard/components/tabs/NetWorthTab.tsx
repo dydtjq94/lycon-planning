@@ -27,6 +27,10 @@ interface NetWorthTabProps {
   onSelectedYearChange?: (year: number) => void
   simulationAssumptions?: SimulationAssumptions
   cashFlowPriorities?: CashFlowPriorities
+  selfLifeExpectancy?: number
+  spouseLifeExpectancy?: number
+  simulationStartYear?: number | null
+  simulationStartMonth?: number | null
 }
 
 // 기간 선택 옵션
@@ -58,13 +62,17 @@ export function NetWorthTab({
   onSelectedYearChange,
   simulationAssumptions,
   cashFlowPriorities,
+  selfLifeExpectancy = 100,
+  spouseLifeExpectancy = 100,
+  simulationStartYear,
+  simulationStartMonth,
 }: NetWorthTabProps) {
-  const currentYear = new Date().getFullYear()
+  const currentYear = simulationStartYear || new Date().getFullYear()
   const currentAge = currentYear - birthYear
   const { isDark, chartLineColors } = useChartTheme()
 
   // 시뮬레이션 설정
-  const simulationEndYear = calculateEndYear(birthYear, spouseBirthYear)
+  const simulationEndYear = calculateEndYear(birthYear, spouseBirthYear, selfLifeExpectancy, spouseLifeExpectancy)
   const yearsToSimulate = simulationEndYear - currentYear
   const retirementYear = birthYear + retirementAge
   const spouseRetirementYear = spouseBirthYear ? spouseBirthYear + spouseRetirementAge : undefined
@@ -116,9 +124,11 @@ export function NetWorthTab({
       },
       yearsToSimulate,
       simulationAssumptions || DEFAULT_SIMULATION_ASSUMPTIONS,
-      cashFlowPriorities
+      cashFlowPriorities,
+      simulationStartYear,
+      simulationStartMonth,
     )
-  }, [v2Data, birthYear, retirementAge, spouseBirthYear, yearsToSimulate, simulationAssumptions, cashFlowPriorities])
+  }, [v2Data, birthYear, retirementAge, spouseBirthYear, yearsToSimulate, simulationAssumptions, cashFlowPriorities, simulationStartYear, simulationStartMonth])
 
   // 기간에 따른 표시 범위 계산
   const displayRange = useMemo(() => {
@@ -254,6 +264,8 @@ export function NetWorthTab({
               onYearClick={handleYearChange}
               selectedYear={selectedYear}
               monthlySnapshots={filteredMonthlySnapshots}
+              selfLifeExpectancy={selfLifeExpectancy}
+              spouseLifeExpectancy={spouseLifeExpectancy}
               headerAction={
                 <div ref={timeRangeRef} className={styles.timeRangeSelector}>
                   <button

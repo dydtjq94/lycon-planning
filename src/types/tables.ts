@@ -139,6 +139,7 @@ export interface Expense {
   growth_rate: number
   rate_category: RateCategory
   amount_base_year: number | null  // 금액 기준년도 (현재가치 기반 항목용, null이면 start_year 기준)
+  owner: OwnerWithCommon
   source_type: ExpenseSourceType
   source_id: string | null
   memo: string | null
@@ -163,6 +164,7 @@ export interface ExpenseInput {
   growth_rate?: number
   rate_category?: RateCategory
   amount_base_year?: number | null  // 금액 기준년도 (현재가치 기반 항목용)
+  owner?: OwnerWithCommon
   source_type?: ExpenseSourceType
   source_id?: string | null
   memo?: string | null
@@ -215,6 +217,8 @@ export interface RetirementPension {
   broker_name: string | null  // DC 증권사
   current_balance: number | null  // DC, IRP
   years_of_service: number | null  // DB, 퇴직금
+  monthly_salary: number | null  // DB/퇴직금용 월급여 (만원, 서비스 변환)
+  calculation_mode: 'auto' | 'manual'  // auto: 소득연동/급여기반, manual: 직접입력
   receive_type: ReceiveType
   start_age: number | null
   receiving_years: number | null
@@ -234,6 +238,8 @@ export interface RetirementPensionInput {
   broker_name?: string | null
   current_balance?: number | null
   years_of_service?: number | null
+  monthly_salary?: number | null
+  calculation_mode?: 'auto' | 'manual'
   receive_type: ReceiveType
   start_age?: number | null
   receiving_years?: number | null
@@ -314,6 +320,7 @@ export interface RealEstate {
   purchase_year: number | null
   purchase_month: number | null
   growth_rate: number
+  rate_category: RateCategory
 
   // 거주용
   housing_type: HousingType | null
@@ -348,6 +355,9 @@ export interface RealEstate {
   sell_year: number | null
   sell_month: number | null
 
+  // 현금 흐름
+  include_in_cashflow: boolean
+
   memo: string | null
   sort_order: number
   is_active: boolean
@@ -365,6 +375,7 @@ export interface RealEstateInput {
   purchase_year?: number | null
   purchase_month?: number | null
   growth_rate?: number
+  rate_category?: RateCategory
   housing_type?: HousingType | null
   deposit?: number | null
   monthly_rent?: number | null
@@ -390,6 +401,7 @@ export interface RealEstateInput {
   grace_end_month?: number | null
   sell_year?: number | null
   sell_month?: number | null
+  include_in_cashflow?: boolean
   memo?: string | null
   sort_order?: number
 }
@@ -429,6 +441,9 @@ export interface PhysicalAsset {
   sell_year: number | null
   sell_month: number | null
 
+  // 현금 흐름
+  include_in_cashflow: boolean
+
   memo: string | null
   sort_order: number
   is_active: boolean
@@ -458,6 +473,7 @@ export interface PhysicalAssetInput {
   loan_repayment_type?: LoanRepaymentType | null
   sell_year?: number | null
   sell_month?: number | null
+  include_in_cashflow?: boolean
   memo?: string | null
   sort_order?: number
 }

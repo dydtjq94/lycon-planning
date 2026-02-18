@@ -90,51 +90,64 @@
 /* 있음/없음 토글 */
 .toggleRow {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+  background: var(--dashboard-bg);
+  border-radius: 6px;
+  padding: 2px;
   margin-bottom: 10px;
 }
 
 .toggleBtn {
-  padding: 8px 14px;
-  font-size: 13px;
+  padding: 5px 10px;
+  font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
-  background: #f5f5f7;
+  color: var(--dashboard-text-secondary);
+  background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .toggleBtn:hover {
-  background: #e5e7eb;
+  color: var(--dashboard-text);
 }
 
 .toggleBtn.active {
-  background: var(--accent-color, #007aff);
-  color: #fff;
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* 아들/딸 토글 */
 .genderToggle {
   display: flex;
-  background: #f5f5f7;
+  gap: 4px;
+  background: var(--dashboard-bg);
   border-radius: 6px;
-  overflow: hidden;
+  padding: 2px;
 }
 
 .genderBtn {
-  padding: 6px 12px;
-  font-size: 13px;
+  padding: 5px 10px;
+  font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--dashboard-text-secondary);
   background: transparent;
   border: none;
+  border-radius: 4px;
   cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.genderBtn:hover {
+  color: var(--dashboard-text);
 }
 
 .genderBtn.active {
-  background: var(--accent-color, #007aff);
-  color: #fff;
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* 생년월일 입력 */

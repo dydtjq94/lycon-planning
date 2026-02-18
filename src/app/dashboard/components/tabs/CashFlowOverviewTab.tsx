@@ -27,6 +27,10 @@ interface CashFlowOverviewTabProps {
   onTimeRangeChange?: (range: 'next3m' | 'next5m' | 'next5' | 'next10' | 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full') => void
   selectedYear?: number
   onSelectedYearChange?: (year: number) => void
+  selfLifeExpectancy?: number
+  spouseLifeExpectancy?: number
+  simulationStartYear?: number | null
+  simulationStartMonth?: number | null
 }
 
 // 기간 선택 옵션
@@ -58,12 +62,16 @@ export function CashFlowOverviewTab({
   onTimeRangeChange,
   selectedYear: propSelectedYear,
   onSelectedYearChange,
+  selfLifeExpectancy = 100,
+  spouseLifeExpectancy = 100,
+  simulationStartYear,
+  simulationStartMonth,
 }: CashFlowOverviewTabProps) {
-  const currentYear = new Date().getFullYear()
+  const currentYear = simulationStartYear || new Date().getFullYear()
   const { isDark, chartLineColors } = useChartTheme()
 
   // 시뮬레이션 설정
-  const simulationEndYear = calculateEndYear(birthYear, spouseBirthYear)
+  const simulationEndYear = calculateEndYear(birthYear, spouseBirthYear, selfLifeExpectancy, spouseLifeExpectancy)
   const yearsToSimulate = simulationEndYear - currentYear
   const retirementYear = birthYear + retirementAge
   const spouseRetirementYear = spouseBirthYear ? spouseBirthYear + spouseRetirementAge : undefined
@@ -135,9 +143,11 @@ export function CashFlowOverviewTab({
       },
       yearsToSimulate,
       simulationAssumptions || DEFAULT_SIMULATION_ASSUMPTIONS,
-      cashFlowPriorities
+      cashFlowPriorities,
+      simulationStartYear,
+      simulationStartMonth,
     )
-  }, [v2Data, birthYear, retirementAge, spouseBirthYear, yearsToSimulate, simulationAssumptions, cashFlowPriorities])
+  }, [v2Data, birthYear, retirementAge, spouseBirthYear, yearsToSimulate, simulationAssumptions, cashFlowPriorities, simulationStartYear, simulationStartMonth])
 
   // 필터링된 시뮬레이션 결과 (기간 선택에 따라)
   const filteredSimulationResult = useMemo(() => ({
@@ -306,6 +316,8 @@ export function CashFlowOverviewTab({
                 onYearClick={(year) => setSankeyYear(year)}
                 monthlySnapshots={filteredMonthlySnapshots}
                 hideLegend
+                selfLifeExpectancy={selfLifeExpectancy}
+                spouseLifeExpectancy={spouseLifeExpectancy}
               />
             ) : (
               <div className={styles.sankeyBody}>

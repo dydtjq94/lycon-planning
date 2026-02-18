@@ -194,10 +194,15 @@
 /* ========== 읽기 모드 ========== */
 .assetItem {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 8px 0;
   border-bottom: 1px solid var(--dashboard-border);
+  cursor: pointer;
+}
+
+.assetItem:hover {
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.08);
 }
 
 .assetItem:last-of-type {
@@ -207,14 +212,14 @@
 .itemInfo {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
 }
 
 .itemName {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--dashboard-text);
   display: flex;
   align-items: center;
@@ -234,7 +239,7 @@
 }
 
 .itemAmount {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--dashboard-text);
 }
@@ -378,28 +383,33 @@
 /* 유형 선택 버튼 */
 .typeButtons {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+  background: var(--dashboard-bg);
+  border-radius: 6px;
+  padding: 2px;
   flex-wrap: wrap;
 }
 
 .typeBtn {
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--dashboard-text);
-  background: var(--dashboard-hover-bg);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .typeBtn:hover {
-  background: var(--dashboard-active-bg);
+  color: var(--dashboard-text);
 }
 
 .typeBtn.active {
-  background: var(--dashboard-text);
-  color: var(--dashboard-card-bg);
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* 편집 구분선 */
@@ -473,6 +483,53 @@
   padding-top: 24px;
   border-top: 1px solid var(--dashboard-border);
   line-height: 1.6;
+}
+
+/* 그룹 리스트 */
+.groupedList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 8px;
+}
+
+.sectionGroup {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.sectionGroup:last-child {
+  border-bottom: none;
+}
+
+.sectionGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.sectionTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sectionGroupTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dashboard-text-secondary);
+}
+
+.sectionCount {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+}
+
+.sectionItems {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 /* 반응형 */
@@ -834,4 +891,25 @@
 
 .periodInput.invalid:focus {
   border-color: #ff3b30;
+}
+
+/* 현금 흐름 체크박스 */
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+}
+
+.checkboxRow input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent-color, #007aff);
+}
+
+.checkboxText {
+  user-select: none;
 }

@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Pencil, Trash2, X } from 'lucide-react'
+import { Trash2, X } from 'lucide-react'
 import type { RetirementPension, Owner, RetirementPensionType, ReceiveType, RateCategory } from '@/types/tables'
 import { formatMoney, getDefaultRateCategory } from '@/lib/utils'
 import {
   upsertRetirementPension,
   deleteRetirementPension,
 } from '@/lib/services/retirementPensionService'
-import type { RetirementPensionProjection } from './usePensionCalculations'
+import { useMemo } from 'react'
 import { useChartTheme } from '@/hooks/useChartTheme'
 import {
   formatPeriodDisplay,
@@ -24,8 +24,6 @@ interface RetirementPensionSectionProps {
   simulationId: string
   owner: Owner
   ownerLabel: string
-  projection: RetirementPensionProjection | null
-  monthlyIncome: number
   yearsUntilRetirement: number
   birthYear: number
   retirementAge: number
@@ -37,8 +35,6 @@ export function RetirementPensionSection({
   simulationId,
   owner,
   ownerLabel,
-  projection,
-  monthlyIncome,
   yearsUntilRetirement,
   birthYear,
   retirementAge,
@@ -71,6 +67,8 @@ export function RetirementPensionSection({
       endMonth: '12',
       rateCategory,
       returnRate: pension?.return_rate?.toString() || '5',
+      calculationMode: pension?.calculation_mode || 'auto',
+      monthlySalary: pension?.monthly_salary?.toString() || '',
     })
     setStartDateText(toPeriodRaw(startYear, 1))
     setEndDateText(toPeriodRaw(endYear, 12))
@@ -109,22 +107,57 @@ export function RetirementPensionSection({
       const rateCategory = editValues.rateCategory as RateCategory
       const returnRate = parseFloat(editValues.returnRate) || 5
 
-      await upsertRetirementPension(
-        simulationId,
-        owner,
-        {
+      const isDBType = editValues.type === 'DB'
+      const isAutoMode = editValues.calculationMode !== 'manual'
+
+      let pensionFields: Parameters<typeof upsertRetirementPension>[2]
+      if (isDBType && isAutoMode) {
+        pensionFields = {
           pension_type: pensionType,
-          current_balance: editValues.type === 'DC' && editValues.balance ? parseFloat(editValues.balance) : null,
-          years_of_service: editValues.type === 'DB' && editValues.years ? parseInt(editValues.years) : null,
+          current_balance: null,
+          years_of_service: editValues.years ? parseInt(editValues.years) : null,
+          monthly_salary: editValues.monthlySalary ? parseFloat(editValues.monthlySalary) : null,
+          calculation_mode: 'auto',
           receive_type: receiveType,
           start_age: receiveType === 'annuity' ? validatedStartAge : null,
           receiving_years: receiveType === 'annuity' ? receivingYears : null,
           return_rate: returnRate,
           rate_category: rateCategory,
-        },
+        }
+      } else if (isDBType && !isAutoMode) {
+        pensionFields = {
+          pension_type: pensionType,
+          current_balance: editValues.balance ? parseFloat(editValues.balance) : null,
+          years_of_service: null,
+          monthly_salary: null,
+          calculation_mode: 'manual',
+          receive_type: receiveType,
+          start_age: receiveType === 'annuity' ? validatedStartAge : null,
+          receiving_years: receiveType === 'annuity' ? receivingYears : null,
+          return_rate: returnRate,
+          rate_category: rateCategory,
+        }
+      } else {
+        // DC/기업IRP
+        pensionFields = {
+          pension_type: pensionType,
+          current_balance: editValues.balance ? parseFloat(editValues.balance) : null,
+          years_of_service: null,
+          monthly_salary: editValues.monthlySalary ? parseFloat(editValues.monthlySalary) : null,
+          receive_type: receiveType,
+          start_age: receiveType === 'annuity' ? validatedStartAge : null,
+          receiving_years: receiveType === 'annuity' ? receivingYears : null,
+          return_rate: returnRate,
+          rate_category: rateCategory,
+        }
+      }
+
+      await upsertRetirementPension(
+        simulationId,
+        owner,
+        pensionFields,
         birthYear,
-        retirementAge,
-        monthlyIncome
+        retirementAge
       )
       await onSave()
       setIsEditing(false)
@@ -150,6 +183,60 @@ export function RetirementPensionSection({
     }
   }
 
+  // 예상 수령액 계산: 연금이면 PMT 월 수령액, 일시금이면 퇴직 시 총액
+  const pensionEstimate = useMemo(() => {
+    if (!pension) return null
+    const isDB = pension.pension_type === 'db' || pension.pension_type === 'severance'
+    const returnRate = pension.return_rate || 5
+    const monthlyRate = Math.pow(1 + returnRate / 100, 1 / 12) - 1
+    const monthsUntilRet = Math.max(0, yearsUntilRetirement * 12)
+
+    let totalAtRetirement: number | null = null
+
+    if (isDB) {
+      if (pension.calculation_mode === 'manual') {
+        totalAtRetirement = pension.current_balance || 0
+      } else {
+        const annualSalary = pension.monthly_salary || 0
+        const totalYears = (pension.years_of_service || 0) + yearsUntilRetirement
+        totalAtRetirement = annualSalary > 0 && totalYears > 0
+          ? (annualSalary / 12) * totalYears
+          : null
+      }
+    } else {
+      // DC/기업IRP: FV(현재잔액) + FV(월 납입 누적) with compound returns
+      const balance = pension.current_balance || 0
+      const annualSalary = pension.monthly_salary || 0
+      const monthlyContrib = annualSalary / 144 // 연간부담금(연봉/12)의 월할
+
+      if (monthlyRate > 0 && monthsUntilRet > 0) {
+        const fvBalance = balance * Math.pow(1 + monthlyRate, monthsUntilRet)
+        const fvContrib = monthlyContrib * (Math.pow(1 + monthlyRate, monthsUntilRet) - 1) / monthlyRate
+        totalAtRetirement = fvBalance + fvContrib
+      } else {
+        totalAtRetirement = balance + monthlyContrib * monthsUntilRet
+      }
+    }
+
+    if (totalAtRetirement === null || totalAtRetirement <= 0) return null
+
+    // 일시금: 퇴직 시 총액
+    if (pension.receive_type === 'lump_sum') {
+      return { amount: totalAtRetirement, isMonthly: false }
+    }
+
+    // 연금: PMT 월 수령액 (수령 기간 동안 잔액에 수익률 적용)
+    const receivingMonths = (pension.receiving_years || 10) * 12
+    let monthlyPMT: number
+    if (monthlyRate > 0) {
+      monthlyPMT = totalAtRetirement * monthlyRate / (1 - Math.pow(1 + monthlyRate, -receivingMonths))
+    } else {
+      monthlyPMT = totalAtRetirement / receivingMonths
+    }
+
+    return { amount: monthlyPMT, isMonthly: true }
+  }, [pension, yearsUntilRetirement])
+
   if (pension) {
     const isDBType = pension.pension_type === 'db' || pension.pension_type === 'severance'
 
@@ -157,14 +244,28 @@ export function RetirementPensionSection({
     const metaParts = []
 
     if (isDBType) {
-      if (pension.years_of_service) {
-        metaParts.push(`현재 ${pension.years_of_service}년 → 퇴직 시 ${pension.years_of_service + yearsUntilRetirement}년 근속`)
+      if (pension.calculation_mode === 'manual') {
+        metaParts.push(`직접 입력 | 예상 ${formatMoney(pension.current_balance ?? 0)}`)
       } else {
-        metaParts.push('근속연수를 입력하세요')
+        if (pension.monthly_salary) {
+          const years = pension.years_of_service || 0
+          metaParts.push(`연봉 ${formatMoney(pension.monthly_salary)} | 현재 ${years}년 근속`)
+        } else if (pension.years_of_service) {
+          metaParts.push(`현재 ${pension.years_of_service}년 → 퇴직 시 ${pension.years_of_service + yearsUntilRetirement}년 근속`)
+        } else {
+          metaParts.push('근속연수를 입력하세요')
+        }
       }
     } else {
+      const dcParts = []
       if (pension.current_balance) {
-        metaParts.push(`현재 잔액 ${formatMoney(pension.current_balance)}`)
+        dcParts.push(`현재 잔액 ${formatMoney(pension.current_balance)}`)
+      }
+      if (pension.monthly_salary) {
+        dcParts.push(`연봉 ${formatMoney(pension.monthly_salary)}`)
+      }
+      if (dcParts.length > 0) {
+        metaParts.push(dcParts.join(' | '))
       } else {
         metaParts.push('현재 잔액을 입력하세요')
       }
@@ -176,37 +277,25 @@ export function RetirementPensionSection({
       metaParts.push('일시금 수령')
     }
 
-    if (!monthlyIncome) {
-      metaParts.push('소득 탭에서 근로소득 입력 필요')
-    }
-
     return (
       <>
-        <div className={styles.pensionItem}>
+        <div className={styles.pensionItem} onClick={startEdit} style={{ cursor: 'pointer' }}>
           <div className={styles.itemInfo}>
             <span className={styles.itemName}>
               {ownerLabel} {isDBType ? 'DB형/퇴직금' : 'DC형/기업IRP'}
             </span>
-            <span className={styles.itemMeta}>
-              {metaParts.join(' | ')}
-            </span>
+            {metaParts.map((part, i) => (
+              <span key={i} className={styles.itemMeta}>{part}</span>
+            ))}
           </div>
           <div className={styles.itemRight}>
             <span className={styles.itemAmount}>
-              {projection
-                ? pension.receive_type === 'annuity' && projection.monthlyPMT
-                  ? `${formatMoney(projection.monthlyPMT)}/월`
-                  : formatMoney(projection.totalAmount)
-                : '계산 불가'}
+              {pensionEstimate !== null
+                ? pensionEstimate.isMonthly
+                  ? `${formatMoney(Math.round(pensionEstimate.amount))}/월`
+                  : formatMoney(Math.round(pensionEstimate.amount))
+                : '-'}
             </span>
-            <div className={styles.itemActions}>
-              <button className={styles.editBtn} onClick={startEdit}>
-                <Pencil size={16} />
-              </button>
-              <button className={styles.deleteBtn} onClick={handleDelete} disabled={isSaving}>
-                <Trash2 size={16} />
-              </button>
-            </div>
           </div>
         </div>
 
@@ -229,9 +318,25 @@ export function RetirementPensionSection({
             >
               <div className={styles.typeModalHeader}>
                 <span className={styles.stepLabel}>{ownerLabel} 퇴직연금 수정</span>
-                <button className={styles.typeModalClose} onClick={cancelEdit} type="button">
-                  <X size={18} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <button
+                    className={styles.typeModalClose}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (window.confirm('이 항목을 삭제하시겠습니까?')) {
+                        handleDelete()
+                      }
+                    }}
+                    type="button"
+                    disabled={isSaving}
+                    style={{ color: 'var(--dashboard-text-secondary)' }}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                  <button className={styles.typeModalClose} onClick={cancelEdit} type="button">
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
               <div className={styles.modalFormBody}>
                 <div className={styles.modalFormRow}>
@@ -255,20 +360,80 @@ export function RetirementPensionSection({
                 </div>
 
                 {editValues.type === 'DB' && (
-                  <div className={styles.modalFormRow}>
-                    <span className={styles.modalFormLabel}>근속</span>
-                    <input
-                      type="number"
-                      className={styles.modalFormInput}
-                      value={editValues.years || ''}
-                      onChange={e => setEditValues({ ...editValues, years: e.target.value })}
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      min={0}
-                      max={50}
-                      placeholder="0"
-                    />
-                    <span className={styles.modalFormUnit}>년</span>
-                  </div>
+                  <>
+                    <div className={styles.modalFormRow}>
+                      <span className={styles.modalFormLabel}>계산</span>
+                      <div className={styles.typeButtons}>
+                        <button
+                          type="button"
+                          className={`${styles.typeBtn} ${editValues.calculationMode !== 'manual' ? styles.active : ''}`}
+                          onClick={() => setEditValues({ ...editValues, calculationMode: 'auto' })}
+                        >
+                          자동 계산
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.typeBtn} ${editValues.calculationMode === 'manual' ? styles.active : ''}`}
+                          onClick={() => setEditValues({ ...editValues, calculationMode: 'manual' })}
+                        >
+                          직접 입력
+                        </button>
+                      </div>
+                    </div>
+
+                    {editValues.calculationMode !== 'manual' ? (
+                      <>
+                        <div className={styles.modalFormRow}>
+                          <span className={styles.modalFormLabel}>근속</span>
+                          <input
+                            type="number"
+                            className={styles.modalFormInput}
+                            value={editValues.years || ''}
+                            onChange={e => setEditValues({ ...editValues, years: e.target.value })}
+                            onWheel={e => (e.target as HTMLElement).blur()}
+                            min={0}
+                            max={50}
+                            placeholder="0"
+                          />
+                          <span className={styles.modalFormUnit}>년</span>
+                        </div>
+                        <div className={styles.modalFormRow}>
+                          <span className={styles.modalFormLabel}>연봉</span>
+                          <input
+                            type="number"
+                            className={styles.modalFormInput}
+                            value={editValues.monthlySalary || ''}
+                            onChange={e => setEditValues({ ...editValues, monthlySalary: e.target.value })}
+                            onWheel={e => (e.target as HTMLElement).blur()}
+                            min={0}
+                            placeholder="0"
+                          />
+                          <span className={styles.modalFormUnit}>만원</span>
+                        </div>
+                        {editValues.years && editValues.monthlySalary && (
+                          <div className={styles.modalFormRow}>
+                            <span className={styles.modalFormLabel} />
+                            <span className={styles.modalFormHint}>
+                              {`예상 퇴직금: ${formatMoney(Math.round(parseFloat(editValues.monthlySalary) / 12 * (parseInt(editValues.years) + yearsUntilRetirement)))} (연봉/12 x 퇴직시 총 근속연수)`}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className={styles.modalFormRow}>
+                        <span className={styles.modalFormLabel}>예상 총액</span>
+                        <input
+                          type="number"
+                          className={styles.modalFormInput}
+                          value={editValues.balance || ''}
+                          onChange={e => setEditValues({ ...editValues, balance: e.target.value })}
+                          onWheel={e => (e.target as HTMLElement).blur()}
+                          placeholder="0"
+                        />
+                        <span className={styles.modalFormUnit}>만원</span>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {editValues.type === 'DC' && (
@@ -285,6 +450,20 @@ export function RetirementPensionSection({
                       />
                       <span className={styles.modalFormUnit}>만원</span>
                     </div>
+                    <div className={styles.modalFormRow}>
+                      <span className={styles.modalFormLabel}>연봉</span>
+                      <input
+                        type="number"
+                        className={styles.modalFormInput}
+                        value={editValues.monthlySalary || ''}
+                        onChange={e => setEditValues({ ...editValues, monthlySalary: e.target.value })}
+                        onWheel={e => (e.target as HTMLElement).blur()}
+                        min={0}
+                        placeholder="0"
+                      />
+                      <span className={styles.modalFormUnit}>만원</span>
+                    </div>
+                    <span className={styles.modalFormHint}>매년 연봉의 1/12이 회사에서 DC 계좌로 적립됩니다</span>
                     <div className={styles.modalFormRow}>
                       <span className={styles.modalFormLabel}>수익률</span>
                       <div className={styles.fieldContent}>

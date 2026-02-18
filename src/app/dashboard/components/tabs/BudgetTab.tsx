@@ -1,12 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect, Fragment, useRef } from "react";
-import { Plus, X, ChevronLeft, ChevronRight, Edit2, Trash2, Check } from "lucide-react";
-import { Doughnut } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { X, Check, List, CalendarDays, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
 import {
   useBudgetCategories,
   useBudgetTransactions,
@@ -14,11 +11,11 @@ import {
   useUpdateTransaction,
   useDeleteTransaction,
 } from "@/hooks/useBudget";
-import { useChartTheme } from "@/hooks/useChartTheme";
 import type { BudgetTransaction, TransactionType } from "@/lib/services/budgetService";
-import type { Account, AccountType, AccountInput, PaymentMethod, PaymentMethodType, PaymentMethodInput } from "@/types/tables";
+import type { Account, AccountInput, PaymentMethod, PaymentMethodInput } from "@/types/tables";
 import { formatWon } from "@/lib/utils";
 import { calculateAccountBalances } from "@/lib/utils/accountValueCalculator";
+import { useChartTheme } from "@/hooks/useChartTheme";
 import styles from "./BudgetTab.module.css";
 
 interface BudgetTabProps {
@@ -83,13 +80,45 @@ const CARD_COMPANY_OPTIONS = [
   "기타",
 ];
 
+// 요일 인덱스 → 한글 요일
+function getDayOfWeekName(year: number, month: number, day: number): string {
+  const date = new Date(year, month - 1, day);
+  const jsDay = date.getDay(); // 0=일, 1=월, ...
+  const names = ["일", "월", "화", "수", "목", "금", "토"];
+  return names[jsDay];
+}
+
 export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
   const supabase = createClient();
-  const { colors: chartColors, chartScaleColors } = useChartTheme();
+  const { isDark } = useChartTheme();
   const [showForm, setShowForm] = useState(false);
-  const [formType, setFormType] = useState<TransactionType>("expense");
+  const [viewMode, setViewMode] = useState<"calendar" | "timeline">("calendar");
 
-  // 주간 날짜 계산
+  // 5주 달력 날짜 계산 (weekStart 기준 -14일 ~ +20일, 총 35일)
+  const fiveWeekStart = useMemo(() => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() - 14);
+    return d;
+  }, [weekStart]);
+
+  const fiveWeekEnd = useMemo(() => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + 20);
+    return d;
+  }, [weekStart]);
+
+  // 5주 달력 모든 날짜 (35일)
+  const calendarDays = useMemo(() => {
+    const days: Date[] = [];
+    for (let i = 0; i < 35; i++) {
+      const d = new Date(fiveWeekStart);
+      d.setDate(d.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }, [fiveWeekStart]);
+
+  // 주간 날짜 계산 (현재 주 = 가운데 주)
   const weekDays = useMemo(() => {
     const days: Date[] = [];
     for (let i = 0; i < 7; i++) {
@@ -104,25 +133,29 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // 데이터 조회용 년/월 (주간이 걸친 월들 모두 가져오기)
+  // 데이터 조회용 년/월 (5주 범위가 걸친 월들 모두 가져오기)
   const selectedYear = weekStart.getFullYear();
   const selectedMonth = weekStart.getMonth() + 1;
-  const weekEndDate = new Date(weekStart);
-  weekEndDate.setDate(weekEndDate.getDate() + 6);
-  const endYear = weekEndDate.getFullYear();
-  const endMonth = weekEndDate.getMonth() + 1;
 
-  // 인라인 입력 상태
-  const [incomeInput, setIncomeInput] = useState({ day: "", amount: "", title: "", category: "", accountId: "" });
-  const [expenseInput, setExpenseInput] = useState({ day: "", amount: "", title: "", category: "", paymentSource: "" }); // paymentSource: "account:id" or "payment:id"
+  // 5주 범위에 걸치는 고유 년/월 조합 계산
+  const monthsToLoad = useMemo(() => {
+    const months = new Set<string>();
+    for (const d of calendarDays) {
+      months.add(`${d.getFullYear()}-${d.getMonth() + 1}`);
+    }
+    return Array.from(months).map(m => {
+      const [y, mo] = m.split("-");
+      return { year: parseInt(y, 10), month: parseInt(mo, 10) };
+    });
+  }, [calendarDays]);
 
   // 중복 제출 방지용 ref (state보다 즉시 반영됨)
   const isSubmittingRef = useRef(false);
 
   // 은행 계좌 상태
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [accountsLoading, setAccountsLoading] = useState(true); // 계좌 로딩 상태
-  const [selectedAccountIds, setSelectedAccountIds] = useState<Set<string>>(new Set()); // 필터용 선택된 계좌들
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [selectedAccountIds, setSelectedAccountIds] = useState<Set<string>>(new Set());
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [accountFormData, setAccountFormData] = useState<Partial<AccountInput> & { balance_date?: string }>({
@@ -132,7 +165,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     account_type: "checking",
     current_balance: 0,
     is_default: false,
-    balance_date: new Date().toISOString().split("T")[0], // 오늘 날짜 기본값
+    balance_date: new Date().toISOString().split("T")[0],
   });
 
   // 결제수단 (카드/페이) 상태
@@ -156,13 +189,9 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
   }
   const [monthlyBalances, setMonthlyBalances] = useState<MonthlyBalance[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  // 모든 계좌 잔액 (계좌별)
   const [confirmBalances, setConfirmBalances] = useState<Record<string, string>>({});
-  // 잔액 계산용 거래 (balance_updated_at 이후 모든 거래)
   const [balanceTransactions, setBalanceTransactions] = useState<BudgetTransaction[]>([]);
-  // 잔액 거래 로딩 상태
   const [balanceTxLoading, setBalanceTxLoading] = useState(true);
-  // 잔액 거래 갱신 트리거
   const [balanceTxVersion, setBalanceTxVersion] = useState(0);
 
   // 은행 계좌 로드
@@ -197,7 +226,6 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     const loadBalanceTransactions = async () => {
       if (accounts.length === 0) {
         setBalanceTransactions([]);
-        // 계좌가 아직 로딩 중이면 balanceTxLoading을 유지
         if (!accountsLoading) {
           setBalanceTxLoading(false);
         }
@@ -206,13 +234,11 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
 
       setBalanceTxLoading(true);
 
-      // 가장 오래된 balance_updated_at 찾기
       const balanceDates = accounts
         .filter((a) => a.balance_updated_at)
         .map((a) => new Date(a.balance_updated_at!));
 
       if (balanceDates.length === 0) {
-        // balance_updated_at이 없으면 모든 거래 가져오기
         const { data, error } = await supabase
           .from("budget_transactions")
           .select("*")
@@ -232,7 +258,6 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       const oldestYear = oldestDate.getFullYear();
       const oldestMonth = oldestDate.getMonth() + 1;
 
-      // 해당 월 이후 모든 거래 가져오기
       const { data, error } = await supabase
         .from("budget_transactions")
         .select("*")
@@ -258,7 +283,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       .select("*")
       .eq("profile_id", profileId)
       .eq("is_active", true)
-      .eq("account_type", "checking") // 입출금 계좌만 (적금/정기예금은 별도 탭)
+      .eq("account_type", "checking")
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: true });
 
@@ -288,7 +313,6 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       return;
     }
 
-    // 기존 계좌의 잔액 확인 (잔액이 변경되었는지 체크)
     let balanceChanged = false;
     if (editingAccountId) {
       const existingAccount = accounts.find((a) => a.id === editingAccountId);
@@ -296,7 +320,6 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
         balanceChanged = true;
       }
     } else {
-      // 새 계좌는 항상 잔액 기록
       balanceChanged = true;
     }
 
@@ -310,13 +333,10 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       is_default: accountFormData.is_default || false,
     };
 
-    // 잔액 기준일 설정 (폼에서 선택한 날짜 사용)
     if (balanceChanged && accountFormData.balance_date) {
-      // 선택한 날짜의 자정(00:00:00)으로 설정
       payload.balance_updated_at = new Date(accountFormData.balance_date + "T00:00:00").toISOString();
     }
 
-    // 기본 계좌로 설정 시 기존 은행 계좌 중 기본 계좌 해제
     if (payload.is_default) {
       await supabase
         .from("accounts")
@@ -373,7 +393,6 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       .eq("id", id);
 
     if (!error) {
-      // 삭제된 계좌는 선택 해제
       setSelectedAccountIds((prev) => {
         const next = new Set(prev);
         next.delete(id);
@@ -481,32 +500,50 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     setEditingPaymentMethodId(null);
   };
 
-  // 데이터 조회 (두 달에 걸칠 수 있으므로 둘 다 조회)
+  // 데이터 조회 (5주 범위에 걸치는 최대 3개월 조회)
   const { data: categories = [] } = useBudgetCategories(profileId);
+
+  // 각 월별로 거래 데이터 조회
+  const month0 = monthsToLoad[0] || { year: selectedYear, month: selectedMonth };
+  const month1 = monthsToLoad[1] || month0;
+  const month2 = monthsToLoad[2] || month0;
+
+  const { data: transactions0 = [], isLoading: isLoading0 } = useBudgetTransactions(
+    profileId, month0.year, month0.month
+  );
   const { data: transactions1 = [], isLoading: isLoading1 } = useBudgetTransactions(
-    profileId,
-    selectedYear,
-    selectedMonth
+    profileId, month1.year, month1.month
   );
   const { data: transactions2 = [], isLoading: isLoading2 } = useBudgetTransactions(
-    profileId,
-    endYear,
-    endMonth
+    profileId, month2.year, month2.month
   );
-  const isLoading = isLoading1 || isLoading2;
+  const isLoading = isLoading0 || isLoading1 || isLoading2;
 
-  // 두 달 데이터 합치고 중복 제거
+  // 모든 월 데이터 합치고 중복 제거
   const allTransactions = useMemo(() => {
-    const merged = [...transactions1, ...transactions2];
+    const merged = [...transactions0, ...transactions1, ...transactions2];
     const seen = new Set<string>();
     return merged.filter((tx) => {
       if (seen.has(tx.id)) return false;
       seen.add(tx.id);
       return true;
     });
-  }, [transactions1, transactions2]);
+  }, [transactions0, transactions1, transactions2]);
 
-  // 주간 내 거래만 필터
+  // 5주 범위 내 거래 필터
+  const fiveWeekTransactions = useMemo(() => {
+    return allTransactions.filter((tx) => {
+      const txDate = new Date(tx.year, tx.month - 1, tx.day || 1);
+      txDate.setHours(0, 0, 0, 0);
+      const rangeEnd = new Date(fiveWeekEnd);
+      rangeEnd.setHours(23, 59, 59, 999);
+      const rangeStart = new Date(fiveWeekStart);
+      rangeStart.setHours(0, 0, 0, 0);
+      return txDate >= rangeStart && txDate <= rangeEnd;
+    });
+  }, [allTransactions, fiveWeekStart, fiveWeekEnd]);
+
+  // 주간 내 거래만 필터 (현재 주 = 가운데 주)
   const weekTransactions = useMemo(() => {
     return allTransactions.filter((tx) => {
       const txDate = new Date(tx.year, tx.month - 1, tx.day || 1);
@@ -518,19 +555,21 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     });
   }, [allTransactions, weekStart]);
 
-  // 주간 거래 (항상 전체 주간 표시)
+  // 주간 거래 (표시용)
   const transactions = weekTransactions;
 
-  // 일별 수입/지출 합계
-  const dailyTotals = useMemo(() => {
-    const totals = new Map<number, { income: number; expense: number }>();
-    weekDays.forEach((d) => {
-      totals.set(d.getDate(), { income: 0, expense: 0 });
+  // 5주 달력 일별 수입/지출 합계 (전체 5주 거래 기준)
+  const calendarDailyTotals = useMemo(() => {
+    const totals = new Map<string, { income: number; expense: number }>();
+    calendarDays.forEach((d) => {
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      totals.set(key, { income: 0, expense: 0 });
     });
-    weekTransactions.forEach((tx) => {
-      const day = tx.day;
-      if (day && totals.has(day)) {
-        const current = totals.get(day)!;
+    fiveWeekTransactions.forEach((tx) => {
+      if (!tx.day) return;
+      const key = `${tx.year}-${tx.month - 1}-${tx.day}`;
+      const current = totals.get(key);
+      if (current) {
         if (tx.type === "income") {
           current.income += tx.amount;
         } else {
@@ -539,40 +578,21 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       }
     });
     return totals;
-  }, [weekTransactions, weekDays]);
+  }, [fiveWeekTransactions, calendarDays]);
 
-  // 주간 카테고리별 요약 계산
-  const expenseSummary = useMemo(() => {
-    const categoryTotals = new Map<string, number>();
-    weekTransactions
-      .filter((tx) => tx.type === "expense")
-      .forEach((tx) => {
-        const current = categoryTotals.get(tx.category) || 0;
-        categoryTotals.set(tx.category, current + tx.amount);
-      });
-    return Array.from(categoryTotals.entries())
-      .map(([category, total]) => ({ category, total }))
-      .sort((a, b) => b.total - a.total);
-  }, [weekTransactions]);
-
-  const incomeSummary = useMemo(() => {
-    const categoryTotals = new Map<string, number>();
-    weekTransactions
-      .filter((tx) => tx.type === "income")
-      .forEach((tx) => {
-        const current = categoryTotals.get(tx.category) || 0;
-        categoryTotals.set(tx.category, current + tx.amount);
-      });
-    return Array.from(categoryTotals.entries())
-      .map(([category, total]) => ({ category, total }))
-      .sort((a, b) => b.total - a.total);
-  }, [weekTransactions]);
+  // 타임라인용: 전체 거래를 최신순으로 정렬 + 날짜별 그룹화
+  const timelineSorted = useMemo(() => {
+    return [...allTransactions].sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      if (a.month !== b.month) return b.month - a.month;
+      return (b.day || 0) - (a.day || 0);
+    });
+  }, [allTransactions]);
 
   // Mutations
   const createMutation = useCreateTransaction(profileId, selectedYear, selectedMonth);
   const updateMutation = useUpdateTransaction(profileId, selectedYear, selectedMonth);
   const deleteMutation = useDeleteTransaction(profileId, selectedYear, selectedMonth);
-
 
   // 카테고리 목록 (DB에서 가져온 것 또는 기본값)
   const expenseCategories = useMemo(() => {
@@ -589,7 +609,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     return dbCategories.length > 0 ? dbCategories : DEFAULT_INCOME_CATEGORIES;
   }, [categories]);
 
-  // 총합 계산 (모든 거래 기준)
+  // 총합 계산 (현재 주 거래 기준)
   const totalExpense = useMemo(() => {
     return transactions
       .filter((tx) => tx.type === "expense")
@@ -602,134 +622,18 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       .reduce((sum, tx) => sum + tx.amount, 0);
   }, [transactions]);
 
-  // 커스텀 툴팁 옵션 생성 함수
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const createChartOptions = (tooltipId: string, total: number, hasData: boolean): any => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        enabled: false,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        external: (context: any) => {
-          if (!hasData) return;
-
-          const { chart, tooltip } = context;
-
-          const chartBlock = chart.canvas.closest(`.${styles.summaryChartBlock}`) as HTMLElement;
-          if (!chartBlock) return;
-
-          let tooltipEl = chartBlock.querySelector(`#${tooltipId}`) as HTMLDivElement | null;
-
-          if (!tooltipEl) {
-            tooltipEl = document.createElement("div");
-            tooltipEl.id = tooltipId;
-            chartBlock.style.position = "relative";
-            chartBlock.appendChild(tooltipEl);
-          }
-
-          if (tooltip.opacity === 0) {
-            tooltipEl.style.opacity = "0";
-            tooltipEl.style.pointerEvents = "none";
-            return;
-          }
-
-          Object.assign(tooltipEl.style, {
-            position: "absolute",
-            pointerEvents: "none",
-            background: "rgba(255, 255, 255, 0.5)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            padding: "8px 12px",
-            fontSize: "13px",
-            whiteSpace: "nowrap",
-            transition: "opacity 0.15s ease",
-            zIndex: "1000",
-          });
-
-          let html = "";
-          if (tooltip.dataPoints && tooltip.dataPoints.length > 0) {
-            const point = tooltip.dataPoints[0];
-            const label = point.label;
-            const value = point.raw as number;
-            const percent = total > 0 ? ((value / total) * 100).toFixed(1) : "0";
-            const bgColor = Array.isArray(point.dataset.backgroundColor)
-              ? point.dataset.backgroundColor[point.dataIndex]
-              : point.dataset.backgroundColor;
-            html = `<div style="display:flex;align-items:center;gap:8px;">
-              <span style="width:10px;height:10px;border-radius:50%;background:${bgColor};"></span>
-              <span style="color:#374151;font-weight:500;">${label}</span>
-              <span style="color:#1a1a1a;font-weight:600;">${formatWon(value)}</span>
-              <span style="color:#6b7280;font-size:12px;">(${percent}%)</span>
-            </div>`;
-          }
-
-          tooltipEl.innerHTML = html;
-          tooltipEl.style.opacity = "1";
-
-          const blockRect = chartBlock.getBoundingClientRect();
-          const tooltipWidth = tooltipEl.offsetWidth;
-          const tooltipHeight = tooltipEl.offsetHeight;
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const mouseEvent = (chart as any)._lastEvent?.native as MouseEvent | undefined;
-
-          let left: number;
-          let top: number;
-
-          if (mouseEvent) {
-            left = mouseEvent.clientX - blockRect.left + 15;
-            top = mouseEvent.clientY - blockRect.top - tooltipHeight - 10;
-          } else {
-            const canvasRect = chart.canvas.getBoundingClientRect();
-            left = (canvasRect.left - blockRect.left) + tooltip.caretX;
-            top = (canvasRect.top - blockRect.top) + tooltip.caretY - tooltipHeight - 10;
-          }
-
-          if (top < 10) {
-            top = (mouseEvent?.clientY ?? 0) - blockRect.top + 15;
-          }
-          if (left + tooltipWidth > blockRect.width - 10) {
-            left = (mouseEvent?.clientX ?? blockRect.width) - blockRect.left - tooltipWidth - 15;
-          }
-          if (left < 10) {
-            left = 10;
-          }
-
-          tooltipEl.style.left = left + "px";
-          tooltipEl.style.top = top + "px";
-        },
-      },
-    },
-    cutout: "80%",
-  });
-
   // 선택된 계좌 기준으로 필터링된 거래
   const filteredTransactions = useMemo(() => {
     if (selectedAccountIds.size === 0) {
-      // 아무것도 선택 안 하면 전체 표시
       return transactions;
     }
     return transactions.filter((tx) => tx.account_id && selectedAccountIds.has(tx.account_id));
   }, [transactions, selectedAccountIds]);
 
-  // 수입/지출 거래 분리 (필터링된 거래 기준)
-  const incomeTransactions = useMemo(() => {
-    return filteredTransactions.filter((tx) => tx.type === "income");
-  }, [filteredTransactions]);
-
-  const expenseTransactions = useMemo(() => {
-    return filteredTransactions.filter((tx) => tx.type === "expense");
-  }, [filteredTransactions]);
-
   // 월별 마감 확정 (모든 계좌 일괄) - 차액을 기타 거래로 추가
   const handleConfirmMonth = async () => {
     if (accounts.length === 0) return;
 
-    // 해당 월의 마지막 날 계산
     const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
 
     for (const account of accounts) {
@@ -740,12 +644,8 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       const expectedBalance = info?.expectedBalance ?? (account.current_balance || 0);
       const difference = actualBalance - expectedBalance;
 
-      // 차액이 없으면 건너뛰기
       if (difference === 0) continue;
 
-      // 차액이 있으면 기타 거래 추가
-      // 양수 차액: 수입으로 추가 (실제 잔액이 더 높음)
-      // 음수 차액: 지출로 추가 (실제 잔액이 더 낮음)
       const transactionType = difference > 0 ? "income" : "expense";
       const transactionAmount = Math.abs(difference);
 
@@ -771,15 +671,11 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
 
     setShowConfirmModal(false);
     setConfirmBalances({});
-
-    // 거래 목록 새로고침을 위해 페이지 리로드 대신 mutation 캐시 무효화
-    // createMutation의 onSuccess에서 자동으로 처리되므로 여기서는 window.location.reload() 사용
     window.location.reload();
   };
 
   // 마감 모달 열기
   const openConfirmModal = () => {
-    // 모든 계좌의 예상 잔액으로 초기화
     const initialBalances: Record<string, string> = {};
     accounts.forEach((account) => {
       const info = accountBalanceInfo[account.id];
@@ -844,96 +740,17 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     );
   };
 
-  // 인라인 입력으로 거래 추가
-  const handleInlineSubmit = (type: TransactionType) => {
-    // 중복 제출 방지 (ref로 즉시 체크)
-    if (isSubmittingRef.current) return;
-
-    // 현재 입력값 캡처 (초기화 전에 저장)
-    const currentInput = type === "income" ? { ...incomeInput } : { ...expenseInput };
-    const amount = parseInt(currentInput.amount, 10);
-
-    if (!amount || amount <= 0) return;
-    const title = currentInput.title;
-    if (!title.trim()) return;
-
-    // 즉시 제출 잠금 (Enter 연타 방지)
-    isSubmittingRef.current = true;
-
-    // 입력 즉시 초기화 (낙관적 UX - 다음 입력 준비)
-    if (type === "income") {
-      setIncomeInput({ day: "", amount: "", title: "", category: "", accountId: "" });
-    } else {
-      setExpenseInput({ day: "", amount: "", title: "", category: "", paymentSource: "" });
-    }
-
-    // 기본 계좌
-    const defaultAccountId = accounts.find(a => a.is_default)?.id || accounts[0]?.id || null;
-
-    let accountId: string | null = null;
-    let paymentMethodId: string | null = null;
-
-    if (type === "income") {
-      // 수입: 계좌로 직접
-      accountId = (currentInput as typeof incomeInput).accountId || defaultAccountId;
-    } else {
-      // 지출: 계좌 또는 결제수단
-      const source = (currentInput as typeof expenseInput).paymentSource;
-      if (source.startsWith("account:")) {
-        accountId = source.replace("account:", "");
-      } else if (source.startsWith("payment:")) {
-        paymentMethodId = source.replace("payment:", "");
-        // 결제수단의 연결 계좌 찾기
-        const pm = paymentMethods.find(p => p.id === paymentMethodId);
-        accountId = pm?.account_id || null;
-      } else {
-        // 기본 계좌
-        accountId = defaultAccountId;
-      }
-    }
-
-    // 카테고리: 선택된 것 또는 첫 번째
-    const defaultCategories = type === "income" ? incomeCategories : expenseCategories;
-    const category = currentInput.category || defaultCategories[0] || "기타";
-
-    createMutation.mutate(
-      {
-        profile_id: profileId,
-        type,
-        category,
-        title: title.trim(),
-        amount,
-        year: selectedYear,
-        month: selectedMonth,
-        day: currentInput.day ? parseInt(currentInput.day, 10) : null,
-        memo: null,
-        account_id: accountId,
-        payment_method_id: paymentMethodId,
-      },
-      {
-        onSuccess: () => {
-          setBalanceTxVersion((v) => v + 1);
-        },
-        onSettled: () => {
-          // 제출 완료 후 잠금 해제
-          isSubmittingRef.current = false;
-        },
-      }
-    );
-  };
-
   // 전체 계좌 합계
   const totalAccountBalance = useMemo(() => {
     return accounts.reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
   }, [accounts]);
 
   // 계좌별 수입/지출 및 예상 잔액 계산
-  // balance_updated_at 이후의 거래만 계산하여 current_balance에 더함
   const accountBalanceInfo = useMemo(() => {
     return calculateAccountBalances(accounts, balanceTransactions);
   }, [accounts, balanceTransactions]);
 
-  // 전체 누적 잔액 (모든 계좌의 expectedBalance 합계)
+  // 전체 누적 잔액
   const totalExpectedBalance = useMemo(() => {
     return accounts.reduce((sum, acc) => {
       const info = accountBalanceInfo[acc.id];
@@ -941,7 +758,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     }, 0);
   }, [accounts, accountBalanceInfo]);
 
-  // 전체 누적 변동액 (모든 계좌의 income - expense 합계)
+  // 전체 누적 변동액
   const totalBalanceChange = useMemo(() => {
     return accounts.reduce((sum, acc) => {
       const info = accountBalanceInfo[acc.id];
@@ -953,457 +770,112 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
   if (accountsLoading || isLoading || balanceTxLoading) {
     return (
       <div className={styles.container}>
-        {/* 계좌 바 스켈레톤 */}
-        <div className={styles.accountBar}>
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className={`${styles.skeleton} ${styles.skeletonAccountItem}`} />
-          ))}
+        <div className={styles.contentArea}>
+          <div className={`${styles.skeleton} ${styles.skeletonCalendar}`} />
         </div>
-
-        {/* 요약 헤더 스켈레톤 */}
-        <div className={styles.summaryHeader}>
-          <div className={styles.summaryCharts}>
-            <div className={styles.summaryChartBlock}>
-              <div className={styles.sideMetric}>
-                <span className={`${styles.skeleton} ${styles.skeletonLabel}`} />
-                <span className={`${styles.skeleton} ${styles.skeletonValue}`} />
-              </div>
-              <div className={styles.categoryChart}>
-                <div className={`${styles.skeleton} ${styles.skeletonChart}`} />
-                <div className={styles.chartLegend}>
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className={`${styles.skeleton} ${styles.skeletonLegendItem}`} />
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className={styles.summaryChartBlock}>
-              <div className={styles.sideMetric}>
-                <span className={`${styles.skeleton} ${styles.skeletonLabel}`} />
-                <span className={`${styles.skeleton} ${styles.skeletonValue}`} />
-              </div>
-              <div className={styles.categoryChart}>
-                <div className={`${styles.skeleton} ${styles.skeletonChart}`} />
-                <div className={styles.chartLegend}>
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className={`${styles.skeleton} ${styles.skeletonLegendItem}`} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 콘텐츠 스켈레톤 */}
-        <div className={styles.content}>
-          <div className={styles.incomeColumn}>
-            <div className={`${styles.skeleton} ${styles.skeletonColumnLabel}`} />
-            <div className={`${styles.skeleton} ${styles.skeletonTableHeader}`} />
-            {[1, 2, 3].map((i) => (
-              <div key={i} className={`${styles.skeleton} ${styles.skeletonRow}`} />
-            ))}
-          </div>
-          <div className={styles.expenseColumn}>
-            <div className={`${styles.skeleton} ${styles.skeletonColumnLabel}`} />
-            <div className={`${styles.skeleton} ${styles.skeletonTableHeader}`} />
-            {[1, 2, 3].map((i) => (
-              <div key={i} className={`${styles.skeleton} ${styles.skeletonRow}`} />
-            ))}
-          </div>
-        </div>
+        <div className={`${styles.skeleton} ${styles.skeletonBottomNav}`} />
       </div>
     );
   }
 
   return (
     <div className={styles.container}>
-      {/* 상단 계좌 바 */}
-      <div className={styles.accountBar}>
-        {/* 전체 (맨 왼쪽) */}
-        <button
-          className={`${styles.accountItem} ${selectedAccountIds.size === 0 ? styles.accountItemSelected : ""}`}
-          onClick={() => setSelectedAccountIds(new Set())}
-        >
-          <span className={styles.accountItemName}>전체</span>
-          <div className={styles.accountItemValues}>
-            <span className={styles.accountItemBalance}>{formatWon(totalExpectedBalance)}</span>
-          </div>
-        </button>
-        <div className={styles.accountDivider} />
-        {/* 개별 계좌들 */}
-        {accounts.length === 0 ? (
-          <span className={styles.noAccountsText}>등록된 계좌 없음</span>
-        ) : (
-          accounts.map((account) => {
-            const info = accountBalanceInfo[account.id];
-            const change = (info?.income ?? 0) - (info?.expense ?? 0);
-            const currentBalance = info?.expectedBalance ?? (account.current_balance || 0);
-            const isSelected = selectedAccountIds.has(account.id);
-            return (
-              <button
-                key={account.id}
-                className={`${styles.accountItem} ${isSelected ? styles.accountItemSelected : ""}`}
-                onClick={() => toggleAccountSelection(account.id)}
-              >
-                <span className={styles.accountItemName}>{account.name}</span>
-                <div className={styles.accountItemValues}>
-                  <span className={styles.accountItemBalance}>{formatWon(currentBalance)}</span>
+      {/* 콘텐츠 영역 */}
+      <div className={styles.contentArea}>
+        {viewMode === "calendar" ? (
+          /* ===== 캘린더 뷰 ===== */
+          <div className={styles.calendarGrid}>
+            {/* 요일 헤더 */}
+            {DAY_NAMES.map((name) => (
+              <div key={name} className={styles.calendarHeaderCell}>
+                {name}
+              </div>
+            ))}
+
+            {/* 5주 x 7일 = 35 셀 */}
+            {calendarDays.map((day, idx) => {
+              const dayNum = day.getDate();
+              const isToday = day.getTime() === today.getTime();
+              const isCurrentWeek =
+                day >= weekStart &&
+                day < new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
+              const key = `${day.getFullYear()}-${day.getMonth()}-${dayNum}`;
+              const totals = calendarDailyTotals.get(key) || { income: 0, expense: 0 };
+
+              return (
+                <div
+                  key={idx}
+                  className={`${styles.calendarCell} ${isCurrentWeek ? styles.calendarCellCurrentWeek : ""}`}
+                >
+                  <div className={styles.calendarCellHeader}>
+                    <span className={`${styles.calendarDayNum} ${isToday ? styles.calendarDayToday : ""}`}>
+                      {dayNum}
+                    </span>
+                  </div>
+                  <div className={styles.calendarCellTotals}>
+                    {totals.income > 0 && (
+                      <span className={styles.calendarIncome}>+{formatWon(totals.income)}</span>
+                    )}
+                    {totals.expense > 0 && (
+                      <span className={styles.calendarExpense}>-{formatWon(totals.expense)}</span>
+                    )}
+                  </div>
                 </div>
-              </button>
-            );
-          })
+              );
+            })}
+          </div>
+        ) : (
+          /* ===== 타임라인 뷰 ===== */
+          <TimelineView
+            transactions={timelineSorted}
+            accounts={accounts}
+            paymentMethods={paymentMethods}
+            expenseCategories={expenseCategories}
+            incomeCategories={incomeCategories}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+          />
         )}
+      </div>
+
+      {/* 하단 네비게이션 바 */}
+      <div
+        className={styles.bottomNav}
+        style={{
+          background: isDark ? 'rgba(34, 37, 41, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12)',
+        }}
+      >
         <button
-          className={styles.confirmButton}
-          onClick={openConfirmModal}
+          className={`${styles.bottomNavItem} ${viewMode === "timeline" ? styles.bottomNavItemActive : ""}`}
+          onClick={() => setViewMode("timeline")}
         >
-          <Check size={14} />
-          정리하기
+          <List size={18} />
+        </button>
+        <button
+          className={styles.addButton}
+          onClick={() => setShowForm(true)}
+        >
+          <Plus size={20} />
+        </button>
+        <button
+          className={`${styles.bottomNavItem} ${viewMode === "calendar" ? styles.bottomNavItemActive : ""}`}
+          onClick={() => setViewMode("calendar")}
+        >
+          <CalendarDays size={18} />
         </button>
       </div>
 
-      {/* 주간 달력 */}
-      <div className={styles.weekCalendar}>
-        {weekDays.map((day, idx) => {
-          const dayNum = day.getDate();
-          const isToday = day.getTime() === today.getTime();
-          const totals = dailyTotals.get(dayNum) || { income: 0, expense: 0 };
-          const net = totals.income - totals.expense;
-          return (
-            <div
-              key={idx}
-              className={`${styles.weekDay} ${isToday ? styles.weekDayToday : ""}`}
-            >
-              <span className={styles.weekDayHeader}>
-                <span className={styles.weekDayName}>{DAY_NAMES[idx]}</span>
-                <span className={`${styles.weekDayNum} ${isToday ? styles.weekDayNumToday : ""}`}>{dayNum}</span>
-              </span>
-              <div className={styles.weekDayTotals}>
-                {totals.income > 0 && (
-                  <span className={styles.weekDayIncome}>+{formatWon(totals.income)}</span>
-                )}
-                {totals.expense > 0 && (
-                  <span className={styles.weekDayExpense}>-{formatWon(totals.expense)}</span>
-                )}
-                {(totals.income > 0 || totals.expense > 0) && (
-                  <span className={net >= 0 ? styles.weekDayNet : styles.weekDayNetNegative}>
-                    {net >= 0 ? "+" : ""}{formatWon(net)}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 수입/지출 요약 */}
-      <div className={styles.summaryHeader}>
-        <div className={styles.summaryCharts}>
-          {/* 수입 차트 */}
-          <div className={styles.summaryChartBlock}>
-            <div className={styles.sideMetric}>
-              <span className={styles.sideLabel}>수입</span>
-              <span className={`${styles.sideValue} ${styles.incomeValue}`}>+{formatWon(totalIncome)}</span>
-            </div>
-            <div className={styles.categoryChart}>
-              <div className={styles.chartWrapper}>
-                <Doughnut
-                  data={incomeSummary.length > 0 ? {
-                    labels: incomeSummary.map((item) => item.category),
-                    datasets: [{
-                      data: incomeSummary.map((item) => item.total),
-                      backgroundColor: chartColors.slice(0, incomeSummary.length),
-                      borderWidth: 2,
-                      borderColor: chartScaleColors.doughnutBorder,
-                    }],
-                  } : {
-                    labels: ["없음"],
-                    datasets: [{
-                      data: [1],
-                      backgroundColor: [chartScaleColors.emptyState],
-                      borderWidth: 0,
-                    }],
-                  }}
-                  options={createChartOptions("income-tooltip", totalIncome, incomeSummary.length > 0)}
-                />
-              </div>
-              <div className={styles.chartLegend}>
-                {incomeSummary.length > 0 ? incomeSummary.map((item, idx) => {
-                  const percent = ((item.total / totalIncome) * 100).toFixed(1);
-                  return (
-                    <div key={item.category} className={styles.legendItem}>
-                      <span className={styles.legendDot} style={{ backgroundColor: chartColors[idx % chartColors.length] }} />
-                      <span className={styles.legendLabel}>{item.category}</span>
-                      <span className={styles.legendValue}>{formatWon(item.total)}</span>
-                      <span className={styles.legendPercent}>{percent}%</span>
-                    </div>
-                  );
-                }) : (
-                  <div className={styles.emptyLegend}>수입 내역이 없습니다</div>
-                )}
-              </div>
-            </div>
-          </div>
-          {/* 지출 차트 */}
-          <div className={styles.summaryChartBlock}>
-            <div className={styles.sideMetric}>
-              <span className={styles.sideLabel}>지출</span>
-              <span className={`${styles.sideValue} ${styles.expenseValue}`}>-{formatWon(totalExpense)}</span>
-            </div>
-            <div className={styles.categoryChart}>
-              <div className={styles.chartWrapper}>
-                <Doughnut
-                  data={expenseSummary.length > 0 ? {
-                    labels: expenseSummary.map((item) => item.category),
-                    datasets: [{
-                      data: expenseSummary.map((item) => item.total),
-                      backgroundColor: chartColors.slice(0, expenseSummary.length),
-                      borderWidth: 2,
-                      borderColor: chartScaleColors.doughnutBorder,
-                    }],
-                  } : {
-                    labels: ["없음"],
-                    datasets: [{
-                      data: [1],
-                      backgroundColor: [chartScaleColors.emptyState],
-                      borderWidth: 0,
-                    }],
-                  }}
-                  options={createChartOptions("expense-tooltip", totalExpense, expenseSummary.length > 0)}
-                />
-              </div>
-              <div className={styles.chartLegend}>
-                {expenseSummary.length > 0 ? expenseSummary.map((item, idx) => {
-                  const percent = ((item.total / totalExpense) * 100).toFixed(1);
-                  return (
-                    <div key={item.category} className={styles.legendItem}>
-                      <span className={styles.legendDot} style={{ backgroundColor: chartColors[idx % chartColors.length] }} />
-                      <span className={styles.legendLabel}>{item.category}</span>
-                      <span className={styles.legendValue}>{formatWon(item.total)}</span>
-                      <span className={styles.legendPercent}>{percent}%</span>
-                    </div>
-                  );
-                }) : (
-                  <div className={styles.emptyLegend}>지출 내역이 없습니다</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.content}>
-        {/* 왼쪽: 수입 */}
-        <div className={styles.incomeColumn}>
-          <div className={styles.columnLabel}>수입 입력</div>
-          {/* 테이블 헤더 */}
-          <div className={styles.tableHeader}>
-            <span className={styles.headerDay}>일</span>
-            <span className={styles.headerAmount}>금액</span>
-            <span className={styles.headerTitle}>내역</span>
-            <span className={styles.headerCategory}>카테고리</span>
-            <span className={styles.headerAccount}>계좌</span>
-            <span className={styles.headerAction}></span>
-          </div>
-          {/* 인라인 입력 */}
-          <div className={styles.inlineInputRow}>
-            <input
-              type="number"
-              className={styles.inlineDayInput}
-              value={incomeInput.day}
-              onChange={(e) => setIncomeInput({ ...incomeInput, day: e.target.value })}
-              onWheel={(e) => (e.target as HTMLElement).blur()}
-              min={1}
-              max={31}
-            />
-            <input
-              type="number"
-              className={styles.inlineAmountInput}
-              value={incomeInput.amount}
-              onChange={(e) => setIncomeInput({ ...incomeInput, amount: e.target.value })}
-              onWheel={(e) => (e.target as HTMLElement).blur()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                }
-              }}
-            />
-            <input
-              type="text"
-              className={styles.inlineTitleInput}
-              value={incomeInput.title}
-              onChange={(e) => setIncomeInput({ ...incomeInput, title: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleInlineSubmit("income");
-                }
-              }}
-            />
-            <select
-              className={styles.inlineCategorySelect}
-              value={incomeInput.category || incomeCategories[0] || ""}
-              onChange={(e) => setIncomeInput({ ...incomeInput, category: e.target.value })}
-            >
-              {incomeCategories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-            <select
-              className={styles.inlineAccountSelect}
-              value={incomeInput.accountId || accounts.find(a => a.is_default)?.id || accounts[0]?.id || ""}
-              onChange={(e) => setIncomeInput({ ...incomeInput, accountId: e.target.value })}
-            >
-              {accounts.map((acc) => (
-                <option key={acc.id} value={acc.id}>{acc.name}</option>
-              ))}
-            </select>
-            <button
-              className={styles.inlineAddBtn}
-              onClick={() => handleInlineSubmit("income")}
-              disabled={createMutation.isPending}
-            >
-              +
-            </button>
-          </div>
-          <div className={styles.transactionList}>
-            {isLoading ? (
-              <div className={styles.loading}>로딩 중...</div>
-            ) : incomeTransactions.length === 0 ? (
-              <div className={styles.emptyText}>이번 달 수입이 없습니다</div>
-            ) : (
-              incomeTransactions.map((tx) => (
-                <TransactionRow
-                  key={tx.id}
-                  transaction={tx}
-                  accounts={accounts}
-                  categories={incomeCategories}
-                  paymentMethods={paymentMethods}
-                  onUpdate={(updates) => handleUpdate(tx.id, updates)}
-                  onDelete={() => handleDelete(tx.id)}
-                  showAccount={true}
-                />
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* 오른쪽: 지출 */}
-        <div className={styles.expenseColumn}>
-          <div className={styles.columnLabel}>지출 입력</div>
-          {/* 테이블 헤더 */}
-          <div className={styles.tableHeader}>
-            <span className={styles.headerDay}>일</span>
-            <span className={styles.headerAmount}>금액</span>
-            <span className={styles.headerTitle}>내역</span>
-            <span className={styles.headerCategory}>카테고리</span>
-            <span className={styles.headerAccount}>결제수단</span>
-            <span className={styles.headerAction}></span>
-          </div>
-          {/* 인라인 입력 */}
-          <div className={styles.inlineInputRow}>
-            <input
-              type="number"
-              className={styles.inlineDayInput}
-              value={expenseInput.day}
-              onChange={(e) => setExpenseInput({ ...expenseInput, day: e.target.value })}
-              onWheel={(e) => (e.target as HTMLElement).blur()}
-              min={1}
-              max={31}
-            />
-            <input
-              type="number"
-              className={styles.inlineAmountInput}
-              value={expenseInput.amount}
-              onChange={(e) => setExpenseInput({ ...expenseInput, amount: e.target.value })}
-              onWheel={(e) => (e.target as HTMLElement).blur()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                }
-              }}
-            />
-            <input
-              type="text"
-              className={styles.inlineTitleInput}
-              value={expenseInput.title}
-              onChange={(e) => setExpenseInput({ ...expenseInput, title: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleInlineSubmit("expense");
-                }
-              }}
-            />
-            <select
-              className={styles.inlineCategorySelect}
-              value={expenseInput.category || expenseCategories[0] || ""}
-              onChange={(e) => setExpenseInput({ ...expenseInput, category: e.target.value })}
-            >
-              {expenseCategories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-            <select
-              className={styles.inlineAccountSelect}
-              value={expenseInput.paymentSource || `account:${accounts.find(a => a.is_default)?.id || accounts[0]?.id || ""}`}
-              onChange={(e) => setExpenseInput({ ...expenseInput, paymentSource: e.target.value })}
-            >
-              {paymentMethods.length > 0 && (
-                <optgroup label="카드/페이">
-                  {paymentMethods.map((pm) => (
-                    <option key={pm.id} value={`payment:${pm.id}`}>{pm.name}</option>
-                  ))}
-                </optgroup>
-              )}
-              <optgroup label="계좌이체">
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={`account:${acc.id}`}>{acc.name}</option>
-                ))}
-              </optgroup>
-            </select>
-            <button
-              className={styles.inlineAddBtn}
-              onClick={() => handleInlineSubmit("expense")}
-              disabled={createMutation.isPending}
-            >
-              +
-            </button>
-          </div>
-          <div className={styles.transactionList}>
-            {isLoading ? (
-              <div className={styles.loading}>로딩 중...</div>
-            ) : expenseTransactions.length === 0 ? (
-              <div className={styles.emptyText}>이번 달 지출이 없습니다</div>
-            ) : (
-              expenseTransactions.map((tx) => (
-                <TransactionRow
-                  key={tx.id}
-                  transaction={tx}
-                  accounts={accounts}
-                  categories={expenseCategories}
-                  paymentMethods={paymentMethods}
-                  onUpdate={(updates) => handleUpdate(tx.id, updates)}
-                  onDelete={() => handleDelete(tx.id)}
-                  showAccount={true}
-                />
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 거래 추가 폼 모달 */}
+      {/* 가계부 작성 일괄 입력 모달 */}
       {showForm && (
         <TransactionForm
-          type={formType}
           expenseCategories={expenseCategories}
           incomeCategories={incomeCategories}
           accounts={accounts}
-          month={selectedMonth}
           onSubmit={handleAddTransaction}
           onClose={() => setShowForm(false)}
-          onTypeChange={setFormType}
           isLoading={createMutation.isPending}
         />
       )}
@@ -1499,7 +971,246 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
   );
 }
 
-// 거래 행 컴포넌트
+// 타임라인 뷰 컴포넌트
+function TimelineView({
+  transactions,
+  accounts,
+  paymentMethods,
+  expenseCategories,
+  incomeCategories,
+  onUpdate,
+  onDelete,
+}: {
+  transactions: BudgetTransaction[];
+  accounts: Account[];
+  paymentMethods: PaymentMethod[];
+  expenseCategories: string[];
+  incomeCategories: string[];
+  onUpdate: (id: string, updates: Partial<BudgetTransaction>) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  if (transactions.length === 0) {
+    return (
+      <div className={styles.timelineView}>
+        <div className={styles.timelineEmpty}>거래 내역이 없습니다</div>
+      </div>
+    );
+  }
+
+  // 날짜별 그룹화
+  type DateGroup = { dateKey: string; label: string; items: BudgetTransaction[] };
+  const groups: DateGroup[] = [];
+  let currentGroup: DateGroup | null = null;
+
+  for (const tx of transactions) {
+    const dateKey = `${tx.year}-${tx.month}-${tx.day || 0}`;
+    if (!currentGroup || currentGroup.dateKey !== dateKey) {
+      const dayLabel = tx.day
+        ? `${tx.month}/${tx.day} ${getDayOfWeekName(tx.year, tx.month, tx.day)}`
+        : `${tx.year}.${String(tx.month).padStart(2, "0")}`;
+      currentGroup = { dateKey, label: dayLabel, items: [] };
+      groups.push(currentGroup);
+    }
+    currentGroup.items.push(tx);
+  }
+
+  return (
+    <div className={styles.timelineView}>
+      {groups.map((group) => (
+        <div key={group.dateKey}>
+          <div className={styles.timelineGroup}>{group.label}</div>
+          {group.items.map((tx) => (
+            <TimelineTransactionRow
+              key={tx.id}
+              transaction={tx}
+              accounts={accounts}
+              paymentMethods={paymentMethods}
+              categories={tx.type === "income" ? incomeCategories : expenseCategories}
+              isEditing={editingId === tx.id}
+              onStartEdit={() => setEditingId(tx.id)}
+              onCancelEdit={() => setEditingId(null)}
+              onUpdate={(updates) => {
+                onUpdate(tx.id, updates);
+                setEditingId(null);
+              }}
+              onDelete={() => onDelete(tx.id)}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// 타임라인 거래 행 (표시/수정 겸용)
+function TimelineTransactionRow({
+  transaction,
+  accounts,
+  paymentMethods,
+  categories,
+  isEditing,
+  onStartEdit,
+  onCancelEdit,
+  onUpdate,
+  onDelete,
+}: {
+  transaction: BudgetTransaction;
+  accounts: Account[];
+  paymentMethods: PaymentMethod[];
+  categories: string[];
+  isEditing: boolean;
+  onStartEdit: () => void;
+  onCancelEdit: () => void;
+  onUpdate: (updates: Partial<BudgetTransaction>) => void;
+  onDelete: () => void;
+}) {
+  const [editDay, setEditDay] = useState(transaction.day?.toString() || "");
+  const [editAmount, setEditAmount] = useState(transaction.amount.toString());
+  const [editTitle, setEditTitle] = useState(transaction.title);
+  const [editCategory, setEditCategory] = useState(transaction.category);
+  const initialPaymentSource = transaction.payment_method_id
+    ? `payment:${transaction.payment_method_id}`
+    : `account:${transaction.account_id}`;
+  const [editPaymentSource, setEditPaymentSource] = useState(initialPaymentSource);
+
+  const handleSave = () => {
+    const amount = parseInt(editAmount, 10);
+    if (!amount || amount <= 0 || !editTitle.trim()) return;
+
+    let accountId = transaction.account_id;
+    let paymentMethodId: string | null = transaction.payment_method_id;
+
+    if (editPaymentSource.startsWith("payment:")) {
+      paymentMethodId = editPaymentSource.replace("payment:", "");
+      const pm = paymentMethods.find((p) => p.id === paymentMethodId);
+      if (pm) accountId = pm.account_id;
+    } else if (editPaymentSource.startsWith("account:")) {
+      accountId = editPaymentSource.replace("account:", "");
+      paymentMethodId = null;
+    }
+
+    onUpdate({
+      day: editDay ? parseInt(editDay, 10) : null,
+      amount,
+      title: editTitle.trim(),
+      category: editCategory,
+      account_id: accountId,
+      payment_method_id: paymentMethodId,
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === "Escape") {
+      onCancelEdit();
+      setEditDay(transaction.day?.toString() || "");
+      setEditAmount(transaction.amount.toString());
+      setEditTitle(transaction.title);
+      setEditCategory(transaction.category);
+      setEditPaymentSource(initialPaymentSource);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className={styles.timelineEditRow}>
+        <input
+          type="number"
+          className={styles.timelineEditDayInput}
+          value={editDay}
+          onChange={(e) => setEditDay(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onWheel={(e) => (e.target as HTMLElement).blur()}
+          min={1}
+          max={31}
+          placeholder="일"
+          autoFocus
+        />
+        <input
+          type="number"
+          className={styles.timelineEditAmountInput}
+          value={editAmount}
+          onChange={(e) => setEditAmount(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onWheel={(e) => (e.target as HTMLElement).blur()}
+        />
+        <input
+          type="text"
+          className={styles.timelineEditTitleInput}
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+        <select
+          className={styles.timelineEditCategorySelect}
+          value={editCategory}
+          onChange={(e) => setEditCategory(e.target.value)}
+          onKeyDown={handleKeyDown}
+        >
+          {categories.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+        <select
+          className={styles.timelineEditAccountSelect}
+          value={editPaymentSource}
+          onChange={(e) => setEditPaymentSource(e.target.value)}
+          onKeyDown={handleKeyDown}
+        >
+          {paymentMethods.length > 0 && (
+            <optgroup label="카드/페이">
+              {paymentMethods.map((pm) => (
+                <option key={pm.id} value={`payment:${pm.id}`}>{pm.name}</option>
+              ))}
+            </optgroup>
+          )}
+          <optgroup label="계좌이체">
+            {accounts.map((acc) => (
+              <option key={acc.id} value={`account:${acc.id}`}>{acc.name}</option>
+            ))}
+          </optgroup>
+        </select>
+        <button className={styles.timelineEditSaveBtn} onClick={handleSave}>
+          <Check size={16} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.timelineRow} onClick={onStartEdit}>
+      <div className={styles.timelineRowDate}>
+        {transaction.day ? `${transaction.day}일` : ""}
+      </div>
+      <div
+        className={`${styles.timelineRowAmount} ${
+          transaction.type === "income"
+            ? styles.timelineRowAmountIncome
+            : styles.timelineRowAmountExpense
+        }`}
+      >
+        {transaction.type === "income" ? "+" : "-"}{formatWon(transaction.amount)}
+      </div>
+      <div className={styles.timelineRowTitle}>{transaction.title}</div>
+      <div className={styles.timelineRowCategory}>{transaction.category}</div>
+      <button
+        className={styles.timelineRowDelete}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
+
+// 거래 행 컴포넌트 (legacy - kept for potential reuse)
 function TransactionRow({
   transaction,
   accounts,
@@ -1522,7 +1233,6 @@ function TransactionRow({
   const [editAmount, setEditAmount] = useState(transaction.amount.toString());
   const [editTitle, setEditTitle] = useState(transaction.title);
   const [editCategory, setEditCategory] = useState(transaction.category);
-  // 결제수단: payment_method_id가 있으면 "payment:id", 없으면 "account:id"
   const initialPaymentSource = transaction.payment_method_id
     ? `payment:${transaction.payment_method_id}`
     : `account:${transaction.account_id}`;
@@ -1535,13 +1245,11 @@ function TransactionRow({
     const amount = parseInt(editAmount, 10);
     if (!amount || amount <= 0 || !editTitle.trim()) return;
 
-    // 결제수단 파싱
     let accountId = transaction.account_id;
     let paymentMethodId: string | null = transaction.payment_method_id;
 
     if (editPaymentSource.startsWith("payment:")) {
       paymentMethodId = editPaymentSource.replace("payment:", "");
-      // 결제수단의 연결 계좌 찾기
       const pm = paymentMethods.find((p) => p.id === paymentMethodId);
       if (pm) accountId = pm.account_id;
     } else if (editPaymentSource.startsWith("account:")) {
@@ -1668,23 +1376,45 @@ function TransactionRow({
   );
 }
 
-// 거래 추가 폼 컴포넌트
+// 일괄 거래 입력 폼 (가계부 작성)
+interface FormRow {
+  id: string;
+  day: string;
+  type: TransactionType;
+  category: string;
+  title: string;
+  amount: string;
+  accountId: string;
+}
+
+function createEmptyRow(
+  defaultType: TransactionType,
+  defaultCategory: string,
+  defaultAccountId: string,
+  defaultDay: string,
+): FormRow {
+  return {
+    id: crypto.randomUUID(),
+    day: defaultDay,
+    type: defaultType,
+    category: defaultCategory,
+    title: "",
+    amount: "",
+    accountId: defaultAccountId,
+  };
+}
+
 function TransactionForm({
-  type,
   expenseCategories,
   incomeCategories,
   accounts,
-  month,
   onSubmit,
   onClose,
-  onTypeChange,
   isLoading,
 }: {
-  type: TransactionType;
   expenseCategories: string[];
   incomeCategories: string[];
   accounts: Account[];
-  month: number;
   onSubmit: (data: {
     type: TransactionType;
     category: string;
@@ -1695,182 +1425,242 @@ function TransactionForm({
     account_id: string | null;
   }) => void;
   onClose: () => void;
-  onTypeChange: (type: TransactionType) => void;
   isLoading: boolean;
 }) {
-  const categories = type === "expense" ? expenseCategories : incomeCategories;
-  const [category, setCategory] = useState(categories[0] || "");
-  const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("");
-  const [day, setDay] = useState<string>("");
-  const [memo, setMemo] = useState("");
   const defaultAccount = accounts.find((a) => a.is_default);
-  const [accountId, setAccountId] = useState<string>(defaultAccount?.id || "");
+  const defaultAccountId = defaultAccount?.id || "";
+  const todayDay = new Date().getDate().toString();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!category || !title || !amount) return;
+  const [rows, setRows] = useState<FormRow[]>([]);
+  const [currentRow, setCurrentRow] = useState<FormRow>(
+    createEmptyRow("expense", expenseCategories[0] || "", defaultAccountId, todayDay)
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
-    onSubmit({
-      type,
-      category,
-      title,
-      amount: parseInt(amount, 10),
-      day: day ? parseInt(day, 10) : null,
-      memo,
-      account_id: accountId || null,
-    });
+  // ESC 키로 닫기
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
+
+  const isRowValid = (row: FormRow) => {
+    return row.title.trim() !== "" && row.amount !== "" && parseInt(row.amount, 10) > 0;
   };
 
-  // 타입 변경 시 카테고리도 리셋
-  const handleTypeChange = (newType: TransactionType) => {
-    onTypeChange(newType);
+  const commitCurrentRow = () => {
+    if (!isRowValid(currentRow)) return;
+    setRows((prev) => [...prev, currentRow]);
+    setCurrentRow(
+      createEmptyRow(currentRow.type, currentRow.category, currentRow.accountId, currentRow.day)
+    );
+    // Focus the title input of the new row after render
+    setTimeout(() => titleInputRef.current?.focus(), 0);
+  };
+
+  const handleCurrentRowKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitCurrentRow();
+    }
+  };
+
+  const handleDeleteRow = (id: string) => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const handleCurrentRowTypeChange = (newType: TransactionType) => {
     const newCategories = newType === "expense" ? expenseCategories : incomeCategories;
-    setCategory(newCategories[0] || "");
+    setCurrentRow((prev) => ({
+      ...prev,
+      type: newType,
+      category: newCategories[0] || "",
+    }));
   };
+
+  const getCategoriesForType = (type: TransactionType) => {
+    return type === "expense" ? expenseCategories : incomeCategories;
+  };
+
+  const handleSaveAll = async () => {
+    // Collect all valid rows: committed rows + current row if valid
+    const allRows = [...rows];
+    if (isRowValid(currentRow)) {
+      allRows.push(currentRow);
+    }
+
+    if (allRows.length === 0) return;
+
+    setIsSubmitting(true);
+    for (const row of allRows) {
+      onSubmit({
+        type: row.type,
+        category: row.category,
+        title: row.title.trim(),
+        amount: parseInt(row.amount, 10),
+        day: row.day ? parseInt(row.day, 10) : null,
+        memo: "",
+        account_id: row.accountId || null,
+      });
+    }
+    // Close is handled by the parent via onSuccess callback in createMutation
+  };
+
+  const totalCount = rows.length + (isRowValid(currentRow) ? 1 : 0);
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.batchModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h3>거래 추가</h3>
+          <h3>가계부 작성</h3>
           <button className={styles.closeButton} onClick={onClose}>
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          {/* 지출/수입 선택 */}
-          <div className={styles.typeSelector}>
-            <button
-              type="button"
-              className={`${styles.typeButton} ${type === "expense" ? styles.typeButtonActive : ""}`}
-              onClick={() => handleTypeChange("expense")}
-            >
-              지출
-            </button>
-            <button
-              type="button"
-              className={`${styles.typeButton} ${type === "income" ? styles.typeButtonActiveIncome : ""}`}
-              onClick={() => handleTypeChange("income")}
-            >
-              수입
-            </button>
+        <div className={styles.batchBody}>
+          {/* Header row */}
+          <div className={styles.batchHeader}>
+            <span className={styles.batchColDay}>날짜</span>
+            <span className={styles.batchColType}>유형</span>
+            <span className={styles.batchColCategory}>카테고리</span>
+            <span className={styles.batchColTitle}>내용</span>
+            <span className={styles.batchColAmount}>금액</span>
+            <span className={styles.batchColAccount}>계좌</span>
+            <span className={styles.batchColAction} />
           </div>
 
-          {/* 날짜 */}
-          <div className={styles.formRow}>
-            <label className={styles.formLabel}>날짜</label>
-            <div className={styles.dateInputGroup}>
-              <span className={styles.monthDisplay}>{month}월</span>
+          {/* Committed rows */}
+          <div className={styles.batchList}>
+            {rows.map((row) => (
+              <div key={row.id} className={styles.batchRow}>
+                <span className={styles.batchCellDay}>{row.day || "-"}</span>
+                <span
+                  className={`${styles.batchCellType} ${
+                    row.type === "income" ? styles.batchCellTypeIncome : styles.batchCellTypeExpense
+                  }`}
+                >
+                  {row.type === "expense" ? "지출" : "수입"}
+                </span>
+                <span className={styles.batchCellCategory}>{row.category}</span>
+                <span className={styles.batchCellTitle}>{row.title}</span>
+                <span className={styles.batchCellAmount}>{parseInt(row.amount, 10).toLocaleString()}</span>
+                <span className={styles.batchCellAccount}>
+                  {accounts.find((a) => a.id === row.accountId)?.name || "-"}
+                </span>
+                <button
+                  className={styles.batchRowDelete}
+                  onClick={() => handleDeleteRow(row.id)}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+
+            {/* Active input row */}
+            <div className={styles.batchInputRow}>
               <input
                 type="number"
-                className={styles.dayInput}
-                value={day}
-                onChange={(e) => setDay(e.target.value)}
+                className={styles.batchDayInput}
+                value={currentRow.day}
+                onChange={(e) => setCurrentRow((prev) => ({ ...prev, day: e.target.value }))}
+                onKeyDown={handleCurrentRowKeyDown}
                 onWheel={(e) => (e.target as HTMLElement).blur()}
-                placeholder="일"
+                placeholder={todayDay}
                 min={1}
                 max={31}
               />
-              <span className={styles.unitText}>일</span>
-              <span className={styles.optionalText}>(선택)</span>
-            </div>
-          </div>
-
-          {/* 계좌 */}
-          {accounts.length > 0 && (
-            <div className={styles.formRow}>
-              <label className={styles.formLabel}>계좌</label>
+              <div className={styles.batchTypeToggle}>
+                <button
+                  type="button"
+                  className={`${styles.batchTypeBtn} ${
+                    currentRow.type === "expense" ? styles.batchTypeBtnExpense : ""
+                  }`}
+                  onClick={() => handleCurrentRowTypeChange("expense")}
+                >
+                  지출
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.batchTypeBtn} ${
+                    currentRow.type === "income" ? styles.batchTypeBtnIncome : ""
+                  }`}
+                  onClick={() => handleCurrentRowTypeChange("income")}
+                >
+                  수입
+                </button>
+              </div>
               <select
-                className={styles.select}
-                value={accountId}
-                onChange={(e) => setAccountId(e.target.value)}
+                className={styles.batchCategorySelect}
+                value={currentRow.category}
+                onChange={(e) => setCurrentRow((prev) => ({ ...prev, category: e.target.value }))}
+                onKeyDown={handleCurrentRowKeyDown}
               >
-                <option value="">선택 안 함</option>
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name} ({acc.broker_name})
-                  </option>
+                {getCategoriesForType(currentRow.type).map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
-            </div>
-          )}
-
-          {/* 카테고리 */}
-          <div className={styles.formRow}>
-            <label className={styles.formLabel}>카테고리</label>
-            <select
-              className={styles.select}
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 내용 */}
-          <div className={styles.formRow}>
-            <label className={styles.formLabel}>내용</label>
-            <input
-              type="text"
-              className={styles.input}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="예: 점심, 교통카드 충전"
-            />
-          </div>
-
-          {/* 금액 */}
-          <div className={styles.formRow}>
-            <label className={styles.formLabel}>금액</label>
-            <div className={styles.amountInputGroup}>
+              <input
+                ref={titleInputRef}
+                type="text"
+                className={styles.batchTitleInput}
+                value={currentRow.title}
+                onChange={(e) => setCurrentRow((prev) => ({ ...prev, title: e.target.value }))}
+                onKeyDown={handleCurrentRowKeyDown}
+                placeholder="내용"
+              />
               <input
                 type="number"
-                className={styles.amountInput}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                className={styles.batchAmountInput}
+                value={currentRow.amount}
+                onChange={(e) => setCurrentRow((prev) => ({ ...prev, amount: e.target.value }))}
+                onKeyDown={handleCurrentRowKeyDown}
                 onWheel={(e) => (e.target as HTMLElement).blur()}
                 placeholder="0"
               />
-              <span className={styles.unitText}>만원</span>
+              <select
+                className={styles.batchAccountSelect}
+                value={currentRow.accountId}
+                onChange={(e) => setCurrentRow((prev) => ({ ...prev, accountId: e.target.value }))}
+                onKeyDown={handleCurrentRowKeyDown}
+              >
+                <option value="">-</option>
+                {accounts.map((acc) => (
+                  <option key={acc.id} value={acc.id}>{acc.name}</option>
+                ))}
+              </select>
+              <button
+                className={styles.batchRowAdd}
+                onClick={commitCurrentRow}
+                disabled={!isRowValid(currentRow)}
+              >
+                <Plus size={14} />
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* 메모 */}
-          <div className={styles.formRow}>
-            <label className={styles.formLabel}>메모</label>
-            <input
-              type="text"
-              className={styles.input}
-              value={memo}
-              onChange={(e) => setMemo(e.target.value)}
-              placeholder="(선택)"
-            />
-          </div>
-
-          {/* 버튼 */}
-          <div className={styles.formButtons}>
-            <button
-              type="button"
-              className={styles.cancelButton}
-              onClick={onClose}
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              className={styles.submitButton}
-              disabled={!category || !title || !amount || isLoading}
-            >
-              {isLoading ? "저장 중..." : "저장"}
-            </button>
-          </div>
-        </form>
+        {/* Footer */}
+        <div className={styles.batchFooter}>
+          <button
+            type="button"
+            className={styles.cancelButton}
+            onClick={onClose}
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            className={styles.submitButton}
+            onClick={handleSaveAll}
+            disabled={totalCount === 0 || isLoading || isSubmitting}
+          >
+            {isLoading || isSubmitting ? "저장 중..." : `저장 (${totalCount}건)`}
+          </button>
+        </div>
       </div>
     </div>
   );
