@@ -572,6 +572,11 @@
   padding: 0 !important;
 }
 
+/* 하단 패딩만 없음 (채팅 탭) */
+.noBottomPadding {
+  padding-bottom: 0 !important;
+}
+
 .noPadding .contentInner {
   height: 100%;
 }

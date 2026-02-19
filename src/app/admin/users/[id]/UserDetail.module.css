@@ -1777,11 +1777,17 @@
 
 .chatInputArea {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   padding: 12px 20px;
-  border-top: 1px solid #e7e5e4;
-  background: white;
+  border-top: 1px solid var(--dashboard-border);
+  background: var(--dashboard-card-bg);
+}
+
+.chatInputActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .chatInput {
@@ -1795,22 +1801,19 @@
 }
 
 .chatTextarea {
-  flex: 1;
+  width: 100%;
   padding: 10px 14px;
   font-size: 14px;
-  border: 1px solid #e7e5e4;
-  border-radius: 16px;
+  border: none;
+  border-radius: 0;
   outline: none;
   resize: none;
   min-height: 40px;
   max-height: 120px;
   line-height: 1.4;
   font-family: inherit;
-  transition: border-color 0.15s;
-}
-
-.chatTextarea:focus {
-  border-color: #007aff;
+  background: transparent;
+  color: var(--dashboard-text);
 }
 
 .chatInput:focus {
@@ -1823,26 +1826,51 @@
 }
 
 .chatSendButton {
-  width: 40px;
-  height: 40px;
+  padding: 8px 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #007aff;
+  background: var(--dashboard-bg-secondary);
   border: none;
-  border-radius: 50%;
-  color: white;
+  border-radius: 20px;
+  color: var(--dashboard-text);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
   flex-shrink: 0;
 }
 
 .chatSendButton:hover:not(:disabled) {
-  background: #0066d6;
+  background: var(--dashboard-hover-bg);
 }
 
 .chatSendButton:disabled {
-  background: #ccc;
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chatNotifyButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.chatNotifyButton:hover:not(:disabled) {
+  color: var(--dashboard-text);
+}
+
+.chatNotifyButton:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 

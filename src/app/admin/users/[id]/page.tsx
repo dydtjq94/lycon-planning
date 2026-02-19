@@ -328,6 +328,7 @@ export default function UserDetailPage() {
   // SMS 발송
   const [showSmsModal, setShowSmsModal] = useState(false);
   const [sendingSms, setSendingSms] = useState(false);
+  const [sendingChatNotification, setSendingChatNotification] = useState(false);
 
   // Gemini Agent 패널
   const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(true);
@@ -1005,6 +1006,44 @@ export default function UserDetailPage() {
     }
   };
 
+  const handleSendChatNotification = async () => {
+    if (!profile?.phone_number) {
+      alert("고객 전화번호가 없습니다.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `${profile.name}님에게 알림 메시지를 보내시겠어요?`
+    );
+    if (!confirmed) return;
+
+    setSendingChatNotification(true);
+
+    try {
+      const response = await fetch("/api/sms/chat-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: profile.phone_number,
+          customer_name: profile.name,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert("알림 문자가 발송되었습니다.");
+      } else {
+        alert(`발송 실패: ${result.error || "알 수 없는 오류"}`);
+      }
+    } catch (error) {
+      console.error("채팅 알림 SMS 발송 오류:", error);
+      alert("문자 발송 중 오류가 발생했습니다.");
+    } finally {
+      setSendingChatNotification(false);
+    }
+  };
+
   // AI Agent 액션 처리 (Supabase 수정/추가/삭제)
   const handleAgentAction = async (actions: AgentAction[]) => {
     const supabase = createClient();
@@ -1148,7 +1187,7 @@ export default function UserDetailPage() {
             <div className={styles.chatInputArea}>
               <textarea
                 className={styles.chatTextarea}
-                placeholder="메시지를 입력하세요... (Shift+Enter로 줄바꿈)"
+                placeholder="메시지 입력 (Shift+Enter로 줄바꿈)"
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -1161,13 +1200,23 @@ export default function UserDetailPage() {
                 disabled={sendingMessage}
                 rows={1}
               />
-              <button
-                className={styles.chatSendButton}
-                onClick={sendMessage}
-                disabled={!messageInput.trim() || sendingMessage}
-              >
-                <Send size={18} />
-              </button>
+              <div className={styles.chatInputActions}>
+                <button
+                  className={styles.chatNotifyButton}
+                  onClick={handleSendChatNotification}
+                  disabled={sendingChatNotification || !profile?.phone_number}
+                  title="새 메시지 알림 문자 발송"
+                >
+                  {sendingChatNotification ? <Clock size={18} /> : <MessageCircle size={18} />}
+                </button>
+                <button
+                  className={styles.chatSendButton}
+                  onClick={sendMessage}
+                  disabled={!messageInput.trim() || sendingMessage}
+                >
+                  전송
+                </button>
+              </div>
             </div>
 
             {/* 메시지 수정 모달 */}

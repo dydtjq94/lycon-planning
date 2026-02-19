@@ -1435,7 +1435,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           </div>
         )}
 
-        <div className={`${styles.content} ${currentSection === "simulation" ? styles.noPadding : ""} ${currentSection === "household-budget" ? `${styles.noPadding} ${styles.noScroll}` : ""}`}>
+        <div className={`${styles.content} ${currentSection === "simulation" ? styles.noPadding : ""} ${currentSection === "household-budget" ? `${styles.noPadding} ${styles.noScroll}` : ""} ${currentSection === "messages" ? styles.noPadding : ""}`}>
           <div key={currentSection} className={`${styles.contentInner} ${currentSection === "simulation" || currentSection === "household-budget" ? styles.fullWidth : ""} ${currentSection === "household-budget" ? styles.fullHeight : ""}`}>{renderContent()}</div>
         </div>
       </main>
