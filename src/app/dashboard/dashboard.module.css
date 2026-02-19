@@ -185,6 +185,49 @@
   }
 }
 
+.comparePanelSection {
+  margin-bottom: 8px;
+}
+
+.comparePanelSection:last-child {
+  margin-bottom: 0;
+}
+
+.comparePanelLabel {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+  padding: 0 4px 6px;
+}
+
+.comparePanelItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  background: none;
+  color: var(--dashboard-text);
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.comparePanelItem:hover {
+  background: var(--dashboard-hover-bg);
+}
+
+.comparePanelItem.selected {
+  /* background set inline with overlay color */
+}
+
+.comparePanelCheck {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .simIconWrapper {
   position: relative;
 }

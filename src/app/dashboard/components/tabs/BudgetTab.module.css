@@ -24,7 +24,7 @@
 .calendarGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: auto repeat(5, 1fr);
+  grid-template-rows: auto repeat(6, 1fr);
   gap: 0;
   flex: 1;
   overflow: hidden;
@@ -52,13 +52,16 @@
   border-right: none;
 }
 
-/* 마지막 줄 하단 테두리 제거 */
 .calendarCell:nth-last-child(-n+7) {
   border-bottom: none;
 }
 
-.calendarCellCurrentWeek {
-  background: var(--dashboard-bg-secondary);
+.calendarCellOtherMonth .calendarDayNum {
+  opacity: 0.25;
+}
+
+.calendarCellOtherMonth .calendarCellTotals {
+  opacity: 0.25;
 }
 
 .calendarCellHeader {

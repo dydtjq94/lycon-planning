@@ -25,6 +25,8 @@ interface NationalPensionSectionProps {
   ownerLabel: string
   birthYear: number
   onSave: () => void
+  retirementAge?: number
+  lifeExpectancy?: number
 }
 
 export function NationalPensionSection({
@@ -34,12 +36,15 @@ export function NationalPensionSection({
   ownerLabel,
   birthYear,
   onSave,
+  retirementAge,
+  lifeExpectancy,
 }: NationalPensionSectionProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
   const [startDateText, setStartDateText] = useState('')
   const [endDateText, setEndDateText] = useState('')
-  const [endMode, setEndMode] = useState<'none' | 'custom'>('none')
+  const [startMode, setStartMode] = useState<'default' | 'custom'>('default')
+  const [endMode, setEndMode] = useState<'none' | 'lifeExpectancy' | 'custom'>('none')
   const [isSaving, setIsSaving] = useState(false)
   const { isDark } = useChartTheme()
 
@@ -59,7 +64,22 @@ export function NationalPensionSection({
     })
     setStartDateText(toPeriodRaw(startYear, 1))
     setEndDateText(endYear ? toPeriodRaw(endYear, 12) : '')
-    setEndMode(endAge ? 'custom' : 'none')
+
+    // 수령시작 모드 복원: 65세와 일치하면 default
+    if (startAge === 65) {
+      setStartMode('default')
+    } else {
+      setStartMode('custom')
+    }
+
+    // 수령종료 모드 복원: 기대수명과 일치하면 lifeExpectancy
+    if (!endAge) {
+      setEndMode('none')
+    } else if (lifeExpectancy && endAge === lifeExpectancy) {
+      setEndMode('lifeExpectancy')
+    } else {
+      setEndMode('custom')
+    }
   }
 
   const cancelEdit = () => {
@@ -67,6 +87,7 @@ export function NationalPensionSection({
     setEditValues({})
     setStartDateText('')
     setEndDateText('')
+    setStartMode('default')
     setEndMode('none')
   }
 
@@ -196,18 +217,40 @@ export function NationalPensionSection({
                 </div>
                 <div className={styles.modalFormRow}>
                   <span className={styles.modalFormLabel}>수령시작</span>
-                  <input
-                    type="text"
-                    className={`${styles.periodInput} ${startDateText.length === 6 && !isPeriodValid(startDateText) ? styles.invalid : ''}`}
-                    value={formatPeriodDisplay(startDateText)}
-                    onChange={e => handlePeriodTextChange(
-                      e,
-                      setStartDateText,
-                      y => setEditValues({ ...editValues, startYear: String(y) }),
-                      m => setEditValues({ ...editValues, startMonth: String(m) })
+                  <div className={styles.fieldContent}>
+                    <select
+                      className={styles.periodSelect}
+                      value={startMode}
+                      onChange={e => {
+                        const mode = e.target.value as 'default' | 'custom'
+                        setStartMode(mode)
+                        if (mode === 'default') {
+                          const year = birthYear + 65
+                          setEditValues({ ...editValues, startYear: String(year), startMonth: '1' })
+                          setStartDateText(toPeriodRaw(year, 1))
+                        }
+                      }}
+                    >
+                      <option value="default">
+                        65세 ({birthYear + 65}년)
+                      </option>
+                      <option value="custom">직접 입력</option>
+                    </select>
+                    {startMode === 'custom' && (
+                      <input
+                        type="text"
+                        className={`${styles.periodInput} ${startDateText.length === 6 && !isPeriodValid(startDateText) ? styles.invalid : ''}`}
+                        value={formatPeriodDisplay(startDateText)}
+                        onChange={e => handlePeriodTextChange(
+                          e,
+                          setStartDateText,
+                          y => setEditValues({ ...editValues, startYear: String(y) }),
+                          m => setEditValues({ ...editValues, startMonth: String(m) })
+                        )}
+                        placeholder="YYYY.MM"
+                      />
                     )}
-                    placeholder="YYYY.MM"
-                  />
+                  </div>
                 </div>
                 <div className={styles.modalFormRow}>
                   <span className={styles.modalFormLabel}>수령종료</span>
@@ -216,15 +259,24 @@ export function NationalPensionSection({
                       className={styles.periodSelect}
                       value={endMode}
                       onChange={e => {
-                        const mode = e.target.value as 'none' | 'custom'
+                        const mode = e.target.value as 'none' | 'lifeExpectancy' | 'custom'
                         setEndMode(mode)
                         if (mode === 'none') {
                           setEditValues({ ...editValues, endYear: '', endMonth: '' })
                           setEndDateText('')
+                        } else if (mode === 'lifeExpectancy' && lifeExpectancy) {
+                          const year = birthYear + lifeExpectancy
+                          setEditValues({ ...editValues, endYear: String(year), endMonth: '12' })
+                          setEndDateText(toPeriodRaw(year, 12))
                         }
                       }}
                     >
                       <option value="none">종료 없음 (평생)</option>
+                      {lifeExpectancy && (
+                        <option value="lifeExpectancy">
+                          기대수명 ({lifeExpectancy}세, {birthYear + lifeExpectancy}년)
+                        </option>
+                      )}
                       <option value="custom">직접 입력</option>
                     </select>
                     {endMode === 'custom' && (

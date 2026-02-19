@@ -27,8 +27,8 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: var(--dashboard-text);
-  color: var(--dashboard-bg);
+  background-color: var(--accent-color, #007aff);
+  color: #fff;
   font-size: 14px;
   font-weight: 600;
   display: flex;
@@ -117,8 +117,8 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: var(--dashboard-text);
-  color: var(--dashboard-bg);
+  background-color: var(--accent-color, #007aff);
+  color: #fff;
   font-size: 13px;
   font-weight: 600;
   display: flex;

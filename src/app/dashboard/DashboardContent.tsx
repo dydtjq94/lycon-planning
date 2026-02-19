@@ -9,7 +9,7 @@ import {
   Landmark, Home, Briefcase, GraduationCap, Plane, Heart,
   TrendingUp, Wallet, PiggyBank, Shield, Target, Umbrella,
   Baby, Car, Gem, Building2, Palmtree, Rocket, Star, Coffee,
-  ListOrdered, Percent, Users, CalendarClock, Play,
+  ListOrdered, Percent, Users, CalendarClock, Play, ArrowLeftRight, Check,
   type LucideIcon,
 } from "lucide-react";
 import { useChartTheme } from "@/hooks/useChartTheme";
@@ -133,6 +133,16 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
 
   const queryClient = useQueryClient();
 
+  // 시뮬레이션 아이콘 맵
+  const SIM_ICON_MAP: Record<string, LucideIcon> = {
+    landmark: Landmark, home: Home, briefcase: Briefcase,
+    'graduation-cap': GraduationCap, plane: Plane, heart: Heart,
+    baby: Baby, 'trending-up': TrendingUp, wallet: Wallet,
+    'piggy-bank': PiggyBank, target: Target, umbrella: Umbrella,
+    car: Car, gem: Gem, building: Building2, palmtree: Palmtree,
+    rocket: Rocket, star: Star, coffee: Coffee, shield: Shield,
+  };
+
   // 상태 (URL에서 초기화는 useEffect에서 처리)
   const [currentSection, setCurrentSection] = useState<string>("dashboard");
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -168,6 +178,13 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   const [lifeCyclePanelRect, setLifeCyclePanelRect] = useState<{ top: number; left: number } | null>(null);
   const lifeCyclePanelBtnRef = useRef<HTMLButtonElement>(null);
   const lifeCyclePanelRef = useRef<HTMLDivElement>(null);
+
+  const [showComparePanel, setShowComparePanel] = useState(false);
+  const [comparePanelRect, setComparePanelRect] = useState<{ top: number; left: number } | null>(null);
+  const comparePanelBtnRef = useRef<HTMLButtonElement>(null);
+  const comparePanelRef = useRef<HTMLDivElement>(null);
+  // 비교 선택 상태: 'asset-trend' = 자산 추이, 시뮬레이션 ID = 다른 시뮬레이션
+  const [compareSelections, setCompareSelections] = useState<Set<string>>(new Set());
 
   // URL 업데이트 함수 (pushState 직접 사용으로 즉시 반응)
   const updateUrl = useCallback((section: string, simId: string) => {
@@ -247,18 +264,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   const [portfolioSearchLoading, setPortfolioSearchLoading] = useState(false);
   const portfolioSearchTriggerRef = useRef<(() => void) | null>(null);
 
-  // 가계부 주간 상태
+  // 가계부 월간 상태
   const today = new Date();
-  // 월요일 구하기 (0=일요일이므로 조정 필요)
-  const getMonday = (date: Date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // 일요일이면 이전 주 월요일
-    d.setDate(diff);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  };
-  const [budgetWeekStart, setBudgetWeekStart] = useState(() => getMonday(today));
+  const [budgetYear, setBudgetYear] = useState(today.getFullYear());
+  const [budgetMonth, setBudgetMonth] = useState(today.getMonth() + 1); // 1-12
 
   // 계좌 관리 모달
   const [showAccountModal, setShowAccountModal] = useState(false);
@@ -429,6 +438,28 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       document.removeEventListener("keydown", handleEsc);
     };
   }, [showLifeCyclePanel]);
+
+  // Compare panel click-outside handler
+  useEffect(() => {
+    if (!showComparePanel) return;
+    const handleClick = (e: MouseEvent) => {
+      if (
+        comparePanelRef.current && !comparePanelRef.current.contains(e.target as Node) &&
+        comparePanelBtnRef.current && !comparePanelBtnRef.current.contains(e.target as Node)
+      ) {
+        setShowComparePanel(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowComparePanel(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [showComparePanel]);
 
   // 검색어로 종목 필터링
   const filterSuggestions = useCallback((query: string) => {
@@ -658,6 +689,19 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       });
     }
   }, [selectedSim, updateSimulation, activeSim.family_config]);
+
+  // 비교 선택 토글
+  const toggleCompareSelection = useCallback((key: string) => {
+    setCompareSelections(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
 
   // Profile update handler (saves to profiles table + updates context)
   const handleProfileUpdate = useCallback(async (updates: Record<string, any>) => {
@@ -942,7 +986,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           />
         );
       case "household-budget":
-        return <BudgetTab profileId={profile.id} weekStart={budgetWeekStart} />;
+        return <BudgetTab profileId={profile.id} year={budgetYear} month={budgetMonth} />;
       case "checking-account":
         return <CheckingAccountTab profileId={profile.id} />;
       case "savings-deposits":
@@ -974,6 +1018,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             isSyncingPrices={syncingPricesSimulationId === selectedSimulationId}
             simulationAssumptions={simulationAssumptions}
             cashFlowPriorities={cashFlowPriorities}
+            compareSelections={compareSelections}
+            allSimulations={simulations}
+            profileId={profile.id}
           />
         );
       }
@@ -1160,6 +1207,22 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                 >
                   <ListOrdered size={15} />
                 </button>
+                <div className={styles.simHeaderDivider} />
+                <button
+                  ref={comparePanelBtnRef}
+                  className={styles.simHeaderAction}
+                  onClick={() => {
+                    if (comparePanelBtnRef.current) {
+                      const rect = comparePanelBtnRef.current.getBoundingClientRect();
+                      setComparePanelRect({ top: rect.bottom + 6, left: rect.left });
+                    }
+                    setShowComparePanel(!showComparePanel);
+                  }}
+                  type="button"
+                  data-tooltip={showComparePanel ? undefined : "비교하기"}
+                >
+                  <ArrowLeftRight size={15} />
+                </button>
               </div>
             ) : (
               <h1 key={currentSection} className={styles.pageTitle}>
@@ -1174,31 +1237,33 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
               </span>
             )}
 
-            {/* 가계부 주간 선택기 */}
+            {/* 가계부 월간 선택기 */}
             {currentSection === "household-budget" && (
               <div className={styles.budgetMonthSelector}>
                 <button
                   onClick={() => {
-                    const newDate = new Date(budgetWeekStart);
-                    newDate.setDate(newDate.getDate() - 7);
-                    setBudgetWeekStart(newDate);
+                    if (budgetMonth === 1) {
+                      setBudgetYear(budgetYear - 1);
+                      setBudgetMonth(12);
+                    } else {
+                      setBudgetMonth(budgetMonth - 1);
+                    }
                   }}
                   className={styles.budgetMonthBtn}
                 >
                   <ChevronLeft size={16} />
                 </button>
                 <span className={styles.budgetMonthLabel}>
-                  {budgetWeekStart.getMonth() + 1}.{budgetWeekStart.getDate()} - {(() => {
-                    const endDate = new Date(budgetWeekStart);
-                    endDate.setDate(endDate.getDate() + 6);
-                    return `${endDate.getMonth() + 1}.${endDate.getDate()}`;
-                  })()}
+                  {budgetYear}년 {budgetMonth}월
                 </span>
                 <button
                   onClick={() => {
-                    const newDate = new Date(budgetWeekStart);
-                    newDate.setDate(newDate.getDate() + 7);
-                    setBudgetWeekStart(newDate);
+                    if (budgetMonth === 12) {
+                      setBudgetYear(budgetYear + 1);
+                      setBudgetMonth(1);
+                    } else {
+                      setBudgetMonth(budgetMonth + 1);
+                    }
                   }}
                   className={styles.budgetMonthBtn}
                 >
@@ -1432,6 +1497,76 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
               lifeCycleSettings={lifeCycleSettings}
               onLifeCycleChange={handleLifeCycleChange}
             />
+          </div>
+        )}
+
+        {showComparePanel && comparePanelRect && currentSection === "simulation" && selectedSim && (
+          <div
+            ref={comparePanelRef}
+            className={styles.accountsPanelDropdown}
+            style={{
+              position: 'fixed',
+              top: comparePanelRect.top,
+              left: Math.min(comparePanelRect.left, window.innerWidth - 300),
+              width: 260,
+              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              zIndex: 200,
+            }}
+          >
+            {(() => {
+              const COMPARE_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+              const colorMap = new Map<string, string>();
+              let ci = 0;
+              for (const key of compareSelections) {
+                if (key === selectedSim.id) continue;
+                colorMap.set(key, COMPARE_COLORS[ci % COMPARE_COLORS.length]);
+                ci++;
+              }
+              const assetTrendSelected = compareSelections.has('asset-trend');
+              return (
+                <>
+                  <div className={styles.comparePanelSection}>
+                    <div className={styles.comparePanelLabel}>자산 추이</div>
+                    <button
+                      className={`${styles.comparePanelItem} ${assetTrendSelected ? styles.selected : ''}`}
+                      onClick={() => toggleCompareSelection('asset-trend')}
+                      type="button"
+                      style={assetTrendSelected ? { background: `${colorMap.get('asset-trend')}18` } : undefined}
+                    >
+                      <TrendingUp size={15} />
+                      <span>자산 추이</span>
+                      {assetTrendSelected && <Check size={14} className={styles.comparePanelCheck} style={{ color: colorMap.get('asset-trend') }} />}
+                    </button>
+                  </div>
+                  {simulations.filter(s => s.id !== selectedSim.id).length > 0 && (
+                    <div className={styles.comparePanelSection}>
+                      <div className={styles.comparePanelLabel}>시뮬레이션</div>
+                      {simulations.filter(s => s.id !== selectedSim.id).map(sim => {
+                        const Icon = (sim.icon && SIM_ICON_MAP[sim.icon]) || Star;
+                        const isSelected = compareSelections.has(sim.id);
+                        const lineColor = colorMap.get(sim.id);
+                        return (
+                          <button
+                            key={sim.id}
+                            className={`${styles.comparePanelItem} ${isSelected ? styles.selected : ''}`}
+                            onClick={() => toggleCompareSelection(sim.id)}
+                            type="button"
+                            style={isSelected ? { background: `${lineColor}18` } : undefined}
+                          >
+                            <Icon size={15} />
+                            <span>{sim.title}</span>
+                            {isSelected && <Check size={14} className={styles.comparePanelCheck} style={{ color: lineColor }} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 

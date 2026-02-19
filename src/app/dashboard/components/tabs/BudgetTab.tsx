@@ -20,7 +20,8 @@ import styles from "./BudgetTab.module.css";
 
 interface BudgetTabProps {
   profileId: string;
-  weekStart: Date;
+  year: number;
+  month: number; // 1-12
 }
 
 // 요일 이름
@@ -88,54 +89,38 @@ function getDayOfWeekName(year: number, month: number, day: number): string {
   return names[jsDay];
 }
 
-export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
+export function BudgetTab({ profileId, year, month }: BudgetTabProps) {
   const supabase = createClient();
   const { isDark } = useChartTheme();
   const [showForm, setShowForm] = useState(false);
   const [viewMode, setViewMode] = useState<"calendar" | "timeline">("calendar");
 
-  // 5주 달력 날짜 계산 (weekStart 기준 -14일 ~ +20일, 총 35일)
-  const fiveWeekStart = useMemo(() => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() - 14);
-    return d;
-  }, [weekStart]);
-
-  const fiveWeekEnd = useMemo(() => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + 20);
-    return d;
-  }, [weekStart]);
-
-  // 5주 달력 모든 날짜 (35일)
+  // 월간 달력 계산
   const calendarDays = useMemo(() => {
-    const days: Date[] = [];
-    for (let i = 0; i < 35; i++) {
-      const d = new Date(fiveWeekStart);
-      d.setDate(d.getDate() + i);
-      days.push(d);
-    }
-    return days;
-  }, [fiveWeekStart]);
+    // 해당 월 1일의 요일 (0=일, 1=월, ..., 6=토)
+    const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
+    // 월요일 시작 오프셋 (월=0, 화=1, ..., 일=6)
+    const startOffset = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
+    // 해당 월 마지막 날
+    const lastDate = new Date(year, month, 0).getDate();
+    // 총 셀 수 (5행 x 7열 = 35, 필요시 42)
+    const totalCells = 42;
 
-  // 주간 날짜 계산 (현재 주 = 가운데 주)
-  const weekDays = useMemo(() => {
     const days: Date[] = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(weekStart);
-      d.setDate(d.getDate() + i);
+    for (let i = 0; i < totalCells; i++) {
+      const d = new Date(year, month - 1, 1 - startOffset + i);
       days.push(d);
     }
     return days;
-  }, [weekStart]);
+  }, [year, month]);
 
   // 오늘 날짜
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // 데이터 조회용 년/월 (5주 범위가 걸친 월들 모두 가져오기)
-  const selectedYear = weekStart.getFullYear();
-  const selectedMonth = weekStart.getMonth() + 1;
+  // 데이터 조회용 년/월
+  const selectedYear = year;
+  const selectedMonth = month;
 
   // 5주 범위에 걸치는 고유 년/월 조합 계산
   const monthsToLoad = useMemo(() => {
@@ -530,42 +515,33 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
     });
   }, [transactions0, transactions1, transactions2]);
 
-  // 5주 범위 내 거래 필터
-  const fiveWeekTransactions = useMemo(() => {
+  // 달력 범위 내 거래 필터
+  const calendarTransactions = useMemo(() => {
+    if (calendarDays.length === 0) return [];
+    const rangeStart = new Date(calendarDays[0]);
+    rangeStart.setHours(0, 0, 0, 0);
+    const rangeEnd = new Date(calendarDays[calendarDays.length - 1]);
+    rangeEnd.setHours(23, 59, 59, 999);
     return allTransactions.filter((tx) => {
       const txDate = new Date(tx.year, tx.month - 1, tx.day || 1);
       txDate.setHours(0, 0, 0, 0);
-      const rangeEnd = new Date(fiveWeekEnd);
-      rangeEnd.setHours(23, 59, 59, 999);
-      const rangeStart = new Date(fiveWeekStart);
-      rangeStart.setHours(0, 0, 0, 0);
       return txDate >= rangeStart && txDate <= rangeEnd;
     });
-  }, [allTransactions, fiveWeekStart, fiveWeekEnd]);
+  }, [allTransactions, calendarDays]);
 
-  // 주간 내 거래만 필터 (현재 주 = 가운데 주)
-  const weekTransactions = useMemo(() => {
-    return allTransactions.filter((tx) => {
-      const txDate = new Date(tx.year, tx.month - 1, tx.day || 1);
-      txDate.setHours(0, 0, 0, 0);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-      weekEnd.setHours(23, 59, 59, 999);
-      return txDate >= weekStart && txDate <= weekEnd;
-    });
-  }, [allTransactions, weekStart]);
+  // 현재 월 거래 (표시용)
+  const transactions = useMemo(() => {
+    return allTransactions.filter((tx) => tx.year === year && tx.month === month);
+  }, [allTransactions, year, month]);
 
-  // 주간 거래 (표시용)
-  const transactions = weekTransactions;
-
-  // 5주 달력 일별 수입/지출 합계 (전체 5주 거래 기준)
+  // 달력 일별 수입/지출 합계
   const calendarDailyTotals = useMemo(() => {
     const totals = new Map<string, { income: number; expense: number }>();
     calendarDays.forEach((d) => {
       const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
       totals.set(key, { income: 0, expense: 0 });
     });
-    fiveWeekTransactions.forEach((tx) => {
+    calendarTransactions.forEach((tx) => {
       if (!tx.day) return;
       const key = `${tx.year}-${tx.month - 1}-${tx.day}`;
       const current = totals.get(key);
@@ -578,7 +554,7 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
       }
     });
     return totals;
-  }, [fiveWeekTransactions, calendarDays]);
+  }, [calendarTransactions, calendarDays]);
 
   // 타임라인용: 전체 거래를 최신순으로 정렬 + 날짜별 그룹화
   const timelineSorted = useMemo(() => {
@@ -792,20 +768,18 @@ export function BudgetTab({ profileId, weekStart }: BudgetTabProps) {
               </div>
             ))}
 
-            {/* 5주 x 7일 = 35 셀 */}
+            {/* 달력 셀 */}
             {calendarDays.map((day, idx) => {
               const dayNum = day.getDate();
               const isToday = day.getTime() === today.getTime();
-              const isCurrentWeek =
-                day >= weekStart &&
-                day < new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
+              const isCurrentMonth = day.getMonth() === month - 1 && day.getFullYear() === year;
               const key = `${day.getFullYear()}-${day.getMonth()}-${dayNum}`;
               const totals = calendarDailyTotals.get(key) || { income: 0, expense: 0 };
 
               return (
                 <div
                   key={idx}
-                  className={`${styles.calendarCell} ${isCurrentWeek ? styles.calendarCellCurrentWeek : ""}`}
+                  className={`${styles.calendarCell} ${!isCurrentMonth ? styles.calendarCellOtherMonth : ""}`}
                 >
                   <div className={styles.calendarCellHeader}>
                     <span className={`${styles.calendarDayNum} ${isToday ? styles.calendarDayToday : ""}`}>

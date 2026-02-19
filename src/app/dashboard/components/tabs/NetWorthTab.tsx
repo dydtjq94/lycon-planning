@@ -2,11 +2,23 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { ChevronDown } from 'lucide-react'
-import type { SimulationAssumptions, CashFlowPriorities } from '@/types'
+import type { Simulation, SimulationAssumptions, CashFlowPriorities } from '@/types'
 import type { MonthlySnapshot } from '@/lib/services/simulationTypes'
-import { DEFAULT_SIMULATION_ASSUMPTIONS } from '@/types'
-import { runSimulationV2 } from '@/lib/services/simulationEngineV2'
+import type { FinancialSnapshot } from '@/types/tables'
+import { DEFAULT_SIMULATION_ASSUMPTIONS, normalizePriorities } from '@/types'
+import { runSimulationV2, type SimulationV2Input } from '@/lib/services/simulationEngineV2'
 import { useSimulationV2Data } from '@/hooks/useFinancialData'
+import { getSnapshots } from '@/lib/services/snapshotService'
+import { getIncomes } from '@/lib/services/incomeService'
+import { getExpenses } from '@/lib/services/expenseService'
+import { getSavings } from '@/lib/services/savingsService'
+import { getDebts } from '@/lib/services/debtService'
+import { getNationalPensions } from '@/lib/services/nationalPensionService'
+import { getRetirementPensions } from '@/lib/services/retirementPensionService'
+import { getPersonalPensions } from '@/lib/services/personalPensionService'
+import { getRealEstates } from '@/lib/services/realEstateService'
+import { getPhysicalAssets } from '@/lib/services/physicalAssetService'
+import { wonToManwon } from '@/lib/utils'
 import { calculateEndYear } from '@/lib/utils/chartDataTransformer'
 import { AssetStackChart } from '../charts'
 import { formatMoney } from '@/lib/utils'
@@ -32,6 +44,9 @@ interface NetWorthTabProps {
   simulationStartYear?: number | null
   simulationStartMonth?: number | null
   lifecycleMilestones?: { year: number; color: string; label: string; iconId: string }[]
+  compareSelections?: Set<string>
+  allSimulations?: Simulation[]
+  profileId?: string
 }
 
 // 기간 선택 옵션
@@ -49,6 +64,8 @@ const TIME_RANGES: { id: TimeRange; label: string }[] = [
   { id: 'drawdown', label: '인출 기간' },
   { id: 'full', label: '전체 기간' },
 ]
+
+const OVERLAY_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
 
 export function NetWorthTab({
   simulationId,
@@ -68,10 +85,25 @@ export function NetWorthTab({
   simulationStartYear,
   simulationStartMonth,
   lifecycleMilestones,
+  compareSelections,
+  allSimulations,
+  profileId,
 }: NetWorthTabProps) {
   const currentYear = simulationStartYear || new Date().getFullYear()
   const currentAge = currentYear - birthYear
   const { isDark, chartLineColors } = useChartTheme()
+
+  // Overlay comparison: cache + loading
+  interface OverlayCacheEntry {
+    label: string
+    color: string
+    yearMap: Map<number, number>    // year → netWorth (만원)
+    monthMap: Map<string, number>   // "YYYY-MM" → netWorth (만원)
+  }
+  const overlayCache = useRef<Map<string, OverlayCacheEntry>>(new Map())
+  const overlayRequestRef = useRef(0)
+  const [overlayCacheVer, setOverlayCacheVer] = useState(0)
+  const [overlayLoading, setOverlayLoading] = useState(false)
 
   // 시뮬레이션 설정
   const simulationEndYear = calculateEndYear(birthYear, spouseBirthYear, selfLifeExpectancy, spouseLifeExpectancy)
@@ -178,6 +210,117 @@ export function NetWorthTab({
 
   const isMonthlyMode = !!filteredMonthlySnapshots && filteredMonthlySnapshots.length > 0
 
+  // Fetch overlay data into cache (runs only when new items need fetching)
+  useEffect(() => {
+    if (!compareSelections || compareSelections.size === 0) return
+
+    const toFetch = Array.from(compareSelections).filter(key => !overlayCache.current.has(key))
+    if (toFetch.length === 0) return
+
+    const requestId = ++overlayRequestRef.current
+    setOverlayLoading(true)
+
+    let colorIndex = overlayCache.current.size
+
+    ;(async () => {
+      for (const key of toFetch) {
+        if (requestId !== overlayRequestRef.current) return
+
+        if (key === 'asset-trend' && profileId) {
+          try {
+            const snapshots = await getSnapshots(profileId)
+            const yearMap = new Map<number, number>()
+            const monthMap = new Map<string, number>()
+            // getSnapshots returns sorted by recorded_at DESC (newest first)
+            for (const snap of snapshots) {
+              const year = parseInt(snap.recorded_at.slice(0, 4))
+              const monthKey = snap.recorded_at.slice(0, 7)
+              if (!yearMap.has(year)) yearMap.set(year, wonToManwon(snap.net_worth))
+              if (!monthMap.has(monthKey)) monthMap.set(monthKey, wonToManwon(snap.net_worth))
+            }
+            overlayCache.current.set('asset-trend', {
+              label: '실제 자산 추이',
+              color: OVERLAY_COLORS[colorIndex % OVERLAY_COLORS.length],
+              yearMap,
+              monthMap,
+            })
+            colorIndex++
+          } catch (err) {
+            console.error('Failed to fetch asset trend snapshots:', err)
+          }
+        } else if (key !== 'asset-trend') {
+          try {
+            const [incomes, expenses, savings, debts, nationalPensions, retirementPensions, personalPensions, realEstates, physicalAssets] = await Promise.all([
+              getIncomes(key), getExpenses(key), getSavings(key), getDebts(key),
+              getNationalPensions(key), getRetirementPensions(key), getPersonalPensions(key),
+              getRealEstates(key), getPhysicalAssets(key),
+            ])
+            const targetSim = allSimulations?.find(s => s.id === key)
+            if (!targetSim) continue
+            const compResult = runSimulationV2(
+              { incomes, expenses, savings, debts, nationalPensions, retirementPensions, personalPensions, realEstates, physicalAssets },
+              { birthYear, retirementAge, spouseBirthYear: spouseBirthYear || undefined },
+              yearsToSimulate,
+              targetSim.simulation_assumptions || DEFAULT_SIMULATION_ASSUMPTIONS,
+              targetSim.cash_flow_priorities ? normalizePriorities(targetSim.cash_flow_priorities) : undefined,
+              targetSim.start_year ?? undefined,
+              targetSim.start_month ?? undefined,
+            )
+            const yearMap = new Map<number, number>()
+            compResult.snapshots.forEach(s => yearMap.set(s.year, s.netWorth))
+            const monthMap = new Map<string, number>()
+            compResult.monthlySnapshots?.forEach(ms => {
+              monthMap.set(`${ms.year}-${String(ms.month).padStart(2, '0')}`, ms.netWorth)
+            })
+            overlayCache.current.set(key, {
+              label: targetSim.title || `시뮬레이션 ${key.slice(0, 8)}`,
+              color: OVERLAY_COLORS[colorIndex % OVERLAY_COLORS.length],
+              yearMap,
+              monthMap,
+            })
+            colorIndex++
+          } catch (err) {
+            console.error(`Failed to load comparison simulation ${key}:`, err)
+          }
+        }
+      }
+      if (requestId === overlayRequestRef.current) {
+        setOverlayLoading(false)
+        setOverlayCacheVer(v => v + 1)
+      }
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compareSelections, profileId, simulationId, birthYear, retirementAge, spouseBirthYear, yearsToSimulate])
+
+  // Build overlay lines from cache (instant, runs on mode/range/cache changes)
+  const overlayLines = useMemo(() => {
+    if (!compareSelections || compareSelections.size === 0) return []
+
+    const lines: { label: string; color: string; data: (number | null)[] }[] = []
+    for (const key of compareSelections) {
+      if (key === simulationId) continue // 현재 시뮬레이션은 비교 제외
+      const cached = overlayCache.current.get(key)
+      if (!cached) continue
+
+      let data: (number | null)[]
+      if (isMonthlyMode && filteredMonthlySnapshots) {
+        data = filteredMonthlySnapshots.map(ms => {
+          const monthKey = `${ms.year}-${String(ms.month).padStart(2, '0')}`
+          return cached.monthMap.get(monthKey) ?? null
+        })
+      } else {
+        data = []
+        for (let y = displayRange.start; y <= displayRange.end; y++) {
+          data.push(cached.yearMap.get(y) ?? null)
+        }
+      }
+
+      lines.push({ label: cached.label, color: cached.color, data })
+    }
+    return lines
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compareSelections, overlayCacheVer, isMonthlyMode, filteredMonthlySnapshots, displayRange.start, displayRange.end, simulationId])
+
   const selectedYear = rawSelectedYear
 
   // 선택된 연도의 스냅샷
@@ -269,6 +412,7 @@ export function NetWorthTab({
               selfLifeExpectancy={selfLifeExpectancy}
               spouseLifeExpectancy={spouseLifeExpectancy}
               lifecycleMilestones={lifecycleMilestones}
+              overlayLines={overlayLines}
               headerAction={
                 <div ref={timeRangeRef} className={styles.timeRangeSelector}>
                   <button

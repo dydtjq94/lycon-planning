@@ -35,6 +35,12 @@ interface PensionTabProps {
   spouseBirthYear?: number | null
   retirementAge: number
   isMarried: boolean
+  lifeCycleSettings?: {
+    selfRetirementAge: number
+    spouseRetirementAge: number
+    selfLifeExpectancy: number
+    spouseLifeExpectancy: number
+  }
 }
 
 export function PensionTab({
@@ -43,6 +49,7 @@ export function PensionTab({
   spouseBirthYear,
   retirementAge,
   isMarried,
+  lifeCycleSettings,
 }: PensionTabProps) {
   const currentYear = new Date().getFullYear()
   const currentAge = currentYear - birthYear
@@ -911,6 +918,8 @@ export function PensionTab({
                   ownerLabel="본인"
                   birthYear={birthYear}
                   onSave={loadPensions}
+                  retirementAge={lifeCycleSettings?.selfRetirementAge}
+                  lifeExpectancy={lifeCycleSettings?.selfLifeExpectancy}
                 />
                 {isMarried && (
                   <NationalPensionSection
@@ -920,6 +929,8 @@ export function PensionTab({
                     ownerLabel="배우자"
                     birthYear={effectiveSpouseBirthYear}
                     onSave={loadPensions}
+                    retirementAge={lifeCycleSettings?.spouseRetirementAge}
+                    lifeExpectancy={lifeCycleSettings?.spouseLifeExpectancy}
                   />
                 )}
               </div>

@@ -43,6 +43,9 @@ interface ScenarioTabProps {
   onCashFlowPrioritiesChange?: (priorities: CashFlowPriorities) => void;
   isInitializing?: boolean;
   isSyncingPrices?: boolean;
+  compareSelections?: Set<string>;
+  allSimulations?: Simulation[];
+  profileId?: string;
 }
 
 // Top level tabs
@@ -89,6 +92,9 @@ export function ScenarioTab({
   onCashFlowPrioritiesChange,
   isInitializing,
   isSyncingPrices,
+  compareSelections,
+  allSimulations,
+  profileId,
 }: ScenarioTabProps) {
   const { isDark, chartScaleColors } = useChartTheme();
 
@@ -272,6 +278,9 @@ export function ScenarioTab({
           simulationStartYear={simulation.start_year}
           simulationStartMonth={simulation.start_month}
           lifecycleMilestones={lifecycleMilestones}
+          compareSelections={compareSelections}
+          allSimulations={allSimulations}
+          profileId={profileId}
         />
       );
     }
@@ -385,6 +394,7 @@ export function ScenarioTab({
             spouseBirthYear={simulationProfile.spouseBirthYear}
             retirementAge={lifeCycleSettings.selfRetirementAge}
             isMarried={isMarried}
+            lifeCycleSettings={lifeCycleSettings}
           />
         );
       default:

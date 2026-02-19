@@ -258,22 +258,24 @@ export function CategoryManagementModal({
                     <GripVertical size={14} />
                   </div>
                   <span className={styles.categoryName}>{category.name}</span>
-                  <div className={styles.actions}>
-                    <button
-                      className={styles.iconBtn}
-                      onClick={() => startEdit(category)}
-                      title="수정"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      className={styles.iconBtn}
-                      onClick={() => handleDeleteCategory(category)}
-                      title="삭제"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                  {!category.is_default && (
+                    <div className={styles.actions}>
+                      <button
+                        className={styles.iconBtn}
+                        onClick={() => startEdit(category)}
+                        title="수정"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        className={styles.iconBtn}
+                        onClick={() => handleDeleteCategory(category)}
+                        title="삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>

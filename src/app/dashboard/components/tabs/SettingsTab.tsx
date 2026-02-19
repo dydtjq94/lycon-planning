@@ -3,11 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { LogOut, User, Sun, Moon, Monitor, Bell, Shield, HelpCircle, Palette, CreditCard, X, Plus, Crown, MessageCircle, FileText, Lock, Pencil, Check, Info } from "lucide-react";
+import { LogOut, User, Sun, Moon, Monitor, HelpCircle, Palette, CreditCard, X, Plus, FileText, Lock, Pencil, Check, Info } from "lucide-react";
 import { useTheme, type ColorMode, type AccentColor } from "@/contexts/ThemeContext";
 import { ProfileBasics, FamilyMember } from "@/contexts/FinancialContext";
 import { createFamilyMember, updateFamilyMember, deleteFamilyMember } from "@/lib/services/familyService";
-import { formatWon } from "@/lib/utils";
 import { getBrokerLogo, getCardLogo } from "@/lib/constants/financial";
 import type { Account, PaymentMethod } from "@/types/tables";
 import { AccountManagementModal } from "../AccountManagementModal";
@@ -101,7 +100,7 @@ const RELATIONSHIP_LABELS: Record<string, string> = {
   parent: "부양가족",
 };
 
-type MenuId = "profile" | "account" | "subscription" | "appearance" | "notifications" | "security" | "help" | "contact" | "version";
+type MenuId = "profile" | "account" | "appearance" | "help" | "version";
 
 interface MenuItem {
   id: MenuId;
@@ -112,11 +111,7 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
   { id: "profile", label: "내 정보", icon: <User size={18} /> },
   { id: "account", label: "계좌 관리", icon: <CreditCard size={18} /> },
-  { id: "subscription", label: "구독 관리", icon: <Crown size={18} /> },
   { id: "appearance", label: "모양", icon: <Palette size={18} /> },
-  { id: "notifications", label: "알림", icon: <Bell size={18} /> },
-  { id: "security", label: "보안", icon: <Shield size={18} /> },
-  { id: "contact", label: "문의하기", icon: <MessageCircle size={18} /> },
   { id: "help", label: "더보기", icon: <HelpCircle size={18} /> },
   { id: "version", label: `v${CURRENT_VERSION}`, icon: <Info size={18} /> },
 ];
@@ -124,11 +119,7 @@ const menuItems: MenuItem[] = [
 const menuTitles: Record<MenuId, string> = {
   profile: "내 정보",
   account: "계좌 관리",
-  subscription: "구독 관리",
   appearance: "모양",
-  notifications: "알림",
-  security: "보안",
-  contact: "문의하기",
   help: "더보기",
   version: `v${CURRENT_VERSION}`,
 };
@@ -727,9 +718,7 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
                         {" · "}{account.broker_name}
                       </div>
                     </div>
-                    <div className={styles.accountBalance}>
-                      {account.current_balance ? formatWon(account.current_balance) : ""}
-                    </div>
+                    <div className={styles.accountBalance} />
                   </div>
                   {linkedPms.length > 0 && (
                     <div className={styles.linkedPayments}>
@@ -812,12 +801,6 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
     </div>
   );
 
-  const renderPlaceholderContent = () => (
-    <div className={styles.contentBody}>
-      <div className={styles.placeholder}>준비 중입니다</div>
-    </div>
-  );
-
   const renderContent = () => {
     switch (selectedMenu) {
       case "profile":
@@ -830,11 +813,6 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
         return renderHelpContent();
       case "version":
         return renderVersionContent();
-      case "subscription":
-      case "notifications":
-      case "security":
-      case "contact":
-        return renderPlaceholderContent();
     }
   };
 

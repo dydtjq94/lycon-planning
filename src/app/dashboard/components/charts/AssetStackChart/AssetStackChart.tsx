@@ -60,6 +60,7 @@ interface AssetStackChartProps {
   selfLifeExpectancy?: number
   spouseLifeExpectancy?: number
   lifecycleMilestones?: { year: number; color: string; label: string; iconId: string }[]
+  overlayLines?: { label: string; color: string; data: (number | null)[] }[]
 }
 
 
@@ -77,6 +78,7 @@ export function AssetStackChart({
   selfLifeExpectancy,
   spouseLifeExpectancy,
   lifecycleMilestones,
+  overlayLines,
 }: AssetStackChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<ChartJS | null>(null)
@@ -251,6 +253,32 @@ export function AssetStackChart({
 
     const dataIndex = tooltip.dataPoints?.[0]?.dataIndex ?? 0
 
+    // 오버레이 비교 섹션 HTML 빌더
+    const buildOverlayHtml = (idx: number, borderColor: string) => {
+      if (!overlayLines || overlayLines.length === 0) return ''
+      const items = overlayLines
+        .map(line => {
+          const val = line.data[idx]
+          if (val == null) return ''
+          const prefix = val >= 0 ? '' : '-'
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 12px; height: 0; border-top: 2px dashed ${line.color}; flex-shrink: 0;"></span>
+                <span style="font-size: 11px; color: ${isDark ? '#9a9b9e' : '#a8a29e'};">${line.label}</span>
+              </div>
+              <span style="font-size: 11px; color: ${isDark ? '#9a9b9e' : '#a8a29e'};">${prefix}${formatMoneyWithUnit(val)}</span>
+            </div>`
+        })
+        .filter(Boolean)
+        .join('')
+      if (!items) return ''
+      return `
+        <div style="margin-top: 10px; border-top: 1px solid ${borderColor}; padding-top: 10px;">
+          ${items}
+        </div>`
+    }
+
     // Monthly mode: use monthlySnapshots
     if (isMonthlyMode && monthlyChartData) {
       const ms = monthlyChartData.snapshots[dataIndex]
@@ -341,6 +369,7 @@ export function AssetStackChart({
         </div>
         ${assetSectionHtml}
         ${debtSectionHtml}
+        ${buildOverlayHtml(dataIndex, borderColor)}
         ${msMilestoneHtml}
       `
 
@@ -441,11 +470,12 @@ export function AssetStackChart({
       </div>
       ${assetSectionHtml}
       ${debtSectionHtml}
+      ${buildOverlayHtml(dataIndex, borderColor)}
       ${milestoneHtml}
     `
 
     positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
-  }, [chartData.snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlyChartData, selfLifeExpectancy, spouseLifeExpectancy, lifecycleMilestones])
+  }, [chartData.snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlyChartData, selfLifeExpectancy, spouseLifeExpectancy, lifecycleMilestones, overlayLines])
 
   // 마우스 추적 + 호버 라인 + 언마운트 정리
   useEffect(() => {
@@ -698,6 +728,33 @@ export function AssetStackChart({
         }
       }
 
+      // 오버레이 라인 업데이트 (비교 기능)
+      const baseCount = chartMode === 'bar' && stackedBarData
+        ? [...stackedBarData.assetDatasets, ...stackedBarData.debtDatasets].length
+        : 2
+      // 기존 오버레이 제거
+      while (chart.data.datasets.length > baseCount) chart.data.datasets.pop()
+      // 새 오버레이 추가
+      if (overlayLines && overlayLines.length > 0) {
+        overlayLines.forEach(line => {
+          chart.data.datasets.push({
+            type: 'line' as const,
+            label: line.label,
+            data: line.data,
+            borderColor: line.color,
+            borderWidth: 2,
+            borderDash: [6, 3],
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointBackgroundColor: line.color,
+            tension: 0.35,
+            fill: false,
+            spanGaps: true,
+            stack: undefined,
+          } as any)
+        })
+      }
+
       // 스케일 업데이트
       if (chart.options.scales?.x?.ticks) chart.options.scales.x.ticks.color = chartScaleColors.tickColor
       if (chart.options.scales?.y) {
@@ -787,6 +844,27 @@ export function AssetStackChart({
           },
         },
       ]
+    }
+
+    // 비교 오버레이 라인 추가
+    if (overlayLines && overlayLines.length > 0) {
+      overlayLines.forEach(line => {
+        datasets.push({
+          type: 'line' as const,
+          label: line.label,
+          data: line.data,
+          borderColor: line.color,
+          borderWidth: 2,
+          borderDash: [6, 3],
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointBackgroundColor: line.color,
+          tension: 0.35,
+          fill: false,
+          spanGaps: true,
+          stack: undefined,
+        })
+      })
     }
 
     chartInstance.current = new ChartJS(ctx, {
@@ -879,16 +957,31 @@ export function AssetStackChart({
         allBarData.forEach((ds, i) => {
           ;(chart.data.datasets[i] as any).data = ds.data
         })
+        // 오버레이 라인 데이터도 설정 (bar 모드에서 스택 데이터셋 수 이후)
+        if (overlayLines) {
+          const overlayStartIdx = allBarData.length
+          overlayLines.forEach((line, i) => {
+            const ds = chart.data.datasets[overlayStartIdx + i] as any
+            if (ds) ds.data = line.data
+          })
+        }
       } else {
         const barDs = chart.data.datasets[0] as any
         const lineDs = chart.data.datasets[1] as any
         barDs.data = activeNetWorthData
         if (lineDs) lineDs.data = activeNetWorthData
+        // 오버레이 라인 데이터도 설정 (line 모드에서 2개 기본 데이터셋 이후)
+        if (overlayLines) {
+          overlayLines.forEach((line, i) => {
+            const ds = chart.data.datasets[2 + i] as any
+            if (ds) ds.data = line.data
+          })
+        }
       }
       chart.update()
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartData, lifecycleMilestones, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, netWorthData, toRgba, chartMode, isMonthlyMode, monthlyChartData, stackedBarData])
+  }, [chartData, lifecycleMilestones, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, netWorthData, toRgba, chartMode, isMonthlyMode, monthlyChartData, stackedBarData, overlayLines])
 
   // 선택된 연도가 변경될 때 annotation만 업데이트 (차트 재생성 X)
   useEffect(() => {
