@@ -398,6 +398,7 @@ export function ScenarioTab({
             retirementAge={lifeCycleSettings.selfRetirementAge}
             isMarried={isMarried}
             lifeCycleSettings={lifeCycleSettings}
+            inflationRate={assumptions.rates.inflation}
           />
         );
       default:

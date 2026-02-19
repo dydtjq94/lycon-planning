@@ -716,19 +716,6 @@ export function CashFlowPrioritiesPanel({
             </div>
           )}
 
-          {/* 유동 현금 - 항상 마지막 고정 */}
-          <div className={styles.ruleList}>
-            <div className={styles.ruleRowFixed}>
-              <div className={styles.pinHandle}>
-                <Pin size={14} />
-              </div>
-              <div className={styles.ruleName}>유동 현금</div>
-            </div>
-          </div>
-          <p className={styles.fixedHint}>
-            배분 규칙을 모두 채운 뒤 남은 잉여금은 유동 현금으로 보관됩니다.
-          </p>
-
           {addingSurplus ? (
             <div className={styles.addRow}>
               <select
@@ -768,6 +755,19 @@ export function CashFlowPrioritiesPanel({
               추가
             </button>
           )}
+
+          {/* 유동 현금 - 항상 마지막 고정 */}
+          <div className={styles.ruleList}>
+            <div className={styles.ruleRowFixed}>
+              <div className={styles.pinHandle}>
+                <Pin size={14} />
+              </div>
+              <div className={styles.ruleName}>유동 현금</div>
+            </div>
+          </div>
+          <p className={styles.fixedHint}>
+            배분 규칙을 모두 채운 뒤 남은 잉여금은 유동 현금으로 보관됩니다.
+          </p>
         </div>
       )}
 
@@ -821,17 +821,7 @@ export function CashFlowPrioritiesPanel({
                   </button>
                 </div>
               ))}
-            {/* 마이너스 통장 - 항상 마지막 고정 */}
-            <div className={styles.ruleRowFixed}>
-              <div className={styles.pinHandle}>
-                <Pin size={14} />
-              </div>
-              <div className={styles.ruleName}>마이너스 통장</div>
-            </div>
           </div>
-          <p className={styles.fixedHint}>
-            모든 계좌에서 인출해도 부족하면 마이너스 통장으로 자동 충당됩니다.
-          </p>
 
           {addingWithdrawal ? (
             <div className={styles.addRow}>
@@ -872,6 +862,19 @@ export function CashFlowPrioritiesPanel({
               추가
             </button>
           )}
+
+          {/* 마이너스 통장 - 항상 마지막 고정 */}
+          <div className={styles.ruleList}>
+            <div className={styles.ruleRowFixed}>
+              <div className={styles.pinHandle}>
+                <Pin size={14} />
+              </div>
+              <div className={styles.ruleName}>마이너스 통장</div>
+            </div>
+          </div>
+          <p className={styles.fixedHint}>
+            모든 계좌에서 인출해도 부족하면 마이너스 통장으로 자동 충당됩니다.
+          </p>
 
         </div>
       )}

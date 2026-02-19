@@ -383,7 +383,7 @@ function mapRealEstateToSimulation(
     purchase_month: metadata.purchase_month || currentMonth,
     growth_rate: metadata.growth_rate || 3.0,
     housing_type: metadata.housing_type || '자가',
-    deposit: metadata.deposit || null,
+    deposit: metadata.deposit || (metadata.housing_type === '전세' || metadata.housing_type === '월세' ? item.amount : null),
     monthly_rent: metadata.monthly_rent || null,
     maintenance_fee: metadata.maintenance_fee || null,
     has_loan: metadata.has_loan || false,

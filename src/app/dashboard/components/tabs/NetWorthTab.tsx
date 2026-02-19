@@ -386,6 +386,26 @@ export function NetWorthTab({
     setSelectedYear(parseInt(e.target.value))
   }, [])
 
+  // 키보드 좌우 화살표로 연도 이동
+  const selectedYearRef = useRef(selectedYear)
+  selectedYearRef.current = selectedYear
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        const next = Math.max(displayRange.start, Math.floor(selectedYearRef.current) - 1)
+        setSelectedYear(next)
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        const next = Math.min(displayRange.end, Math.floor(selectedYearRef.current) + 1)
+        setSelectedYear(next)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [displayRange.start, displayRange.end, setSelectedYear])
+
   // 자산/부채 카테고리 그룹 계산 (hooks는 early return 전에 위치해야 함)
   const assetGroups = useMemo(() => {
     if (!selectedSnapshot) return []

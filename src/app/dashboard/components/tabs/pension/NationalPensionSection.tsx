@@ -27,6 +27,7 @@ interface NationalPensionSectionProps {
   onSave: () => void
   retirementAge?: number
   lifeExpectancy?: number
+  inflationRate?: number
 }
 
 export function NationalPensionSection({
@@ -38,6 +39,7 @@ export function NationalPensionSection({
   onSave,
   retirementAge,
   lifeExpectancy,
+  inflationRate,
 }: NationalPensionSectionProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
@@ -156,6 +158,20 @@ export function NationalPensionSection({
             <span className={styles.itemMeta}>
               {birthYear + pension.start_age}년부터 수령{pension.end_age ? ` ~ ${birthYear + pension.end_age}년` : ''}
             </span>
+            {inflationRate && (() => {
+              const currentYear = new Date().getFullYear()
+              const startYear = birthYear + pension.start_age
+              const years = startYear - currentYear
+              if (years <= 0) return null
+              const amount = pension.expected_monthly_amount
+              if (!amount || amount <= 0) return null
+              const presentValue = amount / Math.pow(1 + inflationRate / 100, years)
+              return (
+                <span className={styles.itemMeta}>
+                  {`현재 가치 기준 약 ${formatMoney(Math.round(presentValue))}/월`}
+                </span>
+              )
+            })()}
           </div>
           <div className={styles.itemRight}>
             <span className={styles.itemAmount}>{formatMoney(pension.expected_monthly_amount)}/월</span>
@@ -215,6 +231,23 @@ export function NationalPensionSection({
                   />
                   <span className={styles.modalFormUnit}>만원/월</span>
                 </div>
+                {editValues.amount && editValues.startYear && inflationRate && (() => {
+                  const currentYear = new Date().getFullYear()
+                  const startYear = parseInt(editValues.startYear)
+                  const years = startYear - currentYear
+                  if (years <= 0) return null
+                  const amount = parseFloat(editValues.amount)
+                  if (!amount || amount <= 0) return null
+                  const presentValue = amount / Math.pow(1 + inflationRate / 100, years)
+                  return (
+                    <div className={styles.modalFormRow}>
+                      <span className={styles.modalFormLabel} />
+                      <span className={styles.modalFormHint}>
+                        {`현재 가치 기준 약 ${formatMoney(Math.round(presentValue))}/월 (물가상승률 ${inflationRate}%)`}
+                      </span>
+                    </div>
+                  )
+                })()}
                 <div className={styles.modalFormRow}>
                   <span className={styles.modalFormLabel}>수령시작</span>
                   <div className={styles.fieldContent}>
@@ -244,8 +277,8 @@ export function NationalPensionSection({
                         onChange={e => handlePeriodTextChange(
                           e,
                           setStartDateText,
-                          y => setEditValues({ ...editValues, startYear: String(y) }),
-                          m => setEditValues({ ...editValues, startMonth: String(m) })
+                          y => setEditValues(prev => ({ ...prev, startYear: String(y) })),
+                          m => setEditValues(prev => ({ ...prev, startMonth: String(m) }))
                         )}
                         placeholder="YYYY.MM"
                       />
@@ -287,8 +320,8 @@ export function NationalPensionSection({
                         onChange={e => handlePeriodTextChange(
                           e,
                           setEndDateText,
-                          y => setEditValues({ ...editValues, endYear: String(y) }),
-                          m => setEditValues({ ...editValues, endMonth: String(m) })
+                          y => setEditValues(prev => ({ ...prev, endYear: String(y) })),
+                          m => setEditValues(prev => ({ ...prev, endMonth: String(m) }))
                         )}
                         placeholder="YYYY.MM"
                       />

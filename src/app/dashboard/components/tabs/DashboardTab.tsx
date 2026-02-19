@@ -660,89 +660,105 @@ export function DashboardTab({
           )}
         </div>
 
-        {/* Card 4: Simulation */}
-        <div
-          className={`${styles.card} ${styles.clickableCard}`}
-          onClick={() => onNavigate("simulation")}
-        >
-          <div className={styles.cardHeader}>
-            <span className={styles.cardTitle}>시뮬레이션</span>
-            <button
-              className={styles.moreBtn}
-              onClick={(e) => {
-                e.stopPropagation();
-                onNavigate("simulation");
-              }}
+        {/* Simulation cards - one per simulation */}
+        {simLines.length > 0 ? (
+          simLines.map((line, i) => (
+            <div
+              key={i}
+              className={`${styles.card} ${styles.clickableCard}`}
+              onClick={() => onNavigate("simulation")}
             >
-              상세 <ArrowRight size={12} />
-            </button>
-          </div>
-          {simLines.length > 0 ? (
-            <div className={styles.chartContainer}>
-              <Line
-                data={{
-                  datasets: simLines.map((line, i) => ({
-                    label: line.title,
-                    data: line.data,
-                    borderColor: colors[i % colors.length],
-                    borderWidth: 1.5,
-                    pointRadius: 0,
-                    fill: false,
-                    tension: 0.3,
-                  })),
-                }}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    tooltip: { enabled: false },
-                    legend: {
-                      display: simLines.length > 1,
-                      position: "bottom" as const,
-                      labels: {
-                        color: chartScaleColors.tickColor,
-                        font: { size: 10 },
-                        boxWidth: 12,
-                        padding: 8,
+              <div className={styles.cardHeader}>
+                <span className={styles.cardTitle}>{line.title}</span>
+                <button
+                  className={styles.moreBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNavigate("simulation");
+                  }}
+                >
+                  상세 <ArrowRight size={12} />
+                </button>
+              </div>
+              <div className={styles.chartContainer}>
+                <Line
+                  data={{
+                    datasets: [
+                      {
+                        data: line.data,
+                        borderColor: colors[i % colors.length],
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHitRadius: 8,
+                        fill: true,
+                        backgroundColor: (ctx: any) => {
+                          if (!ctx.chart.chartArea) return "transparent";
+                          const gradient = ctx.chart.ctx.createLinearGradient(
+                            0,
+                            ctx.chart.chartArea.top,
+                            0,
+                            ctx.chart.chartArea.bottom
+                          );
+                          gradient.addColorStop(0, toRgba(colors[i % colors.length], 0.15));
+                          gradient.addColorStop(1, toRgba(colors[i % colors.length], 0));
+                          return gradient;
+                        },
+                        tension: 0.3,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      tooltip: { enabled: false },
+                      legend: { display: false },
+                    },
+                    scales: {
+                      x: {
+                        type: "linear" as const,
+                        display: true,
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                          color: chartScaleColors.tickColor,
+                          font: { size: 10 },
+                          callback: (v: any) => v,
+                          maxTicksLimit: 5,
+                        },
+                      },
+                      y: {
+                        display: true,
+                        position: "left" as const,
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                          color: chartScaleColors.tickColor,
+                          font: { size: 10 },
+                          maxTicksLimit: 3,
+                          callback: (v: any) => formatMoney(v),
+                        },
                       },
                     },
-                  },
-                  scales: {
-                    x: {
-                      type: "linear" as const,
-                      display: true,
-                      grid: { display: false },
-                      border: { display: false },
-                      ticks: {
-                        color: chartScaleColors.tickColor,
-                        font: { size: 10 },
-                        callback: (v: any) => v,
-                        maxTicksLimit: 5,
-                      },
-                    },
-                    y: {
-                      display: true,
-                      position: "left" as const,
-                      grid: { display: false },
-                      border: { display: false },
-                      ticks: {
-                        color: chartScaleColors.tickColor,
-                        font: { size: 10 },
-                        maxTicksLimit: 3,
-                        callback: (v: any) => formatMoney(v),
-                      },
-                    },
-                  },
-                }}
-              />
+                  }}
+                />
+              </div>
             </div>
-          ) : (
+          ))
+        ) : (
+          <div
+            className={`${styles.card} ${styles.clickableCard}`}
+            onClick={() => onNavigate("simulation")}
+          >
+            <div className={styles.cardHeader}>
+              <span className={styles.cardTitle}>시뮬레이션</span>
+            </div>
             <div className={styles.emptyState}>
               <Activity size={24} className={styles.emptyIcon} />
               <span>시뮬레이션 데이터가 없습니다</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

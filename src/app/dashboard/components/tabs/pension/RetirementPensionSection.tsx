@@ -539,8 +539,8 @@ export function RetirementPensionSection({
                             onChange={e => handlePeriodTextChange(
                               e,
                               setStartDateText,
-                              y => setEditValues({ ...editValues, startYear: String(y) }),
-                              m => setEditValues({ ...editValues, startMonth: String(m) })
+                              y => setEditValues(prev => ({ ...prev, startYear: String(y) })),
+                              m => setEditValues(prev => ({ ...prev, startMonth: String(m) }))
                             )}
                             placeholder="YYYY.MM"
                           />
@@ -554,8 +554,8 @@ export function RetirementPensionSection({
                             onChange={e => handlePeriodTextChange(
                               e,
                               setEndDateText,
-                              y => setEditValues({ ...editValues, endYear: String(y) }),
-                              m => setEditValues({ ...editValues, endMonth: String(m) })
+                              y => setEditValues(prev => ({ ...prev, endYear: String(y) })),
+                              m => setEditValues(prev => ({ ...prev, endMonth: String(m) }))
                             )}
                             placeholder="YYYY.MM"
                           />

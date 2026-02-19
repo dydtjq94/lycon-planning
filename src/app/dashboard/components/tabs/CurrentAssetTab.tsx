@@ -131,7 +131,6 @@ const ITEM_TYPES: Record<TabType, { value: string; label: string }[]> = {
     { value: "emergency", label: "비상금" },
   ],
   investment: [
-    { value: "gold", label: "실물 금" },
     { value: "fund", label: "펀드" },
     { value: "bond", label: "채권" },
     { value: "crypto", label: "암호화폐" },
@@ -171,7 +170,6 @@ const MODAL_ITEMS: Record<ModalCategory, { title: string; items: ModalItemConfig
   investment: {
     title: "투자",
     items: [
-      { value: "gold", label: "실물 금" },
       { value: "fund", label: "펀드" },
       { value: "bond", label: "채권" },
       { value: "crypto", label: "암호화폐" },

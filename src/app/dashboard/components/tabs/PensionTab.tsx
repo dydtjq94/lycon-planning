@@ -41,6 +41,7 @@ interface PensionTabProps {
     selfLifeExpectancy: number
     spouseLifeExpectancy: number
   }
+  inflationRate?: number
 }
 
 export function PensionTab({
@@ -50,6 +51,7 @@ export function PensionTab({
   retirementAge,
   isMarried,
   lifeCycleSettings,
+  inflationRate,
 }: PensionTabProps) {
   const currentYear = new Date().getFullYear()
   const currentAge = currentYear - birthYear
@@ -920,6 +922,7 @@ export function PensionTab({
                   onSave={loadPensions}
                   retirementAge={lifeCycleSettings?.selfRetirementAge}
                   lifeExpectancy={lifeCycleSettings?.selfLifeExpectancy}
+                  inflationRate={inflationRate}
                 />
                 {isMarried && (
                   <NationalPensionSection
@@ -931,6 +934,7 @@ export function PensionTab({
                     onSave={loadPensions}
                     retirementAge={lifeCycleSettings?.spouseRetirementAge}
                     lifeExpectancy={lifeCycleSettings?.spouseLifeExpectancy}
+                    inflationRate={inflationRate}
                   />
                 )}
               </div>

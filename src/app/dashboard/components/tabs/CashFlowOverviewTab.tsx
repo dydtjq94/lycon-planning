@@ -179,6 +179,26 @@ export function CashFlowOverviewTab({
   const sankeyYear = propSelectedYear ?? localSelectedYear
   const setSankeyYear = onSelectedYearChange ?? setLocalSelectedYear
 
+  // 키보드 좌우 화살표로 연도 이동
+  const sankeyYearRef = useRef(sankeyYear)
+  sankeyYearRef.current = sankeyYear
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        const next = Math.max(displayRange.start, Math.floor(sankeyYearRef.current) - 1)
+        setSankeyYear(next)
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        const next = Math.min(displayRange.end, Math.floor(sankeyYearRef.current) + 1)
+        setSankeyYear(next)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [displayRange.start, displayRange.end, setSankeyYear])
+
   // 현재 나이 계산
   const sankeyAge = Math.floor(sankeyYear) - birthYear
   const spouseAge = spouseBirthYear ? Math.floor(sankeyYear) - spouseBirthYear : null
