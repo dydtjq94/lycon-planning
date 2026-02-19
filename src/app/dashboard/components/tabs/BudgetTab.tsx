@@ -51,9 +51,9 @@ const BANK_ACCOUNT_TYPE_OPTIONS = [
 
 // 기본 카테고리 목록 (DB에서 가져오기 전 폴백)
 const DEFAULT_EXPENSE_CATEGORIES = [
-  "식비", "주거", "교통", "통신", "의료", "문화", "교육", "의류", "경조사", "기타"
+  "식비", "외식", "카페/음료", "주거", "생활용품", "교통", "통신", "의료/건강", "교육", "의류/패션", "뷰티/미용", "여가/취미", "경조사", "보험", "기타"
 ];
-const DEFAULT_INCOME_CATEGORIES = ["급여", "부수입", "이자/배당", "기타"];
+const DEFAULT_INCOME_CATEGORIES = ["급여", "사업소득", "부수입", "용돈/선물", "환급/지원금", "기타"];
 
 // 결제수단 유형
 const PAYMENT_METHOD_TYPE_OPTIONS = [

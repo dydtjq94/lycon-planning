@@ -9,7 +9,7 @@ import {
   Landmark, Home, Briefcase, GraduationCap, Plane, Heart,
   TrendingUp, Wallet, PiggyBank, Shield, Target, Umbrella,
   Baby, Car, Gem, Building2, Palmtree, Rocket, Star, Coffee,
-  ListOrdered, Percent, Users, CalendarClock, Play, ArrowLeftRight, Check,
+  ListOrdered, Percent, Users, CalendarClock, Play,
   type LucideIcon,
 } from "lucide-react";
 import { useChartTheme } from "@/hooks/useChartTheme";
@@ -178,11 +178,6 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   const [lifeCyclePanelRect, setLifeCyclePanelRect] = useState<{ top: number; left: number } | null>(null);
   const lifeCyclePanelBtnRef = useRef<HTMLButtonElement>(null);
   const lifeCyclePanelRef = useRef<HTMLDivElement>(null);
-
-  const [showComparePanel, setShowComparePanel] = useState(false);
-  const [comparePanelRect, setComparePanelRect] = useState<{ top: number; left: number } | null>(null);
-  const comparePanelBtnRef = useRef<HTMLButtonElement>(null);
-  const comparePanelRef = useRef<HTMLDivElement>(null);
   // 비교 선택 상태: 'asset-trend' = 자산 추이, 시뮬레이션 ID = 다른 시뮬레이션
   const [compareSelections, setCompareSelections] = useState<Set<string>>(new Set());
 
@@ -439,28 +434,6 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     };
   }, [showLifeCyclePanel]);
 
-  // Compare panel click-outside handler
-  useEffect(() => {
-    if (!showComparePanel) return;
-    const handleClick = (e: MouseEvent) => {
-      if (
-        comparePanelRef.current && !comparePanelRef.current.contains(e.target as Node) &&
-        comparePanelBtnRef.current && !comparePanelBtnRef.current.contains(e.target as Node)
-      ) {
-        setShowComparePanel(false);
-      }
-    };
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowComparePanel(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleEsc);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleEsc);
-    };
-  }, [showComparePanel]);
-
   // 검색어로 종목 필터링
   const filterSuggestions = useCallback((query: string) => {
     if (!query.trim() || stocksList.length === 0) {
@@ -501,10 +474,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
 
   // 시뮬레이션 추가 핸들러
   const handleAddSimulation = useCallback(async () => {
-    const title = prompt("새 시뮬레이션 이름을 입력하세요:", "새 시뮬레이션");
-    if (title && title.trim()) {
-      createSimulation.mutate(
-        { title: title.trim() },
+    const nextNum = simulations.length + 1;
+    const title = `새 시뮬레이션 ${nextNum}`;
+    createSimulation.mutate(
+      { title },
         {
           onSuccess: (newSim) => {
             // 즉시 UI 업데이트 (시뮬레이션 리스트에 표시)
@@ -535,8 +508,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           },
         }
       );
-    }
-  }, [createSimulation, profile.id, updateUrl]);
+  }, [createSimulation, simulations.length, profile.id, updateUrl]);
 
   // 시뮬레이션 삭제
   const deleteSimulation = useDeleteSimulation();
@@ -958,6 +930,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             unreadMessageCount={unreadMessageCount}
             onNavigate={handleSectionChange}
             profileId={profile.id}
+            simulations={simulations}
+            lifeCycleSettings={lifeCycleSettings}
           />
         );
       // 담당자 관련
@@ -1021,6 +995,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             compareSelections={compareSelections}
             allSimulations={simulations}
             profileId={profile.id}
+            onToggleCompare={toggleCompareSelection}
           />
         );
       }
@@ -1206,22 +1181,6 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   data-tooltip={showPrioritiesPanel ? undefined : "현금 흐름 우선순위"}
                 >
                   <ListOrdered size={15} />
-                </button>
-                <div className={styles.simHeaderDivider} />
-                <button
-                  ref={comparePanelBtnRef}
-                  className={styles.simHeaderAction}
-                  onClick={() => {
-                    if (comparePanelBtnRef.current) {
-                      const rect = comparePanelBtnRef.current.getBoundingClientRect();
-                      setComparePanelRect({ top: rect.bottom + 6, left: rect.left });
-                    }
-                    setShowComparePanel(!showComparePanel);
-                  }}
-                  type="button"
-                  data-tooltip={showComparePanel ? undefined : "비교하기"}
-                >
-                  <ArrowLeftRight size={15} />
                 </button>
               </div>
             ) : (
@@ -1500,78 +1459,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           </div>
         )}
 
-        {showComparePanel && comparePanelRect && currentSection === "simulation" && selectedSim && (
-          <div
-            ref={comparePanelRef}
-            className={styles.accountsPanelDropdown}
-            style={{
-              position: 'fixed',
-              top: comparePanelRect.top,
-              left: Math.min(comparePanelRect.left, window.innerWidth - 300),
-              width: 260,
-              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-              zIndex: 200,
-            }}
-          >
-            {(() => {
-              const COMPARE_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
-              const colorMap = new Map<string, string>();
-              let ci = 0;
-              for (const key of compareSelections) {
-                if (key === selectedSim.id) continue;
-                colorMap.set(key, COMPARE_COLORS[ci % COMPARE_COLORS.length]);
-                ci++;
-              }
-              const assetTrendSelected = compareSelections.has('asset-trend');
-              return (
-                <>
-                  <div className={styles.comparePanelSection}>
-                    <div className={styles.comparePanelLabel}>자산 추이</div>
-                    <button
-                      className={`${styles.comparePanelItem} ${assetTrendSelected ? styles.selected : ''}`}
-                      onClick={() => toggleCompareSelection('asset-trend')}
-                      type="button"
-                      style={assetTrendSelected ? { background: `${colorMap.get('asset-trend')}18` } : undefined}
-                    >
-                      <TrendingUp size={15} />
-                      <span>자산 추이</span>
-                      {assetTrendSelected && <Check size={14} className={styles.comparePanelCheck} style={{ color: colorMap.get('asset-trend') }} />}
-                    </button>
-                  </div>
-                  {simulations.filter(s => s.id !== selectedSim.id).length > 0 && (
-                    <div className={styles.comparePanelSection}>
-                      <div className={styles.comparePanelLabel}>시뮬레이션</div>
-                      {simulations.filter(s => s.id !== selectedSim.id).map(sim => {
-                        const Icon = (sim.icon && SIM_ICON_MAP[sim.icon]) || Star;
-                        const isSelected = compareSelections.has(sim.id);
-                        const lineColor = colorMap.get(sim.id);
-                        return (
-                          <button
-                            key={sim.id}
-                            className={`${styles.comparePanelItem} ${isSelected ? styles.selected : ''}`}
-                            onClick={() => toggleCompareSelection(sim.id)}
-                            type="button"
-                            style={isSelected ? { background: `${lineColor}18` } : undefined}
-                          >
-                            <Icon size={15} />
-                            <span>{sim.title}</span>
-                            {isSelected && <Check size={14} className={styles.comparePanelCheck} style={{ color: lineColor }} />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
-        )}
-
         <div className={`${styles.content} ${currentSection === "simulation" ? styles.noPadding : ""} ${currentSection === "household-budget" ? `${styles.noPadding} ${styles.noScroll}` : ""} ${currentSection === "messages" ? styles.noPadding : ""}`}>
-          <div key={currentSection} className={`${styles.contentInner} ${currentSection === "simulation" || currentSection === "household-budget" ? styles.fullWidth : ""} ${currentSection === "household-budget" ? styles.fullHeight : ""}`}>{renderContent()}</div>
+          <div key={currentSection} className={`${styles.contentInner} ${currentSection === "simulation" || currentSection === "household-budget" || currentSection === "dashboard" ? styles.fullWidth : ""} ${currentSection === "household-budget" ? styles.fullHeight : ""}`}>{renderContent()}</div>
         </div>
       </main>
 

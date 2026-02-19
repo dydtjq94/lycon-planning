@@ -46,6 +46,7 @@ interface ScenarioTabProps {
   compareSelections?: Set<string>;
   allSimulations?: Simulation[];
   profileId?: string;
+  onToggleCompare?: (key: string) => void;
 }
 
 // Top level tabs
@@ -95,6 +96,7 @@ export function ScenarioTab({
   compareSelections,
   allSimulations,
   profileId,
+  onToggleCompare,
 }: ScenarioTabProps) {
   const { isDark, chartScaleColors } = useChartTheme();
 
@@ -281,6 +283,7 @@ export function ScenarioTab({
           compareSelections={compareSelections}
           allSimulations={allSimulations}
           profileId={profileId}
+          onToggleCompare={onToggleCompare}
         />
       );
     }

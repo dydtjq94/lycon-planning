@@ -337,8 +337,9 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
         ticks: {
           color: chartScaleColors.tickColor,
           font: { size: 11 },
-          maxTicksLimit: 10,
+          source: "data" as const,
           autoSkip: true,
+          maxRotation: 0,
         },
       },
       y: {

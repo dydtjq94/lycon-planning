@@ -277,6 +277,51 @@ export async function updateAvailability(
   if (error) throw error
 }
 
+export interface NextBooking {
+  booking_date: string
+  booking_time: string
+  status: string
+  expert_name: string
+}
+
+// 사용자의 다음 예약 조회
+export async function getNextBooking(): Promise<NextBooking | null> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return null
+
+  const today = formatLocalDate(new Date())
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(`
+      booking_date,
+      booking_time,
+      status,
+      experts:expert_id (name)
+    `)
+    .eq('user_id', user.id)
+    .in('status', ['pending', 'confirmed'])
+    .gte('booking_date', today)
+    .order('booking_date', { ascending: true })
+    .order('booking_time', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  if (error || !data) return null
+
+  const expertData = data.experts as unknown as { name: string } | { name: string }[] | null
+  const expert = Array.isArray(expertData) ? expertData[0] : expertData
+
+  return {
+    booking_date: data.booking_date,
+    booking_time: data.booking_time,
+    status: data.status,
+    expert_name: expert?.name || '전문가',
+  }
+}
+
 // 기본 전문가 ID 조회
 export async function getDefaultExpertId(): Promise<string | null> {
   const supabase = createClient()

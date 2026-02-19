@@ -1194,7 +1194,7 @@ export function SavingsTab({
             className={styles.modalFormInput}
             value={editValues.name || ''}
             onChange={e => setEditValues({ ...editValues, name: e.target.value })}
-            placeholder="예: 금, 달러, 부동산펀드"
+            placeholder="예: 달러, 부동산펀드, 채권"
             autoFocus={!isEditMode}
           />
         </div>

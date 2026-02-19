@@ -47,6 +47,7 @@ interface NetWorthTabProps {
   compareSelections?: Set<string>
   allSimulations?: Simulation[]
   profileId?: string
+  onToggleCompare?: (key: string) => void
 }
 
 // 기간 선택 옵션
@@ -88,15 +89,54 @@ export function NetWorthTab({
   compareSelections,
   allSimulations,
   profileId,
+  onToggleCompare,
 }: NetWorthTabProps) {
   const currentYear = simulationStartYear || new Date().getFullYear()
   const currentAge = currentYear - birthYear
   const { isDark, chartLineColors } = useChartTheme()
 
+  // 메인 액센트 색 (실제 자산 추이에 사용)
+  const accentColor = typeof window !== 'undefined'
+    ? getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#007aff'
+    : '#007aff'
+
+  // Overlay comparison: 항목 ID 기반 고정 색상 맵
+  const stableColorMap = useMemo(() => {
+    const map = new Map<string, string>()
+    map.set('asset-trend', accentColor)
+    const otherSims = (allSimulations || []).filter(s => s.id !== simulationId)
+    otherSims.forEach((sim, i) => {
+      map.set(sim.id, OVERLAY_COLORS[i % OVERLAY_COLORS.length])
+    })
+    return map
+  }, [allSimulations, simulationId, accentColor])
+
+  // Build compare items array for legend
+  const compareItems = useMemo(() => {
+    const items: { key: string; label: string; color: string; selected: boolean }[] = []
+    // Asset trend
+    items.push({
+      key: 'asset-trend',
+      label: '실제 자산 추이',
+      color: stableColorMap.get('asset-trend') || OVERLAY_COLORS[0],
+      selected: compareSelections?.has('asset-trend') || false,
+    })
+    // Other simulations
+    const otherSims = (allSimulations || []).filter(s => s.id !== simulationId)
+    otherSims.forEach(sim => {
+      items.push({
+        key: sim.id,
+        label: sim.title || '시뮬레이션',
+        color: stableColorMap.get(sim.id) || OVERLAY_COLORS[0],
+        selected: compareSelections?.has(sim.id) || false,
+      })
+    })
+    return items
+  }, [allSimulations, simulationId, compareSelections, stableColorMap])
+
   // Overlay comparison: cache + loading
   interface OverlayCacheEntry {
     label: string
-    color: string
     yearMap: Map<number, number>    // year → netWorth (만원)
     monthMap: Map<string, number>   // "YYYY-MM" → netWorth (만원)
   }
@@ -220,8 +260,6 @@ export function NetWorthTab({
     const requestId = ++overlayRequestRef.current
     setOverlayLoading(true)
 
-    let colorIndex = overlayCache.current.size
-
     ;(async () => {
       for (const key of toFetch) {
         if (requestId !== overlayRequestRef.current) return
@@ -231,7 +269,6 @@ export function NetWorthTab({
             const snapshots = await getSnapshots(profileId)
             const yearMap = new Map<number, number>()
             const monthMap = new Map<string, number>()
-            // getSnapshots returns sorted by recorded_at DESC (newest first)
             for (const snap of snapshots) {
               const year = parseInt(snap.recorded_at.slice(0, 4))
               const monthKey = snap.recorded_at.slice(0, 7)
@@ -240,11 +277,9 @@ export function NetWorthTab({
             }
             overlayCache.current.set('asset-trend', {
               label: '실제 자산 추이',
-              color: OVERLAY_COLORS[colorIndex % OVERLAY_COLORS.length],
               yearMap,
               monthMap,
             })
-            colorIndex++
           } catch (err) {
             console.error('Failed to fetch asset trend snapshots:', err)
           }
@@ -274,11 +309,9 @@ export function NetWorthTab({
             })
             overlayCache.current.set(key, {
               label: targetSim.title || `시뮬레이션 ${key.slice(0, 8)}`,
-              color: OVERLAY_COLORS[colorIndex % OVERLAY_COLORS.length],
               yearMap,
               monthMap,
             })
-            colorIndex++
           } catch (err) {
             console.error(`Failed to load comparison simulation ${key}:`, err)
           }
@@ -315,11 +348,11 @@ export function NetWorthTab({
         }
       }
 
-      lines.push({ label: cached.label, color: cached.color, data })
+      lines.push({ label: cached.label, color: stableColorMap.get(key) || OVERLAY_COLORS[0], data })
     }
     return lines
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compareSelections, overlayCacheVer, isMonthlyMode, filteredMonthlySnapshots, displayRange.start, displayRange.end, simulationId])
+  }, [compareSelections, overlayCacheVer, isMonthlyMode, filteredMonthlySnapshots, displayRange.start, displayRange.end, simulationId, stableColorMap])
 
   const selectedYear = rawSelectedYear
 
@@ -413,6 +446,8 @@ export function NetWorthTab({
               spouseLifeExpectancy={spouseLifeExpectancy}
               lifecycleMilestones={lifecycleMilestones}
               overlayLines={overlayLines}
+              compareItems={compareItems}
+              onToggleCompare={onToggleCompare}
               headerAction={
                 <div ref={timeRangeRef} className={styles.timeRangeSelector}>
                   <button

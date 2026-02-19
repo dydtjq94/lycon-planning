@@ -3710,7 +3710,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
             <div className={styles.otherInvestmentSection}>
               <div className={styles.otherInvestmentHeader}>
                 <span className={styles.otherInvestmentTitle}>투자</span>
-                <span className={styles.otherInvestmentDesc}>실물 금, 채권 등</span>
+                <span className={styles.otherInvestmentDesc}>채권, 달러 등</span>
               </div>
 
               {otherInvestmentItems.length > 0 && (

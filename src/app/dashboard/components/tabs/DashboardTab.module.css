@@ -2,121 +2,59 @@
 .container {
   padding: 24px;
   width: 100%;
-  max-width: none;
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* ===== Section: Expert Card + Messages ===== */
-.expertSection {
+/* Top section: consultation + chat side by side */
+.topSection {
   display: flex;
   gap: 16px;
   align-items: stretch;
 }
 
-.expertCard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 20px 24px;
+/* Shared card styling */
+.card {
   background: var(--dashboard-card-bg);
   border: 1px solid var(--dashboard-border);
   border-radius: 10px;
-  min-width: 160px;
-  flex-shrink: 0;
-}
-
-.expertAvatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--dashboard-hover-bg);
-}
-
-.expertAvatarFallback {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--dashboard-hover-bg);
+  padding: 20px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--dashboard-text-muted);
+  flex-direction: column;
 }
 
-.expertName {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--dashboard-text);
-  text-align: center;
-}
-
-.expertTitle {
-  font-size: 11px;
-  color: var(--dashboard-text-secondary);
-  text-align: center;
-}
-
-.chatBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background: var(--accent-color, #007aff);
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #fff;
+/* Clickable card */
+.clickableCard {
   cursor: pointer;
-  transition: opacity 0.15s;
-  margin-top: auto;
+  transition: border-color 0.15s;
+}
+.clickableCard:hover {
+  border-color: var(--accent-color, #007aff);
 }
 
-.chatBtn:hover {
-  opacity: 0.85;
-}
-
-.unreadBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-/* Message Preview */
-.messagePreview {
+/* Top section halves */
+.topLeft {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 10px;
-  overflow: hidden;
+  min-width: 0;
+}
+.topRight {
+  flex: 1;
   min-width: 0;
 }
 
-.messagePreviewHeader {
+/* Card header: title + "더보기" link */
+.cardHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--dashboard-border);
+  margin-bottom: 16px;
 }
 
-.messagePreviewTitle {
-  font-size: 13px;
+.cardTitle {
+  font-size: 14px;
   font-weight: 600;
   color: var(--dashboard-text);
 }
@@ -134,23 +72,87 @@
   cursor: pointer;
   transition: color 0.15s;
 }
-
 .moreBtn:hover {
   color: var(--accent-color, #007aff);
 }
 
-.messageList {
-  flex: 1;
+/* 2x2 grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+/* === Consultation (top left) === */
+.bookingInfo {
   display: flex;
   flex-direction: column;
-  padding: 8px 0;
+  gap: 12px;
+  flex: 1;
+}
+
+.bookingDate {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+}
+
+.bookingTime {
+  font-size: 14px;
+  color: var(--dashboard-text-secondary);
+}
+
+.bookingExpert {
+  font-size: 13px;
+  color: var(--dashboard-text-secondary);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-secondary);
+  width: fit-content;
+}
+
+.statusConfirmed {
+  color: var(--accent-color, #007aff);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 8px;
+  color: var(--dashboard-text-muted);
+  font-size: 13px;
+  min-height: 80px;
+}
+
+.emptyIcon {
+  color: var(--dashboard-text-muted);
+  opacity: 0.5;
+}
+
+/* === Chat (top right) === */
+.messageList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
 }
 
 .messageRow {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 6px 16px;
+  padding: 5px 0;
 }
 
 .messageSender {
@@ -182,65 +184,128 @@
   white-space: nowrap;
 }
 
-.emptyMessages {
-  flex: 1;
-  display: flex;
+.unreadBadge {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  font-size: 12px;
-  color: var(--dashboard-text-muted);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 4px;
 }
 
-/* No expert state */
-.noExpertCard {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 10px;
-  width: 100%;
-}
-
-.noExpertText {
-  flex: 1;
-}
-
-.noExpertTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--dashboard-text);
-  margin-bottom: 4px;
-}
-
-.noExpertDesc {
-  font-size: 12px;
-  color: var(--dashboard-text-secondary);
-}
-
-/* ===== Section: Asset Summary ===== */
-.assetSection {
+/* === Weekly Budget === */
+.weeklyBars {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1;
 }
 
-.assetHeader {
+.weekGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.weekLabel {
+  font-size: 11px;
+  color: var(--dashboard-text-secondary);
+  white-space: nowrap;
+  min-width: 65px;
+}
+
+.weekBarsCol {
+  flex: 1;
+  max-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.barContainer {
+  height: 10px;
+  background: var(--dashboard-hover-bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.weekAmount {
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: auto;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* === Portfolio === */
+.portfolioContent {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.doughnutWrap {
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.portfolioStats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.portfolioTotal {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+}
+
+.portfolioGain {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.positive {
+  color: #ef4444;
+}
+.negative {
+  color: #3b82f6;
+}
+
+/* === Asset Trends === */
+.chartContainer {
+  height: 120px;
+  flex: 1;
+  position: relative;
+}
+
+.netWorthDisplay {
   display: flex;
   align-items: baseline;
-  gap: 12px;
-}
-
-.netWorthLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .netWorthValue {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--dashboard-text);
 }
@@ -250,256 +315,56 @@
   font-weight: 500;
 }
 
-.positive {
-  color: #ef4444;
-}
-
-.negative {
-  color: #3b82f6;
-}
-
 .muted {
   color: var(--dashboard-text-muted);
 }
 
-.assetGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-
-.assetCard {
+/* === Simulation === */
+.simMetrics {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 14px;
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: border-color 0.15s;
+  margin-top: 8px;
 }
 
-.assetCard:hover {
-  border-color: var(--accent-color, #007aff);
-}
-
-.assetCardHeader {
+.simMetric {
   display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.assetCardDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.assetCardLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-}
-
-.assetCardValue {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--dashboard-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ===== Section: Action Items ===== */
-.actionSection {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sectionHeader {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
 }
 
-.sectionTitle {
-  font-size: 14px;
+.simMetricLabel {
+  font-size: 12px;
+  color: var(--dashboard-text-secondary);
+}
+
+.simMetricValue {
+  font-size: 13px;
   font-weight: 600;
   color: var(--dashboard-text);
 }
 
-.actionList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.sparklineWrap {
+  height: 60px;
+  width: 100%;
 }
 
-.actionGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.actionGroupLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--dashboard-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 8px 0 4px;
-}
-
-.actionItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-
-.actionItem:hover {
-  border-color: var(--accent-color, #007aff);
-}
-
-.actionItemCompleted {
-  opacity: 0.5;
-}
-
-.actionCheckbox {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  border: 1.5px solid var(--dashboard-border);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s;
-  background: none;
-  padding: 0;
-  color: transparent;
-}
-
-.actionCheckbox:hover {
-  border-color: var(--accent-color, #007aff);
-}
-
-.actionCheckboxChecked {
-  background: var(--accent-color, #007aff);
-  border-color: var(--accent-color, #007aff);
-  color: #fff;
-}
-
-.actionTextWrap {
-  flex: 1;
-  min-width: 0;
-}
-
-.actionTitle {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.actionTitleCompleted {
-  text-decoration: line-through;
-  color: var(--dashboard-text-muted);
-}
-
-.actionDesc {
-  font-size: 11px;
-  color: var(--dashboard-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 1px;
-}
-
-.actionArrow {
-  flex-shrink: 0;
-  color: var(--dashboard-text-muted);
-}
-
-/* Detected action items (auto) */
-.detectedItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-
-.detectedItem:hover {
-  border-color: var(--accent-color, #007aff);
-}
-
-.detectedIcon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: var(--dashboard-hover-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: var(--dashboard-text-secondary);
-}
-
-.detectedText {
-  flex: 1;
-  min-width: 0;
-}
-
-.detectedTitle {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-}
-
-.detectedDesc {
-  font-size: 11px;
-  color: var(--dashboard-text-secondary);
-  margin-top: 1px;
-}
-
-.detectedArrow {
-  flex-shrink: 0;
-  color: var(--dashboard-text-muted);
-}
-
-.emptyAction {
-  padding: 24px;
-  text-align: center;
-  font-size: 13px;
-  color: var(--dashboard-text-muted);
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 10px;
-}
-
-/* ===== Skeleton Loading ===== */
+/* === Skeleton === */
 @keyframes shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: 200px 0;
-  }
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+.skeleton {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
 }
 
 .skeletonContainer {
@@ -510,28 +375,14 @@
   gap: 20px;
 }
 
-.skeletonExpert {
+.skeletonTop {
   display: flex;
   gap: 16px;
 }
 
-.skeletonExpertCard {
-  width: 160px;
-  height: 180px;
-  border-radius: 10px;
-  background: linear-gradient(
-    90deg,
-    var(--skeleton-base) 25%,
-    var(--skeleton-highlight) 50%,
-    var(--skeleton-base) 75%
-  );
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeletonMessages {
+.skeletonTopHalf {
   flex: 1;
-  height: 180px;
+  height: 160px;
   border-radius: 10px;
   background: linear-gradient(
     90deg,
@@ -543,28 +394,14 @@
   animation: shimmer 1.5s infinite;
 }
 
-.skeletonAssetHeader {
-  height: 32px;
-  width: 200px;
-  border-radius: 6px;
-  background: linear-gradient(
-    90deg,
-    var(--skeleton-base) 25%,
-    var(--skeleton-highlight) 50%,
-    var(--skeleton-base) 75%
-  );
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeletonAssetGrid {
+.skeletonGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
-.skeletonAssetCard {
-  height: 72px;
+.skeletonCard {
+  height: 200px;
   border-radius: 10px;
   background: linear-gradient(
     90deg,
@@ -576,65 +413,31 @@
   animation: shimmer 1.5s infinite;
 }
 
-.skeletonActions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.skeletonActionItem {
-  height: 48px;
-  border-radius: 8px;
-  background: linear-gradient(
-    90deg,
-    var(--skeleton-base) 25%,
-    var(--skeleton-highlight) 50%,
-    var(--skeleton-base) 75%
-  );
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-/* ===== Responsive ===== */
-@media (max-width: 600px) {
+/* === Responsive === */
+@media (max-width: 768px) {
   .container {
     padding: 16px;
     gap: 16px;
   }
 
-  .expertSection {
+  .topSection {
     flex-direction: column;
   }
 
-  .expertCard {
-    flex-direction: row;
-    min-width: unset;
-    padding: 14px 16px;
+  .grid {
+    grid-template-columns: 1fr;
   }
 
-  .assetGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .netWorthValue {
-    font-size: 18px;
-  }
-
-  /* Skeleton responsive */
-  .skeletonContainer {
-    padding: 16px;
-  }
-
-  .skeletonExpert {
+  .skeletonTop {
     flex-direction: column;
   }
 
-  .skeletonExpertCard {
-    width: 100%;
-    height: 80px;
+  .skeletonGrid {
+    grid-template-columns: 1fr;
   }
 
-  .skeletonAssetGrid {
-    grid-template-columns: repeat(2, 1fr);
+  .portfolioContent {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

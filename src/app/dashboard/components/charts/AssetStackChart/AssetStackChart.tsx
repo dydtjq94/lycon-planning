@@ -61,6 +61,8 @@ interface AssetStackChartProps {
   spouseLifeExpectancy?: number
   lifecycleMilestones?: { year: number; color: string; label: string; iconId: string }[]
   overlayLines?: { label: string; color: string; data: (number | null)[] }[]
+  compareItems?: { key: string; label: string; color: string; selected: boolean }[]
+  onToggleCompare?: (key: string) => void
 }
 
 
@@ -79,6 +81,8 @@ export function AssetStackChart({
   spouseLifeExpectancy,
   lifecycleMilestones,
   overlayLines,
+  compareItems,
+  onToggleCompare,
 }: AssetStackChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<ChartJS | null>(null)
@@ -1026,7 +1030,7 @@ export function AssetStackChart({
     <div className={styles.container}>
       {/* 범례 + 헤더 액션 */}
       <div className={styles.legendRow}>
-        <div className={styles.legend} style={chartMode === 'bar' ? { flexWrap: 'wrap', gap: '4px 12px' } : undefined}>
+        <div className={styles.legend}>
           {chartMode === 'bar' && stackedBarData ? (
             <>
               {stackedBarData.assetDatasets.map(ds => (
@@ -1043,16 +1047,29 @@ export function AssetStackChart({
               ))}
             </>
           ) : (
-            <div className={styles.legendItem}>
-              <span
-                className={styles.legendGradient}
-                style={{
-                  borderTopColor: chartLineColors.price,
-                  background: `linear-gradient(to bottom, ${toRgba(chartLineColors.price, 0.3)}, ${toRgba(chartLineColors.price, 0)})`,
-                }}
-              />
-              <span className={styles.legendLabel}>순자산</span>
-            </div>
+            <>
+              <div className={styles.legendItem}>
+                <span
+                  className={styles.legendGradient}
+                  style={{
+                    borderTopColor: chartLineColors.price,
+                    background: `linear-gradient(to bottom, ${toRgba(chartLineColors.price, 0.3)}, ${toRgba(chartLineColors.price, 0)})`,
+                  }}
+                />
+                <span className={styles.legendLabel}>순자산</span>
+              </div>
+              {compareItems && compareItems.map(item => (
+                <button
+                  key={item.key}
+                  className={`${styles.compareLegendItem} ${item.selected ? styles.compareLegendActive : ''}`}
+                  onClick={() => onToggleCompare?.(item.key)}
+                  type="button"
+                >
+                  <span className={styles.compareLegendLine} style={{ borderTopColor: item.color }} />
+                  <span className={styles.compareLegendLabel}>{item.label}</span>
+                </button>
+              ))}
+            </>
           )}
         </div>
         <div className={styles.rightActions}>
