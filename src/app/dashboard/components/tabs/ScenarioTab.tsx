@@ -208,53 +208,50 @@ export function ScenarioTab({
     }
   };
 
-  // Main chart area content
+  // Main chart area content (both tabs always mounted, hidden via display:none)
   const renderMainContent = () => {
-    if (activeTopTab === "plan") {
-      return (
-        <NetWorthTab
-          simulationId={simulationId}
-          birthYear={simulationProfile.birthYear}
-          spouseBirthYear={simulationProfile.spouseBirthYear}
-          retirementAge={lifeCycleSettings.selfRetirementAge}
-          isInitializing={isInitializing}
-          timeRange={sharedTimeRange}
-          onTimeRangeChange={setSharedTimeRange}
-          selectedYear={sharedSelectedYear}
-          onSelectedYearChange={setSharedSelectedYear}
-          simulationAssumptions={assumptions}
-          cashFlowPriorities={priorities}
-          selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
-          spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
-          simulationStartYear={simulation.start_year}
-          simulationStartMonth={simulation.start_month}
-        />
-      );
-    }
-
-    if (activeTopTab === "cashflow") {
-      return (
-        <CashFlowOverviewTab
-          simulationId={simulationId}
-          birthYear={simulationProfile.birthYear}
-          spouseBirthYear={simulationProfile.spouseBirthYear}
-          isInitializing={isInitializing}
-          retirementAge={lifeCycleSettings.selfRetirementAge}
-          timeRange={sharedTimeRange}
-          onTimeRangeChange={setSharedTimeRange}
-          selectedYear={sharedSelectedYear}
-          onSelectedYearChange={setSharedSelectedYear}
-          simulationAssumptions={assumptions}
-          cashFlowPriorities={priorities}
-          selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
-          spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
-          simulationStartYear={simulation.start_year}
-          simulationStartMonth={simulation.start_month}
-        />
-      );
-    }
-
-    return null;
+    return (
+      <>
+        <div style={{ display: activeTopTab === "plan" ? "block" : "none" }}>
+          <NetWorthTab
+            simulationId={simulationId}
+            birthYear={simulationProfile.birthYear}
+            spouseBirthYear={simulationProfile.spouseBirthYear}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            isInitializing={isInitializing}
+            timeRange={sharedTimeRange}
+            onTimeRangeChange={setSharedTimeRange}
+            selectedYear={sharedSelectedYear}
+            onSelectedYearChange={setSharedSelectedYear}
+            simulationAssumptions={assumptions}
+            cashFlowPriorities={priorities}
+            selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
+            spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
+            simulationStartYear={simulation.start_year}
+            simulationStartMonth={simulation.start_month}
+          />
+        </div>
+        <div style={{ display: activeTopTab === "cashflow" ? "block" : "none" }}>
+          <CashFlowOverviewTab
+            simulationId={simulationId}
+            birthYear={simulationProfile.birthYear}
+            spouseBirthYear={simulationProfile.spouseBirthYear}
+            isInitializing={isInitializing}
+            retirementAge={lifeCycleSettings.selfRetirementAge}
+            timeRange={sharedTimeRange}
+            onTimeRangeChange={setSharedTimeRange}
+            selectedYear={sharedSelectedYear}
+            onSelectedYearChange={setSharedSelectedYear}
+            simulationAssumptions={assumptions}
+            cashFlowPriorities={priorities}
+            selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
+            spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
+            simulationStartYear={simulation.start_year}
+            simulationStartMonth={simulation.start_month}
+          />
+        </div>
+      </>
+    );
   };
 
   // Category items content

@@ -18,6 +18,8 @@ import {
   formatChartValue,
 } from '@/lib/utils/chartDataTransformer'
 import {
+  ASSET_CATEGORIES,
+  DEBT_CATEGORIES,
   groupAssetItems,
   groupDebtItems,
 } from '@/lib/utils/tooltipCategories'
@@ -92,6 +94,7 @@ export function AssetStackChart({
   }, [])
   const chartModeRef = useRef(chartMode)
   chartModeRef.current = chartMode
+  const prevChartModeRef = useRef(chartMode)
 
   const { snapshots } = simulationResult
 
@@ -121,6 +124,55 @@ export function AssetStackChart({
     const netWorthValues = monthlySnapshots!.map(ms => ms.netWorth)
     return { labels, netWorthValues, snapshots: monthlySnapshots! }
   }, [isMonthlyMode, monthlySnapshots])
+
+  // 막대 모드용 카테고리별 스택 데이터
+  const stackedBarData = useMemo(() => {
+    const dataSource = isMonthlyMode && monthlySnapshots
+      ? monthlySnapshots
+      : chartData.snapshots
+    if (!dataSource || dataSource.length === 0) return null
+
+    const allAssetCategoryIds = new Set<string>()
+    const allDebtCategoryIds = new Set<string>()
+
+    const perSnapshot = dataSource.map(snapshot => {
+      const allAssetItems = [
+        ...(snapshot.assetBreakdown || []),
+        ...(snapshot.pensionBreakdown || [])
+      ]
+      const assetGroups = groupAssetItems(allAssetItems)
+      const debtGroups = groupDebtItems(snapshot.debtBreakdown || [])
+
+      assetGroups.forEach(g => allAssetCategoryIds.add(g.category.id))
+      debtGroups.forEach(g => allDebtCategoryIds.add(g.category.id))
+
+      return { assetGroups, debtGroups }
+    })
+
+    const assetDatasets = ASSET_CATEGORIES
+      .filter(c => allAssetCategoryIds.has(c.id))
+      .map(category => ({
+        label: category.label,
+        color: category.color,
+        data: perSnapshot.map(s => {
+          const group = s.assetGroups.find(g => g.category.id === category.id)
+          return group ? group.total : 0
+        }),
+      }))
+
+    const debtDatasets = DEBT_CATEGORIES
+      .filter(c => allDebtCategoryIds.has(c.id))
+      .map(category => ({
+        label: category.label,
+        color: category.color,
+        data: perSnapshot.map(s => {
+          const group = s.debtGroups.find(g => g.category.id === category.id)
+          return group ? -group.total : 0
+        }),
+      }))
+
+    return { assetDatasets, debtDatasets }
+  }, [chartData.snapshots, isMonthlyMode, monthlySnapshots])
 
   // 커스텀 툴팁 핸들러
   const externalTooltipHandler = useCallback((context: {
@@ -374,17 +426,11 @@ export function AssetStackChart({
     const activeLabels = isMonthlyMode && monthlyChartData ? monthlyChartData.labels : chartData.labels
     const activeNetWorthData = isMonthlyMode && monthlyChartData ? monthlyChartData.netWorthValues : netWorthData
 
-    // Bar mode에서 사용할 색상 배열
-    const bgColors = activeNetWorthData.map(v => v >= 0 ? toRgba(positiveColor, 0.7) : toRgba(negativeColor, 0.7))
-
     const retirementIndex = isMonthlyMode && monthlyChartData
       ? monthlyChartData.snapshots.findIndex(ms => ms.year === retirementYear && ms.month === 1)
       : retirementYear
         ? chartData.labels.findIndex(label => parseInt(label) === retirementYear)
         : -1
-
-    // 0을 가운데로 대칭 y축
-    const maxAbs = Math.max(Math.abs(Math.max(...activeNetWorthData)), Math.abs(Math.min(...activeNetWorthData))) * 1.1
 
     // annotation 설정
     const annotationsConfig: any = {
@@ -498,17 +544,14 @@ export function AssetStackChart({
     const gradientFillPlugin = {
       id: 'gradientFill',
       afterLayout: (chart: ChartJS) => {
+        // bar 모드에서는 완전히 스킵 (datasets[1]이 저축 카테고리이므로 건드리면 안됨)
+        if (chartModeRef.current !== 'line') return
+
         const { ctx, chartArea, scales } = chart
         if (!chartArea || !scales.y) return
 
         const lineDs = chart.data.datasets[1] as any
         if (!lineDs) return
-
-        // Only apply gradient in line mode (ref로 최신 값 참조)
-        if (chartModeRef.current !== 'line') {
-          lineDs.backgroundColor = 'transparent'
-          return
-        }
 
         const chartHeight = chartArea.bottom - chartArea.top
         if (!chartHeight || chartHeight <= 0) return
@@ -534,37 +577,61 @@ export function AssetStackChart({
     }
     prevMonthlyModeRef.current = isMonthlyMode
 
-    // 차트가 이미 있으면 데이터/옵션만 업데이트
+    // bar/line 모드 전환 시 차트 재생성 (데이터셋 구조가 다름)
+    if (chartInstance.current && prevChartModeRef.current !== chartMode) {
+      chartInstance.current.destroy()
+      chartInstance.current = null
+    }
+    prevChartModeRef.current = chartMode
+
+    // Y축 범위 계산 (bar/line 모두 0 중심 대칭)
+    let yMin: number
+    let yMax: number
+    if (chartMode === 'bar' && stackedBarData) {
+      let rawMax = 0
+      let rawMin = 0
+      const numPoints = stackedBarData.assetDatasets[0]?.data.length || stackedBarData.debtDatasets[0]?.data.length || 0
+      for (let i = 0; i < numPoints; i++) {
+        const assetSum = stackedBarData.assetDatasets.reduce((sum, ds) => sum + ds.data[i], 0)
+        const debtSum = stackedBarData.debtDatasets.reduce((sum, ds) => sum + ds.data[i], 0)
+        rawMax = Math.max(rawMax, assetSum)
+        rawMin = Math.min(rawMin, debtSum)
+      }
+      const maxAbs = Math.max(Math.abs(rawMax), Math.abs(rawMin)) * 1.1
+      yMin = -maxAbs
+      yMax = maxAbs
+    } else {
+      const maxAbs = Math.max(Math.abs(Math.max(...activeNetWorthData)), Math.abs(Math.min(...activeNetWorthData))) * 1.1
+      yMin = -maxAbs
+      yMax = maxAbs
+    }
+
+    // 차트가 이미 있으면 데이터/옵션만 업데이트 (같은 모드 내 데이터 변경)
     if (chartInstance.current) {
       const chart = chartInstance.current
       chart.data.labels = activeLabels
 
-      const barDs = chart.data.datasets[0] as any
-      const lineDs = chart.data.datasets[1] as any
-
-      barDs.data = activeNetWorthData
-      if (lineDs) lineDs.data = activeNetWorthData
-
-      if (chartMode === 'bar') {
-        // Bar visible
-        barDs.backgroundColor = bgColors
-        barDs.borderRadius = 2
-        barDs.barPercentage = 0.85
-        barDs.categoryPercentage = 0.85
-        // Line hidden
-        if (lineDs) {
-          lineDs.borderWidth = 0
-          lineDs.fill = false
-          lineDs.backgroundColor = 'transparent'
-        }
+      if (chartMode === 'bar' && stackedBarData) {
+        // 스택 바 모드: 각 카테고리 데이터셋 업데이트
+        const allBarData = [...stackedBarData.assetDatasets, ...stackedBarData.debtDatasets]
+        allBarData.forEach((ds, i) => {
+          const chartDs = chart.data.datasets[i] as any
+          if (chartDs) {
+            chartDs.data = ds.data
+            chartDs.backgroundColor = toRgba(ds.color, 0.8)
+          }
+        })
       } else {
-        // Bar transparent
+        // 라인 모드
+        const barDs = chart.data.datasets[0] as any
+        const lineDs = chart.data.datasets[1] as any
+        barDs.data = activeNetWorthData
         barDs.backgroundColor = 'transparent'
         barDs.borderRadius = 0
         barDs.barPercentage = 1.0
         barDs.categoryPercentage = 1.0
-        // Line visible
         if (lineDs) {
+          lineDs.data = activeNetWorthData
           lineDs.borderWidth = 2.5
           lineDs.borderColor = positiveColor
           lineDs.fill = 'origin'
@@ -583,8 +650,8 @@ export function AssetStackChart({
       // 스케일 업데이트
       if (chart.options.scales?.x?.ticks) chart.options.scales.x.ticks.color = chartScaleColors.tickColor
       if (chart.options.scales?.y) {
-        chart.options.scales.y.min = -maxAbs
-        chart.options.scales.y.max = maxAbs
+        chart.options.scales.y.min = yMin
+        chart.options.scales.y.max = yMax
         if (chart.options.scales.y.ticks) chart.options.scales.y.ticks.color = chartScaleColors.tickColor
         if (chart.options.scales.y.grid) (chart.options.scales.y.grid as any).color = chartScaleColors.gridColor
       }
@@ -605,44 +672,75 @@ export function AssetStackChart({
     const ctx = chartRef.current.getContext('2d')
     if (!ctx) return
 
-    const zeroData = activeNetWorthData.map(() => 0)
+    // 모드별 데이터셋 구성
+    let datasets: any[]
+    if (chartMode === 'bar' && stackedBarData) {
+      datasets = []
+      stackedBarData.assetDatasets.forEach(ds => {
+        datasets.push({
+          label: ds.label,
+          data: ds.data.map(() => 0),
+          backgroundColor: toRgba(ds.color, 0.8),
+          borderWidth: 0,
+          borderRadius: 0,
+          stack: 'stack',
+          barPercentage: 0.85,
+          categoryPercentage: 0.85,
+        })
+      })
+      stackedBarData.debtDatasets.forEach(ds => {
+        datasets.push({
+          label: ds.label,
+          data: ds.data.map(() => 0),
+          backgroundColor: toRgba(ds.color, 0.8),
+          borderWidth: 0,
+          borderRadius: 0,
+          stack: 'stack',
+          barPercentage: 0.85,
+          categoryPercentage: 0.85,
+        })
+      })
+    } else {
+      const zeroData = activeNetWorthData.map(() => 0)
+      datasets = [
+        {
+          label: '순자산-bar',
+          data: zeroData,
+          backgroundColor: 'transparent',
+          borderWidth: 0,
+          borderRadius: 0,
+          barPercentage: 1.0,
+          categoryPercentage: 1.0,
+        },
+        {
+          type: 'line' as const,
+          label: '순자산',
+          data: zeroData,
+          borderColor: positiveColor,
+          borderWidth: 2.5,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0.35,
+          fill: 'origin',
+          backgroundColor: 'transparent',
+          segment: {
+            borderColor: (ctx: any) => {
+              const y0 = ctx.p0.parsed.y
+              const y1 = ctx.p1.parsed.y
+              if (y0 >= 0 && y1 >= 0) return positiveColor
+              if (y0 < 0 && y1 < 0) return negativeColor
+              return positiveColor
+            },
+          },
+        },
+      ]
+    }
 
     chartInstance.current = new ChartJS(ctx, {
       type: 'bar',
       data: {
         labels: activeLabels,
-        datasets: [
-          {
-            label: '순자산-bar',
-            data: zeroData,
-            backgroundColor: chartMode === 'bar' ? bgColors : 'transparent',
-            borderWidth: 0,
-            borderRadius: chartMode === 'bar' ? 2 : 0,
-            barPercentage: chartMode === 'bar' ? 0.85 : 1.0,
-            categoryPercentage: chartMode === 'bar' ? 0.85 : 1.0,
-          },
-          {
-            type: 'line' as const,
-            label: '순자산',
-            data: zeroData,
-            borderColor: positiveColor,
-            borderWidth: chartMode === 'line' ? 2.5 : 0,
-            pointRadius: 0,
-            pointHoverRadius: 0,
-            tension: 0.35,
-            fill: chartMode === 'line' ? 'origin' : false,
-            backgroundColor: 'transparent',
-            segment: {
-              borderColor: (ctx: any) => {
-                const y0 = ctx.p0.parsed.y
-                const y1 = ctx.p1.parsed.y
-                if (y0 >= 0 && y1 >= 0) return positiveColor
-                if (y0 < 0 && y1 < 0) return negativeColor
-                return positiveColor
-              },
-            },
-          },
-        ],
+        datasets,
       },
       options: {
         responsive: true,
@@ -667,6 +765,7 @@ export function AssetStackChart({
         },
         scales: {
           x: {
+            stacked: true,
             grid: { display: false },
             ticks: {
               maxRotation: 0,
@@ -678,8 +777,9 @@ export function AssetStackChart({
             border: { display: false },
           },
           y: {
-            min: -maxAbs,
-            max: maxAbs,
+            stacked: chartMode === 'bar',
+            min: yMin,
+            max: yMax,
             afterFit: (scale: { width: number }) => { scale.width = 60 },
             grid: { color: chartScaleColors.gridColor },
             ticks: {
@@ -713,14 +813,21 @@ export function AssetStackChart({
     requestAnimationFrame(() => {
       const chart = chartInstance.current
       if (!chart) return
-      const barDs = chart.data.datasets[0] as any
-      const lineDs = chart.data.datasets[1] as any
-      barDs.data = activeNetWorthData
-      if (lineDs) lineDs.data = activeNetWorthData
+      if (chartMode === 'bar' && stackedBarData) {
+        const allBarData = [...stackedBarData.assetDatasets, ...stackedBarData.debtDatasets]
+        allBarData.forEach((ds, i) => {
+          ;(chart.data.datasets[i] as any).data = ds.data
+        })
+      } else {
+        const barDs = chart.data.datasets[0] as any
+        const lineDs = chart.data.datasets[1] as any
+        barDs.data = activeNetWorthData
+        if (lineDs) lineDs.data = activeNetWorthData
+      }
       chart.update()
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartData, retirementYear, spouseRetirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, netWorthData, toRgba, chartMode, isMonthlyMode, monthlyChartData])
+  }, [chartData, retirementYear, spouseRetirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, netWorthData, toRgba, chartMode, isMonthlyMode, monthlyChartData, stackedBarData])
 
   // 선택된 연도가 변경될 때 annotation만 업데이트 (차트 재생성 X)
   useEffect(() => {
@@ -765,17 +872,21 @@ export function AssetStackChart({
     <div className={styles.container}>
       {/* 범례 + 헤더 액션 */}
       <div className={styles.legendRow}>
-        <div className={styles.legend}>
-          {chartMode === 'bar' ? (
+        <div className={styles.legend} style={chartMode === 'bar' ? { flexWrap: 'wrap', gap: '4px 12px' } : undefined}>
+          {chartMode === 'bar' && stackedBarData ? (
             <>
-              <div className={styles.legendItem}>
-                <span className={styles.legendColor} style={{ background: chartLineColors.price }} />
-                <span className={styles.legendLabel}>순자산</span>
-              </div>
-              <div className={styles.legendItem}>
-                <span className={styles.legendColor} style={{ background: chartLineColors.expense }} />
-                <span className={styles.legendLabel}>순부채</span>
-              </div>
+              {stackedBarData.assetDatasets.map(ds => (
+                <div key={ds.label} className={styles.legendItem}>
+                  <span className={styles.legendColor} style={{ background: ds.color }} />
+                  <span className={styles.legendLabel}>{ds.label}</span>
+                </div>
+              ))}
+              {stackedBarData.debtDatasets.map(ds => (
+                <div key={ds.label} className={styles.legendItem}>
+                  <span className={styles.legendColor} style={{ background: ds.color }} />
+                  <span className={styles.legendLabel}>{ds.label}</span>
+                </div>
+              ))}
             </>
           ) : (
             <div className={styles.legendItem}>
@@ -789,11 +900,19 @@ export function AssetStackChart({
               <span className={styles.legendLabel}>순자산</span>
             </div>
           )}
-
         </div>
         <div className={styles.rightActions}>
           {/* Chart mode toggle */}
           <div className={styles.chartModeToggle}>
+            <button
+              className={`${styles.modeButton} ${chartMode === 'line' ? styles.modeActive : ''}`}
+              onClick={() => handleChartModeChange('line')}
+              title="라인 차트"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M1 12L4.5 7L8 9L13 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
             <button
               className={`${styles.modeButton} ${chartMode === 'bar' ? styles.modeActive : ''}`}
               onClick={() => handleChartModeChange('bar')}
@@ -803,15 +922,6 @@ export function AssetStackChart({
                 <rect x="1" y="6" width="3" height="7" rx="0.5" fill="currentColor"/>
                 <rect x="5.5" y="3" width="3" height="10" rx="0.5" fill="currentColor"/>
                 <rect x="10" y="1" width="3" height="12" rx="0.5" fill="currentColor"/>
-              </svg>
-            </button>
-            <button
-              className={`${styles.modeButton} ${chartMode === 'line' ? styles.modeActive : ''}`}
-              onClick={() => handleChartModeChange('line')}
-              title="라인 차트"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M1 12L4.5 7L8 9L13 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
           </div>
