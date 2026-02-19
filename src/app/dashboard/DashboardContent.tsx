@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  Search, RefreshCw, ChevronLeft, ChevronRight, Settings, Tags,
+  Search, RefreshCw, ChevronLeft, Settings,
   Landmark, Home, Briefcase, GraduationCap, Plane, Heart,
   TrendingUp, Wallet, PiggyBank, Shield, Target, Umbrella,
   Baby, Car, Gem, Building2, Palmtree, Rocket, Star, Coffee,
@@ -49,9 +49,7 @@ import {
   CurrentAssetTab,
   AssetRecordTab,
   PortfolioTab,
-  BudgetTab,
   CheckingAccountTab,
-  SavingsDepositsTab,
   DashboardTab,
   ScenarioTab,
   SettingsTab,
@@ -69,9 +67,7 @@ const sectionTitles: Record<string, string> = {
   "current-asset": "현재 자산",
   progress: "자산 추이",
   portfolio: "투자 포트폴리오",
-  "household-budget": "가계부",
   "checking-account": "입출금통장",
-  "savings-deposits": "정기 예금/적금",
   // 시뮬레이션
   simulation: "시뮬레이션",
   // 설정
@@ -259,16 +255,12 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   const [portfolioSearchLoading, setPortfolioSearchLoading] = useState(false);
   const portfolioSearchTriggerRef = useRef<(() => void) | null>(null);
 
-  // 가계부 월간 상태
-  const today = new Date();
-  const [budgetYear, setBudgetYear] = useState(today.getFullYear());
-  const [budgetMonth, setBudgetMonth] = useState(today.getMonth() + 1); // 1-12
-
   // 계좌 관리 모달
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "securities">("checking");
+  const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "investment" | "pension_savings" | "irp" | "isa">("checking");
   const [accountBtnRect, setAccountBtnRect] = useState<{top: number, left: number, width: number} | null>(null);
   const accountBtnRef = useRef<HTMLButtonElement>(null);
+  const [accountCount, setAccountCount] = useState(0);
 
   // 카테고리 관리 모달
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -463,6 +455,20 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       portfolioSearchTriggerRef.current?.();
     }, 100);
   }, []);
+
+  // 계좌 수 조회
+  useEffect(() => {
+    const loadAccountCount = async () => {
+      const supabase = createClient();
+      const { count } = await supabase
+        .from("accounts")
+        .select("*", { count: "exact", head: true })
+        .eq("profile_id", profile.id)
+        .eq("is_active", true);
+      setAccountCount(count ?? 0);
+    };
+    loadAccountCount();
+  }, [profile.id, showAccountModal]);
 
   // 시뮬레이션(시나리오) 목록 조회
   const { data: simulations = [] } = useSimulations(profile.id);
@@ -930,8 +936,14 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             unreadMessageCount={unreadMessageCount}
             onNavigate={handleSectionChange}
             profileId={profile.id}
+            profileName={profile.name}
             simulations={simulations}
             lifeCycleSettings={lifeCycleSettings}
+            accountCount={accountCount}
+            onOpenAccountModal={() => {
+              setAccountModalTab("checking");
+              setShowAccountModal(true);
+            }}
           />
         );
       // 담당자 관련
@@ -959,12 +971,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             onSearchTrigger={(fn) => { portfolioSearchTriggerRef.current = fn; }}
           />
         );
-      case "household-budget":
-        return <BudgetTab profileId={profile.id} year={budgetYear} month={budgetMonth} />;
       case "checking-account":
         return <CheckingAccountTab profileId={profile.id} />;
-      case "savings-deposits":
-        return <SavingsDepositsTab profileId={profile.id} />;
       // 설정
       case "settings":
         return (
@@ -1196,71 +1204,15 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
               </span>
             )}
 
-            {/* 가계부 월간 선택기 */}
-            {currentSection === "household-budget" && (
-              <div className={styles.budgetMonthSelector}>
-                <button
-                  onClick={() => {
-                    if (budgetMonth === 1) {
-                      setBudgetYear(budgetYear - 1);
-                      setBudgetMonth(12);
-                    } else {
-                      setBudgetMonth(budgetMonth - 1);
-                    }
-                  }}
-                  className={styles.budgetMonthBtn}
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <span className={styles.budgetMonthLabel}>
-                  {budgetYear}년 {budgetMonth}월
-                </span>
-                <button
-                  onClick={() => {
-                    if (budgetMonth === 12) {
-                      setBudgetYear(budgetYear + 1);
-                      setBudgetMonth(1);
-                    } else {
-                      setBudgetMonth(budgetMonth + 1);
-                    }
-                  }}
-                  className={styles.budgetMonthBtn}
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            )}
-
-            {/* 관리 버튼들 (가계부, 정기예금/적금, 포트폴리오) */}
-            {["household-budget", "savings-deposits", "portfolio"].includes(currentSection) && (
+            {/* 관리 버튼들 (포트폴리오) */}
+            {currentSection === "portfolio" && (
               <div className={styles.headerBtnGroup}>
-                {/* 카테고리 관리 버튼 (가계부만) */}
-                {currentSection === "household-budget" && (
-                  <button
-                    ref={categoryBtnRef}
-                    className={styles.accountManageBtn}
-                    onClick={() => {
-                      if (categoryBtnRef.current) {
-                        const rect = categoryBtnRef.current.getBoundingClientRect();
-                        setCategoryBtnRect({ top: rect.bottom, left: rect.left, width: rect.width });
-                      }
-                      setShowCategoryModal(true);
-                    }}
-                  >
-                    <Tags size={14} />
-                    카테고리 관리
-                  </button>
-                )}
-
                 {/* 계좌 관리 버튼 */}
                 <button
                   ref={accountBtnRef}
                   className={styles.accountManageBtn}
                   onClick={() => {
-                    // 섹션에 따라 적절한 탭 열기
-                    if (currentSection === "household-budget") setAccountModalTab("checking");
-                    else if (currentSection === "savings-deposits") setAccountModalTab("savings");
-                    else if (currentSection === "portfolio") setAccountModalTab("securities");
+                    setAccountModalTab("investment");
 
                     if (accountBtnRef.current) {
                       const rect = accountBtnRef.current.getBoundingClientRect();
@@ -1459,8 +1411,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           </div>
         )}
 
-        <div className={`${styles.content} ${currentSection === "simulation" ? styles.noPadding : ""} ${currentSection === "household-budget" ? `${styles.noPadding} ${styles.noScroll}` : ""} ${currentSection === "messages" ? styles.noPadding : ""}`}>
-          <div key={currentSection} className={`${styles.contentInner} ${currentSection === "simulation" || currentSection === "household-budget" || currentSection === "dashboard" ? styles.fullWidth : ""} ${currentSection === "household-budget" ? styles.fullHeight : ""}`}>{renderContent()}</div>
+        <div className={`${styles.content} ${currentSection === "simulation" ? styles.noPadding : ""} ${currentSection === "messages" ? styles.noPadding : ""}`}>
+          <div key={currentSection} className={`${styles.contentInner} ${currentSection === "simulation" || currentSection === "dashboard" ? styles.fullWidth : ""}`}>{renderContent()}</div>
         </div>
       </main>
 

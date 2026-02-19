@@ -16,7 +16,7 @@ import {
 import "chartjs-adapter-date-fns";
 import { useSnapshots, usePortfolioValue } from "@/hooks/useFinancialData";
 import { useChartTheme } from "@/hooks/useChartTheme";
-import { formatMoney, formatWon, wonToManwon } from "@/lib/utils";
+import { formatMoney, wonToManwon } from "@/lib/utils";
 import {
   loadChatData,
   type Expert,
@@ -26,7 +26,6 @@ import {
   getNextBooking,
   type NextBooking,
 } from "@/lib/services/bookingService";
-import { getBudgetTransactions } from "@/lib/services/budgetService";
 import { getIncomes } from "@/lib/services/incomeService";
 import { getExpenses } from "@/lib/services/expenseService";
 import { getSavings } from "@/lib/services/savingsService";
@@ -44,10 +43,11 @@ import {
   MessageSquare,
   Calendar,
   ArrowRight,
-  Wallet,
   TrendingUp,
   BarChart3,
   Activity,
+  CreditCard,
+  ChevronRight,
 } from "lucide-react";
 import styles from "./DashboardTab.module.css";
 
@@ -70,6 +70,9 @@ interface DashboardTabProps {
   unreadMessageCount: number;
   onNavigate: (section: string) => void;
   profileId?: string;
+  profileName?: string;
+  accountCount?: number;
+  onOpenAccountModal?: () => void;
   simulations?: Simulation[];
   lifeCycleSettings?: LifeCycleSettings;
 }
@@ -79,70 +82,14 @@ interface SimLine {
   data: { x: number; y: number }[];
 }
 
-interface WeeklyData {
-  label: string;
-  income: number;
-  expense: number;
-}
-
-async function loadWeeklyBudget(profileId: string): Promise<WeeklyData[]> {
-  const now = new Date();
-  const weeks: { label: string; start: Date; end: Date }[] = [];
-
-  const getMonday = (d: Date) => {
-    const date = new Date(d);
-    const day = date.getDay();
-    date.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
-    date.setHours(0, 0, 0, 0);
-    return date;
-  };
-
-  const thisMonday = getMonday(now);
-
-  for (let i = 2; i >= 0; i--) {
-    const start = new Date(thisMonday);
-    start.setDate(start.getDate() - i * 7);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    const label = `${start.getMonth() + 1}/${start.getDate()}~${end.getMonth() + 1}/${end.getDate()}`;
-    weeks.push({ label, start, end });
-  }
-
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const prevMonth = month === 1 ? 12 : month - 1;
-  const prevYear = month === 1 ? year - 1 : year;
-
-  try {
-    const [currentTxns, prevTxns] = await Promise.all([
-      getBudgetTransactions(profileId, year, month),
-      getBudgetTransactions(profileId, prevYear, prevMonth),
-    ]);
-    const allTxns = [...currentTxns, ...prevTxns];
-
-    return weeks.map((w) => {
-      const weekTxns = allTxns.filter((t) => {
-        const txDate = new Date(t.year, t.month - 1, t.day || 1);
-        return txDate >= w.start && txDate <= w.end;
-      });
-      const income = weekTxns
-        .filter((t) => t.type === "income")
-        .reduce((sum, t) => sum + t.amount, 0);
-      const expense = weekTxns
-        .filter((t) => t.type === "expense")
-        .reduce((sum, t) => sum + t.amount, 0);
-      return { label: w.label, income, expense };
-    });
-  } catch {
-    return weeks.map((w) => ({ label: w.label, income: 0, expense: 0 }));
-  }
-}
-
 export function DashboardTab({
   simulationId,
   birthYear,
   spouseBirthYear,
   profileId,
+  profileName,
+  accountCount,
+  onOpenAccountModal,
   unreadMessageCount,
   onNavigate,
   simulations,
@@ -151,7 +98,6 @@ export function DashboardTab({
   const [expert, setExpert] = useState<Expert | null>(null);
   const [recentMessages, setRecentMessages] = useState<Message[]>([]);
   const [nextBooking, setNextBooking] = useState<NextBooking | null>(null);
-  const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
   const [simLines, setSimLines] = useState<SimLine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -177,17 +123,15 @@ export function DashboardTab({
     }
     const load = async () => {
       setIsLoading(true);
-      const [chatData, booking, weeklyData] = await Promise.all([
+      const [chatData, booking] = await Promise.all([
         loadChatData().catch(() => null),
         getNextBooking().catch(() => null),
-        loadWeeklyBudget(profileId),
       ]);
       if (chatData) {
         setExpert(chatData.expert);
         setRecentMessages(chatData.messages.slice(-5));
       }
       setNextBooking(booking);
-      setWeeklyData(weeklyData);
       setIsLoading(false);
     };
     load();
@@ -291,12 +235,6 @@ export function DashboardTab({
     return `${month}월 ${day}일 (${dayNames[d.getDay()]})`;
   };
 
-  // Max value for bar width calculation (income or expense)
-  const maxWeekly = Math.max(
-    ...weeklyData.flatMap((w) => [w.income, w.expense]),
-    1
-  );
-
   // Skeleton loading
   if (isLoading || snapshotsLoading) {
     return (
@@ -319,6 +257,22 @@ export function DashboardTab({
 
   return (
     <div className={styles.container}>
+      {/* Greeting */}
+      <div className={styles.greetingRow}>
+        {profileName && (
+          <h1 className={styles.greeting}>
+            안녕하세요, {profileName}님
+          </h1>
+        )}
+        {onOpenAccountModal && (
+          <button className={styles.accountBtn} onClick={onOpenAccountModal}>
+            <CreditCard size={15} />
+            <span>계좌 {accountCount ?? 0}개</span>
+            <ChevronRight size={14} />
+          </button>
+        )}
+      </div>
+
       {/* TOP SECTION: Consultation + Chat */}
       <div className={styles.topSection}>
         {/* Left: Next Consultation */}
@@ -405,69 +359,7 @@ export function DashboardTab({
 
       {/* GRID: 2x2 */}
       <div className={styles.grid}>
-        {/* Card 1: Weekly Budget */}
-        <div
-          className={`${styles.card} ${styles.clickableCard}`}
-          onClick={() => onNavigate("household-budget")}
-        >
-          <div className={styles.cardHeader}>
-            <span className={styles.cardTitle}>주간 가계부</span>
-            <button
-              className={styles.moreBtn}
-              onClick={(e) => {
-                e.stopPropagation();
-                onNavigate("household-budget");
-              }}
-            >
-              상세 <ArrowRight size={12} />
-            </button>
-          </div>
-          {weeklyData.some((w) => w.income > 0 || w.expense > 0) ? (
-            <div className={styles.weeklyBars}>
-              {weeklyData.map((week, i) => {
-                const net = week.income - week.expense;
-                return (
-                  <div key={i} className={styles.weekGroup}>
-                    <span className={styles.weekLabel}>{week.label}</span>
-                    <div className={styles.weekBarsCol}>
-                      <div className={styles.barContainer}>
-                        <div
-                          className={styles.bar}
-                          style={{
-                            width: `${(week.income / maxWeekly) * 100}%`,
-                            backgroundColor: "#ef4444",
-                          }}
-                        />
-                      </div>
-                      <div className={styles.barContainer}>
-                        <div
-                          className={styles.bar}
-                          style={{
-                            width: `${(week.expense / maxWeekly) * 100}%`,
-                            backgroundColor: "#3b82f6",
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <span
-                      className={`${styles.weekAmount} ${net >= 0 ? styles.positive : styles.negative}`}
-                    >
-                      {net >= 0 ? "+" : ""}
-                      {formatWon(net)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className={styles.emptyState}>
-              <Wallet size={24} className={styles.emptyIcon} />
-              <span>이번 달 가계부 데이터가 없습니다</span>
-            </div>
-          )}
-        </div>
-
-        {/* Card 2: Portfolio */}
+        {/* Card 1: Portfolio */}
         <div
           className={`${styles.card} ${styles.clickableCard}`}
           onClick={() => onNavigate("portfolio")}

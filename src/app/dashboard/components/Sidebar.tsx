@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Settings,
   PieChart,
-  Receipt,
   MessageCircle,
   CalendarCheck,
   LayoutDashboard,
@@ -58,8 +57,6 @@ const expertMenu = [
 
 // 재무 관리
 const financeMenu = [
-  { id: "household-budget", label: "가계부", icon: Receipt },
-  { id: "savings-deposits", label: "정기 예금/적금", icon: PiggyBank },
   { id: "portfolio", label: "투자 포트폴리오", icon: LineChart },
   { id: "current-asset", label: "현재 자산", icon: PieChart },
 ];
@@ -72,13 +69,11 @@ const analysisMenu = [
 // 단축키용 탭 매핑 (위에서부터 순서대로)
 const shortcutTabs: { key: string; id: string; display: string }[] = [
   { key: "1", id: "dashboard", display: "1" },
-  { key: "2", id: "household-budget", display: "2" },
-  { key: "3", id: "savings-deposits", display: "3" },
-  { key: "4", id: "portfolio", display: "4" },
-  { key: "5", id: "current-asset", display: "5" },
-  { key: "6", id: "progress", display: "6" },
-  { key: "7", id: "messages", display: "7" },
-  { key: "8", id: "consultation", display: "8" },
+  { key: "2", id: "portfolio", display: "2" },
+  { key: "3", id: "current-asset", display: "3" },
+  { key: "4", id: "progress", display: "4" },
+  { key: "5", id: "messages", display: "5" },
+  { key: "6", id: "consultation", display: "6" },
 ];
 
 export function Sidebar({

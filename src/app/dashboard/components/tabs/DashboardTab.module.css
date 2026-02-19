@@ -9,6 +9,40 @@
   gap: 20px;
 }
 
+/* Greeting */
+.greetingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.greeting {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.accountBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 10px;
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.accountBtn:hover {
+  color: var(--dashboard-text);
+}
+
 /* Top section: consultation + chat side by side */
 .topSection {
   display: flex;

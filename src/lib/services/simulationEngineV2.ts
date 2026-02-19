@@ -1940,11 +1940,11 @@ export function runSimulationV2(
         const endAge = pension.endAge ?? 999;
 
         if (ownerAge >= pension.startAge && ownerAge <= endAge) {
-          // 물가 상승률 적용
-          const yearsReceiving = ownerAge - pension.startAge;
+          // 물가 상승률 적용: 현재 시점(입력 기준)에서 수령 연도까지 복리
+          const yearsFromNow = year - currentYear;
           const adjustedAmount =
             pension.expectedMonthlyAmount *
-            Math.pow(1 + inflationPct / 100, yearsReceiving);
+            Math.pow(1 + inflationPct / 100, Math.max(0, yearsFromNow));
           state.currentCash += adjustedAmount;
           yearlyIncome += adjustedAmount;
           monthIncome += adjustedAmount;

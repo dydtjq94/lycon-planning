@@ -142,7 +142,7 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [accountOwnerFilter, setAccountOwnerFilter] = useState<"all" | "self" | "spouse">("all");
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "securities">("checking");
+  const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "investment" | "pension_savings" | "irp" | "isa">("checking");
 
   const loadAccounts = useCallback(async () => {
     const supabase = createClient();
@@ -660,7 +660,10 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
       : accounts.filter(a => a.owner === accountOwnerFilter);
     const checkingAccounts = filtered.filter(a => a.account_type === "checking");
     const savingsAccounts = filtered.filter(a => ["savings", "deposit", "free_savings", "housing"].includes(a.account_type || ""));
-    const securitiesAccounts = filtered.filter(a => ["general", "isa", "pension_savings", "irp", "dc"].includes(a.account_type || ""));
+    const investmentAccounts = filtered.filter(a => a.account_type === "general");
+    const pensionSavingsAccounts = filtered.filter(a => a.account_type === "pension_savings");
+    const irpAccounts = filtered.filter(a => ["irp", "dc"].includes(a.account_type || ""));
+    const isaAccounts = filtered.filter(a => a.account_type === "isa");
 
     const TYPE_LABELS: Record<string, string> = {
       checking: "입출금", savings: "정기적금", deposit: "정기예금",
@@ -672,7 +675,7 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
       debit_card: "체크카드", credit_card: "신용카드", pay: "페이",
     };
 
-    const renderAccountGroup = (title: string, list: Account[], tab: "checking" | "savings" | "securities", desc?: string) => (
+    const renderAccountGroup = (title: string, list: Account[], tab: "checking" | "savings" | "investment" | "pension_savings" | "irp" | "isa", desc?: string) => (
       <section className={styles.section} key={tab}>
         <div className={styles.accountSectionHeader}>
           <h3 className={styles.sectionTitle}>{title}</h3>
@@ -758,7 +761,10 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
       <div className={styles.contentBody}>
         {renderAccountGroup("입출금 계좌", checkingAccounts, "checking", "카드와 페이는 가계부 작성을 위해 등록하면 편합니다")}
         {renderAccountGroup("정기 예금/적금", savingsAccounts, "savings")}
-        {renderAccountGroup("증권 계좌", securitiesAccounts, "securities")}
+        {renderAccountGroup("투자 계좌", investmentAccounts, "investment")}
+        {renderAccountGroup("연금저축", pensionSavingsAccounts, "pension_savings")}
+        {renderAccountGroup("IRP", irpAccounts, "irp")}
+        {renderAccountGroup("ISA", isaAccounts, "isa")}
       </div>
     );
   };
