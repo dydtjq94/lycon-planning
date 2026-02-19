@@ -264,6 +264,8 @@ export interface PersonalPension {
   broker_name: string | null
   current_balance: number  // 원 (서비스에서 만원으로 변환)
   monthly_contribution: number | null
+  contribution_start_year: number | null
+  contribution_start_month: number | null
   contribution_end_year: number | null
   contribution_end_month: number | null
   is_contribution_fixed_to_retirement: boolean
@@ -288,6 +290,8 @@ export interface PersonalPensionInput {
   broker_name?: string | null
   current_balance: number
   monthly_contribution?: number | null
+  contribution_start_year?: number | null
+  contribution_start_month?: number | null
   contribution_end_year?: number | null
   contribution_end_month?: number | null
   is_contribution_fixed_to_retirement?: boolean

@@ -84,6 +84,8 @@ interface PensionItemState {
   balance: number;
   totalPrincipal: number;
   monthlyContribution: number | null;
+  contributionStartYear: number | null;
+  contributionStartMonth: number | null;
   contributionEndYear: number | null;
   contributionEndMonth: number | null;
   isContributionFixedToRetirement: boolean;
@@ -444,6 +446,8 @@ function initializeState(
       balance: 0,
       totalPrincipal: 0,
       monthlyContribution: null,
+      contributionStartYear: null,
+      contributionStartMonth: null,
       contributionEndYear: null,
       contributionEndMonth: null,
       isContributionFixedToRetirement: false,
@@ -495,6 +499,8 @@ function initializeState(
       balance: initialBalance,
       totalPrincipal: initialBalance,
       monthlyContribution: null,
+      contributionStartYear: null,
+      contributionStartMonth: null,
       contributionEndYear: null,
       contributionEndMonth: null,
       isContributionFixedToRetirement: false,
@@ -529,6 +535,8 @@ function initializeState(
       balance: p.current_balance,
       totalPrincipal: p.current_balance,
       monthlyContribution: p.monthly_contribution,
+      contributionStartYear: p.contribution_start_year ?? null,
+      contributionStartMonth: p.contribution_start_month ?? null,
       contributionEndYear: p.contribution_end_year,
       contributionEndMonth: p.contribution_end_month,
       isContributionFixedToRetirement: p.is_contribution_fixed_to_retirement,
@@ -1070,8 +1078,8 @@ export function runSimulationV2(
         const inContribPeriod = isInPeriod(
           year,
           month,
-          null,
-          null,
+          pension.contributionStartYear,
+          pension.contributionStartMonth,
           contribEndYear,
           contribEndMonth,
         );
@@ -1304,6 +1312,12 @@ export function runSimulationV2(
       for (const re of state.realEstates) {
         if (re.isSold || !re.hasLoan || re.loanBalance <= 0) continue;
         if (!re.isPurchased) continue;
+        // Check if property hasn't been purchased yet (by date)
+        if (re.purchaseYear) {
+          const purchaseYM = re.purchaseYear * 12 + (re.purchaseMonth || 1);
+          const currentYM = year * 12 + month;
+          if (currentYM < purchaseYM) continue;
+        }
         if (!re.loanStartYear || !re.loanMaturityYear) continue;
         if (
           !isInPeriod(
@@ -1442,6 +1456,12 @@ export function runSimulationV2(
       for (const asset of state.physicalAssets) {
         if (asset.isSold || !asset.hasLoan || asset.loanBalance <= 0) continue;
         if (!asset.isPurchased) continue;
+        // Check if asset hasn't been purchased yet (by date)
+        if (asset.purchaseYear) {
+          const purchaseYM = asset.purchaseYear * 12 + (asset.purchaseMonth || 1);
+          const currentYM = year * 12 + month;
+          if (currentYM < purchaseYM) continue;
+        }
         if (!asset.loanStartYear || !asset.loanMaturityYear) continue;
         if (
           !isInPeriod(
@@ -1568,6 +1588,12 @@ export function runSimulationV2(
       for (const re of state.realEstates) {
         if (re.isSold) continue;
         if (!re.isPurchased) continue;
+        // Check if property hasn't been purchased yet (by date)
+        if (re.purchaseYear) {
+          const purchaseYM = re.purchaseYear * 12 + (re.purchaseMonth || 1);
+          const currentYM = year * 12 + month;
+          if (currentYM < purchaseYM) continue;
+        }
 
         // 월세 (월세 거주만)
         if (re.housingType === "월세" && re.monthlyRent && re.monthlyRent > 0) {
@@ -1620,6 +1646,12 @@ export function runSimulationV2(
       for (const re of state.realEstates) {
         if (re.isSold) continue;
         if (!re.isPurchased) continue;
+        // Check if property hasn't been purchased yet (by date)
+        if (re.purchaseYear) {
+          const purchaseYM = re.purchaseYear * 12 + (re.purchaseMonth || 1);
+          const currentYM = year * 12 + month;
+          if (currentYM < purchaseYM) continue;
+        }
         if (!re.hasRentalIncome || !re.rentalMonthly || re.rentalMonthly <= 0)
           continue;
         if (
@@ -2081,6 +2113,7 @@ export function runSimulationV2(
       // 저축 이자/수익률
       for (const saving of state.savings) {
         if (saving.isMatured || !saving.isActive) continue;
+        if (saving.isVirtual) continue; // 유동 현금은 성장률 0%
         let annualRate: number;
         if (isSavingsType(saving.type)) {
           annualRate = saving.interestRate ?? savingsReturnPct;
@@ -2112,6 +2145,12 @@ export function runSimulationV2(
       for (const re of state.realEstates) {
         if (re.isSold) continue;
         if (!re.isPurchased) continue;
+        // Check if property hasn't been purchased yet (by date)
+        if (re.purchaseYear) {
+          const purchaseYM = re.purchaseYear * 12 + (re.purchaseMonth || 1);
+          const currentYM = year * 12 + month;
+          if (currentYM < purchaseYM) continue;
+        }
         const reRate = re.rateCategory === 'fixed'
           ? (re.growthRate ?? 0)
           : (assumptionRateByCategory[re.rateCategory] ?? re.growthRate ?? 0);
@@ -2124,6 +2163,12 @@ export function runSimulationV2(
       for (const asset of state.physicalAssets) {
         if (asset.isSold) continue;
         if (!asset.isPurchased) continue;
+        // Check if asset hasn't been purchased yet (by date)
+        if (asset.purchaseYear) {
+          const purchaseYM = asset.purchaseYear * 12 + (asset.purchaseMonth || 1);
+          const currentYM = year * 12 + month;
+          if (currentYM < purchaseYM) continue;
+        }
         if (asset.annualRate !== 0) {
           const monthlyRate = Math.pow(1 + asset.annualRate / 100, 1 / 12) - 1;
           asset.currentValue *= 1 + monthlyRate;

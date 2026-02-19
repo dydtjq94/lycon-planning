@@ -147,22 +147,16 @@ export function hideTooltip(el: HTMLDivElement): void {
 }
 
 export function formatMoneyWithUnit(amount: number): string {
-  const absAmount = Math.abs(amount)
-  const manPart = Math.floor(absAmount)
-  const wonPart = Math.round((absAmount - manPart) * 10000)
+  const manPart = Math.round(Math.abs(amount))
 
   if (manPart >= 10000) {
     const uk = Math.floor(manPart / 10000)
     const man = manPart % 10000
-    if (man === 0 && wonPart === 0) return `${uk}억원`
-    if (wonPart === 0) return `${uk}억 ${man.toLocaleString()}만원`
-    if (man === 0) return `${uk}억 ${wonPart.toLocaleString()}원`
-    return `${uk}억 ${man.toLocaleString()}만 ${wonPart.toLocaleString()}원`
+    if (man === 0) return `${uk}억원`
+    return `${uk}억 ${man.toLocaleString()}만원`
   }
 
-  if (wonPart === 0) return `${manPart.toLocaleString()}만원`
-  if (manPart === 0) return `${wonPart.toLocaleString()}원`
-  return `${manPart.toLocaleString()}만 ${wonPart.toLocaleString()}원`
+  return `${manPart.toLocaleString()}만원`
 }
 
 export function getAgeText(

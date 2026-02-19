@@ -35,34 +35,21 @@ export function calculateAge(birthDate: Date | string | number, referenceDate: D
   return age;
 }
 
-// 금액 포맷팅 (만원 단위 입력, 억+만+원 단위로 상세 표시)
-// 예: 4729.205 → "4,729만 2,050원", 223 → "223만원", 53000 → "5억 3,000만원"
+// 금액 포맷팅 (만원 단위 입력, 억+만원 단위로 표시)
+// 예: 4729.205 → "4,729만원", 223 → "223만원", 53000 → "5억 3,000만원"
 export function formatMoney(amount: number): string {
   const isNegative = amount < 0
-  const absAmount = Math.abs(amount)
   const prefix = isNegative ? "-" : ""
-
-  let manPart = Math.floor(absAmount)
-  let wonPart = Math.round((absAmount - manPart) * 10000)
-
-  // wonPart 반올림으로 10000이 되면 만원 단위로 올림
-  if (wonPart >= 10000) {
-    manPart += 1
-    wonPart = 0
-  }
+  const manPart = Math.round(Math.abs(amount))
 
   if (manPart >= 10000) {
     const uk = Math.floor(manPart / 10000)
     const man = manPart % 10000
-    if (man === 0 && wonPart === 0) return `${prefix}${uk.toLocaleString()}억원`
-    if (wonPart === 0) return `${prefix}${uk.toLocaleString()}억 ${man.toLocaleString()}만원`
-    if (man === 0) return `${prefix}${uk.toLocaleString()}억 ${wonPart.toLocaleString()}원`
-    return `${prefix}${uk.toLocaleString()}억 ${man.toLocaleString()}만 ${wonPart.toLocaleString()}원`
+    if (man === 0) return `${prefix}${uk.toLocaleString()}억원`
+    return `${prefix}${uk.toLocaleString()}억 ${man.toLocaleString()}만원`
   }
 
-  if (wonPart === 0) return `${prefix}${manPart.toLocaleString()}만원`
-  if (manPart === 0) return `${prefix}${wonPart.toLocaleString()}원`
-  return `${prefix}${manPart.toLocaleString()}만 ${wonPart.toLocaleString()}원`
+  return `${prefix}${manPart.toLocaleString()}만원`
 }
 
 // 금액 포맷팅 (원 단위 입력, 억+만+원 단위로 표시)
