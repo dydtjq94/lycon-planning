@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChevronLeft, Image as ImageIcon, X } from "lucide-react";
+import { Image as ImageIcon, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   getConversations,
@@ -22,13 +22,11 @@ interface MessagesTabProps {
 }
 
 export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesTabProps) {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showConversationList, setShowConversationList] = useState(true);
   const [pendingImages, setPendingImages] = useState<{ file: File; preview: string }[]>([]);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [scrollReady, setScrollReady] = useState(false);
@@ -52,7 +50,7 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
     }
   }, []);
 
-  // 대화 목록 로드
+  // 대화 목록 로드 및 자동 선택
   const loadConversations = useCallback(async () => {
     try {
       let convos = await getConversations();
@@ -63,14 +61,12 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
         convos = await getConversations();
       }
 
-      setConversations(convos);
-
       // 안 읽은 메시지 수 계산
       const totalUnread = convos.reduce((sum, c) => sum + (c.unread_count || 0), 0);
       onUnreadCountChange?.(totalUnread);
 
-      // 첫 번째 대화 선택
-      if (convos.length > 0 && !selectedConversation) {
+      // 첫 번째 대화 자동 선택
+      if (convos.length > 0) {
         setSelectedConversation(convos[0]);
       }
     } catch (error) {
@@ -78,7 +74,7 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
     } finally {
       setIsLoading(false);
     }
-  }, [onUnreadCountChange, selectedConversation]);
+  }, [onUnreadCountChange]);
 
   // 메시지 로드
   const loadMessages = useCallback(async (conversationId: string) => {
@@ -86,15 +82,8 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
       const msgs = await getMessages(conversationId);
       setMessages(msgs);
 
-      // 먼저 로컬 상태 즉시 업데이트 (사용자가 빠르게 이탈해도 반영됨)
-      setConversations((prev) => {
-        const updated = prev.map((c) =>
-          c.id === conversationId ? { ...c, unread_count: 0 } : c
-        );
-        const totalUnread = updated.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-        onUnreadCountChange?.(totalUnread);
-        return updated;
-      });
+      // 읽음 카운트 초기화
+      onUnreadCountChange?.(0);
 
       // DB 동기화는 백그라운드에서 진행
       markMessagesAsRead(conversationId).catch(console.error);
@@ -112,10 +101,9 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
   useEffect(() => {
     if (selectedConversation) {
       loadMessages(selectedConversation.id);
-      setShowConversationList(false);
       setScrollReady(false);
     }
-  }, [selectedConversation?.id]);
+  }, [selectedConversation?.id, loadMessages]);
 
   // 메시지 로드 후 스크롤
   useEffect(() => {
@@ -395,28 +383,9 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
   if (isLoading) {
     return (
       <div className={styles.container}>
-        {/* 스켈레톤 대화 목록 */}
-        <div className={styles.conversationList}>
-          <div className={styles.listHeader}>
-            <h2>메시지</h2>
-          </div>
-          <div className={styles.listContent}>
-            {[1, 2].map((i) => (
-              <div key={i} className={styles.skeletonItem}>
-                <div className={styles.skeletonAvatar} />
-                <div className={styles.skeletonInfo}>
-                  <div className={styles.skeletonName} />
-                  <div className={styles.skeletonTitle} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 스켈레톤 채팅 영역 */}
         <div className={styles.chatArea}>
           <div className={styles.chatHeader}>
-            <div className={styles.skeletonAvatarSmall} />
+            <div className={styles.skeletonAvatar} />
             <div className={styles.skeletonInfo}>
               <div className={styles.skeletonName} />
               <div className={styles.skeletonTitle} />
@@ -425,11 +394,11 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
           <div className={styles.messagesArea}>
             <div className={styles.messagesList}>
               <div className={styles.skeletonMessage}>
-                <div className={styles.skeletonAvatarTiny} />
+                <div className={styles.skeletonAvatar} />
                 <div className={styles.skeletonBubble} />
               </div>
               <div className={styles.skeletonMessage}>
-                <div className={styles.skeletonAvatarTiny} />
+                <div className={styles.skeletonAvatar} />
                 <div className={styles.skeletonBubbleLong} />
               </div>
             </div>
@@ -441,71 +410,19 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
 
   return (
     <div className={styles.container}>
-      {/* 대화 목록 */}
-      <div className={`${styles.conversationList} ${showConversationList ? styles.show : ""}`}>
-        <div className={styles.listHeader}>
-          <h2>메시지</h2>
-        </div>
-        <div className={styles.listContent}>
-          {conversations.map((conversation) => (
-            <button
-              key={conversation.id}
-              className={`${styles.conversationItem} ${
-                selectedConversation?.id === conversation.id ? styles.selected : ""
-              }`}
-              onClick={() => setSelectedConversation(conversation)}
-            >
-              <div className={styles.conversationAvatar}>
-                {conversation.expert?.name?.[0] || "?"}
-                {conversation.is_primary && (
-                  <span className={styles.primaryBadge} />
-                )}
-              </div>
-              <div className={styles.conversationInfo}>
-                <div className={styles.conversationHeader}>
-                  <span className={styles.conversationName}>
-                    {conversation.expert?.name}
-                  </span>
-                  <span className={styles.conversationTime}>
-                    {formatListDate(conversation.last_message_at)}
-                  </span>
-                </div>
-                <div className={styles.conversationPreview}>
-                  <span className={styles.conversationTitle}>
-                    {conversation.expert?.title}
-                  </span>
-                  {conversation.unread_count > 0 && (
-                    <span className={styles.unreadBadge}>
-                      {conversation.unread_count}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 메시지 영역 */}
       <div className={styles.chatArea}>
         {selectedConversation ? (
           <>
             {/* 채팅 헤더 */}
             <div className={styles.chatHeader}>
-              <button
-                className={styles.backButton}
-                onClick={() => setShowConversationList(true)}
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <div className={styles.chatHeaderAvatar}>
+              <div className={styles.expertAvatar}>
                 {selectedConversation.expert?.name?.[0] || "?"}
               </div>
-              <div className={styles.chatHeaderInfo}>
-                <span className={styles.chatHeaderName}>
+              <div className={styles.expertInfo}>
+                <span className={styles.expertName}>
                   {selectedConversation.expert?.name}
                 </span>
-                <span className={styles.chatHeaderTitle}>
+                <span className={styles.expertTitle}>
                   {selectedConversation.expert?.title}
                 </span>
               </div>
@@ -539,7 +456,7 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
                           } ${!firstInGroup ? styles.continuedRow : ""}`}
                         >
                           {message.sender_type === "expert" && (
-                            <div className={styles.expertInfo}>
+                            <div className={styles.messageAvatarWrapper}>
                               {firstInGroup ? (
                                 <div className={styles.messageAvatar}>
                                   {selectedConversation.expert?.name?.[0] || "?"}
@@ -550,11 +467,6 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
                             </div>
                           )}
                           <div className={styles.messageContentWrapper}>
-                            {message.sender_type === "expert" && firstInGroup && (
-                              <span className={styles.senderName}>
-                                {selectedConversation.expert?.name}
-                              </span>
-                            )}
                             {/* 이미지 */}
                             {message.attachments && message.attachments.length > 0 && (
                               <div className={`${styles.imageWithTime} ${
@@ -645,7 +557,17 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
                     ))}
                   </div>
                 )}
-                <div className={styles.inputRow}>
+                <textarea
+                  ref={inputRef}
+                  className={styles.input}
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onCompositionEnd={handleCompositionEnd}
+                  placeholder="메시지 입력 (Shift+Enter로 줄바꿈)"
+                  disabled={sending}
+                />
+                <div className={styles.sendButtonRow}>
                   <button
                     type="button"
                     className={styles.attachButton}
@@ -660,17 +582,6 @@ export function MessagesTab({ onUnreadCountChange, isVisible = true }: MessagesT
                     multiple
                     className={styles.hiddenInput}
                     onChange={handleImageSelect}
-                  />
-                  <textarea
-                    ref={inputRef}
-                    className={styles.input}
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onCompositionEnd={handleCompositionEnd}
-                    placeholder="메시지 입력"
-                    disabled={sending}
-                    rows={1}
                   />
                   <button
                     className={`${styles.sendButton} ${

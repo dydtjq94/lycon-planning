@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -20,6 +20,7 @@ import {
   getAgeText,
 } from '@/lib/utils/chartTooltip'
 import { useChartTheme } from '@/hooks/useChartTheme'
+import { getLifecycleIcon, getLifecycleIconSvg } from '@/lib/constants/lifecycle'
 import styles from './CashFlowChart.module.css'
 
 ChartJS.register(
@@ -44,6 +45,7 @@ interface CashFlowChartProps {
   hideLegend?: boolean
   selfLifeExpectancy?: number
   spouseLifeExpectancy?: number
+  lifecycleMilestones?: { year: number; color: string; label: string; iconId: string }[]
 }
 
 // Y축 포맷팅
@@ -69,6 +71,7 @@ export function CashFlowChart({
   hideLegend,
   selfLifeExpectancy,
   spouseLifeExpectancy,
+  lifecycleMilestones,
 }: CashFlowChartProps) {
   const { chartLineColors, chartScaleColors, categoryColors, isDark, toRgba } = useChartTheme()
   const chartRef = useRef<HTMLCanvasElement>(null)
@@ -81,8 +84,49 @@ export function CashFlowChart({
   const isMonthlyMode = !!monthlySnapshots && monthlySnapshots.length > 0
   const prevMonthlyModeRef = useRef(isMonthlyMode)
 
+  // 생애주기 아이콘 오버레이 위치
+  const [milestonePos, setMilestonePos] = useState<{ x: number; y: number; color: string; iconId: string }[]>([])
+  const computePosRef = useRef<() => void>(() => {})
+
   const { snapshots } = simulationResult
   const currentYear = new Date().getFullYear()
+
+  // 생애주기 아이콘 위치 계산 함수
+  computePosRef.current = () => {
+    const chart = chartInstance.current
+    if (!chart || !lifecycleMilestones?.length || !chart.scales?.x || !chart.chartArea) {
+      setMilestonePos(prev => prev.length === 0 ? prev : [])
+      return
+    }
+    const labels = chart.data.labels as (number | string)[]
+    const chartTop = chart.chartArea.top
+    const iconSize = 22
+    const iconGap = 2
+
+    const xCountMap = new Map<number, number>()
+    const pos = lifecycleMilestones.map(milestone => {
+      const idx = isMonthlyMode && monthlySnapshots
+        ? monthlySnapshots.findIndex(ms => ms.year === milestone.year && ms.month === 1)
+        : labels.findIndex(y => Number(y) === milestone.year)
+      if (idx < 0) return null
+      const x = chart.scales.x.getPixelForValue(idx)
+      const stackIdx = xCountMap.get(idx) || 0
+      xCountMap.set(idx, stackIdx + 1)
+      return {
+        x,
+        y: chartTop + 4 + stackIdx * (iconSize + iconGap),
+        color: milestone.color,
+        iconId: milestone.iconId,
+      }
+    }).filter(Boolean) as { x: number; y: number; color: string; iconId: string }[]
+    setMilestonePos(prev => {
+      if (prev.length !== pos.length) return pos
+      const same = prev.every((p, i) =>
+        Math.abs(p.x - pos[i].x) < 0.5 && Math.abs(p.y - pos[i].y) < 0.5 && p.color === pos[i].color && p.iconId === pos[i].iconId
+      )
+      return same ? prev : pos
+    })
+  }
 
   // 순현금흐름 바 색상
   const positiveColor = chartLineColors.price
@@ -154,6 +198,19 @@ export function CashFlowChart({
         </div>
       ` : ''
 
+      // 생애주기 마일스톤 (해당 년도)
+      const msMatches = lifecycleMilestones?.filter(m => m.year === ms.year) || []
+      const msMilestoneHtml = msMatches.length > 0 ? `
+        <div style="margin-top: 10px; border-top: 1px solid ${borderColor}; padding-top: 10px;">
+          ${msMatches.map(m => `
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: ${m.color}20; flex-shrink: 0;">${getLifecycleIconSvg(m.iconId, m.color, 11)}</span>
+              <span style="font-size: 12px; color: ${m.color}; font-weight: 600;">${m.label}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''
+
       tooltipEl.innerHTML = `
         <div style="font-size: 18px; font-weight: 700; color: ${textColor}; margin-bottom: 2px;">${ms.year}년 ${ms.month}월</div>
         <div style="font-size: 12px; color: ${textSecondary}; margin-bottom: 12px;">${ageText}</div>
@@ -165,6 +222,7 @@ export function CashFlowChart({
         </div>
         ${incomeItemsHtml}
         ${expenseItemsHtml}
+        ${msMilestoneHtml}
       `
 
       positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
@@ -286,6 +344,19 @@ export function CashFlowChart({
       ` : ''
     }
 
+    // 생애주기 마일스톤 (해당 년도)
+    const yearMatches = lifecycleMilestones?.filter(m => m.year === snapshot.year) || []
+    const milestoneHtml = yearMatches.length > 0 ? `
+      <div style="margin-top: 10px; border-top: 1px solid ${borderColor}; padding-top: 10px;">
+        ${yearMatches.map(m => `
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: ${m.color}20; flex-shrink: 0;">${getLifecycleIconSvg(m.iconId, m.color, 11)}</span>
+            <span style="font-size: 12px; color: ${m.color}; font-weight: 600;">${m.label}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''
+
     tooltipEl.innerHTML = `
       <div style="font-size: 18px; font-weight: 700; color: ${textColor}; margin-bottom: 2px;">${snapshot.year}년</div>
       <div style="font-size: 12px; color: ${textSecondary}; margin-bottom: 12px;">${ageText}</div>
@@ -297,10 +368,11 @@ export function CashFlowChart({
       </div>
       ${incomeItemsHtml}
       ${expenseItemsHtml}
+      ${milestoneHtml}
     `
 
     positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
-  }, [snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlySnapshots, selfLifeExpectancy, spouseLifeExpectancy])
+  }, [snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlySnapshots, selfLifeExpectancy, spouseLifeExpectancy, lifecycleMilestones])
 
   // 마우스 추적 + 호버 라인 + 언마운트 정리
   useEffect(() => {
@@ -380,10 +452,6 @@ export function CashFlowChart({
       ? monthlySnapshots.map(ms => ms.netCashFlow)
       : snapshots.map(s => s.netCashFlow)
 
-    const retirementIndex = isMonthlyMode && monthlySnapshots
-      ? monthlySnapshots.findIndex(ms => ms.year === retirementYear && ms.month === 1)
-      : labels.findIndex(y => y === retirementYear)
-
     // 바 색상 (양수/음수)
     const bgColors = netCashFlowData.map(v => v >= 0 ? toRgba(positiveColor, 0.7) : toRgba(negativeColor, 0.7))
 
@@ -401,53 +469,25 @@ export function CashFlowChart({
         borderWidth: 1.5,
       },
     }
-    if (retirementIndex >= 0) {
-      annotationsConfig.retirementLine = {
-        type: 'line',
-        xMin: retirementIndex,
-        xMax: retirementIndex,
-        borderColor: 'rgba(148, 163, 184, 0.8)',
-        borderWidth: 2,
-        borderDash: [6, 4],
-        label: {
-          display: true,
-          content: '은퇴',
-          position: 'start' as const,
-          backgroundColor: 'rgba(100, 116, 139, 0.9)',
-          color: '#fff',
-          font: { size: 11, weight: 'bold' as const },
-          padding: { x: 6, y: 4 },
-          borderRadius: 4,
-        },
-      }
-    }
 
-    // 배우자 은퇴선
-    const spouseRetirementIndex = spouseRetirementYear
-      ? (isMonthlyMode && monthlySnapshots
-        ? monthlySnapshots.findIndex(ms => ms.year === spouseRetirementYear && ms.month === 1)
-        : labels.findIndex(y => y === spouseRetirementYear))
-      : -1
+    // 생애주기 마일스톤 (은퇴, 기대수명 등)
+    if (lifecycleMilestones) {
+      lifecycleMilestones.forEach((milestone, idx) => {
+        const milestoneIndex = isMonthlyMode && monthlySnapshots
+          ? monthlySnapshots.findIndex(ms => ms.year === milestone.year && ms.month === 1)
+          : labels.findIndex(y => Number(y) === milestone.year)
 
-    if (spouseRetirementIndex >= 0 && spouseRetirementIndex !== retirementIndex) {
-      annotationsConfig.spouseRetirementLine = {
-        type: 'line',
-        xMin: spouseRetirementIndex,
-        xMax: spouseRetirementIndex,
-        borderColor: 'rgba(148, 163, 184, 0.6)',
-        borderWidth: 1.5,
-        borderDash: [4, 4],
-        label: {
-          display: true,
-          content: '배우자 은퇴',
-          position: 'start' as const,
-          backgroundColor: 'rgba(148, 163, 184, 0.8)',
-          color: '#fff',
-          font: { size: 10, weight: 'bold' as const },
-          padding: { x: 5, y: 3 },
-          borderRadius: 4,
-        },
-      }
+        if (milestoneIndex >= 0) {
+          annotationsConfig[`milestone_${idx}`] = {
+            type: 'line',
+            xMin: milestoneIndex,
+            xMax: milestoneIndex,
+            borderColor: `${milestone.color}25`,
+            borderWidth: 1,
+            borderDash: [3, 3],
+          }
+        }
+      })
     }
 
     // 선택된 연도 라인
@@ -501,6 +541,7 @@ export function CashFlowChart({
       }
 
       chart.update('none')
+      computePosRef.current()
       return
     }
 
@@ -525,6 +566,9 @@ export function CashFlowChart({
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
+        transitions: { resize: { animation: { duration: 0 } } },
+        onResize: () => { requestAnimationFrame(() => computePosRef.current()) },
         interaction: {
           mode: 'index',
           intersect: false,
@@ -586,15 +630,19 @@ export function CashFlowChart({
       },
     })
 
-    // 0→실제 데이터 전환 애니메이션
+    // 생애주기 아이콘 위치 계산
+    computePosRef.current()
+
+    // 0→실제 데이터 전환 애니메이션 (초기 생성 시에만)
     requestAnimationFrame(() => {
       const chart = chartInstance.current
       if (!chart) return
+      ;(chart.options as any).animation = { duration: 800, easing: 'easeOutQuart' }
       ;(chart.data.datasets[0] as any).data = netCashFlowData
       chart.update()
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [snapshots, retirementYear, spouseRetirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, isDark, toRgba, isMonthlyMode, monthlySnapshots])
+  }, [snapshots, lifecycleMilestones, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, isDark, toRgba, isMonthlyMode, monthlySnapshots])
 
   // 선택된 연도가 변경될 때 annotation만 업데이트
   useEffect(() => {
@@ -661,6 +709,28 @@ export function CashFlowChart({
       )}
       <div className={styles.chartWrapper}>
         <canvas ref={chartRef} />
+        {milestonePos.map((pos, i) => {
+          const Icon = getLifecycleIcon(pos.iconId)
+          return (
+            <div key={i} style={{
+              position: 'absolute',
+              left: pos.x,
+              top: pos.y,
+              transform: 'translateX(-50%)',
+              pointerEvents: 'none',
+              zIndex: 10,
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              background: `${pos.color}${isDark ? '30' : '20'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Icon size={13} color={pos.color} strokeWidth={2.5} />
+            </div>
+          )
+        })}
       </div>
       <p className={styles.hint}>
         차트를 클릭하면 해당 연도의 상세 정보를 볼 수 있습니다

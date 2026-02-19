@@ -672,7 +672,22 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   }, [setFamilyMembers]);
 
   // 공유 시뮬레이션 결과 (V2 엔진 사용, 선택된 시뮬레이션 기준)
+  // v2Data 로딩 중에는 빈 결과를 반환하여 중간 상태 렌더링 방지
   const simulationResult: SimulationResult = useMemo(() => {
+    if (isLoadingV2) {
+      return {
+        startYear: new Date().getFullYear(),
+        endYear: new Date().getFullYear(),
+        retirementYear: new Date().getFullYear(),
+        snapshots: [],
+        monthlySnapshots: [],
+        summary: {
+          currentNetWorth: 0, retirementNetWorth: 0,
+          peakNetWorth: 0, peakNetWorthYear: 0,
+          yearsToFI: null, fiTarget: 0, bankruptcyYear: null,
+        },
+      } as SimulationResult;
+    }
     const simulationEndYear = calculateEndYear(
       simulationProfile.birthYear,
       simulationProfile.spouseBirthYear,
@@ -695,7 +710,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       activeSim.start_year,
       activeSim.start_month,
     );
-  }, [v2Data, simulationProfile, lifeCycleSettings, simulationAssumptions, cashFlowPriorities, activeSim.start_year, activeSim.start_month]);
+  }, [v2Data, isLoadingV2, simulationProfile, lifeCycleSettings, simulationAssumptions, cashFlowPriorities, activeSim.start_year, activeSim.start_month]);
 
   // 레거시 CRUD 스텁 함수 (실제 업데이트는 개별 서비스 사용)
   const addItem = useCallback(
@@ -955,7 +970,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             simulationResult={simulationResult}
             isMarried={isMarried}
             spouseMember={spouseMember}
-            isInitializing={initializingSimulationId === selectedSimulationId}
+            isInitializing={initializingSimulationId === selectedSimulationId || isLoadingV2}
             isSyncingPrices={syncingPricesSimulationId === selectedSimulationId}
             simulationAssumptions={simulationAssumptions}
             cashFlowPriorities={cashFlowPriorities}

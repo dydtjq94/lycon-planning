@@ -32,6 +32,7 @@ import {
   getAgeText,
 } from '@/lib/utils/chartTooltip'
 import { useChartTheme } from '@/hooks/useChartTheme'
+import { getLifecycleIcon, getLifecycleIconSvg } from '@/lib/constants/lifecycle'
 import styles from './AssetStackChart.module.css'
 
 ChartJS.register(
@@ -58,6 +59,7 @@ interface AssetStackChartProps {
   monthlySnapshots?: MonthlySnapshot[]
   selfLifeExpectancy?: number
   spouseLifeExpectancy?: number
+  lifecycleMilestones?: { year: number; color: string; label: string; iconId: string }[]
 }
 
 
@@ -74,6 +76,7 @@ export function AssetStackChart({
   monthlySnapshots,
   selfLifeExpectancy,
   spouseLifeExpectancy,
+  lifecycleMilestones,
 }: AssetStackChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<ChartJS | null>(null)
@@ -95,6 +98,10 @@ export function AssetStackChart({
   const chartModeRef = useRef(chartMode)
   chartModeRef.current = chartMode
   const prevChartModeRef = useRef(chartMode)
+
+  // 생애주기 아이콘 오버레이 위치
+  const [milestonePos, setMilestonePos] = useState<{ x: number; y: number; color: string; iconId: string }[]>([])
+  const computePosRef = useRef<() => void>(() => {})
 
   const { snapshots } = simulationResult
 
@@ -124,6 +131,56 @@ export function AssetStackChart({
     const netWorthValues = monthlySnapshots!.map(ms => ms.netWorth)
     return { labels, netWorthValues, snapshots: monthlySnapshots! }
   }, [isMonthlyMode, monthlySnapshots])
+
+  // 생애주기 아이콘 위치 계산 함수 (ref로 최신 클로저 유지)
+  computePosRef.current = () => {
+    const chart = chartInstance.current
+    if (!chart || !chart.scales?.x || !chart.chartArea) {
+      setMilestonePos(prev => prev.length === 0 ? prev : [])
+      return
+    }
+    const labels = chart.data.labels as string[]
+    const chartTop = chart.chartArea.top
+    const iconSize = 22
+    const iconGap = 2
+
+    // 같은 x 위치에 여러 아이콘이 겹치면 아래로 쌓기
+    const xCountMap = new Map<number, number>()
+    const pos: { x: number; y: number; color: string; iconId: string }[] = []
+
+    // 생애주기 마일스톤
+    if (lifecycleMilestones?.length) {
+      lifecycleMilestones.forEach(milestone => {
+        const idx = isMonthlyMode && monthlyChartData
+          ? monthlyChartData.snapshots.findIndex(ms => ms.year === milestone.year && ms.month === 1)
+          : labels.findIndex(l => parseInt(String(l)) === milestone.year)
+        if (idx < 0) return
+        const x = chart.scales.x.getPixelForValue(idx)
+        const stackIdx = xCountMap.get(idx) || 0
+        xCountMap.set(idx, stackIdx + 1)
+        pos.push({ x, y: chartTop + 4 + stackIdx * (iconSize + iconGap), color: milestone.color, iconId: milestone.iconId })
+      })
+    }
+
+    // 금융자산 소진 (마이너스 통장 시작)
+    const overdraftIdx = isMonthlyMode && monthlyChartData
+      ? monthlyChartData.snapshots.findIndex(ms => ms.debtBreakdown?.some(d => d.title === '마이너스 통장'))
+      : chartData.snapshots.findIndex(s => s.debtBreakdown?.some(d => d.title === '마이너스 통장'))
+    if (overdraftIdx >= 0) {
+      const x = chart.scales.x.getPixelForValue(overdraftIdx)
+      const stackIdx = xCountMap.get(overdraftIdx) || 0
+      xCountMap.set(overdraftIdx, stackIdx + 1)
+      pos.push({ x, y: chartTop + 4 + stackIdx * (iconSize + iconGap), color: '#ef4444', iconId: 'circle-alert' })
+    }
+
+    setMilestonePos(prev => {
+      if (prev.length !== pos.length) return pos
+      const same = prev.every((p, i) =>
+        Math.abs(p.x - pos[i].x) < 0.5 && Math.abs(p.y - pos[i].y) < 0.5 && p.color === pos[i].color && p.iconId === pos[i].iconId
+      )
+      return same ? prev : pos
+    })
+  }
 
   // 막대 모드용 카테고리별 스택 데이터
   const stackedBarData = useMemo(() => {
@@ -255,6 +312,24 @@ export function AssetStackChart({
         </div>
       ` : ''
 
+      // 생애주기 마일스톤 + 금융자산 소진 (해당 년도)
+      const msMatches = lifecycleMilestones?.filter(m => m.year === ms.year) || []
+      const isOverdraftStart = ms.debtBreakdown?.some(d => d.title === '마이너스 통장') && (dataIndex === 0 || !monthlyChartData!.snapshots[dataIndex - 1]?.debtBreakdown?.some(d => d.title === '마이너스 통장'))
+      const allMarkers = [
+        ...msMatches.map(m => ({ iconId: m.iconId, color: m.color, label: m.label })),
+        ...(isOverdraftStart ? [{ iconId: 'circle-alert', color: '#ef4444', label: '금융자산 소진' }] : []),
+      ]
+      const msMilestoneHtml = allMarkers.length > 0 ? `
+        <div style="margin-top: 10px; border-top: 1px solid ${borderColor}; padding-top: 10px;">
+          ${allMarkers.map(m => `
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: ${m.color}20; flex-shrink: 0;">${getLifecycleIconSvg(m.iconId, m.color, 11)}</span>
+              <span style="font-size: 12px; color: ${m.color}; font-weight: 600;">${m.label}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''
+
       tooltipEl.innerHTML = `
         <div style="font-size: 18px; font-weight: 700; color: ${textColor}; margin-bottom: 2px;">${ms.year}년 ${ms.month}월</div>
         <div style="font-size: 12px; color: ${textSecondary}; margin-bottom: 12px;">${ageText}</div>
@@ -266,6 +341,7 @@ export function AssetStackChart({
         </div>
         ${assetSectionHtml}
         ${debtSectionHtml}
+        ${msMilestoneHtml}
       `
 
       positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
@@ -336,6 +412,24 @@ export function AssetStackChart({
       </div>
     ` : ''
 
+    // 생애주기 마일스톤 + 금융자산 소진 (해당 년도)
+    const yearMatches = lifecycleMilestones?.filter(m => m.year === snapshot.year) || []
+    const isOverdraftYear = snapshot.debtBreakdown?.some(d => d.title === '마이너스 통장') && (dataIndex === 0 || !chartData.snapshots[dataIndex - 1]?.debtBreakdown?.some(d => d.title === '마이너스 통장'))
+    const allYearMarkers = [
+      ...yearMatches.map(m => ({ iconId: m.iconId, color: m.color, label: m.label })),
+      ...(isOverdraftYear ? [{ iconId: 'circle-alert', color: '#ef4444', label: '금융자산 소진' }] : []),
+    ]
+    const milestoneHtml = allYearMarkers.length > 0 ? `
+      <div style="margin-top: 10px; border-top: 1px solid ${borderColor}; padding-top: 10px;">
+        ${allYearMarkers.map(m => `
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: ${m.color}20; flex-shrink: 0;">${getLifecycleIconSvg(m.iconId, m.color, 11)}</span>
+            <span style="font-size: 12px; color: ${m.color}; font-weight: 600;">${m.label}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''
+
     tooltipEl.innerHTML = `
       <div style="font-size: 18px; font-weight: 700; color: ${textColor}; margin-bottom: 2px;">${snapshot.year}년</div>
       <div style="font-size: 12px; color: ${textSecondary}; margin-bottom: 12px;">${ageText}</div>
@@ -347,10 +441,11 @@ export function AssetStackChart({
       </div>
       ${assetSectionHtml}
       ${debtSectionHtml}
+      ${milestoneHtml}
     `
 
     positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
-  }, [chartData.snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlyChartData, selfLifeExpectancy, spouseLifeExpectancy])
+  }, [chartData.snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlyChartData, selfLifeExpectancy, spouseLifeExpectancy, lifecycleMilestones])
 
   // 마우스 추적 + 호버 라인 + 언마운트 정리
   useEffect(() => {
@@ -426,12 +521,6 @@ export function AssetStackChart({
     const activeLabels = isMonthlyMode && monthlyChartData ? monthlyChartData.labels : chartData.labels
     const activeNetWorthData = isMonthlyMode && monthlyChartData ? monthlyChartData.netWorthValues : netWorthData
 
-    const retirementIndex = isMonthlyMode && monthlyChartData
-      ? monthlyChartData.snapshots.findIndex(ms => ms.year === retirementYear && ms.month === 1)
-      : retirementYear
-        ? chartData.labels.findIndex(label => parseInt(label) === retirementYear)
-        : -1
-
     // annotation 설정
     const annotationsConfig: any = {
       zeroLine: {
@@ -442,53 +531,25 @@ export function AssetStackChart({
         borderWidth: 1.5,
       },
     }
-    if (retirementIndex >= 0) {
-      annotationsConfig.retirementLine = {
-        type: 'line',
-        xMin: retirementIndex,
-        xMax: retirementIndex,
-        borderColor: 'rgba(148, 163, 184, 0.8)',
-        borderWidth: 2,
-        borderDash: [6, 4],
-        label: {
-          display: true,
-          content: '은퇴',
-          position: 'start' as const,
-          backgroundColor: 'rgba(100, 116, 139, 0.9)',
-          color: '#fff',
-          font: { size: 11, weight: 'bold' as const },
-          padding: { x: 6, y: 4 },
-          borderRadius: 4,
-        },
-      }
-    }
 
-    // 배우자 은퇴선
-    const spouseRetirementIndex = spouseRetirementYear
-      ? (isMonthlyMode && monthlyChartData
-        ? monthlyChartData.snapshots.findIndex(ms => ms.year === spouseRetirementYear && ms.month === 1)
-        : activeLabels.findIndex(label => parseInt(label) === spouseRetirementYear))
-      : -1
+    // 생애주기 마일스톤 (은퇴, 기대수명 등)
+    if (lifecycleMilestones) {
+      lifecycleMilestones.forEach((milestone, idx) => {
+        const milestoneIndex = isMonthlyMode && monthlyChartData
+          ? monthlyChartData.snapshots.findIndex(ms => ms.year === milestone.year && ms.month === 1)
+          : activeLabels.findIndex(label => parseInt(label) === milestone.year)
 
-    if (spouseRetirementIndex >= 0 && spouseRetirementIndex !== retirementIndex) {
-      annotationsConfig.spouseRetirementLine = {
-        type: 'line',
-        xMin: spouseRetirementIndex,
-        xMax: spouseRetirementIndex,
-        borderColor: 'rgba(148, 163, 184, 0.6)',
-        borderWidth: 1.5,
-        borderDash: [4, 4],
-        label: {
-          display: true,
-          content: '배우자 은퇴',
-          position: 'start' as const,
-          backgroundColor: 'rgba(148, 163, 184, 0.8)',
-          color: '#fff',
-          font: { size: 10, weight: 'bold' as const },
-          padding: { x: 5, y: 3 },
-          borderRadius: 4,
-        },
-      }
+        if (milestoneIndex >= 0) {
+          annotationsConfig[`milestone_${idx}`] = {
+            type: 'line',
+            xMin: milestoneIndex,
+            xMax: milestoneIndex,
+            borderColor: `${milestone.color}25`,
+            borderWidth: 1,
+            borderDash: [3, 3],
+          }
+        }
+      })
     }
 
     // 금융자산 소진 (마이너스 통장 시작) 라인
@@ -503,19 +564,9 @@ export function AssetStackChart({
         type: 'line',
         xMin: overdraftStartIndex,
         xMax: overdraftStartIndex,
-        borderColor: 'rgba(239, 68, 68, 0.6)',
-        borderWidth: 1.5,
-        borderDash: [4, 4],
-        label: {
-          display: true,
-          content: '금융자산 소진',
-          position: 'end' as const,
-          backgroundColor: 'rgba(239, 68, 68, 0.8)',
-          color: '#fff',
-          font: { size: 10, weight: 'bold' as const },
-          padding: { x: 5, y: 3 },
-          borderRadius: 4,
-        },
+        borderColor: 'rgba(239, 68, 68, 0.25)',
+        borderWidth: 1,
+        borderDash: [3, 3],
       }
     }
 
@@ -612,8 +663,8 @@ export function AssetStackChart({
       chart.data.labels = activeLabels
 
       if (chartMode === 'bar' && stackedBarData) {
-        // 스택 바 모드: 각 카테고리 데이터셋 업데이트
-        const allBarData = [...stackedBarData.assetDatasets, ...stackedBarData.debtDatasets]
+        // 스택 바 모드: 자산은 역순 (위→아래가 툴팁/사이드바 순서와 일치하도록)
+        const allBarData = [...[...stackedBarData.assetDatasets].reverse(), ...stackedBarData.debtDatasets]
         allBarData.forEach((ds, i) => {
           const chartDs = chart.data.datasets[i] as any
           if (chartDs) {
@@ -665,6 +716,7 @@ export function AssetStackChart({
       }
 
       chart.update('none')
+      computePosRef.current()
       return
     }
 
@@ -672,11 +724,12 @@ export function AssetStackChart({
     const ctx = chartRef.current.getContext('2d')
     if (!ctx) return
 
-    // 모드별 데이터셋 구성
+    // 모드별 데이터셋 구성 (0으로 초기화 → 애니메이션으로 실제 데이터 전환)
     let datasets: any[]
     if (chartMode === 'bar' && stackedBarData) {
       datasets = []
-      stackedBarData.assetDatasets.forEach(ds => {
+      // 자산은 역순으로 쌓기 (위→아래가 툴팁/사이드바 순서와 일치)
+      ;[...stackedBarData.assetDatasets].reverse().forEach(ds => {
         datasets.push({
           label: ds.label,
           data: ds.data.map(() => 0),
@@ -745,6 +798,9 @@ export function AssetStackChart({
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
+        transitions: { resize: { animation: { duration: 0 } } },
+        onResize: () => { requestAnimationFrame(() => computePosRef.current()) },
         interaction: {
           mode: 'index',
           intersect: false,
@@ -809,12 +865,17 @@ export function AssetStackChart({
       plugins: [gradientFillPlugin],
     })
 
-    // 0→실제 데이터 전환 애니메이션
+    // 생애주기 아이콘 위치 계산
+    computePosRef.current()
+
+    // 0→실제 데이터 전환 애니메이션 (초기 생성 시에만)
     requestAnimationFrame(() => {
       const chart = chartInstance.current
       if (!chart) return
+      // 일시적으로 애니메이션 활성화
+      ;(chart.options as any).animation = { duration: 800, easing: 'easeOutQuart' }
       if (chartMode === 'bar' && stackedBarData) {
-        const allBarData = [...stackedBarData.assetDatasets, ...stackedBarData.debtDatasets]
+        const allBarData = [...[...stackedBarData.assetDatasets].reverse(), ...stackedBarData.debtDatasets]
         allBarData.forEach((ds, i) => {
           ;(chart.data.datasets[i] as any).data = ds.data
         })
@@ -827,7 +888,7 @@ export function AssetStackChart({
       chart.update()
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartData, retirementYear, spouseRetirementYear, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, netWorthData, toRgba, chartMode, isMonthlyMode, monthlyChartData, stackedBarData])
+  }, [chartData, lifecycleMilestones, externalTooltipHandler, chartScaleColors, chartLineColors, categoryColors, netWorthData, toRgba, chartMode, isMonthlyMode, monthlyChartData, stackedBarData])
 
   // 선택된 연도가 변경될 때 annotation만 업데이트 (차트 재생성 X)
   useEffect(() => {
@@ -932,6 +993,28 @@ export function AssetStackChart({
       {/* 차트 */}
       <div className={styles.chartWrapper}>
         <canvas ref={chartRef} />
+        {milestonePos.map((pos, i) => {
+          const Icon = getLifecycleIcon(pos.iconId)
+          return (
+            <div key={i} style={{
+              position: 'absolute',
+              left: pos.x,
+              top: pos.y,
+              transform: 'translateX(-50%)',
+              pointerEvents: 'none',
+              zIndex: 10,
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              background: `${pos.color}${isDark ? '30' : '20'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Icon size={13} color={pos.color} strokeWidth={2.5} />
+            </div>
+          )
+        })}
       </div>
 
       {/* 클릭 안내 */}

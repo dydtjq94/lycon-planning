@@ -96,6 +96,17 @@ export const simulationService = {
     }
 
     const now = new Date()
+
+    // sort_order가 지정되지 않으면 맨 뒤에 배치
+    let sortOrder = input.sort_order
+    if (sortOrder === undefined || sortOrder === null) {
+      const { count } = await supabase
+        .from('simulations')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_id', profileId)
+      sortOrder = count ?? 0
+    }
+
     const { data, error } = await supabase
       .from('simulations')
       .insert({
@@ -103,7 +114,7 @@ export const simulationService = {
         title: input.title,
         description: input.description,
         is_default: input.is_default ?? false,
-        sort_order: input.sort_order ?? 0,
+        sort_order: sortOrder,
         start_year: input.start_year ?? now.getFullYear(),
         start_month: input.start_month ?? (now.getMonth() + 1),
       })

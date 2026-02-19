@@ -31,6 +31,7 @@ interface CashFlowOverviewTabProps {
   spouseLifeExpectancy?: number
   simulationStartYear?: number | null
   simulationStartMonth?: number | null
+  lifecycleMilestones?: { year: number; color: string; label: string; iconId: string }[]
 }
 
 // 기간 선택 옵션
@@ -66,6 +67,7 @@ export function CashFlowOverviewTab({
   spouseLifeExpectancy = 100,
   simulationStartYear,
   simulationStartMonth,
+  lifecycleMilestones,
 }: CashFlowOverviewTabProps) {
   const currentYear = simulationStartYear || new Date().getFullYear()
   const { isDark, chartLineColors } = useChartTheme()
@@ -318,6 +320,7 @@ export function CashFlowOverviewTab({
                 hideLegend
                 selfLifeExpectancy={selfLifeExpectancy}
                 spouseLifeExpectancy={spouseLifeExpectancy}
+                lifecycleMilestones={lifecycleMilestones}
               />
             ) : (
               <div className={styles.sankeyBody}>

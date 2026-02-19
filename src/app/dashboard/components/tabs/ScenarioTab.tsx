@@ -11,7 +11,7 @@ import {
   LineChart,
   Landmark,
 } from "lucide-react";
-import type { Simulation, SimulationAssumptions, CashFlowPriorities, SimFamilyMember } from "@/types";
+import type { Simulation, SimulationAssumptions, CashFlowPriorities, SimFamilyMember, LifeCycleSettings } from "@/types";
 import { normalizePriorities } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationTypes";
 import type { SimulationProfile } from "@/lib/services/dbToFinancialItems";
@@ -102,6 +102,49 @@ export function ScenarioTab({
       spouseLifeExpectancy: saved?.spouseLifeExpectancy ?? saved?.selfLifeExpectancy ?? 100,
     };
   }, [simulation.life_cycle_settings, profile.target_retirement_age, spouseMember?.retirement_age]);
+
+  // 차트에 표시할 생애주기 마일스톤 (은퇴, 기대수명, 배우자 포함)
+  const lifecycleMilestones = useMemo(() => {
+    const saved = simulation.life_cycle_settings as LifeCycleSettings | null;
+    const milestones: { year: number; color: string; label: string; iconId: string }[] = [];
+
+    const selfBY = simulationProfile.birthYear;
+
+    // 본인 은퇴
+    milestones.push({
+      year: selfBY + lifeCycleSettings.selfRetirementAge,
+      color: saved?.retirementColor ?? '#6366f1',
+      label: '은퇴',
+      iconId: saved?.retirementIcon ?? 'sparkles',
+    });
+
+    // 본인 기대수명
+    milestones.push({
+      year: selfBY + lifeCycleSettings.selfLifeExpectancy,
+      color: saved?.lifeExpectancyColor ?? '#3b82f6',
+      label: '기대수명',
+      iconId: saved?.lifeExpectancyIcon ?? 'hourglass',
+    });
+
+    // 배우자
+    const spouseBY = simulationProfile.spouseBirthYear;
+    if (spouseBY) {
+      milestones.push({
+        year: spouseBY + lifeCycleSettings.spouseRetirementAge,
+        color: saved?.spouseRetirementColor ?? '#ec4899',
+        label: '배우자 은퇴',
+        iconId: saved?.spouseRetirementIcon ?? 'sparkles',
+      });
+      milestones.push({
+        year: spouseBY + lifeCycleSettings.spouseLifeExpectancy,
+        color: saved?.spouseLifeExpectancyColor ?? '#f43f5e',
+        label: '배우자 기대수명',
+        iconId: saved?.spouseLifeExpectancyIcon ?? 'hourglass',
+      });
+    }
+
+    return milestones;
+  }, [simulation.life_cycle_settings, simulationProfile, lifeCycleSettings]);
 
   const [activeTopTab, setActiveTopTab] = useState<"plan" | "cashflow">("plan");
   const [activeCategoryTab, setActiveCategoryTab] = useState<string | null>(null);
@@ -208,49 +251,49 @@ export function ScenarioTab({
     }
   };
 
-  // Main chart area content (both tabs always mounted, hidden via display:none)
+  // Main chart area content (탭 전환 시 재마운트하여 차트 애니메이션 재생)
   const renderMainContent = () => {
+    if (activeTopTab === "plan") {
+      return (
+        <NetWorthTab
+          simulationId={simulationId}
+          birthYear={simulationProfile.birthYear}
+          spouseBirthYear={simulationProfile.spouseBirthYear}
+          retirementAge={lifeCycleSettings.selfRetirementAge}
+          isInitializing={isInitializing}
+          timeRange={sharedTimeRange}
+          onTimeRangeChange={setSharedTimeRange}
+          selectedYear={sharedSelectedYear}
+          onSelectedYearChange={setSharedSelectedYear}
+          simulationAssumptions={assumptions}
+          cashFlowPriorities={priorities}
+          selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
+          spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
+          simulationStartYear={simulation.start_year}
+          simulationStartMonth={simulation.start_month}
+          lifecycleMilestones={lifecycleMilestones}
+        />
+      );
+    }
     return (
-      <>
-        <div style={{ display: activeTopTab === "plan" ? "block" : "none" }}>
-          <NetWorthTab
-            simulationId={simulationId}
-            birthYear={simulationProfile.birthYear}
-            spouseBirthYear={simulationProfile.spouseBirthYear}
-            retirementAge={lifeCycleSettings.selfRetirementAge}
-            isInitializing={isInitializing}
-            timeRange={sharedTimeRange}
-            onTimeRangeChange={setSharedTimeRange}
-            selectedYear={sharedSelectedYear}
-            onSelectedYearChange={setSharedSelectedYear}
-            simulationAssumptions={assumptions}
-            cashFlowPriorities={priorities}
-            selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
-            spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
-            simulationStartYear={simulation.start_year}
-            simulationStartMonth={simulation.start_month}
-          />
-        </div>
-        <div style={{ display: activeTopTab === "cashflow" ? "block" : "none" }}>
-          <CashFlowOverviewTab
-            simulationId={simulationId}
-            birthYear={simulationProfile.birthYear}
-            spouseBirthYear={simulationProfile.spouseBirthYear}
-            isInitializing={isInitializing}
-            retirementAge={lifeCycleSettings.selfRetirementAge}
-            timeRange={sharedTimeRange}
-            onTimeRangeChange={setSharedTimeRange}
-            selectedYear={sharedSelectedYear}
-            onSelectedYearChange={setSharedSelectedYear}
-            simulationAssumptions={assumptions}
-            cashFlowPriorities={priorities}
-            selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
-            spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
-            simulationStartYear={simulation.start_year}
-            simulationStartMonth={simulation.start_month}
-          />
-        </div>
-      </>
+      <CashFlowOverviewTab
+        simulationId={simulationId}
+        birthYear={simulationProfile.birthYear}
+        spouseBirthYear={simulationProfile.spouseBirthYear}
+        isInitializing={isInitializing}
+        retirementAge={lifeCycleSettings.selfRetirementAge}
+        timeRange={sharedTimeRange}
+        onTimeRangeChange={setSharedTimeRange}
+        selectedYear={sharedSelectedYear}
+        onSelectedYearChange={setSharedSelectedYear}
+        simulationAssumptions={assumptions}
+        cashFlowPriorities={priorities}
+        selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
+        spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
+        simulationStartYear={simulation.start_year}
+        simulationStartMonth={simulation.start_month}
+        lifecycleMilestones={lifecycleMilestones}
+      />
     );
   };
 

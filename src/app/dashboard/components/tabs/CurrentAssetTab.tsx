@@ -32,7 +32,7 @@ interface CurrentAssetTabProps {
   onNavigate?: (section: string) => void;
 }
 
-type TabType = "savings" | "investment" | "realEstate" | "realAsset" | "debt" | "profile";
+type TabType = "savings" | "investment" | "realEstate" | "realAsset" | "debt";
 
 const TABS: { id: TabType; label: string; color: string }[] = [
   { id: "savings", label: "저축", color: "#3b82f6" },
@@ -40,7 +40,6 @@ const TABS: { id: TabType; label: string; color: string }[] = [
   { id: "realEstate", label: "부동산", color: "#8b5cf6" },
   { id: "realAsset", label: "실물 자산", color: "#f59e0b" },
   { id: "debt", label: "금융 부채", color: "#94a3b8" },
-  { id: "profile", label: "프로필", color: "#6b7280" },
 ];
 
 // 거주 형태
@@ -158,7 +157,6 @@ const ITEM_TYPES: Record<TabType, { value: string; label: string }[]> = {
     { value: "card", label: "카드대출" },
     { value: "other", label: "기타" },
   ],
-  profile: [],
 };
 
 // 모달용 아이템 설정 (아이콘 포함)
@@ -2345,7 +2343,6 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
 
   // 현재 탭의 항목들
   const currentItems = useMemo(() => {
-    if (activeTab === "profile") return [];
     const typeValues = ITEM_TYPES[activeTab].map(t => t.value);
     // realEstate는 기존 real_estate도 포함
     const additionalTypes = activeTab === "realEstate" ? ["real_estate"] : [];
@@ -2749,7 +2746,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
   // 항목 추가 (DB에 바로 저장)
   const handleAddItem = async () => {
     if (!currentSnapshot) return;
-    if (activeTab === "profile" || activeTab === "savings" || activeTab === "investment") return;
+    if (activeTab === "savings" || activeTab === "investment") return;
     if (createMutation.isPending) return; // 중복 클릭 방지
 
     const category = activeTab === "debt" ? "debt" : "asset";
@@ -3372,7 +3369,6 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       case "realEstate": return totals.realEstate;
       case "realAsset": return totals.realAsset;
       case "debt": return totals.debt;
-      case "profile": return 0;
     }
   };
 
@@ -3580,11 +3576,7 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
               className={`${styles.tabButton} ${isActive ? styles.active : ""}`}
               onClick={() => setActiveTab(tab.id)}
             >
-              {tab.id === "profile" ? (
-                <User className={styles.tabIcon} size={24} />
-              ) : (
-                <span className={styles.tabAmount}>{formatMoney(amount)}</span>
-              )}
+              <span className={styles.tabAmount}>{formatMoney(amount)}</span>
               <span className={styles.tabLabel}>{tab.label}</span>
             </button>
           );
@@ -3833,316 +3825,6 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
                 )}
               </div>
             )}
-          </div>
-        ) : activeTab === "profile" ? (
-          /* 프로필 탭 */
-          <div className={styles.simpleSection}>
-            <div className={styles.simpleSectionHeader}>
-              <span className={styles.simpleSectionTitle}>프로필</span>
-            </div>
-            <div className={styles.profileContent}>
-              {isProfileLoading ? (
-                <div className={styles.profileLoading}>
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className={styles.profileSkeletonItem}>
-                      <div className={styles.profileSkeletonIcon} />
-                      <div className={styles.profileSkeletonText}>
-                        <div className={`${styles.profileSkeletonLine} ${styles.short}`} />
-                        <div className={`${styles.profileSkeletonLine} ${styles.long}`} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  {/* 계획 단위 (개인/가계) */}
-                  <button className={styles.profileInfoItem} onClick={() => setShowPlanningModeModal(true)}>
-                    <div className={styles.profileInfoIcon}>
-                      {isCouple ? <Users size={20} /> : <User size={20} />}
-                    </div>
-                    <div className={styles.profileInfoContent}>
-                      <span className={styles.profileInfoLabel}>
-                        {isCouple ? "가계 단위" : "개인 단위"}
-                      </span>
-                      <span className={styles.profileInfoValue}>
-                        {isCouple ? "배우자와 함께 계획합니다" : "혼자서 계획합니다"}
-                      </span>
-                    </div>
-                    <ChevronRight size={18} className={styles.profileInfoChevron} />
-                  </button>
-
-                  {/* 계획 단위 변경 모달 */}
-                  {showPlanningModeModal && (
-                    <div className={styles.planningModeModal}>
-                      <div className={styles.planningModeModalContent}
-                        style={{
-                          background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-                          backdropFilter: 'blur(8px)',
-                          WebkitBackdropFilter: 'blur(8px)',
-                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-                        }}
-                      >
-                        <div className={styles.planningModeModalHeader}>
-                          <span>계획 단위 선택</span>
-                          <button onClick={() => setShowPlanningModeModal(false)}>
-                            <X size={18} />
-                          </button>
-                        </div>
-                        <div className={styles.planningModeOptions}>
-                          <button
-                            className={`${styles.planningModeOption} ${!isCouple ? styles.active : ""}`}
-                            onClick={() => {
-                              if (isCouple) confirmPlanningModeChange();
-                              else setShowPlanningModeModal(false);
-                            }}
-                          >
-                            <div className={styles.planningModeOptionIcon}>
-                              <User size={24} />
-                            </div>
-                            <div className={styles.planningModeOptionText}>
-                              <span className={styles.planningModeOptionTitle}>개인 단위</span>
-                              <span className={styles.planningModeOptionDesc}>혼자서 계획합니다</span>
-                            </div>
-                          </button>
-                          <button
-                            className={`${styles.planningModeOption} ${isCouple ? styles.active : ""}`}
-                            onClick={() => {
-                              if (!isCouple) confirmPlanningModeChange();
-                              else setShowPlanningModeModal(false);
-                            }}
-                          >
-                            <div className={styles.planningModeOptionIcon}>
-                              <Users size={24} />
-                            </div>
-                            <div className={styles.planningModeOptionText}>
-                              <span className={styles.planningModeOptionTitle}>가계 단위</span>
-                              <span className={styles.planningModeOptionDesc}>배우자와 함께 계획합니다</span>
-                            </div>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 본인 정보 */}
-                  {editingProfileField === "profile" ? (
-                    <div className={styles.profileEditCard}>
-                      <div className={styles.profileEditHeader}>
-                        <span>본인 정보 수정</span>
-                        <button onClick={() => setEditingProfileField(null)}>
-                          <X size={18} />
-                        </button>
-                      </div>
-                      <div className={styles.profileEditGrid}>
-                        <div className={styles.profileEditField}>
-                          <label>이름</label>
-                          <input
-                            type="text"
-                            value={editProfileData.name || ""}
-                            placeholder="이름"
-                            onChange={(e) => setEditProfileData(prev => ({ ...prev, name: e.target.value }))}
-                          />
-                        </div>
-                        <div className={styles.profileEditField}>
-                          <label>생년월일</label>
-                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <input
-                              type="number"
-                              style={{ width: 80 }}
-                              value={editProfileData.birthYear || ""}
-                              placeholder="1990"
-                              onChange={(e) => setEditProfileData(prev => ({ ...prev, birthYear: e.target.value }))}
-                            />
-                            <span style={{ color: '#6b7280', fontSize: 13 }}>년</span>
-                            <input
-                              type="number"
-                              style={{ width: 60 }}
-                              value={editProfileData.birthMonth || ""}
-                              placeholder="1"
-                              min={1}
-                              max={12}
-                              onChange={(e) => setEditProfileData(prev => ({ ...prev, birthMonth: e.target.value }))}
-                            />
-                            <span style={{ color: '#6b7280', fontSize: 13 }}>월</span>
-                            <input
-                              type="number"
-                              style={{ width: 60 }}
-                              value={editProfileData.birthDay || ""}
-                              placeholder="1"
-                              min={1}
-                              max={31}
-                              onChange={(e) => setEditProfileData(prev => ({ ...prev, birthDay: e.target.value }))}
-                            />
-                            <span style={{ color: '#6b7280', fontSize: 13 }}>일</span>
-                          </div>
-                        </div>
-                        <div className={styles.profileEditField}>
-                          <label>목표 은퇴 나이</label>
-                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <input
-                              type="number"
-                              style={{ width: 80 }}
-                              value={editProfileData.targetRetirementAge || ""}
-                              placeholder="60"
-                              onChange={(e) => setEditProfileData(prev => ({ ...prev, targetRetirementAge: e.target.value }))}
-                            />
-                            <span style={{ color: '#6b7280', fontSize: 13 }}>세</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className={styles.profileEditActions}>
-                        <button className={styles.profileEditCancel} onClick={() => setEditingProfileField(null)}>취소</button>
-                        <button className={styles.profileEditSave} onClick={saveProfile}>저장</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button className={styles.profileInfoItem} onClick={startEditProfile}>
-                      <div className={styles.profileInfoIcon}>
-                        <User size={20} />
-                      </div>
-                      <div className={styles.profileInfoContent}>
-                        <span className={styles.profileInfoLabel}>
-                          {profile?.name || "본인"}
-                        </span>
-                        <span className={styles.profileInfoValue}>
-                          {profile?.birth_date ? (
-                            <>만 {calculateAge(profile.birth_date)}세 - {new Date(profile.birth_date).getFullYear()}년 {new Date(profile.birth_date).getMonth() + 1}월생</>
-                          ) : (
-                            "생년월일 미입력"
-                          )}
-                        </span>
-                      </div>
-                      <ChevronRight size={18} className={styles.profileInfoChevron} />
-                    </button>
-                  )}
-
-                  {/* 배우자 정보 */}
-                  {isCouple && (
-                    editingProfileField === "spouse" ? (
-                      <div className={styles.profileEditCard}>
-                        <div className={styles.profileEditHeader}>
-                          <span>배우자 정보 수정</span>
-                          <button onClick={() => setEditingProfileField(null)}>
-                            <X size={18} />
-                          </button>
-                        </div>
-                        <div className={styles.profileEditGrid}>
-                          <div className={styles.profileEditField}>
-                            <label>이름</label>
-                            <input
-                              type="text"
-                              value={editSpouseData.name || ""}
-                              placeholder="배우자"
-                              onChange={(e) => setEditSpouseData(prev => ({ ...prev, name: e.target.value }))}
-                            />
-                          </div>
-                          <div className={styles.profileEditField}>
-                            <label>생년월일</label>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                              <input
-                                type="number"
-                                style={{ width: 80 }}
-                                value={editSpouseData.birthYear || ""}
-                                placeholder="1990"
-                                onChange={(e) => setEditSpouseData(prev => ({ ...prev, birthYear: e.target.value }))}
-                              />
-                              <span style={{ color: '#6b7280', fontSize: 13 }}>년</span>
-                              <input
-                                type="number"
-                                style={{ width: 60 }}
-                                value={editSpouseData.birthMonth || ""}
-                                placeholder="1"
-                                min={1}
-                                max={12}
-                                onChange={(e) => setEditSpouseData(prev => ({ ...prev, birthMonth: e.target.value }))}
-                              />
-                              <span style={{ color: '#6b7280', fontSize: 13 }}>월</span>
-                              <input
-                                type="number"
-                                style={{ width: 60 }}
-                                value={editSpouseData.birthDay || ""}
-                                placeholder="1"
-                                min={1}
-                                max={31}
-                                onChange={(e) => setEditSpouseData(prev => ({ ...prev, birthDay: e.target.value }))}
-                              />
-                              <span style={{ color: '#6b7280', fontSize: 13 }}>일</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className={styles.profileEditActions}>
-                          <button className={styles.profileEditCancel} onClick={() => setEditingProfileField(null)}>취소</button>
-                          <button className={styles.profileEditSave} onClick={saveSpouse}>저장</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button className={styles.profileInfoItem} onClick={startEditSpouse}>
-                        <div className={styles.profileInfoIcon}>
-                          <Users size={20} />
-                        </div>
-                        <div className={styles.profileInfoContent}>
-                          <span className={styles.profileInfoLabel}>
-                            {spouse?.name || "배우자"}
-                          </span>
-                          <span className={styles.profileInfoValue}>
-                            {spouse?.birth_date ? (
-                              <>만 {calculateAge(spouse.birth_date)}세 - {new Date(spouse.birth_date).getFullYear()}년 {new Date(spouse.birth_date).getMonth() + 1}월생</>
-                            ) : (
-                              "생년월일 미입력"
-                            )}
-                          </span>
-                        </div>
-                        <ChevronRight size={18} className={styles.profileInfoChevron} />
-                      </button>
-                    )
-                  )}
-
-                  {/* 자녀 정보 */}
-                  {(() => {
-                    const children = familyMembers.filter(m => m.relationship === "child");
-                    if (children.length === 0) return null;
-                    return (
-                      <div className={styles.profileInfoItem} style={{ cursor: 'default' }}>
-                        <div className={styles.profileInfoIcon}>
-                          <Baby size={20} />
-                        </div>
-                        <div className={styles.profileInfoContent}>
-                          <span className={styles.profileInfoLabel}>
-                            자녀 {children.length}명
-                          </span>
-                          <div className={styles.childrenList}>
-                            {children.map((child) => (
-                              <span key={child.id} className={styles.childItem}>
-                                {child.name || (child.gender === "male" ? "아들" : child.gender === "female" ? "딸" : "자녀")}
-                                {child.birth_date && (
-                                  <> - 만 {calculateAge(child.birth_date)}세</>
-                                )}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* 은퇴 목표 */}
-                  <div className={styles.profileInfoItem} style={{ cursor: 'default' }}>
-                    <div className={styles.profileInfoIcon}>
-                      <Target size={20} />
-                    </div>
-                    <div className={styles.profileInfoContent}>
-                      <span className={styles.profileInfoLabel}>은퇴 목표</span>
-                      <span className={styles.profileInfoValue}>
-                        {profile?.target_retirement_age || 60}세
-                        {profile?.birth_date && (
-                          <> ({new Date(profile.birth_date).getFullYear() + (profile?.target_retirement_age || 60)}년)</>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         ) : activeTab === "realAsset" ? (
           /* 실물 자산 탭 - 카드 UI */

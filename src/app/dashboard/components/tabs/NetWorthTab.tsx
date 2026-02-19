@@ -31,6 +31,7 @@ interface NetWorthTabProps {
   spouseLifeExpectancy?: number
   simulationStartYear?: number | null
   simulationStartMonth?: number | null
+  lifecycleMilestones?: { year: number; color: string; label: string; iconId: string }[]
 }
 
 // 기간 선택 옵션
@@ -66,6 +67,7 @@ export function NetWorthTab({
   spouseLifeExpectancy = 100,
   simulationStartYear,
   simulationStartMonth,
+  lifecycleMilestones,
 }: NetWorthTabProps) {
   const currentYear = simulationStartYear || new Date().getFullYear()
   const currentAge = currentYear - birthYear
@@ -266,6 +268,7 @@ export function NetWorthTab({
               monthlySnapshots={filteredMonthlySnapshots}
               selfLifeExpectancy={selfLifeExpectancy}
               spouseLifeExpectancy={spouseLifeExpectancy}
+              lifecycleMilestones={lifecycleMilestones}
               headerAction={
                 <div ref={timeRangeRef} className={styles.timeRangeSelector}>
                   <button

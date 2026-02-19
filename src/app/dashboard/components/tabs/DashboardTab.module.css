@@ -3,220 +3,119 @@
   padding: 24px;
   width: 100%;
   max-width: none;
-}
-
-/* Section Headers */
-.sectionHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.sectionTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--dashboard-text);
-}
-
-/* ===== Section 1: Hero Stats ===== */
-.heroGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.heroCard {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 16px;
+  gap: 20px;
+}
+
+/* ===== Section: Expert Card + Messages ===== */
+.expertSection {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.expertCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 24px;
   background: var(--dashboard-card-bg);
   border: 1px solid var(--dashboard-border);
   border-radius: 10px;
+  min-width: 160px;
+  flex-shrink: 0;
 }
 
-.heroLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
+.expertAvatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--dashboard-hover-bg);
 }
 
-.heroValue {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--dashboard-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.heroSub {
+.expertAvatarFallback {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--dashboard-hover-bg);
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--dashboard-text-secondary);
-}
-
-.heroDivider {
-  width: 1px;
-  height: 10px;
-  background: var(--dashboard-border);
-}
-
-/* Korean financial colors */
-.positive {
-  color: #ef4444;
-}
-
-.negative {
-  color: #3b82f6;
-}
-
-.muted {
+  justify-content: center;
   color: var(--dashboard-text-muted);
 }
 
-/* Retirement progress bar */
-.progressBarWrap {
-  width: 100%;
-  height: 4px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 2px;
-  margin-top: 4px;
-  overflow: hidden;
-}
-
-.progressBar {
-  height: 100%;
-  background: var(--accent-color, #007aff);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-/* ===== Section 2: Asset Composition ===== */
-.assetSection {
-  margin-bottom: 24px;
-  padding: 20px;
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 10px;
-}
-
-.detailBtn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
-  background: none;
-  border: none;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  cursor: pointer;
-  transition: color 0.15s;
-}
-
-.detailBtn:hover {
-  color: var(--accent-color, #007aff);
-}
-
-.assetContent {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.doughnutWrap {
-  position: relative;
-  width: 160px;
-  height: 160px;
-  flex-shrink: 0;
-}
-
-.doughnutCenter {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  pointer-events: none;
-}
-
-.doughnutCenterLabel {
-  font-size: 10px;
-  color: var(--dashboard-text-secondary);
-}
-
-.doughnutCenterValue {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--dashboard-text);
-  white-space: nowrap;
-}
-
-.legendList {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legendDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-
-.legendLabel {
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
-  flex: 1;
-}
-
-.legendValue {
-  font-size: 13px;
+.expertName {
+  font-size: 14px;
   font-weight: 600;
   color: var(--dashboard-text);
-  white-space: nowrap;
+  text-align: center;
 }
 
-/* ===== Section 3: Recent Activity ===== */
-.activityGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 24px;
+.expertTitle {
+  font-size: 11px;
+  color: var(--dashboard-text-secondary);
+  text-align: center;
 }
 
-.activityCard {
-  padding: 16px;
+.chatBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--accent-color, #007aff);
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: auto;
+}
+
+.chatBtn:hover {
+  opacity: 0.85;
+}
+
+.unreadBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Message Preview */
+.messagePreview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background: var(--dashboard-card-bg);
   border: 1px solid var(--dashboard-border);
   border-radius: 10px;
+  overflow: hidden;
   min-width: 0;
 }
 
-.activityHeader {
+.messagePreviewHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--dashboard-border);
 }
 
-.activityTitle {
+.messagePreviewTitle {
   font-size: 13px;
   font-weight: 600;
   color: var(--dashboard-text);
@@ -240,99 +139,140 @@
   color: var(--accent-color, #007aff);
 }
 
-.activityList {
+.messageList {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  padding: 8px 0;
 }
 
-.activityRow {
+.messageRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  font-size: 12px;
-  min-width: 0;
+  padding: 6px 16px;
 }
 
-.activityDate {
+.messageSender {
   font-size: 11px;
-  color: var(--dashboard-text-muted);
+  font-weight: 600;
+  color: var(--dashboard-text-secondary);
   flex-shrink: 0;
-  width: 36px;
+  min-width: 40px;
 }
 
-.activityName {
+.messageSenderExpert {
+  color: var(--accent-color, #007aff);
+}
+
+.messageContent {
   flex: 1;
+  font-size: 12px;
   color: var(--dashboard-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
-.activityIncome {
-  color: #ef4444;
-  font-weight: 600;
-  font-size: 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.activityExpense {
-  color: #3b82f6;
-  font-weight: 600;
-  font-size: 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.activityAmount {
-  color: var(--dashboard-text);
-  font-weight: 500;
-  font-size: 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.badgeBuy {
+.messageTime {
   font-size: 10px;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  color: var(--dashboard-text-muted);
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.badgeSell {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-  flex-shrink: 0;
-}
-
-.emptyState {
+.emptyMessages {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 20px;
-  text-align: center;
   font-size: 12px;
   color: var(--dashboard-text-muted);
 }
 
-/* ===== Section 4: Quick Nav ===== */
-.quickNav {
+/* No expert state */
+.noExpertCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 10px;
+  width: 100%;
+}
+
+.noExpertText {
+  flex: 1;
+}
+
+.noExpertTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  margin-bottom: 4px;
+}
+
+.noExpertDesc {
+  font-size: 12px;
+  color: var(--dashboard-text-secondary);
+}
+
+/* ===== Section: Asset Summary ===== */
+.assetSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assetHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.netWorthLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+}
+
+.netWorthValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+}
+
+.netWorthChange {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.positive {
+  color: #ef4444;
+}
+
+.negative {
+  color: #3b82f6;
+}
+
+.muted {
+  color: var(--dashboard-text-muted);
+}
+
+.assetGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
 
-.quickNavItem {
+.assetCard {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 8px;
+  gap: 6px;
+  padding: 14px;
   background: var(--dashboard-card-bg);
   border: 1px solid var(--dashboard-border);
   border-radius: 10px;
@@ -340,21 +280,216 @@
   transition: border-color 0.15s;
 }
 
-.quickNavItem:hover {
+.assetCard:hover {
   border-color: var(--accent-color, #007aff);
 }
 
-.quickNavIcon {
+.assetCardHeader {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+}
+
+.assetCardDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.assetCardLabel {
+  font-size: 12px;
+  font-weight: 500;
   color: var(--dashboard-text-secondary);
 }
 
-.quickNavLabel {
-  font-size: 12px;
+.assetCardValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Section: Action Items ===== */
+.actionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+}
+
+.actionList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.actionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.actionGroupLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dashboard-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 0 4px;
+}
+
+.actionItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.actionItem:hover {
+  border-color: var(--accent-color, #007aff);
+}
+
+.actionItemCompleted {
+  opacity: 0.5;
+}
+
+.actionCheckbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid var(--dashboard-border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: none;
+  padding: 0;
+  color: transparent;
+}
+
+.actionCheckbox:hover {
+  border-color: var(--accent-color, #007aff);
+}
+
+.actionCheckboxChecked {
+  background: var(--accent-color, #007aff);
+  border-color: var(--accent-color, #007aff);
+  color: #fff;
+}
+
+.actionTextWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.actionTitle {
+  font-size: 13px;
   font-weight: 500;
   color: var(--dashboard-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actionTitleCompleted {
+  text-decoration: line-through;
+  color: var(--dashboard-text-muted);
+}
+
+.actionDesc {
+  font-size: 11px;
+  color: var(--dashboard-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.actionArrow {
+  flex-shrink: 0;
+  color: var(--dashboard-text-muted);
+}
+
+/* Detected action items (auto) */
+.detectedItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.detectedItem:hover {
+  border-color: var(--accent-color, #007aff);
+}
+
+.detectedIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--dashboard-hover-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--dashboard-text-secondary);
+}
+
+.detectedText {
+  flex: 1;
+  min-width: 0;
+}
+
+.detectedTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text);
+}
+
+.detectedDesc {
+  font-size: 11px;
+  color: var(--dashboard-text-secondary);
+  margin-top: 1px;
+}
+
+.detectedArrow {
+  flex-shrink: 0;
+  color: var(--dashboard-text-muted);
+}
+
+.emptyAction {
+  padding: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--dashboard-text-muted);
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 10px;
 }
 
 /* ===== Skeleton Loading ===== */
@@ -372,80 +507,16 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
-.skeletonHeroGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.skeletonCard {
-  height: 90px;
-  border-radius: 10px;
-  background: linear-gradient(
-    90deg,
-    var(--skeleton-base) 25%,
-    var(--skeleton-highlight) 50%,
-    var(--skeleton-base) 75%
-  );
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeletonChart {
+.skeletonExpert {
   display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 20px;
-  background: var(--dashboard-card-bg);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 10px;
+  gap: 16px;
 }
 
-.skeletonCircle {
+.skeletonExpertCard {
   width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: linear-gradient(
-    90deg,
-    var(--skeleton-base) 25%,
-    var(--skeleton-highlight) 50%,
-    var(--skeleton-base) 75%
-  );
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeletonLegend {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.skeletonLine {
-  height: 14px;
-  border-radius: 4px;
-  background: linear-gradient(
-    90deg,
-    var(--skeleton-base) 25%,
-    var(--skeleton-highlight) 50%,
-    var(--skeleton-base) 75%
-  );
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeletonActivityGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.skeletonActivityCard {
   height: 180px;
   border-radius: 10px;
   background: linear-gradient(
@@ -458,15 +529,62 @@
   animation: shimmer 1.5s infinite;
 }
 
-.skeletonQuickNav {
+.skeletonMessages {
+  flex: 1;
+  height: 180px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonAssetHeader {
+  height: 32px;
+  width: 200px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonAssetGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
 
-.skeletonQuickItem {
+.skeletonAssetCard {
   height: 72px;
   border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonActions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeletonActionItem {
+  height: 48px;
+  border-radius: 8px;
   background: linear-gradient(
     90deg,
     var(--skeleton-base) 25%,
@@ -481,27 +599,25 @@
 @media (max-width: 600px) {
   .container {
     padding: 16px;
+    gap: 16px;
   }
 
-  .heroGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .assetContent {
+  .expertSection {
     flex-direction: column;
   }
 
-  .doughnutWrap {
-    width: 140px;
-    height: 140px;
+  .expertCard {
+    flex-direction: row;
+    min-width: unset;
+    padding: 14px 16px;
   }
 
-  .activityGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .quickNav {
+  .assetGrid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .netWorthValue {
+    font-size: 18px;
   }
 
   /* Skeleton responsive */
@@ -509,24 +625,16 @@
     padding: 16px;
   }
 
-  .skeletonHeroGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .skeletonChart {
+  .skeletonExpert {
     flex-direction: column;
   }
 
-  .skeletonCircle {
-    width: 140px;
-    height: 140px;
+  .skeletonExpertCard {
+    width: 100%;
+    height: 80px;
   }
 
-  .skeletonActivityGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .skeletonQuickNav {
+  .skeletonAssetGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
