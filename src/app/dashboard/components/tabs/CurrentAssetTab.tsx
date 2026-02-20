@@ -227,6 +227,8 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
   const [maturityYear, setMaturityYear] = useState(String((meta?.loan_maturity_year as number) || ""));
   const [maturityMonth, setMaturityMonth] = useState(String((meta?.loan_maturity_month as number) || ""));
   const [repaymentType, setRepaymentType] = useState((meta?.loan_repayment_type as RepaymentType) || "원리금균등상환");
+  const [gracePeriodYear, setGracePeriodYear] = useState(String((meta?.grace_period_year as number) || ""));
+  const [gracePeriodMonth, setGracePeriodMonth] = useState(String((meta?.grace_period_month as number) || ""));
 
   // Enter 키로 저장 트리거
   const handleKeyDown = (e: React.KeyboardEvent, saveCallback: () => void) => {
@@ -367,7 +369,7 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
                 }
               }}
             />
-            <span style={{ fontSize: 13, color: '#6b7280' }}>년</span>
+            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
             <input
               type="number"
               className={styles.itemCardFieldInput}
@@ -391,7 +393,7 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
                 }
               }}
             />
-            <span style={{ fontSize: 13, color: '#6b7280' }}>월</span>
+            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
           </div>
         </div>
 
@@ -411,6 +413,62 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
             ))}
           </select>
         </div>
+
+        {repaymentType === "거치식상환" ? (
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>거치기간</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                style={{ width: 80, paddingRight: 12 }}
+                value={gracePeriodYear}
+                placeholder={String(currentYear + 3)}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                onChange={(e) => setGracePeriodYear(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, () => {
+                  const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
+                  if (val !== (meta?.grace_period_year as number | null)) {
+                    onUpdate(item.id, { metadata: { ...meta, grace_period_year: val } });
+                  }
+                })}
+                onBlur={() => {
+                  const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
+                  if (val !== (meta?.grace_period_year as number | null)) {
+                    onUpdate(item.id, { metadata: { ...meta, grace_period_year: val } });
+                  }
+                }}
+              />
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                style={{ width: 60, paddingRight: 12 }}
+                value={gracePeriodMonth}
+                placeholder="12"
+                min={1}
+                max={12}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                onChange={(e) => setGracePeriodMonth(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, () => {
+                  const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
+                  if (val !== (meta?.grace_period_month as number | null)) {
+                    onUpdate(item.id, { metadata: { ...meta, grace_period_month: val } });
+                  }
+                })}
+                onBlur={() => {
+                  const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
+                  if (val !== (meta?.grace_period_month as number | null)) {
+                    onUpdate(item.id, { metadata: { ...meta, grace_period_month: val } });
+                  }
+                }}
+              />
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+            </div>
+          </div>
+        ) : (
+          <div />
+        )}
       </div>
     </div>
   );
@@ -536,11 +594,20 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
   const [title, setTitle] = useState(item.title || ITEM_TYPES.realAsset.find(t => t.value === item.item_type)?.label || "");
   const [purchasePrice, setPurchasePrice] = useState(String((meta?.purchase_price as number) || ""));
   const [amount, setAmount] = useState(String(item.amount || ""));
+  const [purchaseYear, setPurchaseYear] = useState(String((meta?.purchase_year as number) || ""));
+  const [purchaseMonth, setPurchaseMonth] = useState(String((meta?.purchase_month as number) || ""));
   const [loanAmount, setLoanAmount] = useState(String((meta?.loan_amount as number) || ""));
   const [loanRate, setLoanRate] = useState(String((meta?.loan_rate as number) || ""));
-  const [loanMaturityYear, setLoanMaturityYear] = useState(String((meta?.loan_maturity_year as number) || currentYear + 10));
-  const [loanMaturityMonth, setLoanMaturityMonth] = useState(String((meta?.loan_maturity_month as number) || 12));
+  const [loanMaturityYear, setLoanMaturityYear] = useState(String((meta?.loan_maturity_year as number) || ""));
+  const [loanMaturityMonth, setLoanMaturityMonth] = useState(String((meta?.loan_maturity_month as number) || ""));
   const [loanRepaymentType, setLoanRepaymentType] = useState((meta?.loan_repayment_type as RepaymentType) || "원리금균등상환");
+  const [gracePeriodYear, setGracePeriodYear] = useState(String((meta?.grace_period_year as number) || ""));
+  const [gracePeriodMonth, setGracePeriodMonth] = useState(String((meta?.grace_period_month as number) || ""));
+  const hasInstallment = meta?.has_installment as boolean;
+  const [installmentRemaining, setInstallmentRemaining] = useState(String((meta?.installment_remaining as number) || ""));
+  const [installmentRate, setInstallmentRate] = useState(String((meta?.installment_rate as number) || ""));
+  const [installmentEndYear, setInstallmentEndYear] = useState(String((meta?.installment_end_year as number) || ""));
+  const [installmentEndMonth, setInstallmentEndMonth] = useState(String((meta?.installment_end_month as number) || ""));
 
   const handleKeyDown = (e: React.KeyboardEvent, saveCallback: () => void) => {
     if (e.key === 'Enter') {
@@ -562,8 +629,21 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
       >
         <Trash2 size={16} />
       </button>
+      {/* Header: 유형 | 이름 | 소유 */}
       <div className={styles.itemCardHeader}>
         <div className={styles.itemCardHeaderGrid}>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>유형</span>
+            <select
+              className={styles.itemCardFieldSelect}
+              value={item.item_type}
+              onChange={(e) => onUpdate(item.id, { item_type: e.target.value })}
+            >
+              {ITEM_TYPES.realAsset.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+          </div>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>이름</span>
             <input
@@ -591,52 +671,63 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
               {isCouple && <option value="spouse">배우자</option>}
             </select>
           </div>
-          <div />
         </div>
       </div>
 
-      {/* Row 2: 유형, 현재가 */}
+      {/* Row 2: 취득일 | 취득가 | 현재가 */}
       <div className={styles.itemCardGrid}>
         <div className={styles.itemCardField}>
-          <span className={styles.itemCardFieldLabel}>유형</span>
-          <select
-            className={styles.itemCardFieldSelect}
-            value={item.item_type}
-            onChange={(e) => onUpdate(item.id, { item_type: e.target.value })}
-          >
-            {ITEM_TYPES.realAsset.map(type => (
-              <option key={type.value} value={type.value}>{type.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.itemCardField}>
-          <span className={styles.itemCardFieldLabel}>현재가</span>
-          <div className={styles.itemCardFieldUnit}>
+          <span className={styles.itemCardFieldLabel}>취득일</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input
               type="number"
               className={styles.itemCardFieldInput}
-              value={amount}
-              placeholder="0"
+              style={{ width: 80, paddingRight: 12 }}
+              value={purchaseYear}
+              placeholder={String(currentYear)}
               onWheel={e => (e.target as HTMLElement).blur()}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => setPurchaseYear(e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = parseInt(amount) || 0;
-                if (val !== item.amount) onUpdate(item.id, { amount: val });
+                const val = purchaseYear ? parseInt(purchaseYear) : null;
+                if (val !== (meta?.purchase_year as number | null)) {
+                  updateMeta({ purchase_year: val });
+                }
               })}
               onBlur={() => {
-                const val = parseInt(amount) || 0;
-                if (val !== item.amount) onUpdate(item.id, { amount: val });
+                const val = purchaseYear ? parseInt(purchaseYear) : null;
+                if (val !== (meta?.purchase_year as number | null)) {
+                  updateMeta({ purchase_year: val });
+                }
               }}
             />
-            <span className={styles.itemCardFieldUnitLabel}>만원</span>
+            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+            <input
+              type="number"
+              className={styles.itemCardFieldInput}
+              style={{ width: 60, paddingRight: 12 }}
+              value={purchaseMonth}
+              placeholder="1"
+              min={1}
+              max={12}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              onChange={(e) => setPurchaseMonth(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, () => {
+                const val = purchaseMonth ? parseInt(purchaseMonth) : null;
+                if (val !== (meta?.purchase_month as number | null)) {
+                  updateMeta({ purchase_month: val });
+                }
+              })}
+              onBlur={() => {
+                const val = purchaseMonth ? parseInt(purchaseMonth) : null;
+                if (val !== (meta?.purchase_month as number | null)) {
+                  updateMeta({ purchase_month: val });
+                }
+              }}
+            />
+            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
           </div>
         </div>
-        <div />
-      </div>
 
-      {/* Row 3: 취득가, 담보대출 */}
-      <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
         <div className={styles.itemCardField}>
           <span className={styles.itemCardFieldLabel}>취득가</span>
           <div className={styles.itemCardFieldUnit}>
@@ -665,139 +756,205 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
         </div>
 
         <div className={styles.itemCardField}>
-          <span className={styles.itemCardFieldLabel}>담보대출</span>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              type="button"
-              className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
-              onClick={() => updateMeta({ has_loan: false })}
-            >
-              없음
-            </button>
-            <button
-              type="button"
-              className={`${styles.typeBtn} ${hasLoan ? styles.active : ""}`}
-              onClick={() => updateMeta({ has_loan: true })}
-            >
-              있음
-            </button>
+          <span className={styles.itemCardFieldLabel}>현재가</span>
+          <div className={styles.itemCardFieldUnit}>
+            <input
+              type="number"
+              className={styles.itemCardFieldInput}
+              value={amount}
+              placeholder="0"
+              onWheel={e => (e.target as HTMLElement).blur()}
+              onChange={(e) => setAmount(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, () => {
+                const val = parseInt(amount) || 0;
+                if (val !== item.amount) onUpdate(item.id, { amount: val });
+              })}
+              onBlur={() => {
+                const val = parseInt(amount) || 0;
+                if (val !== item.amount) onUpdate(item.id, { amount: val });
+              }}
+            />
+            <span className={styles.itemCardFieldUnitLabel}>만원</span>
           </div>
         </div>
-        <div />
       </div>
 
-      {hasLoan && (
+      {/* 담보대출 toggle - show when no installment active */}
+      {!hasInstallment && (
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>대출잔액</span>
-            <div className={styles.itemCardFieldUnit}>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                value={loanAmount}
-                placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
-                onChange={(e) => setLoanAmount(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = parseInt(loanAmount) || 0;
-                  if (val !== (meta?.loan_amount as number)) {
-                    updateMeta({ loan_amount: val });
-                  }
-                })}
-                onBlur={() => {
-                  const val = parseInt(loanAmount) || 0;
-                  if (val !== (meta?.loan_amount as number)) {
-                    updateMeta({ loan_amount: val });
-                  }
-                }}
-              />
-              <span className={styles.itemCardFieldUnitLabel}>만원</span>
+            <span className={styles.itemCardFieldLabel}>담보대출</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
+                onClick={() => updateMeta({ has_loan: false })}>없음</button>
+              <button type="button" className={`${styles.typeBtn} ${hasLoan ? styles.active : ""}`}
+                onClick={() => updateMeta({ has_loan: true })}>있음</button>
             </div>
           </div>
+          {hasLoan ? (
+            <>
+              <div className={styles.itemCardField}>
+                <span className={styles.itemCardFieldLabel}>대출금액</span>
+                <div className={styles.itemCardFieldUnit}>
+                  <input type="number" className={styles.itemCardFieldInput} value={loanAmount} placeholder="0"
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onChange={(e) => setLoanAmount(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, () => { const val = parseInt(loanAmount) || 0; if (val !== (meta?.loan_amount as number)) updateMeta({ loan_amount: val }); })}
+                    onBlur={() => { const val = parseInt(loanAmount) || 0; if (val !== (meta?.loan_amount as number)) updateMeta({ loan_amount: val }); }}
+                  />
+                  <span className={styles.itemCardFieldUnitLabel}>만원</span>
+                </div>
+              </div>
+              <div className={styles.itemCardField}>
+                <span className={styles.itemCardFieldLabel}>금리</span>
+                <div className={styles.itemCardFieldUnit}>
+                  <input type="number" className={styles.itemCardFieldInput} value={loanRate} placeholder="0" step="0.1"
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onChange={(e) => setLoanRate(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, () => { const val = parseFloat(loanRate) || 0; if (val !== (meta?.loan_rate as number)) updateMeta({ loan_rate: val }); })}
+                    onBlur={() => { const val = parseFloat(loanRate) || 0; if (val !== (meta?.loan_rate as number)) updateMeta({ loan_rate: val }); }}
+                  />
+                  <span className={styles.itemCardFieldUnitLabel}>%</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <><div /><div /></>
+          )}
+        </div>
+      )}
 
-          <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>금리</span>
-            <div className={styles.itemCardFieldUnit}>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                value={loanRate}
-                placeholder="0"
-                step="0.1"
-                onWheel={e => (e.target as HTMLElement).blur()}
-                onChange={(e) => setLoanRate(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = parseFloat(loanRate) || 0;
-                  if (val !== (meta?.loan_rate as number)) {
-                    updateMeta({ loan_rate: val });
-                  }
-                })}
-                onBlur={() => {
-                  const val = parseFloat(loanRate) || 0;
-                  if (val !== (meta?.loan_rate as number)) {
-                    updateMeta({ loan_rate: val });
-                  }
-                }}
-              />
-              <span className={styles.itemCardFieldUnitLabel}>%</span>
-            </div>
-          </div>
-
+      {/* 담보대출 Row 2: 만기일 | 상환방식 | 거치기간 */}
+      {!hasInstallment && hasLoan && (
+        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>만기일</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' }}>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                style={{ width: 75, flexShrink: 0, paddingRight: 12 }}
-                value={loanMaturityYear}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="number" className={styles.itemCardFieldInput} style={{ width: 80, paddingRight: 12 }}
+                value={loanMaturityYear} placeholder={String(currentYear + 10)}
                 onWheel={e => (e.target as HTMLElement).blur()}
                 onChange={(e) => setLoanMaturityYear(e.target.value)}
-                onBlur={() => {
-                  const val = parseInt(loanMaturityYear) || currentYear + 10;
-                  if (val !== (meta?.loan_maturity_year as number)) {
-                    updateMeta({ loan_maturity_year: val });
-                  }
-                }}
+                onKeyDown={(e) => handleKeyDown(e, () => { const val = loanMaturityYear ? parseInt(loanMaturityYear) : null; if (val !== (meta?.loan_maturity_year as number | null)) updateMeta({ loan_maturity_year: val }); })}
+                onBlur={() => { const val = loanMaturityYear ? parseInt(loanMaturityYear) : null; if (val !== (meta?.loan_maturity_year as number | null)) updateMeta({ loan_maturity_year: val }); }}
               />
-              <span style={{ fontSize: 13, color: '#6b7280', flexShrink: 0 }}>년</span>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                style={{ width: 55, flexShrink: 0, paddingRight: 12 }}
-                value={loanMaturityMonth}
-                min={1}
-                max={12}
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+              <input type="number" className={styles.itemCardFieldInput} style={{ width: 60, paddingRight: 12 }}
+                value={loanMaturityMonth} placeholder="12" min={1} max={12}
                 onWheel={e => (e.target as HTMLElement).blur()}
                 onChange={(e) => setLoanMaturityMonth(e.target.value)}
-                onBlur={() => {
-                  const val = Math.min(12, Math.max(1, parseInt(loanMaturityMonth) || 12));
-                  setLoanMaturityMonth(String(val));
-                  if (val !== (meta?.loan_maturity_month as number)) {
-                    updateMeta({ loan_maturity_month: val });
-                  }
-                }}
+                onKeyDown={(e) => handleKeyDown(e, () => { const val = loanMaturityMonth ? parseInt(loanMaturityMonth) : null; if (val !== (meta?.loan_maturity_month as number | null)) updateMeta({ loan_maturity_month: val }); })}
+                onBlur={() => { const val = loanMaturityMonth ? parseInt(loanMaturityMonth) : null; if (val !== (meta?.loan_maturity_month as number | null)) updateMeta({ loan_maturity_month: val }); }}
               />
-              <span style={{ fontSize: 13, color: '#6b7280', flexShrink: 0 }}>월</span>
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
             </div>
           </div>
-
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>상환방식</span>
-            <select
-              className={styles.itemCardFieldSelect}
-              value={loanRepaymentType}
-              onChange={(e) => {
-                const val = e.target.value as RepaymentType;
-                setLoanRepaymentType(val);
-                updateMeta({ loan_repayment_type: val });
-              }}
-            >
+            <select className={styles.itemCardFieldSelect} value={loanRepaymentType}
+              onChange={(e) => { const val = e.target.value as RepaymentType; setLoanRepaymentType(val); updateMeta({ loan_repayment_type: val }); }}>
               {REPAYMENT_TYPES.map(type => (
                 <option key={type.value} value={type.value}>{type.label}</option>
               ))}
             </select>
           </div>
+          {loanRepaymentType === "거치식상환" ? (
+            <div className={styles.itemCardField}>
+              <span className={styles.itemCardFieldLabel}>거치기간</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input type="number" className={styles.itemCardFieldInput} style={{ width: 80, paddingRight: 12 }}
+                  value={gracePeriodYear} placeholder={String(currentYear + 3)}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setGracePeriodYear(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => { const val = gracePeriodYear ? parseInt(gracePeriodYear) : null; if (val !== (meta?.grace_period_year as number | null)) updateMeta({ grace_period_year: val }); })}
+                  onBlur={() => { const val = gracePeriodYear ? parseInt(gracePeriodYear) : null; if (val !== (meta?.grace_period_year as number | null)) updateMeta({ grace_period_year: val }); }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+                <input type="number" className={styles.itemCardFieldInput} style={{ width: 60, paddingRight: 12 }}
+                  value={gracePeriodMonth} placeholder="12" min={1} max={12}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setGracePeriodMonth(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => { const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null; if (val !== (meta?.grace_period_month as number | null)) updateMeta({ grace_period_month: val }); })}
+                  onBlur={() => { const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null; if (val !== (meta?.grace_period_month as number | null)) updateMeta({ grace_period_month: val }); }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+              </div>
+            </div>
+          ) : (
+            <div />
+          )}
+        </div>
+      )}
+
+      {/* 할부 toggle - show when no loan active */}
+      {!hasLoan && (
+        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>할부</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className={`${styles.typeBtn} ${!hasInstallment ? styles.active : ""}`}
+                onClick={() => updateMeta({ has_installment: false })}>없음</button>
+              <button type="button" className={`${styles.typeBtn} ${hasInstallment ? styles.active : ""}`}
+                onClick={() => updateMeta({ has_installment: true })}>있음</button>
+            </div>
+          </div>
+          {hasInstallment ? (
+            <>
+              <div className={styles.itemCardField}>
+                <span className={styles.itemCardFieldLabel}>잔여금액</span>
+                <div className={styles.itemCardFieldUnit}>
+                  <input type="number" className={styles.itemCardFieldInput} value={installmentRemaining} placeholder="0"
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onChange={(e) => setInstallmentRemaining(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, () => { const val = parseInt(installmentRemaining) || 0; if (val !== (meta?.installment_remaining as number)) updateMeta({ installment_remaining: val }); })}
+                    onBlur={() => { const val = parseInt(installmentRemaining) || 0; if (val !== (meta?.installment_remaining as number)) updateMeta({ installment_remaining: val }); }}
+                  />
+                  <span className={styles.itemCardFieldUnitLabel}>만원</span>
+                </div>
+              </div>
+              <div className={styles.itemCardField}>
+                <span className={styles.itemCardFieldLabel}>금리</span>
+                <div className={styles.itemCardFieldUnit}>
+                  <input type="number" className={styles.itemCardFieldInput} value={installmentRate} placeholder="0" step="0.1"
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onChange={(e) => setInstallmentRate(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, () => { const val = parseFloat(installmentRate) || 0; if (val !== (meta?.installment_rate as number)) updateMeta({ installment_rate: val }); })}
+                    onBlur={() => { const val = parseFloat(installmentRate) || 0; if (val !== (meta?.installment_rate as number)) updateMeta({ installment_rate: val }); }}
+                  />
+                  <span className={styles.itemCardFieldUnitLabel}>%</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <><div /><div /></>
+          )}
+        </div>
+      )}
+
+      {/* 할부 Row 2: 종료일 */}
+      {!hasLoan && hasInstallment && (
+        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>종료일</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="number" className={styles.itemCardFieldInput} style={{ width: 80, paddingRight: 12 }}
+                value={installmentEndYear} placeholder={String(currentYear + 3)}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                onChange={(e) => setInstallmentEndYear(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, () => { const val = installmentEndYear ? parseInt(installmentEndYear) : null; if (val !== (meta?.installment_end_year as number | null)) updateMeta({ installment_end_year: val }); })}
+                onBlur={() => { const val = installmentEndYear ? parseInt(installmentEndYear) : null; if (val !== (meta?.installment_end_year as number | null)) updateMeta({ installment_end_year: val }); }}
+              />
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+              <input type="number" className={styles.itemCardFieldInput} style={{ width: 60, paddingRight: 12 }}
+                value={installmentEndMonth} placeholder="12" min={1} max={12}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                onChange={(e) => setInstallmentEndMonth(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, () => { const val = installmentEndMonth ? parseInt(installmentEndMonth) : null; if (val !== (meta?.installment_end_month as number | null)) updateMeta({ installment_end_month: val }); })}
+                onBlur={() => { const val = installmentEndMonth ? parseInt(installmentEndMonth) : null; if (val !== (meta?.installment_end_month as number | null)) updateMeta({ installment_end_month: val }); }}
+              />
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+            </div>
+          </div>
+          <div /><div />
         </div>
       )}
     </div>
@@ -826,6 +983,9 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
   const [loanRate, setLoanRate] = useState(String((meta?.loan_rate as number) || ""));
   const [maturityYear, setMaturityYear] = useState(String((meta?.loan_maturity_year as number) || ""));
   const [maturityMonth, setMaturityMonth] = useState(String((meta?.loan_maturity_month as number) || ""));
+  const [repaymentType, setRepaymentType] = useState<string>((meta?.loan_repayment_type as string) || "원리금균등상환");
+  const [gracePeriodYear, setGracePeriodYear] = useState(String((meta?.grace_period_year as number) || ""));
+  const [gracePeriodMonth, setGracePeriodMonth] = useState(String((meta?.grace_period_month as number) || ""));
 
   const handleKeyDown = (e: React.KeyboardEvent, saveCallback: () => void) => {
     if (e.key === 'Enter') {
@@ -833,6 +993,10 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
       (e.target as HTMLElement).blur();
       saveCallback();
     }
+  };
+
+  const updateMeta = (updates: Record<string, unknown>) => {
+    onUpdate(item.id, { metadata: { ...meta, ...updates } });
   };
 
   return (
@@ -843,8 +1007,21 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
       >
         <Trash2 size={16} />
       </button>
+      {/* Header: 유형 | 이름 | 소유 */}
       <div className={styles.itemCardHeader}>
         <div className={styles.itemCardHeaderGrid}>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>유형</span>
+            <select
+              className={styles.itemCardFieldSelect}
+              value={item.item_type}
+              onChange={(e) => onUpdate(item.id, { item_type: e.target.value })}
+            >
+              {ITEM_TYPES.realEstate.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+          </div>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>이름</span>
             <input
@@ -872,23 +1049,88 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
               {isCouple && <option value="spouse">배우자</option>}
             </select>
           </div>
-          <div />
         </div>
       </div>
 
-      {/* Row 2: 유형, 현재 시세 */}
+      {/* Row 2: 취득일 | 취득가 | 현재 시세 */}
       <div className={styles.itemCardGrid}>
         <div className={styles.itemCardField}>
-          <span className={styles.itemCardFieldLabel}>유형</span>
-          <select
-            className={styles.itemCardFieldSelect}
-            value={item.item_type}
-            onChange={(e) => onUpdate(item.id, { item_type: e.target.value })}
-          >
-            {ITEM_TYPES.realEstate.map(type => (
-              <option key={type.value} value={type.value}>{type.label}</option>
-            ))}
-          </select>
+          <span className={styles.itemCardFieldLabel}>취득일</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input
+              type="number"
+              className={styles.itemCardFieldInput}
+              style={{ width: 80, paddingRight: 12 }}
+              value={purchaseYear}
+              placeholder={String(currentYear)}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              onChange={(e) => setPurchaseYear(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, () => {
+                const val = purchaseYear ? parseInt(purchaseYear) : null;
+                if (val !== (meta?.purchase_year as number | null)) {
+                  updateMeta({ purchase_year: val });
+                }
+              })}
+              onBlur={() => {
+                const val = purchaseYear ? parseInt(purchaseYear) : null;
+                if (val !== (meta?.purchase_year as number | null)) {
+                  updateMeta({ purchase_year: val });
+                }
+              }}
+            />
+            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+            <input
+              type="number"
+              className={styles.itemCardFieldInput}
+              style={{ width: 60, paddingRight: 12 }}
+              value={purchaseMonth}
+              placeholder="1"
+              min={1}
+              max={12}
+              onWheel={e => (e.target as HTMLElement).blur()}
+              onChange={(e) => setPurchaseMonth(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, () => {
+                const val = purchaseMonth ? parseInt(purchaseMonth) : null;
+                if (val !== (meta?.purchase_month as number | null)) {
+                  updateMeta({ purchase_month: val });
+                }
+              })}
+              onBlur={() => {
+                const val = purchaseMonth ? parseInt(purchaseMonth) : null;
+                if (val !== (meta?.purchase_month as number | null)) {
+                  updateMeta({ purchase_month: val });
+                }
+              }}
+            />
+            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+          </div>
+        </div>
+
+        <div className={styles.itemCardField}>
+          <span className={styles.itemCardFieldLabel}>취득가</span>
+          <div className={styles.itemCardFieldUnit}>
+            <input
+              type="number"
+              className={styles.itemCardFieldInput}
+              value={purchasePrice}
+              placeholder="0"
+              onWheel={e => (e.target as HTMLElement).blur()}
+              onChange={(e) => setPurchasePrice(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, () => {
+                const val = parseInt(purchasePrice) || 0;
+                if (val !== (meta?.purchase_price as number)) {
+                  updateMeta({ purchase_price: val });
+                }
+              })}
+              onBlur={() => {
+                const val = parseInt(purchasePrice) || 0;
+                if (val !== (meta?.purchase_price as number)) {
+                  updateMeta({ purchase_price: val });
+                }
+              }}
+            />
+            <span className={styles.itemCardFieldUnitLabel}>만원</span>
+          </div>
         </div>
 
         <div className={styles.itemCardField}>
@@ -913,168 +1155,96 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
             <span className={styles.itemCardFieldUnitLabel}>만원</span>
           </div>
         </div>
-        <div />
       </div>
 
-      {/* Row 3: 취득일, 취득가, 담보대출 */}
+      {/* Row 3: 담보대출 | [대출금액] | [금리] */}
       <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
-        <div className={styles.itemCardField}>
-          <span className={styles.itemCardFieldLabel}>취득일</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input
-              type="number"
-              className={styles.itemCardFieldInput}
-              style={{ width: 80, paddingRight: 12 }}
-              value={purchaseYear}
-              placeholder={String(currentYear)}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              onChange={(e) => setPurchaseYear(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = purchaseYear ? parseInt(purchaseYear) : null;
-                if (val !== (meta?.purchase_year as number | null)) {
-                  onUpdate(item.id, { metadata: { ...meta, purchase_year: val } });
-                }
-              })}
-              onBlur={() => {
-                const val = purchaseYear ? parseInt(purchaseYear) : null;
-                if (val !== (meta?.purchase_year as number | null)) {
-                  onUpdate(item.id, { metadata: { ...meta, purchase_year: val } });
-                }
-              }}
-            />
-            <span style={{ fontSize: 13, color: '#6b7280' }}>년</span>
-            <input
-              type="number"
-              className={styles.itemCardFieldInput}
-              style={{ width: 60, paddingRight: 12 }}
-              value={purchaseMonth}
-              placeholder="1"
-              min={1}
-              max={12}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              onChange={(e) => setPurchaseMonth(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = purchaseMonth ? parseInt(purchaseMonth) : null;
-                if (val !== (meta?.purchase_month as number | null)) {
-                  onUpdate(item.id, { metadata: { ...meta, purchase_month: val } });
-                }
-              })}
-              onBlur={() => {
-                const val = purchaseMonth ? parseInt(purchaseMonth) : null;
-                if (val !== (meta?.purchase_month as number | null)) {
-                  onUpdate(item.id, { metadata: { ...meta, purchase_month: val } });
-                }
-              }}
-            />
-            <span style={{ fontSize: 13, color: '#6b7280' }}>월</span>
-          </div>
-        </div>
-
-        <div className={styles.itemCardField}>
-          <span className={styles.itemCardFieldLabel}>취득가</span>
-          <div className={styles.itemCardFieldUnit}>
-            <input
-              type="number"
-              className={styles.itemCardFieldInput}
-              value={purchasePrice}
-              placeholder="0"
-              onWheel={e => (e.target as HTMLElement).blur()}
-              onChange={(e) => setPurchasePrice(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = parseInt(purchasePrice) || 0;
-                if (val !== (meta?.purchase_price as number)) {
-                  onUpdate(item.id, { metadata: { ...meta, purchase_price: val } });
-                }
-              })}
-              onBlur={() => {
-                const val = parseInt(purchasePrice) || 0;
-                if (val !== (meta?.purchase_price as number)) {
-                  onUpdate(item.id, { metadata: { ...meta, purchase_price: val } });
-                }
-              }}
-            />
-            <span className={styles.itemCardFieldUnitLabel}>만원</span>
-          </div>
-        </div>
-
         <div className={styles.itemCardField}>
           <span className={styles.itemCardFieldLabel}>담보대출</span>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               type="button"
               className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
-              onClick={() => onUpdate(item.id, { metadata: { ...meta, has_loan: false } })}
+              onClick={() => updateMeta({ has_loan: false })}
             >
               없음
             </button>
             <button
               type="button"
               className={`${styles.typeBtn} ${hasLoan ? styles.active : ""}`}
-              onClick={() => onUpdate(item.id, { metadata: { ...meta, has_loan: true } })}
+              onClick={() => updateMeta({ has_loan: true })}
             >
               있음
             </button>
           </div>
         </div>
+        {hasLoan ? (
+          <>
+            <div className={styles.itemCardField}>
+              <span className={styles.itemCardFieldLabel}>대출금액</span>
+              <div className={styles.itemCardFieldUnit}>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  value={loanAmount}
+                  placeholder="0"
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setLoanAmount(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => {
+                    const val = parseInt(loanAmount) || 0;
+                    if (val !== (meta?.loan_amount as number)) {
+                      updateMeta({ loan_amount: val });
+                    }
+                  })}
+                  onBlur={() => {
+                    const val = parseInt(loanAmount) || 0;
+                    if (val !== (meta?.loan_amount as number)) {
+                      updateMeta({ loan_amount: val });
+                    }
+                  }}
+                />
+                <span className={styles.itemCardFieldUnitLabel}>만원</span>
+              </div>
+            </div>
+            <div className={styles.itemCardField}>
+              <span className={styles.itemCardFieldLabel}>금리</span>
+              <div className={styles.itemCardFieldUnit}>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  value={loanRate}
+                  placeholder="3.5"
+                  step="0.1"
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setLoanRate(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => {
+                    const val = parseFloat(loanRate) || 0;
+                    if (val !== (meta?.loan_rate as number)) {
+                      updateMeta({ loan_rate: val });
+                    }
+                  })}
+                  onBlur={() => {
+                    const val = parseFloat(loanRate) || 0;
+                    if (val !== (meta?.loan_rate as number)) {
+                      updateMeta({ loan_rate: val });
+                    }
+                  }}
+                />
+                <span className={styles.itemCardFieldUnitLabel}>%</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div />
+            <div />
+          </>
+        )}
       </div>
 
+      {/* Row 4 (hasLoan): 만기일 | 상환방식 | [거치기간] */}
       {hasLoan && (
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
-          <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>대출잔액</span>
-            <div className={styles.itemCardFieldUnit}>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                value={loanAmount}
-                placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
-                onChange={(e) => setLoanAmount(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = parseInt(loanAmount) || 0;
-                  if (val !== (meta?.loan_amount as number)) {
-                    onUpdate(item.id, { metadata: { ...meta, loan_amount: val } });
-                  }
-                })}
-                onBlur={() => {
-                  const val = parseInt(loanAmount) || 0;
-                  if (val !== (meta?.loan_amount as number)) {
-                    onUpdate(item.id, { metadata: { ...meta, loan_amount: val } });
-                  }
-                }}
-              />
-              <span className={styles.itemCardFieldUnitLabel}>만원</span>
-            </div>
-          </div>
-
-          <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>금리</span>
-            <div className={styles.itemCardFieldUnit}>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                value={loanRate}
-                placeholder="3.5"
-                step="0.1"
-                onWheel={e => (e.target as HTMLElement).blur()}
-                onChange={(e) => setLoanRate(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = parseFloat(loanRate) || 0;
-                  if (val !== (meta?.loan_rate as number)) {
-                    onUpdate(item.id, { metadata: { ...meta, loan_rate: val } });
-                  }
-                })}
-                onBlur={() => {
-                  const val = parseFloat(loanRate) || 0;
-                  if (val !== (meta?.loan_rate as number)) {
-                    onUpdate(item.id, { metadata: { ...meta, loan_rate: val } });
-                  }
-                }}
-              />
-              <span className={styles.itemCardFieldUnitLabel}>%</span>
-            </div>
-          </div>
-
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>만기일</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1089,17 +1259,17 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
                 onKeyDown={(e) => handleKeyDown(e, () => {
                   const val = maturityYear ? parseInt(maturityYear) : null;
                   if (val !== (meta?.loan_maturity_year as number | null)) {
-                    onUpdate(item.id, { metadata: { ...meta, loan_maturity_year: val } });
+                    updateMeta({ loan_maturity_year: val });
                   }
                 })}
                 onBlur={() => {
                   const val = maturityYear ? parseInt(maturityYear) : null;
                   if (val !== (meta?.loan_maturity_year as number | null)) {
-                    onUpdate(item.id, { metadata: { ...meta, loan_maturity_year: val } });
+                    updateMeta({ loan_maturity_year: val });
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: '#6b7280' }}>년</span>
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
               <input
                 type="number"
                 className={styles.itemCardFieldInput}
@@ -1113,27 +1283,28 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
                 onKeyDown={(e) => handleKeyDown(e, () => {
                   const val = maturityMonth ? parseInt(maturityMonth) : null;
                   if (val !== (meta?.loan_maturity_month as number | null)) {
-                    onUpdate(item.id, { metadata: { ...meta, loan_maturity_month: val } });
+                    updateMeta({ loan_maturity_month: val });
                   }
                 })}
                 onBlur={() => {
                   const val = maturityMonth ? parseInt(maturityMonth) : null;
                   if (val !== (meta?.loan_maturity_month as number | null)) {
-                    onUpdate(item.id, { metadata: { ...meta, loan_maturity_month: val } });
+                    updateMeta({ loan_maturity_month: val });
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: '#6b7280' }}>월</span>
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
             </div>
           </div>
-
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>상환방식</span>
             <select
               className={styles.itemCardFieldSelect}
-              value={(meta?.loan_repayment_type as string) || "원리금균등상환"}
+              value={repaymentType}
               onChange={(e) => {
-                onUpdate(item.id, { metadata: { ...meta, loan_repayment_type: e.target.value } });
+                const val = e.target.value;
+                setRepaymentType(val);
+                updateMeta({ loan_repayment_type: val });
               }}
             >
               {REPAYMENT_TYPES.map(type => (
@@ -1141,6 +1312,61 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
               ))}
             </select>
           </div>
+          {repaymentType === "거치식상환" ? (
+            <div className={styles.itemCardField}>
+              <span className={styles.itemCardFieldLabel}>거치기간</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  style={{ width: 80, paddingRight: 12 }}
+                  value={gracePeriodYear}
+                  placeholder={String(currentYear + 3)}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setGracePeriodYear(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => {
+                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
+                    if (val !== (meta?.grace_period_year as number | null)) {
+                      updateMeta({ grace_period_year: val });
+                    }
+                  })}
+                  onBlur={() => {
+                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
+                    if (val !== (meta?.grace_period_year as number | null)) {
+                      updateMeta({ grace_period_year: val });
+                    }
+                  }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  style={{ width: 60, paddingRight: 12 }}
+                  value={gracePeriodMonth}
+                  placeholder="12"
+                  min={1}
+                  max={12}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setGracePeriodMonth(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => {
+                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
+                    if (val !== (meta?.grace_period_month as number | null)) {
+                      updateMeta({ grace_period_month: val });
+                    }
+                  })}
+                  onBlur={() => {
+                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
+                    if (val !== (meta?.grace_period_month as number | null)) {
+                      updateMeta({ grace_period_month: val });
+                    }
+                  }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+              </div>
+            </div>
+          ) : (
+            <div />
+          )}
         </div>
       )}
     </div>
@@ -1176,6 +1402,8 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
   const [repaymentType, setRepaymentType] = useState<string>((meta?.loan_repayment_type as string) || "원리금균등상환");
   const [monthlyRent, setMonthlyRent] = useState(String((meta?.monthly_rent as number) || ""));
   const [maintenanceFee, setMaintenanceFee] = useState(String((meta?.maintenance_fee as number) || ""));
+  const [gracePeriodYear, setGracePeriodYear] = useState(String((meta?.grace_period_year as number) || ""));
+  const [gracePeriodMonth, setGracePeriodMonth] = useState(String((meta?.grace_period_month as number) || ""));
 
   const handleKeyDown = (e: React.KeyboardEvent, saveCallback: () => void) => {
     if (e.key === 'Enter') {
@@ -1306,16 +1534,6 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
             </select>
           </div>
           <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>이름</span>
-            <input
-              type="text"
-              className={styles.itemCardFieldInput}
-              value="거주용 부동산"
-              readOnly
-              style={{ background: 'var(--dashboard-bg-secondary)' }}
-            />
-          </div>
-          <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>소유</span>
             <select
               className={styles.itemCardFieldSelect}
@@ -1326,10 +1544,63 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               {isCouple && <option value="spouse">배우자</option>}
             </select>
           </div>
+          {housingType === "자가" && (
+            <div className={styles.itemCardField}>
+              <span className={styles.itemCardFieldLabel}>취득일</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  style={{ width: 80, paddingRight: 12 }}
+                  value={purchaseYear}
+                  placeholder={String(currentYear)}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setPurchaseYear(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => {
+                    const val = purchaseYear ? parseInt(purchaseYear) : null;
+                    if (item && val !== (meta?.purchase_year as number | null)) {
+                      updateMeta({ purchase_year: val });
+                    }
+                  })}
+                  onBlur={() => {
+                    const val = purchaseYear ? parseInt(purchaseYear) : null;
+                    if (item && val !== (meta?.purchase_year as number | null)) {
+                      updateMeta({ purchase_year: val });
+                    }
+                  }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  style={{ width: 60, paddingRight: 12 }}
+                  value={purchaseMonth}
+                  placeholder={String(currentMonth)}
+                  min={1}
+                  max={12}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setPurchaseMonth(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => {
+                    const val = purchaseMonth ? parseInt(purchaseMonth) : null;
+                    if (item && val !== (meta?.purchase_month as number | null)) {
+                      updateMeta({ purchase_month: val });
+                    }
+                  })}
+                  onBlur={() => {
+                    const val = purchaseMonth ? parseInt(purchaseMonth) : null;
+                    if (item && val !== (meta?.purchase_month as number | null)) {
+                      updateMeta({ purchase_month: val });
+                    }
+                  }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Row 1 (전세): 보증금, 관리비, 전월세대출 */}
+      {/* Row 1 (전세): 보증금, 관리비 */}
       {housingType === "전세" && (
         <div className={styles.itemCardGrid}>
           <div className={styles.itemCardField}>
@@ -1386,29 +1657,11 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               <span className={styles.itemCardFieldUnitLabel}>만원/월</span>
             </div>
           </div>
-          <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>전월세대출</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
-                onClick={() => handleLoanToggle(false)}
-              >
-                없음
-              </button>
-              <button
-                type="button"
-                className={`${styles.typeBtn} ${hasLoan ? styles.active : ""}`}
-                onClick={() => handleLoanToggle(true)}
-              >
-                있음
-              </button>
-            </div>
-          </div>
+          <div />
         </div>
       )}
 
-      {/* Row 1 (월세): 보증금, 월세, 전월세대출 */}
+      {/* Row 1 (월세): 보증금, 월세, 관리비 */}
       {housingType === "월세" && (
         <div className={styles.itemCardGrid}>
           <div className={styles.itemCardField}>
@@ -1466,31 +1719,6 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
             </div>
           </div>
           <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>전월세대출</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
-                onClick={() => handleLoanToggle(false)}
-              >
-                없음
-              </button>
-              <button
-                type="button"
-                className={`${styles.typeBtn} ${hasLoan ? styles.active : ""}`}
-                onClick={() => handleLoanToggle(true)}
-              >
-                있음
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Row 2 (월세): 관리비 */}
-      {housingType === "월세" && (
-        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
-          <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>관리비</span>
             <div className={styles.itemCardFieldUnit}>
               <input
@@ -1516,8 +1744,6 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               <span className={styles.itemCardFieldUnitLabel}>만원/월</span>
             </div>
           </div>
-          <div />
-          <div />
         </div>
       )}
 
@@ -1555,11 +1781,124 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
         </div>
       )}
 
-      {/* Row 1 (자가): 시세, 관리비, 주담대 */}
+      {/* Row (전세/월세): 전월세대출 | 대출금액 | 금리 */}
+      {(housingType === "전세" || housingType === "월세") && (
+        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>전월세대출</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
+                onClick={() => handleLoanToggle(false)}
+              >
+                없음
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${hasLoan ? styles.active : ""}`}
+                onClick={() => handleLoanToggle(true)}
+              >
+                있음
+              </button>
+            </div>
+          </div>
+          {hasLoan ? (
+            <>
+              <div className={styles.itemCardField}>
+                <span className={styles.itemCardFieldLabel}>대출금액</span>
+                <div className={styles.itemCardFieldUnit}>
+                  <input
+                    type="number"
+                    className={styles.itemCardFieldInput}
+                    value={loanAmount}
+                    placeholder="0"
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onChange={(e) => setLoanAmount(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, () => {
+                      const val = loanAmount ? parseInt(loanAmount) : null;
+                      if (item && val !== (meta?.loan_amount as number | null)) {
+                        updateMeta({ loan_amount: val });
+                      }
+                    })}
+                    onBlur={() => {
+                      const val = loanAmount ? parseInt(loanAmount) : null;
+                      if (item && val !== (meta?.loan_amount as number | null)) {
+                        updateMeta({ loan_amount: val });
+                      }
+                    }}
+                  />
+                  <span className={styles.itemCardFieldUnitLabel}>만원</span>
+                </div>
+              </div>
+              <div className={styles.itemCardField}>
+                <span className={styles.itemCardFieldLabel}>금리</span>
+                <div className={styles.itemCardFieldUnit}>
+                  <input
+                    type="number"
+                    className={styles.itemCardFieldInput}
+                    value={loanRate}
+                    placeholder="3.5"
+                    step="0.1"
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onChange={(e) => setLoanRate(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, () => {
+                      const val = loanRate ? parseFloat(loanRate) : null;
+                      if (item && val !== (meta?.loan_rate as number | null)) {
+                        updateMeta({ loan_rate: val });
+                      }
+                    })}
+                    onBlur={() => {
+                      const val = loanRate ? parseFloat(loanRate) : null;
+                      if (item && val !== (meta?.loan_rate as number | null)) {
+                        updateMeta({ loan_rate: val });
+                      }
+                    }}
+                  />
+                  <span className={styles.itemCardFieldUnitLabel}>%</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div />
+              <div />
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Row 1 (자가): 취득가, 현재시세, 관리비 */}
       {housingType === "자가" && (
         <div className={styles.itemCardGrid}>
           <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>시세</span>
+            <span className={styles.itemCardFieldLabel}>취득가</span>
+            <div className={styles.itemCardFieldUnit}>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                value={purchasePrice}
+                placeholder="0"
+                onWheel={e => (e.target as HTMLElement).blur()}
+                onChange={(e) => setPurchasePrice(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, () => {
+                  const val = purchasePrice ? parseInt(purchasePrice) : null;
+                  if (item && val !== (meta?.purchase_price as number | null)) {
+                    updateMeta({ purchase_price: val });
+                  }
+                })}
+                onBlur={() => {
+                  const val = purchasePrice ? parseInt(purchasePrice) : null;
+                  if (item && val !== (meta?.purchase_price as number | null)) {
+                    updateMeta({ purchase_price: val });
+                  }
+                }}
+              />
+              <span className={styles.itemCardFieldUnitLabel}>만원</span>
+            </div>
+          </div>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>현재시세</span>
             <div className={styles.itemCardFieldUnit}>
               <input
                 type="number"
@@ -1612,6 +1951,12 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               <span className={styles.itemCardFieldUnitLabel}>만원/월</span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Row 2 (자가): 주담대 | 대출금액 | 금리 */}
+      {housingType === "자가" && (
+        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>주담대</span>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -1631,152 +1976,74 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               </button>
             </div>
           </div>
+          {hasLoan ? (
+            <>
+              <div className={styles.itemCardField}>
+                <span className={styles.itemCardFieldLabel}>대출금액</span>
+                <div className={styles.itemCardFieldUnit}>
+                  <input
+                    type="number"
+                    className={styles.itemCardFieldInput}
+                    value={loanAmount}
+                    placeholder="0"
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onChange={(e) => setLoanAmount(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, () => {
+                      const val = loanAmount ? parseInt(loanAmount) : null;
+                      if (item && val !== (meta?.loan_amount as number | null)) {
+                        updateMeta({ loan_amount: val });
+                      }
+                    })}
+                    onBlur={() => {
+                      const val = loanAmount ? parseInt(loanAmount) : null;
+                      if (item && val !== (meta?.loan_amount as number | null)) {
+                        updateMeta({ loan_amount: val });
+                      }
+                    }}
+                  />
+                  <span className={styles.itemCardFieldUnitLabel}>만원</span>
+                </div>
+              </div>
+              <div className={styles.itemCardField}>
+                <span className={styles.itemCardFieldLabel}>금리</span>
+                <div className={styles.itemCardFieldUnit}>
+                  <input
+                    type="number"
+                    className={styles.itemCardFieldInput}
+                    value={loanRate}
+                    placeholder="3.5"
+                    step="0.1"
+                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onChange={(e) => setLoanRate(e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, () => {
+                      const val = loanRate ? parseFloat(loanRate) : null;
+                      if (item && val !== (meta?.loan_rate as number | null)) {
+                        updateMeta({ loan_rate: val });
+                      }
+                    })}
+                    onBlur={() => {
+                      const val = loanRate ? parseFloat(loanRate) : null;
+                      if (item && val !== (meta?.loan_rate as number | null)) {
+                        updateMeta({ loan_rate: val });
+                      }
+                    }}
+                  />
+                  <span className={styles.itemCardFieldUnitLabel}>%</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div />
+              <div />
+            </>
+          )}
         </div>
       )}
 
-      {/* Row 2 (자가): 취득일, 취득가 */}
-      {housingType === "자가" && (
+      {/* Row 4 (자가 + 주담대): 만기일, 상환방식, [거치기간] */}
+      {housingType === "자가" && hasLoan && (
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
-          <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>취득일</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                style={{ width: 80, paddingRight: 12 }}
-                value={purchaseYear}
-                placeholder={String(currentYear)}
-                onWheel={e => (e.target as HTMLElement).blur()}
-                onChange={(e) => setPurchaseYear(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = purchaseYear ? parseInt(purchaseYear) : null;
-                  if (item && val !== (meta?.purchase_year as number | null)) {
-                    updateMeta({ purchase_year: val });
-                  }
-                })}
-                onBlur={() => {
-                  const val = purchaseYear ? parseInt(purchaseYear) : null;
-                  if (item && val !== (meta?.purchase_year as number | null)) {
-                    updateMeta({ purchase_year: val });
-                  }
-                }}
-              />
-              <span style={{ fontSize: 13, color: '#6b7280' }}>년</span>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                style={{ width: 60, paddingRight: 12 }}
-                value={purchaseMonth}
-                placeholder={String(currentMonth)}
-                min={1}
-                max={12}
-                onWheel={e => (e.target as HTMLElement).blur()}
-                onChange={(e) => setPurchaseMonth(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = purchaseMonth ? parseInt(purchaseMonth) : null;
-                  if (item && val !== (meta?.purchase_month as number | null)) {
-                    updateMeta({ purchase_month: val });
-                  }
-                })}
-                onBlur={() => {
-                  const val = purchaseMonth ? parseInt(purchaseMonth) : null;
-                  if (item && val !== (meta?.purchase_month as number | null)) {
-                    updateMeta({ purchase_month: val });
-                  }
-                }}
-              />
-              <span style={{ fontSize: 13, color: '#6b7280' }}>월</span>
-            </div>
-          </div>
-
-          <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>취득가</span>
-            <div className={styles.itemCardFieldUnit}>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                value={purchasePrice}
-                placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
-                onChange={(e) => setPurchasePrice(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = purchasePrice ? parseInt(purchasePrice) : null;
-                  if (item && val !== (meta?.purchase_price as number | null)) {
-                    updateMeta({ purchase_price: val });
-                  }
-                })}
-                onBlur={() => {
-                  const val = purchasePrice ? parseInt(purchasePrice) : null;
-                  if (item && val !== (meta?.purchase_price as number | null)) {
-                    updateMeta({ purchase_price: val });
-                  }
-                }}
-              />
-              <span className={styles.itemCardFieldUnitLabel}>만원</span>
-            </div>
-          </div>
-          <div />
-        </div>
-      )}
-
-      {/* Row 4: 대출금액, 금리, 만기일 */}
-      {housingType !== "무상" && hasLoan && (
-        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
-          <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>대출금액</span>
-            <div className={styles.itemCardFieldUnit}>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                value={loanAmount}
-                placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
-                onChange={(e) => setLoanAmount(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = loanAmount ? parseInt(loanAmount) : null;
-                  if (item && val !== (meta?.loan_amount as number | null)) {
-                    updateMeta({ loan_amount: val });
-                  }
-                })}
-                onBlur={() => {
-                  const val = loanAmount ? parseInt(loanAmount) : null;
-                  if (item && val !== (meta?.loan_amount as number | null)) {
-                    updateMeta({ loan_amount: val });
-                  }
-                }}
-              />
-              <span className={styles.itemCardFieldUnitLabel}>만원</span>
-            </div>
-          </div>
-
-          <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>금리</span>
-            <div className={styles.itemCardFieldUnit}>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                value={loanRate}
-                placeholder="3.5"
-                step="0.1"
-                onWheel={e => (e.target as HTMLElement).blur()}
-                onChange={(e) => setLoanRate(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = loanRate ? parseFloat(loanRate) : null;
-                  if (item && val !== (meta?.loan_rate as number | null)) {
-                    updateMeta({ loan_rate: val });
-                  }
-                })}
-                onBlur={() => {
-                  const val = loanRate ? parseFloat(loanRate) : null;
-                  if (item && val !== (meta?.loan_rate as number | null)) {
-                    updateMeta({ loan_rate: val });
-                  }
-                }}
-              />
-              <span className={styles.itemCardFieldUnitLabel}>%</span>
-            </div>
-          </div>
-
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>만기일</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1801,7 +2068,7 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: '#6b7280' }}>년</span>
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
               <input
                 type="number"
                 className={styles.itemCardFieldInput}
@@ -1825,15 +2092,9 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: '#6b7280' }}>월</span>
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Row 4: 상환방식 */}
-      {housingType !== "무상" && hasLoan && (
-        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>상환방식</span>
             <select
@@ -1846,6 +2107,185 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               ))}
             </select>
           </div>
+          {repaymentType === "거치식상환" ? (
+            <div className={styles.itemCardField}>
+              <span className={styles.itemCardFieldLabel}>거치기간</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  style={{ width: 80, paddingRight: 12 }}
+                  value={gracePeriodYear}
+                  placeholder={String(currentYear + 3)}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setGracePeriodYear(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => {
+                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
+                    if (item && val !== (meta?.grace_period_year as number | null)) {
+                      updateMeta({ grace_period_year: val });
+                    }
+                  })}
+                  onBlur={() => {
+                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
+                    if (item && val !== (meta?.grace_period_year as number | null)) {
+                      updateMeta({ grace_period_year: val });
+                    }
+                  }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  style={{ width: 60, paddingRight: 12 }}
+                  value={gracePeriodMonth}
+                  placeholder="12"
+                  min={1}
+                  max={12}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setGracePeriodMonth(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => {
+                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
+                    if (item && val !== (meta?.grace_period_month as number | null)) {
+                      updateMeta({ grace_period_month: val });
+                    }
+                  })}
+                  onBlur={() => {
+                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
+                    if (item && val !== (meta?.grace_period_month as number | null)) {
+                      updateMeta({ grace_period_month: val });
+                    }
+                  }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+              </div>
+            </div>
+          ) : (
+            <div />
+          )}
+        </div>
+      )}
+
+      {/* Row (전세/월세 + 대출): 만기일, 상환방식, [거치기간] */}
+      {(housingType === "전세" || housingType === "월세") && hasLoan && (
+        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>만기일</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                style={{ width: 80, paddingRight: 12 }}
+                value={maturityYear}
+                placeholder={String(currentYear + 20)}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                onChange={(e) => setMaturityYear(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, () => {
+                  const val = maturityYear ? parseInt(maturityYear) : null;
+                  if (item && val !== (meta?.loan_maturity_year as number | null)) {
+                    updateMeta({ loan_maturity_year: val });
+                  }
+                })}
+                onBlur={() => {
+                  const val = maturityYear ? parseInt(maturityYear) : null;
+                  if (item && val !== (meta?.loan_maturity_year as number | null)) {
+                    updateMeta({ loan_maturity_year: val });
+                  }
+                }}
+              />
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                style={{ width: 60, paddingRight: 12 }}
+                value={maturityMonth}
+                placeholder="12"
+                min={1}
+                max={12}
+                onWheel={e => (e.target as HTMLElement).blur()}
+                onChange={(e) => setMaturityMonth(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, () => {
+                  const val = maturityMonth ? parseInt(maturityMonth) : null;
+                  if (item && val !== (meta?.loan_maturity_month as number | null)) {
+                    updateMeta({ loan_maturity_month: val });
+                  }
+                })}
+                onBlur={() => {
+                  const val = maturityMonth ? parseInt(maturityMonth) : null;
+                  if (item && val !== (meta?.loan_maturity_month as number | null)) {
+                    updateMeta({ loan_maturity_month: val });
+                  }
+                }}
+              />
+              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+            </div>
+          </div>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>상환방식</span>
+            <select
+              className={styles.itemCardFieldSelect}
+              value={repaymentType}
+              onChange={(e) => handleRepaymentTypeChange(e.target.value)}
+            >
+              {REPAYMENT_TYPES.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+          </div>
+          {repaymentType === "거치식상환" ? (
+            <div className={styles.itemCardField}>
+              <span className={styles.itemCardFieldLabel}>거치기간</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  style={{ width: 80, paddingRight: 12 }}
+                  value={gracePeriodYear}
+                  placeholder={String(currentYear + 3)}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setGracePeriodYear(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => {
+                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
+                    if (item && val !== (meta?.grace_period_year as number | null)) {
+                      updateMeta({ grace_period_year: val });
+                    }
+                  })}
+                  onBlur={() => {
+                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
+                    if (item && val !== (meta?.grace_period_year as number | null)) {
+                      updateMeta({ grace_period_year: val });
+                    }
+                  }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  style={{ width: 60, paddingRight: 12 }}
+                  value={gracePeriodMonth}
+                  placeholder="12"
+                  min={1}
+                  max={12}
+                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onChange={(e) => setGracePeriodMonth(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, () => {
+                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
+                    if (item && val !== (meta?.grace_period_month as number | null)) {
+                      updateMeta({ grace_period_month: val });
+                    }
+                  })}
+                  onBlur={() => {
+                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
+                    if (item && val !== (meta?.grace_period_month as number | null)) {
+                      updateMeta({ grace_period_month: val });
+                    }
+                  }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+              </div>
+            </div>
+          ) : (
+            <div />
+          )}
         </div>
       )}
     </div>
@@ -1859,18 +2299,17 @@ interface CheckingAccountCardProps {
 }
 
 function CheckingAccountCard({ data, onSave }: CheckingAccountCardProps) {
-  const [balance, setBalance] = useState(String(Math.round(wonToManwon(data.value))));
+  const [balance, setBalance] = useState(data.value ? String(data.value) : "");
 
   useEffect(() => {
-    setBalance(String(Math.round(wonToManwon(data.value))));
+    setBalance(data.value ? String(data.value) : "");
   }, [data.value]);
 
   const saveBalance = () => {
     const val = parseInt(balance);
     if (isNaN(val)) return;
-    const newWon = manwonToWon(val);
-    if (newWon === data.value) return;
-    onSave(data.id, newWon);
+    if (val === data.value) return;
+    onSave(data.id, val);
   };
 
   return (
@@ -1894,11 +2333,11 @@ function CheckingAccountCard({ data, onSave }: CheckingAccountCardProps) {
             onBlur={saveBalance}
             onKeyDown={e => {
               if (e.key === "Enter") { e.preventDefault(); (e.target as HTMLElement).blur(); saveBalance(); }
-              if (e.key === "Escape") setBalance(String(Math.round(wonToManwon(data.value))));
+              if (e.key === "Escape") setBalance(data.value ? String(data.value) : "");
             }}
-            style={{ width: 120, textAlign: 'right' }}
+            style={{ width: 140, textAlign: 'right' }}
           />
-          <span className={styles.itemCardFieldUnitLabel}>만원</span>
+          <span className={styles.itemCardFieldUnitLabel}>원</span>
         </div>
       </div>
     </div>
@@ -1912,222 +2351,32 @@ interface TermDepositCardProps {
   onSave: (accountId: string, updateData: Record<string, unknown>) => Promise<void>;
 }
 
-function TermDepositCard({ account, displayValue, onSave }: TermDepositCardProps) {
-  const isSavingsType = account.account_type === "savings";
+function TermDepositCard({ account, displayValue, onSave: _onSave }: TermDepositCardProps) {
   const typeLabel = account.account_type === "deposit" ? "예금" :
     account.account_type === "housing" ? "주택청약" :
     account.account_type === "free_savings" ? "자유적금" : "적금";
-
-  // 로컬 상태 (만원 단위)
-  const [balanceOrContribution, setBalanceOrContribution] = useState(
-    isSavingsType
-      ? (account.monthly_contribution ? String(wonToManwon(account.monthly_contribution)) : "")
-      : (account.current_balance ? String(wonToManwon(account.current_balance)) : "")
-  );
-  const [interestRate, setInterestRate] = useState(
-    account.interest_rate != null ? String(account.interest_rate) : ""
-  );
-  const [startYear, setStartYear] = useState(
-    account.start_year ? String(account.start_year) : ""
-  );
-  const [startMonth, setStartMonth] = useState(
-    account.start_month ? String(account.start_month) : ""
-  );
-  const [maturityYear, setMaturityYear] = useState(
-    account.maturity_year ? String(account.maturity_year) : ""
-  );
-  const [maturityMonth, setMaturityMonth] = useState(
-    account.maturity_month ? String(account.maturity_month) : ""
-  );
-
-  // 외부에서 account 데이터가 변경되면 로컬 상태 동기화
-  useEffect(() => {
-    setBalanceOrContribution(
-      isSavingsType
-        ? (account.monthly_contribution ? String(wonToManwon(account.monthly_contribution)) : "")
-        : (account.current_balance ? String(wonToManwon(account.current_balance)) : "")
-    );
-    setInterestRate(account.interest_rate != null ? String(account.interest_rate) : "");
-    setStartYear(account.start_year ? String(account.start_year) : "");
-    setStartMonth(account.start_month ? String(account.start_month) : "");
-    setMaturityYear(account.maturity_year ? String(account.maturity_year) : "");
-    setMaturityMonth(account.maturity_month ? String(account.maturity_month) : "");
-  }, [account, isSavingsType]);
-
-  const handleKeyDown = (e: React.KeyboardEvent, saveCallback: () => void) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      (e.target as HTMLElement).blur();
-      saveCallback();
-    }
-  };
-
-  const saveBalanceOrContribution = () => {
-    const val = parseFloat(balanceOrContribution);
-    if (isNaN(val)) return;
-    if (isSavingsType) {
-      onSave(account.id, { monthly_contribution: manwonToWon(val) });
-    } else {
-      onSave(account.id, { current_balance: manwonToWon(val) });
-    }
-  };
-
-  const saveInterestRate = () => {
-    const val = parseFloat(interestRate);
-    if (isNaN(val)) return;
-    onSave(account.id, { interest_rate: val });
-  };
-
-  const saveStartDate = () => {
-    const y = parseInt(startYear);
-    const m = parseInt(startMonth);
-    const updates: Record<string, unknown> = {};
-    if (!isNaN(y)) updates.start_year = y;
-    if (!isNaN(m) && m >= 1 && m <= 12) updates.start_month = m;
-    if (Object.keys(updates).length > 0) onSave(account.id, updates);
-  };
-
-  const saveMaturityDate = () => {
-    const y = parseInt(maturityYear);
-    const m = parseInt(maturityMonth);
-    const updates: Record<string, unknown> = {};
-    if (!isNaN(y)) updates.maturity_year = y;
-    if (!isNaN(m) && m >= 1 && m <= 12) updates.maturity_month = m;
-    if (Object.keys(updates).length > 0) onSave(account.id, updates);
-  };
 
   const maturityPreTax = calculateMaturityAmountPreTax(account);
   const maturityPostTax = calculateMaturityAmountPostTax(account);
 
   return (
-    <div className={`${styles.itemCard} ${styles.itemCardCompact}`}>
-      <div className={styles.itemCardHeaderSimple}>
-        <div className={styles.itemCardTitleRow}>
-          <BrokerLogo brokerName={account.broker_name} fallback={account.name || "?"} size="md" />
-          <div className={styles.accountInfo}>
-            <span className={styles.itemCardTitle}>{account.name}</span>
-            <span className={styles.accountTypeLabel}>{typeLabel}</span>
-          </div>
-        </div>
-        <div className={styles.termDepositValueArea}>
-          <span className={styles.termDepositCurrentValue}>
-            {formatWon(displayValue)}
-          </span>
-          {maturityPreTax != null && (
-            <span className={styles.termDepositMaturityInfo}>
-              예상 만기 금액: 세전 {formatWon(maturityPreTax)} / 세후 {formatWon(maturityPostTax ?? maturityPreTax)}
-            </span>
-          )}
+    <div className={styles.simpleRow}>
+      <div className={styles.simpleRowInfo}>
+        <BrokerLogo brokerName={account.broker_name || ""} fallback={account.name || "?"} size="md" />
+        <div className={styles.accountInfo}>
+          <span className={styles.accountName}>{account.name}</span>
+          <span className={styles.accountTypeLabel}>{typeLabel}</span>
         </div>
       </div>
-
-      <div className={styles.itemCardGrid}>
-        {/* 원금 or 월 납입액 */}
-        <div className={styles.itemCardField}>
-          <span className={styles.itemCardFieldLabel}>{isSavingsType ? "월 납입액" : "원금"}</span>
-          <div className={styles.itemCardFieldUnit}>
-            <input
-              type="number"
-              className={styles.itemCardFieldInput}
-              value={balanceOrContribution}
-              placeholder="0"
-              onWheel={e => (e.target as HTMLElement).blur()}
-              onChange={e => setBalanceOrContribution(e.target.value)}
-              onKeyDown={e => handleKeyDown(e, saveBalanceOrContribution)}
-              onBlur={saveBalanceOrContribution}
-            />
-            <span className={styles.itemCardFieldUnitLabel}>만원</span>
-          </div>
+      <div className={styles.simpleRowAmount}>
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--dashboard-text)' }}>{formatWon(displayValue)}</span>
+          {maturityPreTax != null && maturityPreTax > 0 && (
+            <div style={{ fontSize: 11, color: 'var(--dashboard-text-muted)', marginTop: 2 }}>
+              예상 만기 금액: 세전 {formatWon(maturityPreTax)} / 세후 {formatWon(maturityPostTax ?? maturityPreTax)}
+            </div>
+          )}
         </div>
-
-        {/* 이율 */}
-        <div className={styles.itemCardField}>
-          <span className={styles.itemCardFieldLabel}>이율</span>
-          <div className={styles.itemCardFieldUnit}>
-            <input
-              type="number"
-              className={styles.itemCardFieldInput}
-              value={interestRate}
-              placeholder="0"
-              step="0.1"
-              onWheel={e => (e.target as HTMLElement).blur()}
-              onChange={e => setInterestRate(e.target.value)}
-              onKeyDown={e => handleKeyDown(e, saveInterestRate)}
-              onBlur={saveInterestRate}
-            />
-            <span className={styles.itemCardFieldUnitLabel}>%</span>
-          </div>
-        </div>
-
-        {/* 빈 칸 (3열 그리드 맞춤) */}
-        <div />
-
-        {/* 가입일 */}
-        <div className={styles.itemCardField}>
-          <span className={styles.itemCardFieldLabel}>가입일</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input
-              type="number"
-              className={styles.itemCardFieldInput}
-              style={{ width: 80, paddingRight: 12 }}
-              value={startYear}
-              placeholder="년"
-              onWheel={e => (e.target as HTMLElement).blur()}
-              onChange={e => setStartYear(e.target.value)}
-              onKeyDown={e => handleKeyDown(e, saveStartDate)}
-              onBlur={saveStartDate}
-            />
-            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>.</span>
-            <input
-              type="number"
-              className={styles.itemCardFieldInput}
-              style={{ width: 60, paddingRight: 12 }}
-              value={startMonth}
-              placeholder="월"
-              min={1}
-              max={12}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              onChange={e => setStartMonth(e.target.value)}
-              onKeyDown={e => handleKeyDown(e, saveStartDate)}
-              onBlur={saveStartDate}
-            />
-          </div>
-        </div>
-
-        {/* 만기일 */}
-        <div className={styles.itemCardField}>
-          <span className={styles.itemCardFieldLabel}>만기일</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input
-              type="number"
-              className={styles.itemCardFieldInput}
-              style={{ width: 80, paddingRight: 12 }}
-              value={maturityYear}
-              placeholder="년"
-              onWheel={e => (e.target as HTMLElement).blur()}
-              onChange={e => setMaturityYear(e.target.value)}
-              onKeyDown={e => handleKeyDown(e, saveMaturityDate)}
-              onBlur={saveMaturityDate}
-            />
-            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>.</span>
-            <input
-              type="number"
-              className={styles.itemCardFieldInput}
-              style={{ width: 60, paddingRight: 12 }}
-              value={maturityMonth}
-              placeholder="월"
-              min={1}
-              max={12}
-              onWheel={e => (e.target as HTMLElement).blur()}
-              onChange={e => setMaturityMonth(e.target.value)}
-              onKeyDown={e => handleKeyDown(e, saveMaturityDate)}
-              onBlur={saveMaturityDate}
-            />
-          </div>
-        </div>
-
-        {/* 빈 칸 (3열 그리드 맞춤 - 만기 금액은 헤더 영역에 표시) */}
-        <div />
       </div>
     </div>
   );
@@ -2436,9 +2685,21 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   const checkingAccounts = useMemo(() =>
     accounts.filter(a => a.account_type === "checking"),
   [accounts]);
-  const termDepositAccounts = useMemo(() =>
-    accounts.filter(a => ["savings", "deposit", "free_savings", "housing"].includes(a.account_type)),
-  [accounts]);
+  const termDepositAccounts = useMemo(() => {
+    const now = new Date();
+    const nowYear = now.getFullYear();
+    const nowMonth = now.getMonth() + 1;
+    return accounts.filter(a => {
+      if (!["savings", "deposit", "free_savings", "housing"].includes(a.account_type)) return false;
+      // 만기된 계좌 제외 (만기 후 수령액은 다른 통장/투자로 이동되므로)
+      if (a.maturity_year && a.maturity_month) {
+        if (a.maturity_year < nowYear || (a.maturity_year === nowYear && a.maturity_month < nowMonth)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [accounts]);
 
   const [budgetTransactions, setBudgetTransactions] = useState<{ account_id: string | null; type: string; amount: number }[]>([]);
 
@@ -2588,11 +2849,15 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     const realAssetItems = items.filter(i => i.category === "asset" && ["car", "precious_metal", "art", "other"].includes(i.item_type));
 
     const realAssetGross = realAssetItems.reduce((sum, i) => sum + i.amount, 0);
+    const realAssetLoan = realAssetItems.reduce((sum, i) => {
+      const meta = i.metadata as Record<string, unknown>;
+      return sum + ((meta?.has_loan && meta?.loan_amount) ? (meta.loan_amount as number) : 0);
+    }, 0);
     const realAssetInstallment = realAssetItems.reduce((sum, i) => {
       const meta = i.metadata as Record<string, unknown>;
-      return sum + ((meta?.has_installment && meta?.installment_balance) ? (meta.installment_balance as number) : 0);
+      return sum + ((meta?.has_installment && meta?.installment_remaining) ? (meta.installment_remaining as number) : 0);
     }, 0);
-    const realAsset = realAssetGross; // 총 자산 가치 (할부 미차감)
+    const realAsset = realAssetGross; // 총 자산 가치 (부채 미차감)
 
     // 금융 부채 (source 없는 순수 금융부채)
     const unsecuredDebt = items
@@ -2603,8 +2868,8 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
       })
       .reduce((sum, i) => sum + i.amount, 0);
 
-    // 전체 부채 (금융부채 + 주담대 + 할부)
-    const debt = unsecuredDebt + realEstateLoan + realAssetInstallment;
+    // 전체 부채 (금융부채 + 부동산대출 + 실물자산대출 + 할부)
+    const debt = unsecuredDebt + realEstateLoan + realAssetLoan + realAssetInstallment;
 
     const totalAssets = savings + investment + realEstate + realAsset;
     const netWorth = totalAssets - debt;
@@ -2692,12 +2957,12 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   }, [items, activeTab]);
 
   // 차트 데이터 - 순자산 (메인) - 부채 포함
-  const hasData = totals.savings > 0 || totals.investment > 0 || totals.realEstate > 0 || totals.realAsset > 0 || totals.debt > 0;
+  const hasData = totals.savings > 0 || totals.investment > 0 || totals.realEstate > 0 || totals.realAsset > 0 || totals.unsecuredDebt > 0;
   const chartData = {
     labels: hasData ? ["저축", "투자", "부동산", "실물 자산", "금융 부채"] : ["데이터 없음"],
     datasets: [{
       data: hasData
-        ? [totals.savings || 0.01, totals.investment || 0.01, totals.realEstate || 0.01, totals.realAsset || 0.01, totals.debt || 0.01]
+        ? [totals.savings || 0.01, totals.investment || 0.01, totals.realEstate || 0.01, totals.realAsset || 0.01, totals.unsecuredDebt || 0.01]
         : [1],
       backgroundColor: hasData
         ? [categoryColors.savings, categoryColors.investment, categoryColors.realEstate, categoryColors.realAsset, categoryColors.debt]
@@ -2922,7 +3187,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
       .filter(i => i.category === "asset" && ["car", "precious_metal", "art", "other"].includes(i.item_type))
       .forEach((item) => {
         const meta = item.metadata as Record<string, unknown>;
-        const installment = (meta?.has_installment && meta?.installment_balance) ? (meta.installment_balance as number) : 0;
+        const installment = (meta?.has_installment && meta?.installment_remaining) ? (meta.installment_remaining as number) : 0;
         if (installment > 0) {
           const title = item.title || '실물자산';
           debtItems.push({
@@ -3697,7 +3962,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
       case "investment": return totals.investment;
       case "realEstate": return totals.realEstate;
       case "realAsset": return totals.realAsset;
-      case "debt": return totals.debt;
+      case "debt": return totals.unsecuredDebt;
     }
   };
 
@@ -4232,11 +4497,11 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
               </button>
             </div>
 
-            {totals.debt > 0 && (
+            {totals.unsecuredDebt > 0 && (
               <div className={styles.sectionFooterExpanded}>
                 <div className={styles.footerRow}>
                   <span className={styles.footerTotalLabel}>합계</span>
-                  <span className={styles.footerTotalValue}>{formatMoney(totals.debt)}</span>
+                  <span className={styles.footerTotalValue}>{formatMoney(totals.unsecuredDebt)}</span>
                 </div>
               </div>
             )}

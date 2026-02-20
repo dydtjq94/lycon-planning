@@ -24,7 +24,7 @@ const SAVINGS_TYPES = ['checking', 'savings', 'deposit', 'emergency']
 const INVESTMENT_TYPES = ['domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'etf']
 
 // 실물자산 타입
-const REAL_ASSET_TYPES = ['real_estate', 'car', 'precious_metal', 'art', 'other']
+const REAL_ASSET_TYPES = ['real_estate', 'car', 'precious_metal', 'art', 'other', 'other_asset', 'residence', 'apartment', 'house', 'officetel', 'commercial', 'land', 'building', 'room']
 
 // 무담보 부채 타입 (담보대출 제외)
 const UNSECURED_DEBT_TYPES = ['credit', 'student', 'card', 'installment', 'other']

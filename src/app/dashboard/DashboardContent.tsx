@@ -9,14 +9,14 @@ import {
   Landmark, Home, Briefcase, GraduationCap, Plane, Heart,
   TrendingUp, Wallet, PiggyBank, Shield, Target, Umbrella,
   Baby, Car, Gem, Building2, Palmtree, Rocket, Star, Coffee,
-  ListOrdered, Percent, Users, CalendarClock, Play,
+  ListOrdered, Percent, Users, CalendarClock,
   type LucideIcon,
 } from "lucide-react";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { AccountManagementModal } from "./components/AccountManagementModal";
 import { CategoryManagementModal } from "./components/CategoryManagementModal";
 import { AddSimulationModal } from "./components/AddSimulationModal";
-import { SimulationAssumptionsPanel, CashFlowPrioritiesPanel, FamilyConfigPanel, LifeCyclePanel, StartPointPanel } from "./components/tabs/scenario";
+import { SimulationAssumptionsPanel, CashFlowPrioritiesPanel, FamilyConfigPanel, LifeCyclePanel } from "./components/tabs/scenario";
 import { useFinancialContext, type FamilyMember } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
@@ -151,11 +151,6 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   const [editSimTitle, setEditSimTitle] = useState("");
   const [showIconPicker, setShowIconPicker] = useState(false);
   const iconPickerRef = useRef<HTMLDivElement>(null);
-  const [showStartPointPanel, setShowStartPointPanel] = useState(false);
-  const [startPointRect, setStartPointRect] = useState<{ top: number; left: number } | null>(null);
-  const startPointBtnRef = useRef<HTMLButtonElement>(null);
-  const startPointRef = useRef<HTMLDivElement>(null);
-
   const [showAssumptionsPanel, setShowAssumptionsPanel] = useState(false);
   const [assumptionsPanelRect, setAssumptionsPanelRect] = useState<{ top: number; left: number } | null>(null);
   const assumptionsPanelBtnRef = useRef<HTMLButtonElement>(null);
@@ -333,28 +328,6 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Start point panel click-outside handler
-  useEffect(() => {
-    if (!showStartPointPanel) return;
-    const handleClick = (e: MouseEvent) => {
-      if (
-        startPointRef.current && !startPointRef.current.contains(e.target as Node) &&
-        startPointBtnRef.current && !startPointBtnRef.current.contains(e.target as Node)
-      ) {
-        setShowStartPointPanel(false);
-      }
-    };
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowStartPointPanel(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleEsc);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleEsc);
-    };
-  }, [showStartPointPanel]);
 
   // Assumptions panel click-outside handler
   useEffect(() => {
@@ -1208,21 +1181,6 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                 </button>
                 <div className={styles.simHeaderDivider} />
                 <button
-                  ref={startPointBtnRef}
-                  className={styles.simHeaderAction}
-                  onClick={() => {
-                    if (startPointBtnRef.current) {
-                      const rect = startPointBtnRef.current.getBoundingClientRect();
-                      setStartPointRect({ top: rect.bottom + 6, left: rect.left });
-                    }
-                    setShowStartPointPanel(!showStartPointPanel);
-                  }}
-                  type="button"
-                  data-tooltip={showStartPointPanel ? undefined : "시작 시점"}
-                >
-                  <Play size={15} />
-                </button>
-                <button
                   ref={assumptionsPanelBtnRef}
                   className={styles.simHeaderAction}
                   onClick={() => {
@@ -1346,41 +1304,6 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             )}
           </div>
         </header>
-
-        {showStartPointPanel && startPointRect && currentSection === "simulation" && selectedSim && (
-          <div
-            ref={startPointRef}
-            className={styles.accountsPanelDropdown}
-            style={{
-              position: 'fixed',
-              top: startPointRect.top,
-              left: startPointRect.left,
-              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-              zIndex: 200,
-              width: 260,
-            }}
-          >
-            <StartPointPanel
-              startYear={selectedSim.start_year ?? null}
-              startMonth={selectedSim.start_month ?? null}
-              onSave={async (year: number | null, month: number | null) => {
-                try {
-                  await simulationService.update(selectedSim.id, {
-                    start_year: year,
-                    start_month: month,
-                  });
-                  await queryClient.invalidateQueries({ queryKey: ["simulations"] });
-                  setShowStartPointPanel(false);
-                } catch (err) {
-                  console.error('Failed to update start point:', err);
-                }
-              }}
-            />
-          </div>
-        )}
 
         {showAssumptionsPanel && assumptionsPanelRect && currentSection === "simulation" && selectedSim && (
           <div

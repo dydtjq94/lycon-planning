@@ -46,12 +46,13 @@ ChartJS.register(
 
 // 기간 필터 옵션
 const TIME_FILTERS = [
+  { id: "ALL", label: "전체", displayLabel: "전체 기간", months: 9999 },
   { id: "1M", label: "1개월", displayLabel: "지난 1개월", months: 1 },
   { id: "3M", label: "3개월", displayLabel: "지난 3개월", months: 3 },
   { id: "1Y", label: "1년", displayLabel: "지난 1년", months: 12 },
+  { id: "3Y", label: "3년", displayLabel: "지난 3년", months: 36 },
   { id: "5Y", label: "5년", displayLabel: "지난 5년", months: 60 },
   { id: "10Y", label: "10년", displayLabel: "지난 10년", months: 120 },
-  { id: "ALL", label: "전체", displayLabel: "전체 기간", months: 9999 },
 ];
 
 interface AssetRecordTabProps {

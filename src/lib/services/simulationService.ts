@@ -310,9 +310,10 @@ export const simulationService = {
     if (hasDebts && hasRealEstates && hasPhysicalAssets) return
 
     // 빈 카테고리만 스냅샷에서 복사
-    const categoriesToCopy: ('savings' | 'debts' | 'real_estates')[] = []
+    const categoriesToCopy: ('savings' | 'debts' | 'real_estates' | 'physical_assets')[] = []
     if (!hasDebts) categoriesToCopy.push('debts')
     if (!hasRealEstates) categoriesToCopy.push('real_estates')
+    if (!hasPhysicalAssets) categoriesToCopy.push('physical_assets')
 
     if (categoriesToCopy.length > 0) {
       await copySnapshotToSimulation(profileId, simulationId, {

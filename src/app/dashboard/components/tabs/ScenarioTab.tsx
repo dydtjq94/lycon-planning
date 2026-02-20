@@ -16,7 +16,7 @@ import { normalizePriorities } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationTypes";
 import type { SimulationProfile } from "@/lib/services/dbToFinancialItems";
 import type { ProfileBasics } from "@/contexts/FinancialContext";
-import { useNationalPensions, useRetirementPensions, usePersonalPensions } from "@/hooks/useFinancialData";
+import { useNationalPensions, useRetirementPensions, usePersonalPensions, useIncomes, useDebts } from "@/hooks/useFinancialData";
 import { getDefaultIconId, getFinancialColor } from "@/lib/constants/financialIcons";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { NetWorthTab } from "./NetWorthTab";
@@ -106,6 +106,8 @@ export function ScenarioTab({
   const { data: nationalPensions = [] } = useNationalPensions(simulationId);
   const { data: retirementPensions = [] } = useRetirementPensions(simulationId);
   const { data: personalPensions = [] } = usePersonalPensions(simulationId);
+  const { data: incomes = [] } = useIncomes(simulationId);
+  const { data: debts = [] } = useDebts(simulationId);
 
   // 시뮬레이션별 은퇴 나이 + 기대수명 (life_cycle_settings에서 가져오고, 없으면 프로필 기본값)
   const lifeCycleSettings = useMemo(() => {
@@ -121,7 +123,7 @@ export function ScenarioTab({
   // 차트에 표시할 생애주기 마일스톤 (은퇴, 기대수명, 배우자 포함)
   const lifecycleMilestones = useMemo(() => {
     const saved = simulation.life_cycle_settings as LifeCycleSettings | null;
-    const milestones: { year: number; color: string; label: string; iconId: string }[] = [];
+    const milestones: { year: number; color: string; label: string; iconId: string; opacity?: number }[] = [];
 
     const selfBY = simulationProfile.birthYear;
 
@@ -202,8 +204,53 @@ export function ScenarioTab({
       }
     });
 
+    // 소득 종료 시점
+    incomes.forEach(income => {
+      // 자동 생성 소득(연금/부동산 연동) 제외
+      if (income.source_type) return;
+      if (!income.is_active) return;
+
+      let endYear: number | null = null;
+      if (income.end_year) {
+        endYear = income.end_year;
+      } else if (income.is_fixed_to_retirement) {
+        const ownerBY = income.owner === 'spouse' ? spouseBY : selfBY;
+        const retAge = income.owner === 'spouse'
+          ? lifeCycleSettings.spouseRetirementAge
+          : lifeCycleSettings.selfRetirementAge;
+        if (ownerBY) endYear = ownerBY + retAge;
+      }
+      if (!endYear) return;
+
+      const ownerLabel = income.owner === 'spouse' ? '배우자' : '본인';
+      milestones.push({
+        year: endYear,
+        color: income.color || getFinancialColor('income'),
+        label: `${ownerLabel} ${income.title} 종료`,
+        iconId: income.icon || getDefaultIconId('income', income.type) || 'banknote',
+        opacity: 0.4,
+      });
+    });
+
+    // 부채 만기 시점
+    debts.forEach(debt => {
+      // 부동산/실물자산 연동 부채 제외
+      if (debt.source_type) return;
+      if (!debt.is_active) return;
+      if (!debt.maturity_year) return;
+
+      const ownerLabel = debt.owner === 'spouse' ? '배우자' : '본인';
+      milestones.push({
+        year: debt.maturity_year,
+        color: debt.color || getFinancialColor('debt'),
+        label: `${ownerLabel} ${debt.title} 만기`,
+        iconId: debt.icon || getDefaultIconId('debt', debt.type) || 'banknote',
+        opacity: 0.4,
+      });
+    });
+
     return milestones;
-  }, [simulation.life_cycle_settings, simulationProfile, lifeCycleSettings, nationalPensions, retirementPensions, personalPensions]);
+  }, [simulation.life_cycle_settings, simulationProfile, lifeCycleSettings, nationalPensions, retirementPensions, personalPensions, incomes, debts]);
 
   const [activeTopTab, setActiveTopTab] = useState<"plan" | "cashflow">("plan");
   const [activeCategoryTab, setActiveCategoryTab] = useState<string | null>(null);

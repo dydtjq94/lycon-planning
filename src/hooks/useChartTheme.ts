@@ -171,6 +171,30 @@ export function useChartTheme() {
     expense: colors[3],      // 비용/적자 (Sankey 비용 색상과 통일)
   }), [lineColor, plColors, colors]);
 
+  // 스택 차트용 자산 카테고리 색상 (category ID → 테마 색상)
+  const assetCategoryColors = useMemo<Record<string, string>>(() => ({
+    pension: colors[3],
+    savings: colors[1],
+    investment: colors[2],
+    real_estate: colors[0],
+    deposit: colors[5],
+    tangible: colors[6],
+    other_asset: colors[7],
+  }), [colors]);
+
+  // 스택 차트용 부채 카테고리 색상 (base color에서 shade 생성)
+  const debtCategoryColors = useMemo<Record<string, string>>(() => {
+    const shades = generateShades(colors[4], 6);
+    return {
+      mortgage: shades[0],
+      jeonse: shades[1],
+      credit: shades[2],
+      car: shades[3],
+      student: shades[4],
+      other_debt: shades[5],
+    };
+  }, [colors]);
+
   // 카테고리별 그라데이션 배열
   const categoryShades = useMemo(() => ({
     savings: generateShades(colors[0], 5),
@@ -210,6 +234,8 @@ export function useChartTheme() {
     isReady,
     colors,
     categoryColors,
+    assetCategoryColors,
+    debtCategoryColors,
     categoryShades,
     chartLineColors,
     chartScaleColors,

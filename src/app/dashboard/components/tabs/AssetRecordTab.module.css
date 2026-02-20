@@ -187,28 +187,32 @@
 .timeFilters {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
+  background: var(--dashboard-bg);
+  border-radius: 6px;
+  padding: 2px;
 }
 
 .timeFilterBtn {
-  padding: 8px 16px;
-  background: none;
+  padding: 5px 10px;
+  background: transparent;
   border: none;
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--dashboard-text-secondary);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
 }
 
 .timeFilterBtn:hover {
-  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text);
 }
 
 .timeFilterBtn.active {
-  background: var(--dashboard-text);
-  color: var(--dashboard-bg);
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* 테이블 섹션 */

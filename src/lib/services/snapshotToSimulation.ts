@@ -23,6 +23,7 @@ interface CopyResult {
     savings: number
     debts: number
     realEstates: number
+    physicalAssets: number
     personalPensions: number
     incomes: number
     expenses: number
@@ -60,6 +61,7 @@ const ITEM_TYPE_TO_TABLE: Record<string, string> = {
   car: 'physical_assets',
   precious_metal: 'physical_assets',
   art: 'physical_assets',
+  other_asset: 'physical_assets',
 }
 
 // ============================================
@@ -77,7 +79,7 @@ export async function copySnapshotToSimulation(
   simulationId: string,
   options: {
     clearExisting?: boolean // 기존 데이터 삭제 후 복사 (기본: false)
-    categories?: ('savings' | 'debts' | 'real_estates')[] // 복사할 카테고리 (기본: 전체)
+    categories?: ('savings' | 'debts' | 'real_estates' | 'physical_assets')[] // 복사할 카테고리 (기본: 전체)
   } = {}
 ): Promise<CopyResult> {
   const { clearExisting = false, categories } = options
@@ -88,6 +90,7 @@ export async function copySnapshotToSimulation(
       savings: 0,
       debts: 0,
       realEstates: 0,
+      physicalAssets: 0,
       personalPensions: 0,
       incomes: 0,
       expenses: 0,
@@ -112,7 +115,7 @@ export async function copySnapshotToSimulation(
 
     // 3. 기존 데이터 삭제 (옵션)
     if (clearExisting) {
-      const tablesToClear = categories || ['savings', 'debts', 'real_estates']
+      const tablesToClear = categories || ['savings', 'debts', 'real_estates', 'physical_assets']
       for (const table of tablesToClear) {
         const { error } = await supabase
           .from(table)
@@ -132,7 +135,7 @@ export async function copySnapshotToSimulation(
     // 자산 항목 복사 (savings) - 배치 INSERT
     if (!categories || categories.includes('savings')) {
       const assetItems = items.filter(
-        item => item.category === 'asset' && ['checking', 'savings', 'deposit', 'domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'etf', 'emergency'].includes(item.item_type)
+        item => item.category === 'asset' && ['checking', 'savings', 'deposit', 'domestic_stock', 'foreign_stock', 'fund', 'bond', 'crypto', 'etf', 'emergency', 'other'].includes(item.item_type)
       )
 
       if (assetItems.length > 0) {
@@ -217,6 +220,35 @@ export async function copySnapshotToSimulation(
               await createLinkedItemsForRealEstate(re, supabase)
             }
           }
+        }
+      }
+    }
+
+    // 실물자산 항목 복사 (physical_assets) - 배치 INSERT
+    if (!categories || categories.includes('physical_assets')) {
+      const physicalAssetItems = items.filter(
+        item => item.category === 'asset' && ['car', 'precious_metal', 'art', 'other_asset'].includes(item.item_type)
+      )
+
+      if (physicalAssetItems.length > 0) {
+        // 기존 physical_assets 삭제
+        const { error: deletePhysicalError } = await supabase
+          .from('physical_assets')
+          .delete()
+          .eq('simulation_id', simulationId)
+
+        if (deletePhysicalError) {
+          result.errors.push(`Failed to clear physical_assets: ${deletePhysicalError.message}`)
+        }
+
+        const physicalAssetsDataArray = physicalAssetItems.map(item =>
+          mapPhysicalAssetToSimulation(item, simulationId, currentYear, currentMonth)
+        )
+        const { error } = await supabase.from('physical_assets').insert(physicalAssetsDataArray)
+        if (error) {
+          result.errors.push(`Failed to copy physical assets: ${error.message}`)
+        } else {
+          result.copiedItems.physicalAssets = physicalAssetItems.length
         }
       }
     }
@@ -335,6 +367,18 @@ function mapDebtToSimulation(
   const maturityYear = metadata.loan_maturity_year || metadata.maturity_year || currentYear + 10
   const maturityMonth = metadata.loan_maturity_month || metadata.maturity_month || 12
 
+  const startYear = (metadata.start_year as number) || currentYear
+  const startMonth = (metadata.start_month as number) || currentMonth
+
+  // 거치기간 계산: grace_period_year/month (절대 연/월) → grace_period_months (상대 개월 수)
+  let gracePeriodMonths = 0
+  const graceYear = metadata.grace_period_year as number | undefined
+  const graceMonth = metadata.grace_period_month as number | undefined
+  if (graceYear && graceMonth) {
+    gracePeriodMonths = (graceYear - startYear) * 12 + (graceMonth - startMonth)
+    if (gracePeriodMonths < 0) gracePeriodMonths = 0
+  }
+
   return {
     simulation_id: simulationId,
     type: typeMapping[item.item_type] || 'other',
@@ -344,8 +388,9 @@ function mapDebtToSimulation(
     interest_rate: metadata.loan_rate || metadata.interest_rate || 5.0,
     rate_type: metadata.rate_type || 'fixed',
     repayment_type: metadata.loan_repayment_type || metadata.repayment_type || '원리금균등상환',
-    start_year: metadata.start_year || currentYear,
-    start_month: metadata.start_month || currentMonth,
+    grace_period_months: gracePeriodMonths,
+    start_year: startYear,
+    start_month: startMonth,
     maturity_year: maturityYear,
     maturity_month: maturityMonth,
     is_active: true,
@@ -389,6 +434,76 @@ function mapRealEstateToSimulation(
     has_loan: metadata.has_loan || false,
     loan_amount: metadata.loan_amount || null,
     loan_rate: metadata.loan_rate || null,
+    loan_start_year: metadata.loan_start_year || metadata.purchase_year || currentYear,
+    loan_start_month: metadata.loan_start_month || metadata.purchase_month || currentMonth,
+    loan_maturity_year: metadata.loan_maturity_year || null,
+    loan_maturity_month: metadata.loan_maturity_month || null,
+    loan_repayment_type: metadata.loan_repayment_type || null,
+    grace_end_year: metadata.grace_period_year || null,
+    grace_end_month: metadata.grace_period_month || null,
+    is_active: true,
+    sort_order: item.sort_order || 0,
+  }
+}
+
+function mapPhysicalAssetToSimulation(
+  item: FinancialSnapshotItem,
+  simulationId: string,
+  currentYear: number,
+  currentMonth: number
+) {
+  const metadata = item.metadata || {}
+
+  // item_type → physical_asset type 매핑
+  const typeMapping: Record<string, string> = {
+    car: 'car',
+    precious_metal: 'precious_metal',
+    art: 'art',
+    other_asset: 'other',
+  }
+
+  // 담보대출 또는 할부 → 동일한 loan 필드로 매핑
+  const hasLoan = metadata.has_loan || false
+  const hasInstallment = metadata.has_installment || false
+  const hasFinancing = hasLoan || hasInstallment
+  const financingType = hasInstallment ? 'installment' : hasLoan ? 'loan' : null
+
+  // 할부인 경우 installment_ 필드에서, 담보대출인 경우 loan_ 필드에서 가져옴
+  const loanAmount = hasInstallment
+    ? (metadata.installment_remaining || null)
+    : (metadata.loan_amount || null)
+  const loanRate = hasInstallment
+    ? (metadata.installment_rate || null)
+    : (metadata.loan_rate || null)
+  const loanMaturityYear = hasInstallment
+    ? (metadata.installment_end_year || null)
+    : (metadata.loan_maturity_year || null)
+  const loanMaturityMonth = hasInstallment
+    ? (metadata.installment_end_month || null)
+    : (metadata.loan_maturity_month || null)
+  const loanRepaymentType = hasInstallment
+    ? '원리금균등상환'
+    : (metadata.loan_repayment_type || null)
+
+  return {
+    simulation_id: simulationId,
+    type: typeMapping[item.item_type] || 'other',
+    title: item.title,
+    owner: item.owner || 'self',
+    current_value: item.amount,
+    purchase_price: metadata.purchase_price || item.amount,
+    purchase_year: metadata.purchase_year || currentYear,
+    purchase_month: metadata.purchase_month || currentMonth,
+    annual_rate: metadata.annual_rate ?? metadata.growth_rate ?? -10,
+    has_loan: hasFinancing,
+    financing_type: financingType,
+    loan_amount: loanAmount,
+    loan_rate: loanRate,
+    loan_start_year: metadata.loan_start_year || metadata.purchase_year || currentYear,
+    loan_start_month: metadata.loan_start_month || metadata.purchase_month || currentMonth,
+    loan_maturity_year: loanMaturityYear,
+    loan_maturity_month: loanMaturityMonth,
+    loan_repayment_type: loanRepaymentType,
     is_active: true,
     sort_order: item.sort_order || 0,
   }

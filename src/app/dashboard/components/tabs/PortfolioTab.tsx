@@ -369,11 +369,12 @@ export function PortfolioTab({
   // 계좌 선택 토글
   const toggleAccountSelection = (accountId: string) => {
     setSelectedAccountIds((prev) => {
+      // 이미 선택된 계좌 클릭 시 전체(빈 배열)로
       if (prev.includes(accountId)) {
-        return prev.filter((id) => id !== accountId);
-      } else {
-        return [...prev, accountId];
+        return [];
       }
+      // 단일 선택
+      return [accountId];
     });
   };
 

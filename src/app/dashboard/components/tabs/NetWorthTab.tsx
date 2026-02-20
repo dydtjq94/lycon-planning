@@ -93,7 +93,7 @@ export function NetWorthTab({
 }: NetWorthTabProps) {
   const currentYear = simulationStartYear || new Date().getFullYear()
   const currentAge = currentYear - birthYear
-  const { isDark, chartLineColors } = useChartTheme()
+  const { isDark, chartLineColors, assetCategoryColors, debtCategoryColors } = useChartTheme()
 
   // 메인 액센트 색 (실제 자산 추이에 사용)
   const accentColor = typeof window !== 'undefined'
@@ -427,6 +427,8 @@ export function NetWorthTab({
 
   const selectedAge = Math.floor(selectedYear) - birthYear
   const spouseAge = spouseBirthYear ? Math.floor(selectedYear) - spouseBirthYear : null
+  const showSelfAge = selectedAge <= selfLifeExpectancy
+  const showSpouseAge = spouseAge !== null && spouseAge <= spouseLifeExpectancy
 
   // 변화량 계산
   const netWorthChange = prevSnapshot ? selectedSnapshot.netWorth - prevSnapshot.netWorth : 0
@@ -524,14 +526,14 @@ export function NetWorthTab({
                 {isMonthlyMode && selectedMonthlySnapshot ? (
                   <>
                     <span className={styles.sliderYear}>{selectedMonthlySnapshot.year}년 {selectedMonthlySnapshot.month}월</span>
-                    <span className={styles.sliderAge}>본인 {selectedMonthlySnapshot.age}세</span>
-                    {spouseAge !== null && <span className={styles.sliderAge}>배우자 {spouseAge}세</span>}
+                    {showSelfAge && <span className={styles.sliderAge}>본인 {selectedMonthlySnapshot.age}세</span>}
+                    {showSpouseAge && <span className={styles.sliderAge}>배우자 {spouseAge}세</span>}
                   </>
                 ) : (
                   <>
                     <span className={styles.sliderYear}>{Math.floor(selectedYear)}년</span>
-                    <span className={styles.sliderAge}>본인 {selectedAge}세</span>
-                    {spouseAge !== null && <span className={styles.sliderAge}>배우자 {spouseAge}세</span>}
+                    {showSelfAge && <span className={styles.sliderAge}>본인 {selectedAge}세</span>}
+                    {showSpouseAge && <span className={styles.sliderAge}>배우자 {spouseAge}세</span>}
                   </>
                 )}
               </div>
@@ -614,7 +616,7 @@ export function NetWorthTab({
                     <div key={group.category.id}>
                       <div className={styles.detailRow}>
                         <span className={styles.detailLabel}>
-                          <span className={styles.categoryDot} style={{ background: group.category.color }} />
+                          <span className={styles.categoryDot} style={{ background: assetCategoryColors[group.category.id] || group.category.color }} />
                           {group.category.label}
                         </span>
                         <span className={styles.detailValue}>{formatMoney(group.total)}</span>
@@ -642,7 +644,7 @@ export function NetWorthTab({
                         <div key={group.category.id}>
                           <div className={styles.detailRow}>
                             <span className={styles.detailLabel}>
-                              <span className={styles.categoryDot} style={{ background: group.category.color }} />
+                              <span className={styles.categoryDot} style={{ background: debtCategoryColors[group.category.id] || group.category.color }} />
                               {group.category.label}
                             </span>
                             <span className={`${styles.detailValue} ${styles.negative}`}>-{formatMoney(group.total)}</span>
@@ -684,7 +686,7 @@ export function NetWorthTab({
                           <div key={group.category.id}>
                             <div className={styles.detailRow}>
                               <span className={styles.detailLabel}>
-                                <span className={styles.categoryDot} style={{ background: group.category.color }} />
+                                <span className={styles.categoryDot} style={{ background: assetCategoryColors[group.category.id] || group.category.color }} />
                                 {group.category.label}
                               </span>
                               <span className={styles.detailValue}>{formatMoney(group.total)}</span>
@@ -711,7 +713,7 @@ export function NetWorthTab({
                               <div key={group.category.id}>
                                 <div className={styles.detailRow}>
                                   <span className={styles.detailLabel}>
-                                    <span className={styles.categoryDot} style={{ background: group.category.color }} />
+                                    <span className={styles.categoryDot} style={{ background: debtCategoryColors[group.category.id] || group.category.color }} />
                                     {group.category.label}
                                   </span>
                                   <span className={`${styles.detailValue} ${styles.negative}`}>-{formatMoney(group.total)}</span>

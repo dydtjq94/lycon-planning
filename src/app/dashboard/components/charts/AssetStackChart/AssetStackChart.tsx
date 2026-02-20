@@ -59,7 +59,7 @@ interface AssetStackChartProps {
   monthlySnapshots?: MonthlySnapshot[]
   selfLifeExpectancy?: number
   spouseLifeExpectancy?: number
-  lifecycleMilestones?: { year: number; color: string; label: string; iconId: string }[]
+  lifecycleMilestones?: { year: number; color: string; label: string; iconId: string; opacity?: number }[]
   overlayLines?: { label: string; color: string; data: (number | null)[] }[]
   compareItems?: { key: string; label: string; color: string; selected: boolean }[]
   onToggleCompare?: (key: string) => void
@@ -90,7 +90,7 @@ export function AssetStackChart({
   onYearClickRef.current = onYearClick
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const hoverIndexRef = useRef<number>(-1)
-  const { chartScaleColors, isDark, categoryColors, chartLineColors, toRgba } = useChartTheme()
+  const { chartScaleColors, isDark, categoryColors, chartLineColors, toRgba, assetCategoryColors, debtCategoryColors } = useChartTheme()
   const [chartMode, setChartMode] = useState<'bar' | 'line'>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('asset-chart-mode') as 'bar' | 'line') || 'line'
@@ -106,7 +106,7 @@ export function AssetStackChart({
   const prevChartModeRef = useRef(chartMode)
 
   // 생애주기 아이콘 오버레이 위치
-  const [milestonePos, setMilestonePos] = useState<{ x: number; y: number; color: string; iconId: string }[]>([])
+  const [milestonePos, setMilestonePos] = useState<{ x: number; y: number; color: string; iconId: string; opacity?: number }[]>([])
   const computePosRef = useRef<() => void>(() => {})
 
   const { snapshots } = simulationResult
@@ -181,11 +181,11 @@ export function AssetStackChart({
 
     // 같은 x 위치에 여러 아이콘이 겹치면 위로 쌓기
     const xCountMap = new Map<number, number>()
-    const pos: { x: number; y: number; color: string; iconId: string }[] = []
+    const pos: { x: number; y: number; color: string; iconId: string; opacity?: number }[] = []
 
     // 생애주기 마일스톤
     if (lifecycleMilestones?.length) {
-      lifecycleMilestones.forEach(milestone => {
+      [...lifecycleMilestones].reverse().forEach(milestone => {
         const idx = isMonthlyMode && monthlyChartData
           ? monthlyChartData.snapshots.findIndex(ms => ms.year === milestone.year && ms.month === 1)
           : labels.findIndex(l => parseInt(String(l)) === milestone.year)
@@ -195,7 +195,7 @@ export function AssetStackChart({
         const stackIdx = xCountMap.get(idx) || 0
         xCountMap.set(idx, stackIdx + 1)
         const y = barTopY - iconPad - iconSize - stackIdx * (iconSize + iconGap)
-        pos.push({ x, y: Math.max(y, chartTop), color: milestone.color, iconId: milestone.iconId })
+        pos.push({ x, y: Math.max(y, chartTop), color: milestone.color, iconId: milestone.iconId, opacity: milestone.opacity })
       })
     }
 
@@ -215,7 +215,7 @@ export function AssetStackChart({
     setMilestonePos(prev => {
       if (prev.length !== pos.length) return pos
       const same = prev.every((p, i) =>
-        Math.abs(p.x - pos[i].x) < 0.5 && Math.abs(p.y - pos[i].y) < 0.5 && p.color === pos[i].color && p.iconId === pos[i].iconId
+        Math.abs(p.x - pos[i].x) < 0.5 && Math.abs(p.y - pos[i].y) < 0.5 && p.color === pos[i].color && p.iconId === pos[i].iconId && p.opacity === pos[i].opacity
       )
       return same ? prev : pos
     })
@@ -249,7 +249,7 @@ export function AssetStackChart({
       .filter(c => allAssetCategoryIds.has(c.id))
       .map(category => ({
         label: category.label,
-        color: category.color,
+        color: assetCategoryColors[category.id] || category.color,
         data: perSnapshot.map(s => {
           const group = s.assetGroups.find(g => g.category.id === category.id)
           return group ? group.total : 0
@@ -260,7 +260,7 @@ export function AssetStackChart({
       .filter(c => allDebtCategoryIds.has(c.id))
       .map(category => ({
         label: category.label,
-        color: category.color,
+        color: debtCategoryColors[category.id] || category.color,
         data: perSnapshot.map(s => {
           const group = s.debtGroups.find(g => g.category.id === category.id)
           return group ? -group.total : 0
@@ -268,7 +268,7 @@ export function AssetStackChart({
       }))
 
     return { assetDatasets, debtDatasets }
-  }, [chartData.snapshots, isMonthlyMode, monthlySnapshots])
+  }, [chartData.snapshots, isMonthlyMode, monthlySnapshots, assetCategoryColors, debtCategoryColors])
 
   // 커스텀 툴팁 핸들러
   const externalTooltipHandler = useCallback((context: {
@@ -350,7 +350,7 @@ export function AssetStackChart({
           ${assetGroups.map(group => `
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
               <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${assetCategoryColors[group.category.id] || group.category.color}; flex-shrink: 0;"></span>
                 <span style="font-size: 12px; color: ${textColor};">${group.category.label}</span>
               </div>
               <span style="font-size: 12px; color: ${textColor};">${formatMoneyWithUnit(group.total)}</span>
@@ -368,7 +368,7 @@ export function AssetStackChart({
           ${debtGroups.map(group => `
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
               <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${debtCategoryColors[group.category.id] || group.category.color}; flex-shrink: 0;"></span>
                 <span style="font-size: 12px; color: ${textColor};">${group.category.label}</span>
               </div>
               <span style="font-size: 12px; color: ${textColor};">-${formatMoneyWithUnit(group.total)}</span>
@@ -449,7 +449,7 @@ export function AssetStackChart({
         ${assetGroups.map(group => `
           <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
             <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: ${assetCategoryColors[group.category.id] || group.category.color}; flex-shrink: 0;"></span>
               <span style="font-size: 12px; color: ${textColor};">${group.category.label}</span>
             </div>
             <span style="font-size: 12px; color: ${textColor};">${formatMoneyWithUnit(group.total)}</span>
@@ -469,7 +469,7 @@ export function AssetStackChart({
         ${debtGroups.map(group => `
           <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 3px; padding-left: 4px;">
             <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: ${group.category.color}; flex-shrink: 0;"></span>
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: ${debtCategoryColors[group.category.id] || group.category.color}; flex-shrink: 0;"></span>
               <span style="font-size: 12px; color: ${textColor};">${group.category.label}</span>
             </div>
             <span style="font-size: 12px; color: ${textColor};">-${formatMoneyWithUnit(group.total)}</span>
@@ -512,7 +512,7 @@ export function AssetStackChart({
     `
 
     positionTooltip(tooltipEl, chart.canvas, mouseRef.current.x, mouseRef.current.y)
-  }, [chartData.snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlyChartData, selfLifeExpectancy, spouseLifeExpectancy, lifecycleMilestones, overlayLines])
+  }, [chartData.snapshots, isDark, birthYear, spouseBirthYear, isMonthlyMode, monthlyChartData, selfLifeExpectancy, spouseLifeExpectancy, lifecycleMilestones, overlayLines, assetCategoryColors, debtCategoryColors])
 
   // 마우스 추적 + 호버 라인 + 언마운트 정리
   useEffect(() => {
@@ -979,10 +979,23 @@ export function AssetStackChart({
             grid: { display: false },
             ticks: {
               maxRotation: 0,
-              autoSkip: true,
-              maxTicksLimit: 15,
+              autoSkip: false,
               font: { size: 11 },
               color: chartScaleColors.tickColor,
+              callback: function (_, index) {
+                const labels = this.chart.data.labels as string[] | undefined
+                if (!labels || labels.length === 0) return ''
+                const total = labels.length
+                if (total <= 15) return labels[index]
+                if (index === 0 || index === total - 1) return labels[index]
+                const slots = Math.min(15, total) - 2
+                if (slots <= 0) return ''
+                const step = (total - 2) / (slots + 1)
+                for (let s = 1; s <= slots; s++) {
+                  if (index === Math.round(s * step)) return labels[index]
+                }
+                return ''
+              },
             },
             border: { display: false },
           },
@@ -1194,6 +1207,7 @@ export function AssetStackChart({
               transform: 'translateX(-50%)',
               pointerEvents: 'none',
               zIndex: 10,
+              opacity: pos.opacity ?? 1,
               width: 17,
               height: 17,
               borderRadius: '50%',

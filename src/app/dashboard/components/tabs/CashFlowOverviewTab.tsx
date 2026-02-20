@@ -202,6 +202,8 @@ export function CashFlowOverviewTab({
   // 현재 나이 계산
   const sankeyAge = Math.floor(sankeyYear) - birthYear
   const spouseAge = spouseBirthYear ? Math.floor(sankeyYear) - spouseBirthYear : null
+  const showSelfAge = sankeyAge <= selfLifeExpectancy
+  const showSpouseAge = spouseAge !== null && spouseAge <= spouseLifeExpectancy
 
   // 현금흐름도 스냅샷
   const sankeySnapshot = simulationResult.snapshots.find(s => s.year === Math.floor(sankeyYear))
@@ -362,14 +364,14 @@ export function CashFlowOverviewTab({
                 {isMonthlyMode && selectedMonthlySnapshot ? (
                   <>
                     <span className={styles.sliderYear}>{selectedMonthlySnapshot.year}년 {selectedMonthlySnapshot.month}월</span>
-                    <span className={styles.sliderAge}>본인 {selectedMonthlySnapshot.age}세</span>
-                    {spouseAge !== null && <span className={styles.sliderAge}>배우자 {spouseAge}세</span>}
+                    {showSelfAge && <span className={styles.sliderAge}>본인 {selectedMonthlySnapshot.age}세</span>}
+                    {showSpouseAge && <span className={styles.sliderAge}>배우자 {spouseAge}세</span>}
                   </>
                 ) : (
                   <>
                     <span className={styles.sliderYear}>{sankeyYear}년</span>
-                    <span className={styles.sliderAge}>본인 {sankeyAge}세</span>
-                    {spouseAge !== null && <span className={styles.sliderAge}>배우자 {spouseAge}세</span>}
+                    {showSelfAge && <span className={styles.sliderAge}>본인 {sankeyAge}세</span>}
+                    {showSpouseAge && <span className={styles.sliderAge}>배우자 {spouseAge}세</span>}
                   </>
                 )}
               </div>

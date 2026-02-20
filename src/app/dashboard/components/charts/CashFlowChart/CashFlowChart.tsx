@@ -45,7 +45,7 @@ interface CashFlowChartProps {
   hideLegend?: boolean
   selfLifeExpectancy?: number
   spouseLifeExpectancy?: number
-  lifecycleMilestones?: { year: number; color: string; label: string; iconId: string }[]
+  lifecycleMilestones?: { year: number; color: string; label: string; iconId: string; opacity?: number }[]
 }
 
 // Y축 포맷팅
@@ -85,7 +85,7 @@ export function CashFlowChart({
   const prevMonthlyModeRef = useRef(isMonthlyMode)
 
   // 생애주기 아이콘 오버레이 위치
-  const [milestonePos, setMilestonePos] = useState<{ x: number; y: number; color: string; iconId: string }[]>([])
+  const [milestonePos, setMilestonePos] = useState<{ x: number; y: number; color: string; iconId: string; opacity?: number }[]>([])
   const computePosRef = useRef<() => void>(() => {})
 
   const { snapshots } = simulationResult
@@ -122,7 +122,7 @@ export function CashFlowChart({
     }
 
     const xCountMap = new Map<number, number>()
-    const pos = lifecycleMilestones.map(milestone => {
+    const pos = [...lifecycleMilestones].reverse().map(milestone => {
       const idx = isMonthlyMode && monthlySnapshots
         ? monthlySnapshots.findIndex(ms => ms.year === milestone.year && ms.month === 1)
         : labels.findIndex(y => Number(y) === milestone.year)
@@ -137,12 +137,13 @@ export function CashFlowChart({
         y: Math.max(y, chartTop),
         color: milestone.color,
         iconId: milestone.iconId,
+        opacity: milestone.opacity,
       }
-    }).filter(Boolean) as { x: number; y: number; color: string; iconId: string }[]
+    }).filter(Boolean) as { x: number; y: number; color: string; iconId: string; opacity?: number }[]
     setMilestonePos(prev => {
       if (prev.length !== pos.length) return pos
       const same = prev.every((p, i) =>
-        Math.abs(p.x - pos[i].x) < 0.5 && Math.abs(p.y - pos[i].y) < 0.5 && p.color === pos[i].color && p.iconId === pos[i].iconId
+        Math.abs(p.x - pos[i].x) < 0.5 && Math.abs(p.y - pos[i].y) < 0.5 && p.color === pos[i].color && p.iconId === pos[i].iconId && p.opacity === pos[i].opacity
       )
       return same ? prev : pos
     })
@@ -650,10 +651,23 @@ export function CashFlowChart({
             grid: { display: false },
             ticks: {
               maxRotation: 0,
-              autoSkip: true,
-              maxTicksLimit: 15,
+              autoSkip: false,
               font: { size: 11 },
               color: chartScaleColors.tickColor,
+              callback: function (_, index) {
+                const labels = this.chart.data.labels as string[] | undefined
+                if (!labels || labels.length === 0) return ''
+                const total = labels.length
+                if (total <= 15) return labels[index]
+                if (index === 0 || index === total - 1) return labels[index]
+                const slots = Math.min(15, total) - 2
+                if (slots <= 0) return ''
+                const step = (total - 2) / (slots + 1)
+                for (let s = 1; s <= slots; s++) {
+                  if (index === Math.round(s * step)) return labels[index]
+                }
+                return ''
+              },
             },
             border: { display: false },
           },
@@ -775,6 +789,7 @@ export function CashFlowChart({
               transform: 'translateX(-50%)',
               pointerEvents: 'none',
               zIndex: 10,
+              opacity: pos.opacity ?? 1,
               width: 17,
               height: 17,
               borderRadius: '50%',
