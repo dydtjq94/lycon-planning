@@ -155,16 +155,26 @@ export function AssetStackChart({
     const iconGap = 2
     const iconPad = 4
 
-    // 바 상단 Y 좌표 가져오기
+    // 바 상단 Y 좌표 가져오기 (애니메이션 중 현재 위치 사용)
     const getBarTopY = (idx: number): number => {
+      const zeroY = chart.scales.y.getPixelForValue(0)
       if (chartMode === 'bar') {
-        let total = 0
-        for (const ds of chart.data.datasets) {
-          const val = (ds.data as number[])[idx]
-          if (val != null && val > 0) total += val
+        // 스택 바: 가장 높은 양수 바 엘리먼트의 현재 y 위치
+        let topY = zeroY
+        for (let d = 0; d < chart.data.datasets.length; d++) {
+          const val = (chart.data.datasets[d].data as number[])[idx]
+          if (val != null && val > 0) {
+            const meta = chart.getDatasetMeta(d)
+            const el = meta.data[idx] as any
+            if (el && el.y < topY) topY = el.y
+          }
         }
-        return chart.scales.y.getPixelForValue(total)
+        return topY
       }
+      // 라인 모드: 라인 포인트의 현재 y 위치
+      const lineMeta = chart.getDatasetMeta(1)
+      const el = lineMeta?.data[idx] as any
+      if (el) return Math.min(el.y, zeroY)
       const val = (chart.data.datasets[0]?.data as number[])?.[idx] ?? 0
       return chart.scales.y.getPixelForValue(Math.max(val, 0))
     }
@@ -1018,6 +1028,9 @@ export function AssetStackChart({
       ;(chart.options as any).animation = {
         duration: 800,
         easing: 'easeOutQuart',
+        onProgress: () => {
+          computePosRef.current()
+        },
         onComplete: () => {
           isAnimatingRef.current = false
           computePosRef.current()

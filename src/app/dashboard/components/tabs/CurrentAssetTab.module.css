@@ -2640,6 +2640,29 @@
   border-bottom: none;
 }
 
+.itemCardCompact {
+  padding-right: 20px;
+}
+
+.termDepositValueArea {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.termDepositCurrentValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+}
+
+.termDepositMaturityInfo {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+}
+
 .itemCardHeader {
   margin-bottom: 12px;
 }

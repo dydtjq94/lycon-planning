@@ -108,8 +108,15 @@ export function CashFlowChart({
     const iconGap = 2
     const iconPad = 4
 
-    // 바 상단 Y 좌표 (양수: 바 꼭대기, 음수: 0선)
+    // 바 상단 Y 좌표 (애니메이션 중 현재 위치 사용)
     const getBarTopY = (idx: number): number => {
+      const zeroY = chart.scales.y.getPixelForValue(0)
+      const meta = chart.getDatasetMeta(0)
+      const el = meta?.data[idx] as any
+      if (el) {
+        const val = (chart.data.datasets[0]?.data as number[])?.[idx] ?? 0
+        return val >= 0 ? el.y : zeroY
+      }
       const val = (chart.data.datasets[0]?.data as number[])?.[idx] ?? 0
       return chart.scales.y.getPixelForValue(Math.max(val, 0))
     }
@@ -679,6 +686,9 @@ export function CashFlowChart({
       ;(chart.options as any).animation = {
         duration: 800,
         easing: 'easeOutQuart',
+        onProgress: () => {
+          computePosRef.current()
+        },
         onComplete: () => {
           isAnimatingRef.current = false
           computePosRef.current()

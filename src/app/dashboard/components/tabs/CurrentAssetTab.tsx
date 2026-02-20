@@ -1294,13 +1294,25 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
       <div className={styles.itemCardHeader}>
         <div className={styles.itemCardHeaderGrid}>
           <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>거주형태</span>
+            <select
+              className={styles.itemCardFieldSelect}
+              value={housingType}
+              onChange={(e) => handleHousingTypeChange(e.target.value)}
+            >
+              {HOUSING_TYPES.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>이름</span>
             <input
               type="text"
               className={styles.itemCardFieldInput}
               value="거주용 부동산"
               readOnly
-              style={{ background: '#f9fafb' }}
+              style={{ background: 'var(--dashboard-bg-secondary)' }}
             />
           </div>
           <div className={styles.itemCardField}>
@@ -1314,30 +1326,14 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               {isCouple && <option value="spouse">배우자</option>}
             </select>
           </div>
-          <div />
         </div>
       </div>
 
-      {/* Row 1: 거주형태, 보증금/시세, 전월세대출 */}
-      <div className={styles.itemCardGrid}>
-        <div className={styles.itemCardField}>
-          <span className={styles.itemCardFieldLabel}>거주형태</span>
-          <select
-            className={styles.itemCardFieldSelect}
-            value={housingType}
-            onChange={(e) => handleHousingTypeChange(e.target.value)}
-          >
-            {HOUSING_TYPES.map(type => (
-              <option key={type.value} value={type.value}>{type.label}</option>
-            ))}
-          </select>
-        </div>
-
-        {housingType !== "무상" && (
+      {/* Row 1 (전세): 보증금, 관리비, 전월세대출 */}
+      {housingType === "전세" && (
+        <div className={styles.itemCardGrid}>
           <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>
-              {housingType === "자가" ? "시세" : "보증금"}
-            </span>
+            <span className={styles.itemCardFieldLabel}>보증금</span>
             <div className={styles.itemCardFieldUnit}>
               <input
                 type="number"
@@ -1364,9 +1360,32 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               <span className={styles.itemCardFieldUnitLabel}>만원</span>
             </div>
           </div>
-        )}
-
-        {housingType !== "무상" && housingType !== "자가" && (
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>관리비</span>
+            <div className={styles.itemCardFieldUnit}>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                value={maintenanceFee}
+                placeholder="0"
+                onWheel={e => (e.target as HTMLElement).blur()}
+                onChange={(e) => setMaintenanceFee(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, () => {
+                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
+                  if (item && val !== (meta?.maintenance_fee as number | null)) {
+                    updateMeta({ maintenance_fee: val });
+                  }
+                })}
+                onBlur={() => {
+                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
+                  if (item && val !== (meta?.maintenance_fee as number | null)) {
+                    updateMeta({ maintenance_fee: val });
+                  }
+                }}
+              />
+              <span className={styles.itemCardFieldUnitLabel}>만원/월</span>
+            </div>
+          </div>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>전월세대출</span>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -1386,12 +1405,40 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Row 2 (월세): 월세, 관리비 */}
+      {/* Row 1 (월세): 보증금, 월세, 전월세대출 */}
       {housingType === "월세" && (
-        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
+        <div className={styles.itemCardGrid}>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>보증금</span>
+            <div className={styles.itemCardFieldUnit}>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                value={currentValue}
+                placeholder="0"
+                onWheel={e => (e.target as HTMLElement).blur()}
+                onChange={(e) => setCurrentValue(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, () => {
+                  const val = parseInt(currentValue) || 0;
+                  if (item) {
+                    onUpdate(item.id, { amount: val });
+                    updateMeta({ current_value: val });
+                  }
+                })}
+                onBlur={() => {
+                  const val = parseInt(currentValue) || 0;
+                  if (item) {
+                    onUpdate(item.id, { amount: val });
+                    updateMeta({ current_value: val });
+                  }
+                }}
+              />
+              <span className={styles.itemCardFieldUnitLabel}>만원</span>
+            </div>
+          </div>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>월세</span>
             <div className={styles.itemCardFieldUnit}>
@@ -1418,39 +1465,30 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               <span className={styles.itemCardFieldUnitLabel}>만원/월</span>
             </div>
           </div>
-
           <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>관리비</span>
-            <div className={styles.itemCardFieldUnit}>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                value={maintenanceFee}
-                placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
-                onChange={(e) => setMaintenanceFee(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
-                    updateMeta({ maintenance_fee: val });
-                  }
-                })}
-                onBlur={() => {
-                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
-                    updateMeta({ maintenance_fee: val });
-                  }
-                }}
-              />
-              <span className={styles.itemCardFieldUnitLabel}>만원/월</span>
+            <span className={styles.itemCardFieldLabel}>전월세대출</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
+                onClick={() => handleLoanToggle(false)}
+              >
+                없음
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${hasLoan ? styles.active : ""}`}
+                onClick={() => handleLoanToggle(true)}
+              >
+                있음
+              </button>
             </div>
           </div>
-          <div />
         </div>
       )}
 
-      {/* Row 2 (전세): 관리비 */}
-      {housingType === "전세" && (
+      {/* Row 2 (월세): 관리비 */}
+      {housingType === "월세" && (
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>관리비</span>
@@ -1483,9 +1521,9 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
         </div>
       )}
 
-      {/* Row 2 (무상): 관리비 */}
+      {/* Row 1 (무상): 관리비 */}
       {housingType === "무상" && (
-        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
+        <div className={styles.itemCardGrid}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>관리비</span>
             <div className={styles.itemCardFieldUnit}>
@@ -1517,7 +1555,86 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
         </div>
       )}
 
-      {/* Row 2 (자가): 취득일, 취득가, 주담대 */}
+      {/* Row 1 (자가): 시세, 관리비, 주담대 */}
+      {housingType === "자가" && (
+        <div className={styles.itemCardGrid}>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>시세</span>
+            <div className={styles.itemCardFieldUnit}>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                value={currentValue}
+                placeholder="0"
+                onWheel={e => (e.target as HTMLElement).blur()}
+                onChange={(e) => setCurrentValue(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, () => {
+                  const val = parseInt(currentValue) || 0;
+                  if (item) {
+                    onUpdate(item.id, { amount: val });
+                    updateMeta({ current_value: val });
+                  }
+                })}
+                onBlur={() => {
+                  const val = parseInt(currentValue) || 0;
+                  if (item) {
+                    onUpdate(item.id, { amount: val });
+                    updateMeta({ current_value: val });
+                  }
+                }}
+              />
+              <span className={styles.itemCardFieldUnitLabel}>만원</span>
+            </div>
+          </div>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>관리비</span>
+            <div className={styles.itemCardFieldUnit}>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                value={maintenanceFee}
+                placeholder="0"
+                onWheel={e => (e.target as HTMLElement).blur()}
+                onChange={(e) => setMaintenanceFee(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, () => {
+                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
+                  if (item && val !== (meta?.maintenance_fee as number | null)) {
+                    updateMeta({ maintenance_fee: val });
+                  }
+                })}
+                onBlur={() => {
+                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
+                  if (item && val !== (meta?.maintenance_fee as number | null)) {
+                    updateMeta({ maintenance_fee: val });
+                  }
+                }}
+              />
+              <span className={styles.itemCardFieldUnitLabel}>만원/월</span>
+            </div>
+          </div>
+          <div className={styles.itemCardField}>
+            <span className={styles.itemCardFieldLabel}>주담대</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
+                onClick={() => handleLoanToggle(false)}
+              >
+                없음
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${hasLoan ? styles.active : ""}`}
+                onClick={() => handleLoanToggle(true)}
+              >
+                있음
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Row 2 (자가): 취득일, 취득가 */}
       {housingType === "자가" && (
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
@@ -1598,59 +1715,6 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               <span className={styles.itemCardFieldUnitLabel}>만원</span>
             </div>
           </div>
-
-          <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>주담대</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
-                onClick={() => handleLoanToggle(false)}
-              >
-                없음
-              </button>
-              <button
-                type="button"
-                className={`${styles.typeBtn} ${hasLoan ? styles.active : ""}`}
-                onClick={() => handleLoanToggle(true)}
-              >
-                있음
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Row 3 (자가): 관리비 */}
-      {housingType === "자가" && (
-        <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
-          <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>관리비</span>
-            <div className={styles.itemCardFieldUnit}>
-              <input
-                type="number"
-                className={styles.itemCardFieldInput}
-                value={maintenanceFee}
-                placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
-                onChange={(e) => setMaintenanceFee(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
-                    updateMeta({ maintenance_fee: val });
-                  }
-                })}
-                onBlur={() => {
-                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
-                    updateMeta({ maintenance_fee: val });
-                  }
-                }}
-              />
-              <span className={styles.itemCardFieldUnitLabel}>만원/월</span>
-            </div>
-          </div>
-          <div />
           <div />
         </div>
       )}
@@ -1936,7 +2000,7 @@ function TermDepositCard({ account, displayValue, onSave }: TermDepositCardProps
   const maturityPostTax = calculateMaturityAmountPostTax(account);
 
   return (
-    <div className={styles.itemCard}>
+    <div className={`${styles.itemCard} ${styles.itemCardCompact}`}>
       <div className={styles.itemCardHeaderSimple}>
         <div className={styles.itemCardTitleRow}>
           <BrokerLogo brokerName={account.broker_name} fallback={account.name || "?"} size="md" />
@@ -1945,9 +2009,16 @@ function TermDepositCard({ account, displayValue, onSave }: TermDepositCardProps
             <span className={styles.accountTypeLabel}>{typeLabel}</span>
           </div>
         </div>
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--dashboard-text)' }}>
-          {formatWon(displayValue)}
-        </span>
+        <div className={styles.termDepositValueArea}>
+          <span className={styles.termDepositCurrentValue}>
+            {formatWon(displayValue)}
+          </span>
+          {maturityPreTax != null && (
+            <span className={styles.termDepositMaturityInfo}>
+              예상 만기 금액: 세전 {formatWon(maturityPreTax)} / 세후 {formatWon(maturityPostTax ?? maturityPreTax)}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className={styles.itemCardGrid}>
@@ -2055,17 +2126,8 @@ function TermDepositCard({ account, displayValue, onSave }: TermDepositCardProps
           </div>
         </div>
 
-        {/* 만기 금액 */}
-        {maturityPreTax != null && (
-          <div className={styles.itemCardField}>
-            <span className={styles.itemCardFieldLabel}>만기 금액</span>
-            <div className={styles.itemCardFieldStatic}>
-              <span style={{ fontSize: 12, color: 'var(--dashboard-text-muted)' }}>
-                세전 {formatWon(maturityPreTax)} / 세후 {formatWon(maturityPostTax ?? maturityPreTax)}
-              </span>
-            </div>
-          </div>
-        )}
+        {/* 빈 칸 (3열 그리드 맞춤 - 만기 금액은 헤더 영역에 표시) */}
+        <div />
       </div>
     </div>
   );

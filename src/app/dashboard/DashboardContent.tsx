@@ -15,6 +15,7 @@ import {
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { AccountManagementModal } from "./components/AccountManagementModal";
 import { CategoryManagementModal } from "./components/CategoryManagementModal";
+import { AddSimulationModal } from "./components/AddSimulationModal";
 import { SimulationAssumptionsPanel, CashFlowPrioritiesPanel, FamilyConfigPanel, LifeCyclePanel, StartPointPanel } from "./components/tabs/scenario";
 import { useFinancialContext, type FamilyMember } from "@/contexts/FinancialContext";
 import {
@@ -174,6 +175,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   const [lifeCyclePanelRect, setLifeCyclePanelRect] = useState<{ top: number; left: number } | null>(null);
   const lifeCyclePanelBtnRef = useRef<HTMLButtonElement>(null);
   const lifeCyclePanelRef = useRef<HTMLDivElement>(null);
+  const [showAddSimModal, setShowAddSimModal] = useState(false);
+  const [addSimModalRect, setAddSimModalRect] = useState<{ top: number; left: number; bottom: number; width: number } | null>(null);
+
   // 비교 선택 상태: 'asset-trend' = 자산 추이, 시뮬레이션 ID = 다른 시뮬레이션
   const [compareSelections, setCompareSelections] = useState<Set<string>>(new Set());
 
@@ -492,43 +496,72 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   // 선택된 시뮬레이션 계산
   const selectedSim = simulations.find(s => s.id === selectedSimulationId) || simulations[0];
 
-  // 시뮬레이션 추가 핸들러
-  const handleAddSimulation = useCallback(async () => {
+  // 시뮬레이션 추가 모달 열기
+  const handleAddSimulation = useCallback((rect: { top: number; left: number; bottom: number; width: number }) => {
+    setAddSimModalRect(rect);
+    setShowAddSimModal(true);
+  }, []);
+
+  // 새 시뮬레이션 생성 (빈 시뮬레이션)
+  const handleCreateNewSimulation = useCallback(async () => {
     const nextNum = simulations.length + 1;
     const title = `새 시뮬레이션 ${nextNum}`;
     createSimulation.mutate(
       { title },
         {
           onSuccess: (newSim) => {
-            // 즉시 UI 업데이트 (시뮬레이션 리스트에 표시)
             setSelectedSimulationId(newSim.id);
             setCurrentSection("simulation");
             updateUrl("simulation", newSim.id);
-            setInitializingSimulationId(newSim.id); // 초기화 중 표시
+            setInitializingSimulationId(newSim.id);
 
-            // 백그라운드에서 데이터 초기화
             (async () => {
               try {
-                // 1단계: 계좌 데이터 복사 (가격 없이 빠르게)
                 await simulationService.initializeSimulationData(newSim.id, profile.id);
-
-                // 2단계: 실시간 가격 조회 및 동기화
                 await simulationService.syncPricesInBackground(newSim.id, profile.id);
-
-                // 3단계: 모든 데이터 로드 완료까지 대기 후 로딩 해제
                 setSimulationDataKey(prev => prev + 1);
                 queryClient.invalidateQueries({ queryKey: ["simulations"] });
                 await queryClient.invalidateQueries({ queryKey: financialKeys.all });
                 setInitializingSimulationId(null);
               } catch (error) {
-                console.error("[handleAddSimulation] Initialize error:", error);
+                console.error("[handleCreateNewSimulation] Initialize error:", error);
                 setInitializingSimulationId(null);
               }
             })();
           },
         }
       );
-  }, [createSimulation, simulations.length, profile.id, updateUrl]);
+  }, [createSimulation, simulations.length, profile.id, updateUrl, queryClient]);
+
+  // 기존 시뮬레이션 복사
+  const handleCopySimulation = useCallback(async (sourceSimulationId: string) => {
+    const sourceSim = simulations.find(s => s.id === sourceSimulationId);
+    const title = sourceSim ? `${sourceSim.title} (복사)` : `시뮬레이션 복사`;
+    createSimulation.mutate(
+      { title },
+      {
+        onSuccess: (newSim) => {
+          setSelectedSimulationId(newSim.id);
+          setCurrentSection("simulation");
+          updateUrl("simulation", newSim.id);
+          setInitializingSimulationId(newSim.id);
+
+          (async () => {
+            try {
+              await simulationService.copyFullSimulation(sourceSimulationId, newSim.id);
+              setSimulationDataKey(prev => prev + 1);
+              queryClient.invalidateQueries({ queryKey: ["simulations"] });
+              await queryClient.invalidateQueries({ queryKey: financialKeys.all });
+              setInitializingSimulationId(null);
+            } catch (error) {
+              console.error("[handleCopySimulation] Copy error:", error);
+              setInitializingSimulationId(null);
+            }
+          })();
+        },
+      }
+    );
+  }, [createSimulation, simulations, updateUrl, queryClient]);
 
   // 시뮬레이션 삭제
   const deleteSimulation = useDeleteSimulation();
@@ -1470,6 +1503,17 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           profileId={profile.id}
           onClose={() => setShowCategoryModal(false)}
           triggerRect={categoryBtnRect}
+        />
+      )}
+
+      {/* 시뮬레이션 추가 모달 */}
+      {showAddSimModal && addSimModalRect && (
+        <AddSimulationModal
+          triggerRect={addSimModalRect}
+          simulations={simulations}
+          onCreateNew={handleCreateNewSimulation}
+          onCopyFrom={handleCopySimulation}
+          onClose={() => setShowAddSimModal(false)}
         />
       )}
     </div>

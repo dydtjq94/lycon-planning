@@ -45,7 +45,7 @@ interface SidebarProps {
   simulations?: Simulation[];
   currentSimulationId?: string;
   onSimulationChange?: (simulationId: string) => void;
-  onAddSimulation?: () => void;
+  onAddSimulation?: (rect: { top: number; left: number; bottom: number; width: number }) => void;
   onDeleteSimulation?: (simulationId: string) => void;
 }
 
@@ -286,7 +286,10 @@ export function Sidebar({
                 <button
                   className={styles.addScenarioBtn}
                   title="시뮬레이션 추가"
-                  onClick={onAddSimulation}
+                  onClick={(e) => {
+                    const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                    onAddSimulation?.({ top: rect.top, left: rect.left, bottom: rect.bottom, width: rect.width });
+                  }}
                 >
                   <Plus size={14} />
                   <span>시뮬레이션 추가</span>

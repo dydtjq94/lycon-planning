@@ -166,7 +166,7 @@ export function ScenarioTab({
         milestones.push({
           year: ownerBY + pension.start_age,
           color: pension.color || getFinancialColor('nationalPension'),
-          label: isSpouse ? '배우자 공적연금' : '공적연금',
+          label: isSpouse ? '배우자 공적연금 수령 시작' : '본인 공적연금 수령 시작',
           iconId: pension.icon || getDefaultIconId('nationalPension', pension.pension_type) || 'landmark',
         });
       }
@@ -180,7 +180,7 @@ export function ScenarioTab({
         milestones.push({
           year: ownerBY + pension.start_age,
           color: pension.color || getFinancialColor('retirementPension'),
-          label: isSpouse ? '배우자 퇴직연금' : '퇴직연금',
+          label: isSpouse ? '배우자 퇴직연금 수령 시작' : '본인 퇴직연금 수령 시작',
           iconId: pension.icon || getDefaultIconId('retirementPension', pension.pension_type) || 'landmark',
         });
       }
@@ -196,7 +196,7 @@ export function ScenarioTab({
         milestones.push({
           year: ownerBY + pension.start_age,
           color: pension.color || getFinancialColor('personalPension'),
-          label: isSpouse ? `배우자 ${typeLabel}` : typeLabel,
+          label: isSpouse ? `배우자 ${typeLabel} 수령 시작` : `본인 ${typeLabel} 수령 시작`,
           iconId: pension.icon || getDefaultIconId('personalPension', pension.pension_type) || 'piggy-bank',
         });
       }

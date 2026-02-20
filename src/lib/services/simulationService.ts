@@ -221,6 +221,74 @@ export const simulationService = {
   },
 
   /**
+   * 기존 시뮬레이션을 완전히 복사
+   * copySimulationData + savings/personal_pensions/retirement_pensions + 시뮬레이션 설정
+   */
+  async copyFullSimulation(sourceSimulationId: string, targetSimulationId: string): Promise<void> {
+    const supabase = createClient()
+
+    // 1. 기존 copySimulationData 호출 (incomes, expenses, debts, real_estates, physical_assets, insurances, national_pensions)
+    await this.copySimulationData(sourceSimulationId, targetSimulationId)
+
+    // 2. 추가 테이블 복사 (savings, personal_pensions, retirement_pensions)
+    const [
+      savingsRes,
+      personalPensionsRes,
+      retirementPensionsRes,
+    ] = await Promise.all([
+      supabase.from('savings').select('*').eq('simulation_id', sourceSimulationId),
+      supabase.from('personal_pensions').select('*').eq('simulation_id', sourceSimulationId),
+      supabase.from('retirement_pensions').select('*').eq('simulation_id', sourceSimulationId),
+    ])
+
+    // id, created_at, updated_at 제거하고 simulation_id 교체
+    const prepareRows = (rows: any[] | null) => {
+      if (!rows?.length) return []
+      return rows.map(({ id, created_at, updated_at, ...rest }) => ({
+        ...rest,
+        simulation_id: targetSimulationId,
+      }))
+    }
+
+    const inserts: Promise<unknown>[] = []
+
+    const savings = prepareRows(savingsRes.data)
+    if (savings.length > 0) inserts.push(Promise.resolve(supabase.from('savings').insert(savings)))
+
+    const personalPensions = prepareRows(personalPensionsRes.data)
+    if (personalPensions.length > 0) inserts.push(Promise.resolve(supabase.from('personal_pensions').insert(personalPensions)))
+
+    const retirementPensions = prepareRows(retirementPensionsRes.data)
+    if (retirementPensions.length > 0) inserts.push(Promise.resolve(supabase.from('retirement_pensions').insert(retirementPensions)))
+
+    await Promise.all(inserts)
+
+    // 3. 시뮬레이션 설정 복사 (simulation_assumptions, cash_flow_priorities, life_cycle_settings, family_config)
+    const { data: sourceSim } = await supabase
+      .from('simulations')
+      .select('simulation_assumptions, cash_flow_priorities, life_cycle_settings, family_config, start_year, start_month')
+      .eq('id', sourceSimulationId)
+      .single()
+
+    if (sourceSim) {
+      const updates: Record<string, any> = {}
+      if (sourceSim.simulation_assumptions) updates.simulation_assumptions = sourceSim.simulation_assumptions
+      if (sourceSim.cash_flow_priorities) updates.cash_flow_priorities = sourceSim.cash_flow_priorities
+      if (sourceSim.life_cycle_settings) updates.life_cycle_settings = sourceSim.life_cycle_settings
+      if (sourceSim.family_config) updates.family_config = sourceSim.family_config
+      if (sourceSim.start_year) updates.start_year = sourceSim.start_year
+      if (sourceSim.start_month) updates.start_month = sourceSim.start_month
+
+      if (Object.keys(updates).length > 0) {
+        await supabase
+          .from('simulations')
+          .update(updates)
+          .eq('id', targetSimulationId)
+      }
+    }
+  },
+
+  /**
    * 스냅샷에서 시뮬레이션에 없는 데이터만 복사
    * 부동산, 부채, 실물자산 등이 시뮬레이션 테이블에 없으면 스냅샷에서 가져옴
    */
