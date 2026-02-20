@@ -98,14 +98,21 @@ export function CashFlowChart({
   // 생애주기 아이콘 위치 계산 함수
   computePosRef.current = () => {
     const chart = chartInstance.current
-    if (!chart || !lifecycleMilestones?.length || !chart.scales?.x || !chart.chartArea) {
+    if (!chart || !lifecycleMilestones?.length || !chart.scales?.x || !chart.scales?.y || !chart.chartArea) {
       setMilestonePos(prev => prev.length === 0 ? prev : [])
       return
     }
     const labels = chart.data.labels as (number | string)[]
     const chartTop = chart.chartArea.top
-    const iconSize = 22
+    const iconSize = 17
     const iconGap = 2
+    const iconPad = 4
+
+    // 바 상단 Y 좌표 (양수: 바 꼭대기, 음수: 0선)
+    const getBarTopY = (idx: number): number => {
+      const val = (chart.data.datasets[0]?.data as number[])?.[idx] ?? 0
+      return chart.scales.y.getPixelForValue(Math.max(val, 0))
+    }
 
     const xCountMap = new Map<number, number>()
     const pos = lifecycleMilestones.map(milestone => {
@@ -114,11 +121,13 @@ export function CashFlowChart({
         : labels.findIndex(y => Number(y) === milestone.year)
       if (idx < 0) return null
       const x = chart.scales.x.getPixelForValue(idx)
+      const barTopY = getBarTopY(idx)
       const stackIdx = xCountMap.get(idx) || 0
       xCountMap.set(idx, stackIdx + 1)
+      const y = barTopY - iconPad - iconSize - stackIdx * (iconSize + iconGap)
       return {
         x,
-        y: chartTop + 4 + stackIdx * (iconSize + iconGap),
+        y: Math.max(y, chartTop),
         color: milestone.color,
         iconId: milestone.iconId,
       }
@@ -459,8 +468,22 @@ export function CashFlowChart({
     // 바 색상 (양수/음수)
     const bgColors = netCashFlowData.map(v => v >= 0 ? toRgba(positiveColor, 0.7) : toRgba(negativeColor, 0.7))
 
-    // 0을 가운데로 대칭 y축
-    const maxAbs = Math.max(Math.abs(Math.max(...netCashFlowData)), Math.abs(Math.min(...netCashFlowData))) * 1.1
+    // 0을 가운데로 대칭 y축 (그리드 한 칸 여유)
+    const rawPosMax = Math.max(...netCashFlowData)
+    const rawNegMin = Math.min(...netCashFlowData)
+    const absRange = Math.max(Math.abs(rawPosMax), Math.abs(rawNegMin))
+    let maxAbs: number
+    if (absRange === 0) {
+      maxAbs = 1
+    } else {
+      const roughStep = absRange / 4
+      const mag = Math.pow(10, Math.floor(Math.log10(roughStep)))
+      const norm = roughStep / mag
+      const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag
+      const posSteps = Math.ceil(Math.abs(rawPosMax) / step) + 1
+      const negSteps = Math.ceil(Math.abs(rawNegMin) / step) + 1
+      maxAbs = Math.max(posSteps, negSteps) * step
+    }
 
     // annotation 설정
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -648,10 +671,7 @@ export function CashFlowChart({
       },
     })
 
-    // 생애주기 아이콘 위치 계산
-    computePosRef.current()
-
-    // 0→실제 데이터 전환 애니메이션 (초기 생성 시에만)
+    // 0→실제 데이터 전환 애니메이션 (초기 생성 시에만, onComplete에서 아이콘 위치 계산)
     isAnimatingRef.current = true
     requestAnimationFrame(() => {
       const chart = chartInstance.current
@@ -659,7 +679,10 @@ export function CashFlowChart({
       ;(chart.options as any).animation = {
         duration: 800,
         easing: 'easeOutQuart',
-        onComplete: () => { isAnimatingRef.current = false },
+        onComplete: () => {
+          isAnimatingRef.current = false
+          computePosRef.current()
+        },
       }
       ;(chart.data.datasets[0] as any).data = netCashFlowData
       chart.update()
@@ -742,15 +765,15 @@ export function CashFlowChart({
               transform: 'translateX(-50%)',
               pointerEvents: 'none',
               zIndex: 10,
-              width: 22,
-              height: 22,
+              width: 17,
+              height: 17,
               borderRadius: '50%',
               background: `${pos.color}${isDark ? '30' : '20'}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <Icon size={13} color={pos.color} strokeWidth={2.5} />
+              <Icon size={10} color={pos.color} strokeWidth={2.5} />
             </div>
           )
         })}

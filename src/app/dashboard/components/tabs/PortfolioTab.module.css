@@ -874,6 +874,44 @@
   color: var(--dashboard-text);
 }
 
+.sideValueEditable {
+  cursor: pointer;
+  border-bottom: 1px dashed var(--dashboard-text-muted);
+}
+
+.sideValueEditable:hover {
+  color: var(--dashboard-accent);
+}
+
+.sideInputWrap {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.sideInput {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  width: 160px;
+  text-align: right;
+  outline: none;
+}
+
+.sideInput:focus {
+  border-color: var(--dashboard-accent);
+}
+
+.sideInputUnit {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+}
+
 .profit {
   color: var(--chart-profit-color, #ef4444);
 }

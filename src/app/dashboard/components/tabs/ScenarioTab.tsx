@@ -16,7 +16,8 @@ import { normalizePriorities } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationTypes";
 import type { SimulationProfile } from "@/lib/services/dbToFinancialItems";
 import type { ProfileBasics } from "@/contexts/FinancialContext";
-import { useNationalPensions } from "@/hooks/useFinancialData";
+import { useNationalPensions, useRetirementPensions, usePersonalPensions } from "@/hooks/useFinancialData";
+import { getDefaultIconId, getFinancialColor } from "@/lib/constants/financialIcons";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { NetWorthTab } from "./NetWorthTab";
 import { CashFlowOverviewTab } from "./CashFlowOverviewTab";
@@ -101,8 +102,10 @@ export function ScenarioTab({
 }: ScenarioTabProps) {
   const { isDark, chartScaleColors } = useChartTheme();
 
-  // 공적연금 데이터 (차트 마일스톤용 - React Query 캐시 활용)
+  // 연금 데이터 (차트 마일스톤용 - React Query 캐시 활용)
   const { data: nationalPensions = [] } = useNationalPensions(simulationId);
+  const { data: retirementPensions = [] } = useRetirementPensions(simulationId);
+  const { data: personalPensions = [] } = usePersonalPensions(simulationId);
 
   // 시뮬레이션별 은퇴 나이 + 기대수명 (life_cycle_settings에서 가져오고, 없으면 프로필 기본값)
   const lifeCycleSettings = useMemo(() => {
@@ -126,7 +129,7 @@ export function ScenarioTab({
     milestones.push({
       year: selfBY + lifeCycleSettings.selfRetirementAge,
       color: saved?.retirementColor ?? '#6366f1',
-      label: '은퇴',
+      label: '본인 은퇴',
       iconId: saved?.retirementIcon ?? 'sparkles',
     });
 
@@ -134,7 +137,7 @@ export function ScenarioTab({
     milestones.push({
       year: selfBY + lifeCycleSettings.selfLifeExpectancy,
       color: saved?.lifeExpectancyColor ?? '#3b82f6',
-      label: '기대수명',
+      label: '본인 기대수명',
       iconId: saved?.lifeExpectancyIcon ?? 'hourglass',
     });
 
@@ -162,15 +165,45 @@ export function ScenarioTab({
         const isSpouse = pension.owner === 'spouse';
         milestones.push({
           year: ownerBY + pension.start_age,
-          color: pension.color || '#6366f1',
-          label: isSpouse ? '배우자 연금 수령' : '연금 수령',
-          iconId: pension.icon || 'landmark',
+          color: pension.color || getFinancialColor('nationalPension'),
+          label: isSpouse ? '배우자 공적연금' : '공적연금',
+          iconId: pension.icon || getDefaultIconId('nationalPension', pension.pension_type) || 'landmark',
+        });
+      }
+    });
+
+    // 퇴직연금 수령 시작
+    retirementPensions.forEach(pension => {
+      const ownerBY = pension.owner === 'spouse' ? spouseBY : selfBY;
+      if (ownerBY && pension.start_age) {
+        const isSpouse = pension.owner === 'spouse';
+        milestones.push({
+          year: ownerBY + pension.start_age,
+          color: pension.color || getFinancialColor('retirementPension'),
+          label: isSpouse ? '배우자 퇴직연금' : '퇴직연금',
+          iconId: pension.icon || getDefaultIconId('retirementPension', pension.pension_type) || 'landmark',
+        });
+      }
+    });
+
+    // 개인연금 수령 시작 (ISA 제외 - 연금저축/IRP만)
+    personalPensions.forEach(pension => {
+      if (pension.pension_type === 'isa') return;
+      const ownerBY = pension.owner === 'spouse' ? spouseBY : selfBY;
+      if (ownerBY && pension.start_age) {
+        const isSpouse = pension.owner === 'spouse';
+        const typeLabel = pension.pension_type === 'irp' ? 'IRP' : '연금저축';
+        milestones.push({
+          year: ownerBY + pension.start_age,
+          color: pension.color || getFinancialColor('personalPension'),
+          label: isSpouse ? `배우자 ${typeLabel}` : typeLabel,
+          iconId: pension.icon || getDefaultIconId('personalPension', pension.pension_type) || 'piggy-bank',
         });
       }
     });
 
     return milestones;
-  }, [simulation.life_cycle_settings, simulationProfile, lifeCycleSettings, nationalPensions]);
+  }, [simulation.life_cycle_settings, simulationProfile, lifeCycleSettings, nationalPensions, retirementPensions, personalPensions]);
 
   const [activeTopTab, setActiveTopTab] = useState<"plan" | "cashflow">("plan");
   const [activeCategoryTab, setActiveCategoryTab] = useState<string | null>(null);

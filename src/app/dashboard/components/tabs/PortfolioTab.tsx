@@ -833,10 +833,42 @@ export function PortfolioTab({
     ? ((currentValue - totalInvested) / totalInvested) * 100
     : null;
 
+  // 선택된 계좌의 추가금액 합산
+  const selectedAdditionalAmount = useMemo(() => {
+    const targetAccounts = selectedAccountIds.length > 0
+      ? accounts.filter(a => selectedAccountIds.includes(a.id))
+      : accounts;
+    return targetAccounts.reduce((sum, a) => sum + (a.additional_amount || 0), 0);
+  }, [accounts, selectedAccountIds]);
+
+  // 추가금액 인라인 편집 상태
+  const [editingAdditionalAmountId, setEditingAdditionalAmountId] = useState<string | null>(null);
+  const [additionalAmountInput, setAdditionalAmountInput] = useState("");
+  const additionalAmountCancelledRef = useRef(false);
+
+  const handleAdditionalAmountSave = async (accountId: string) => {
+    if (additionalAmountCancelledRef.current) {
+      additionalAmountCancelledRef.current = false;
+      return;
+    }
+    const rawValue = additionalAmountInput.replace(/,/g, "");
+    const won = Math.round(parseFloat(rawValue) || 0);
+    const { error } = await supabase
+      .from("accounts")
+      .update({ additional_amount: won })
+      .eq("id", accountId);
+    if (!error) {
+      setAccounts(prev => prev.map(a =>
+        a.id === accountId ? { ...a, additional_amount: won } : a
+      ));
+    }
+    setEditingAdditionalAmountId(null);
+  };
+
   // 계좌별 평가금액 계산 (유틸리티 함수 사용)
   const accountValues = useMemo(() => {
-    return calculatePortfolioAccountValues(transactions, priceCache);
-  }, [priceCache, transactions]);
+    return calculatePortfolioAccountValues(transactions, priceCache, accounts);
+  }, [priceCache, transactions, accounts]);
 
   // 계좌별 투자금액 계산
   const accountInvested = useMemo(() => {
@@ -903,7 +935,8 @@ export function PortfolioTab({
     return sum;
   }, [accountInvested]);
 
-  const totalAllProfitLoss = totalAllValue - totalAllInvested;
+  const totalAllAdditionalAmount = accounts.reduce((sum, a) => sum + (a.additional_amount || 0), 0);
+  const totalAllProfitLoss = totalAllValue - totalAllAdditionalAmount - totalAllInvested;
 
   // 정렬된 보유 종목
   const sortedHoldings = useMemo(() => {
@@ -1256,7 +1289,8 @@ export function PortfolioTab({
           accounts.map((account) => {
             const accountValue = accountValues.get(account.id) || 0;
             const invested = accountInvested.get(account.id) || 0;
-            const profit = accountValue - invested;
+            const additionalAmt = account.additional_amount || 0;
+            const profit = accountValue - additionalAmt - invested;
             const isSelected = selectedAccountIds.includes(account.id);
             return (
               <button
@@ -1457,7 +1491,7 @@ export function PortfolioTab({
           ) : (
             <>
               <span className={styles.mainValue}>
-                {currentValue !== null ? formatWon(Math.round(currentValue)) : "0원"}
+                {currentValue !== null ? formatWon(Math.round(currentValue + selectedAdditionalAmount)) : formatWon(selectedAdditionalAmount) || "0원"}
               </span>
               {profitLoss !== null && (
                 <div className={`${styles.changeInfo} ${profitLoss >= 0 ? styles.positive : styles.negative}`}>
@@ -1472,6 +1506,44 @@ export function PortfolioTab({
           )}
         </div>
         <div className={styles.sideMetrics}>
+          <div className={styles.sideMetric}>
+            <span className={styles.sideLabel}>추가금액</span>
+            {selectedAccountIds.length === 1 && editingAdditionalAmountId === selectedAccountIds[0] ? (
+              <div className={styles.sideInputWrap}>
+                <input
+                  className={styles.sideInput}
+                  type="text"
+                  value={additionalAmountInput}
+                  onChange={(e) => setAdditionalAmountInput(e.target.value)}
+                  onBlur={() => handleAdditionalAmountSave(selectedAccountIds[0])}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleAdditionalAmountSave(selectedAccountIds[0]);
+                    if (e.key === "Escape") {
+                      additionalAmountCancelledRef.current = true;
+                      setEditingAdditionalAmountId(null);
+                    }
+                  }}
+                  autoFocus
+                  placeholder="0"
+                />
+                <span className={styles.sideInputUnit}>원</span>
+              </div>
+            ) : (
+              <span
+                className={`${styles.sideValue} ${selectedAccountIds.length === 1 ? styles.sideValueEditable : ""}`}
+                onClick={() => {
+                  if (selectedAccountIds.length === 1) {
+                    const account = accounts.find(a => a.id === selectedAccountIds[0]);
+                    const won = account?.additional_amount || 0;
+                    setAdditionalAmountInput(won > 0 ? won.toLocaleString() : "");
+                    setEditingAdditionalAmountId(selectedAccountIds[0]);
+                  }
+                }}
+              >
+                {formatWon(Math.round(selectedAdditionalAmount))}
+              </span>
+            )}
+          </div>
           <div className={styles.sideMetric}>
             <span className={styles.sideLabel}>투자금액</span>
             <span className={styles.sideValue}>{formatWon(Math.round(totalInvested))}</span>

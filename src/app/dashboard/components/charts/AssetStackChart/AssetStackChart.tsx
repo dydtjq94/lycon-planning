@@ -145,16 +145,31 @@ export function AssetStackChart({
   // 생애주기 아이콘 위치 계산 함수 (ref로 최신 클로저 유지)
   computePosRef.current = () => {
     const chart = chartInstance.current
-    if (!chart || !chart.scales?.x || !chart.chartArea) {
+    if (!chart || !chart.scales?.x || !chart.scales?.y || !chart.chartArea) {
       setMilestonePos(prev => prev.length === 0 ? prev : [])
       return
     }
     const labels = chart.data.labels as string[]
     const chartTop = chart.chartArea.top
-    const iconSize = 22
+    const iconSize = 17
     const iconGap = 2
+    const iconPad = 4
 
-    // 같은 x 위치에 여러 아이콘이 겹치면 아래로 쌓기
+    // 바 상단 Y 좌표 가져오기
+    const getBarTopY = (idx: number): number => {
+      if (chartMode === 'bar') {
+        let total = 0
+        for (const ds of chart.data.datasets) {
+          const val = (ds.data as number[])[idx]
+          if (val != null && val > 0) total += val
+        }
+        return chart.scales.y.getPixelForValue(total)
+      }
+      const val = (chart.data.datasets[0]?.data as number[])?.[idx] ?? 0
+      return chart.scales.y.getPixelForValue(Math.max(val, 0))
+    }
+
+    // 같은 x 위치에 여러 아이콘이 겹치면 위로 쌓기
     const xCountMap = new Map<number, number>()
     const pos: { x: number; y: number; color: string; iconId: string }[] = []
 
@@ -166,9 +181,11 @@ export function AssetStackChart({
           : labels.findIndex(l => parseInt(String(l)) === milestone.year)
         if (idx < 0) return
         const x = chart.scales.x.getPixelForValue(idx)
+        const barTopY = getBarTopY(idx)
         const stackIdx = xCountMap.get(idx) || 0
         xCountMap.set(idx, stackIdx + 1)
-        pos.push({ x, y: chartTop + 4 + stackIdx * (iconSize + iconGap), color: milestone.color, iconId: milestone.iconId })
+        const y = barTopY - iconPad - iconSize - stackIdx * (iconSize + iconGap)
+        pos.push({ x, y: Math.max(y, chartTop), color: milestone.color, iconId: milestone.iconId })
       })
     }
 
@@ -178,9 +195,11 @@ export function AssetStackChart({
       : chartData.snapshots.findIndex(s => s.debtBreakdown?.some(d => d.title === '마이너스 통장'))
     if (overdraftIdx >= 0) {
       const x = chart.scales.x.getPixelForValue(overdraftIdx)
+      const barTopY = getBarTopY(overdraftIdx)
       const stackIdx = xCountMap.get(overdraftIdx) || 0
       xCountMap.set(overdraftIdx, stackIdx + 1)
-      pos.push({ x, y: chartTop + 4 + stackIdx * (iconSize + iconGap), color: '#ef4444', iconId: 'circle-alert' })
+      const y = barTopY - iconPad - iconSize - stackIdx * (iconSize + iconGap)
+      pos.push({ x, y: Math.max(y, chartTop), color: '#ef4444', iconId: 'circle-alert' })
     }
 
     setMilestonePos(prev => {
@@ -696,7 +715,19 @@ export function AssetStackChart({
     prevMonthlyModeRef.current = isMonthlyMode
     prevChartModeRef.current = chartMode
 
-    // Y축 범위 계산 (bar/line 모두 0 중심 대칭)
+    // Y축 범위 계산 (bar/line 모두 0 중심 대칭, 그리드 한 칸 여유)
+    const computeNiceAxisMax = (posMax: number, negMin: number): number => {
+      const absMax = Math.max(Math.abs(posMax), Math.abs(negMin))
+      if (absMax === 0) return 1
+      const roughStep = absMax / 4
+      const mag = Math.pow(10, Math.floor(Math.log10(roughStep)))
+      const norm = roughStep / mag
+      const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag
+      const posSteps = Math.ceil(Math.abs(posMax) / step) + 1
+      const negSteps = Math.ceil(Math.abs(negMin) / step) + 1
+      return Math.max(posSteps, negSteps) * step
+    }
+
     let yMin: number
     let yMax: number
     if (chartMode === 'bar' && stackedBarData) {
@@ -709,11 +740,13 @@ export function AssetStackChart({
         rawMax = Math.max(rawMax, assetSum)
         rawMin = Math.min(rawMin, debtSum)
       }
-      const maxAbs = Math.max(Math.abs(rawMax), Math.abs(rawMin)) * 1.1
+      const maxAbs = computeNiceAxisMax(rawMax, rawMin)
       yMin = -maxAbs
       yMax = maxAbs
     } else {
-      const maxAbs = Math.max(Math.abs(Math.max(...activeNetWorthData)), Math.abs(Math.min(...activeNetWorthData))) * 1.1
+      const dataMax = Math.max(...activeNetWorthData)
+      const dataMin = Math.min(...activeNetWorthData)
+      const maxAbs = computeNiceAxisMax(dataMax, dataMin)
       yMin = -maxAbs
       yMax = maxAbs
     }
@@ -976,10 +1009,7 @@ export function AssetStackChart({
       plugins: [gradientFillPlugin],
     })
 
-    // 생애주기 아이콘 위치 계산
-    computePosRef.current()
-
-    // 0→실제 데이터 전환 애니메이션 (초기 생성 시에만)
+    // 0→실제 데이터 전환 애니메이션 (초기 생성 시에만, onComplete에서 아이콘 위치 계산)
     isAnimatingRef.current = true
     requestAnimationFrame(() => {
       const chart = chartInstance.current
@@ -988,7 +1018,10 @@ export function AssetStackChart({
       ;(chart.options as any).animation = {
         duration: 800,
         easing: 'easeOutQuart',
-        onComplete: () => { isAnimatingRef.current = false },
+        onComplete: () => {
+          isAnimatingRef.current = false
+          computePosRef.current()
+        },
       }
       if (chartMode === 'bar' && stackedBarData) {
         const allBarData = [...[...stackedBarData.assetDatasets].reverse(), ...stackedBarData.debtDatasets]
@@ -1148,15 +1181,15 @@ export function AssetStackChart({
               transform: 'translateX(-50%)',
               pointerEvents: 'none',
               zIndex: 10,
-              width: 22,
-              height: 22,
+              width: 17,
+              height: 17,
               borderRadius: '50%',
               background: `${pos.color}${isDark ? '30' : '20'}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <Icon size={13} color={pos.color} strokeWidth={2.5} />
+              <Icon size={10} color={pos.color} strokeWidth={2.5} />
             </div>
           )
         })}

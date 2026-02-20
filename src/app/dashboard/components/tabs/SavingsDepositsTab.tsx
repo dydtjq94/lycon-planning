@@ -193,6 +193,7 @@ export function SavingsDepositsTab({ profileId }: SavingsDepositsTabProps) {
           currency: input.currency || "KRW",
           monthly_contribution: input.monthly_contribution || null,
           interest_type: input.interest_type || "simple",
+          additional_amount: 0,
         });
       } else if (editingId) {
         await updateAccount(editingId, input);

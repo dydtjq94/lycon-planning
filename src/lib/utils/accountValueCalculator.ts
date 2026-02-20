@@ -416,7 +416,8 @@ export async function fetchPortfolioPrices(
  */
 export function calculatePortfolioAccountValues(
   transactions: PortfolioTransaction[],
-  priceCache: PortfolioPriceCache | null | undefined
+  priceCache: PortfolioPriceCache | null | undefined,
+  accounts?: { id: string; additional_amount?: number | null }[]
 ): Map<string, number> {
   const investmentAccountValues = new Map<string, number>();
 
@@ -489,8 +490,18 @@ export function calculatePortfolioAccountValues(
       }
     });
 
-    investmentAccountValues.set(accountId, Math.round(accountValue));
+    const additionalAmount = accounts?.find(a => a.id === accountId)?.additional_amount || 0;
+    investmentAccountValues.set(accountId, Math.round(accountValue + additionalAmount));
   });
+
+  // 거래 없는 계좌도 추가금액이 있으면 포함
+  if (accounts) {
+    accounts.forEach(acc => {
+      if (!investmentAccountValues.has(acc.id) && acc.additional_amount && acc.additional_amount > 0) {
+        investmentAccountValues.set(acc.id, acc.additional_amount);
+      }
+    });
+  }
 
   return investmentAccountValues;
 }
@@ -510,7 +521,7 @@ export interface AccountValueDetail {
 export function calculatePortfolioAccountValuesDetailed(
   transactions: PortfolioTransaction[],
   priceCache: PortfolioPriceCache | null | undefined,
-  accounts: { id: string; broker_name: string | null; name: string; account_type: string }[]
+  accounts: { id: string; broker_name: string | null; name: string; account_type: string; additional_amount?: number | null }[]
 ): Map<string, AccountValueDetail> {
   const values = new Map<string, AccountValueDetail>();
 
@@ -551,10 +562,11 @@ export function calculatePortfolioAccountValuesDetailed(
   accounts
     .filter(acc => SECURITIES_ACCOUNT_TYPES.includes(acc.account_type))
     .forEach(account => {
+      const additionalAmount = account.additional_amount || 0;
       values.set(account.id, {
         broker: account.broker_name || "기타",
         accountName: account.name || "계좌",
-        value: 0,
+        value: additionalAmount,
         invested: 0,
         accountType: account.account_type,
       });
@@ -601,10 +613,11 @@ export function calculatePortfolioAccountValuesDetailed(
     const accountType = account?.account_type || "general";
 
     if (totalInvested > 0 || totalValue > 0) {
+      const additionalAmount = account?.additional_amount || 0;
       values.set(accountId, {
         broker,
         accountName,
-        value: totalValue || totalInvested,
+        value: (totalValue || totalInvested) + additionalAmount,
         invested: totalInvested,
         accountType,
       });
