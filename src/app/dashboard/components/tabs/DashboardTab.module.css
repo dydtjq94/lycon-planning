@@ -43,18 +43,242 @@
   color: var(--dashboard-text);
 }
 
-/* Top section: consultation + chat side by side */
+/* Top section: chart + breakdown side by side */
 .topSection {
   display: flex;
   gap: 16px;
   align-items: stretch;
 }
 
+/* Chart panel (left ~65%) */
+.chartPanel {
+  flex: 1.85;
+  min-width: 0;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Breakdown panel (right ~35%) */
+.breakdownPanel {
+  flex: 1;
+  min-width: 0;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Net worth header */
+.netWorthLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  margin-bottom: 4px;
+}
+
+.netWorthAmount {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+
+.changeIndicator {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.changeLabel {
+  color: var(--dashboard-text-muted);
+  margin-right: 6px;
+}
+
+.changeDate {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  margin-right: 6px;
+}
+
+.positive {
+  color: #ef4444;
+}
+
+.negative {
+  color: #3b82f6;
+}
+
+.muted {
+  color: var(--dashboard-text-muted);
+}
+
+/* Chart area */
+.chartContainer {
+  flex: 1;
+  min-height: 180px;
+  position: relative;
+}
+
+/* Period selector */
+.periodSelector {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  background: var(--dashboard-bg);
+  border-radius: 6px;
+  padding: 2px;
+  margin-top: 12px;
+}
+
+.periodBtn {
+  padding: 5px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.periodBtn:hover {
+  color: var(--dashboard-text);
+}
+
+.periodBtnActive {
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.periodBtnActive:hover {
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-text);
+}
+
+/* Breakdown headers */
+.breakdownHeaders {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.breakdownHeader {
+  flex: 1;
+  min-width: 0;
+}
+
+.breakdownHeaderLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  margin-bottom: 2px;
+}
+
+.breakdownHeaderAmount {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+  letter-spacing: -0.3px;
+}
+
+.breakdownDivider {
+  width: 1px;
+  background: var(--dashboard-border);
+  align-self: stretch;
+}
+
+/* Item lists */
+.itemSection {
+  margin-bottom: 16px;
+}
+
+.itemSection:last-child {
+  margin-bottom: 0;
+}
+
+.itemSectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dashboard-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.itemDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.itemTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--dashboard-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemAmount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.itemType {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* No items state */
+.noItems {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  padding: 8px 0;
+}
+
+/* Simulation section */
+.simSection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
 /* Shared card styling */
 .card {
   background: var(--dashboard-card-bg);
   border: 1px solid var(--dashboard-border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -69,17 +293,7 @@
   border-color: var(--accent-color, #007aff);
 }
 
-/* Top section halves */
-.topLeft {
-  flex: 1;
-  min-width: 0;
-}
-.topRight {
-  flex: 1;
-  min-width: 0;
-}
-
-/* Card header: title + "더보기" link */
+/* Card header: title + "상세" link */
 .cardHeader {
   display: flex;
   align-items: center;
@@ -110,53 +324,14 @@
   color: var(--accent-color, #007aff);
 }
 
-/* 2x2 grid */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-/* === Consultation (top left) === */
-.bookingInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* Sim chart */
+.simChartContainer {
+  height: 120px;
   flex: 1;
+  position: relative;
 }
 
-.bookingDate {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--dashboard-text);
-}
-
-.bookingTime {
-  font-size: 14px;
-  color: var(--dashboard-text-secondary);
-}
-
-.bookingExpert {
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
-}
-
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--dashboard-hover-bg);
-  color: var(--dashboard-text-secondary);
-  width: fit-content;
-}
-
-.statusConfirmed {
-  color: var(--accent-color, #007aff);
-}
-
+/* Empty state */
 .emptyState {
   display: flex;
   flex-direction: column;
@@ -174,213 +349,16 @@
   opacity: 0.5;
 }
 
-/* === Chat (top right) === */
-.messageList {
+/* Empty top section */
+.emptyTopSection {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.messageRow {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 5px 0;
-}
-
-.messageSender {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--dashboard-text-secondary);
-  flex-shrink: 0;
-  min-width: 40px;
-}
-
-.messageSenderExpert {
-  color: var(--accent-color, #007aff);
-}
-
-.messageContent {
-  flex: 1;
-  font-size: 12px;
-  color: var(--dashboard-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-
-.messageTime {
-  font-size: 10px;
-  color: var(--dashboard-text-muted);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.unreadBadge {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  margin-left: 4px;
-}
-
-/* === Weekly Budget === */
-.weeklyBars {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1;
-}
-
-.weekGroup {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.weekLabel {
-  font-size: 11px;
-  color: var(--dashboard-text-secondary);
-  white-space: nowrap;
-  min-width: 65px;
-}
-
-.weekBarsCol {
-  flex: 1;
-  max-width: 200px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.barContainer {
-  height: 10px;
-  background: var(--dashboard-hover-bg);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.bar {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s ease;
-}
-
-.weekAmount {
-  font-size: 12px;
-  font-weight: 600;
-  margin-left: auto;
-  text-align: right;
-  white-space: nowrap;
-}
-
-/* === Portfolio === */
-.portfolioContent {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-}
-
-.doughnutWrap {
-  width: 100px;
-  height: 100px;
-  flex-shrink: 0;
-}
-
-.portfolioStats {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
-}
-
-.portfolioTotal {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--dashboard-text);
-}
-
-.portfolioGain {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.positive {
-  color: #ef4444;
-}
-.negative {
-  color: #3b82f6;
-}
-
-/* === Asset Trends === */
-.chartContainer {
-  height: 120px;
-  flex: 1;
-  position: relative;
-}
-
-.netWorthDisplay {
-  display: flex;
-  align-items: baseline;
+  min-height: 250px;
   gap: 8px;
-  margin-bottom: 8px;
-}
-
-.netWorthValue {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--dashboard-text);
-}
-
-.netWorthChange {
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.muted {
   color: var(--dashboard-text-muted);
-}
-
-/* === Simulation === */
-.simMetrics {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.simMetric {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.simMetricLabel {
-  font-size: 12px;
-  color: var(--dashboard-text-secondary);
-}
-
-.simMetricValue {
   font-size: 13px;
-  font-weight: 600;
-  color: var(--dashboard-text);
-}
-
-.sparklineWrap {
-  height: 60px;
-  width: 100%;
 }
 
 /* === Skeleton === */
@@ -414,10 +392,24 @@
   gap: 16px;
 }
 
-.skeletonTopHalf {
+.skeletonTopLeft {
+  flex: 1.85;
+  height: 300px;
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonTopRight {
   flex: 1;
-  height: 160px;
-  border-radius: 10px;
+  height: 300px;
+  border-radius: 12px;
   background: linear-gradient(
     90deg,
     var(--skeleton-base) 25%,
@@ -435,8 +427,8 @@
 }
 
 .skeletonCard {
-  height: 200px;
-  border-radius: 10px;
+  height: 180px;
+  border-radius: 12px;
   background: linear-gradient(
     90deg,
     var(--skeleton-base) 25%,
@@ -458,7 +450,7 @@
     flex-direction: column;
   }
 
-  .grid {
+  .simSection {
     grid-template-columns: 1fr;
   }
 
@@ -466,12 +458,25 @@
     flex-direction: column;
   }
 
+  .skeletonTopLeft,
+  .skeletonTopRight {
+    flex: none;
+    height: 200px;
+  }
+
   .skeletonGrid {
     grid-template-columns: 1fr;
   }
 
-  .portfolioContent {
-    flex-direction: column;
-    align-items: flex-start;
+  .netWorthAmount {
+    font-size: 22px;
+  }
+
+  .breakdownHeaders {
+    gap: 12px;
+  }
+
+  .breakdownHeaderAmount {
+    font-size: 15px;
   }
 }
