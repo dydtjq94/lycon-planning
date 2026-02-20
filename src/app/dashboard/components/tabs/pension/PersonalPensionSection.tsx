@@ -16,6 +16,8 @@ import {
   isPeriodValid,
   handlePeriodTextChange,
 } from '@/lib/utils/periodInput'
+import { FinancialItemIcon } from '@/components/FinancialItemIcon'
+import { FinancialIconPicker } from '@/components/FinancialIconPicker'
 import styles from '../PensionTab.module.css'
 
 interface PersonalPensionSectionProps {
@@ -43,6 +45,10 @@ export function PersonalPensionSection({
   const [endDateText, setEndDateText] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const { isDark } = useChartTheme()
+
+  // Icon/color state
+  const [editIcon, setEditIcon] = useState<string | null>(null)
+  const [editColor, setEditColor] = useState<string | null>(null)
 
   // 타입별 연금 찾기
   const pensionSavings = useMemo(
@@ -104,6 +110,8 @@ export function PersonalPensionSection({
     setEditValues({})
     setStartDateText('')
     setEndDateText('')
+    setEditIcon(null)
+    setEditColor(null)
   }
 
   // ESC 키로 모달 닫기
@@ -124,6 +132,10 @@ export function PersonalPensionSection({
     const receivingYears = pensionSavings?.receiving_years || 20
     const startYear = birthYear + startAge
     const endYear = startYear + receivingYears
+
+    // Set icon and color
+    setEditIcon(pensionSavings?.icon || null)
+    setEditColor(pensionSavings?.color || null)
 
     setEditingType('pension_savings')
     setEditValues({
@@ -146,6 +158,10 @@ export function PersonalPensionSection({
     const receivingYears = irp?.receiving_years || 20
     const startYear = birthYear + startAge
     const endYear = startYear + receivingYears
+
+    // Set icon and color
+    setEditIcon(irp?.icon || null)
+    setEditColor(irp?.color || null)
 
     setEditingType('irp')
     setEditValues({
@@ -184,6 +200,8 @@ export function PersonalPensionSection({
           receiving_years: receivingYears,
           return_rate: returnRate,
           rate_category: rateCategory,
+          icon: editIcon,
+          color: editColor,
         },
         birthYear,
         retirementAge
@@ -256,6 +274,14 @@ export function PersonalPensionSection({
             </div>
           </div>
           <div className={styles.modalFormBody}>
+            <FinancialIconPicker
+              category="personalPension"
+              type={pensionType}
+              icon={editIcon}
+              color={editColor}
+              onIconChange={setEditIcon}
+              onColorChange={setEditColor}
+            />
             <div className={styles.modalFormRow}>
               <span className={styles.modalFormLabel}>잔액</span>
               <input
@@ -374,6 +400,33 @@ export function PersonalPensionSection({
       {/* 연금저축 읽기 뷰 */}
       {pensionSavings && (
         <div className={styles.pensionItem} onClick={startEditPensionSavings} style={{ cursor: 'pointer' }}>
+          <FinancialItemIcon
+            category="personalPension"
+            type="pension_savings"
+            icon={pensionSavings.icon}
+            color={pensionSavings.color}
+            onSave={async (icon, color) => {
+              await upsertPersonalPension(
+                simulationId,
+                owner,
+                'pension_savings',
+                {
+                  current_balance: pensionSavings.current_balance || 0,
+                  monthly_contribution: pensionSavings.monthly_contribution,
+                  is_contribution_fixed_to_retirement: pensionSavings.is_contribution_fixed_to_retirement,
+                  start_age: pensionSavings.start_age,
+                  receiving_years: pensionSavings.receiving_years,
+                  return_rate: pensionSavings.return_rate,
+                  rate_category: pensionSavings.rate_category,
+                  icon,
+                  color,
+                },
+                birthYear,
+                retirementAge
+              )
+              await onSave()
+            }}
+          />
           <div className={styles.itemInfo}>
             <span className={styles.itemName}>
               {ownerLabel} 연금저축
@@ -399,6 +452,33 @@ export function PersonalPensionSection({
       {/* IRP 읽기 뷰 */}
       {irp && (
         <div className={styles.pensionItem} onClick={startEditIrp} style={{ cursor: 'pointer' }}>
+          <FinancialItemIcon
+            category="personalPension"
+            type="irp"
+            icon={irp.icon}
+            color={irp.color}
+            onSave={async (icon, color) => {
+              await upsertPersonalPension(
+                simulationId,
+                owner,
+                'irp',
+                {
+                  current_balance: irp.current_balance || 0,
+                  monthly_contribution: irp.monthly_contribution,
+                  is_contribution_fixed_to_retirement: irp.is_contribution_fixed_to_retirement,
+                  start_age: irp.start_age,
+                  receiving_years: irp.receiving_years,
+                  return_rate: irp.return_rate,
+                  rate_category: irp.rate_category,
+                  icon,
+                  color,
+                },
+                birthYear,
+                retirementAge
+              )
+              await onSave()
+            }}
+          />
           <div className={styles.itemInfo}>
             <span className={styles.itemName}>
               {ownerLabel} IRP

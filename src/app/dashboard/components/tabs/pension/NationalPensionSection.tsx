@@ -16,6 +16,8 @@ import {
   isPeriodValid,
   handlePeriodTextChange,
 } from '@/lib/utils/periodInput'
+import { FinancialItemIcon } from '@/components/FinancialItemIcon'
+import { FinancialIconPicker } from '@/components/FinancialIconPicker'
 import styles from '../PensionTab.module.css'
 
 interface NationalPensionSectionProps {
@@ -50,12 +52,20 @@ export function NationalPensionSection({
   const [isSaving, setIsSaving] = useState(false)
   const { isDark } = useChartTheme()
 
+  // Icon/color state
+  const [editIcon, setEditIcon] = useState<string | null>(null)
+  const [editColor, setEditColor] = useState<string | null>(null)
+
   const startEdit = () => {
     setIsEditing(true)
     const startAge = pension?.start_age || 65
     const endAge = pension?.end_age || null
     const startYear = birthYear + startAge
     const endYear = endAge ? birthYear + endAge : null
+
+    // Set icon and color
+    setEditIcon(pension?.icon || null)
+    setEditColor(pension?.color || null)
 
     setEditValues({
       amount: pension?.expected_monthly_amount?.toString() || '',
@@ -91,6 +101,8 @@ export function NationalPensionSection({
     setEndDateText('')
     setStartMode('default')
     setEndMode('none')
+    setEditIcon(null)
+    setEditColor(null)
   }
 
   // ESC 키로 모달 닫기
@@ -121,6 +133,8 @@ export function NationalPensionSection({
           expected_monthly_amount: parseFloat(editValues.amount),
           start_age: startAge,
           end_age: endAge,
+          icon: editIcon,
+          color: editColor,
         },
         birthYear
       )
@@ -153,6 +167,27 @@ export function NationalPensionSection({
     return (
       <>
         <div className={styles.pensionItem} onClick={startEdit} style={{ cursor: 'pointer' }}>
+          <FinancialItemIcon
+            category="nationalPension"
+            type={pension.pension_type}
+            icon={pension.icon}
+            color={pension.color}
+            onSave={async (icon, color) => {
+              await upsertNationalPension(
+                simulationId,
+                owner,
+                {
+                  expected_monthly_amount: pension.expected_monthly_amount,
+                  start_age: pension.start_age,
+                  end_age: pension.end_age,
+                  icon,
+                  color,
+                },
+                birthYear
+              )
+              await onSave()
+            }}
+          />
           <div className={styles.itemInfo}>
             <span className={styles.itemName}>{ownerLabel} 공적연금</span>
             <span className={styles.itemMeta}>
@@ -218,6 +253,14 @@ export function NationalPensionSection({
                 </div>
               </div>
               <div className={styles.modalFormBody}>
+                <FinancialIconPicker
+                  category="nationalPension"
+                  type={pension?.pension_type || 'national'}
+                  icon={editIcon}
+                  color={editColor}
+                  onIconChange={setEditIcon}
+                  onColorChange={setEditColor}
+                />
                 <div className={styles.modalFormRow}>
                   <span className={styles.modalFormLabel}>금액</span>
                   <input

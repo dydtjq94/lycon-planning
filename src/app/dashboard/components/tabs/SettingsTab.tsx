@@ -7,8 +7,8 @@ import { LogOut, User, Sun, Moon, Monitor, HelpCircle, Palette, CreditCard, X, P
 import { useTheme, type ColorMode, type AccentColor } from "@/contexts/ThemeContext";
 import { ProfileBasics, FamilyMember } from "@/contexts/FinancialContext";
 import { createFamilyMember, updateFamilyMember, deleteFamilyMember } from "@/lib/services/familyService";
-import { getBrokerLogo, getCardLogo } from "@/lib/constants/financial";
-import type { Account, PaymentMethod } from "@/types/tables";
+import { getBrokerLogo } from "@/lib/constants/financial";
+import type { Account } from "@/types/tables";
 import { AccountManagementModal } from "../AccountManagementModal";
 import ReactMarkdown from "react-markdown";
 import { CURRENT_VERSION, VERSION_HISTORY } from "@/lib/constants/versionHistory";
@@ -129,20 +129,20 @@ interface SettingsTabProps {
   familyMembers: FamilyMember[];
   onFamilyMembersChange: (members: FamilyMember[]) => void;
   onProfileUpdate: (updates: Partial<ProfileBasics>) => void;
+  initialMenu?: MenuId;
 }
 
-export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onProfileUpdate }: SettingsTabProps) {
+export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onProfileUpdate, initialMenu }: SettingsTabProps) {
   const router = useRouter();
   const { colorMode, accentColor, setColorMode, setAccentColor } = useTheme();
   const [currentChartTheme, setCurrentChartTheme] = useState<ChartThemeId>("default");
-  const [selectedMenu, setSelectedMenu] = useState<MenuId>("profile");
+  const [selectedMenu, setSelectedMenu] = useState<MenuId>(initialMenu || "profile");
 
   // 계좌 관리 상태
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [accountOwnerFilter, setAccountOwnerFilter] = useState<"all" | "self" | "spouse">("all");
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "investment" | "pension_savings" | "irp" | "isa">("checking");
+  const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "investment" | "pension_savings" | "irp" | "dc" | "isa">("checking");
 
   const loadAccounts = useCallback(async () => {
     const supabase = createClient();
@@ -154,13 +154,6 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: true });
     if (data) setAccounts(data);
-
-    const { data: pmData } = await supabase
-      .from("payment_methods")
-      .select("*")
-      .eq("profile_id", profile.id)
-      .eq("is_active", true);
-    if (pmData) setPaymentMethods(pmData);
   }, [profile.id]);
 
   useEffect(() => {
@@ -662,7 +655,8 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
     const savingsAccounts = filtered.filter(a => ["savings", "deposit", "free_savings", "housing"].includes(a.account_type || ""));
     const investmentAccounts = filtered.filter(a => a.account_type === "general");
     const pensionSavingsAccounts = filtered.filter(a => a.account_type === "pension_savings");
-    const irpAccounts = filtered.filter(a => ["irp", "dc"].includes(a.account_type || ""));
+    const irpAccounts = filtered.filter(a => a.account_type === "irp");
+    const dcAccounts = filtered.filter(a => a.account_type === "dc");
     const isaAccounts = filtered.filter(a => a.account_type === "isa");
 
     const TYPE_LABELS: Record<string, string> = {
@@ -671,11 +665,7 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
       isa: "ISA", pension_savings: "연금저축", irp: "IRP", dc: "DC형",
     };
 
-    const PAYMENT_TYPE_LABELS: Record<string, string> = {
-      debit_card: "체크카드", credit_card: "신용카드", pay: "페이",
-    };
-
-    const renderAccountGroup = (title: string, list: Account[], tab: "checking" | "savings" | "investment" | "pension_savings" | "irp" | "isa", desc?: string) => (
+    const renderAccountGroup = (title: string, list: Account[], tab: "checking" | "savings" | "investment" | "pension_savings" | "irp" | "dc" | "isa", desc?: string) => (
       <section className={styles.section} key={tab}>
         <div className={styles.accountSectionHeader}>
           <h3 className={styles.sectionTitle}>{title}</h3>
@@ -694,61 +684,31 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
           ) : (
             list.map((account) => {
               const logo = getBrokerLogo(account.broker_name);
-              const linkedPms = tab === "checking"
-                ? paymentMethods.filter(pm => pm.account_id === account.id)
-                : [];
               return (
-                <div key={account.id}>
-                  <div
-                    className={`${styles.accountRow} ${linkedPms.length > 0 ? styles.accountRowNoBottomBorder : ""}`}
-                    onClick={() => { setAccountModalTab(tab); setShowAccountModal(true); }}
-                  >
-                    {logo ? (
-                      <img src={logo} alt={account.broker_name} className={styles.accountLogo} />
-                    ) : (
-                      <div className={styles.accountLogoPlaceholder}>
-                        <CreditCard size={16} />
-                      </div>
-                    )}
-                    <div className={styles.accountInfo}>
-                      <div className={styles.accountName}>
-                        {account.name}
-                        {account.is_default && <span className={styles.accountDefaultBadge}>기본</span>}
-                      </div>
-                      <div className={styles.accountMeta}>
-                        {account.owner === "spouse" ? "배우자" : "본인"}
-                        {" · "}{TYPE_LABELS[account.account_type || ""] || account.account_type}
-                        {" · "}{account.broker_name}
-                      </div>
-                    </div>
-                    <div className={styles.accountBalance} />
-                  </div>
-                  {linkedPms.length > 0 && (
-                    <div className={styles.linkedPayments}>
-                      {linkedPms.map((pm, idx) => {
-                        const cardLogo = getCardLogo(pm.card_company);
-                        const isLast = idx === linkedPms.length - 1;
-                        return (
-                          <div key={pm.id} className={styles.linkedPaymentRow}>
-                            <div className={styles.treeLine}>
-                              <span className={isLast ? styles.treeCorner : styles.treeTee} />
-                            </div>
-                            {cardLogo ? (
-                              <img src={cardLogo} alt={pm.card_company || ""} className={styles.linkedPaymentLogo} />
-                            ) : (
-                              <div className={styles.linkedPaymentLogoPlaceholder}>
-                                <CreditCard size={12} />
-                              </div>
-                            )}
-                            <span className={styles.linkedPaymentName}>{pm.name}</span>
-                            <span className={styles.linkedPaymentType}>
-                              {PAYMENT_TYPE_LABELS[pm.type] || pm.type}
-                            </span>
-                          </div>
-                        );
-                      })}
+                <div
+                  key={account.id}
+                  className={styles.accountRow}
+                  onClick={() => { setAccountModalTab(tab); setShowAccountModal(true); }}
+                >
+                  {logo ? (
+                    <img src={logo} alt={account.broker_name} className={styles.accountLogo} />
+                  ) : (
+                    <div className={styles.accountLogoPlaceholder}>
+                      <CreditCard size={16} />
                     </div>
                   )}
+                  <div className={styles.accountInfo}>
+                    <div className={styles.accountName}>
+                      {account.name}
+                      {account.is_default && <span className={styles.accountDefaultBadge}>기본</span>}
+                    </div>
+                    <div className={styles.accountMeta}>
+                      {account.owner === "spouse" ? "배우자" : "본인"}
+                      {" · "}{TYPE_LABELS[account.account_type || ""] || account.account_type}
+                      {" · "}{account.broker_name}
+                    </div>
+                  </div>
+                  <div className={styles.accountBalance} />
                 </div>
               );
             })
@@ -759,11 +719,12 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
 
     return (
       <div className={styles.contentBody}>
-        {renderAccountGroup("입출금 계좌", checkingAccounts, "checking", "카드와 페이는 가계부 작성을 위해 등록하면 편합니다")}
+        {renderAccountGroup("입출금 계좌", checkingAccounts, "checking")}
         {renderAccountGroup("정기 예금/적금", savingsAccounts, "savings")}
         {renderAccountGroup("투자 계좌", investmentAccounts, "investment")}
         {renderAccountGroup("연금저축", pensionSavingsAccounts, "pension_savings")}
         {renderAccountGroup("IRP", irpAccounts, "irp")}
+        {renderAccountGroup("퇴직연금 DC", dcAccounts, "dc")}
         {renderAccountGroup("ISA", isaAccounts, "isa")}
       </div>
     );

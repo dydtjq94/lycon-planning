@@ -164,6 +164,8 @@ export interface DashboardIncomeItem {
   endAge?: number; // age 종료 조건일 때 사용
   growthRate: number; // % (연간) - 커스텀 모드에서 사용하는 기본값
   rateCategory: RateCategory; // 상승률 카테고리 (시나리오 모드에 따라 적용)
+  icon?: string | null;
+  color?: string | null;
   isSystem?: boolean; // 시스템에서 자동 생성된 항목 (연금 탭 등)
   // 연동 정보 (다른 탭에서 생성된 경우)
   sourceType?: IncomeSourceType;
@@ -198,6 +200,8 @@ export interface DashboardExpenseItem {
   endMonth: number | null; // custom일 때만 사용
   growthRate: number; // % (연간) - 커스텀 모드에서 사용하는 기본값
   rateCategory: RateCategory; // 상승률 카테고리 (시나리오 모드에 따라 적용)
+  icon?: string | null;
+  color?: string | null;
   // 연동 정보 (다른 탭에서 생성된 경우)
   sourceType?: ExpenseSourceType;
   sourceId?: string; // 원본 항목 ID (debt.id 등)

@@ -17,6 +17,8 @@ import {
   isPeriodValid,
   handlePeriodTextChange,
 } from '@/lib/utils/periodInput'
+import { FinancialItemIcon } from '@/components/FinancialItemIcon'
+import { FinancialIconPicker } from '@/components/FinancialIconPicker'
 import styles from '../PensionTab.module.css'
 
 interface RetirementPensionSectionProps {
@@ -47,6 +49,10 @@ export function RetirementPensionSection({
   const [isSaving, setIsSaving] = useState(false)
   const { isDark } = useChartTheme()
 
+  // Icon/color state
+  const [editIcon, setEditIcon] = useState<string | null>(null)
+  const [editColor, setEditColor] = useState<string | null>(null)
+
   const startEdit = () => {
     const isDB = pension?.pension_type === 'db' || pension?.pension_type === 'severance'
     const rateCategory = pension?.rate_category || getDefaultRateCategory('investment')
@@ -54,6 +60,10 @@ export function RetirementPensionSection({
     const receivingYears = pension?.receiving_years || 10
     const startYear = birthYear + startAge
     const endYear = startYear + receivingYears
+
+    // Set icon and color
+    setEditIcon(pension?.icon || null)
+    setEditColor(pension?.color || null)
 
     setIsEditing(true)
     setEditValues({
@@ -79,6 +89,8 @@ export function RetirementPensionSection({
     setEditValues({})
     setStartDateText('')
     setEndDateText('')
+    setEditIcon(null)
+    setEditColor(null)
   }
 
   // ESC 키로 모달 닫기
@@ -123,6 +135,8 @@ export function RetirementPensionSection({
           receiving_years: receiveType === 'annuity' ? receivingYears : null,
           return_rate: returnRate,
           rate_category: rateCategory,
+          icon: editIcon,
+          color: editColor,
         }
       } else if (isDBType && !isAutoMode) {
         pensionFields = {
@@ -136,6 +150,8 @@ export function RetirementPensionSection({
           receiving_years: receiveType === 'annuity' ? receivingYears : null,
           return_rate: returnRate,
           rate_category: rateCategory,
+          icon: editIcon,
+          color: editColor,
         }
       } else {
         // DC/기업IRP
@@ -149,6 +165,8 @@ export function RetirementPensionSection({
           receiving_years: receiveType === 'annuity' ? receivingYears : null,
           return_rate: returnRate,
           rate_category: rateCategory,
+          icon: editIcon,
+          color: editColor,
         }
       }
 
@@ -280,6 +298,72 @@ export function RetirementPensionSection({
     return (
       <>
         <div className={styles.pensionItem} onClick={startEdit} style={{ cursor: 'pointer' }}>
+          <FinancialItemIcon
+            category="retirementPension"
+            type={pension.pension_type}
+            icon={pension.icon}
+            color={pension.color}
+            onSave={async (icon, color) => {
+              const isDBType = pension.pension_type === 'db' || pension.pension_type === 'severance'
+              const isAutoMode = pension.calculation_mode !== 'manual'
+
+              let pensionFields: Parameters<typeof upsertRetirementPension>[2]
+              if (isDBType && isAutoMode) {
+                pensionFields = {
+                  pension_type: pension.pension_type,
+                  current_balance: null,
+                  years_of_service: pension.years_of_service,
+                  monthly_salary: pension.monthly_salary,
+                  calculation_mode: 'auto',
+                  receive_type: pension.receive_type,
+                  start_age: pension.start_age,
+                  receiving_years: pension.receiving_years,
+                  return_rate: pension.return_rate,
+                  rate_category: pension.rate_category,
+                  icon,
+                  color,
+                }
+              } else if (isDBType && !isAutoMode) {
+                pensionFields = {
+                  pension_type: pension.pension_type,
+                  current_balance: pension.current_balance,
+                  years_of_service: null,
+                  monthly_salary: null,
+                  calculation_mode: 'manual',
+                  receive_type: pension.receive_type,
+                  start_age: pension.start_age,
+                  receiving_years: pension.receiving_years,
+                  return_rate: pension.return_rate,
+                  rate_category: pension.rate_category,
+                  icon,
+                  color,
+                }
+              } else {
+                pensionFields = {
+                  pension_type: pension.pension_type,
+                  current_balance: pension.current_balance,
+                  years_of_service: null,
+                  monthly_salary: pension.monthly_salary,
+                  receive_type: pension.receive_type,
+                  start_age: pension.start_age,
+                  receiving_years: pension.receiving_years,
+                  return_rate: pension.return_rate,
+                  rate_category: pension.rate_category,
+                  icon,
+                  color,
+                }
+              }
+
+              await upsertRetirementPension(
+                simulationId,
+                owner,
+                pensionFields,
+                birthYear,
+                retirementAge
+              )
+              await onSave()
+            }}
+          />
           <div className={styles.itemInfo}>
             <span className={styles.itemName}>
               {ownerLabel} {isDBType ? 'DB형/퇴직금' : 'DC형/기업IRP'}
@@ -339,6 +423,14 @@ export function RetirementPensionSection({
                 </div>
               </div>
               <div className={styles.modalFormBody}>
+                <FinancialIconPicker
+                  category="retirementPension"
+                  type={pension?.pension_type || 'db'}
+                  icon={editIcon}
+                  color={editColor}
+                  onIconChange={setEditIcon}
+                  onColorChange={setEditColor}
+                />
                 <div className={styles.modalFormRow}>
                   <span className={styles.modalFormLabel}>유형</span>
                   <div className={styles.typeButtons}>

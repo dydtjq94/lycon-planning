@@ -1,0 +1,139 @@
+.wrapper {
+  position: relative;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--dashboard-text-secondary);
+  font-size: 13px;
+}
+
+.trigger:hover {
+  color: var(--dashboard-text);
+}
+
+.preview {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.triggerLabel {
+  font-size: 12px;
+}
+
+.panel {
+  padding: 8px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--dashboard-border);
+  background: var(--dashboard-input-bg);
+  animation: panelEnter 0.2s ease-out;
+}
+
+@keyframes panelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.iconGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+}
+
+.iconItem {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--dashboard-text-secondary);
+  transition: background 0.1s;
+}
+
+.iconItem:hover {
+  background: var(--dashboard-hover-bg);
+}
+
+.iconItemActive {
+  background: var(--dashboard-hover-bg);
+}
+
+.divider {
+  height: 1px;
+  background: var(--dashboard-border);
+  margin: 6px 0;
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  justify-items: center;
+}
+
+.colorItem {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.colorItem:hover {
+  transform: scale(1.15);
+}
+
+.colorItemActive {
+  border-color: var(--dashboard-text);
+}
+
+/* 카드 위 아이콘 원 (편집 가능) */
+.iconCircle {
+  transition: transform 0.15s;
+}
+
+.iconCircle:hover {
+  transform: scale(1.15);
+}
+
+/* 카드에서 아이콘 클릭 시 나타나는 팝오버 */
+.popover {
+  padding: 8px;
+  border-radius: 10px;
+  width: 220px;
+  animation: popoverEnter 0.2s ease-out;
+}
+
+@keyframes popoverEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

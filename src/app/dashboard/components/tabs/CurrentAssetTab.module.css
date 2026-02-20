@@ -367,7 +367,7 @@
 
 .accountCellWithLogo {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
 }
 
@@ -785,6 +785,82 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 저축 탭 서브 섹션 */
+.savingsSubSectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  margin: 0 0 8px 0;
+}
+
+.editableAmount {
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.editableAmount:hover {
+  color: var(--accent-color, #007aff);
+}
+
+.inlineAmountInput {
+  width: 120px;
+  padding: 4px 8px;
+  border: 1px solid var(--accent-color, #007aff);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
+  text-align: right;
+  outline: none;
+}
+
+.inlineAmountInput::-webkit-outer-spin-button,
+.inlineAmountInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 정기 예금/적금 인라인 편집 */
+.termDepositEditWrap {
+  padding: 0;
+}
+
+.termDepositFields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.termDepositFieldRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.termDepositLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  min-width: 52px;
+  flex-shrink: 0;
+}
+
+.termDepositInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 12px;
+}
+
+.termDepositEditActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 /* 부동산 섹션 */
@@ -1637,6 +1713,12 @@
   font-size: 11px;
   font-weight: 400;
   color: var(--dashboard-text-secondary);
+}
+
+/* 계좌 메타 정보 (금리, 만기일 등) */
+.accountMeta {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
 }
 
 /* 계좌명 행 (이름 + 라벨) */

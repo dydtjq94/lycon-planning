@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 
 type ChartThemeId = "default" | "pastel" | "mono" | "vivid" | "ocean" | "sunset" | "forest" | "neon" | "retro" | "candy";
 type ColorMode = "light" | "dark";
@@ -180,11 +180,11 @@ export function useChartTheme() {
     debt: generateShades(colors[4], 8),
   }), [colors]);
 
-  // rgba 변환 유틸리티
-  const toRgba = (hex: string, alpha: number) => {
+  // rgba 변환 유틸리티 (안정적인 참조로 차트 useEffect 불필요한 재실행 방지)
+  const toRgba = useCallback((hex: string, alpha: number) => {
     const { r, g, b } = hexToRgb(hex);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
+  }, []);
 
   // 다크모드 여부
   const isDark = colorMode === "dark";

@@ -365,13 +365,18 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 8px 0;
+  padding: 12px 4px;
   border-bottom: 1px solid var(--dashboard-border);
   cursor: pointer;
+  gap: 8px;
 }
 
 .pensionItem:hover {
   box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.08);
+}
+
+.pensionItem:has([data-icon-editable]:hover) {
+  box-shadow: none;
 }
 
 .pensionItem:last-of-type {

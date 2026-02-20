@@ -196,13 +196,18 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 8px 0;
+  gap: 8px;
+  padding: 12px 4px;
   border-bottom: 1px solid var(--dashboard-border);
   cursor: pointer;
 }
 
 .assetItem:hover {
   box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.08);
+}
+
+.assetItem:has([data-icon-editable]:hover) {
+  box-shadow: none;
 }
 
 .assetItem:last-of-type {

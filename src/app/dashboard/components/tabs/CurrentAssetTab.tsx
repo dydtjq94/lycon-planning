@@ -18,10 +18,9 @@ import {
 } from "@/hooks/useFinancialData";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import type { FinancialSnapshotItem, FinancialSnapshotItemInput, PortfolioAccount, Account, Profile, FamilyMember } from "@/types/tables";
-import { formatMoney, formatWon, calculateAge } from "@/lib/utils";
+import { formatMoney, formatWon, calculateAge, wonToManwon, manwonToWon } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { getTermDepositAccounts, getBudgetTransactions } from "@/lib/services/budgetService";
-import { calculatePortfolioAccountValuesDetailed, calculateAccountBalances, calculateTermDepositValue } from "@/lib/utils/accountValueCalculator";
+import { calculatePortfolioAccountValuesDetailed, calculateAccountBalances, calculateTermDepositValue, calculateMaturityAmountPreTax, calculateMaturityAmountPostTax } from "@/lib/utils/accountValueCalculator";
 import { BrokerLogo } from "./shared/BrokerLogo";
 import styles from "./CurrentAssetTab.module.css";
 
@@ -30,6 +29,7 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 interface CurrentAssetTabProps {
   profileId: string;
   onNavigate?: (section: string) => void;
+  onOpenAccountModal?: (tab: string) => void;
 }
 
 type TabType = "savings" | "investment" | "realEstate" | "realAsset" | "debt";
@@ -1788,7 +1788,7 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
   );
 }
 
-export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps) {
+export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: CurrentAssetTabProps) {
   const [activeTab, setActiveTab] = useState<TabType>("savings");
   const supabase = createClient();
   const { isDark, categoryColors, categoryShades, chartScaleColors } = useChartTheme();
@@ -2047,94 +2047,89 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
     setEditingProfileField(null);
   };
 
-  // 증권 계좌 로드
+  // 전체 계좌 + 거래 내역 로드 (한 번에)
+  const [isBudgetTxLoading, setIsBudgetTxLoading] = useState(true);
   useEffect(() => {
-    const loadAccounts = async () => {
+    const loadAll = async () => {
       setIsAccountsLoading(true);
-      const { data } = await supabase
-        .from("accounts")
-        .select("*")
-        .eq("profile_id", profileId)
-        .eq("is_active", true)
-        .order("is_default", { ascending: false });
-      if (data) setAccounts(data);
-      setIsAccountsLoading(false);
-    };
-    loadAccounts();
-  }, [profileId, supabase]);
+      setIsBudgetTxLoading(true);
 
-  // 저축 연동: 입출금 계좌 + 정기 예금/적금 계좌 + 거래 내역
-  const [checkingAccounts, setCheckingAccounts] = useState<Account[]>([]);
-  const [termDepositAccounts, setTermDepositAccounts] = useState<Account[]>([]);
-  const [budgetTransactions, setBudgetTransactions] = useState<{ account_id: string | null; type: string; amount: number }[]>([]);
-  const [isSavingsAccountsLoading, setIsSavingsAccountsLoading] = useState(true);
-
-  // 현재 연/월
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-
-  useEffect(() => {
-    const loadSavingsAccounts = async () => {
-      setIsSavingsAccountsLoading(true);
-      try {
-        // 입출금 계좌 (checking만)
-        const { data: checkingData } = await supabase
+      // 계좌 + 거래 내역 병렬 로드
+      const [accountsRes, txRes] = await Promise.all([
+        supabase
           .from("accounts")
           .select("*")
           .eq("profile_id", profileId)
           .eq("is_active", true)
-          .eq("account_type", "checking")
-          .order("is_default", { ascending: false });
-        if (checkingData) setCheckingAccounts(checkingData);
+          .order("is_default", { ascending: false }),
+        supabase
+          .from("budget_transactions")
+          .select("account_id,type,amount,year,month,day")
+          .eq("profile_id", profileId)
+          .order("year", { ascending: true })
+          .order("month", { ascending: true }),
+      ]);
 
-        // 정기 예금/적금 계좌
-        const termData = await getTermDepositAccounts(profileId);
-        setTermDepositAccounts(termData);
-
-        // 잔액 계산용 거래 로드 (balance_updated_at 이후 모든 거래)
-        const balanceDates = (checkingData || [])
-          .filter((a: Account) => a.balance_updated_at)
-          .map((a: Account) => new Date(a.balance_updated_at!));
-
-        let txData: any[] = [];
-        if (balanceDates.length === 0) {
-          // No balance_updated_at, load all transactions
-          const { data } = await supabase
-            .from("budget_transactions")
-            .select("*")
-            .eq("profile_id", profileId)
-            .order("year", { ascending: true })
-            .order("month", { ascending: true });
-          txData = data || [];
-        } else {
-          const oldestDate = new Date(Math.min(...balanceDates.map((d: Date) => d.getTime())));
-          const oldestYear = oldestDate.getFullYear();
-          const oldestMonth = oldestDate.getMonth() + 1;
-          const { data } = await supabase
-            .from("budget_transactions")
-            .select("*")
-            .eq("profile_id", profileId)
-            .or(`year.gt.${oldestYear},and(year.eq.${oldestYear},month.gte.${oldestMonth})`)
-            .order("year", { ascending: true })
-            .order("month", { ascending: true });
-          txData = data || [];
-        }
-        setBudgetTransactions(txData.map((tx: any) => ({
+      if (accountsRes.data) setAccounts(accountsRes.data);
+      setBudgetTransactions(
+        (txRes.data || []).map((tx: any) => ({
           account_id: tx.account_id,
           type: tx.type,
           amount: tx.amount,
           year: tx.year,
           month: tx.month,
           day: tx.day,
-        })));
-      } catch (error) {
-        console.error("Failed to load savings accounts:", error);
-      } finally {
-        setIsSavingsAccountsLoading(false);
-      }
+        }))
+      );
+      setIsAccountsLoading(false);
+      setIsBudgetTxLoading(false);
     };
-    loadSavingsAccounts();
+    loadAll();
   }, [profileId, supabase]);
+
+  // 계좌 데이터에서 파생 (별도 쿼리 불필요)
+  const checkingAccounts = useMemo(() =>
+    accounts.filter(a => a.account_type === "checking"),
+  [accounts]);
+  const termDepositAccounts = useMemo(() =>
+    accounts.filter(a => ["savings", "deposit", "free_savings", "housing"].includes(a.account_type)),
+  [accounts]);
+
+  // 입출금 통장 잔액 인라인 수정
+  const [editingSavingsId, setEditingSavingsId] = useState<string | null>(null);
+  const [editingSavingsBalance, setEditingSavingsBalance] = useState<string>("");
+
+  // 정기 예금/적금 인라인 수정
+  const [editingTermDepositId, setEditingTermDepositId] = useState<string | null>(null);
+  const [termDepositForm, setTermDepositForm] = useState({
+    currentBalance: "",
+    interestRate: "",
+    startYear: "",
+    startMonth: "",
+    maturityYear: "",
+    maturityMonth: "",
+    monthlyContribution: "",
+  });
+
+  const startEditingTermDeposit = (accountId: string) => {
+    const acc = termDepositAccounts.find(a => a.id === accountId);
+    if (!acc) return;
+    setEditingTermDepositId(accountId);
+    setTermDepositForm({
+      currentBalance: acc.current_balance ? String(wonToManwon(acc.current_balance)) : "",
+      interestRate: acc.interest_rate != null ? String(acc.interest_rate) : "",
+      startYear: acc.start_year ? String(acc.start_year) : "",
+      startMonth: acc.start_month ? String(acc.start_month) : "",
+      maturityYear: acc.maturity_year ? String(acc.maturity_year) : "",
+      maturityMonth: acc.maturity_month ? String(acc.maturity_month) : "",
+      monthlyContribution: acc.monthly_contribution ? String(wonToManwon(acc.monthly_contribution)) : "",
+    });
+  };
+  const [budgetTransactions, setBudgetTransactions] = useState<{ account_id: string | null; type: string; amount: number }[]>([]);
+
+  // 현재 연/월
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
 
   // 계좌별 누적 잔액 계산 (유틸리티 함수 사용)
   const accountBalanceInfo = useMemo(() => {
@@ -2181,9 +2176,79 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
   }, [linkedSavingsTotalWon]);
 
 
+  // 입출금 통장 잔액 저장
+  const handleSavingsBalanceSave = async (accountId: string) => {
+    const balanceWon = parseInt(editingSavingsBalance);
+    if (isNaN(balanceWon)) {
+      setEditingSavingsId(null);
+      return;
+    }
+    await supabase
+      .from("accounts")
+      .update({
+        current_balance: balanceWon,
+        balance_updated_at: new Date().toISOString(),
+      })
+      .eq("id", accountId);
+    // 데이터 새로고침 (전체 계좌 reload)
+    const { data: refreshed } = await supabase
+      .from("accounts")
+      .select("*")
+      .eq("profile_id", profileId)
+      .eq("is_active", true)
+      .order("is_default", { ascending: false });
+    if (refreshed) setAccounts(refreshed);
+    setEditingSavingsId(null);
+  };
+
+  // 정기 예금/적금 저장
+  const handleTermDepositSave = async () => {
+    if (!editingTermDepositId) return;
+
+    const updateData: Record<string, unknown> = {};
+
+    const balance = parseFloat(termDepositForm.currentBalance);
+    if (!isNaN(balance)) updateData.current_balance = manwonToWon(balance);
+
+    const rate = parseFloat(termDepositForm.interestRate);
+    if (!isNaN(rate)) updateData.interest_rate = rate;
+
+    const startY = parseInt(termDepositForm.startYear);
+    if (!isNaN(startY)) updateData.start_year = startY;
+
+    const startM = parseInt(termDepositForm.startMonth);
+    if (!isNaN(startM) && startM >= 1 && startM <= 12) updateData.start_month = startM;
+
+    const matY = parseInt(termDepositForm.maturityYear);
+    if (!isNaN(matY)) updateData.maturity_year = matY;
+
+    const matM = parseInt(termDepositForm.maturityMonth);
+    if (!isNaN(matM) && matM >= 1 && matM <= 12) updateData.maturity_month = matM;
+
+    const contribution = parseFloat(termDepositForm.monthlyContribution);
+    if (!isNaN(contribution)) updateData.monthly_contribution = manwonToWon(contribution);
+
+    if (Object.keys(updateData).length > 0) {
+      await supabase
+        .from("accounts")
+        .update(updateData)
+        .eq("id", editingTermDepositId);
+    }
+
+    // 데이터 새로고침 (전체 계좌 reload)
+    const { data: refreshed } = await supabase
+      .from("accounts")
+      .select("*")
+      .eq("profile_id", profileId)
+      .eq("is_active", true)
+      .order("is_default", { ascending: false });
+    if (refreshed) setAccounts(refreshed);
+    setEditingTermDepositId(null);
+  };
+
   const isLoading = isSnapshotLoading || isItemsLoading;
   const isInvestmentDataReady = !isTransactionsLoading && !isPriceLoading && !isAccountsLoading;
-  const isSavingsDataReady = !isSavingsAccountsLoading;
+  const isSavingsDataReady = !isAccountsLoading && !isBudgetTxLoading;
 
   // 증권 계좌별 평가금액 계산 (유틸리티 함수 사용)
   const accountValues = useMemo(() => {
@@ -3584,73 +3649,267 @@ export function CurrentAssetTab({ profileId, onNavigate }: CurrentAssetTabProps)
       {/* 콘텐츠 섹션 */}
       <div key={activeTab} className={styles.contentSection}>
         {activeTab === "savings" ? (
-          /* 저축 탭 - 가계부 + 정기예금/적금 연동 */
+          /* 저축 탭 - 입출금 통장 + 정기 예금/적금 */
           <div className={styles.investmentSection}>
-            {savingsAccountValues.length > 0 ? (
-              <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>
-                        <div className={styles.tableHeaderWithBadge}>
-                          계좌
-                          <span className={styles.linkedBadgeSmall}>
-                            <Link2 size={10} />
-                            가계부 / 정기 예금적금에서 연동됨
-                          </span>
-                        </div>
-                      </th>
-                      <th className={styles.amountHeader}>평가금액</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {savingsAccountValues.map(data => {
-                      return (
-                        <tr key={data.id}>
-                          <td>
-                            <div className={styles.accountCellWithLogo}>
-                              <BrokerLogo brokerName={data.broker} fallback={data.name || "?"} size="md" />
-                              <div className={styles.accountInfo}>
-                                <span className={styles.accountName}>{data.name}</span>
-                                <span className={styles.accountTypeLabel}>
-                                  {data.type === "checking" ? "입출금통장" :
-                                   data.type === "deposit" ? "예금" :
-                                   data.type === "housing" ? "주택청약" :
-                                   data.type === "free_savings" ? "자유적금" : "적금"}
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className={styles.amountCell}>
-                            {formatWon(data.value)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className={styles.emptyState}>
-                <p>등록된 저축 계좌가 없습니다</p>
-              </div>
-            )}
+            {(() => {
+              const checkingValues = savingsAccountValues.filter(v => v.type === "checking");
+              const termDepositValues = savingsAccountValues.filter(v => v.type !== "checking");
+              const checkingTotal = checkingValues.reduce((sum, v) => sum + v.value, 0);
+              const termDepositTotal = termDepositValues.reduce((sum, v) => sum + v.value, 0);
 
-            {/* 하단: 관리 버튼 + 합계 */}
-            <div className={styles.sectionFooterWithButtons}>
-              <div className={styles.footerButtons}>
-                <button className={styles.footerLinkButton} onClick={() => onNavigate?.("household-budget")}>
-                  가계부 관리
-                </button>
-                <button className={styles.footerLinkButton} onClick={() => onNavigate?.("savings-deposits")}>
-                  예금/적금 관리
-                </button>
-              </div>
-              <div className={styles.footerTotalGroup}>
-                <span className={styles.footerTotalLabel}>합계</span>
-                <span className={styles.footerTotalValue}>{formatWon(linkedSavingsTotalWon)}</span>
-              </div>
-            </div>
+              return (
+                <>
+                  {/* 입출금 통장 섹션 */}
+                  {checkingValues.length > 0 ? (
+                    <div className={styles.tableWrapper}>
+                      <table className={styles.table}>
+                        <thead>
+                          <tr>
+                            <th>입출금 통장</th>
+                            <th className={styles.amountHeader}>잔액</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {checkingValues.map(data => (
+                            <tr key={data.id}>
+                              <td>
+                                <div className={styles.accountCellWithLogo}>
+                                  <BrokerLogo brokerName={data.broker} fallback={data.name || "?"} size="md" />
+                                  <div className={styles.accountInfo}>
+                                    <span className={styles.accountName}>{data.name}</span>
+                                    <span className={styles.accountTypeLabel}>입출금통장</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className={styles.amountCell}>
+                                {editingSavingsId === data.id ? (
+                                  <input
+                                    type="number"
+                                    className={styles.inlineAmountInput}
+                                    value={editingSavingsBalance}
+                                    autoFocus
+                                    onChange={e => setEditingSavingsBalance(e.target.value)}
+                                    onBlur={() => handleSavingsBalanceSave(data.id)}
+                                    onKeyDown={e => {
+                                      if (e.key === "Enter") handleSavingsBalanceSave(data.id);
+                                      if (e.key === "Escape") setEditingSavingsId(null);
+                                    }}
+                                    onWheel={e => (e.target as HTMLElement).blur()}
+                                  />
+                                ) : (
+                                  <span
+                                    className={styles.editableAmount}
+                                    onClick={() => {
+                                      setEditingSavingsId(data.id);
+                                      setEditingSavingsBalance(String(data.value));
+                                    }}
+                                  >
+                                    {formatWon(data.value)}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>등록된 입출금 통장이 없습니다</p>
+                    </div>
+                  )}
+
+                  {/* 정기 예금/적금 섹션 */}
+                  {termDepositValues.length > 0 ? (
+                    <div className={styles.tableWrapper} style={{ marginTop: 20 }}>
+                      <table className={styles.table}>
+                        <thead>
+                          <tr>
+                            <th>정기 예금/적금</th>
+                            <th className={styles.amountHeader}>평가금액</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {termDepositValues.map(data => {
+                            const acc = termDepositAccounts.find(a => a.id === data.id);
+                            const isSavingsType = acc?.account_type === "savings";
+                            const typeLabel = data.type === "deposit" ? "예금" :
+                              data.type === "housing" ? "주택청약" :
+                              data.type === "free_savings" ? "자유적금" : "적금";
+
+                            const metaLine = (() => {
+                              if (!acc) return null;
+                              const parts: string[] = [];
+                              if (isSavingsType && acc.monthly_contribution) {
+                                parts.push(`월 ${wonToManwon(acc.monthly_contribution)}만원`);
+                              } else if (acc.current_balance) {
+                                parts.push(`원금 ${wonToManwon(acc.current_balance)}만원`);
+                              }
+                              if (acc.interest_rate != null) parts.push(`이율 ${acc.interest_rate}%`);
+                              if (acc.maturity_year && acc.maturity_month) {
+                                parts.push(`만기 ${acc.maturity_year}.${String(acc.maturity_month).padStart(2, "0")}`);
+                              }
+                              return parts.length > 0 ? parts.join(" · ") : null;
+                            })();
+
+                            if (editingTermDepositId === data.id) {
+                              return (
+                                <tr key={data.id}>
+                                  <td colSpan={2} style={{ padding: "12px 0" }}>
+                                    <div className={styles.termDepositEditWrap}>
+                                      <div className={styles.accountCellWithLogo} style={{ marginBottom: 12 }}>
+                                        <BrokerLogo brokerName={data.broker} fallback={data.name || "?"} size="md" />
+                                        <div className={styles.accountInfo}>
+                                          <span className={styles.accountName}>{data.name}</span>
+                                          <span className={styles.accountTypeLabel}>{typeLabel}</span>
+                                        </div>
+                                      </div>
+                                      <div className={styles.termDepositFields}>
+                                        <div className={styles.termDepositFieldRow}>
+                                          <label className={styles.termDepositLabel}>{isSavingsType ? "월 납입액" : "원금"}</label>
+                                          <div className={styles.termDepositInputGroup}>
+                                            <input
+                                              type="number"
+                                              className={styles.editInput}
+                                              value={isSavingsType ? termDepositForm.monthlyContribution : termDepositForm.currentBalance}
+                                              autoFocus
+                                              onChange={e => {
+                                                if (isSavingsType) {
+                                                  setTermDepositForm(f => ({ ...f, monthlyContribution: e.target.value }));
+                                                } else {
+                                                  setTermDepositForm(f => ({ ...f, currentBalance: e.target.value }));
+                                                }
+                                              }}
+                                              onWheel={e => (e.target as HTMLElement).blur()}
+                                              onKeyDown={e => { if (e.key === "Escape") setEditingTermDepositId(null); }}
+                                            />
+                                            <span className={styles.editUnit}>만원</span>
+                                          </div>
+                                          <label className={styles.termDepositLabel}>이율</label>
+                                          <div className={styles.termDepositInputGroup}>
+                                            <input
+                                              type="number"
+                                              className={styles.editInputSmall}
+                                              value={termDepositForm.interestRate}
+                                              onChange={e => setTermDepositForm(f => ({ ...f, interestRate: e.target.value }))}
+                                              onWheel={e => (e.target as HTMLElement).blur()}
+                                              onKeyDown={e => { if (e.key === "Escape") setEditingTermDepositId(null); }}
+                                            />
+                                            <span className={styles.editUnit}>%</span>
+                                          </div>
+                                        </div>
+                                        <div className={styles.termDepositFieldRow}>
+                                          <label className={styles.termDepositLabel}>가입</label>
+                                          <div className={styles.termDepositInputGroup}>
+                                            <input
+                                              type="number"
+                                              className={styles.editInputSmall}
+                                              value={termDepositForm.startYear}
+                                              placeholder="년"
+                                              onChange={e => setTermDepositForm(f => ({ ...f, startYear: e.target.value }))}
+                                              onWheel={e => (e.target as HTMLElement).blur()}
+                                              onKeyDown={e => { if (e.key === "Escape") setEditingTermDepositId(null); }}
+                                            />
+                                            <span className={styles.editUnit}>.</span>
+                                            <input
+                                              type="number"
+                                              className={styles.editInputSmall}
+                                              value={termDepositForm.startMonth}
+                                              placeholder="월"
+                                              onChange={e => setTermDepositForm(f => ({ ...f, startMonth: e.target.value }))}
+                                              onWheel={e => (e.target as HTMLElement).blur()}
+                                              onKeyDown={e => { if (e.key === "Escape") setEditingTermDepositId(null); }}
+                                            />
+                                          </div>
+                                          <label className={styles.termDepositLabel}>만기</label>
+                                          <div className={styles.termDepositInputGroup}>
+                                            <input
+                                              type="number"
+                                              className={styles.editInputSmall}
+                                              value={termDepositForm.maturityYear}
+                                              placeholder="년"
+                                              onChange={e => setTermDepositForm(f => ({ ...f, maturityYear: e.target.value }))}
+                                              onWheel={e => (e.target as HTMLElement).blur()}
+                                              onKeyDown={e => { if (e.key === "Escape") setEditingTermDepositId(null); }}
+                                            />
+                                            <span className={styles.editUnit}>.</span>
+                                            <input
+                                              type="number"
+                                              className={styles.editInputSmall}
+                                              value={termDepositForm.maturityMonth}
+                                              placeholder="월"
+                                              onChange={e => setTermDepositForm(f => ({ ...f, maturityMonth: e.target.value }))}
+                                              onWheel={e => (e.target as HTMLElement).blur()}
+                                              onKeyDown={e => { if (e.key === "Escape") setEditingTermDepositId(null); }}
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className={styles.termDepositEditActions}>
+                                        <button className={styles.cancelBtn} onClick={() => setEditingTermDepositId(null)}>취소</button>
+                                        <button className={styles.saveBtn} onClick={handleTermDepositSave}>저장</button>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            const maturityPreTax = acc ? calculateMaturityAmountPreTax(acc) : null;
+                            const maturityPostTax = acc ? calculateMaturityAmountPostTax(acc) : null;
+
+                            return (
+                              <tr key={data.id}>
+                                <td>
+                                  <div className={styles.accountCellWithLogo}>
+                                    <BrokerLogo brokerName={data.broker} fallback={data.name || "?"} size="md" />
+                                    <div className={styles.accountInfo}>
+                                      <span className={styles.accountName}>{data.name}</span>
+                                      <span className={styles.accountTypeLabel}>{typeLabel}</span>
+                                      {metaLine && <span className={styles.accountMeta}>{metaLine}</span>}
+                                      {maturityPreTax != null && (
+                                        <span className={styles.accountMeta}>
+                                          만기 세전 {formatWon(maturityPreTax)} · 세후 {formatWon(maturityPostTax ?? maturityPreTax)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className={styles.amountCell}>
+                                  <span
+                                    className={styles.editableAmount}
+                                    onClick={() => startEditingTermDeposit(data.id)}
+                                  >
+                                    {formatWon(data.value)}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>등록된 정기 예금/적금이 없습니다</p>
+                    </div>
+                  )}
+
+                  {/* 하단: 관리 버튼 + 합계 */}
+                  <div className={styles.sectionFooterWithButtons}>
+                    <div className={styles.footerButtons}>
+                      <button className={styles.footerLinkButton} onClick={() => onNavigate?.("settings-account")}>
+                        저축 계좌 관리
+                      </button>
+                    </div>
+                    <div className={styles.footerTotalGroup}>
+                      <span className={styles.footerTotalLabel}>합계</span>
+                      <span className={styles.footerTotalValue}>{formatWon(linkedSavingsTotalWon)}</span>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         ) : activeTab === "investment" ? (
           /* 투자 탭 - 포트폴리오 연동 + 기타 투자 */

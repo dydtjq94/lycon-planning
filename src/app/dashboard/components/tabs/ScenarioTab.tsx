@@ -16,6 +16,7 @@ import { normalizePriorities } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationTypes";
 import type { SimulationProfile } from "@/lib/services/dbToFinancialItems";
 import type { ProfileBasics } from "@/contexts/FinancialContext";
+import { useNationalPensions } from "@/hooks/useFinancialData";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { NetWorthTab } from "./NetWorthTab";
 import { CashFlowOverviewTab } from "./CashFlowOverviewTab";
@@ -100,6 +101,9 @@ export function ScenarioTab({
 }: ScenarioTabProps) {
   const { isDark, chartScaleColors } = useChartTheme();
 
+  // 공적연금 데이터 (차트 마일스톤용 - React Query 캐시 활용)
+  const { data: nationalPensions = [] } = useNationalPensions(simulationId);
+
   // 시뮬레이션별 은퇴 나이 + 기대수명 (life_cycle_settings에서 가져오고, 없으면 프로필 기본값)
   const lifeCycleSettings = useMemo(() => {
     const saved = simulation.life_cycle_settings as { selfRetirementAge?: number; spouseRetirementAge?: number; selfLifeExpectancy?: number; spouseLifeExpectancy?: number } | null;
@@ -151,8 +155,22 @@ export function ScenarioTab({
       });
     }
 
+    // 공적연금 수령 시작
+    nationalPensions.forEach(pension => {
+      const ownerBY = pension.owner === 'spouse' ? spouseBY : selfBY;
+      if (ownerBY && pension.start_age) {
+        const isSpouse = pension.owner === 'spouse';
+        milestones.push({
+          year: ownerBY + pension.start_age,
+          color: pension.color || '#6366f1',
+          label: isSpouse ? '배우자 연금 수령' : '연금 수령',
+          iconId: pension.icon || 'landmark',
+        });
+      }
+    });
+
     return milestones;
-  }, [simulation.life_cycle_settings, simulationProfile, lifeCycleSettings]);
+  }, [simulation.life_cycle_settings, simulationProfile, lifeCycleSettings, nationalPensions]);
 
   const [activeTopTab, setActiveTopTab] = useState<"plan" | "cashflow">("plan");
   const [activeCategoryTab, setActiveCategoryTab] = useState<string | null>(null);

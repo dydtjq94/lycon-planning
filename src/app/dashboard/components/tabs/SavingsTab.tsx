@@ -27,9 +27,12 @@ import {
   updatePersonalPension,
   deletePersonalPension,
 } from '@/lib/services/personalPensionService'
+import { createClient } from '@/lib/supabase/client'
 import { BANK_OPTIONS, SECURITIES_OPTIONS } from '@/lib/constants/financial'
 import { useChartTheme } from '@/hooks/useChartTheme'
 import { TabSkeleton } from './shared/TabSkeleton'
+import { FinancialItemIcon } from '@/components/FinancialItemIcon'
+import { FinancialIconPicker } from '@/components/FinancialIconPicker'
 import styles from './SavingsTab.module.css'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
@@ -121,10 +124,14 @@ export function SavingsTab({
   const [editingAccount, setEditingAccount] = useState<{ section: 'checking' | 'deposit' | 'installment_savings' | 'investment' | 'other', id: string | null } | null>(null)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
   const [isExpanded, setIsExpanded] = useState(true)
+  const [editIcon, setEditIcon] = useState<string | null>(null)
+  const [editColor, setEditColor] = useState<string | null>(null)
 
   // ISA 편집 상태
   const [editingIsa, setEditingIsa] = useState<string | 'new' | null>(null)
   const [isaEditValues, setIsaEditValues] = useState<Record<string, string>>({})
+  const [isaEditIcon, setIsaEditIcon] = useState<string | null>(null)
+  const [isaEditColor, setIsaEditColor] = useState<string | null>(null)
 
 
   // 가입일/만기 텍스트 상태
@@ -276,6 +283,8 @@ export function SavingsTab({
       : 'investment'
     const isSavingsType = section === 'checking' || section === 'deposit' || section === 'installment_savings'
     setEditingAccount({ section, id: account.id })
+    setEditIcon(account.icon || null)
+    setEditColor(account.color || null)
     if (isSavingsType) {
       const startY = account.contribution_start_year || currentYear
       const startM = account.contribution_start_month || currentMonth
@@ -328,6 +337,8 @@ export function SavingsTab({
 
   const startEditIsaAccount = (isa: PersonalPension) => {
     setEditingIsa(isa.id)
+    setIsaEditIcon(isa.icon || null)
+    setIsaEditColor(isa.color || null)
     const matY = isa.isa_maturity_year || currentYear + 3
     const matM = isa.isa_maturity_month || 12
     setIsaEditValues({
@@ -348,11 +359,15 @@ export function SavingsTab({
   const cancelEdit = () => {
     setEditingAccount(null)
     setEditValues({})
+    setEditIcon(null)
+    setEditColor(null)
   }
 
   const cancelIsaEdit = () => {
     setEditingIsa(null)
     setIsaEditValues({})
+    setIsaEditIcon(null)
+    setIsaEditColor(null)
   }
 
 
@@ -385,6 +400,8 @@ export function SavingsTab({
         maturity_month: maturityMonth,
         is_tax_free: isChecking ? false : editValues.isTaxFree === 'true',
         currency: (editValues.currency || 'KRW') as CurrencyType,
+        icon: editIcon,
+        color: editColor,
       }
 
       if (editingAccount?.id) {
@@ -414,6 +431,8 @@ export function SavingsTab({
         expected_return: editValues.expectedReturn ? parseFloat(editValues.expectedReturn) : null,
         contribution_start_year: editValues.startYear ? parseInt(editValues.startYear) : null,
         contribution_start_month: editValues.startMonth ? parseInt(editValues.startMonth) : null,
+        icon: editIcon,
+        color: editColor,
       }
 
       if (editingAccount?.id) {
@@ -443,6 +462,8 @@ export function SavingsTab({
         expected_return: editValues.expectedReturn ? parseFloat(editValues.expectedReturn) : null,
         contribution_start_year: editValues.startYear ? parseInt(editValues.startYear) : null,
         contribution_start_month: editValues.startMonth ? parseInt(editValues.startMonth) : null,
+        icon: editIcon,
+        color: editColor,
       }
 
       if (editingAccount?.id) {
@@ -487,6 +508,8 @@ export function SavingsTab({
         isa_maturity_month: isaEditValues.maturityMonth ? parseInt(isaEditValues.maturityMonth) : null,
         isa_maturity_strategy: (isaEditValues.strategy as 'pension_savings' | 'irp' | 'cash') || 'pension_savings',
         return_rate: returnRate,
+        icon: isaEditIcon,
+        color: isaEditColor,
       }
 
       if (editingIsa && editingIsa !== 'new') {
@@ -639,6 +662,15 @@ export function SavingsTab({
 
     return (
       <>
+        <FinancialIconPicker
+          category="savings"
+          type={editValues.type as UISavingsType}
+          icon={editIcon}
+          color={editColor}
+          onIconChange={(icon) => setEditIcon(icon)}
+          onColorChange={(color) => setEditColor(color)}
+        />
+
         {/* 계좌명 */}
         <div className={styles.modalFormRow}>
           <span className={styles.modalFormLabel}>계좌명</span>
@@ -836,6 +868,15 @@ export function SavingsTab({
 
     return (
       <>
+        <FinancialIconPicker
+          category="savings"
+          type={editValues.type as UIInvestmentType}
+          icon={editIcon}
+          color={editColor}
+          onIconChange={(icon) => setEditIcon(icon)}
+          onColorChange={(color) => setEditColor(color)}
+        />
+
         {/* 계좌명 */}
         <div className={styles.modalFormRow}>
           <span className={styles.modalFormLabel}>계좌명</span>
@@ -999,6 +1040,15 @@ export function SavingsTab({
 
     return (
       <>
+        <FinancialIconPicker
+          category="savings"
+          type="isa"
+          icon={isaEditIcon}
+          color={isaEditColor}
+          onIconChange={(icon) => setIsaEditIcon(icon)}
+          onColorChange={(color) => setIsaEditColor(color)}
+        />
+
         {/* 계좌명 */}
         <div className={styles.modalFormRow}>
           <span className={styles.modalFormLabel}>계좌명</span>
@@ -1186,6 +1236,15 @@ export function SavingsTab({
 
     return (
       <>
+        <FinancialIconPicker
+          category="savings"
+          type="other"
+          icon={editIcon}
+          color={editColor}
+          onIconChange={(icon) => setEditIcon(icon)}
+          onColorChange={(color) => setEditColor(color)}
+        />
+
         {/* 이름 */}
         <div className={styles.modalFormRow}>
           <span className={styles.modalFormLabel}>이름</span>
@@ -1545,6 +1604,16 @@ export function SavingsTab({
                   const period = formatAccountPeriod(account)
                   return (
                     <div key={account.id} className={styles.assetItem} onClick={() => startEditSavingsAccount(account)}>
+                      <FinancialItemIcon
+                        category="savings"
+                        type={account.type}
+                        icon={account.icon}
+                        color={account.color}
+                        onSave={async (icon, color) => {
+                          await updateSavings(account.id, { icon, color })
+                          invalidate('savings')
+                        }}
+                      />
                       <div className={styles.itemInfo}>
                         <span className={styles.itemName}>
                           {account.title} | {account.owner === 'spouse' ? '배우자' : '본인'}
@@ -1577,6 +1646,16 @@ export function SavingsTab({
                   const period = formatAccountPeriod(account)
                   return (
                     <div key={account.id} className={styles.assetItem} onClick={() => startEditSavingsAccount(account)}>
+                      <FinancialItemIcon
+                        category="savings"
+                        type={account.type}
+                        icon={account.icon}
+                        color={account.color}
+                        onSave={async (icon, color) => {
+                          await updateSavings(account.id, { icon, color })
+                          invalidate('savings')
+                        }}
+                      />
                       <div className={styles.itemInfo}>
                         <span className={styles.itemName}>
                           {account.title} | {account.owner === 'spouse' ? '배우자' : '본인'}
@@ -1609,6 +1688,16 @@ export function SavingsTab({
                   const period = formatAccountPeriod(account)
                   return (
                     <div key={account.id} className={styles.assetItem} onClick={() => startEditSavingsAccount(account)}>
+                      <FinancialItemIcon
+                        category="savings"
+                        type={account.type}
+                        icon={account.icon}
+                        color={account.color}
+                        onSave={async (icon, color) => {
+                          await updateSavings(account.id, { icon, color })
+                          invalidate('savings')
+                        }}
+                      />
                       <div className={styles.itemInfo}>
                         <span className={styles.itemName}>
                           {account.title} | {account.owner === 'spouse' ? '배우자' : '본인'}
@@ -1641,6 +1730,16 @@ export function SavingsTab({
                   const period = formatAccountPeriod(account)
                   return (
                     <div key={account.id} className={styles.assetItem} onClick={() => startEditSavingsAccount(account)}>
+                      <FinancialItemIcon
+                        category="savings"
+                        type={account.type}
+                        icon={account.icon}
+                        color={account.color}
+                        onSave={async (icon, color) => {
+                          await updateSavings(account.id, { icon, color })
+                          invalidate('savings')
+                        }}
+                      />
                       <div className={styles.itemInfo}>
                         <span className={styles.itemName}>
                           {account.title} | {account.owner === 'spouse' ? '배우자' : '본인'}
@@ -1680,6 +1779,17 @@ export function SavingsTab({
 
                   return (
                     <div key={isa.id} className={styles.assetItem} onClick={() => startEditIsaAccount(isa)}>
+                      <FinancialItemIcon
+                        category="savings"
+                        type="isa"
+                        icon={isa.icon}
+                        color={isa.color}
+                        onSave={async (icon, color) => {
+                          const supabase = createClient()
+                          await supabase.from('personal_pensions').update({ icon, color }).eq('id', isa.id)
+                          invalidate('personalPensions')
+                        }}
+                      />
                       <div className={styles.itemInfo}>
                         <span className={styles.itemName}>
                           {isa.title || 'ISA'} | {isa.owner === 'spouse' ? '배우자' : '본인'}
@@ -1713,6 +1823,16 @@ export function SavingsTab({
                   const period = formatAccountPeriod(account)
                   return (
                     <div key={account.id} className={styles.assetItem} onClick={() => startEditSavingsAccount(account)}>
+                      <FinancialItemIcon
+                        category="savings"
+                        type={account.type}
+                        icon={account.icon}
+                        color={account.color}
+                        onSave={async (icon, color) => {
+                          await updateSavings(account.id, { icon, color })
+                          invalidate('savings')
+                        }}
+                      />
                       <div className={styles.itemInfo}>
                         <span className={styles.itemName}>
                           {account.title} | {account.owner === 'spouse' ? '배우자' : '본인'}

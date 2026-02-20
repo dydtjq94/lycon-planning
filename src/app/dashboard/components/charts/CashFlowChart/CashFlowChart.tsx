@@ -89,6 +89,10 @@ export function CashFlowChart({
   const computePosRef = useRef<() => void>(() => {})
 
   const { snapshots } = simulationResult
+  // snapshots 참조가 바뀌면 시뮬레이션 전환으로 간주 → 차트 재생성
+  const prevSnapshotsRef = useRef(snapshots)
+  // 초기 애니메이션 진행 중 플래그
+  const isAnimatingRef = useRef(false)
   const currentYear = new Date().getFullYear()
 
   // 생애주기 아이콘 위치 계산 함수
@@ -511,14 +515,26 @@ export function CashFlowChart({
       }
     }
 
-    // 월별↔연간 모드 전환 시 차트 완전 재생성 (onClick 클로저 갱신)
-    if (chartInstance.current && prevMonthlyModeRef.current !== isMonthlyMode) {
+    // snapshots 참조 변경 감지 (시뮬레이션 전환, 기간 변경 등)
+    const snapshotsChanged = prevSnapshotsRef.current !== snapshots
+    prevSnapshotsRef.current = snapshots
+
+    // 모드 전환 또는 데이터 변경 시 차트 재생성 (애니메이션 재생)
+    if (chartInstance.current && (prevMonthlyModeRef.current !== isMonthlyMode || snapshotsChanged)) {
       chartInstance.current.destroy()
       chartInstance.current = null
     }
     prevMonthlyModeRef.current = isMonthlyMode
 
-    // 차트가 이미 있으면 데이터/옵션만 업데이트
+    // 초기 애니메이션 진행 중이면 어노테이션/아이콘만 업데이트 (데이터 업데이트로 애니메이션 중단 방지)
+    if (chartInstance.current && isAnimatingRef.current) {
+      const chart = chartInstance.current
+      ;(chart.options.plugins as any).annotation = { annotations: annotationsConfig }
+      computePosRef.current()
+      return
+    }
+
+    // 차트가 이미 있으면 데이터/옵션만 업데이트 (테마 변경 등)
     if (chartInstance.current) {
       const chart = chartInstance.current
       chart.data.labels = labels
@@ -545,7 +561,7 @@ export function CashFlowChart({
       return
     }
 
-    // 최초 생성
+    // 최초 생성 (또는 데이터 변경 후 재생성)
     const ctx = chartRef.current.getContext('2d')
     if (!ctx) return
 
@@ -560,7 +576,9 @@ export function CashFlowChart({
           data: zeroData,
           backgroundColor: bgColors,
           borderWidth: 0,
-          borderRadius: 2,
+          borderRadius: 3,
+          barPercentage: 0.92,
+          categoryPercentage: 0.92,
         }],
       },
       options: {
@@ -634,10 +652,15 @@ export function CashFlowChart({
     computePosRef.current()
 
     // 0→실제 데이터 전환 애니메이션 (초기 생성 시에만)
+    isAnimatingRef.current = true
     requestAnimationFrame(() => {
       const chart = chartInstance.current
-      if (!chart) return
-      ;(chart.options as any).animation = { duration: 800, easing: 'easeOutQuart' }
+      if (!chart) { isAnimatingRef.current = false; return }
+      ;(chart.options as any).animation = {
+        duration: 800,
+        easing: 'easeOutQuart',
+        onComplete: () => { isAnimatingRef.current = false },
+      }
       ;(chart.data.datasets[0] as any).data = netCashFlowData
       chart.update()
     })

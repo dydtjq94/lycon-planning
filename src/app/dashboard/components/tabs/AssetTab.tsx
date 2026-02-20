@@ -26,6 +26,8 @@ import {
 } from '@/lib/services/physicalAssetService'
 import { TabSkeleton } from './shared/TabSkeleton'
 import { useChartTheme } from '@/hooks/useChartTheme'
+import { FinancialItemIcon } from '@/components/FinancialItemIcon'
+import { FinancialIconPicker } from '@/components/FinancialIconPicker'
 import { formatPeriodDisplay, toPeriodRaw, isPeriodValid, handlePeriodTextChange } from '@/lib/utils/periodInput'
 import styles from './AssetTab.module.css'
 
@@ -91,6 +93,10 @@ export function AssetTab({
   const [sellMode, setSellMode] = useState<'none' | 'custom'>('none')
   const [includeInCashflow, setIncludeInCashflow] = useState(false)
 
+  // Icon/color state
+  const [editIcon, setEditIcon] = useState<string | null>(null)
+  const [editColor, setEditColor] = useState<string | null>(null)
+
   // 타입 선택 드롭다운
   const [showTypeMenu, setShowTypeMenu] = useState(false)
   const [addingType, setAddingType] = useState<UIAssetType | null>(null)
@@ -133,6 +139,10 @@ export function AssetTab({
   const startEditAsset = (asset: PhysicalAsset) => {
     const uiType = dbTypeToUIType(asset.type)
     setEditingAsset({ type: uiType, id: asset.id })
+
+    // Set icon and color
+    setEditIcon(asset.icon || null)
+    setEditColor(asset.color || null)
 
     const purchaseY = asset.purchase_year || currentYear
     const purchaseM = asset.purchase_month || currentMonth
@@ -179,6 +189,8 @@ export function AssetTab({
     setLoanMaturityDateText('')
     setSellDateText('')
     setIncludeInCashflow(false)
+    setEditIcon(null)
+    setEditColor(null)
   }
 
   const resetAddForm = () => {
@@ -226,6 +238,8 @@ export function AssetTab({
         owner: editValues.owner as any || 'self',
         current_value: parseFloat(editValues.currentValue) || 0,
         purchase_price: parseFloat(editValues.currentValue) || 0, // 현재는 현재가치 = 매입가
+        icon: editIcon,
+        color: editColor,
         purchase_year: editValues.purchaseYear ? parseInt(editValues.purchaseYear) : null,
         purchase_month: editValues.purchaseMonth ? parseInt(editValues.purchaseMonth) : null,
         annual_rate: annualRate,
@@ -619,6 +633,16 @@ export function AssetTab({
 
     return (
       <div key={asset.id} className={styles.assetItem} onClick={() => startEditAsset(asset)} style={{ cursor: 'pointer' }}>
+        <FinancialItemIcon
+          category="physicalAsset"
+          type={asset.type}
+          icon={asset.icon}
+          color={asset.color}
+          onSave={async (icon, color) => {
+            await updatePhysicalAsset(asset.id, { icon, color })
+            invalidate('physicalAssets')
+          }}
+        />
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>{asset.title} | {ownerLabel}</span>
           {metaParts.length > 0 && (
@@ -828,6 +852,14 @@ export function AssetTab({
               </div>
             </div>
             <div className={styles.modalFormBody}>
+              <FinancialIconPicker
+                category="physicalAsset"
+                type={editingAsset.type}
+                icon={editIcon}
+                color={editColor}
+                onIconChange={setEditIcon}
+                onColorChange={setEditColor}
+              />
               {renderModalForm(editingAsset.type)}
             </div>
           </div>

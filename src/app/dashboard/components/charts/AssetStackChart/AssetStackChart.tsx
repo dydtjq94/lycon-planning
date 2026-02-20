@@ -113,6 +113,10 @@ export function AssetStackChart({
 
   const isMonthlyMode = !!monthlySnapshots && monthlySnapshots.length > 0
   const prevMonthlyModeRef = useRef(isMonthlyMode)
+  // snapshots 참조가 바뀌면 시뮬레이션 전환으로 간주 → 차트 재생성
+  const prevSnapshotsRef = useRef(snapshots)
+  // 초기 애니메이션 진행 중 플래그 (업데이트 경로가 애니메이션을 중단하지 않도록)
+  const isAnimatingRef = useRef(false)
 
   // 차트 데이터 변환 - 메모이제이션
   const chartData = useMemo(
@@ -655,18 +659,41 @@ export function AssetStackChart({
       },
     }
 
-    // 월별↔연간 모드 전환 시 차트 완전 재생성 (onClick 클로저 갱신)
-    if (chartInstance.current && prevMonthlyModeRef.current !== isMonthlyMode) {
+    // 스택 바 최상단 border-radius 플러그인
+    // 스택 바에서 최상단/최하단 바에만 borderRadius 적용하는 헬퍼
+    const applyTopBarRadius = (chart: any, barData: { data: number[] }[]) => {
+      const dataLength = barData[0]?.data.length || 0
+      const topPositiveByIdx = new Array(dataLength).fill(-1)
+      const bottomNegativeByIdx = new Array(dataLength).fill(-1)
+      for (let i = 0; i < dataLength; i++) {
+        for (let d = 0; d < barData.length; d++) {
+          if (barData[d].data[i] > 0) topPositiveByIdx[i] = d
+          if (barData[d].data[i] < 0 && bottomNegativeByIdx[i] === -1) bottomNegativeByIdx[i] = d
+        }
+      }
+      barData.forEach((_ds, dsIdx) => {
+        const chartDs = chart.data.datasets[dsIdx] as any
+        if (!chartDs) return
+        chartDs.borderRadius = (ctx: any) => {
+          const di = ctx.dataIndex
+          if (dsIdx === topPositiveByIdx[di]) return { topLeft: 3, topRight: 3, bottomLeft: 0, bottomRight: 0 }
+          if (dsIdx === bottomNegativeByIdx[di]) return { topLeft: 0, topRight: 0, bottomLeft: 3, bottomRight: 3 }
+          return 0
+        }
+        chartDs.borderSkipped = false
+      })
+    }
+
+    // snapshots 참조 변경 감지 (시뮬레이션 전환, 기간 변경 등)
+    const snapshotsChanged = prevSnapshotsRef.current !== snapshots
+    prevSnapshotsRef.current = snapshots
+
+    // 모드 전환 또는 데이터 변경 시 차트 재생성 (애니메이션 재생)
+    if (chartInstance.current && (prevMonthlyModeRef.current !== isMonthlyMode || prevChartModeRef.current !== chartMode || snapshotsChanged)) {
       chartInstance.current.destroy()
       chartInstance.current = null
     }
     prevMonthlyModeRef.current = isMonthlyMode
-
-    // bar/line 모드 전환 시 차트 재생성 (데이터셋 구조가 다름)
-    if (chartInstance.current && prevChartModeRef.current !== chartMode) {
-      chartInstance.current.destroy()
-      chartInstance.current = null
-    }
     prevChartModeRef.current = chartMode
 
     // Y축 범위 계산 (bar/line 모두 0 중심 대칭)
@@ -691,13 +718,20 @@ export function AssetStackChart({
       yMax = maxAbs
     }
 
-    // 차트가 이미 있으면 데이터/옵션만 업데이트 (같은 모드 내 데이터 변경)
+    // 초기 애니메이션 진행 중이면 어노테이션/아이콘만 업데이트 (데이터 업데이트로 애니메이션 중단 방지)
+    if (chartInstance.current && isAnimatingRef.current) {
+      const chart = chartInstance.current
+      ;(chart.options.plugins as any).annotation = { annotations: annotationsConfig }
+      computePosRef.current()
+      return
+    }
+
+    // 차트가 이미 있으면 데이터/옵션만 업데이트 (테마 변경 등)
     if (chartInstance.current) {
       const chart = chartInstance.current
       chart.data.labels = activeLabels
 
       if (chartMode === 'bar' && stackedBarData) {
-        // 스택 바 모드: 자산은 역순 (위→아래가 툴팁/사이드바 순서와 일치하도록)
         const allBarData = [...[...stackedBarData.assetDatasets].reverse(), ...stackedBarData.debtDatasets]
         allBarData.forEach((ds, i) => {
           const chartDs = chart.data.datasets[i] as any
@@ -706,8 +740,8 @@ export function AssetStackChart({
             chartDs.backgroundColor = toRgba(ds.color, 0.8)
           }
         })
+        applyTopBarRadius(chart, allBarData)
       } else {
-        // 라인 모드
         const barDs = chart.data.datasets[0] as any
         const lineDs = chart.data.datasets[1] as any
         barDs.data = activeNetWorthData
@@ -732,13 +766,11 @@ export function AssetStackChart({
         }
       }
 
-      // 오버레이 라인 업데이트 (비교 기능)
+      // 오버레이 라인 업데이트
       const baseCount = chartMode === 'bar' && stackedBarData
         ? [...stackedBarData.assetDatasets, ...stackedBarData.debtDatasets].length
         : 2
-      // 기존 오버레이 제거
       while (chart.data.datasets.length > baseCount) chart.data.datasets.pop()
-      // 새 오버레이 추가
       if (overlayLines && overlayLines.length > 0) {
         overlayLines.forEach(line => {
           chart.data.datasets.push({
@@ -759,7 +791,6 @@ export function AssetStackChart({
         })
       }
 
-      // 스케일 업데이트
       if (chart.options.scales?.x?.ticks) chart.options.scales.x.ticks.color = chartScaleColors.tickColor
       if (chart.options.scales?.y) {
         chart.options.scales.y.min = yMin
@@ -768,10 +799,8 @@ export function AssetStackChart({
         if (chart.options.scales.y.grid) (chart.options.scales.y.grid as any).color = chartScaleColors.gridColor
       }
 
-      // annotation 업데이트
       ;(chart.options.plugins as any).annotation = { annotations: annotationsConfig }
 
-      // tooltip 핸들러 업데이트 (테마 변경 반영)
       if (chart.options.plugins?.tooltip) {
         (chart.options.plugins.tooltip as any).external = externalTooltipHandler
       }
@@ -781,7 +810,7 @@ export function AssetStackChart({
       return
     }
 
-    // 최초 생성 (애니메이션 포함)
+    // 최초 생성 또는 데이터 변경 후 재생성 (애니메이션 포함)
     const ctx = chartRef.current.getContext('2d')
     if (!ctx) return
 
@@ -798,8 +827,8 @@ export function AssetStackChart({
           borderWidth: 0,
           borderRadius: 0,
           stack: 'stack',
-          barPercentage: 0.85,
-          categoryPercentage: 0.85,
+          barPercentage: 0.92,
+          categoryPercentage: 0.92,
         })
       })
       stackedBarData.debtDatasets.forEach(ds => {
@@ -810,8 +839,8 @@ export function AssetStackChart({
           borderWidth: 0,
           borderRadius: 0,
           stack: 'stack',
-          barPercentage: 0.85,
-          categoryPercentage: 0.85,
+          barPercentage: 0.92,
+          categoryPercentage: 0.92,
         })
       })
     } else {
@@ -925,7 +954,7 @@ export function AssetStackChart({
                 const numValue = value as number
                 if (numValue === 0) return '0'
                 const prefix = numValue > 0 ? '+' : '-'
-                return `${prefix}${formatChartValue(numValue)}`
+                return `${prefix}${formatChartValue(Math.abs(numValue))}`
               },
               font: { size: 11 },
               color: chartScaleColors.tickColor,
@@ -951,16 +980,22 @@ export function AssetStackChart({
     computePosRef.current()
 
     // 0→실제 데이터 전환 애니메이션 (초기 생성 시에만)
+    isAnimatingRef.current = true
     requestAnimationFrame(() => {
       const chart = chartInstance.current
-      if (!chart) return
+      if (!chart) { isAnimatingRef.current = false; return }
       // 일시적으로 애니메이션 활성화
-      ;(chart.options as any).animation = { duration: 800, easing: 'easeOutQuart' }
+      ;(chart.options as any).animation = {
+        duration: 800,
+        easing: 'easeOutQuart',
+        onComplete: () => { isAnimatingRef.current = false },
+      }
       if (chartMode === 'bar' && stackedBarData) {
         const allBarData = [...[...stackedBarData.assetDatasets].reverse(), ...stackedBarData.debtDatasets]
         allBarData.forEach((ds, i) => {
           ;(chart.data.datasets[i] as any).data = ds.data
         })
+        applyTopBarRadius(chart, allBarData)
         // 오버레이 라인 데이터도 설정 (bar 모드에서 스택 데이터셋 수 이후)
         if (overlayLines) {
           const overlayStartIdx = allBarData.length

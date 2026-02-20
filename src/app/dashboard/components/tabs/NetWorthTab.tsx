@@ -453,6 +453,7 @@ export function NetWorthTab({
         <div className={styles.chartContent}>
           <div className={styles.chartArea}>
             <AssetStackChart
+              key={simulationId}
               simulationResult={filteredSimulationResult}
               endYear={displayRange.end}
               retirementYear={retirementYear}

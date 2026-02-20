@@ -196,8 +196,20 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     window.history.pushState(null, "", newUrl);
   }, [pathname, adminView]);
 
+  // 설정 탭 초기 메뉴
+  const [settingsInitialMenu, setSettingsInitialMenu] = useState<string | undefined>(undefined);
+
   // 섹션 변경 핸들러
   const handleSectionChange = useCallback((section: string) => {
+    // "settings-accounts" 같은 특수 키 처리
+    if (section.startsWith("settings-")) {
+      const menu = section.replace("settings-", "");
+      setSettingsInitialMenu(menu);
+      setCurrentSection("settings");
+      updateUrl("settings", selectedSimulationId);
+      return;
+    }
+    setSettingsInitialMenu(undefined);
     setCurrentSection(section);
     // simulation 섹션은 handleSimulationChange에서 URL 관리
     if (section !== "simulation") {
@@ -257,10 +269,12 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
 
   // 계좌 관리 모달
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "investment" | "pension_savings" | "irp" | "isa">("checking");
+  const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "investment" | "pension_savings" | "irp" | "dc" | "isa">("checking");
   const [accountBtnRect, setAccountBtnRect] = useState<{top: number, left: number, width: number} | null>(null);
   const accountBtnRef = useRef<HTMLButtonElement>(null);
   const [accountCount, setAccountCount] = useState(0);
+  const [accountModalVisibleTabs, setAccountModalVisibleTabs] = useState<("checking" | "savings" | "investment" | "pension_savings" | "irp" | "dc" | "isa")[] | undefined>(undefined);
+  const [accountModalTitle, setAccountModalTitle] = useState<string | undefined>(undefined);
 
   // 카테고리 관리 모달
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -942,6 +956,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             accountCount={accountCount}
             onOpenAccountModal={() => {
               setAccountModalTab("checking");
+              setAccountModalVisibleTabs(undefined);
+              setAccountModalTitle(undefined);
               setShowAccountModal(true);
             }}
           />
@@ -958,7 +974,18 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
         return <div style={{ padding: 40, color: "#888" }}>상담 기록 (준비중)</div>;
       // 자산 추이
       case "current-asset":
-        return <CurrentAssetTab profileId={profile.id} onNavigate={handleSectionChange} />;
+        return (
+          <CurrentAssetTab
+            profileId={profile.id}
+            onNavigate={handleSectionChange}
+            onOpenAccountModal={(tab) => {
+              setAccountModalTab(tab as any);
+              setAccountModalVisibleTabs(undefined);
+              setAccountModalTitle(undefined);
+              setShowAccountModal(true);
+            }}
+          />
+        );
       case "progress":
         return <AssetRecordTab profileId={profile.id} />;
       case "portfolio":
@@ -977,10 +1004,12 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       case "settings":
         return (
           <SettingsTab
+            key={settingsInitialMenu || "default"}
             profile={profile}
             familyMembers={familyMembers}
             onFamilyMembersChange={handleFamilyMembersRefresh}
             onProfileUpdate={handleProfileUpdate}
+            initialMenu={settingsInitialMenu as any}
           />
         );
       // 시뮬레이션
@@ -1213,6 +1242,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   className={styles.accountManageBtn}
                   onClick={() => {
                     setAccountModalTab("investment");
+                    setAccountModalVisibleTabs(["investment", "pension_savings", "irp", "dc", "isa"]);
+                    setAccountModalTitle("투자 계좌 관리");
 
                     if (accountBtnRef.current) {
                       const rect = accountBtnRef.current.getBoundingClientRect();
@@ -1222,7 +1253,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   }}
                 >
                   <Settings size={14} />
-                  계좌 관리
+                  투자 계좌 관리
                 </button>
               </div>
             )}
@@ -1420,10 +1451,16 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       {showAccountModal && (
         <AccountManagementModal
           profileId={profile.id}
-          onClose={() => setShowAccountModal(false)}
+          onClose={() => {
+            setShowAccountModal(false);
+            setAccountModalVisibleTabs(undefined);
+            setAccountModalTitle(undefined);
+          }}
           initialTab={accountModalTab}
           isMarried={isMarried}
           triggerRect={accountBtnRect}
+          visibleTabs={accountModalVisibleTabs}
+          title={accountModalTitle}
         />
       )}
 

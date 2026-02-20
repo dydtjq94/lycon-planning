@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { Trash2, X, Plus, ArrowLeft } from 'lucide-react'
 import type { Debt, DebtInput, LoanRepaymentType, RateType, Owner } from '@/types/tables'
 import { formatMoney } from '@/lib/utils'
+import { FinancialItemIcon } from '@/components/FinancialItemIcon'
 import { formatPeriodDisplay, toPeriodRaw, isPeriodValid, restorePeriodCursor } from '@/lib/utils/periodInput'
 import { useDebts, useInvalidateByCategory } from '@/hooks/useFinancialData'
 import {
@@ -21,6 +22,7 @@ import {
 } from '@/lib/services/debtService'
 import { TabSkeleton } from './shared/TabSkeleton'
 import { useChartTheme } from '@/hooks/useChartTheme'
+import { FinancialIconPicker } from '@/components/FinancialIconPicker'
 import styles from './DebtTab.module.css'
 
 interface DebtTabProps {
@@ -114,6 +116,8 @@ export function DebtTab({
   const [editingDebt, setEditingDebt] = useState<EditingDebt | null>(null)
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(true)
+  const [editIcon, setEditIcon] = useState<string | null>(null)
+  const [editColor, setEditColor] = useState<string | null>(null)
 
   // Period text inputs
   const [startDateText, setStartDateText] = useState('')
@@ -253,6 +257,8 @@ export function DebtTab({
     setStartType('current')
     setMaturityType('self-retirement')
     setGraceEndType('year')
+    setEditIcon(null)
+    setEditColor(null)
   }
 
   // 부채 편집 시작
@@ -285,6 +291,8 @@ export function DebtTab({
       graceEndMonth: graceMonths > 0 ? String(gEndMonth) : '',
       owner: debt.owner || 'self',
     })
+    setEditIcon(debt.icon || null)
+    setEditColor(debt.color || null)
 
     // Determine types and initialize text
     if (sYear === currentYear && sMonth === currentMonth) {
@@ -369,6 +377,8 @@ export function DebtTab({
         maturity_year: maturityYear,
         maturity_month: maturityMonth,
         owner: editingDebt.owner,
+        icon: editIcon,
+        color: editColor,
       }
 
       if (editingDebt.id) {
@@ -403,6 +413,15 @@ export function DebtTab({
 
     return (
       <>
+        <FinancialIconPicker
+          category="debt"
+          type={getDebtTypeFromCategory(editingDebt.category)}
+          icon={editIcon}
+          color={editColor}
+          onIconChange={(icon) => setEditIcon(icon)}
+          onColorChange={(color) => setEditColor(color)}
+        />
+
         {/* 이름 */}
         <div className={styles.modalFormRow}>
           <span className={styles.modalFormLabel}>이름</span>
@@ -750,6 +769,16 @@ export function DebtTab({
 
     return (
       <div key={debt.id} className={styles.debtItem} onClick={() => startEditDebt(debt, category)} style={{ cursor: 'pointer' }}>
+        <FinancialItemIcon
+          category="debt"
+          type={debt.type}
+          icon={debt.icon}
+          color={debt.color}
+          onSave={async (icon, color) => {
+            await updateDebt(debt.id, { icon, color })
+            invalidate('debts')
+          }}
+        />
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>
             {debt.title} | {ownerLabel}

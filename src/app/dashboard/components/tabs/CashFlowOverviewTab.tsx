@@ -328,6 +328,7 @@ export function CashFlowOverviewTab({
             {/* 차트 / 현금흐름도 */}
             {viewMode === 'chart' ? (
               <CashFlowChart
+                key={simulationId}
                 simulationResult={filteredSimulationResult}
                 endYear={displayRange.end}
                 retirementYear={retirementYear}
@@ -345,6 +346,7 @@ export function CashFlowOverviewTab({
             ) : (
               <div className={styles.sankeyBody}>
                 <SankeyChart
+                  key={simulationId}
                   simulationResult={simulationResult}
                   selectedYear={sankeyYear}
                 />

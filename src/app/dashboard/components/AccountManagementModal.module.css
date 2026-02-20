@@ -118,6 +118,40 @@
   margin-bottom: 16px;
 }
 
+.formSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.formSectionHeader h4 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--dashboard-text-muted);
+  margin: 0;
+}
+
+.formCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.formCloseBtn:hover {
+  color: var(--dashboard-text);
+}
+
 .formSection h4 {
   font-size: 12px;
   font-weight: 600;
@@ -311,9 +345,25 @@
 .listItem {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   padding: 10px 0;
   transition: background 0.15s;
+}
+
+.brokerLogo {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.brokerLogoPlaceholder {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--dashboard-hover-bg);
+  flex-shrink: 0;
 }
 
 .listItem:last-child {
@@ -324,6 +374,8 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+  flex: 1;
+  min-width: 0;
 }
 
 .listItemName {
@@ -349,17 +401,6 @@
   color: #16a34a;
 }
 
-.linkedPayments {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 3px;
-}
-
-.linkedPaymentBadge {
-  font-size: 11px;
-  color: var(--dashboard-text-muted);
-}
 
 .listItemActions {
   display: flex;
@@ -411,4 +452,46 @@
 .addSectionButton:hover {
   color: var(--dashboard-text);
   border-color: var(--dashboard-text-muted);
+}
+
+/* 리스트 모드 (탭 없이 섹션 나열) */
+.listModeSection {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.listModeSection:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.listModeSectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  margin: 0 0 8px 0;
+}
+
+.inlineFormWrap {
+  padding: 8px 0;
+}
+
+.addSectionButtonSmall {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.addSectionButtonSmall:hover {
+  color: var(--dashboard-text);
 }

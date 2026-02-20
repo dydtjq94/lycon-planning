@@ -33,6 +33,8 @@ import {
   MEDICAL_EXPENSE_BY_AGE,
   EDUCATION_EXPENSE_BY_AGE,
 } from "@/types";
+import { FinancialItemIcon } from "@/components/FinancialItemIcon";
+import { FinancialIconPicker } from "@/components/FinancialIconPicker";
 import {
   formatMoney,
   getDefaultRateCategory,
@@ -171,6 +173,9 @@ export function ExpenseTab({
         rateCategory: expense.rate_category,
         sourceType: expense.source_type || undefined,
         sourceId: expense.source_id || undefined,
+        icon: expense.icon,
+        color: expense.color,
+        dbType: expense.type,
       };
     });
   }, [dbExpenses]);
@@ -884,6 +889,8 @@ export function ExpenseTab({
         retirement_link: retirementLink,
         growth_rate: finalGrowthRate,
         rate_category: editForm.rateCategory as any,
+        icon: editForm.icon || null,
+        color: editForm.color || null,
       });
       invalidate("expenses");
       cancelEdit();
@@ -965,6 +972,16 @@ export function ExpenseTab({
   const renderItem = (item: DisplayItem) => {
     return (
       <div key={item.id} className={styles.expenseItem} onClick={() => startEdit(item)}>
+        <FinancialItemIcon
+          category="expense"
+          type={(item as any).dbType || item.type}
+          icon={(item as any).icon}
+          color={(item as any).color}
+          onSave={async (icon, color) => {
+            await updateExpense(item.id, { icon, color })
+            invalidate('expenses')
+          }}
+        />
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>
             {item.label} | {getOwnerLabel(item.owner)}
@@ -1376,6 +1393,15 @@ export function ExpenseTab({
               </div>
             </div>
             <div className={styles.modalFormBody}>
+              {/* 아이콘 */}
+              <FinancialIconPicker
+                category="expense"
+                type={(editForm as any)?.dbType || editForm?.type || 'living'}
+                icon={editForm?.icon || null}
+                color={editForm?.color || null}
+                onIconChange={(icon) => setEditForm(prev => prev ? { ...prev, icon } : prev)}
+                onColorChange={(color) => setEditForm(prev => prev ? { ...prev, color } : prev)}
+              />
               {/* 항목명 */}
               <div className={styles.modalFormRow}>
                 <span className={styles.modalFormLabel}>항목명</span>

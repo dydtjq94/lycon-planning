@@ -115,7 +115,7 @@ export function getLogoPath(name: string | null | undefined, type: LogoType): st
  * 계좌 유형으로 로고 타입 결정
  */
 export function getLogoTypeFromAccountType(accountType: string | null): LogoType {
-  const investmentTypes = ["general", "isa", "pension_savings", "irp"];
+  const investmentTypes = ["general", "isa", "pension_savings", "irp", "dc"];
   if (investmentTypes.includes(accountType || "")) {
     return "securities";
   }

@@ -90,6 +90,8 @@ export interface Income {
   source_type: IncomeSourceType
   source_id: string | null
   memo: string | null
+  icon: string | null
+  color: string | null
   sort_order: number
   is_active: boolean
   created_at: string
@@ -113,6 +115,8 @@ export interface IncomeInput {
   rate_category?: RateCategory
   source_type?: IncomeSourceType
   source_id?: string | null
+  icon?: string | null
+  color?: string | null
   memo?: string | null
   sort_order?: number
 }
@@ -142,6 +146,8 @@ export interface Expense {
   owner: OwnerWithCommon
   source_type: ExpenseSourceType
   source_id: string | null
+  icon: string | null
+  color: string | null
   memo: string | null
   sort_order: number
   is_active: boolean
@@ -167,6 +173,8 @@ export interface ExpenseInput {
   owner?: OwnerWithCommon
   source_type?: ExpenseSourceType
   source_id?: string | null
+  icon?: string | null
+  color?: string | null
   memo?: string | null
   sort_order?: number
 }
@@ -185,6 +193,8 @@ export interface NationalPension {
   expected_monthly_amount: number  // 원 (서비스에서 만원으로 변환)
   start_age: number
   end_age: number | null
+  icon: string | null
+  color: string | null
   memo: string | null
   is_active: boolean
   created_at: string
@@ -198,6 +208,8 @@ export interface NationalPensionInput {
   expected_monthly_amount: number
   start_age: number
   end_age?: number | null
+  icon?: string | null
+  color?: string | null
   memo?: string | null
 }
 
@@ -224,6 +236,8 @@ export interface RetirementPension {
   receiving_years: number | null
   return_rate: number
   rate_category: RateCategory
+  icon: string | null
+  color: string | null
   memo: string | null
   is_active: boolean
   created_at: string
@@ -245,6 +259,8 @@ export interface RetirementPensionInput {
   receiving_years?: number | null
   return_rate?: number
   rate_category?: RateCategory
+  icon?: string | null
+  color?: string | null
   memo?: string | null
 }
 
@@ -276,6 +292,8 @@ export interface PersonalPension {
   isa_maturity_year: number | null
   isa_maturity_month: number | null
   isa_maturity_strategy: IsaMaturityStrategy | null
+  icon: string | null
+  color: string | null
   memo: string | null
   is_active: boolean
   created_at: string
@@ -302,6 +320,8 @@ export interface PersonalPensionInput {
   isa_maturity_year?: number | null
   isa_maturity_month?: number | null
   isa_maturity_strategy?: IsaMaturityStrategy | null
+  icon?: string | null
+  color?: string | null
   memo?: string | null
 }
 
@@ -362,6 +382,8 @@ export interface RealEstate {
   // 현금 흐름
   include_in_cashflow: boolean
 
+  icon: string | null
+  color: string | null
   memo: string | null
   sort_order: number
   is_active: boolean
@@ -406,6 +428,8 @@ export interface RealEstateInput {
   sell_year?: number | null
   sell_month?: number | null
   include_in_cashflow?: boolean
+  icon?: string | null
+  color?: string | null
   memo?: string | null
   sort_order?: number
 }
@@ -448,6 +472,8 @@ export interface PhysicalAsset {
   // 현금 흐름
   include_in_cashflow: boolean
 
+  icon: string | null
+  color: string | null
   memo: string | null
   sort_order: number
   is_active: boolean
@@ -478,6 +504,8 @@ export interface PhysicalAssetInput {
   sell_year?: number | null
   sell_month?: number | null
   include_in_cashflow?: boolean
+  icon?: string | null
+  color?: string | null
   memo?: string | null
   sort_order?: number
 }
@@ -510,6 +538,8 @@ export interface Savings {
   maturity_month: number | null
   is_tax_free: boolean  // 비과세 여부
   currency: CurrencyType  // 통화
+  icon: string | null
+  color: string | null
   memo: string | null
   sort_order: number
   is_active: boolean
@@ -536,6 +566,8 @@ export interface SavingsInput {
   maturity_month?: number | null
   is_tax_free?: boolean
   currency?: CurrencyType
+  icon?: string | null
+  color?: string | null
   memo?: string | null
   sort_order?: number
 }
@@ -565,6 +597,8 @@ export interface Debt {
   maturity_month: number
   source_type: DebtSourceType
   source_id: string | null
+  icon: string | null
+  color: string | null
   memo: string | null
   sort_order: number
   is_active: boolean
@@ -590,6 +624,8 @@ export interface DebtInput {
   maturity_month: number
   source_type?: DebtSourceType
   source_id?: string | null
+  icon?: string | null
+  color?: string | null
   memo?: string | null
   sort_order?: number
 }
@@ -632,6 +668,8 @@ export interface Insurance {
   pension_start_age: number | null
   pension_receiving_years: number | null
 
+  icon: string | null
+  color: string | null
   memo: string | null
   sort_order: number
   is_active: boolean
@@ -661,6 +699,8 @@ export interface InsuranceInput {
   return_rate?: number | null
   pension_start_age?: number | null
   pension_receiving_years?: number | null
+  icon?: string | null
+  color?: string | null
   memo?: string | null
   sort_order?: number
 }

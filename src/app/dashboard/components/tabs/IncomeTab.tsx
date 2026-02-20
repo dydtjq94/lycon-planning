@@ -19,6 +19,8 @@ import type {
 import type { SimulationResult } from "@/lib/services/simulationTypes";
 import type { Income, IncomeInput, IncomeType as DBIncomeType } from "@/types/tables";
 import { formatMoney, getDefaultRateCategory } from "@/lib/utils";
+import { FinancialItemIcon } from "@/components/FinancialItemIcon";
+import { FinancialIconPicker } from "@/components/FinancialIconPicker";
 import { formatPeriodDisplay, toPeriodRaw, isPeriodValid, restorePeriodCursor, handlePeriodTextChange } from "@/lib/utils/periodInput";
 import { CHART_COLORS, categorizeIncome } from "@/lib/utils/tooltipCategories";
 import { useIncomes, useInvalidateByCategory } from "@/hooks/useFinancialData";
@@ -176,6 +178,9 @@ export function IncomeTab({
         endMonth: income.end_month,
         growthRate: income.growth_rate,
         rateCategory: income.rate_category,
+        icon: income.icon,
+        color: income.color,
+        dbType: income.type,
       };
     });
   }, [dbIncomes]);
@@ -852,6 +857,8 @@ export function IncomeTab({
         retirement_link: editForm.type === 'onetime' ? null : retirementLink,
         growth_rate: editForm.type === 'onetime' ? 0 : finalGrowthRate,
         rate_category: editForm.rateCategory as any,
+        icon: editForm.icon || null,
+        color: editForm.color || null,
       });
       invalidate('incomes'); // 캐시 무효화 (소득 + items)
     } catch (error) {
@@ -955,6 +962,16 @@ export function IncomeTab({
   const renderItem = (item: DisplayItem) => {
     return (
       <div key={item.id} className={styles.incomeItem} onClick={() => startEdit(item)}>
+        <FinancialItemIcon
+          category="income"
+          type={(item as any).dbType || item.type}
+          icon={(item as any).icon}
+          color={(item as any).color}
+          onSave={async (icon, color) => {
+            await updateIncome(item.id, { icon, color })
+            invalidate('incomes')
+          }}
+        />
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>
             {item.label} | {item.owner === "spouse" ? "배우자" : "본인"}
@@ -1525,6 +1542,15 @@ export function IncomeTab({
               </div>
             </div>
             <div className={styles.modalFormBody}>
+              {/* 아이콘 */}
+              <FinancialIconPicker
+                category="income"
+                type={(editForm as any)?.dbType || editForm?.type || 'labor'}
+                icon={editForm?.icon || null}
+                color={editForm?.color || null}
+                onIconChange={(icon) => setEditForm(prev => prev ? { ...prev, icon } : prev)}
+                onColorChange={(color) => setEditForm(prev => prev ? { ...prev, color } : prev)}
+              />
               {/* 항목명 */}
               <div className={styles.modalFormRow}>
                 <span className={styles.modalFormLabel}>항목명</span>

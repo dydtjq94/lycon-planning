@@ -8,6 +8,7 @@ import {
   CircleAlert,
   type LucideIcon,
 } from 'lucide-react'
+import { FINANCIAL_ICON_MAP } from './financialIcons'
 
 // 아이콘 프리셋
 export const LIFECYCLE_ICONS: { id: string; icon: LucideIcon; label: string }[] = [
@@ -62,10 +63,15 @@ export const LIFECYCLE_DEFAULTS = {
   },
 } as const
 
-// 아이콘 ID → 컴포넌트 조회
+// 아이콘 ID → 컴포넌트 조회 (lifecycle 아이콘 → financial 아이콘 → Landmark 순 폴백)
 export function getLifecycleIcon(iconId?: string): LucideIcon {
+  if (!iconId) return Landmark
   const found = LIFECYCLE_ICONS.find(i => i.id === iconId)
-  return found?.icon || Landmark
+  if (found) return found.icon
+  // financialIcons에서도 검색 (카드에서 설정한 커스텀 아이콘 지원)
+  const financial = FINANCIAL_ICON_MAP[iconId]
+  if (financial) return financial
+  return Landmark
 }
 
 export type LifeCycleMilestoneType = 'retirement' | 'lifeExpectancy'

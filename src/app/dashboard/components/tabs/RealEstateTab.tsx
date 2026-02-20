@@ -24,6 +24,8 @@ import {
 } from '@/lib/services/realEstateService'
 import { TabSkeleton } from './shared/TabSkeleton'
 import { useChartTheme } from '@/hooks/useChartTheme'
+import { FinancialItemIcon } from '@/components/FinancialItemIcon'
+import { FinancialIconPicker } from '@/components/FinancialIconPicker'
 import styles from './RealEstateTab.module.css'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
@@ -83,6 +85,10 @@ export function RealEstateTab({
   const [editBooleans, setEditBooleans] = useState<{ hasRentalIncome: boolean, hasLoan: boolean, includeInCashflow: boolean }>({ hasRentalIncome: false, hasLoan: false, includeInCashflow: false })
   const [isSaving, setIsSaving] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
+
+  // Icon/color state
+  const [editIcon, setEditIcon] = useState<string | null>(null)
+  const [editColor, setEditColor] = useState<string | null>(null)
 
   // Rate category and owner state
   const [editRateCategory, setEditRateCategory] = useState<string>('realEstate')
@@ -295,6 +301,10 @@ export function RealEstateTab({
   const startEditProperty = (property: RealEstate) => {
     setEditingProperty({ type: property.type, id: property.id })
 
+    // Set icon and color
+    setEditIcon(property.icon || null)
+    setEditColor(property.color || null)
+
     // Set rate category and owner
     const rateCategory = (property as any).rate_category || 'realEstate'
     setEditRateCategory(rateCategory)
@@ -395,6 +405,8 @@ export function RealEstateTab({
     setGraceEndDateText('')
     setPurchaseType('current')
     setLoanStartType('current')
+    setEditIcon(null)
+    setEditColor(null)
   }
 
   // 저장 (거주용)
@@ -565,6 +577,8 @@ export function RealEstateTab({
         title: editValues.title,
         owner: editOwner,
         current_value: parseFloat(editValues.currentValue) || 0,
+        icon: editIcon,
+        color: editColor,
         purchase_year: purchaseYear,
         purchase_month: purchaseMonth,
         growth_rate: growthRate,
@@ -1355,6 +1369,16 @@ export function RealEstateTab({
 
     return (
       <div key={property.id} className={styles.assetItem} onClick={() => startEditProperty(property)} style={{ cursor: 'pointer' }}>
+        <FinancialItemIcon
+          category="realEstate"
+          type={property.type}
+          icon={property.icon}
+          color={property.color}
+          onSave={async (icon, color) => {
+            await updateRealEstate(property.id, { icon, color })
+            invalidate('realEstates')
+          }}
+        />
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>{property.title}</span>
           {metaParts.length > 0 && (
@@ -1416,6 +1440,16 @@ export function RealEstateTab({
 
     return (
       <div key={property.id} className={styles.assetItem} onClick={() => startEditProperty(property)} style={{ cursor: 'pointer' }}>
+        <FinancialItemIcon
+          category="realEstate"
+          type="residence"
+          icon={property.icon}
+          color={property.color}
+          onSave={async (icon, color) => {
+            await updateRealEstate(property.id, { icon, color })
+            invalidate('realEstates')
+          }}
+        />
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>{property.housing_type}</span>
           {metaParts.length > 0 && (
@@ -1680,6 +1714,14 @@ export function RealEstateTab({
               </div>
             </div>
             <div className={styles.modalFormBody}>
+              <FinancialIconPicker
+                category="realEstate"
+                type={editingProperty.type}
+                icon={editIcon}
+                color={editColor}
+                onIconChange={setEditIcon}
+                onColorChange={setEditColor}
+              />
               {editingProperty.type === 'residence'
                 ? renderResidenceModalForm()
                 : renderPropertyModalForm(editingProperty.type as Exclude<RealEstateType, 'residence'>)
