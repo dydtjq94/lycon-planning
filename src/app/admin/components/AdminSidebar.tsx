@@ -45,7 +45,8 @@ export function AdminSidebar({
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isCustomerOpen, setIsCustomerOpen] = useState(true);
+  const [isCustomerOpen, setIsCustomerOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [theme, setTheme] = useState<ThemeId>("darker");
 
   // 테마 로드 및 이벤트 리스너
@@ -78,12 +79,17 @@ export function AdminSidebar({
   const currentUserId = isUserDetailPage ? pathname.split("/")[3] : null;
 
   return (
-    <aside className={styles.sidebar} data-theme={theme}>
+    <aside
+      className={`${styles.sidebar} ${isExpanded ? styles.expanded : styles.collapsed}`}
+      data-theme={theme}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+    >
       {/* 로고 */}
       <div className={styles.logoRow}>
         <div className={styles.logoItem}>
           <span className={styles.logoLetter}>L</span>
-          <span className={styles.navLabel}>담당자</span>
+          {isExpanded && <span className={styles.navLabel}>담당자</span>}
         </div>
       </div>
 
@@ -97,31 +103,33 @@ export function AdminSidebar({
               onClick={() => router.push(item.id)}
             >
               <item.icon size={20} />
-              <span className={styles.navLabel}>{item.label}</span>
+              {isExpanded && <span className={styles.navLabel}>{item.label}</span>}
             </button>
           ))}
 
           <div className={styles.divider} />
 
           {/* 고객 관리 */}
-          <div className={styles.sectionLabel}>고객</div>
+          {isExpanded && <div className={styles.sectionLabel}>고객</div>}
           <div className={styles.navGroup}>
             <button
               className={`${styles.navItem} ${isUserDetailPage ? styles.active : ""}`}
-              onClick={() => setIsCustomerOpen(!isCustomerOpen)}
+              onClick={() => isExpanded && setIsCustomerOpen(!isCustomerOpen)}
             >
               <Users size={20} />
-              <span className={styles.navLabel}>고객 목록</span>
-              <span className={styles.chevron}>
-                {isCustomerOpen ? (
-                  <ChevronDown size={16} />
-                ) : (
-                  <ChevronRight size={16} />
-                )}
-              </span>
+              {isExpanded && <span className={styles.navLabel}>고객 목록</span>}
+              {isExpanded && (
+                <span className={styles.chevron}>
+                  {isCustomerOpen ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
+                </span>
+              )}
             </button>
 
-            {isCustomerOpen && (
+            {isExpanded && isCustomerOpen && (
               <div className={styles.submenu}>
                 {customers.length === 0 ? (
                   <div className={styles.emptyCustomers}>
@@ -161,18 +169,18 @@ export function AdminSidebar({
       <div className={styles.footer}>
         <div className={styles.expertInfo}>
           <div className={styles.expertAvatar}>{expertName.charAt(0)}</div>
-          <span className={styles.expertName}>{expertName}</span>
+          {isExpanded && <span className={styles.expertName}>{expertName}</span>}
         </div>
         <button
           className={styles.footerItem}
           onClick={() => router.push("/admin/settings")}
         >
           <Settings size={18} />
-          <span className={styles.navLabel}>설정</span>
+          {isExpanded && <span className={styles.navLabel}>설정</span>}
         </button>
         <button className={styles.footerItem} onClick={onLogout}>
           <LogOut size={18} />
-          <span className={styles.navLabel}>로그아웃</span>
+          {isExpanded && <span className={styles.navLabel}>로그아웃</span>}
         </button>
       </div>
     </aside>
