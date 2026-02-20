@@ -110,7 +110,6 @@ export function AdminSidebar({
           <div className={styles.divider} />
 
           {/* 고객 관리 */}
-          {isExpanded && <div className={styles.sectionLabel}>고객</div>}
           <div className={styles.navGroup}>
             <button
               className={`${styles.navItem} ${isUserDetailPage ? styles.active : ""}`}
