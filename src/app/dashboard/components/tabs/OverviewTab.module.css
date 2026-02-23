@@ -199,10 +199,19 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: #e5e7eb;
+  position: relative;
+  overflow: hidden;
   flex-shrink: 0;
+}
+
+.skeletonAvatar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, #f3f4f6 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 .skeletonContent {
@@ -215,18 +224,23 @@
 .skeletonLine {
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: #e5e7eb;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeletonLine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, #f3f4f6 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: 200px 0;
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 /* 상단 배너 */

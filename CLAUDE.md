@@ -448,34 +448,68 @@ if (hasPositive && hasNegative && scales?.y?.getPixelForValue) {
 ## 스켈레톤 로딩 애니메이션
 
 - **방향 통일**: 모든 shimmer 애니메이션은 왼쪽 → 오른쪽으로 이동
-- **px 단위 사용**: 퍼센트(%) 대신 픽셀(px) 단위 사용
-- **속도**: 1.5s infinite
+- **GPU 가속 필수**: `transform: translateX()` 기반 pseudo-element 사용 (`background-position` 금지)
+- **속도**: 1.5s ease-in-out infinite
 - **다크모드 지원**: CSS 변수 사용 필수
 
 ```css
-/* 스켈레톤 shimmer 애니메이션 (다크모드 지원) */
+/* 스켈레톤 shimmer 애니메이션 (GPU 가속, 다크모드 지원) */
 @keyframes shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: 200px 0;
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--skeleton-base) 25%,
-    var(--skeleton-highlight) 50%,
-    var(--skeleton-base) 75%
-  );
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
 }
 
-/* 하드코딩 금지! 아래처럼 사용하지 말 것 */
-/* background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); */
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--skeleton-highlight) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* 절대 하지 말 것 (background-position 방식 = 버벅거림) */
+/* animation: shimmer 1.5s infinite; */
+/* background-position: -200px 0 → 200px 0; */
+```
+
+### 스켈레톤 → 콘텐츠 전환 규칙 (매우 중요!)
+
+- **최소 스켈레톤 유지 시간**: 데이터 로딩 완료 후 **+0.5초** 더 스켈레톤 표시
+- **fade-in 금지**: opacity 애니메이션으로 전환하면 깜빡이는 느낌 → 사용 금지
+- **즉시 전환**: 최소 시간 경과 후 스켈레톤 → 실제 콘텐츠 바로 교체 (애니메이션 없이)
+- **스켈레톤은 실제 레이아웃과 동일한 구조**: 실제 UI와 같은 그리드/간격으로 만들어야 전환 시 자연스러움
+
+```tsx
+// 패턴: 최소 스켈레톤 유지 시간
+const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+const dataReady = !loading1 && !loading2; // 모든 데이터 로딩 완료
+
+useEffect(() => {
+  if (dataReady && !minTimeElapsed) {
+    const timer = setTimeout(() => setMinTimeElapsed(true), 500);
+    return () => clearTimeout(timer);
+  }
+}, [dataReady, minTimeElapsed]);
+
+// 스켈레톤 조건: 데이터 미완료 OR 최소 시간 미경과
+if (!dataReady || !minTimeElapsed) {
+  return <SkeletonUI />;
+}
+
+return <ActualContent />;
 ```
 
 ## 컴포넌트 분리

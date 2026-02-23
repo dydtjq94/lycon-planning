@@ -97,7 +97,8 @@ const sectionTitles: Record<string, string> = {
   // 재무 현황
   "current-asset": "현재 자산",
   progress: "자산 추이",
-  portfolio: "투자 포트폴리오",
+  portfolio: "일반 투자",
+  "pension-portfolio": "연금 투자",
   "checking-account": "입출금통장",
   // 시뮬레이션
   simulation: "시뮬레이션",
@@ -349,6 +350,11 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   const [portfolioSearchLoading, setPortfolioSearchLoading] = useState(false);
   const portfolioSearchTriggerRef = useRef<(() => void) | null>(null);
 
+  // 연금 포트폴리오 검색 상태 (독립)
+  const [pensionSearchQuery, setPensionSearchQuery] = useState("");
+  const [pensionSearchLoading, setPensionSearchLoading] = useState(false);
+  const pensionSearchTriggerRef = useRef<(() => void) | null>(null);
+
   // 계좌 관리 모달
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [accountModalTab, setAccountModalTab] = useState<
@@ -561,14 +567,25 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   );
 
   // 자동완성 선택
-  const selectSuggestion = useCallback((stock: StockItem) => {
-    setPortfolioSearchQuery(stock.ticker);
-    setShowSuggestions(false);
-    // 선택 후 자동 검색
-    setTimeout(() => {
-      portfolioSearchTriggerRef.current?.();
-    }, 100);
-  }, []);
+  const selectSuggestion = useCallback(
+    (stock: StockItem) => {
+      if (currentSection === "pension-portfolio") {
+        setPensionSearchQuery(stock.ticker);
+      } else {
+        setPortfolioSearchQuery(stock.ticker);
+      }
+      setShowSuggestions(false);
+      // 선택 후 자동 검색
+      setTimeout(() => {
+        if (currentSection === "pension-portfolio") {
+          pensionSearchTriggerRef.current?.();
+        } else {
+          portfolioSearchTriggerRef.current?.();
+        }
+      }, 100);
+    },
+    [currentSection],
+  );
 
   // 계좌 수 조회
   useEffect(() => {
@@ -1224,11 +1241,25 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
         return (
           <PortfolioTab
             profileId={profile.id}
+            accountTypes={["general", "isa"]}
             searchQuery={portfolioSearchQuery}
             setSearchQuery={setPortfolioSearchQuery}
             setSearchLoading={setPortfolioSearchLoading}
             onSearchTrigger={(fn) => {
               portfolioSearchTriggerRef.current = fn;
+            }}
+          />
+        );
+      case "pension-portfolio":
+        return (
+          <PortfolioTab
+            profileId={profile.id}
+            accountTypes={["pension_savings", "irp", "dc"]}
+            searchQuery={pensionSearchQuery}
+            setSearchQuery={setPensionSearchQuery}
+            setSearchLoading={setPensionSearchLoading}
+            onSearchTrigger={(fn) => {
+              pensionSearchTriggerRef.current = fn;
             }}
           />
         );
@@ -1482,22 +1513,27 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             )}
 
             {/* 관리 버튼들 (포트폴리오) */}
-            {currentSection === "portfolio" && (
+            {(currentSection === "portfolio" ||
+              currentSection === "pension-portfolio") && (
               <div className={styles.headerBtnGroup}>
                 {/* 계좌 관리 버튼 */}
                 <button
                   ref={accountBtnRef}
                   className={styles.accountManageBtn}
                   onClick={() => {
-                    setAccountModalTab("investment");
-                    setAccountModalVisibleTabs([
-                      "investment",
-                      "pension_savings",
-                      "irp",
-                      "dc",
-                      "isa",
-                    ]);
-                    setAccountModalTitle("투자 계좌 관리");
+                    if (currentSection === "pension-portfolio") {
+                      setAccountModalTab("pension_savings");
+                      setAccountModalVisibleTabs([
+                        "pension_savings",
+                        "irp",
+                        "dc",
+                      ]);
+                      setAccountModalTitle("연금 계좌 관리");
+                    } else {
+                      setAccountModalTab("investment");
+                      setAccountModalVisibleTabs(["investment", "isa"]);
+                      setAccountModalTitle("투자 계좌 관리");
+                    }
 
                     if (accountBtnRef.current) {
                       const rect =
@@ -1512,22 +1548,33 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   }}
                 >
                   <Settings size={14} />
-                  투자 계좌 관리
+                  {currentSection === "pension-portfolio"
+                    ? "연금 계좌 관리"
+                    : "투자 계좌 관리"}
                 </button>
               </div>
             )}
 
-            {/* 포트폴리오 검색 (포트폴리오 탭에서만 표시) */}
-            {currentSection === "portfolio" && (
+            {/* 포트폴리오 검색 (투자/연금 포트폴리오 탭에서 표시) */}
+            {(currentSection === "portfolio" ||
+              currentSection === "pension-portfolio") && (
               <div className={styles.headerSearch}>
                 <div className={styles.headerSearchWrapper}>
                   <input
                     ref={searchInputRef}
                     type="text"
                     placeholder="종목 검색하고 거래 추가 [국내&미국 주식, ETF]"
-                    value={portfolioSearchQuery}
+                    value={
+                      currentSection === "pension-portfolio"
+                        ? pensionSearchQuery
+                        : portfolioSearchQuery
+                    }
                     onChange={(e) => {
-                      setPortfolioSearchQuery(e.target.value);
+                      if (currentSection === "pension-portfolio") {
+                        setPensionSearchQuery(e.target.value);
+                      } else {
+                        setPortfolioSearchQuery(e.target.value);
+                      }
                       filterSuggestions(e.target.value);
                     }}
                     onFocus={() => {
@@ -1536,7 +1583,11 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         setShowSuggestions(false);
-                        portfolioSearchTriggerRef.current?.();
+                        if (currentSection === "pension-portfolio") {
+                          pensionSearchTriggerRef.current?.();
+                        } else {
+                          portfolioSearchTriggerRef.current?.();
+                        }
                       }
                     }}
                     className={styles.headerSearchInput}
@@ -1570,12 +1621,22 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                 <button
                   onClick={() => {
                     setShowSuggestions(false);
-                    portfolioSearchTriggerRef.current?.();
+                    if (currentSection === "pension-portfolio") {
+                      pensionSearchTriggerRef.current?.();
+                    } else {
+                      portfolioSearchTriggerRef.current?.();
+                    }
                   }}
-                  disabled={portfolioSearchLoading}
+                  disabled={
+                    currentSection === "pension-portfolio"
+                      ? pensionSearchLoading
+                      : portfolioSearchLoading
+                  }
                   className={styles.headerSearchBtn}
                 >
-                  {portfolioSearchLoading ? (
+                  {(currentSection === "pension-portfolio"
+                    ? pensionSearchLoading
+                    : portfolioSearchLoading) ? (
                     <RefreshCw size={16} className={styles.spinning} />
                   ) : (
                     <Search size={16} />

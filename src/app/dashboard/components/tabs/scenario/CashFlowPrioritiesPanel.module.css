@@ -467,24 +467,24 @@
 
 /* Skeleton animation */
 @keyframes shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: 200px 0;
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--dashboard-hover-bg) 25%,
-    var(--dashboard-border) 50%,
-    var(--dashboard-hover-bg) 75%
-  );
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--dashboard-hover-bg);
+  position: relative;
+  overflow: hidden;
   border-radius: 4px;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--dashboard-border) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 .skeletonHeader {

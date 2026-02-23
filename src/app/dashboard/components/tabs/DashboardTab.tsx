@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Line, Chart } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from "chart.js";
 import "chartjs-adapter-date-fns";
-import { useSnapshots, usePortfolioTransactions, usePortfolioChartPriceData } from "@/hooks/useFinancialData";
+import { useSnapshots, usePortfolioTransactions, usePortfolioChartPriceData, useTodaySnapshot, useSnapshotItems } from "@/hooks/useFinancialData";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { formatMoney, formatWon } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -91,7 +91,9 @@ export function DashboardTab({
 }: DashboardTabProps) {
   const [simLines, setSimLines] = useState<SimLine[]>([]);
   const [simLoading, setSimLoading] = useState(true);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [customHoldings, setCustomHoldings] = useState<CustomHolding[]>([]);
+  const [portfolioAccounts, setPortfolioAccounts] = useState<{ id: string; account_type: string }[]>([]);
   const [nextBooking, setNextBooking] = useState<NextBooking | null>(null);
   const [recentChat, setRecentChat] = useState<{ expertName: string; lastMessage: string; lastDate: string; unread: number } | null>(null);
   const [hoveredPoint, setHoveredPoint] = useState<{ value: number; date: string; index: number } | null>(null);
@@ -102,6 +104,71 @@ export function DashboardTab({
     profileId || "",
     !!profileId
   );
+
+  // Today's snapshot + items for asset list
+  const { data: todaySnapshot } = useTodaySnapshot(profileId || "", !!profileId);
+  const { data: snapshotItems = [] } = useSnapshotItems(todaySnapshot?.id, !!todaySnapshot?.id);
+
+  // 자산 항목: 저축/투자 (snapshot summary) + 부동산/실물자산 (snapshot items)
+  const assetItems = useMemo(() => {
+    const items: { id: string; title: string; amount: number }[] = [];
+
+    // 저축 (pre-computed by CurrentAssetTab → snapshot summary)
+    if (todaySnapshot && todaySnapshot.savings > 0) {
+      items.push({ id: "_savings", title: "저축", amount: todaySnapshot.savings });
+    }
+    // 투자 (pre-computed by CurrentAssetTab → snapshot summary)
+    if (todaySnapshot && todaySnapshot.investments > 0) {
+      items.push({ id: "_investments", title: "투자", amount: todaySnapshot.investments });
+    }
+
+    // 부동산 items
+    snapshotItems
+      .filter(i => {
+        if (i.category !== "asset") return false;
+        const meta = (i.metadata || {}) as Record<string, unknown>;
+        if (meta.housing_type === "무상") return false;
+        return meta.purpose === "residential" || meta.purpose === "investment" ||
+          ["apartment", "house", "officetel", "land", "commercial"].includes(i.item_type);
+      })
+      .forEach(i => items.push({ id: i.id, title: i.title, amount: i.amount }));
+
+    // 실물자산 items
+    snapshotItems
+      .filter(i => i.category === "asset" && ["car", "precious_metal", "art"].includes(i.item_type))
+      .forEach(i => items.push({ id: i.id, title: i.title, amount: i.amount }));
+
+    return items.sort((a, b) => b.amount - a.amount);
+  }, [snapshotItems, todaySnapshot]);
+
+  // 부채 항목: 금융부채 (snapshot items) + 담보대출 (asset item metadata)
+  const debtItems = useMemo(() => {
+    const items: { id: string; title: string; amount: number }[] = [];
+
+    // 금융 부채 (순수 부채 - source 없는 것)
+    snapshotItems
+      .filter(i => i.category === "debt")
+      .forEach(i => {
+        const meta = (i.metadata || {}) as Record<string, unknown>;
+        if (!meta.source) {
+          items.push({ id: i.id, title: i.title, amount: i.amount });
+        }
+      });
+
+    // 부동산/실물자산 담보대출 (asset item metadata에서)
+    snapshotItems
+      .filter(i => i.category === "asset")
+      .forEach(i => {
+        const meta = (i.metadata || {}) as Record<string, unknown>;
+        const loanAmt = meta.loan_amount as number | undefined;
+        const hasLoan = meta.has_loan as boolean | undefined;
+        if (hasLoan && loanAmt && loanAmt > 0) {
+          items.push({ id: `${i.id}-loan`, title: `${i.title} 대출`, amount: loanAmt });
+        }
+      });
+
+    return items.sort((a, b) => b.amount - a.amount);
+  }, [snapshotItems]);
 
   const {
     chartScaleColors,
@@ -116,10 +183,54 @@ export function DashboardTab({
     !!profileId
   );
 
-  const { data: priceCache, isLoading: priceCacheLoading } = usePortfolioChartPriceData(
+  // Load portfolio accounts
+  useEffect(() => {
+    if (!profileId) return;
+    const supabase = createClient();
+    supabase
+      .from("accounts")
+      .select("id, account_type")
+      .eq("profile_id", profileId)
+      .eq("is_active", true)
+      .in("account_type", ["general", "isa", "pension_savings", "irp", "dc"])
+      .then(({ data }) => {
+        if (data) setPortfolioAccounts(data);
+      });
+  }, [profileId]);
+
+  // Filter account IDs by type
+  const generalAccountIds = useMemo(
+    () => new Set(portfolioAccounts.filter(a => ["general", "isa"].includes(a.account_type)).map(a => a.id)),
+    [portfolioAccounts],
+  );
+  const pensionAccountIds = useMemo(
+    () => new Set(portfolioAccounts.filter(a => ["pension_savings", "irp", "dc"].includes(a.account_type)).map(a => a.id)),
+    [portfolioAccounts],
+  );
+
+  // Filter transactions by account type
+  const generalTransactions = useMemo(
+    () => portfolioTransactions.filter(tx => tx.account_id && generalAccountIds.has(tx.account_id)),
+    [portfolioTransactions, generalAccountIds],
+  );
+  const pensionTransactions = useMemo(
+    () => portfolioTransactions.filter(tx => tx.account_id && pensionAccountIds.has(tx.account_id)),
+    [portfolioTransactions, pensionAccountIds],
+  );
+
+  // Separate price caches for each investment type
+  const { data: generalPriceCache, isLoading: generalPriceCacheLoading } = usePortfolioChartPriceData(
     profileId || "",
-    portfolioTransactions,
-    !!profileId && portfolioTransactions.length > 0
+    generalTransactions,
+    !!profileId && generalTransactions.length > 0,
+    "general",
+  );
+
+  const { data: pensionPriceCache, isLoading: pensionPriceCacheLoading } = usePortfolioChartPriceData(
+    profileId || "",
+    pensionTransactions,
+    !!profileId && pensionTransactions.length > 0,
+    "pension",
   );
 
   // Load next booking & recent chat
@@ -157,6 +268,16 @@ export function DashboardTab({
         }
       });
   }, [profileId]);
+
+  // Filter custom holdings by account type
+  const generalCustomHoldings = useMemo(
+    () => customHoldings.filter(ch => ch.account_id && generalAccountIds.has(ch.account_id)),
+    [customHoldings, generalAccountIds],
+  );
+  const pensionCustomHoldings = useMemo(
+    () => customHoldings.filter(ch => ch.account_id && pensionAccountIds.has(ch.account_id)),
+    [customHoldings, pensionAccountIds],
+  );
 
   // Latest snapshot
   const latestSnapshot =
@@ -258,13 +379,17 @@ export function DashboardTab({
     return { change, pct };
   }, [chronoSnapshots, latestSnapshot]);
 
-  // Portfolio time-series data (value over time from transactions + prices)
-  const portfolioTimeSeries = useMemo(() => {
-    if (!priceCache || portfolioTransactions.length === 0) return null;
+  // Shared helper to build portfolio time-series from cache + transactions + custom holdings
+  const buildPortfolioTimeSeries = useCallback((
+    cache: typeof generalPriceCache,
+    txs: typeof portfolioTransactions,
+    holdings: typeof customHoldings,
+  ) => {
+    if (!cache || txs.length === 0) return null;
 
-    const { priceDataMap, exchangeRateMap, tickerCurrencyMap, dates } = priceCache;
+    const { priceDataMap, exchangeRateMap, tickerCurrencyMap, dates } = cache;
 
-    const sortedTx = [...portfolioTransactions].sort(
+    const sortedTx = [...txs].sort(
       (a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime()
     );
 
@@ -272,28 +397,26 @@ export function DashboardTab({
     const invested: number[] = [];
 
     dates.forEach((date) => {
-      // Build holdings up to this date
-      const holdings = new Map<string, number>();
+      const holdingsMap = new Map<string, number>();
       const investedMap = new Map<string, number>();
 
       sortedTx.forEach((tx) => {
         if (tx.trade_date <= date) {
-          const currentQty = holdings.get(tx.ticker) || 0;
+          const currentQty = holdingsMap.get(tx.ticker) || 0;
           const currentInvested = investedMap.get(tx.ticker) || 0;
 
           if (tx.type === "buy") {
-            holdings.set(tx.ticker, currentQty + tx.quantity);
+            holdingsMap.set(tx.ticker, currentQty + tx.quantity);
             investedMap.set(tx.ticker, currentInvested + tx.quantity * tx.price);
           } else {
             const newQty = currentQty - tx.quantity;
             const sellRatio = currentQty > 0 ? tx.quantity / currentQty : 0;
-            holdings.set(tx.ticker, newQty);
+            holdingsMap.set(tx.ticker, newQty);
             investedMap.set(tx.ticker, currentInvested * (1 - sellRatio));
           }
         }
       });
 
-      // Calculate value using prices
       let exchangeRate = exchangeRateMap.get(date);
       if (!exchangeRate && exchangeRateMap.size > 0) {
         const sortedFxDates = Array.from(exchangeRateMap.keys()).sort();
@@ -307,7 +430,7 @@ export function DashboardTab({
 
       let totalValue = 0;
       let totalInvested = 0;
-      holdings.forEach((qty, ticker) => {
+      holdingsMap.forEach((qty, ticker) => {
         if (qty > 0) {
           const tickerPrices = priceDataMap.get(ticker);
           const currency = tickerCurrencyMap.get(ticker);
@@ -334,8 +457,7 @@ export function DashboardTab({
         }
       });
 
-      // 커스텀 종목 합산 (기준일 이후 날짜에만 반영)
-      customHoldings.forEach(ch => {
+      holdings.forEach(ch => {
         if (ch.date_basis && date >= ch.date_basis) {
           totalValue += ch.current_value;
           totalInvested += ch.principal;
@@ -347,8 +469,20 @@ export function DashboardTab({
     });
 
     return { labels: dates, value, invested };
-  }, [priceCache, portfolioTransactions, customHoldings]);
+  }, []);
 
+  const generalTimeSeries = useMemo(
+    () => buildPortfolioTimeSeries(generalPriceCache, generalTransactions, generalCustomHoldings),
+    [buildPortfolioTimeSeries, generalPriceCache, generalTransactions, generalCustomHoldings],
+  );
+
+  const pensionTimeSeries = useMemo(
+    () => buildPortfolioTimeSeries(pensionPriceCache, pensionTransactions, pensionCustomHoldings),
+    [buildPortfolioTimeSeries, pensionPriceCache, pensionTransactions, pensionCustomHoldings],
+  );
+
+  const totalAssets = useMemo(() => assetItems.reduce((sum, item) => sum + item.amount, 0), [assetItems]);
+  const totalDebts = useMemo(() => debtItems.reduce((sum, item) => sum + item.amount, 0), [debtItems]);
 
   // Crosshair plugin for vertical dashed line on hover (uses ref to avoid re-creating)
   const crosshairPlugin = useMemo(() => ({
@@ -374,10 +508,20 @@ export function DashboardTab({
   }), [chartScaleColors.tickColor]);
 
   // Portfolio is ready when: no transactions (nothing to load) or price cache is loaded
-  const portfolioReady = portfolioTransactions.length === 0 ? !ptxLoading : !priceCacheLoading;
+  const generalReady = generalTransactions.length === 0 ? !ptxLoading : !generalPriceCacheLoading;
+  const pensionReady = pensionTransactions.length === 0 ? !ptxLoading : !pensionPriceCacheLoading;
+  const dataReady = !snapshotsLoading && generalReady && pensionReady && !simLoading;
 
-  // Skeleton loading: wait for all data
-  if (snapshotsLoading || !portfolioReady || simLoading) {
+  // Minimum skeleton duration: data loaded → +0.5s delay
+  useEffect(() => {
+    if (dataReady && !minTimeElapsed) {
+      const timer = setTimeout(() => setMinTimeElapsed(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [dataReady, minTimeElapsed]);
+
+  // Skeleton loading: wait for all data + minimum duration
+  if (!dataReady || !minTimeElapsed) {
     return (
       <div className={styles.container}>
         {/* Greeting */}
@@ -397,8 +541,11 @@ export function DashboardTab({
         <div className={styles.skeletonQuickInfoRow}>
           {[...Array(2)].map((_, i) => (
             <div key={`qi-${i}`} className={styles.skeletonQuickInfoCard}>
-              <div className={`${styles.skeletonTextSm} ${styles.skeleton}`} />
-              <div className={`${styles.skeletonTextSm} ${styles.skeleton}`} style={{ width: 140 }} />
+              <div className={`${styles.skeleton}`} style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0 }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+                <div className={`${styles.skeleton}`} style={{ width: 60, height: 11 }} />
+                <div className={`${styles.skeleton}`} style={{ width: 150, height: 13 }} />
+              </div>
             </div>
           ))}
         </div>
@@ -407,6 +554,15 @@ export function DashboardTab({
           {[...Array(2)].map((_, i) => (
             <div key={`top-${i}`} className={styles.skeletonChartBlock}>
               <div className={`${styles.skeletonTextLg} ${styles.skeleton}`} />
+              <div className={`${styles.skeletonTextSm} ${styles.skeleton}`} />
+              <div className={`${styles.skeletonChart} ${styles.skeleton}`} />
+            </div>
+          ))}
+        </div>
+        {/* Skeleton investment row */}
+        <div className={styles.skeletonGrid}>
+          {[...Array(2)].map((_, i) => (
+            <div key={`inv-${i}`} className={styles.skeletonChartBlock}>
               <div className={`${styles.skeletonTextSm} ${styles.skeleton}`} />
               <div className={`${styles.skeletonChart} ${styles.skeleton}`} />
             </div>
@@ -426,7 +582,7 @@ export function DashboardTab({
   }
 
   return (
-    <div className={`${styles.container} ${styles.loaded}`}>
+    <div className={styles.container}>
       {/* Greeting */}
       <div className={styles.greetingRow}>
         {profileName && (
@@ -667,17 +823,71 @@ export function DashboardTab({
           )}
         </div>
 
+        <div className={styles.assetListPanel} onClick={() => onNavigate("current-asset")}>
+          {(assetItems.length > 0 || debtItems.length > 0) ? (
+            <div className={styles.assetDebtColumns}>
+              <div className={styles.assetColumn}>
+                <div className={styles.columnHeader}>
+                  <span className={styles.columnTitle}>자산</span>
+                  <span className={styles.columnTotal}>{formatMoney(totalAssets)}</span>
+                </div>
+                <div className={styles.columnScroll}>
+                  {assetItems.map((item) => (
+                    <div key={item.id} className={styles.assetListItem}>
+                      <span className={styles.assetListLabel}>{item.title}</span>
+                      <span className={styles.assetListValue}>{formatMoney(item.amount)}</span>
+                    </div>
+                  ))}
+                  {assetItems.length === 0 && (
+                    <span className={styles.columnEmpty}>등록된 자산 없음</span>
+                  )}
+                </div>
+              </div>
+              <div className={styles.debtColumn}>
+                <div className={styles.columnHeader}>
+                  <span className={styles.columnTitle}>부채</span>
+                  <span className={`${styles.columnTotal} ${styles.negative}`}>
+                    {totalDebts > 0 ? `-${formatMoney(totalDebts)}` : "0"}
+                  </span>
+                </div>
+                <div className={styles.columnScroll}>
+                  {debtItems.map((item) => (
+                    <div key={item.id} className={styles.assetListItem}>
+                      <span className={styles.assetListLabel}>{item.title}</span>
+                      <span className={`${styles.assetListValue} ${styles.negative}`}>
+                        {formatMoney(item.amount)}
+                      </span>
+                    </div>
+                  ))}
+                  {debtItems.length === 0 && (
+                    <span className={styles.columnEmpty}>등록된 부채 없음</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.emptyTopSection}>
+              <TrendingUp size={28} className={styles.emptyIcon} />
+              <span>자산 기록이 없습니다</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Investment section: 일반 투자 + 연금 투자 */}
+      <div className={styles.investmentSection}>
+        {/* 일반 투자 (general / isa) */}
         <div className={styles.portfolioPanel} onClick={() => onNavigate("portfolio")}>
-          {portfolioTimeSeries && portfolioTimeSeries.value.length > 0 ? (
+          {generalTimeSeries && generalTimeSeries.value.length > 0 ? (
             <>
-              <div className={styles.netWorthLabel}>투자 포트폴리오</div>
+              <div className={styles.netWorthLabel}>일반 투자</div>
               <div className={styles.netWorthAmount}>
-                {formatWon(Math.round(portfolioTimeSeries.value[portfolioTimeSeries.value.length - 1]))}
+                {formatWon(Math.round(generalTimeSeries.value[generalTimeSeries.value.length - 1]))}
               </div>
               <div className={styles.changeIndicator}>
                 {(() => {
-                  const lastVal = portfolioTimeSeries.value[portfolioTimeSeries.value.length - 1];
-                  const lastInvested = portfolioTimeSeries.invested[portfolioTimeSeries.invested.length - 1];
+                  const lastVal = generalTimeSeries.value[generalTimeSeries.value.length - 1];
+                  const lastInvested = generalTimeSeries.invested[generalTimeSeries.invested.length - 1];
                   const profitLoss = lastVal - lastInvested;
                   const pct = lastInvested !== 0 ? ((profitLoss / Math.abs(lastInvested)) * 100).toFixed(1) : null;
                   return (
@@ -694,13 +904,13 @@ export function DashboardTab({
               </div>
               <div className={styles.chartContainer}>
                 {(() => {
-                  const plData = portfolioTimeSeries.value.map((v, i) => v - portfolioTimeSeries.invested[i]);
+                  const plData = generalTimeSeries.value.map((v, i) => v - generalTimeSeries.invested[i]);
                   const maxAbsPL = Math.max(...plData.map((v) => Math.abs(v)));
                   return (
                     <Chart
                       type="bar"
                       data={{
-                        labels: portfolioTimeSeries.labels,
+                        labels: generalTimeSeries.labels,
                         datasets: [
                           {
                             type: "bar" as const,
@@ -715,7 +925,7 @@ export function DashboardTab({
                           {
                             type: "line" as const,
                             label: "평가금액",
-                            data: portfolioTimeSeries.value,
+                            data: generalTimeSeries.value,
                             borderColor: chartLineColors.value,
                             borderWidth: 2,
                             pointRadius: 0,
@@ -794,7 +1004,139 @@ export function DashboardTab({
           ) : (
             <div className={styles.emptyTopSection}>
               <Activity size={24} className={styles.emptyIcon} />
-              <span>{ptxLoading || priceCacheLoading ? "포트폴리오 로딩 중..." : "포트폴리오 데이터가 없습니다"}</span>
+              <span>{ptxLoading || generalPriceCacheLoading ? "로딩 중..." : "거래 데이터가 없습니다"}</span>
+            </div>
+          )}
+        </div>
+        {/* 연금 투자 (pension_savings / irp / dc) */}
+        <div className={styles.portfolioPanel} onClick={() => onNavigate("pension-portfolio")}>
+          {pensionTimeSeries && pensionTimeSeries.value.length > 0 ? (
+            <>
+              <div className={styles.netWorthLabel}>연금 투자</div>
+              <div className={styles.netWorthAmount}>
+                {formatWon(Math.round(pensionTimeSeries.value[pensionTimeSeries.value.length - 1]))}
+              </div>
+              <div className={styles.changeIndicator}>
+                {(() => {
+                  const lastVal = pensionTimeSeries.value[pensionTimeSeries.value.length - 1];
+                  const lastInvested = pensionTimeSeries.invested[pensionTimeSeries.invested.length - 1];
+                  const profitLoss = lastVal - lastInvested;
+                  const pct = lastInvested !== 0 ? ((profitLoss / Math.abs(lastInvested)) * 100).toFixed(1) : null;
+                  return (
+                    <>
+                      <span className={styles.changeLabel}>원금 대비</span>
+                      <span className={profitLoss >= 0 ? styles.positive : styles.negative}>
+                        {profitLoss >= 0 ? "+ " : "- "}
+                        {formatWon(Math.round(Math.abs(profitLoss)))}
+                        {pct !== null && ` (${profitLoss >= 0 ? "+" : ""}${pct}%)`}
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
+              <div className={styles.chartContainer}>
+                {(() => {
+                  const plData = pensionTimeSeries.value.map((v, i) => v - pensionTimeSeries.invested[i]);
+                  const maxAbsPL = Math.max(...plData.map((v) => Math.abs(v)));
+                  return (
+                    <Chart
+                      type="bar"
+                      data={{
+                        labels: pensionTimeSeries.labels,
+                        datasets: [
+                          {
+                            type: "bar" as const,
+                            label: "손익",
+                            data: plData,
+                            backgroundColor: plData.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.7) : toRgba(chartLineColors.loss, 0.7)),
+                            borderWidth: 0,
+                            borderRadius: 1,
+                            yAxisID: "y1",
+                            order: 2,
+                          },
+                          {
+                            type: "line" as const,
+                            label: "평가금액",
+                            data: pensionTimeSeries.value,
+                            borderColor: chartLineColors.value,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: true,
+                            backgroundColor: (ctx: any) => {
+                              if (!ctx.chart.chartArea) return "transparent";
+                              const gradient = ctx.chart.ctx.createLinearGradient(
+                                0, ctx.chart.chartArea.top, 0, ctx.chart.chartArea.bottom
+                              );
+                              gradient.addColorStop(0, toRgba(chartLineColors.value, 0.15));
+                              gradient.addColorStop(1, toRgba(chartLineColors.value, 0));
+                              return gradient;
+                            },
+                            tension: 0.3,
+                            yAxisID: "y",
+                            order: 1,
+                          },
+                        ],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: { padding: { right: 20 } },
+                        plugins: {
+                          tooltip: { enabled: false },
+                          legend: { display: false },
+                        },
+                        scales: {
+                          x: {
+                            type: "category",
+                            display: true,
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: {
+                              color: chartScaleColors.tickColor,
+                              font: { size: 10 },
+                              maxRotation: 0,
+                              maxTicksLimit: 6,
+                              callback: function(val: any) {
+                                const label = this.getLabelForValue(val);
+                                if (!label) return "";
+                                const d = new Date(label);
+                                const yy = String(d.getFullYear()).slice(2);
+                                return `${yy}.${d.getMonth() + 1}`;
+                              },
+                            },
+                          },
+                          y: {
+                            display: true,
+                            position: "left" as const,
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: {
+                              color: chartScaleColors.tickColor,
+                              font: { size: 10 },
+                              maxTicksLimit: 4,
+                              callback: (v: any) => formatWon(Math.round(v as number)),
+                            },
+                            beginAtZero: false,
+                          },
+                          y1: {
+                            display: false,
+                            position: "right" as const,
+                            grid: { display: false },
+                            border: { display: false },
+                            min: -maxAbsPL * 2,
+                            max: maxAbsPL * 2,
+                          },
+                        },
+                      }}
+                    />
+                  );
+                })()}
+              </div>
+            </>
+          ) : (
+            <div className={styles.emptyTopSection}>
+              <Activity size={24} className={styles.emptyIcon} />
+              <span>{ptxLoading || pensionPriceCacheLoading ? "로딩 중..." : "거래 데이터가 없습니다"}</span>
             </div>
           )}
         </div>

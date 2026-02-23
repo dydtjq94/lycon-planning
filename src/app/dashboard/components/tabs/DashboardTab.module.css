@@ -9,18 +9,6 @@
   gap: 20px;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.loaded {
-  animation: fadeIn 0.3s ease-out;
-}
 
 /* Greeting */
 .greetingRow {
@@ -147,7 +135,7 @@
 .chartPanel {
   min-width: 0;
   border-radius: 12px;
-  padding: 24px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
 }
@@ -156,7 +144,7 @@
 .portfolioPanel {
   min-width: 0;
   border-radius: 12px;
-  padding: 24px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -215,6 +203,119 @@
 }
 
 
+/* Asset list panel - 2 column */
+.assetListPanel {
+  min-width: 0;
+  min-height: 0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+
+.assetDebtColumns {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.assetColumn,
+.debtColumn {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--dashboard-border);
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.columnTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dashboard-text-secondary);
+}
+
+.columnTotal {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+}
+
+.columnScroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.columnEmpty {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  padding: 12px 0;
+}
+
+.assetListItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+}
+
+.assetListLabel {
+  font-size: 12px;
+  color: var(--dashboard-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 8px;
+}
+
+.assetListValue {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.assetListLabelBold {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+}
+
+.assetListValueBold {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+}
+
+.assetListDivider {
+  height: 1px;
+  background: var(--dashboard-border);
+}
+
+/* Investment section: 2-column grid */
+.investmentSection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
 /* Section label */
 .sectionLabel {
   font-size: 13px;
@@ -233,7 +334,7 @@
 /* Shared card styling */
 .card {
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
 }
@@ -313,8 +414,8 @@
 
 /* === Skeleton === */
 @keyframes shimmer {
-  0% { background-position: -200px 0; }
-  100% { background-position: 200px 0; }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .skeletonQuickInfoRow {
@@ -333,14 +434,23 @@
 
 .skeleton {
   border-radius: 6px;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
     90deg,
-    var(--skeleton-base) 25%,
+    transparent 0%,
     var(--skeleton-highlight) 50%,
-    var(--skeleton-base) 75%
+    transparent 100%
   );
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 .skeletonGrid {
@@ -353,7 +463,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 24px;
+  padding: 16px;
 }
 
 .skeletonTextLg {
@@ -400,6 +510,10 @@
   }
 
   .simSection {
+    grid-template-columns: 1fr;
+  }
+
+  .investmentSection {
     grid-template-columns: 1fr;
   }
 

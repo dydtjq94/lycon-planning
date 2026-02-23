@@ -389,22 +389,27 @@
 
 /* ========== 스켈레톤 애니메이션 ========== */
 @keyframes shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: 200px 0;
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .skeletonAvatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
   flex-shrink: 0;
+}
+
+.skeletonAvatar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--skeleton-highlight) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 .skeletonInfo {
@@ -418,18 +423,36 @@
   width: 80px;
   height: 14px;
   border-radius: 4px;
-  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeletonName::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--skeleton-highlight) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 .skeletonTitle {
   width: 100px;
   height: 12px;
   border-radius: 4px;
-  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeletonTitle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--skeleton-highlight) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 .skeletonMessage {
@@ -443,18 +466,36 @@
   width: 200px;
   height: 48px;
   border-radius: 3px 16px 16px 16px;
-  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeletonBubble::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--skeleton-highlight) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 .skeletonBubbleLong {
   width: 280px;
   height: 72px;
   border-radius: 3px 16px 16px 16px;
-  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeletonBubbleLong::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--skeleton-highlight) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* ========== 스크롤바 ========== */

@@ -57,7 +57,8 @@ const expertMenu = [
 
 // 재무 관리
 const financeMenu = [
-  { id: "portfolio", label: "투자 포트폴리오", icon: LineChart },
+  { id: "portfolio", label: "일반 투자", icon: LineChart },
+  { id: "pension-portfolio", label: "연금 투자", icon: PiggyBank },
   { id: "current-asset", label: "현재 자산", icon: PieChart },
 ];
 
@@ -70,10 +71,11 @@ const analysisMenu = [
 const shortcutTabs: { key: string; id: string; display: string }[] = [
   { key: "1", id: "dashboard", display: "1" },
   { key: "2", id: "portfolio", display: "2" },
-  { key: "3", id: "current-asset", display: "3" },
-  { key: "4", id: "progress", display: "4" },
-  { key: "5", id: "messages", display: "5" },
-  { key: "6", id: "consultation", display: "6" },
+  { key: "3", id: "pension-portfolio", display: "3" },
+  { key: "4", id: "current-asset", display: "4" },
+  { key: "5", id: "progress", display: "5" },
+  { key: "6", id: "messages", display: "6" },
+  { key: "7", id: "consultation", display: "7" },
 ];
 
 export function Sidebar({

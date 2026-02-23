@@ -101,6 +101,7 @@ type DisplayHolding =
 
 interface PortfolioTabProps {
   profileId: string;
+  accountTypes?: string[];
   searchQuery?: string;
   setSearchQuery?: (query: string) => void;
   setSearchLoading?: (loading: boolean) => void;
@@ -171,6 +172,7 @@ const ACCOUNT_TYPE_OPTIONS = [
 
 export function PortfolioTab({
   profileId,
+  accountTypes = ["general", "isa", "pension_savings", "irp", "dc"],
   searchQuery = "",
   setSearchQuery,
   setSearchLoading,
@@ -183,8 +185,15 @@ export function PortfolioTab({
     isReady: isThemeReady,
     isDark,
   } = useChartTheme();
+
+  const filteredAccountTypeOptions = useMemo(
+    () => ACCOUNT_TYPE_OPTIONS.filter((opt) => accountTypes.includes(opt.value)),
+    [accountTypes],
+  );
+
   const [transactions, setTransactions] = useState<PortfolioTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<
@@ -350,13 +359,7 @@ export function PortfolioTab({
 
   const supabase = createClient();
 
-  // 주가 데이터 캐시 (react-query로 관리 - 탭 전환해도 유지)
-  const { data: priceCache, isLoading: priceCacheLoading } =
-    usePortfolioChartPriceData(
-      profileId,
-      transactions,
-      transactions.length > 0,
-    );
+  // 주가 데이터 캐시는 accounts 로드 후 scopedTransactions 기반으로 아래에서 생성
 
   // API 헬스 체크
   useEffect(() => {
@@ -395,7 +398,7 @@ export function PortfolioTab({
   useEffect(() => {
     loadAccounts();
     loadCustomHoldings();
-  }, [profileId]);
+  }, [profileId, accountTypes]);
 
   const loadAccounts = async () => {
     const { data, error } = await supabase
@@ -403,7 +406,7 @@ export function PortfolioTab({
       .select("*")
       .eq("profile_id", profileId)
       .eq("is_active", true)
-      .in("account_type", ["general", "isa", "pension_savings", "irp", "dc"]) // 증권 계좌만
+      .in("account_type", accountTypes) // 증권 계좌만
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: true });
 
@@ -737,15 +740,36 @@ export function PortfolioTab({
     setSearchTicker("");
   };
 
-  // 선택된 계좌로 필터링된 거래 내역
+  const accountIdSet = useMemo(
+    () => new Set(accounts.map((a) => a.id)),
+    [accounts],
+  );
+
+  // 현재 탭 계좌 범위 내의 거래만 (모든 계산/차트에서 사용)
+  const scopedTransactions = useMemo(
+    () => transactions.filter((tx) => tx.account_id && accountIdSet.has(tx.account_id)),
+    [transactions, accountIdSet],
+  );
+
+  // 주가 데이터 캐시 (scopedTransactions 기반 - 탭별 독립 캐시)
+  const scopeKey = accountTypes.join(",");
+  const { data: priceCache, isLoading: priceCacheLoading } =
+    usePortfolioChartPriceData(
+      profileId,
+      scopedTransactions,
+      scopedTransactions.length > 0,
+      scopeKey,
+    );
+
+  // 선택된 계좌로 추가 필터링된 거래 내역
   const filteredTransactions = useMemo(() => {
     if (selectedAccountIds.length === 0) {
-      return transactions; // 전체 보기
+      return scopedTransactions;
     }
-    return transactions.filter(
+    return scopedTransactions.filter(
       (tx) => tx.account_id && selectedAccountIds.includes(tx.account_id),
     );
-  }, [transactions, selectedAccountIds]);
+  }, [scopedTransactions, selectedAccountIds]);
 
   // 보유 종목 계산
   const holdings = useMemo<PortfolioHolding[]>(() => {
@@ -1275,11 +1299,16 @@ export function PortfolioTab({
 
   // 필터링된 커스텀 종목
   const filteredCustomHoldings = useMemo(() => {
-    if (selectedAccountIds.length === 0) return customHoldings;
+    if (selectedAccountIds.length === 0) {
+      // 전체: 현재 탭의 계좌 범위 내에서만
+      return customHoldings.filter(
+        (ch) => ch.account_id && accountIdSet.has(ch.account_id),
+      );
+    }
     return customHoldings.filter(
       (ch) => ch.account_id && selectedAccountIds.includes(ch.account_id),
     );
-  }, [customHoldings, selectedAccountIds]);
+  }, [customHoldings, selectedAccountIds, accountIdSet]);
 
   // 커스텀 종목 합산
   const customHoldingsCurrentValue = useMemo(() => {
@@ -1293,22 +1322,28 @@ export function PortfolioTab({
     return filteredCustomHoldings.reduce((sum, ch) => sum + ch.principal, 0);
   }, [filteredCustomHoldings]);
 
+  // 현재 탭 계좌 범위 내의 커스텀 종목만
+  const scopedCustomHoldings = useMemo(
+    () => customHoldings.filter((ch) => ch.account_id && accountIdSet.has(ch.account_id)),
+    [customHoldings, accountIdSet],
+  );
+
   // 계좌별 평가금액 계산 (유틸리티 함수에서 커스텀 종목도 포함)
   const accountValues = useMemo(() => {
     return calculatePortfolioAccountValues(
-      transactions,
+      scopedTransactions,
       priceCache,
       accounts,
-      customHoldings,
+      scopedCustomHoldings,
     );
-  }, [priceCache, transactions, accounts, customHoldings]);
+  }, [priceCache, scopedTransactions, accounts, scopedCustomHoldings]);
 
   // 계좌별 투자금액 계산
   const accountInvested = useMemo(() => {
     const invested = new Map<string, number>();
 
     accounts.forEach((account) => {
-      const accountTxs = transactions
+      const accountTxs = scopedTransactions
         .filter((tx) => tx.account_id === account.id)
         .sort(
           (a, b) =>
@@ -1358,7 +1393,7 @@ export function PortfolioTab({
     });
 
     return invested;
-  }, [accounts, transactions]);
+  }, [accounts, scopedTransactions]);
 
   // 전체 합계 (모든 계좌 기준 - 필터링과 무관)
   const totalAllValue = useMemo(() => {
@@ -1381,7 +1416,7 @@ export function PortfolioTab({
     (sum, a) => sum + (a.additional_amount || 0),
     0,
   );
-  const totalAllCustomPrincipal = customHoldings.reduce(
+  const totalAllCustomPrincipal = scopedCustomHoldings.reduce(
     (sum, ch) => sum + ch.principal,
     0,
   );
@@ -1644,11 +1679,16 @@ export function PortfolioTab({
   };
 
   // 거래 내역 로딩 중이거나 가격 데이터 로딩 중이거나 테마 로딩 중일 때 전체 스켈레톤 표시
-  if (
-    loading ||
-    !isThemeReady ||
-    (transactions.length > 0 && priceCacheLoading)
-  ) {
+  const dataReady = !loading && isThemeReady && !(scopedTransactions.length > 0 && priceCacheLoading);
+
+  useEffect(() => {
+    if (dataReady && !minTimeElapsed) {
+      const timer = setTimeout(() => setMinTimeElapsed(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [dataReady, minTimeElapsed]);
+
+  if (!dataReady || !minTimeElapsed) {
     return (
       <div className={styles.container}>
         {/* 계좌 바 스켈레톤 */}
@@ -2156,7 +2196,7 @@ export function PortfolioTab({
             <PortfolioValueChart
               priceCache={priceCache}
               priceCacheLoading={priceCacheLoading}
-              transactions={transactions}
+              transactions={scopedTransactions}
               filterAccountIds={selectedAccountIds}
               customHoldings={filteredCustomHoldings}
               customHoldingSnapshots={customHoldingSnapshots}

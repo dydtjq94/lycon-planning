@@ -697,7 +697,7 @@ export function AssetStackChart({
       for (let i = 0; i < dataLength; i++) {
         for (let d = 0; d < barData.length; d++) {
           if (barData[d].data[i] > 0) topPositiveByIdx[i] = d
-          if (barData[d].data[i] < 0 && bottomNegativeByIdx[i] === -1) bottomNegativeByIdx[i] = d
+          if (barData[d].data[i] < 0) bottomNegativeByIdx[i] = d
         }
       }
       barData.forEach((_ds, dsIdx) => {

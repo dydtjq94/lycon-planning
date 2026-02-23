@@ -688,7 +688,7 @@ export const portfolioKeys = {
   all: ['portfolio'] as const,
   transactions: (profileId: string) => [...portfolioKeys.all, 'transactions', profileId] as const,
   value: (profileId: string) => [...portfolioKeys.all, 'value', profileId] as const,
-  chartPriceData: (profileId: string) => [...portfolioKeys.all, 'chartPriceData', profileId] as const,
+  chartPriceData: (profileId: string, scopeKey?: string) => [...portfolioKeys.all, 'chartPriceData', profileId, scopeKey || 'all'] as const,
 }
 
 interface PortfolioHolding {
@@ -847,10 +847,11 @@ export interface PortfolioPriceCache {
 export function usePortfolioChartPriceData(
   profileId: string,
   transactions: PortfolioTransaction[],
-  enabled: boolean = true
+  enabled: boolean = true,
+  scopeKey?: string,
 ) {
   return useQuery({
-    queryKey: portfolioKeys.chartPriceData(profileId),
+    queryKey: portfolioKeys.chartPriceData(profileId, scopeKey),
     queryFn: async (): Promise<PortfolioPriceCache> => {
       if (transactions.length === 0) {
         return {

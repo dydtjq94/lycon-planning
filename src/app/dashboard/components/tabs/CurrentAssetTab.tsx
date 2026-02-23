@@ -2894,6 +2894,14 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isSavingItemsRef = useRef<boolean>(false); // 아이템 저장 중 플래그
   const isDataReady = !isLoading && isInvestmentDataReady && isSavingsDataReady;
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+
+  useEffect(() => {
+    if (isDataReady && !minTimeElapsed) {
+      const timer = setTimeout(() => setMinTimeElapsed(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isDataReady, minTimeElapsed]);
 
   // 스냅샷 totals 저장 함수 (명시적 호출용)
   const saveSnapshotTotals = useCallback(() => {
@@ -3973,7 +3981,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   };
 
   // 스냅샷, 투자, 저축 데이터 로딩 중일 때 전체 스켈레톤 표시
-  if (isLoading || !isInvestmentDataReady || !isSavingsDataReady) {
+  if (!isDataReady || !minTimeElapsed) {
     return (
       <div className={styles.container}>
         {/* 차트 섹션 스켈레톤 */}
@@ -4273,7 +4281,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
                           계좌
                           <span className={styles.linkedBadgeSmall}>
                             <Link2 size={10} />
-                            투자 포트폴리오에서 연동됨
+                            일반 투자에서 연동됨
                           </span>
                         </div>
                       </th>
@@ -4347,7 +4355,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
             <div className={styles.sectionFooterWithButtons}>
               <div className={styles.footerButtons}>
                 <button className={styles.footerLinkButton} onClick={() => onNavigate?.("portfolio")}>
-                  투자 포트폴리오 관리
+                  일반 투자 관리
                 </button>
               </div>
               <div className={styles.footerTotalGroup}>

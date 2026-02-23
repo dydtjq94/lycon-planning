@@ -1008,50 +1008,82 @@
 
 /* 스켈레톤 shimmer 애니메이션 */
 @keyframes shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: 200px 0;
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--dashboard-border-light);
+  position: relative;
+  overflow: hidden;
   border-radius: 4px;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--dashboard-border) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* 메인 값 스켈레톤 */
 .skeletonMainValue {
   width: 200px;
   height: 40px;
-  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--dashboard-border-light);
+  position: relative;
+  overflow: hidden;
   border-radius: 6px;
+}
+
+.skeletonMainValue::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--dashboard-border) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* 사이드 값 스켈레톤 */
 .skeletonSideValue {
   width: 120px;
   height: 32px;
-  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--dashboard-border-light);
+  position: relative;
+  overflow: hidden;
   border-radius: 4px;
+}
+
+.skeletonSideValue::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--dashboard-border) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* 변화 정보 스켈레톤 */
 .skeletonChangeInfo {
   width: 180px;
   height: 18px;
-  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--dashboard-border-light);
+  position: relative;
+  overflow: hidden;
   border-radius: 4px;
   margin-top: 4px;
+}
+
+.skeletonChangeInfo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--dashboard-border) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* 차트 스켈레톤 */
@@ -1071,18 +1103,36 @@
 .chartSkeletonPeriodBtn {
   width: 60px;
   height: 32px;
-  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--dashboard-border-light);
+  position: relative;
+  overflow: hidden;
   border-radius: 6px;
+}
+
+.chartSkeletonPeriodBtn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--dashboard-border) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 .chartSkeletonArea {
   height: 280px;
-  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--dashboard-border-light);
+  position: relative;
+  overflow: hidden;
   border-radius: 8px;
+}
+
+.chartSkeletonArea::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--dashboard-border) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 .chartSkeletonLegend {
@@ -1094,10 +1144,19 @@
 .chartSkeletonLegendItem {
   width: 80px;
   height: 16px;
-  background: linear-gradient(90deg, var(--dashboard-border-light) 25%, var(--dashboard-border) 50%, var(--dashboard-border-light) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--dashboard-border-light);
+  position: relative;
+  overflow: hidden;
   border-radius: 4px;
+}
+
+.chartSkeletonLegendItem::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--dashboard-border) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* 계좌 아이템 스켈레톤 */

@@ -701,7 +701,7 @@ export default function SubscriptionPage() {
               <span className={styles.menuIcon}>
                 <TrendingUp size={18} />
               </span>
-              <span className={styles.menuLabel}>투자 포트폴리오</span>
+              <span className={styles.menuLabel}>일반 투자</span>
               <span className={styles.menuDesc}>
                 계좌별 보유 종목, 평가금액, 손익 차트
               </span>
