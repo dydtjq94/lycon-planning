@@ -800,9 +800,8 @@
 /* 상단 요약 헤더 - AssetRecordTab 스타일 */
 .summaryHeader {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 40px;
+  gap: 48px;
   padding: 32px;
   border-bottom: 1px solid var(--dashboard-border);
 }
@@ -819,11 +818,24 @@
   color: var(--dashboard-text-secondary);
 }
 
+.mainValueRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
 .mainValue {
   font-size: 36px;
   font-weight: 700;
   color: var(--dashboard-text);
   letter-spacing: -1px;
+}
+
+.principalValue {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--dashboard-text-muted);
+  padding-bottom: 6px;
 }
 
 .changeInfo {
@@ -853,6 +865,22 @@
 .sideMetrics {
   display: flex;
   gap: 48px;
+  align-items: flex-end;
+}
+
+.additionalMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+  margin-left: auto;
+}
+
+.totalMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
 }
 
 .sideMetric {

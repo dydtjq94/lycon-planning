@@ -13,11 +13,7 @@ import {
   Tooltip,
 } from "chart.js";
 import "chartjs-adapter-date-fns";
-import {
-  useSnapshots,
-  useSnapshotItems,
-} from "@/hooks/useFinancialData";
-import { useAllAccounts } from "@/hooks/useBudget";
+import { useSnapshots, usePortfolioTransactions, usePortfolioChartPriceData } from "@/hooks/useFinancialData";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { formatMoney, wonToManwon } from "@/lib/utils";
 import { getIncomes } from "@/lib/services/incomeService";
@@ -60,36 +56,6 @@ const PERIODS = [
   { id: "5Y", label: "5년", months: 60 },
   { id: "10Y", label: "10년", months: 120 },
 ] as const;
-
-const ITEM_TYPE_LABELS: Record<string, string> = {
-  checking: "입출금",
-  savings: "정기적금",
-  deposit: "정기예금",
-  free_savings: "자유적금",
-  housing: "청약",
-  general: "일반증권",
-  isa: "ISA",
-  pension_savings: "연금저축",
-  irp: "IRP",
-  dc: "DC퇴직연금",
-  domestic_stock: "국내주식",
-  foreign_stock: "해외주식",
-  fund: "펀드",
-  bond: "채권",
-  crypto: "암호화폐",
-  etf: "ETF",
-  residence: "거주용",
-  real_estate: "부동산",
-  car: "자동차",
-  precious_metal: "귀금속",
-  art: "미술품",
-  mortgage: "주담대",
-  jeonse: "전세대출",
-  credit: "신용대출",
-  student: "학자금",
-  card: "카드론",
-  installment: "할부",
-};
 
 interface DashboardTabProps {
   simulationId: string;
@@ -140,102 +106,24 @@ export function DashboardTab({
     chartScaleColors,
     chartLineColors,
     toRgba,
-    categoryColors,
     colors,
   } = useChartTheme();
+
+  // Portfolio data
+  const { data: portfolioTransactions = [], isLoading: ptxLoading } = usePortfolioTransactions(
+    profileId || "",
+    !!profileId
+  );
+
+  const { data: priceCache, isLoading: priceCacheLoading } = usePortfolioChartPriceData(
+    profileId || "",
+    portfolioTransactions,
+    !!profileId && portfolioTransactions.length > 0
+  );
 
   // Latest snapshot
   const latestSnapshot =
     snapshots && snapshots.length > 0 ? snapshots[0] : null;
-  const latestSnapshotId = latestSnapshot?.id;
-
-  // Load snapshot items for the latest snapshot
-  const { data: snapshotItems } = useSnapshotItems(
-    latestSnapshotId,
-    !!latestSnapshotId
-  );
-
-  // Load all accounts (bank + investment)
-  const { data: allAccounts } = useAllAccounts(profileId || "");
-
-  // Unified asset list: accounts + snapshot assets
-  const allAssetsList = useMemo(() => {
-    const list: { id: string; title: string; type: string; amount: number; color: string }[] = [];
-
-    // 1. 저축 계좌 (checking, savings, deposit, free_savings, housing)
-    if (allAccounts) {
-      allAccounts
-        .filter((a) => ["checking", "savings", "deposit", "free_savings", "housing"].includes(a.account_type))
-        .forEach((a) => {
-          list.push({
-            id: `account-${a.id}`,
-            title: a.name,
-            type: ITEM_TYPE_LABELS[a.account_type] || a.account_type,
-            amount: wonToManwon(a.current_balance || 0),
-            color: categoryColors.savings,
-          });
-        });
-    }
-
-    // 2. 투자/연금 계좌 (general, isa, pension_savings, irp, dc)
-    if (allAccounts) {
-      allAccounts
-        .filter((a) => ["general", "isa", "pension_savings", "irp", "dc"].includes(a.account_type))
-        .forEach((a) => {
-          list.push({
-            id: `account-${a.id}`,
-            title: a.name,
-            type: ITEM_TYPE_LABELS[a.account_type] || a.account_type,
-            amount: wonToManwon(a.current_balance || 0),
-            color: categoryColors.investment,
-          });
-        });
-    }
-
-    // 3. 스냅샷 자산 (부동산, 실물자산)
-    if (snapshotItems) {
-      snapshotItems
-        .filter((i) => i.category === "asset")
-        .forEach((i) => {
-          let color = categoryColors.savings;
-          if (["residence", "real_estate", "apartment", "house", "officetel", "land", "commercial", "building", "room"].includes(i.item_type)) {
-            color = categoryColors.realEstate;
-          } else if (["car", "precious_metal", "art", "other"].includes(i.item_type)) {
-            color = categoryColors.realAsset;
-          }
-          list.push({
-            id: `snapshot-${i.id}`,
-            title: i.title,
-            type: ITEM_TYPE_LABELS[i.item_type] || i.item_type,
-            amount: i.amount,
-            color,
-          });
-        });
-    }
-
-    return list.sort((a, b) => b.amount - a.amount);
-  }, [allAccounts, snapshotItems, categoryColors]);
-
-  // Unified debt list
-  const allDebtsList = useMemo(() => {
-    const list: { id: string; title: string; type: string; amount: number; color: string }[] = [];
-
-    if (snapshotItems) {
-      snapshotItems
-        .filter((i) => i.category === "debt")
-        .forEach((i) => {
-          list.push({
-            id: `snapshot-${i.id}`,
-            title: i.title,
-            type: ITEM_TYPE_LABELS[i.item_type] || i.item_type,
-            amount: i.amount,
-            color: categoryColors.debt,
-          });
-        });
-    }
-
-    return list.sort((a, b) => b.amount - a.amount);
-  }, [snapshotItems, categoryColors]);
 
   useEffect(() => {
     if (!profileId) {
@@ -348,6 +236,111 @@ export function DashboardTab({
     return { change, pct };
   }, [filteredSnapshots, latestSnapshot]);
 
+  // Portfolio time-series data (value over time from transactions + prices)
+  const portfolioTimeSeries = useMemo(() => {
+    if (!priceCache || portfolioTransactions.length === 0) return null;
+
+    const { priceDataMap, exchangeRateMap, tickerCurrencyMap, dates } = priceCache;
+
+    const sortedTx = [...portfolioTransactions].sort(
+      (a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime()
+    );
+
+    const value: number[] = [];
+
+    dates.forEach((date) => {
+      // Build holdings up to this date
+      const holdings = new Map<string, number>();
+      const investedMap = new Map<string, number>();
+
+      sortedTx.forEach((tx) => {
+        if (tx.trade_date <= date) {
+          const currentQty = holdings.get(tx.ticker) || 0;
+          const currentInvested = investedMap.get(tx.ticker) || 0;
+
+          if (tx.type === "buy") {
+            holdings.set(tx.ticker, currentQty + tx.quantity);
+            investedMap.set(tx.ticker, currentInvested + tx.quantity * tx.price);
+          } else {
+            const newQty = currentQty - tx.quantity;
+            const sellRatio = currentQty > 0 ? tx.quantity / currentQty : 0;
+            holdings.set(tx.ticker, newQty);
+            investedMap.set(tx.ticker, currentInvested * (1 - sellRatio));
+          }
+        }
+      });
+
+      // Calculate value using prices
+      let exchangeRate = exchangeRateMap.get(date);
+      if (!exchangeRate && exchangeRateMap.size > 0) {
+        const sortedFxDates = Array.from(exchangeRateMap.keys()).sort();
+        for (const d of sortedFxDates.reverse()) {
+          if (d <= date) {
+            exchangeRate = exchangeRateMap.get(d);
+            break;
+          }
+        }
+      }
+
+      let totalValue = 0;
+      let totalInvested = 0;
+      holdings.forEach((qty, ticker) => {
+        if (qty > 0) {
+          const tickerPrices = priceDataMap.get(ticker);
+          const currency = tickerCurrencyMap.get(ticker);
+
+          let price = tickerPrices?.get(date);
+          if (!price && tickerPrices) {
+            const sortedDates = Array.from(tickerPrices.keys()).sort();
+            for (const d of sortedDates.reverse()) {
+              if (d <= date) {
+                price = tickerPrices.get(d);
+                break;
+              }
+            }
+          }
+
+          if (price) {
+            if (currency === "USD" && exchangeRate) {
+              totalValue += qty * price * exchangeRate;
+            } else {
+              totalValue += qty * price;
+            }
+          }
+          totalInvested += investedMap.get(ticker) || 0;
+        }
+      });
+
+      value.push(totalValue || totalInvested);
+    });
+
+    return { labels: dates, value };
+  }, [priceCache, portfolioTransactions]);
+
+  // Filter portfolio data by selected period
+  const filteredPortfolio = useMemo(() => {
+    if (!portfolioTimeSeries) return null;
+
+    if (selectedPeriod === "ALL") {
+      return portfolioTimeSeries;
+    }
+
+    const period = PERIODS.find((p) => p.id === selectedPeriod);
+    if (!period || !("months" in period)) return portfolioTimeSeries;
+
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - period.months);
+    const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+    const startIdx = portfolioTimeSeries.labels.findIndex((d) => d >= cutoffStr);
+    if (startIdx === -1) return portfolioTimeSeries;
+
+    return {
+      labels: portfolioTimeSeries.labels.slice(startIdx),
+      value: portfolioTimeSeries.value.slice(startIdx),
+    };
+  }, [portfolioTimeSeries, selectedPeriod]);
+
   // Crosshair plugin for vertical dashed line on hover (uses ref to avoid re-creating)
   const crosshairPlugin = useMemo(() => ({
     id: 'dashboardCrosshair',
@@ -412,7 +405,7 @@ export function DashboardTab({
         )}
       </div>
 
-      {/* Top section: chart + breakdown */}
+      {/* Top section: net worth chart + portfolio chart */}
       <div className={styles.topSection}>
         <div className={styles.chartPanel} onMouseLeave={() => { hoveredPointRef.current = null; setHoveredPoint(null); }}>
           {chronoSnapshots.length > 0 ? (
@@ -589,66 +582,111 @@ export function DashboardTab({
           )}
         </div>
 
-        <div className={styles.breakdownPanel}>
-          <div className={styles.breakdownHeaders}>
-            <div className={styles.breakdownHeader}>
-              <div className={styles.breakdownHeaderLabel}>자산</div>
-              <div className={styles.breakdownHeaderAmount}>
-                {formatMoney(latestSnapshot?.total_assets || 0)}
+        <div className={styles.portfolioPanel} onClick={() => onNavigate("portfolio")}>
+          {filteredPortfolio && filteredPortfolio.value.length > 0 ? (
+            <>
+              <div className={styles.netWorthLabel}>투자 포트폴리오</div>
+              <div className={styles.netWorthAmount}>
+                {formatMoney(wonToManwon(filteredPortfolio.value[filteredPortfolio.value.length - 1]))}
               </div>
-            </div>
-            <div className={styles.breakdownDivider} />
-            <div className={styles.breakdownHeader}>
-              <div className={styles.breakdownHeaderLabel}>부채</div>
-              <div className={styles.breakdownHeaderAmount}>
-                {formatMoney(latestSnapshot?.total_debts || 0)}
+              <div className={styles.changeIndicator}>
+                {(() => {
+                  const firstVal = filteredPortfolio.value[0];
+                  const lastVal = filteredPortfolio.value[filteredPortfolio.value.length - 1];
+                  const change = lastVal - firstVal;
+                  const changeManwon = wonToManwon(change);
+                  const pct = firstVal !== 0 ? Math.round((change / Math.abs(firstVal)) * 100) : null;
+                  return (
+                    <>
+                      <span className={styles.changeLabel}>{periodLabel}</span>
+                      <span className={change >= 0 ? styles.positive : styles.negative}>
+                        {change >= 0 ? "+ " : "- "}
+                        {formatMoney(Math.abs(changeManwon))}
+                        {pct !== null && ` (${change >= 0 ? "+" : ""}${pct}%)`}
+                      </span>
+                    </>
+                  );
+                })()}
               </div>
-            </div>
-          </div>
-
-          {/* Asset items */}
-          <div className={styles.itemSection}>
-            <div className={styles.itemSectionLabel}>자산 내역</div>
-            {allAssetsList.length > 0 ? (
-              <div className={styles.itemList}>
-                {allAssetsList.map((item) => (
-                  <div key={item.id} className={styles.itemRow}>
-                    <div
-                      className={styles.itemDot}
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className={styles.itemTitle}>{item.title}</span>
-                    <span className={styles.itemType}>{item.type}</span>
-                    <span className={styles.itemAmount}>
-                      {formatMoney(item.amount)}
-                    </span>
-                  </div>
-                ))}
+              <div className={styles.chartContainer}>
+                <Line
+                  data={{
+                    datasets: [
+                      {
+                        data: filteredPortfolio.labels.map((label, idx) => ({
+                          x: new Date(label).getTime(),
+                          y: filteredPortfolio.value[idx],
+                        })),
+                        borderColor: colors[1] || chartLineColors.price,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHitRadius: 8,
+                        fill: true,
+                        backgroundColor: (ctx: any) => {
+                          if (!ctx.chart.chartArea) return "transparent";
+                          const c = colors[1] || chartLineColors.price;
+                          const gradient = ctx.chart.ctx.createLinearGradient(
+                            0, ctx.chart.chartArea.top, 0, ctx.chart.chartArea.bottom
+                          );
+                          gradient.addColorStop(0, toRgba(c, 0.15));
+                          gradient.addColorStop(1, toRgba(c, 0));
+                          return gradient;
+                        },
+                        tension: 0.3,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { right: 20 } },
+                    plugins: {
+                      tooltip: { enabled: false },
+                      legend: { display: false },
+                    },
+                    scales: {
+                      x: {
+                        type: "time",
+                        display: true,
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                          color: chartScaleColors.tickColor,
+                          font: { size: 10 },
+                          source: "data" as const,
+                          maxRotation: 0,
+                        },
+                        time: {
+                          tooltipFormat: "yyyy.MM.dd",
+                          displayFormats: {
+                            day: "yy.M",
+                            month: "yy.M",
+                            year: "yyyy",
+                          },
+                        },
+                      },
+                      y: {
+                        display: true,
+                        position: "left" as const,
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                          color: chartScaleColors.tickColor,
+                          font: { size: 10 },
+                          maxTicksLimit: 4,
+                          callback: (v: any) => formatMoney(wonToManwon(v as number)),
+                        },
+                        beginAtZero: false,
+                      },
+                    },
+                  }}
+                />
               </div>
-            ) : (
-              <div className={styles.noItems}>자산 항목이 없습니다</div>
-            )}
-          </div>
-
-          {/* Debt items */}
-          {allDebtsList.length > 0 && (
-            <div className={styles.itemSection}>
-              <div className={styles.itemSectionLabel}>부채 내역</div>
-              <div className={styles.itemList}>
-                {allDebtsList.map((item) => (
-                  <div key={item.id} className={styles.itemRow}>
-                    <div
-                      className={styles.itemDot}
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className={styles.itemTitle}>{item.title}</span>
-                    <span className={styles.itemType}>{item.type}</span>
-                    <span className={styles.itemAmount}>
-                      {formatMoney(item.amount)}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            </>
+          ) : (
+            <div className={styles.emptyTopSection}>
+              <Activity size={24} className={styles.emptyIcon} />
+              <span>{ptxLoading || priceCacheLoading ? "포트폴리오 로딩 중..." : "포트폴리오 데이터가 없습니다"}</span>
             </div>
           )}
         </div>

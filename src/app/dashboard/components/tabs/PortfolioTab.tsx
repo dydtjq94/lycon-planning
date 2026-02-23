@@ -1491,9 +1491,14 @@ export function PortfolioTab({
             </>
           ) : (
             <>
-              <span className={styles.mainValue}>
-                {currentValue !== null ? formatWon(Math.round(currentValue + selectedAdditionalAmount)) : formatWon(selectedAdditionalAmount) || "0원"}
-              </span>
+              <div className={styles.mainValueRow}>
+                <span className={styles.mainValue}>
+                  {currentValue !== null ? formatWon(Math.round(currentValue)) : "0원"}
+                </span>
+                <span className={styles.principalValue}>
+                  원금 {formatWon(Math.round(totalInvested))}
+                </span>
+              </div>
               {profitLoss !== null && (
                 <div className={`${styles.changeInfo} ${profitLoss >= 0 ? styles.positive : styles.negative}`}>
                   {profitLoss >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
@@ -1506,53 +1511,49 @@ export function PortfolioTab({
             </>
           )}
         </div>
-        <div className={styles.sideMetrics}>
-          <div className={styles.sideMetric}>
-            <span className={styles.sideLabel}>추가금액</span>
-            {selectedAccountIds.length === 1 && editingAdditionalAmountId === selectedAccountIds[0] ? (
-              <div className={styles.sideInputWrap}>
-                <input
-                  className={styles.sideInput}
-                  type="text"
-                  value={additionalAmountInput}
-                  onChange={(e) => setAdditionalAmountInput(e.target.value)}
-                  onBlur={() => handleAdditionalAmountSave(selectedAccountIds[0])}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAdditionalAmountSave(selectedAccountIds[0]);
-                    if (e.key === "Escape") {
-                      additionalAmountCancelledRef.current = true;
-                      setEditingAdditionalAmountId(null);
-                    }
-                  }}
-                  autoFocus
-                  placeholder="0"
-                />
-                <span className={styles.sideInputUnit}>원</span>
-              </div>
-            ) : (
-              <span
-                className={`${styles.sideValue} ${selectedAccountIds.length === 1 ? styles.sideValueEditable : ""}`}
-                onClick={() => {
-                  if (selectedAccountIds.length === 1) {
-                    const account = accounts.find(a => a.id === selectedAccountIds[0]);
-                    const won = account?.additional_amount || 0;
-                    setAdditionalAmountInput(won > 0 ? won.toLocaleString() : "");
-                    setEditingAdditionalAmountId(selectedAccountIds[0]);
+        <div className={styles.additionalMetric}>
+          <span className={styles.sideLabel}>평가외 추가금액</span>
+          {selectedAccountIds.length === 1 && editingAdditionalAmountId === selectedAccountIds[0] ? (
+            <div className={styles.sideInputWrap}>
+              <input
+                className={styles.sideInput}
+                type="text"
+                value={additionalAmountInput}
+                onChange={(e) => setAdditionalAmountInput(e.target.value)}
+                onBlur={() => handleAdditionalAmountSave(selectedAccountIds[0])}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAdditionalAmountSave(selectedAccountIds[0]);
+                  if (e.key === "Escape") {
+                    additionalAmountCancelledRef.current = true;
+                    setEditingAdditionalAmountId(null);
                   }
                 }}
-              >
-                {formatWon(Math.round(selectedAdditionalAmount))}
-              </span>
-            )}
-          </div>
-          <div className={styles.sideMetric}>
-            <span className={styles.sideLabel}>투자금액</span>
-            <span className={styles.sideValue}>{formatWon(Math.round(totalInvested))}</span>
-          </div>
-          <div className={styles.sideMetric}>
-            <span className={styles.sideLabel}>보유종목</span>
-            <span className={styles.sideValue}>{holdings.length}개</span>
-          </div>
+                autoFocus
+                placeholder="0"
+              />
+              <span className={styles.sideInputUnit}>원</span>
+            </div>
+          ) : (
+            <span
+              className={`${styles.sideValue} ${selectedAccountIds.length === 1 ? styles.sideValueEditable : ""}`}
+              onClick={() => {
+                if (selectedAccountIds.length === 1) {
+                  const account = accounts.find(a => a.id === selectedAccountIds[0]);
+                  const won = account?.additional_amount || 0;
+                  setAdditionalAmountInput(won > 0 ? won.toLocaleString() : "");
+                  setEditingAdditionalAmountId(selectedAccountIds[0]);
+                }
+              }}
+            >
+              {formatWon(Math.round(selectedAdditionalAmount))}
+            </span>
+          )}
+        </div>
+        <div className={styles.totalMetric}>
+          <span className={styles.sideLabel}>총금액</span>
+          <span className={styles.sideValue}>
+            {formatWon(Math.round((currentValue || 0) + selectedAdditionalAmount))}
+          </span>
         </div>
       </div>
 

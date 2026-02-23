@@ -43,16 +43,15 @@
   color: var(--dashboard-text);
 }
 
-/* Top section: chart + breakdown side by side */
+/* Top section: 2-column grid */
 .topSection {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  align-items: stretch;
 }
 
-/* Chart panel (left ~65%) */
+/* Chart panel */
 .chartPanel {
-  flex: 1.85;
   min-width: 0;
   background: var(--dashboard-card-bg);
   border: 1px solid var(--dashboard-border);
@@ -62,9 +61,8 @@
   flex-direction: column;
 }
 
-/* Breakdown panel (right ~35%) */
-.breakdownPanel {
-  flex: 1;
+/* Portfolio panel */
+.portfolioPanel {
   min-width: 0;
   background: var(--dashboard-card-bg);
   border: 1px solid var(--dashboard-border);
@@ -72,7 +70,12 @@
   padding: 24px;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.portfolioPanel:hover {
+  border-color: var(--accent-color, #007aff);
 }
 
 /* Net worth header */
@@ -163,108 +166,6 @@
 .periodBtnActive:hover {
   background: var(--dashboard-card-bg);
   color: var(--dashboard-text);
-}
-
-/* Breakdown headers */
-.breakdownHeaders {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.breakdownHeader {
-  flex: 1;
-  min-width: 0;
-}
-
-.breakdownHeaderLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-muted);
-  margin-bottom: 2px;
-}
-
-.breakdownHeaderAmount {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--dashboard-text);
-  letter-spacing: -0.3px;
-}
-
-.breakdownDivider {
-  width: 1px;
-  background: var(--dashboard-border);
-  align-self: stretch;
-}
-
-/* Item lists */
-.itemSection {
-  margin-bottom: 16px;
-}
-
-.itemSection:last-child {
-  margin-bottom: 0;
-}
-
-.itemSectionLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--dashboard-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-}
-
-.itemList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.itemRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-}
-
-.itemDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.itemTitle {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  color: var(--dashboard-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.itemAmount {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--dashboard-text);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.itemType {
-  font-size: 11px;
-  color: var(--dashboard-text-muted);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-/* No items state */
-.noItems {
-  font-size: 12px;
-  color: var(--dashboard-text-muted);
-  padding: 8px 0;
 }
 
 /* Simulation section */
@@ -388,12 +289,12 @@
 }
 
 .skeletonTop {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
 
 .skeletonTopLeft {
-  flex: 1.85;
   height: 300px;
   border-radius: 12px;
   background: linear-gradient(
@@ -407,7 +308,6 @@
 }
 
 .skeletonTopRight {
-  flex: 1;
   height: 300px;
   border-radius: 12px;
   background: linear-gradient(
@@ -447,7 +347,7 @@
   }
 
   .topSection {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .simSection {
@@ -455,12 +355,11 @@
   }
 
   .skeletonTop {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .skeletonTopLeft,
   .skeletonTopRight {
-    flex: none;
     height: 200px;
   }
 
@@ -470,13 +369,5 @@
 
   .netWorthAmount {
     font-size: 22px;
-  }
-
-  .breakdownHeaders {
-    gap: 12px;
-  }
-
-  .breakdownHeaderAmount {
-    font-size: 15px;
   }
 }
