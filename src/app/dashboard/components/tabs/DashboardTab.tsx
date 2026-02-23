@@ -824,53 +824,55 @@ export function DashboardTab({
         </div>
 
         <div className={styles.assetListPanel} onClick={() => onNavigate("current-asset")}>
-          {(assetItems.length > 0 || debtItems.length > 0) ? (
-            <div className={styles.assetDebtColumns}>
-              <div className={styles.assetColumn}>
-                <div className={styles.columnHeader}>
-                  <span className={styles.columnTitle}>자산</span>
-                  <span className={styles.columnTotal}>{formatMoney(totalAssets)}</span>
+          <div className={styles.assetListInner}>
+            {(assetItems.length > 0 || debtItems.length > 0) ? (
+              <div className={styles.assetDebtColumns}>
+                <div className={styles.assetColumn}>
+                  <div className={styles.columnHeader}>
+                    <span className={styles.columnTitle}>자산</span>
+                    <span className={styles.columnTotal}>{formatMoney(totalAssets)}</span>
+                  </div>
+                  <div className={styles.columnScroll}>
+                    {assetItems.map((item) => (
+                      <div key={item.id} className={styles.assetListItem}>
+                        <span className={styles.assetListLabel}>{item.title}</span>
+                        <span className={styles.assetListValue}>{formatMoney(item.amount)}</span>
+                      </div>
+                    ))}
+                    {assetItems.length === 0 && (
+                      <span className={styles.columnEmpty}>등록된 자산 없음</span>
+                    )}
+                  </div>
                 </div>
-                <div className={styles.columnScroll}>
-                  {assetItems.map((item) => (
-                    <div key={item.id} className={styles.assetListItem}>
-                      <span className={styles.assetListLabel}>{item.title}</span>
-                      <span className={styles.assetListValue}>{formatMoney(item.amount)}</span>
-                    </div>
-                  ))}
-                  {assetItems.length === 0 && (
-                    <span className={styles.columnEmpty}>등록된 자산 없음</span>
-                  )}
+                <div className={styles.debtColumn}>
+                  <div className={styles.columnHeader}>
+                    <span className={styles.columnTitle}>부채</span>
+                    <span className={`${styles.columnTotal} ${styles.negative}`}>
+                      {totalDebts > 0 ? `-${formatMoney(totalDebts)}` : "0"}
+                    </span>
+                  </div>
+                  <div className={styles.columnScroll}>
+                    {debtItems.map((item) => (
+                      <div key={item.id} className={styles.assetListItem}>
+                        <span className={styles.assetListLabel}>{item.title}</span>
+                        <span className={`${styles.assetListValue} ${styles.negative}`}>
+                          {formatMoney(item.amount)}
+                        </span>
+                      </div>
+                    ))}
+                    {debtItems.length === 0 && (
+                      <span className={styles.columnEmpty}>등록된 부채 없음</span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className={styles.debtColumn}>
-                <div className={styles.columnHeader}>
-                  <span className={styles.columnTitle}>부채</span>
-                  <span className={`${styles.columnTotal} ${styles.negative}`}>
-                    {totalDebts > 0 ? `-${formatMoney(totalDebts)}` : "0"}
-                  </span>
-                </div>
-                <div className={styles.columnScroll}>
-                  {debtItems.map((item) => (
-                    <div key={item.id} className={styles.assetListItem}>
-                      <span className={styles.assetListLabel}>{item.title}</span>
-                      <span className={`${styles.assetListValue} ${styles.negative}`}>
-                        {formatMoney(item.amount)}
-                      </span>
-                    </div>
-                  ))}
-                  {debtItems.length === 0 && (
-                    <span className={styles.columnEmpty}>등록된 부채 없음</span>
-                  )}
-                </div>
+            ) : (
+              <div className={styles.emptyTopSection}>
+                <TrendingUp size={28} className={styles.emptyIcon} />
+                <span>자산 기록이 없습니다</span>
               </div>
-            </div>
-          ) : (
-            <div className={styles.emptyTopSection}>
-              <TrendingUp size={28} className={styles.emptyIcon} />
-              <span>자산 기록이 없습니다</span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
