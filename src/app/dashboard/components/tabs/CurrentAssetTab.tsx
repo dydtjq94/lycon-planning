@@ -17,7 +17,7 @@ import {
   usePortfolioChartPriceData,
 } from "@/hooks/useFinancialData";
 import { useChartTheme } from "@/hooks/useChartTheme";
-import type { FinancialSnapshotItem, FinancialSnapshotItemInput, PortfolioAccount, Account, Profile, FamilyMember } from "@/types/tables";
+import type { FinancialSnapshotItem, FinancialSnapshotItemInput, PortfolioAccount, Account, Profile, FamilyMember, CustomHolding } from "@/types/tables";
 import { formatMoney, formatWon, calculateAge, wonToManwon, manwonToWon } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { calculatePortfolioAccountValuesDetailed, calculateAccountBalances, calculateTermDepositValue, calculateMaturityAmountPreTax, calculateMaturityAmountPostTax } from "@/lib/utils/accountValueCalculator";
@@ -2429,6 +2429,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   const { data: portfolioTransactions = [], isLoading: isTransactionsLoading } = usePortfolioTransactions(profileId);
   const { data: priceCache, isLoading: isPriceLoading } = usePortfolioChartPriceData(profileId, portfolioTransactions, portfolioTransactions.length > 0);
   const [accounts, setAccounts] = useState<PortfolioAccount[]>([]);
+  const [customHoldings, setCustomHoldings] = useState<CustomHolding[]>([]);
   const [isAccountsLoading, setIsAccountsLoading] = useState(true);
 
   // 프로필 + 가족 정보
@@ -2648,8 +2649,8 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
       setIsAccountsLoading(true);
       setIsBudgetTxLoading(true);
 
-      // 계좌 + 거래 내역 병렬 로드
-      const [accountsRes, txRes] = await Promise.all([
+      // 계좌 + 거래 내역 + 커스텀 보유 종목 병렬 로드
+      const [accountsRes, txRes, customHoldingsRes] = await Promise.all([
         supabase
           .from("accounts")
           .select("*")
@@ -2662,9 +2663,14 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
           .eq("profile_id", profileId)
           .order("year", { ascending: true })
           .order("month", { ascending: true }),
+        supabase
+          .from("custom_holdings")
+          .select("*")
+          .eq("profile_id", profileId),
       ]);
 
       if (accountsRes.data) setAccounts(accountsRes.data);
+      setCustomHoldings((customHoldingsRes.data || []) as CustomHolding[]);
       setBudgetTransactions(
         (txRes.data || []).map((tx: any) => ({
           account_id: tx.account_id,
@@ -2779,8 +2785,8 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
   // 증권 계좌별 평가금액 계산 (유틸리티 함수 사용)
   const accountValues = useMemo(() => {
-    return calculatePortfolioAccountValuesDetailed(portfolioTransactions, priceCache, accounts);
-  }, [portfolioTransactions, accounts, priceCache]);
+    return calculatePortfolioAccountValuesDetailed(portfolioTransactions, priceCache, accounts, customHoldings);
+  }, [portfolioTransactions, accounts, priceCache, customHoldings]);
 
   // 기타 투자 항목 (실물 금, 채권 등)
   const otherInvestmentItems = useMemo(() => {

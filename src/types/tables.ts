@@ -903,6 +903,47 @@ export interface AccountInput {
   additional_amount?: number | null
 }
 
+// ============================================
+// 커스텀 보유 종목 (custom_holdings)
+// API 가격 데이터 없는 자산 (펀드, 채권 등) 수동 관리
+// ============================================
+
+export type CustomHoldingAssetType = 'fund' | 'bond' | 'other'
+
+export interface CustomHolding {
+  id: string
+  profile_id: string
+  account_id: string | null
+  name: string
+  asset_type: CustomHoldingAssetType
+  date_basis: string  // DATE (YYYY-MM-DD)
+  principal: number   // 원금 (원)
+  current_value: number  // 평가금액 (원)
+  memo: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CustomHoldingInput {
+  profile_id: string
+  account_id?: string | null
+  name: string
+  asset_type?: CustomHoldingAssetType
+  date_basis: string
+  principal: number
+  current_value: number
+  memo?: string | null
+}
+
+export interface CustomHoldingSnapshot {
+  id: string
+  custom_holding_id: string
+  date_basis: string  // DATE (YYYY-MM-DD)
+  principal: number   // 투자금액 (원)
+  current_value: number  // 평가금액 (원)
+  created_at: string
+}
+
 // 기존 코드 호환성을 위한 alias
 export type PortfolioAccountType = AccountType
 export type PortfolioAccount = Account

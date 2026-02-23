@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Line } from "react-chartjs-2";
+import { Line, Chart } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,13 +9,16 @@ import {
   TimeScale,
   PointElement,
   LineElement,
+  BarElement,
   Filler,
   Tooltip,
 } from "chart.js";
 import "chartjs-adapter-date-fns";
 import { useSnapshots, usePortfolioTransactions, usePortfolioChartPriceData } from "@/hooks/useFinancialData";
 import { useChartTheme } from "@/hooks/useChartTheme";
-import { formatMoney, wonToManwon } from "@/lib/utils";
+import { formatMoney, formatWon } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import type { CustomHolding } from "@/types/tables";
 import { getIncomes } from "@/lib/services/incomeService";
 import { getExpenses } from "@/lib/services/expenseService";
 import { getSavings } from "@/lib/services/savingsService";
@@ -43,19 +46,11 @@ ChartJS.register(
   TimeScale,
   PointElement,
   LineElement,
+  BarElement,
   Filler,
   Tooltip
 );
 
-const PERIODS = [
-  { id: "ALL", label: "전체" },
-  { id: "1M", label: "1개월", months: 1 },
-  { id: "3M", label: "3개월", months: 3 },
-  { id: "1Y", label: "1년", months: 12 },
-  { id: "3Y", label: "3년", months: 36 },
-  { id: "5Y", label: "5년", months: 60 },
-  { id: "10Y", label: "10년", months: 120 },
-] as const;
 
 interface DashboardTabProps {
   simulationId: string;
@@ -91,8 +86,8 @@ export function DashboardTab({
   lifeCycleSettings,
 }: DashboardTabProps) {
   const [simLines, setSimLines] = useState<SimLine[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedPeriod, setSelectedPeriod] = useState("ALL");
+  const [simLoading, setSimLoading] = useState(true);
+  const [customHoldings, setCustomHoldings] = useState<CustomHolding[]>([]);
   const [hoveredPoint, setHoveredPoint] = useState<{ value: number; date: string; index: number } | null>(null);
   const hoveredPointRef = useRef<{ value: number; date: string; index: number } | null>(null);
   const chartRef = useRef<any>(null);
@@ -121,21 +116,32 @@ export function DashboardTab({
     !!profileId && portfolioTransactions.length > 0
   );
 
+  // Load custom holdings
+  useEffect(() => {
+    if (!profileId) return;
+    const supabase = createClient();
+    supabase
+      .from("custom_holdings")
+      .select("*")
+      .eq("profile_id", profileId)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setCustomHoldings(data as CustomHolding[]);
+        }
+      });
+  }, [profileId]);
+
   // Latest snapshot
   const latestSnapshot =
     snapshots && snapshots.length > 0 ? snapshots[0] : null;
 
-  useEffect(() => {
-    if (!profileId) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(false);
-  }, [profileId]);
-
   // Load all simulation results
   useEffect(() => {
-    if (!simulations?.length || !lifeCycleSettings) return;
+    if (!simulations?.length || !lifeCycleSettings) {
+      setSimLoading(false);
+      return;
+    }
+    setSimLoading(true);
     let cancelled = false;
 
     const loadAllSims = async () => {
@@ -194,7 +200,10 @@ export function DashboardTab({
           // skip failed simulations
         }
       }
-      if (!cancelled) setSimLines(results);
+      if (!cancelled) {
+        setSimLines(results);
+        setSimLoading(false);
+      }
     };
     loadAllSims();
     return () => {
@@ -208,33 +217,19 @@ export function DashboardTab({
     [snapshots]
   );
 
-  // Filter snapshots by selected period
-  const filteredSnapshots = useMemo(() => {
-    if (selectedPeriod === "ALL" || chronoSnapshots.length === 0) {
-      return chronoSnapshots;
-    }
-    const period = PERIODS.find((p) => p.id === selectedPeriod);
-    if (!period || !("months" in period)) return chronoSnapshots;
-    const cutoff = new Date();
-    cutoff.setMonth(cutoff.getMonth() - period.months);
-    return chronoSnapshots.filter(
-      (s) => new Date(s.recorded_at).getTime() >= cutoff.getTime()
-    );
-  }, [chronoSnapshots, selectedPeriod]);
-
-  // Net worth change based on selected period
+  // Net worth change (all time)
   const netWorthChange = useMemo(() => {
-    if (filteredSnapshots.length < 1 || !latestSnapshot) return null;
-    const firstInPeriod = filteredSnapshots[0];
+    if (chronoSnapshots.length < 1 || !latestSnapshot) return null;
+    const first = chronoSnapshots[0];
     const latestNetWorth = latestSnapshot.net_worth || 0;
-    const firstNetWorth = firstInPeriod.net_worth || 0;
+    const firstNetWorth = first.net_worth || 0;
     const change = latestNetWorth - firstNetWorth;
     const pct =
       firstNetWorth !== 0
         ? Math.round((change / Math.abs(firstNetWorth)) * 100)
         : null;
     return { change, pct };
-  }, [filteredSnapshots, latestSnapshot]);
+  }, [chronoSnapshots, latestSnapshot]);
 
   // Portfolio time-series data (value over time from transactions + prices)
   const portfolioTimeSeries = useMemo(() => {
@@ -247,6 +242,7 @@ export function DashboardTab({
     );
 
     const value: number[] = [];
+    const invested: number[] = [];
 
     dates.forEach((date) => {
       // Build holdings up to this date
@@ -311,35 +307,21 @@ export function DashboardTab({
         }
       });
 
+      // 커스텀 종목 합산 (기준일 이후 날짜에만 반영)
+      customHoldings.forEach(ch => {
+        if (ch.date_basis && date >= ch.date_basis) {
+          totalValue += ch.current_value;
+          totalInvested += ch.principal;
+        }
+      });
+
       value.push(totalValue || totalInvested);
+      invested.push(totalInvested);
     });
 
-    return { labels: dates, value };
-  }, [priceCache, portfolioTransactions]);
+    return { labels: dates, value, invested };
+  }, [priceCache, portfolioTransactions, customHoldings]);
 
-  // Filter portfolio data by selected period
-  const filteredPortfolio = useMemo(() => {
-    if (!portfolioTimeSeries) return null;
-
-    if (selectedPeriod === "ALL") {
-      return portfolioTimeSeries;
-    }
-
-    const period = PERIODS.find((p) => p.id === selectedPeriod);
-    if (!period || !("months" in period)) return portfolioTimeSeries;
-
-    const cutoffDate = new Date();
-    cutoffDate.setMonth(cutoffDate.getMonth() - period.months);
-    const cutoffStr = cutoffDate.toISOString().split("T")[0];
-
-    const startIdx = portfolioTimeSeries.labels.findIndex((d) => d >= cutoffStr);
-    if (startIdx === -1) return portfolioTimeSeries;
-
-    return {
-      labels: portfolioTimeSeries.labels.slice(startIdx),
-      value: portfolioTimeSeries.value.slice(startIdx),
-    };
-  }, [portfolioTimeSeries, selectedPeriod]);
 
   // Crosshair plugin for vertical dashed line on hover (uses ref to avoid re-creating)
   const crosshairPlugin = useMemo(() => ({
@@ -364,30 +346,48 @@ export function DashboardTab({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [chartScaleColors.tickColor]);
 
-  // Skeleton loading
-  if (isLoading || snapshotsLoading) {
+  // Portfolio is ready when: no transactions (nothing to load) or price cache is loaded
+  const portfolioReady = portfolioTransactions.length === 0 ? !ptxLoading : !priceCacheLoading;
+
+  // Skeleton loading: wait for all data
+  if (snapshotsLoading || !portfolioReady || simLoading) {
     return (
-      <div className={styles.skeletonContainer}>
-        <div className={styles.skeletonTop}>
-          <div className={`${styles.skeletonTopLeft} ${styles.skeleton}`} />
-          <div className={`${styles.skeletonTopRight} ${styles.skeleton}`} />
+      <div className={styles.container}>
+        {/* Greeting */}
+        <div className={styles.greetingRow}>
+          {profileName && (
+            <h1 className={styles.greeting}>안녕하세요, {profileName}님</h1>
+          )}
+          {onOpenAccountModal && (
+            <button className={styles.accountBtn} onClick={onOpenAccountModal}>
+              <CreditCard size={15} />
+              <span>계좌 {accountCount ?? 0}개</span>
+              <ChevronRight size={14} />
+            </button>
+          )}
         </div>
+        {/* Skeleton charts */}
         <div className={styles.skeletonGrid}>
           {[...Array(2)].map((_, i) => (
-            <div
-              key={i}
-              className={`${styles.skeletonCard} ${styles.skeleton}`}
-            />
+            <div key={`top-${i}`} className={styles.skeletonChartBlock}>
+              <div className={`${styles.skeletonTextLg} ${styles.skeleton}`} />
+              <div className={`${styles.skeletonTextSm} ${styles.skeleton}`} />
+              <div className={`${styles.skeletonChart} ${styles.skeleton}`} />
+            </div>
+          ))}
+        </div>
+        {/* Skeleton sim cards */}
+        <div className={styles.skeletonGrid}>
+          {[...Array(2)].map((_, i) => (
+            <div key={`sim-${i}`} className={styles.skeletonChartBlock}>
+              <div className={`${styles.skeletonTextSm} ${styles.skeleton}`} />
+              <div className={`${styles.skeletonChartSmall} ${styles.skeleton}`} />
+            </div>
           ))}
         </div>
       </div>
     );
   }
-
-  const periodLabel =
-    selectedPeriod === "ALL"
-      ? "전체"
-      : PERIODS.find((p) => p.id === selectedPeriod)?.label || "전체";
 
   return (
     <div className={styles.container}>
@@ -419,7 +419,7 @@ export function DashboardTab({
                   <>
                     <span className={styles.changeDate}>{hoveredPoint.date}</span>
                     {(() => {
-                      const first = filteredSnapshots[0];
+                      const first = chronoSnapshots[0];
                       if (!first) return null;
                       const change = hoveredPoint.value - (first.net_worth || 0);
                       const pct = first.net_worth ? Math.round((change / Math.abs(first.net_worth)) * 100) : null;
@@ -434,7 +434,7 @@ export function DashboardTab({
                   </>
                 ) : (
                   <>
-                    <span className={styles.changeLabel}>{periodLabel}</span>
+                    <span className={styles.changeLabel}>전체</span>
                     {netWorthChange ? (
                       <span
                         className={
@@ -461,13 +461,13 @@ export function DashboardTab({
                   data={{
                     datasets: [
                       {
-                        data: filteredSnapshots.map((s) => ({
+                        data: chronoSnapshots.map((s) => ({
                           x: new Date(s.recorded_at).getTime(),
                           y: s.net_worth || 0,
                         })),
                         borderColor: chartLineColors.price,
                         borderWidth: 2,
-                        pointRadius: filteredSnapshots.map((_, i) => hoveredPoint?.index === i ? 5 : 0),
+                        pointRadius: chronoSnapshots.map((_, i) => hoveredPoint?.index === i ? 5 : 0),
                         pointBackgroundColor: chartLineColors.price,
                         pointBorderColor: '#fff',
                         pointBorderWidth: 2,
@@ -508,7 +508,7 @@ export function DashboardTab({
                       if (elements.length > 0) {
                         const idx = elements[0].index;
                         if (hoveredPointRef.current?.index === idx) return;
-                        const snapshot = filteredSnapshots[idx];
+                        const snapshot = chronoSnapshots[idx];
                         if (!snapshot) return;
                         const d = new Date(snapshot.recorded_at);
                         const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
@@ -562,17 +562,6 @@ export function DashboardTab({
                   }}
                 />
               </div>
-              <div className={styles.periodSelector}>
-                {PERIODS.map((p) => (
-                  <button
-                    key={p.id}
-                    className={`${styles.periodBtn} ${selectedPeriod === p.id ? styles.periodBtnActive : ""}`}
-                    onClick={() => setSelectedPeriod(p.id)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
             </>
           ) : (
             <div className={styles.emptyTopSection}>
@@ -583,104 +572,127 @@ export function DashboardTab({
         </div>
 
         <div className={styles.portfolioPanel} onClick={() => onNavigate("portfolio")}>
-          {filteredPortfolio && filteredPortfolio.value.length > 0 ? (
+          {portfolioTimeSeries && portfolioTimeSeries.value.length > 0 ? (
             <>
               <div className={styles.netWorthLabel}>투자 포트폴리오</div>
               <div className={styles.netWorthAmount}>
-                {formatMoney(wonToManwon(filteredPortfolio.value[filteredPortfolio.value.length - 1]))}
+                {formatWon(Math.round(portfolioTimeSeries.value[portfolioTimeSeries.value.length - 1]))}
               </div>
               <div className={styles.changeIndicator}>
                 {(() => {
-                  const firstVal = filteredPortfolio.value[0];
-                  const lastVal = filteredPortfolio.value[filteredPortfolio.value.length - 1];
-                  const change = lastVal - firstVal;
-                  const changeManwon = wonToManwon(change);
-                  const pct = firstVal !== 0 ? Math.round((change / Math.abs(firstVal)) * 100) : null;
+                  const lastVal = portfolioTimeSeries.value[portfolioTimeSeries.value.length - 1];
+                  const lastInvested = portfolioTimeSeries.invested[portfolioTimeSeries.invested.length - 1];
+                  const profitLoss = lastVal - lastInvested;
+                  const pct = lastInvested !== 0 ? ((profitLoss / Math.abs(lastInvested)) * 100).toFixed(1) : null;
                   return (
                     <>
-                      <span className={styles.changeLabel}>{periodLabel}</span>
-                      <span className={change >= 0 ? styles.positive : styles.negative}>
-                        {change >= 0 ? "+ " : "- "}
-                        {formatMoney(Math.abs(changeManwon))}
-                        {pct !== null && ` (${change >= 0 ? "+" : ""}${pct}%)`}
+                      <span className={styles.changeLabel}>원금 대비</span>
+                      <span className={profitLoss >= 0 ? styles.positive : styles.negative}>
+                        {profitLoss >= 0 ? "+ " : "- "}
+                        {formatWon(Math.round(Math.abs(profitLoss)))}
+                        {pct !== null && ` (${profitLoss >= 0 ? "+" : ""}${pct}%)`}
                       </span>
                     </>
                   );
                 })()}
               </div>
               <div className={styles.chartContainer}>
-                <Line
-                  data={{
-                    datasets: [
-                      {
-                        data: filteredPortfolio.labels.map((label, idx) => ({
-                          x: new Date(label).getTime(),
-                          y: filteredPortfolio.value[idx],
-                        })),
-                        borderColor: colors[1] || chartLineColors.price,
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        pointHitRadius: 8,
-                        fill: true,
-                        backgroundColor: (ctx: any) => {
-                          if (!ctx.chart.chartArea) return "transparent";
-                          const c = colors[1] || chartLineColors.price;
-                          const gradient = ctx.chart.ctx.createLinearGradient(
-                            0, ctx.chart.chartArea.top, 0, ctx.chart.chartArea.bottom
-                          );
-                          gradient.addColorStop(0, toRgba(c, 0.15));
-                          gradient.addColorStop(1, toRgba(c, 0));
-                          return gradient;
+                {(() => {
+                  const plData = portfolioTimeSeries.value.map((v, i) => v - portfolioTimeSeries.invested[i]);
+                  const maxAbsPL = Math.max(...plData.map((v) => Math.abs(v)));
+                  return (
+                    <Chart
+                      type="bar"
+                      data={{
+                        labels: portfolioTimeSeries.labels,
+                        datasets: [
+                          {
+                            type: "bar" as const,
+                            label: "손익",
+                            data: plData,
+                            backgroundColor: plData.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.7) : toRgba(chartLineColors.loss, 0.7)),
+                            borderWidth: 0,
+                            borderRadius: 1,
+                            yAxisID: "y1",
+                            order: 2,
+                          },
+                          {
+                            type: "line" as const,
+                            label: "평가금액",
+                            data: portfolioTimeSeries.value,
+                            borderColor: chartLineColors.value,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: true,
+                            backgroundColor: (ctx: any) => {
+                              if (!ctx.chart.chartArea) return "transparent";
+                              const gradient = ctx.chart.ctx.createLinearGradient(
+                                0, ctx.chart.chartArea.top, 0, ctx.chart.chartArea.bottom
+                              );
+                              gradient.addColorStop(0, toRgba(chartLineColors.value, 0.15));
+                              gradient.addColorStop(1, toRgba(chartLineColors.value, 0));
+                              return gradient;
+                            },
+                            tension: 0.3,
+                            yAxisID: "y",
+                            order: 1,
+                          },
+                        ],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: { padding: { right: 20 } },
+                        plugins: {
+                          tooltip: { enabled: false },
+                          legend: { display: false },
                         },
-                        tension: 0.3,
-                      },
-                    ],
-                  }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    layout: { padding: { right: 20 } },
-                    plugins: {
-                      tooltip: { enabled: false },
-                      legend: { display: false },
-                    },
-                    scales: {
-                      x: {
-                        type: "time",
-                        display: true,
-                        grid: { display: false },
-                        border: { display: false },
-                        ticks: {
-                          color: chartScaleColors.tickColor,
-                          font: { size: 10 },
-                          source: "data" as const,
-                          maxRotation: 0,
-                        },
-                        time: {
-                          tooltipFormat: "yyyy.MM.dd",
-                          displayFormats: {
-                            day: "yy.M",
-                            month: "yy.M",
-                            year: "yyyy",
+                        scales: {
+                          x: {
+                            type: "category",
+                            display: true,
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: {
+                              color: chartScaleColors.tickColor,
+                              font: { size: 10 },
+                              maxRotation: 0,
+                              maxTicksLimit: 6,
+                              callback: function(val: any) {
+                                const label = this.getLabelForValue(val);
+                                if (!label) return "";
+                                const d = new Date(label);
+                                const yy = String(d.getFullYear()).slice(2);
+                                return `${yy}.${d.getMonth() + 1}`;
+                              },
+                            },
+                          },
+                          y: {
+                            display: true,
+                            position: "left" as const,
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: {
+                              color: chartScaleColors.tickColor,
+                              font: { size: 10 },
+                              maxTicksLimit: 4,
+                              callback: (v: any) => formatWon(Math.round(v as number)),
+                            },
+                            beginAtZero: false,
+                          },
+                          y1: {
+                            display: false,
+                            position: "right" as const,
+                            grid: { display: false },
+                            border: { display: false },
+                            min: -maxAbsPL * 2,
+                            max: maxAbsPL * 2,
                           },
                         },
-                      },
-                      y: {
-                        display: true,
-                        position: "left" as const,
-                        grid: { display: false },
-                        border: { display: false },
-                        ticks: {
-                          color: chartScaleColors.tickColor,
-                          font: { size: 10 },
-                          maxTicksLimit: 4,
-                          callback: (v: any) => formatMoney(wonToManwon(v as number)),
-                        },
-                        beginAtZero: false,
-                      },
-                    },
-                  }}
-                />
+                      }}
+                    />
+                  );
+                })()}
               </div>
             </>
           ) : (
@@ -693,6 +705,7 @@ export function DashboardTab({
       </div>
 
       {/* Simulation section */}
+      <div className={styles.sectionLabel}>시뮬레이션</div>
       <div className={styles.simSection}>
         {simLines.length > 0 ? (
           simLines.map((line, i) => (
@@ -760,10 +773,12 @@ export function DashboardTab({
                         display: true,
                         grid: { display: false },
                         border: { display: false },
+                        min: line.data[0]?.x,
+                        max: line.data[line.data.length - 1]?.x,
                         ticks: {
                           color: chartScaleColors.tickColor,
                           font: { size: 10 },
-                          callback: (v: any) => v,
+                          callback: (v: any) => Math.round(v),
                           maxTicksLimit: 5,
                         },
                       },

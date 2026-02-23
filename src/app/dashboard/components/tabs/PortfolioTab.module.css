@@ -2075,6 +2075,232 @@
   font-weight: 600;
 }
 
+/* 직접 추가하기 카드 */
+.addHoldingCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 120px;
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--dashboard-border-light);
+  color: var(--dashboard-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.addHoldingCardMain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.addHoldingCardDesc {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  opacity: 0.7;
+}
+
+/* 커스텀 종목 뱃지 */
+.customBadge {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--dashboard-border-light);
+}
+
+/* 커스텀 종목 기준일 */
+.customDateBasis {
+  font-size: 11px;
+  color: var(--dashboard-text-muted);
+}
+
+/* 커스텀 종목 - 스파크라인 자리 placeholder */
+.noSparkline {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  min-width: 80px;
+  text-align: center;
+}
+
+/* 커스텀 종목 스냅샷 이력 (모달 내) */
+.snapshotSection {
+  border-top: 1px solid var(--dashboard-border-light);
+  padding-top: 16px;
+  margin-top: 8px;
+}
+
+.snapshotTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dashboard-text-secondary);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.snapshotList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.snapshotRowHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.snapshotRowHeader .snapshotDate,
+.snapshotRowHeader .snapshotValue,
+.snapshotRowHeader .snapshotInvested,
+.snapshotRowHeader .snapshotPL {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+}
+
+.snapshotRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--dashboard-border-light);
+}
+
+.snapshotRow:last-child {
+  border-bottom: none;
+}
+
+.snapshotDate {
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  min-width: 90px;
+}
+
+.snapshotValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  min-width: 100px;
+  text-align: right;
+}
+
+.snapshotInvested {
+  font-size: 12px;
+  color: var(--dashboard-text-secondary);
+  min-width: 100px;
+  text-align: right;
+}
+
+.snapshotPL {
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 120px;
+  text-align: right;
+  flex: 1;
+}
+
+.snapshotActions {
+  display: flex;
+  gap: 2px;
+  min-width: 52px;
+  justify-content: flex-end;
+}
+
+.snapshotActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.snapshotActionBtn:hover {
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-hover-bg);
+}
+
+.snapshotInput {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
+}
+
+.snapshotInput:focus {
+  outline: none;
+  border-color: var(--accent-color, #007aff);
+}
+
+.snapshotInput[type="number"]::-webkit-outer-spin-button,
+.snapshotInput[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 커스텀 종목 모달 폼 그룹 */
+.customHoldingForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.customHoldingFormRow {
+  display: flex;
+  gap: 16px;
+}
+
+.customHoldingFormGroup {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.customHoldingFormGroup label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+}
+
+.customHoldingFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.deleteBtn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #ef4444;
+  font-size: 14px;
+  cursor: pointer;
+  margin-right: auto;
+}
+
+.deleteBtn:hover {
+  background: var(--dashboard-hover-bg);
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
   .summary {

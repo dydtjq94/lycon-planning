@@ -5,7 +5,7 @@
  * - 포트폴리오 평가액 계산 (portfolioCalculator에서 이전)
  */
 
-import type { PortfolioTransaction, Account } from "@/types/tables";
+import type { PortfolioTransaction, Account, CustomHolding } from "@/types/tables";
 import type { PortfolioPriceCache } from "@/hooks/useFinancialData";
 import { getStockData, getExchangeRate } from "@/lib/services/financeApiService";
 
@@ -417,7 +417,8 @@ export async function fetchPortfolioPrices(
 export function calculatePortfolioAccountValues(
   transactions: PortfolioTransaction[],
   priceCache: PortfolioPriceCache | null | undefined,
-  accounts?: { id: string; additional_amount?: number | null }[]
+  accounts?: { id: string; additional_amount?: number | null }[],
+  customHoldings?: CustomHolding[]
 ): Map<string, number> {
   const investmentAccountValues = new Map<string, number>();
 
@@ -503,6 +504,15 @@ export function calculatePortfolioAccountValues(
     });
   }
 
+  // 커스텀 종목 평가액 합산
+  if (customHoldings) {
+    customHoldings.forEach(ch => {
+      const key = ch.account_id || "__unassigned__";
+      const existing = investmentAccountValues.get(key) || 0;
+      investmentAccountValues.set(key, existing + ch.current_value);
+    });
+  }
+
   return investmentAccountValues;
 }
 
@@ -521,7 +531,8 @@ export interface AccountValueDetail {
 export function calculatePortfolioAccountValuesDetailed(
   transactions: PortfolioTransaction[],
   priceCache: PortfolioPriceCache | null | undefined,
-  accounts: { id: string; broker_name: string | null; name: string; account_type: string; additional_amount?: number | null }[]
+  accounts: { id: string; broker_name: string | null; name: string; account_type: string; additional_amount?: number | null }[],
+  customHoldings?: CustomHolding[]
 ): Map<string, AccountValueDetail> {
   const values = new Map<string, AccountValueDetail>();
 
@@ -623,6 +634,27 @@ export function calculatePortfolioAccountValuesDetailed(
       });
     }
   });
+
+  // 커스텀 종목 평가액 및 투자금액 합산
+  if (customHoldings) {
+    customHoldings.forEach(ch => {
+      const key = ch.account_id || "__unassigned__";
+      const existing = values.get(key);
+      if (existing) {
+        existing.value += ch.current_value;
+        existing.invested += ch.principal;
+      } else {
+        const account = accounts.find(a => a.id === key);
+        values.set(key, {
+          broker: account?.broker_name || "기타",
+          accountName: account?.name || "직접입력",
+          value: ch.current_value,
+          invested: ch.principal,
+          accountType: account?.account_type || "general",
+        });
+      }
+    });
+  }
 
   return values;
 }

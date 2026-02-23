@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { formatWon } from "@/lib/utils";
+import type { CustomHolding } from "@/types/tables";
 import { simulationService } from "@/lib/services/simulationService";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -112,6 +113,7 @@ export function AccountsSummaryPanel({
   const [retirementPensions, setRetirementPensions] = useState<
     RawPensionData[]
   >([]);
+  const [customHoldings, setCustomHoldings] = useState<CustomHolding[]>([]);
 
   const supabase = createClient();
 
@@ -129,7 +131,7 @@ export function AccountsSummaryPanel({
   const loadRawData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [savingsRes, personalRes, retirementRes, simulationRes] =
+      const [savingsRes, personalRes, retirementRes, simulationRes, customHoldingsRes] =
         await Promise.all([
           supabase
             .from("savings")
@@ -152,6 +154,10 @@ export function AccountsSummaryPanel({
             .select("last_synced_at")
             .eq("id", simulationId)
             .single(),
+          supabase
+            .from("custom_holdings")
+            .select("*")
+            .eq("profile_id", profileId),
         ]);
 
       const allSavings = (savingsRes.data || []) as RawAccountData[];
@@ -163,13 +169,14 @@ export function AccountsSummaryPanel({
       );
       setPersonalPensions((personalRes.data || []) as RawPensionData[]);
       setRetirementPensions((retirementRes.data || []) as RawPensionData[]);
+      setCustomHoldings((customHoldingsRes.data || []) as CustomHolding[]);
       if (simulationRes.data?.last_synced_at) {
         setLastSyncedAt(new Date(simulationRes.data.last_synced_at));
       }
     } finally {
       setIsLoading(false);
     }
-  }, [simulationId, supabase]);
+  }, [simulationId, profileId, supabase]);
 
   useEffect(() => {
     loadRawData();
@@ -243,6 +250,8 @@ export function AccountsSummaryPanel({
       const investmentAccountValues = calculatePortfolioAccountValues(
         portfolioTransactions,
         freshPriceCache,
+        undefined,
+        customHoldings || []
       );
 
       // 4. 시뮬레이션에 복사

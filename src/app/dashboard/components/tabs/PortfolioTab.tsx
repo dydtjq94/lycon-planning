@@ -11,6 +11,7 @@ import {
   Edit2,
   Search,
   X,
+  Plus,
 } from "lucide-react";
 
 // 종목 데이터 타입
@@ -55,12 +56,25 @@ import type {
   PortfolioAccount,
   PortfolioAccountInput,
   AccountType,
+  CustomHolding,
+  CustomHoldingInput,
+  CustomHoldingAssetType,
+  CustomHoldingSnapshot,
 } from "@/types/tables";
 import { formatWon } from "@/lib/utils";
 import { calculatePortfolioAccountValues } from "@/lib/utils/accountValueCalculator";
 import styles from "./PortfolioTab.module.css";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, Filler);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Tooltip,
+  Legend,
+  Filler,
+);
 
 const ASSET_TYPE_LABELS: Record<PortfolioAssetType, string> = {
   domestic_stock: "국내주식",
@@ -73,6 +87,17 @@ const ASSET_TYPE_LABELS: Record<PortfolioAssetType, string> = {
   bond: "채권",
   other: "기타",
 };
+
+const CUSTOM_HOLDING_TYPE_LABELS: Record<CustomHoldingAssetType, string> = {
+  fund: "펀드",
+  bond: "채권",
+  other: "기타",
+};
+
+// 통합 보유 종목 유니온 타입
+type DisplayHolding =
+  | { kind: "tracked"; data: PortfolioHolding }
+  | { kind: "custom"; data: CustomHolding };
 
 interface PortfolioTabProps {
   profileId: string;
@@ -151,12 +176,20 @@ export function PortfolioTab({
   setSearchLoading,
   onSearchTrigger,
 }: PortfolioTabProps) {
-  const { chartLineColors, chartScaleColors, toRgba, isReady: isThemeReady, isDark } = useChartTheme();
+  const {
+    chartLineColors,
+    chartScaleColors,
+    toRgba,
+    isReady: isThemeReady,
+    isDark,
+  } = useChartTheme();
   const [transactions, setTransactions] = useState<PortfolioTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [expandedSection, setExpandedSection] = useState<"holdings" | "transactions" | null>("holdings");
+  const [expandedSection, setExpandedSection] = useState<
+    "holdings" | "transactions" | null
+  >("holdings");
 
   // 보유 종목 정렬
   type HoldingSortType = "latest" | "value" | "profit";
@@ -167,7 +200,9 @@ export function PortfolioTab({
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]); // 빈 배열 = 전체
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
-  const [accountFormData, setAccountFormData] = useState<Partial<PortfolioAccountInput>>({
+  const [accountFormData, setAccountFormData] = useState<
+    Partial<PortfolioAccountInput>
+  >({
     broker_name: "",
     name: "",
     account_number: "",
@@ -201,7 +236,8 @@ export function PortfolioTab({
   const [isSearchPanelClosing, setIsSearchPanelClosing] = useState(false);
 
   // 보유 종목 상세 패널
-  const [selectedHolding, setSelectedHolding] = useState<PortfolioHolding | null>(null);
+  const [selectedHolding, setSelectedHolding] =
+    useState<PortfolioHolding | null>(null);
   const [isHoldingPanelClosing, setIsHoldingPanelClosing] = useState(false);
   const [isModalClosing, setIsModalClosing] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -219,10 +255,10 @@ export function PortfolioTab({
   useEffect(() => {
     if (!searchResult) return;
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeSearchPanel();
+      if (e.key === "Escape") closeSearchPanel();
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, [searchResult, closeSearchPanel]);
 
   // 보유 종목 패널 닫기
@@ -238,44 +274,50 @@ export function PortfolioTab({
   useEffect(() => {
     if (!selectedHolding) return;
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeHoldingPanel();
+      if (e.key === "Escape") closeHoldingPanel();
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, [selectedHolding, closeHoldingPanel]);
 
   // Click-outside handler for search panel
   useEffect(() => {
     if (!searchResult) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (searchPanelRef.current && !searchPanelRef.current.contains(e.target as Node)) {
+      if (
+        searchPanelRef.current &&
+        !searchPanelRef.current.contains(e.target as Node)
+      ) {
         closeSearchPanel();
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [searchResult, closeSearchPanel]);
 
   // Click-outside handler for holding panel
   useEffect(() => {
     if (!selectedHolding) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (holdingPanelRef.current && !holdingPanelRef.current.contains(e.target as Node)) {
+      if (
+        holdingPanelRef.current &&
+        !holdingPanelRef.current.contains(e.target as Node)
+      ) {
         closeHoldingPanel();
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [selectedHolding, closeHoldingPanel]);
 
   // ESC key handler for transaction modal
   useEffect(() => {
     if (!showAddForm) return;
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleCancel();
+      if (e.key === "Escape") handleCancel();
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, [showAddForm]);
 
   // Click-outside handler for transaction modal
@@ -286,8 +328,8 @@ export function PortfolioTab({
         handleCancel();
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showAddForm]);
 
   // 거래 폼 - 공통 필드
@@ -302,16 +344,19 @@ export function PortfolioTab({
   const [formRows, setFormRows] = useState<FormRow[]>([createEmptyRow()]);
 
   // 해외 여부
-  const isForeignForm = formCommon.asset_type === "foreign_stock" || formCommon.asset_type === "foreign_etf";
+  const isForeignForm =
+    formCommon.asset_type === "foreign_stock" ||
+    formCommon.asset_type === "foreign_etf";
 
   const supabase = createClient();
 
   // 주가 데이터 캐시 (react-query로 관리 - 탭 전환해도 유지)
-  const { data: priceCache, isLoading: priceCacheLoading } = usePortfolioChartPriceData(
-    profileId,
-    transactions,
-    transactions.length > 0
-  );
+  const { data: priceCache, isLoading: priceCacheLoading } =
+    usePortfolioChartPriceData(
+      profileId,
+      transactions,
+      transactions.length > 0,
+    );
 
   // API 헬스 체크
   useEffect(() => {
@@ -349,6 +394,7 @@ export function PortfolioTab({
   // 증권 계좌 로드
   useEffect(() => {
     loadAccounts();
+    loadCustomHoldings();
   }, [profileId]);
 
   const loadAccounts = async () => {
@@ -363,6 +409,41 @@ export function PortfolioTab({
 
     if (!error && data) {
       setAccounts(data);
+    }
+  };
+
+  // 커스텀 보유 종목 로드
+  const loadCustomHoldings = async () => {
+    const { data, error } = await supabase
+      .from("custom_holdings")
+      .select("*")
+      .eq("profile_id", profileId)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setCustomHoldings(data);
+
+      // Load snapshots for all custom holdings
+      if (data.length > 0) {
+        const holdingIds = data.map((h: CustomHolding) => h.id);
+        const { data: snapData } = await supabase
+          .from("custom_holding_snapshots")
+          .select("*")
+          .in("custom_holding_id", holdingIds)
+          .order("date_basis", { ascending: true });
+
+        if (snapData) {
+          const snapMap = new Map<string, CustomHoldingSnapshot[]>();
+          for (const snap of snapData) {
+            const existing = snapMap.get(snap.custom_holding_id) || [];
+            existing.push(snap);
+            snapMap.set(snap.custom_holding_id, existing);
+          }
+          setCustomHoldingSnapshots(snapMap);
+        }
+      } else {
+        setCustomHoldingSnapshots(new Map());
+      }
     }
   };
 
@@ -415,9 +496,7 @@ export function PortfolioTab({
         loadAccounts();
       }
     } else {
-      const { error } = await supabase
-        .from("accounts")
-        .insert(payload);
+      const { error } = await supabase.from("accounts").insert(payload);
 
       if (!error) {
         resetAccountForm();
@@ -438,7 +517,12 @@ export function PortfolioTab({
   };
 
   const handleDeleteAccount = async (id: string) => {
-    if (!confirm("이 계좌를 삭제하시겠습니까? 관련 거래 내역은 계좌 미지정으로 변경됩니다.")) return;
+    if (
+      !confirm(
+        "이 계좌를 삭제하시겠습니까? 관련 거래 내역은 계좌 미지정으로 변경됩니다.",
+      )
+    )
+      return;
 
     // 계좌 비활성화 (soft delete)
     const { error } = await supabase
@@ -478,14 +562,14 @@ export function PortfolioTab({
           (s) =>
             s.name.toLowerCase().includes(q) ||
             s.code.toLowerCase().includes(q) ||
-            s.ticker.toLowerCase().includes(q)
+            s.ticker.toLowerCase().includes(q),
         )
         .slice(0, 10); // 최대 10개
 
       setSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
     },
-    [stocksList]
+    [stocksList],
   );
 
   // 자동완성 항목 선택
@@ -537,13 +621,14 @@ export function PortfolioTab({
 
       if (res.data.length > 0) {
         const latest = res.data[res.data.length - 1];
-        const previous = res.data.length > 1 ? res.data[res.data.length - 2] : latest;
+        const previous =
+          res.data.length > 1 ? res.data[res.data.length - 2] : latest;
         const change = latest.Close - previous.Close;
         const changePercent = (change / previous.Close) * 100;
 
         // 종목명 찾기
         const stockInfo = stocksList.find(
-          (s) => s.ticker.toUpperCase() === res.symbol.toUpperCase()
+          (s) => s.ticker.toUpperCase() === res.symbol.toUpperCase(),
         );
 
         setSearchResult({
@@ -580,16 +665,22 @@ export function PortfolioTab({
 
     // stocks.json에서 종목 정보 찾기
     const stockInfo = stocksList.find(
-      (s) => s.ticker.toUpperCase() === searchResult.symbol.toUpperCase()
+      (s) => s.ticker.toUpperCase() === searchResult.symbol.toUpperCase(),
     );
 
-    if (searchResult.symbol.endsWith(".KS") || searchResult.symbol.endsWith(".KQ")) {
+    if (
+      searchResult.symbol.endsWith(".KS") ||
+      searchResult.symbol.endsWith(".KQ")
+    ) {
       if (stockInfo?.market === "ETF") {
         assetType = "domestic_etf";
       } else {
         assetType = "domestic_stock";
       }
-    } else if (searchResult.symbol.includes("-USD") || searchResult.symbol.includes("-KRW")) {
+    } else if (
+      searchResult.symbol.includes("-USD") ||
+      searchResult.symbol.includes("-KRW")
+    ) {
       assetType = "crypto";
     } else {
       if (stockInfo?.market === "ETF") {
@@ -601,7 +692,8 @@ export function PortfolioTab({
 
     const stockName = stockInfo?.name || searchResult.symbol.split(".")[0];
     const defaultAccount = accounts.find((a) => a.is_default);
-    const isKorean = assetType === "domestic_stock" || assetType === "domestic_etf";
+    const isKorean =
+      assetType === "domestic_stock" || assetType === "domestic_etf";
 
     setFormCommon({
       asset_type: assetType,
@@ -611,22 +703,33 @@ export function PortfolioTab({
     });
 
     if (isKorean) {
-      setFormRows([{
-        ...createEmptyRow(),
-        price: searchResult.price,
-      }]);
+      setFormRows([
+        {
+          ...createEmptyRow(),
+          price: searchResult.price,
+        },
+      ]);
     } else {
       let defaultExchangeRate = 1450;
       if (priceCache?.exchangeRateMap.size) {
-        const sortedFxDates = Array.from(priceCache.exchangeRateMap.keys()).sort();
-        defaultExchangeRate = Math.round((priceCache.exchangeRateMap.get(sortedFxDates[sortedFxDates.length - 1]) || 1450) * 100) / 100;
+        const sortedFxDates = Array.from(
+          priceCache.exchangeRateMap.keys(),
+        ).sort();
+        defaultExchangeRate =
+          Math.round(
+            (priceCache.exchangeRateMap.get(
+              sortedFxDates[sortedFxDates.length - 1],
+            ) || 1450) * 100,
+          ) / 100;
       }
-      setFormRows([{
-        ...createEmptyRow(),
-        price: Math.round(searchResult.price * defaultExchangeRate),
-        exchange_rate: defaultExchangeRate,
-        usdPrice: searchResult.price.toFixed(2),
-      }]);
+      setFormRows([
+        {
+          ...createEmptyRow(),
+          price: Math.round(searchResult.price * defaultExchangeRate),
+          exchange_rate: defaultExchangeRate,
+          usdPrice: searchResult.price.toFixed(2),
+        },
+      ]);
     }
 
     setShowAddForm(true);
@@ -639,7 +742,9 @@ export function PortfolioTab({
     if (selectedAccountIds.length === 0) {
       return transactions; // 전체 보기
     }
-    return transactions.filter((tx) => tx.account_id && selectedAccountIds.includes(tx.account_id));
+    return transactions.filter(
+      (tx) => tx.account_id && selectedAccountIds.includes(tx.account_id),
+    );
   }, [transactions, selectedAccountIds]);
 
   // 보유 종목 계산
@@ -648,7 +753,8 @@ export function PortfolioTab({
 
     // 날짜순 정렬 (오래된 것부터 처리해야 매도가 정확히 계산됨)
     const sortedTransactions = [...filteredTransactions].sort(
-      (a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime()
+      (a, b) =>
+        new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime(),
     );
 
     sortedTransactions.forEach((tx) => {
@@ -681,7 +787,7 @@ export function PortfolioTab({
           existing.quantity -= tx.quantity;
           // 매도 시 투자금액 비례 차감
           const sellRatio = tx.quantity / (existing.quantity + tx.quantity);
-          existing.total_invested *= (1 - sellRatio);
+          existing.total_invested *= 1 - sellRatio;
         }
       }
     });
@@ -712,61 +818,76 @@ export function PortfolioTab({
   }, [filteredTransactions]);
 
   // 매도 폼 열기
-  const openSellForm = useCallback((holding: PortfolioHolding) => {
-    closeHoldingPanel();
-    setTimeout(() => {
-      const accountIds = tickerAccountMap.get(holding.ticker);
-      const autoAccountId = accountIds && accountIds.size === 1
-        ? Array.from(accountIds)[0]
-        : null;
+  const openSellForm = useCallback(
+    (holding: PortfolioHolding) => {
+      closeHoldingPanel();
+      setTimeout(() => {
+        const accountIds = tickerAccountMap.get(holding.ticker);
+        const autoAccountId =
+          accountIds && accountIds.size === 1
+            ? Array.from(accountIds)[0]
+            : null;
 
-      const isForeign = holding.asset_type === "foreign_stock" || holding.asset_type === "foreign_etf";
-      let exchangeRate = 1450;
+        const isForeign =
+          holding.asset_type === "foreign_stock" ||
+          holding.asset_type === "foreign_etf";
+        let exchangeRate = 1450;
 
-      if (isForeign && priceCache?.exchangeRateMap.size) {
-        const sortedFxDates = Array.from(priceCache.exchangeRateMap.keys()).sort();
-        const latestFxDate = sortedFxDates[sortedFxDates.length - 1];
-        exchangeRate = Math.round((priceCache.exchangeRateMap.get(latestFxDate) || 1450) * 100) / 100;
-      }
+        if (isForeign && priceCache?.exchangeRateMap.size) {
+          const sortedFxDates = Array.from(
+            priceCache.exchangeRateMap.keys(),
+          ).sort();
+          const latestFxDate = sortedFxDates[sortedFxDates.length - 1];
+          exchangeRate =
+            Math.round(
+              (priceCache.exchangeRateMap.get(latestFxDate) || 1450) * 100,
+            ) / 100;
+        }
 
-      let currentMarketPrice = 0;
-      const tickerPrices = priceCache?.priceDataMap.get(holding.ticker);
-      if (tickerPrices && tickerPrices.size > 0) {
-        const sortedDates = Array.from(tickerPrices.keys()).sort();
-        currentMarketPrice = tickerPrices.get(sortedDates[sortedDates.length - 1]) || 0;
-      }
-      const sellPrice = currentMarketPrice > 0
-        ? (isForeign ? Math.round(currentMarketPrice * exchangeRate) : Math.round(currentMarketPrice))
-        : Math.round(holding.avg_price);
+        let currentMarketPrice = 0;
+        const tickerPrices = priceCache?.priceDataMap.get(holding.ticker);
+        if (tickerPrices && tickerPrices.size > 0) {
+          const sortedDates = Array.from(tickerPrices.keys()).sort();
+          currentMarketPrice =
+            tickerPrices.get(sortedDates[sortedDates.length - 1]) || 0;
+        }
+        const sellPrice =
+          currentMarketPrice > 0
+            ? isForeign
+              ? Math.round(currentMarketPrice * exchangeRate)
+              : Math.round(currentMarketPrice)
+            : Math.round(holding.avg_price);
 
-      const usdPrice = isForeign
-        ? (sellPrice / exchangeRate).toFixed(2)
-        : "";
+        const usdPrice = isForeign ? (sellPrice / exchangeRate).toFixed(2) : "";
 
-      const today = new Date().toISOString().split("T")[0];
+        const today = new Date().toISOString().split("T")[0];
 
-      setFormCommon({
-        asset_type: holding.asset_type,
-        ticker: holding.ticker,
-        name: holding.name,
-        account_id: autoAccountId,
-      });
+        setFormCommon({
+          asset_type: holding.asset_type,
+          ticker: holding.ticker,
+          name: holding.name,
+          account_id: autoAccountId,
+        });
 
-      setFormRows([{
-        id: Math.random().toString(36).slice(2),
-        type: "sell",
-        trade_date: today,
-        quantity: holding.quantity,
-        price: sellPrice,
-        exchange_rate: isForeign ? exchangeRate : undefined,
-        fee: 0,
-        usdPrice: usdPrice,
-      }]);
+        setFormRows([
+          {
+            id: Math.random().toString(36).slice(2),
+            type: "sell",
+            trade_date: today,
+            quantity: holding.quantity,
+            price: sellPrice,
+            exchange_rate: isForeign ? exchangeRate : undefined,
+            fee: 0,
+            usdPrice: usdPrice,
+          },
+        ]);
 
-      setShowAddForm(true);
-      setEditingId(null);
-    }, 300);
-  }, [closeHoldingPanel, tickerAccountMap, priceCache]);
+        setShowAddForm(true);
+        setEditingId(null);
+      }, 300);
+    },
+    [closeHoldingPanel, tickerAccountMap, priceCache],
+  );
 
   // 종목별 최신 거래일 맵
   const latestTradeDateMap = useMemo(() => {
@@ -785,11 +906,17 @@ export function PortfolioTab({
 
   const { currentValue, holdingValues } = useMemo(() => {
     if (!priceCache || holdings.length === 0) {
-      return { currentValue: null, holdingValues: new Map<string, { value: number; price: number }>() };
+      return {
+        currentValue: null,
+        holdingValues: new Map<string, { value: number; price: number }>(),
+      };
     }
 
     const { priceDataMap, exchangeRateMap, tickerCurrencyMap } = priceCache;
-    const newHoldingValues = new Map<string, { value: number; price: number }>();
+    const newHoldingValues = new Map<
+      string,
+      { value: number; price: number }
+    >();
 
     // 가장 최근 환율 찾기
     let latestExchangeRate = 1;
@@ -812,16 +939,25 @@ export function PortfolioTab({
       }
 
       if (latestPrice > 0) {
-        const isForeign = holding.asset_type === "foreign_stock" || holding.asset_type === "foreign_etf";
-        const holdingValue = isForeign && holding.currency === "USD"
-          ? holding.quantity * latestPrice * latestExchangeRate
-          : holding.quantity * latestPrice;
+        const isForeign =
+          holding.asset_type === "foreign_stock" ||
+          holding.asset_type === "foreign_etf";
+        const holdingValue =
+          isForeign && holding.currency === "USD"
+            ? holding.quantity * latestPrice * latestExchangeRate
+            : holding.quantity * latestPrice;
 
         totalValue += holdingValue;
-        newHoldingValues.set(holding.ticker, { value: holdingValue, price: latestPrice });
+        newHoldingValues.set(holding.ticker, {
+          value: holdingValue,
+          price: latestPrice,
+        });
       } else {
         totalValue += holding.total_invested;
-        newHoldingValues.set(holding.ticker, { value: holding.total_invested, price: 0 });
+        newHoldingValues.set(holding.ticker, {
+          value: holding.total_invested,
+          price: 0,
+        });
       }
     });
 
@@ -829,21 +965,49 @@ export function PortfolioTab({
   }, [priceCache, holdings]);
 
   // 손익 계산
-  const profitLoss = currentValue !== null ? currentValue - totalInvested : null;
-  const profitLossRate = currentValue !== null && totalInvested > 0
-    ? ((currentValue - totalInvested) / totalInvested) * 100
-    : null;
+  const profitLoss =
+    currentValue !== null ? currentValue - totalInvested : null;
+  const profitLossRate =
+    currentValue !== null && totalInvested > 0
+      ? ((currentValue - totalInvested) / totalInvested) * 100
+      : null;
 
   // 선택된 계좌의 추가금액 합산
   const selectedAdditionalAmount = useMemo(() => {
-    const targetAccounts = selectedAccountIds.length > 0
-      ? accounts.filter(a => selectedAccountIds.includes(a.id))
-      : accounts;
-    return targetAccounts.reduce((sum, a) => sum + (a.additional_amount || 0), 0);
+    const targetAccounts =
+      selectedAccountIds.length > 0
+        ? accounts.filter((a) => selectedAccountIds.includes(a.id))
+        : accounts;
+    return targetAccounts.reduce(
+      (sum, a) => sum + (a.additional_amount || 0),
+      0,
+    );
   }, [accounts, selectedAccountIds]);
 
+  // 커스텀 보유 종목
+  const [customHoldings, setCustomHoldings] = useState<CustomHolding[]>([]);
+  const [customHoldingSnapshots, setCustomHoldingSnapshots] = useState<
+    Map<string, CustomHoldingSnapshot[]>
+  >(new Map());
+  const [showCustomHoldingModal, setShowCustomHoldingModal] = useState(false);
+  const [editingCustomHolding, setEditingCustomHolding] =
+    useState<CustomHolding | null>(null);
+  const [isCustomModalClosing, setIsCustomModalClosing] = useState(false);
+  const customModalRef = useRef<HTMLDivElement>(null);
+  const [customForm, setCustomForm] = useState({
+    name: "",
+    asset_type: "fund" as CustomHoldingAssetType,
+    date_basis: new Date().toISOString().split("T")[0],
+    principal: "",
+    current_value: "",
+    account_id: null as string | null,
+    memo: "",
+  });
+
   // 추가금액 인라인 편집 상태
-  const [editingAdditionalAmountId, setEditingAdditionalAmountId] = useState<string | null>(null);
+  const [editingAdditionalAmountId, setEditingAdditionalAmountId] = useState<
+    string | null
+  >(null);
   const [additionalAmountInput, setAdditionalAmountInput] = useState("");
   const additionalAmountCancelledRef = useRef(false);
 
@@ -859,17 +1023,285 @@ export function PortfolioTab({
       .update({ additional_amount: won })
       .eq("id", accountId);
     if (!error) {
-      setAccounts(prev => prev.map(a =>
-        a.id === accountId ? { ...a, additional_amount: won } : a
-      ));
+      setAccounts((prev) =>
+        prev.map((a) =>
+          a.id === accountId ? { ...a, additional_amount: won } : a,
+        ),
+      );
     }
     setEditingAdditionalAmountId(null);
   };
 
-  // 계좌별 평가금액 계산 (유틸리티 함수 사용)
+  // 커스텀 종목 모달 열기
+  const openCustomHoldingModal = (holding?: CustomHolding) => {
+    if (holding) {
+      setEditingCustomHolding(holding);
+      setCustomForm({
+        name: holding.name,
+        asset_type: holding.asset_type,
+        date_basis: holding.date_basis,
+        principal: String(holding.principal),
+        current_value: String(holding.current_value),
+        account_id: holding.account_id,
+        memo: holding.memo || "",
+      });
+    } else {
+      setEditingCustomHolding(null);
+      setCustomForm({
+        name: "",
+        asset_type: "fund",
+        date_basis: new Date().toISOString().split("T")[0],
+        principal: "",
+        current_value: "",
+        account_id:
+          selectedAccountIds.length === 1 ? selectedAccountIds[0] : null,
+        memo: "",
+      });
+    }
+    setShowCustomHoldingModal(true);
+  };
+
+  // 커스텀 종목 모달 닫기
+  const closeCustomHoldingModal = useCallback(() => {
+    setIsCustomModalClosing(true);
+    setTimeout(() => {
+      setShowCustomHoldingModal(false);
+      setEditingCustomHolding(null);
+      setIsCustomModalClosing(false);
+    }, 200);
+  }, []);
+
+  // ESC for custom holding modal
+  useEffect(() => {
+    if (!showCustomHoldingModal) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeCustomHoldingModal();
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [showCustomHoldingModal, closeCustomHoldingModal]);
+
+  // Click-outside for custom holding modal
+  useEffect(() => {
+    if (!showCustomHoldingModal) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        customModalRef.current &&
+        !customModalRef.current.contains(e.target as Node)
+      ) {
+        closeCustomHoldingModal();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showCustomHoldingModal]);
+
+  // 커스텀 종목 저장
+  const handleSaveCustomHolding = async () => {
+    if (!customForm.name.trim()) {
+      alert("종목명을 입력해주세요.");
+      return;
+    }
+
+    const principal = Math.round(
+      parseFloat(customForm.principal.replace(/,/g, "")) || 0,
+    );
+    const currentValue = Math.round(
+      parseFloat(customForm.current_value.replace(/,/g, "")) || 0,
+    );
+
+    if (editingCustomHolding) {
+      // Update holding metadata + denormalized latest values
+      const { error } = await supabase
+        .from("custom_holdings")
+        .update({
+          name: customForm.name.trim(),
+          asset_type: customForm.asset_type,
+          date_basis: customForm.date_basis,
+          principal,
+          current_value: currentValue,
+          account_id: customForm.account_id || null,
+          memo: customForm.memo.trim() || null,
+        })
+        .eq("id", editingCustomHolding.id);
+
+      if (!error) {
+        // Always insert a new snapshot for history tracking
+        await supabase.from("custom_holding_snapshots").insert({
+          custom_holding_id: editingCustomHolding.id,
+          date_basis: customForm.date_basis,
+          principal,
+          current_value: currentValue,
+        });
+        closeCustomHoldingModal();
+        loadCustomHoldings();
+      }
+    } else {
+      // Insert new holding
+      const payload: CustomHoldingInput = {
+        profile_id: profileId,
+        name: customForm.name.trim(),
+        asset_type: customForm.asset_type,
+        date_basis: customForm.date_basis,
+        principal,
+        current_value: currentValue,
+        account_id: customForm.account_id || null,
+        memo: customForm.memo.trim() || null,
+      };
+
+      const { data, error } = await supabase
+        .from("custom_holdings")
+        .insert(payload)
+        .select("id")
+        .single();
+
+      if (!error && data) {
+        // Insert first snapshot
+        await supabase.from("custom_holding_snapshots").insert({
+          custom_holding_id: data.id,
+          date_basis: customForm.date_basis,
+          principal,
+          current_value: currentValue,
+        });
+        closeCustomHoldingModal();
+        loadCustomHoldings();
+      }
+    }
+  };
+
+  // 커스텀 종목 삭제
+  const handleDeleteCustomHolding = async () => {
+    if (!editingCustomHolding) return;
+    if (!confirm("이 종목을 삭제하시겠습니까?")) return;
+
+    const { error } = await supabase
+      .from("custom_holdings")
+      .delete()
+      .eq("id", editingCustomHolding.id);
+
+    if (!error) {
+      closeCustomHoldingModal();
+      loadCustomHoldings();
+    }
+  };
+
+  // 스냅샷 인라인 편집 상태
+  const [editingSnapshotId, setEditingSnapshotId] = useState<string | null>(
+    null,
+  );
+  const [snapshotEditForm, setSnapshotEditForm] = useState({
+    date_basis: "",
+    principal: "",
+    current_value: "",
+  });
+
+  const startEditSnapshot = (snap: CustomHoldingSnapshot) => {
+    setEditingSnapshotId(snap.id);
+    setSnapshotEditForm({
+      date_basis: snap.date_basis,
+      principal: String(snap.principal),
+      current_value: String(snap.current_value),
+    });
+  };
+
+  const handleUpdateSnapshot = async (snapId: string, holdingId: string) => {
+    const principal = Math.round(
+      parseFloat(snapshotEditForm.principal.replace(/,/g, "")) || 0,
+    );
+    const currentValue = Math.round(
+      parseFloat(snapshotEditForm.current_value.replace(/,/g, "")) || 0,
+    );
+
+    const { error } = await supabase
+      .from("custom_holding_snapshots")
+      .update({
+        date_basis: snapshotEditForm.date_basis,
+        principal,
+        current_value: currentValue,
+      })
+      .eq("id", snapId);
+
+    if (!error) {
+      // 최신 스냅샷이면 custom_holdings 테이블도 갱신
+      const snaps = customHoldingSnapshots.get(holdingId) || [];
+      const sorted = [...snaps].sort((a, b) =>
+        b.date_basis.localeCompare(a.date_basis),
+      );
+      if (sorted.length > 0 && sorted[0].id === snapId) {
+        await supabase
+          .from("custom_holdings")
+          .update({
+            date_basis: snapshotEditForm.date_basis,
+            principal,
+            current_value: currentValue,
+          })
+          .eq("id", holdingId);
+      }
+      setEditingSnapshotId(null);
+      loadCustomHoldings();
+    }
+  };
+
+  const handleDeleteSnapshot = async (snapId: string, holdingId: string) => {
+    if (!confirm("이 스냅샷을 삭제하시겠습니까?")) return;
+
+    const { error } = await supabase
+      .from("custom_holding_snapshots")
+      .delete()
+      .eq("id", snapId);
+
+    if (!error) {
+      // 삭제 후 최신 스냅샷으로 custom_holdings 갱신
+      const snaps = (customHoldingSnapshots.get(holdingId) || []).filter(
+        (s) => s.id !== snapId,
+      );
+      const sorted = [...snaps].sort((a, b) =>
+        b.date_basis.localeCompare(a.date_basis),
+      );
+      if (sorted.length > 0) {
+        const latest = sorted[0];
+        await supabase
+          .from("custom_holdings")
+          .update({
+            date_basis: latest.date_basis,
+            principal: latest.principal,
+            current_value: latest.current_value,
+          })
+          .eq("id", holdingId);
+      }
+      loadCustomHoldings();
+    }
+  };
+
+  // 필터링된 커스텀 종목
+  const filteredCustomHoldings = useMemo(() => {
+    if (selectedAccountIds.length === 0) return customHoldings;
+    return customHoldings.filter(
+      (ch) => ch.account_id && selectedAccountIds.includes(ch.account_id),
+    );
+  }, [customHoldings, selectedAccountIds]);
+
+  // 커스텀 종목 합산
+  const customHoldingsCurrentValue = useMemo(() => {
+    return filteredCustomHoldings.reduce(
+      (sum, ch) => sum + ch.current_value,
+      0,
+    );
+  }, [filteredCustomHoldings]);
+
+  const customHoldingsPrincipal = useMemo(() => {
+    return filteredCustomHoldings.reduce((sum, ch) => sum + ch.principal, 0);
+  }, [filteredCustomHoldings]);
+
+  // 계좌별 평가금액 계산 (유틸리티 함수에서 커스텀 종목도 포함)
   const accountValues = useMemo(() => {
-    return calculatePortfolioAccountValues(transactions, priceCache, accounts);
-  }, [priceCache, transactions, accounts]);
+    return calculatePortfolioAccountValues(
+      transactions,
+      priceCache,
+      accounts,
+      customHoldings,
+    );
+  }, [priceCache, transactions, accounts, customHoldings]);
 
   // 계좌별 투자금액 계산
   const accountInvested = useMemo(() => {
@@ -878,8 +1310,14 @@ export function PortfolioTab({
     accounts.forEach((account) => {
       const accountTxs = transactions
         .filter((tx) => tx.account_id === account.id)
-        .sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
-      const holdingsMap = new Map<string, { quantity: number; totalInvested: number; avgPrice: number }>();
+        .sort(
+          (a, b) =>
+            new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime(),
+        );
+      const holdingsMap = new Map<
+        string,
+        { quantity: number; totalInvested: number; avgPrice: number }
+      >();
 
       accountTxs.forEach((tx) => {
         const existing = holdingsMap.get(tx.ticker);
@@ -901,7 +1339,10 @@ export function PortfolioTab({
           } else {
             const sellAmount = tx.quantity * existing.avgPrice;
             existing.quantity -= tx.quantity;
-            existing.totalInvested = Math.max(0, existing.totalInvested - sellAmount);
+            existing.totalInvested = Math.max(
+              0,
+              existing.totalInvested - sellAmount,
+            );
           }
         }
       });
@@ -936,8 +1377,19 @@ export function PortfolioTab({
     return sum;
   }, [accountInvested]);
 
-  const totalAllAdditionalAmount = accounts.reduce((sum, a) => sum + (a.additional_amount || 0), 0);
-  const totalAllProfitLoss = totalAllValue - totalAllAdditionalAmount - totalAllInvested;
+  const totalAllAdditionalAmount = accounts.reduce(
+    (sum, a) => sum + (a.additional_amount || 0),
+    0,
+  );
+  const totalAllCustomPrincipal = customHoldings.reduce(
+    (sum, ch) => sum + ch.principal,
+    0,
+  );
+  const totalAllProfitLoss =
+    totalAllValue -
+    totalAllAdditionalAmount -
+    totalAllInvested -
+    totalAllCustomPrincipal;
 
   // 정렬된 보유 종목
   const sortedHoldings = useMemo(() => {
@@ -963,28 +1415,36 @@ export function PortfolioTab({
 
   // 매도 시 보유 수량 검증용 (기존 보유 + 배치 내 매수 수량 합산)
   const sellHoldingQuantity = useMemo(() => {
-    const hasSellRow = formRows.some(row => row.type === "sell");
+    const hasSellRow = formRows.some((row) => row.type === "sell");
     if (!hasSellRow || !formCommon.ticker) return null;
     const holding = holdings.find((h) => h.ticker === formCommon.ticker);
     const existing = holding?.quantity || 0;
     const batchBuyQty = formRows
-      .filter(row => row.type === "buy")
+      .filter((row) => row.type === "buy")
       .reduce((sum, row) => sum + (row.quantity || 0), 0);
     return existing + batchBuyQty;
   }, [formRows, formCommon.ticker, holdings]);
 
-  const totalSellQuantity = formRows.filter(row => row.type === "sell").reduce((sum, row) => sum + (row.quantity || 0), 0);
+  const totalSellQuantity = formRows
+    .filter((row) => row.type === "sell")
+    .reduce((sum, row) => sum + (row.quantity || 0), 0);
 
-  const isSellQuantityExceeded = totalSellQuantity > 0 &&
+  const isSellQuantityExceeded =
+    totalSellQuantity > 0 &&
     sellHoldingQuantity !== null &&
     totalSellQuantity > sellHoldingQuantity;
 
   // 거래 총액 계산
-  const grandTotal = formRows.reduce((sum, row) => sum + ((row.quantity || 0) * (row.price || 0)), 0);
-  const grandTotalUsd = isForeignForm ? formRows.reduce((sum, row) => {
-    const usd = row.usdPrice ? parseFloat(row.usdPrice) : 0;
-    return sum + ((row.quantity || 0) * usd);
-  }, 0) : 0;
+  const grandTotal = formRows.reduce(
+    (sum, row) => sum + (row.quantity || 0) * (row.price || 0),
+    0,
+  );
+  const grandTotalUsd = isForeignForm
+    ? formRows.reduce((sum, row) => {
+        const usd = row.usdPrice ? parseFloat(row.usdPrice) : 0;
+        return sum + (row.quantity || 0) * usd;
+      }, 0)
+    : 0;
 
   // 폼 제출
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1004,10 +1464,15 @@ export function PortfolioTab({
     }
 
     // 매도 시 보유 수량 초과 검증 (기존 보유 + 배치 내 매수 수량 합산)
-    const sellRows = formRows.filter(row => row.type === "sell");
+    const sellRows = formRows.filter((row) => row.type === "sell");
     if (sellRows.length > 0) {
-      const totalSellQty = sellRows.reduce((sum, row) => sum + (row.quantity || 0), 0);
-      const totalBuyQty = formRows.filter(row => row.type === "buy").reduce((sum, row) => sum + (row.quantity || 0), 0);
+      const totalSellQty = sellRows.reduce(
+        (sum, row) => sum + (row.quantity || 0),
+        0,
+      );
+      const totalBuyQty = formRows
+        .filter((row) => row.type === "buy")
+        .reduce((sum, row) => sum + (row.quantity || 0), 0);
       const holding = holdings.find((h) => h.ticker === formCommon.ticker);
       const availableQuantity = (holding?.quantity || 0) + totalBuyQty;
       if (totalSellQty > availableQuantity) {
@@ -1016,13 +1481,16 @@ export function PortfolioTab({
       }
     }
 
-    const isForeign = formCommon.asset_type === "foreign_stock" || formCommon.asset_type === "foreign_etf";
+    const isForeign =
+      formCommon.asset_type === "foreign_stock" ||
+      formCommon.asset_type === "foreign_etf";
 
     if (editingId) {
       // 수정: 단일 거래
       const row = formRows[0];
       const totalAmount = Math.round((row.quantity || 0) * (row.price || 0));
-      const currency = isForeign && row.exchange_rate && row.exchange_rate > 1 ? "USD" : "KRW";
+      const currency =
+        isForeign && row.exchange_rate && row.exchange_rate > 1 ? "USD" : "KRW";
 
       const payload: PortfolioTransactionInput = {
         profile_id: profileId,
@@ -1055,7 +1523,10 @@ export function PortfolioTab({
       // 추가: 다중 거래
       const payloads: PortfolioTransactionInput[] = formRows.map((row) => {
         const totalAmount = Math.round((row.quantity || 0) * (row.price || 0));
-        const currency = isForeign && row.exchange_rate && row.exchange_rate > 1 ? "USD" : "KRW";
+        const currency =
+          isForeign && row.exchange_rate && row.exchange_rate > 1
+            ? "USD"
+            : "KRW";
 
         return {
           profile_id: profileId,
@@ -1092,7 +1563,8 @@ export function PortfolioTab({
       asset_type: "domestic_stock",
       ticker: "",
       name: "",
-      account_id: selectedAccountIds.length === 1 ? selectedAccountIds[0] : null,
+      account_id:
+        selectedAccountIds.length === 1 ? selectedAccountIds[0] : null,
     });
     setFormRows([createEmptyRow()]);
   };
@@ -1104,16 +1576,21 @@ export function PortfolioTab({
       name: tx.name,
       account_id: tx.account_id,
     });
-    setFormRows([{
-      id: Math.random().toString(36).slice(2),
-      type: tx.type as PortfolioTransactionType,
-      trade_date: tx.trade_date,
-      quantity: tx.quantity,
-      price: tx.price,
-      exchange_rate: tx.exchange_rate || undefined,
-      fee: tx.fee,
-      usdPrice: tx.exchange_rate && tx.exchange_rate > 1 ? (tx.price / tx.exchange_rate).toFixed(2) : "",
-    }]);
+    setFormRows([
+      {
+        id: Math.random().toString(36).slice(2),
+        type: tx.type as PortfolioTransactionType,
+        trade_date: tx.trade_date,
+        quantity: tx.quantity,
+        price: tx.price,
+        exchange_rate: tx.exchange_rate || undefined,
+        fee: tx.fee,
+        usdPrice:
+          tx.exchange_rate && tx.exchange_rate > 1
+            ? (tx.price / tx.exchange_rate).toFixed(2)
+            : "",
+      },
+    ]);
     setEditingId(tx.id);
     setShowAddForm(true);
   };
@@ -1143,32 +1620,44 @@ export function PortfolioTab({
 
   // 거래 행 헬퍼
   const updateRow = (index: number, updates: Partial<FormRow>) => {
-    setFormRows(prev => prev.map((row, i) => i === index ? { ...row, ...updates } : row));
+    setFormRows((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, ...updates } : row)),
+    );
   };
 
   const addRow = () => {
     const lastRow = formRows[formRows.length - 1];
-    setFormRows(prev => [...prev, {
-      ...createEmptyRow(),
-      exchange_rate: lastRow?.exchange_rate,
-    }]);
+    setFormRows((prev) => [
+      ...prev,
+      {
+        ...createEmptyRow(),
+        exchange_rate: lastRow?.exchange_rate,
+      },
+    ]);
   };
 
   const removeRow = (index: number) => {
-    setFormRows(prev => {
+    setFormRows((prev) => {
       const next = prev.filter((_, i) => i !== index);
       return next.length === 0 ? [createEmptyRow()] : next;
     });
   };
 
   // 거래 내역 로딩 중이거나 가격 데이터 로딩 중이거나 테마 로딩 중일 때 전체 스켈레톤 표시
-  if (loading || !isThemeReady || (transactions.length > 0 && priceCacheLoading)) {
+  if (
+    loading ||
+    !isThemeReady ||
+    (transactions.length > 0 && priceCacheLoading)
+  ) {
     return (
       <div className={styles.container}>
         {/* 계좌 바 스켈레톤 */}
         <div className={styles.accountBar}>
           {[1, 2, 3].map((i) => (
-            <div key={i} className={`${styles.skeleton} ${styles.skeletonAccountItem}`} />
+            <div
+              key={i}
+              className={`${styles.skeleton} ${styles.skeletonAccountItem}`}
+            />
           ))}
         </div>
 
@@ -1177,16 +1666,22 @@ export function PortfolioTab({
           <div className={styles.mainMetric}>
             <span className={`${styles.skeleton} ${styles.skeletonLabel}`} />
             <div className={`${styles.skeleton} ${styles.skeletonMainValue}`} />
-            <div className={`${styles.skeleton} ${styles.skeletonChangeInfo}`} />
+            <div
+              className={`${styles.skeleton} ${styles.skeletonChangeInfo}`}
+            />
           </div>
           <div className={styles.sideMetrics}>
             <div className={styles.sideMetric}>
               <span className={`${styles.skeleton} ${styles.skeletonLabel}`} />
-              <span className={`${styles.skeleton} ${styles.skeletonSideValue}`} />
+              <span
+                className={`${styles.skeleton} ${styles.skeletonSideValue}`}
+              />
             </div>
             <div className={styles.sideMetric}>
               <span className={`${styles.skeleton} ${styles.skeletonLabel}`} />
-              <span className={`${styles.skeleton} ${styles.skeletonSideValue}`} />
+              <span
+                className={`${styles.skeleton} ${styles.skeletonSideValue}`}
+              />
             </div>
           </div>
         </div>
@@ -1212,10 +1707,15 @@ export function PortfolioTab({
         {/* 보유 종목 스켈레톤 */}
         <div className={styles.holdingsSection}>
           <div className={styles.holdingsSectionHeader}>
-            <span className={`${styles.skeleton} ${styles.skeletonSectionTitle}`} />
+            <span
+              className={`${styles.skeleton} ${styles.skeletonSectionTitle}`}
+            />
             <div className={styles.holdingSortGroup}>
               {[1, 2, 3].map((i) => (
-                <div key={i} className={`${styles.skeleton} ${styles.skeletonSortBtn}`} />
+                <div
+                  key={i}
+                  className={`${styles.skeleton} ${styles.skeletonSortBtn}`}
+                />
               ))}
             </div>
           </div>
@@ -1225,35 +1725,61 @@ export function PortfolioTab({
                 <div className={styles.holdingRow}>
                   <div className={styles.holdingStockInfo}>
                     <div className={styles.holdingLabelRow}>
-                      <span className={`${styles.skeleton} ${styles.skeletonAssetType}`} />
-                      <span className={`${styles.skeleton} ${styles.skeletonTicker}`} />
+                      <span
+                        className={`${styles.skeleton} ${styles.skeletonAssetType}`}
+                      />
+                      <span
+                        className={`${styles.skeleton} ${styles.skeletonTicker}`}
+                      />
                     </div>
-                    <span className={`${styles.skeleton} ${styles.skeletonHoldingName}`} />
+                    <span
+                      className={`${styles.skeleton} ${styles.skeletonHoldingName}`}
+                    />
                   </div>
                   <div className={styles.holdingMetricsRow}>
                     <div className={styles.holdingMetric}>
-                      <span className={`${styles.skeleton} ${styles.skeletonMetricLabel}`} />
-                      <span className={`${styles.skeleton} ${styles.skeletonMetricValue}`} />
+                      <span
+                        className={`${styles.skeleton} ${styles.skeletonMetricLabel}`}
+                      />
+                      <span
+                        className={`${styles.skeleton} ${styles.skeletonMetricValue}`}
+                      />
                     </div>
                     <div className={styles.holdingMetric}>
-                      <span className={`${styles.skeleton} ${styles.skeletonMetricLabel}`} />
-                      <span className={`${styles.skeleton} ${styles.skeletonMetricValue}`} />
+                      <span
+                        className={`${styles.skeleton} ${styles.skeletonMetricLabel}`}
+                      />
+                      <span
+                        className={`${styles.skeleton} ${styles.skeletonMetricValue}`}
+                      />
                     </div>
                   </div>
                 </div>
                 <div className={styles.holdingRow}>
                   <div className={styles.holdingQtyInfo}>
-                    <span className={`${styles.skeleton} ${styles.skeletonMetricLabel}`} />
-                    <span className={`${styles.skeleton} ${styles.skeletonQtyValue}`} />
+                    <span
+                      className={`${styles.skeleton} ${styles.skeletonMetricLabel}`}
+                    />
+                    <span
+                      className={`${styles.skeleton} ${styles.skeletonQtyValue}`}
+                    />
                   </div>
                   <div className={styles.holdingMetricsRow}>
                     <div className={styles.holdingMetric}>
-                      <span className={`${styles.skeleton} ${styles.skeletonMetricLabel}`} />
-                      <span className={`${styles.skeleton} ${styles.skeletonMetricValue}`} />
+                      <span
+                        className={`${styles.skeleton} ${styles.skeletonMetricLabel}`}
+                      />
+                      <span
+                        className={`${styles.skeleton} ${styles.skeletonMetricValue}`}
+                      />
                     </div>
                     <div className={styles.holdingMetric}>
-                      <span className={`${styles.skeleton} ${styles.skeletonMetricLabel}`} />
-                      <span className={`${styles.skeleton} ${styles.skeletonMetricValue}`} />
+                      <span
+                        className={`${styles.skeleton} ${styles.skeletonMetricLabel}`}
+                      />
+                      <span
+                        className={`${styles.skeleton} ${styles.skeletonMetricValue}`}
+                      />
                     </div>
                   </div>
                 </div>
@@ -1276,9 +1802,14 @@ export function PortfolioTab({
         >
           <span className={styles.accountItemName}>전체</span>
           <div className={styles.accountItemValues}>
-            <span className={styles.accountItemBalance}>{formatWon(Math.round(totalAllValue))}</span>
-            <span className={`${styles.accountItemChange} ${totalAllProfitLoss >= 0 ? styles.positive : styles.negative}`}>
-              {totalAllProfitLoss >= 0 ? "+" : "-"}{formatWon(Math.round(Math.abs(totalAllProfitLoss)))}
+            <span className={styles.accountItemBalance}>
+              {formatWon(Math.round(totalAllValue))}
+            </span>
+            <span
+              className={`${styles.accountItemChange} ${totalAllProfitLoss >= 0 ? styles.positive : styles.negative}`}
+            >
+              {totalAllProfitLoss >= 0 ? "+" : "-"}
+              {formatWon(Math.round(Math.abs(totalAllProfitLoss)))}
             </span>
           </div>
         </button>
@@ -1291,7 +1822,11 @@ export function PortfolioTab({
             const accountValue = accountValues.get(account.id) || 0;
             const invested = accountInvested.get(account.id) || 0;
             const additionalAmt = account.additional_amount || 0;
-            const profit = accountValue - additionalAmt - invested;
+            const accountCustomPrincipal = customHoldings
+              .filter((ch) => ch.account_id === account.id)
+              .reduce((sum, ch) => sum + ch.principal, 0);
+            const profit =
+              accountValue - additionalAmt - invested - accountCustomPrincipal;
             const isSelected = selectedAccountIds.includes(account.id);
             return (
               <button
@@ -1301,9 +1836,14 @@ export function PortfolioTab({
               >
                 <span className={styles.accountItemName}>{account.name}</span>
                 <div className={styles.accountItemValues}>
-                  <span className={styles.accountItemBalance}>{formatWon(Math.round(accountValue))}</span>
-                  <span className={`${styles.accountItemChange} ${profit >= 0 ? styles.positive : styles.negative}`}>
-                    {profit >= 0 ? "+" : "-"}{formatWon(Math.round(Math.abs(profit)))}
+                  <span className={styles.accountItemBalance}>
+                    {formatWon(Math.round(accountValue))}
+                  </span>
+                  <span
+                    className={`${styles.accountItemChange} ${profit >= 0 ? styles.positive : styles.negative}`}
+                  >
+                    {profit >= 0 ? "+" : "-"}
+                    {formatWon(Math.round(Math.abs(profit)))}
                   </span>
                 </div>
               </button>
@@ -1321,29 +1861,44 @@ export function PortfolioTab({
             ref={searchPanelRef}
             className={`${styles.searchPanel} ${isSearchPanelClosing ? styles.closing : ""}`}
             style={{
-              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              background: isDark
+                ? "rgba(34, 37, 41, 0.6)"
+                : "rgba(255, 255, 255, 0.6)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
             }}
           >
             <div className={styles.searchPanelHeader}>
               <div>
                 <div className={styles.searchPanelTitle}>
-                  {searchResult.name && <span className={styles.searchPanelName}>{searchResult.name}</span>}
-                  <span className={styles.searchPanelSymbol}>{searchResult.symbol}</span>
+                  {searchResult.name && (
+                    <span className={styles.searchPanelName}>
+                      {searchResult.name}
+                    </span>
+                  )}
+                  <span className={styles.searchPanelSymbol}>
+                    {searchResult.symbol}
+                  </span>
                 </div>
                 <div className={styles.searchPanelPrice}>
-                  {searchResult.symbol.endsWith(".KS") || searchResult.symbol.endsWith(".KQ")
+                  {searchResult.symbol.endsWith(".KS") ||
+                  searchResult.symbol.endsWith(".KQ")
                     ? `${Math.round(searchResult.price).toLocaleString()}원`
                     : `$${searchResult.price.toLocaleString()}`}
-                  <span className={`${styles.searchPanelChange} ${searchResult.changePercent >= 0 ? styles.positive : styles.negative}`}>
-                    {searchResult.changePercent >= 0 ? "+" : ""}{searchResult.changePercent.toFixed(2)}%
+                  <span
+                    className={`${styles.searchPanelChange} ${searchResult.changePercent >= 0 ? styles.positive : styles.negative}`}
+                  >
+                    {searchResult.changePercent >= 0 ? "+" : ""}
+                    {searchResult.changePercent.toFixed(2)}%
                   </span>
                 </div>
                 <DataDateNotice dataDate={searchResult.dataDate} />
               </div>
-              <button onClick={closeSearchPanel} className={styles.searchPanelCloseBtn}>
+              <button
+                onClick={closeSearchPanel}
+                className={styles.searchPanelCloseBtn}
+              >
                 <X size={20} />
               </button>
             </div>
@@ -1351,12 +1906,14 @@ export function PortfolioTab({
             {/* 차트 */}
             <div className={styles.holdingPanelChart}>
               {searchResult.data && searchResult.data.length > 0 && (
-                <span className={styles.chartDateLabel}>{searchResult.data[searchResult.data.length - 1]?.Date} 기준</span>
+                <span className={styles.chartDateLabel}>
+                  {searchResult.data[searchResult.data.length - 1]?.Date} 기준
+                </span>
               )}
               <Sparkline
                 priceData={(() => {
                   const map = new Map<string, number>();
-                  searchResult.data.forEach(d => map.set(d.Date, d.Close));
+                  searchResult.data.forEach((d) => map.set(d.Date, d.Close));
                   return map;
                 })()}
                 profitLoss={searchResult.changePercent >= 0 ? 1 : -1}
@@ -1367,7 +1924,10 @@ export function PortfolioTab({
               />
             </div>
 
-            <button onClick={applySearchResult} className={styles.searchPanelAddBtn}>
+            <button
+              onClick={applySearchResult}
+              className={styles.searchPanelAddBtn}
+            >
               이 종목으로 거래 추가
             </button>
           </div>
@@ -1383,25 +1943,36 @@ export function PortfolioTab({
             ref={holdingPanelRef}
             className={`${styles.holdingPanel} ${isHoldingPanelClosing ? styles.closing : ""}`}
             style={{
-              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              background: isDark
+                ? "rgba(34, 37, 41, 0.6)"
+                : "rgba(255, 255, 255, 0.6)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
             }}
           >
             <div className={styles.searchPanelHeader}>
               <div>
                 <div className={styles.searchPanelTitle}>
-                  <span className={styles.searchPanelName}>{selectedHolding.name}</span>
-                  <span className={styles.searchPanelSymbol}>{selectedHolding.ticker}</span>
+                  <span className={styles.searchPanelName}>
+                    {selectedHolding.name}
+                  </span>
+                  <span className={styles.searchPanelSymbol}>
+                    {selectedHolding.ticker}
+                  </span>
                 </div>
                 <div className={styles.holdingPanelMeta}>
-                  <span className={`${styles.assetTypeLabel} ${styles[selectedHolding.asset_type]}`}>
+                  <span
+                    className={`${styles.assetTypeLabel} ${styles[selectedHolding.asset_type]}`}
+                  >
                     {ASSET_TYPE_LABELS[selectedHolding.asset_type]}
                   </span>
                 </div>
               </div>
-              <button onClick={closeHoldingPanel} className={styles.searchPanelCloseBtn}>
+              <button
+                onClick={closeHoldingPanel}
+                className={styles.searchPanelCloseBtn}
+              >
                 <X size={20} />
               </button>
             </div>
@@ -1410,34 +1981,53 @@ export function PortfolioTab({
             <div className={styles.holdingPanelInfo}>
               <div className={styles.holdingPanelRow}>
                 <span className={styles.holdingPanelLabel}>보유 수량</span>
-                <span className={styles.holdingPanelValue}>{selectedHolding.quantity.toLocaleString()}주</span>
+                <span className={styles.holdingPanelValue}>
+                  {selectedHolding.quantity.toLocaleString()}주
+                </span>
               </div>
               <div className={styles.holdingPanelRow}>
                 <span className={styles.holdingPanelLabel}>평균 단가</span>
-                <span className={styles.holdingPanelValue}>{Math.round(selectedHolding.avg_price).toLocaleString()}원</span>
+                <span className={styles.holdingPanelValue}>
+                  {Math.round(selectedHolding.avg_price).toLocaleString()}원
+                </span>
               </div>
               <div className={styles.holdingPanelRow}>
                 <span className={styles.holdingPanelLabel}>투자 금액</span>
-                <span className={styles.holdingPanelValue}>{Math.round(selectedHolding.total_invested).toLocaleString()}원</span>
+                <span className={styles.holdingPanelValue}>
+                  {Math.round(selectedHolding.total_invested).toLocaleString()}
+                  원
+                </span>
               </div>
               {(() => {
                 const holdingData = holdingValues.get(selectedHolding.ticker);
                 const currentVal = holdingData?.value ?? null;
-                const holdingPL = currentVal !== null ? currentVal - selectedHolding.total_invested : null;
-                const holdingPLRate = currentVal !== null && selectedHolding.total_invested > 0
-                  ? ((currentVal - selectedHolding.total_invested) / selectedHolding.total_invested) * 100
-                  : null;
+                const holdingPL =
+                  currentVal !== null
+                    ? currentVal - selectedHolding.total_invested
+                    : null;
+                const holdingPLRate =
+                  currentVal !== null && selectedHolding.total_invested > 0
+                    ? ((currentVal - selectedHolding.total_invested) /
+                        selectedHolding.total_invested) *
+                      100
+                    : null;
                 return (
                   <>
                     <div className={styles.holdingPanelRow}>
-                      <span className={styles.holdingPanelLabel}>평가 금액</span>
+                      <span className={styles.holdingPanelLabel}>
+                        평가 금액
+                      </span>
                       <span className={styles.holdingPanelValue}>
-                        {currentVal !== null ? `${Math.round(currentVal).toLocaleString()}원` : "-"}
+                        {currentVal !== null
+                          ? `${Math.round(currentVal).toLocaleString()}원`
+                          : "-"}
                       </span>
                     </div>
                     <div className={styles.holdingPanelRow}>
                       <span className={styles.holdingPanelLabel}>손익</span>
-                      <span className={`${styles.holdingPanelValue} ${holdingPL !== null ? (holdingPL >= 0 ? styles.profitColor : styles.lossColor) : ""}`}>
+                      <span
+                        className={`${styles.holdingPanelValue} ${holdingPL !== null ? (holdingPL >= 0 ? styles.profitColor : styles.lossColor) : ""}`}
+                      >
                         {holdingPL !== null
                           ? `${holdingPL >= 0 ? "+" : ""}${Math.round(holdingPL).toLocaleString()}원 (${holdingPLRate !== null ? `${holdingPLRate >= 0 ? "+" : ""}${holdingPLRate.toFixed(1)}%` : ""})`
                           : "-"}
@@ -1451,11 +2041,20 @@ export function PortfolioTab({
             {/* 차트 */}
             <div className={styles.holdingPanelChart}>
               {(() => {
-                const tickerPrices = priceCache?.priceDataMap.get(selectedHolding.ticker);
-                const sortedDates = tickerPrices ? Array.from(tickerPrices.keys()).sort() : [];
-                const latestDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : null;
+                const tickerPrices = priceCache?.priceDataMap.get(
+                  selectedHolding.ticker,
+                );
+                const sortedDates = tickerPrices
+                  ? Array.from(tickerPrices.keys()).sort()
+                  : [];
+                const latestDate =
+                  sortedDates.length > 0
+                    ? sortedDates[sortedDates.length - 1]
+                    : null;
                 return latestDate ? (
-                  <span className={styles.chartDateLabel}>{latestDate} 기준</span>
+                  <span className={styles.chartDateLabel}>
+                    {latestDate} 기준
+                  </span>
                 ) : null;
               })()}
               <Sparkline
@@ -1463,7 +2062,9 @@ export function PortfolioTab({
                 profitLoss={(() => {
                   const holdingData = holdingValues.get(selectedHolding.ticker);
                   const currentVal = holdingData?.value ?? null;
-                  return currentVal !== null ? currentVal - selectedHolding.total_invested : null;
+                  return currentVal !== null
+                    ? currentVal - selectedHolding.total_invested
+                    : null;
                 })()}
                 chartLineColors={chartLineColors}
                 toRgba={toRgba}
@@ -1472,7 +2073,10 @@ export function PortfolioTab({
               />
             </div>
 
-            <button onClick={() => openSellForm(selectedHolding)} className={styles.sellBtn}>
+            <button
+              onClick={() => openSellForm(selectedHolding)}
+              className={styles.sellBtn}
+            >
               매도하기
             </button>
           </div>
@@ -1491,68 +2095,56 @@ export function PortfolioTab({
             </>
           ) : (
             <>
-              <div className={styles.mainValueRow}>
-                <span className={styles.mainValue}>
-                  {currentValue !== null ? formatWon(Math.round(currentValue)) : "0원"}
-                </span>
-                <span className={styles.principalValue}>
-                  원금 {formatWon(Math.round(totalInvested))}
-                </span>
-              </div>
-              {profitLoss !== null && (
-                <div className={`${styles.changeInfo} ${profitLoss >= 0 ? styles.positive : styles.negative}`}>
-                  {profitLoss >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                  <span>
-                    {profitLoss >= 0 ? "+" : ""}{formatWon(Math.round(Math.abs(profitLoss)))}
-                    {" "}({profitLossRate !== null ? `${profitLossRate >= 0 ? "+" : ""}${profitLossRate.toFixed(1)}%` : ""})
-                  </span>
-                </div>
-              )}
+              {(() => {
+                const totalEvaluation =
+                  (currentValue || 0) + customHoldingsCurrentValue;
+                const totalPrincipal = totalInvested + customHoldingsPrincipal;
+                const totalPL = totalEvaluation - totalPrincipal;
+                const totalPLRate =
+                  totalPrincipal > 0
+                    ? ((totalEvaluation - totalPrincipal) / totalPrincipal) *
+                      100
+                    : null;
+                return (
+                  <>
+                    <div className={styles.mainValue}>
+                      {formatWon(Math.round(totalEvaluation))}
+                    </div>
+                    {totalPrincipal > 0 && (
+                      <div
+                        className={`${styles.changeInfo} ${totalPL >= 0 ? styles.positive : styles.negative}`}
+                      >
+                        {totalPL >= 0 ? (
+                          <TrendingUp size={14} />
+                        ) : (
+                          <TrendingDown size={14} />
+                        )}
+                        <span>
+                          {totalPL >= 0 ? "+" : ""}
+                          {formatWon(Math.round(Math.abs(totalPL)))} (
+                          {totalPLRate !== null
+                            ? `${totalPLRate >= 0 ? "+" : ""}${totalPLRate.toFixed(1)}%`
+                            : ""}
+                          )
+                        </span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </>
           )}
         </div>
         <div className={styles.additionalMetric}>
-          <span className={styles.sideLabel}>평가외 추가금액</span>
-          {selectedAccountIds.length === 1 && editingAdditionalAmountId === selectedAccountIds[0] ? (
-            <div className={styles.sideInputWrap}>
-              <input
-                className={styles.sideInput}
-                type="text"
-                value={additionalAmountInput}
-                onChange={(e) => setAdditionalAmountInput(e.target.value)}
-                onBlur={() => handleAdditionalAmountSave(selectedAccountIds[0])}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleAdditionalAmountSave(selectedAccountIds[0]);
-                  if (e.key === "Escape") {
-                    additionalAmountCancelledRef.current = true;
-                    setEditingAdditionalAmountId(null);
-                  }
-                }}
-                autoFocus
-                placeholder="0"
-              />
-              <span className={styles.sideInputUnit}>원</span>
-            </div>
-          ) : (
-            <span
-              className={`${styles.sideValue} ${selectedAccountIds.length === 1 ? styles.sideValueEditable : ""}`}
-              onClick={() => {
-                if (selectedAccountIds.length === 1) {
-                  const account = accounts.find(a => a.id === selectedAccountIds[0]);
-                  const won = account?.additional_amount || 0;
-                  setAdditionalAmountInput(won > 0 ? won.toLocaleString() : "");
-                  setEditingAdditionalAmountId(selectedAccountIds[0]);
-                }
-              }}
-            >
-              {formatWon(Math.round(selectedAdditionalAmount))}
-            </span>
-          )}
+          <span className={styles.sideLabel}>원금</span>
+          <span className={styles.sideValue}>
+            {formatWon(Math.round(totalInvested + customHoldingsPrincipal))}
+          </span>
         </div>
         <div className={styles.totalMetric}>
-          <span className={styles.sideLabel}>총금액</span>
+          <span className={styles.sideLabel}>종목수</span>
           <span className={styles.sideValue}>
-            {formatWon(Math.round((currentValue || 0) + selectedAdditionalAmount))}
+            {sortedHoldings.length + filteredCustomHoldings.length}
           </span>
         </div>
       </div>
@@ -1566,6 +2158,8 @@ export function PortfolioTab({
               priceCacheLoading={priceCacheLoading}
               transactions={transactions}
               filterAccountIds={selectedAccountIds}
+              customHoldings={filteredCustomHoldings}
+              customHoldingSnapshots={customHoldingSnapshots}
               chartLineColors={chartLineColors}
               chartScaleColors={chartScaleColors}
               toRgba={toRgba}
@@ -1576,15 +2170,19 @@ export function PortfolioTab({
 
       {/* 거래 추가/수정 모달 */}
       {showAddForm && (
-        <div className={`${styles.modalOverlay} ${isModalClosing ? styles.closing : ""}`}>
+        <div
+          className={`${styles.modalOverlay} ${isModalClosing ? styles.closing : ""}`}
+        >
           <div
             ref={modalRef}
             className={`${styles.modal} ${isModalClosing ? styles.closing : ""}`}
             style={{
-              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              background: isDark
+                ? "rgba(34, 37, 41, 0.6)"
+                : "rgba(255, 255, 255, 0.6)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
             }}
           >
             <div className={styles.modalHeader}>
@@ -1605,17 +2203,30 @@ export function PortfolioTab({
                       onChange={(e) => {
                         const newType = e.target.value as PortfolioAssetType;
                         const wasForeign = isForeignForm;
-                        const nowForeign = newType === "foreign_stock" || newType === "foreign_etf";
+                        const nowForeign =
+                          newType === "foreign_stock" ||
+                          newType === "foreign_etf";
                         setFormCommon({ ...formCommon, asset_type: newType });
                         if (wasForeign !== nowForeign) {
-                          setFormRows(prev => prev.map(row => ({ ...row, price: undefined, exchange_rate: undefined, usdPrice: "" })));
+                          setFormRows((prev) =>
+                            prev.map((row) => ({
+                              ...row,
+                              price: undefined,
+                              exchange_rate: undefined,
+                              usdPrice: "",
+                            })),
+                          );
                         }
                       }}
                       className={styles.select}
                     >
-                      {Object.entries(ASSET_TYPE_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
+                      {Object.entries(ASSET_TYPE_LABELS).map(
+                        ([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </div>
 
@@ -1623,7 +2234,12 @@ export function PortfolioTab({
                     <label>증권 계좌</label>
                     <select
                       value={formCommon.account_id || ""}
-                      onChange={(e) => setFormCommon({ ...formCommon, account_id: e.target.value || null })}
+                      onChange={(e) =>
+                        setFormCommon({
+                          ...formCommon,
+                          account_id: e.target.value || null,
+                        })
+                      }
                       className={styles.select}
                     >
                       <option value="">계좌 미지정</option>
@@ -1644,7 +2260,9 @@ export function PortfolioTab({
                       type="text"
                       placeholder="005930.KS, AAPL"
                       value={formCommon.ticker}
-                      onChange={(e) => setFormCommon({ ...formCommon, ticker: e.target.value })}
+                      onChange={(e) =>
+                        setFormCommon({ ...formCommon, ticker: e.target.value })
+                      }
                       className={styles.input}
                     />
                   </div>
@@ -1655,7 +2273,9 @@ export function PortfolioTab({
                       type="text"
                       placeholder="삼성전자, Apple"
                       value={formCommon.name}
-                      onChange={(e) => setFormCommon({ ...formCommon, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormCommon({ ...formCommon, name: e.target.value })
+                      }
                       className={styles.input}
                     />
                   </div>
@@ -1665,23 +2285,52 @@ export function PortfolioTab({
                 <div className={styles.txRowList}>
                   {/* 헤더 */}
                   <div className={styles.txRowHeader}>
-                    <span className={`${styles.txRowHeaderCell} ${styles.colType}`}>유형</span>
-                    <span className={`${styles.txRowHeaderCell} ${styles.colDate}`}>거래일</span>
-                    <span className={`${styles.txRowHeaderCell} ${styles.colQty}`}>
+                    <span
+                      className={`${styles.txRowHeaderCell} ${styles.colType}`}
+                    >
+                      유형
+                    </span>
+                    <span
+                      className={`${styles.txRowHeaderCell} ${styles.colDate}`}
+                    >
+                      거래일
+                    </span>
+                    <span
+                      className={`${styles.txRowHeaderCell} ${styles.colQty}`}
+                    >
                       수량
                       {sellHoldingQuantity !== null && (
-                        <span className={styles.holdingHint}> (보유: {sellHoldingQuantity})</span>
+                        <span className={styles.holdingHint}>
+                          {" "}
+                          (보유: {sellHoldingQuantity})
+                        </span>
                       )}
                     </span>
                     {isForeignForm ? (
                       <>
-                        <span className={`${styles.txRowHeaderCell} ${styles.colPrice}`}>단가 ($)</span>
-                        <span className={`${styles.txRowHeaderCell} ${styles.colFx}`}>환율</span>
+                        <span
+                          className={`${styles.txRowHeaderCell} ${styles.colPrice}`}
+                        >
+                          단가 ($)
+                        </span>
+                        <span
+                          className={`${styles.txRowHeaderCell} ${styles.colFx}`}
+                        >
+                          환율
+                        </span>
                       </>
                     ) : (
-                      <span className={`${styles.txRowHeaderCell} ${styles.colPrice}`}>단가 (원)</span>
+                      <span
+                        className={`${styles.txRowHeaderCell} ${styles.colPrice}`}
+                      >
+                        단가 (원)
+                      </span>
                     )}
-                    <span className={`${styles.txRowHeaderCell} ${styles.colFee}`}>수수료</span>
+                    <span
+                      className={`${styles.txRowHeaderCell} ${styles.colFee}`}
+                    >
+                      수수료
+                    </span>
                     <span className={styles.colAction}></span>
                   </div>
 
@@ -1710,7 +2359,9 @@ export function PortfolioTab({
                         <input
                           type="date"
                           value={row.trade_date}
-                          onChange={(e) => updateRow(index, { trade_date: e.target.value })}
+                          onChange={(e) =>
+                            updateRow(index, { trade_date: e.target.value })
+                          }
                           className={styles.txRowInput}
                         />
                       </div>
@@ -1719,7 +2370,13 @@ export function PortfolioTab({
                           type="number"
                           placeholder="10"
                           value={row.quantity ?? ""}
-                          onChange={(e) => updateRow(index, { quantity: e.target.value ? parseFloat(e.target.value) : undefined })}
+                          onChange={(e) =>
+                            updateRow(index, {
+                              quantity: e.target.value
+                                ? parseFloat(e.target.value)
+                                : undefined,
+                            })
+                          }
                           onWheel={(e) => (e.target as HTMLElement).blur()}
                           className={styles.txRowInput}
                         />
@@ -1733,11 +2390,15 @@ export function PortfolioTab({
                               step="0.01"
                               value={row.usdPrice}
                               onChange={(e) => {
-                                const usdVal = e.target.value ? parseFloat(e.target.value) : 0;
+                                const usdVal = e.target.value
+                                  ? parseFloat(e.target.value)
+                                  : 0;
                                 const rate = row.exchange_rate || 1450;
                                 updateRow(index, {
                                   usdPrice: e.target.value,
-                                  price: usdVal ? Math.round(usdVal * rate) : undefined,
+                                  price: usdVal
+                                    ? Math.round(usdVal * rate)
+                                    : undefined,
                                 });
                               }}
                               onWheel={(e) => (e.target as HTMLElement).blur()}
@@ -1750,11 +2411,18 @@ export function PortfolioTab({
                               placeholder="1450"
                               value={row.exchange_rate ?? ""}
                               onChange={(e) => {
-                                const newRate = e.target.value ? parseFloat(e.target.value) : undefined;
-                                const usdVal = row.usdPrice ? parseFloat(row.usdPrice) : 0;
+                                const newRate = e.target.value
+                                  ? parseFloat(e.target.value)
+                                  : undefined;
+                                const usdVal = row.usdPrice
+                                  ? parseFloat(row.usdPrice)
+                                  : 0;
                                 updateRow(index, {
                                   exchange_rate: newRate,
-                                  price: newRate && usdVal ? Math.round(usdVal * newRate) : undefined,
+                                  price:
+                                    newRate && usdVal
+                                      ? Math.round(usdVal * newRate)
+                                      : undefined,
                                 });
                               }}
                               onWheel={(e) => (e.target as HTMLElement).blur()}
@@ -1768,7 +2436,13 @@ export function PortfolioTab({
                             type="number"
                             placeholder="70000"
                             value={row.price ?? ""}
-                            onChange={(e) => updateRow(index, { price: e.target.value ? parseFloat(e.target.value) : undefined })}
+                            onChange={(e) =>
+                              updateRow(index, {
+                                price: e.target.value
+                                  ? parseFloat(e.target.value)
+                                  : undefined,
+                              })
+                            }
                             onWheel={(e) => (e.target as HTMLElement).blur()}
                             className={styles.txRowInput}
                           />
@@ -1779,13 +2453,23 @@ export function PortfolioTab({
                           type="number"
                           placeholder="0"
                           value={row.fee ?? ""}
-                          onChange={(e) => updateRow(index, { fee: e.target.value ? parseFloat(e.target.value) : undefined })}
+                          onChange={(e) =>
+                            updateRow(index, {
+                              fee: e.target.value
+                                ? parseFloat(e.target.value)
+                                : undefined,
+                            })
+                          }
                           onWheel={(e) => (e.target as HTMLElement).blur()}
                           className={styles.txRowInput}
                         />
                       </div>
                       <div className={styles.colAction}>
-                        <button type="button" onClick={() => removeRow(index)} className={styles.removeRowBtn}>
+                        <button
+                          type="button"
+                          onClick={() => removeRow(index)}
+                          className={styles.removeRowBtn}
+                        >
                           <Trash2 size={13} />
                         </button>
                       </div>
@@ -1794,7 +2478,11 @@ export function PortfolioTab({
 
                   {/* 행 추가 버튼 (수정 모드가 아닐 때만) */}
                   {!editingId && (
-                    <button type="button" onClick={addRow} className={styles.addRowBtn}>
+                    <button
+                      type="button"
+                      onClick={addRow}
+                      className={styles.addRowBtn}
+                    >
                       + 거래 추가
                     </button>
                   )}
@@ -1802,13 +2490,20 @@ export function PortfolioTab({
 
                 {/* 매도 시 보유 수량 초과 경고 */}
                 {isSellQuantityExceeded && (
-                  <div className={styles.errorHint} style={{ textAlign: "center" }}>
+                  <div
+                    className={styles.errorHint}
+                    style={{ textAlign: "center" }}
+                  >
                     매도 가능 수량({sellHoldingQuantity}주)을 초과했습니다.
                   </div>
                 )}
 
                 <div className={styles.formActions}>
-                  <button type="button" onClick={handleCancel} className={styles.cancelBtn}>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className={styles.cancelBtn}
+                  >
                     취소
                   </button>
                   <button type="submit" className={styles.submitBtn}>
@@ -1847,92 +2542,291 @@ export function PortfolioTab({
           </div>
         </div>
 
-        {sortedHoldings.length === 0 ? (
-          <div className={styles.emptyState}>보유 종목이 없습니다.</div>
-        ) : (
-          <div className={styles.holdingsList}>
-            {sortedHoldings.map((holding) => {
-              const holdingData = holdingValues.get(holding.ticker);
-              const currentVal = holdingData?.value ?? null;
-              const holdingPL = currentVal !== null ? currentVal - holding.total_invested : null;
-              const holdingPLRate = currentVal !== null && holding.total_invested > 0
-                ? ((currentVal - holding.total_invested) / holding.total_invested) * 100
-                : null;
+        {(() => {
+          // 통합 보유 종목 리스트 생성
+          const displayList: DisplayHolding[] = [
+            ...sortedHoldings.map(
+              (h): DisplayHolding => ({ kind: "tracked", data: h }),
+            ),
+            ...filteredCustomHoldings.map(
+              (ch): DisplayHolding => ({ kind: "custom", data: ch }),
+            ),
+          ];
 
-              return (
-                <div
-                  key={holding.ticker}
-                  className={styles.holdingItem}
-                  onClick={() => setSelectedHolding(holding)}
-                  style={{ cursor: "pointer" }}
-                >
-                  {/* 1행: 종목명 + 평가금액 + 투자금액 */}
-                  <div className={styles.holdingRow}>
-                    <div className={styles.holdingStockInfo}>
-                      <div className={styles.holdingLabelRow}>
-                        <span className={`${styles.assetTypeLabel} ${styles[holding.asset_type]}`}>
-                          {ASSET_TYPE_LABELS[holding.asset_type]}
-                        </span>
-                        <span className={styles.holdingTicker}>{holding.ticker}</span>
-                      </div>
-                      <span className={styles.holdingName}>{holding.name}</span>
-                    </div>
-                    <div className={styles.holdingMetricsRow}>
-                      <div className={styles.holdingMetric}>
-                        <span className={styles.metricLabel}>평가금액</span>
-                        <span className={styles.metricValue}>
-                          {valueLoading ? "..." : currentVal !== null ? `${Math.round(currentVal).toLocaleString()}원` : "-"}
-                        </span>
-                      </div>
-                      <div className={styles.holdingMetric}>
-                        <span className={styles.metricLabel}>투자금액</span>
-                        <span className={styles.metricValue}>{Math.round(holding.total_invested).toLocaleString()}원</span>
-                      </div>
-                    </div>
-                  </div>
-                  {/* 2행: 보유주식 + 손익 + 스파크라인 */}
-                  <div className={styles.holdingRow}>
-                    <div className={styles.holdingQtyInfo}>
-                      <span className={styles.metricLabel}>보유 주식수</span>
-                      <span className={styles.metricValueLeft}>
-                        {holding.quantity.toLocaleString()}주
-                        <span className={styles.avgPriceInline}>({Math.round(holding.avg_price).toLocaleString()}원)</span>
-                      </span>
-                    </div>
-                    <div className={styles.holdingMetricsRow}>
-                      <div className={styles.holdingMetric}>
-                        <span className={styles.metricLabel}>손익</span>
-                        {holdingPL !== null && !valueLoading ? (
-                          <span className={`${styles.metricValue} ${holdingPL >= 0 ? styles.profitColor : styles.lossColor}`}>
-                            {holdingPL >= 0 ? "+" : ""}{Math.round(holdingPL).toLocaleString()}원
-                            <span className={styles.plRateSmall}> ({holdingPLRate !== null ? `${holdingPLRate >= 0 ? "+" : ""}${holdingPLRate.toFixed(1)}%` : ""})</span>
-                          </span>
-                        ) : (
-                          <span className={styles.metricValue}>-</span>
-                        )}
-                      </div>
-                      <div className={styles.holdingMetricChart}>
-                        <span className={styles.metricLabel}>주가 추이</span>
-                        <Sparkline priceData={priceCache?.priceDataMap.get(holding.ticker)} profitLoss={holdingPL} chartLineColors={chartLineColors} toRgba={toRgba} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          // 정렬
+          displayList.sort((a, b) => {
+            const valueA =
+              a.kind === "tracked"
+                ? (holdingValues.get(a.data.ticker)?.value ??
+                  a.data.total_invested)
+                : (a.data as CustomHolding).current_value;
+            const valueB =
+              b.kind === "tracked"
+                ? (holdingValues.get(b.data.ticker)?.value ??
+                  b.data.total_invested)
+                : (b.data as CustomHolding).current_value;
+
+            if (holdingSort === "value") return valueB - valueA;
+            if (holdingSort === "profit") {
+              const investedA =
+                a.kind === "tracked"
+                  ? a.data.total_invested
+                  : (a.data as CustomHolding).principal;
+              const investedB =
+                b.kind === "tracked"
+                  ? b.data.total_invested
+                  : (b.data as CustomHolding).principal;
+              return valueB - investedB - (valueA - investedA);
+            }
+            // latest: tracked first by latest trade date, then custom by date_basis
+            if (a.kind === "tracked" && b.kind === "tracked") {
+              const dateA = latestTradeDateMap.get(a.data.ticker) || "";
+              const dateB = latestTradeDateMap.get(b.data.ticker) || "";
+              return dateB.localeCompare(dateA);
+            }
+            if (a.kind === "custom" && b.kind === "custom") {
+              return (b.data as CustomHolding).date_basis.localeCompare(
+                (a.data as CustomHolding).date_basis,
               );
-            })}
-          </div>
-        )}
+            }
+            return a.kind === "tracked" ? -1 : 1;
+          });
+
+          return (
+            <div className={styles.holdingsList}>
+              {displayList.map((item) => {
+                if (item.kind === "tracked") {
+                  const holding = item.data;
+                  const holdingData = holdingValues.get(holding.ticker);
+                  const currentVal = holdingData?.value ?? null;
+                  const holdingPL =
+                    currentVal !== null
+                      ? currentVal - holding.total_invested
+                      : null;
+                  const holdingPLRate =
+                    currentVal !== null && holding.total_invested > 0
+                      ? ((currentVal - holding.total_invested) /
+                          holding.total_invested) *
+                        100
+                      : null;
+
+                  return (
+                    <div
+                      key={`tracked-${holding.ticker}`}
+                      className={styles.holdingItem}
+                      onClick={() => setSelectedHolding(holding)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {/* 1행: 종목명 + 평가금액 + 투자금액 */}
+                      <div className={styles.holdingRow}>
+                        <div className={styles.holdingStockInfo}>
+                          <div className={styles.holdingLabelRow}>
+                            <span
+                              className={`${styles.assetTypeLabel} ${styles[holding.asset_type]}`}
+                            >
+                              {ASSET_TYPE_LABELS[holding.asset_type]}
+                            </span>
+                            <span className={styles.holdingTicker}>
+                              {holding.ticker}
+                            </span>
+                          </div>
+                          <span className={styles.holdingName}>
+                            {holding.name}
+                          </span>
+                        </div>
+                        <div className={styles.holdingMetricsRow}>
+                          <div className={styles.holdingMetric}>
+                            <span className={styles.metricLabel}>평가금액</span>
+                            <span className={styles.metricValue}>
+                              {valueLoading
+                                ? "..."
+                                : currentVal !== null
+                                  ? `${Math.round(currentVal).toLocaleString()}원`
+                                  : "-"}
+                            </span>
+                          </div>
+                          <div className={styles.holdingMetric}>
+                            <span className={styles.metricLabel}>투자금액</span>
+                            <span className={styles.metricValue}>
+                              {Math.round(
+                                holding.total_invested,
+                              ).toLocaleString()}
+                              원
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* 2행: 보유주식 + 손익 + 스파크라인 */}
+                      <div className={styles.holdingRow}>
+                        <div className={styles.holdingQtyInfo}>
+                          <span className={styles.metricLabel}>
+                            보유 주식수
+                          </span>
+                          <span className={styles.metricValueLeft}>
+                            {holding.quantity.toLocaleString()}주
+                            <span className={styles.avgPriceInline}>
+                              ({Math.round(holding.avg_price).toLocaleString()}
+                              원)
+                            </span>
+                          </span>
+                        </div>
+                        <div className={styles.holdingMetricsRow}>
+                          <div className={styles.holdingMetric}>
+                            <span className={styles.metricLabel}>손익</span>
+                            {holdingPL !== null && !valueLoading ? (
+                              <span
+                                className={`${styles.metricValue} ${holdingPL >= 0 ? styles.profitColor : styles.lossColor}`}
+                              >
+                                {holdingPL >= 0 ? "+" : ""}
+                                {Math.round(holdingPL).toLocaleString()}원
+                                <span className={styles.plRateSmall}>
+                                  {" "}
+                                  (
+                                  {holdingPLRate !== null
+                                    ? `${holdingPLRate >= 0 ? "+" : ""}${holdingPLRate.toFixed(1)}%`
+                                    : ""}
+                                  )
+                                </span>
+                              </span>
+                            ) : (
+                              <span className={styles.metricValue}>-</span>
+                            )}
+                          </div>
+                          <div className={styles.holdingMetricChart}>
+                            <span className={styles.metricLabel}>
+                              주가 추이
+                            </span>
+                            <Sparkline
+                              priceData={priceCache?.priceDataMap.get(
+                                holding.ticker,
+                              )}
+                              profitLoss={holdingPL}
+                              chartLineColors={chartLineColors}
+                              toRgba={toRgba}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  // 커스텀 보유 종목
+                  const ch = item.data as CustomHolding;
+                  const chPL = ch.current_value - ch.principal;
+                  const chPLRate =
+                    ch.principal > 0
+                      ? ((ch.current_value - ch.principal) / ch.principal) * 100
+                      : null;
+
+                  return (
+                    <div
+                      key={`custom-${ch.id}`}
+                      className={styles.holdingItem}
+                      onClick={() => openCustomHoldingModal(ch)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {/* 1행: 종목명 + 평가금액 + 투자금액 */}
+                      <div className={styles.holdingRow}>
+                        <div className={styles.holdingStockInfo}>
+                          <div className={styles.holdingLabelRow}>
+                            <span
+                              className={`${styles.assetTypeLabel} ${styles[ch.asset_type]}`}
+                            >
+                              {CUSTOM_HOLDING_TYPE_LABELS[ch.asset_type]}
+                            </span>
+                            <span className={styles.holdingTicker}>
+                              직접입력
+                            </span>
+                          </div>
+                          <span className={styles.holdingName}>{ch.name}</span>
+                        </div>
+                        <div className={styles.holdingMetricsRow}>
+                          <div className={styles.holdingMetric}>
+                            <span className={styles.metricLabel}>평가금액</span>
+                            <span className={styles.metricValue}>
+                              {Math.round(ch.current_value).toLocaleString()}원
+                            </span>
+                          </div>
+                          <div className={styles.holdingMetric}>
+                            <span className={styles.metricLabel}>투자금액</span>
+                            <span className={styles.metricValue}>
+                              {Math.round(ch.principal).toLocaleString()}원
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* 2행: (빈 왼쪽) + 손익 + 기준일 */}
+                      <div className={styles.holdingRow}>
+                        <div className={styles.holdingQtyInfo} />
+                        <div className={styles.holdingMetricsRow}>
+                          <div className={styles.holdingMetric}>
+                            <span className={styles.metricLabel}>손익</span>
+                            {ch.principal > 0 ? (
+                              <span
+                                className={`${styles.metricValue} ${chPL >= 0 ? styles.profitColor : styles.lossColor}`}
+                              >
+                                {chPL >= 0 ? "+" : ""}
+                                {Math.round(chPL).toLocaleString()}원
+                                <span className={styles.plRateSmall}>
+                                  {" "}
+                                  (
+                                  {chPLRate !== null
+                                    ? `${chPLRate >= 0 ? "+" : ""}${chPLRate.toFixed(1)}%`
+                                    : ""}
+                                  )
+                                </span>
+                              </span>
+                            ) : (
+                              <span className={styles.metricValue}>-</span>
+                            )}
+                          </div>
+                          <div className={styles.holdingMetricChart}>
+                            <span className={styles.metricLabel}>기준일</span>
+                            <span className={styles.customDateBasis}>
+                              {ch.date_basis}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+              })}
+              {/* 직접 추가하기 카드 */}
+              <div
+                className={styles.addHoldingCard}
+                onClick={() => openCustomHoldingModal()}
+              >
+                <div className={styles.addHoldingCardMain}>
+                  <Plus size={20} />
+                  <span>직접 추가하기</span>
+                </div>
+                <span className={styles.addHoldingCardDesc}>
+                  펀드, 채권 등 시세 조회가 안 되는 종목
+                </span>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* 거래 내역 */}
       <div className={styles.section}>
         <button
           className={styles.sectionHeader}
-          onClick={() => setExpandedSection(expandedSection === "transactions" ? null : "transactions")}
+          onClick={() =>
+            setExpandedSection(
+              expandedSection === "transactions" ? null : "transactions",
+            )
+          }
         >
           <h3 className={styles.sectionTitle}>거래 내역</h3>
           <span className={styles.badge}>{filteredTransactions.length}</span>
-          {expandedSection === "transactions" ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          {expandedSection === "transactions" ? (
+            <ChevronUp size={18} />
+          ) : (
+            <ChevronDown size={18} />
+          )}
         </button>
 
         {expandedSection === "transactions" && (
@@ -1943,42 +2837,54 @@ export function PortfolioTab({
               filteredTransactions.map((tx) => {
                 const txAccount = accounts.find((a) => a.id === tx.account_id);
                 return (
-                <div key={tx.id} className={styles.transactionCard}>
-                  <div className={styles.txLeft}>
-                    <span className={`${styles.txType} ${styles[tx.type]}`}>
-                      {tx.type === "buy" ? "매수" : "매도"}
-                    </span>
-                    <div className={styles.txInfo}>
-                      <span className={styles.txName}>{tx.name}</span>
-                      <div className={styles.txMeta}>
-                        <span className={styles.txTicker}>{tx.ticker}</span>
-                        {txAccount && (
-                          <span className={styles.txAccount}>{txAccount.broker_name}</span>
-                        )}
+                  <div key={tx.id} className={styles.transactionCard}>
+                    <div className={styles.txLeft}>
+                      <span className={`${styles.txType} ${styles[tx.type]}`}>
+                        {tx.type === "buy" ? "매수" : "매도"}
+                      </span>
+                      <div className={styles.txInfo}>
+                        <span className={styles.txName}>{tx.name}</span>
+                        <div className={styles.txMeta}>
+                          <span className={styles.txTicker}>{tx.ticker}</span>
+                          {txAccount && (
+                            <span className={styles.txAccount}>
+                              {txAccount.broker_name}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    <div className={styles.txCenter}>
+                      <span className={styles.txQty}>
+                        {tx.quantity.toLocaleString()}주
+                      </span>
+                      <span className={styles.txPrice}>
+                        {tx.currency === "USD" && tx.exchange_rate > 1
+                          ? `@ $${(tx.price / tx.exchange_rate).toFixed(2)}`
+                          : `@ ${Math.round(tx.price).toLocaleString()}원`}
+                      </span>
+                    </div>
+                    <div className={styles.txRight}>
+                      <span className={styles.txTotal}>
+                        {Math.round(tx.quantity * tx.price).toLocaleString()}원
+                      </span>
+                      <span className={styles.txDate}>{tx.trade_date}</span>
+                    </div>
+                    <div className={styles.txActions}>
+                      <button
+                        onClick={() => handleEdit(tx)}
+                        className={styles.actionBtn}
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(tx.id)}
+                        className={styles.actionBtn}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <div className={styles.txCenter}>
-                    <span className={styles.txQty}>{tx.quantity.toLocaleString()}주</span>
-                    <span className={styles.txPrice}>
-                      {tx.currency === "USD" && tx.exchange_rate > 1
-                        ? `@ $${(tx.price / tx.exchange_rate).toFixed(2)}`
-                        : `@ ${Math.round(tx.price).toLocaleString()}원`}
-                    </span>
-                  </div>
-                  <div className={styles.txRight}>
-                    <span className={styles.txTotal}>{Math.round(tx.quantity * tx.price).toLocaleString()}원</span>
-                    <span className={styles.txDate}>{tx.trade_date}</span>
-                  </div>
-                  <div className={styles.txActions}>
-                    <button onClick={() => handleEdit(tx)} className={styles.actionBtn}>
-                      <Edit2 size={14} />
-                    </button>
-                    <button onClick={() => handleDelete(tx.id)} className={styles.actionBtn}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
                 );
               })
             )}
@@ -1986,6 +2892,340 @@ export function PortfolioTab({
         )}
       </div>
 
+      {/* 커스텀 종목 추가/수정 모달 */}
+      {showCustomHoldingModal && (
+        <div
+          className={`${styles.modalOverlay} ${isCustomModalClosing ? styles.closing : ""}`}
+        >
+          <div
+            ref={customModalRef}
+            className={`${styles.modal} ${isCustomModalClosing ? styles.closing : ""}`}
+            style={{
+              background: isDark
+                ? "rgba(34, 37, 41, 0.6)"
+                : "rgba(255, 255, 255, 0.6)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+              maxWidth: "600px",
+            }}
+          >
+            <div className={styles.modalHeader}>
+              <h3>
+                {editingCustomHolding ? "종목 업데이트" : "직접 입력 종목 추가"}
+              </h3>
+              <div style={{ display: "flex", gap: 4 }}>
+                {editingCustomHolding && (
+                  <button
+                    className={styles.modalCloseBtn}
+                    onClick={handleDeleteCustomHolding}
+                    title="삭제"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+                <button
+                  className={styles.modalCloseBtn}
+                  onClick={closeCustomHoldingModal}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.modalContent}>
+              <div className={styles.customHoldingForm}>
+                {/* 종목명 */}
+                <div className={styles.customHoldingFormGroup}>
+                  <label>종목명</label>
+                  <input
+                    className={styles.input}
+                    type="text"
+                    value={customForm.name}
+                    onChange={(e) =>
+                      setCustomForm((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    placeholder="삼성 채권펀드"
+                  />
+                </div>
+
+                {/* 자산유형 + 계좌 */}
+                <div className={styles.customHoldingFormRow}>
+                  <div className={styles.customHoldingFormGroup}>
+                    <label>자산유형</label>
+                    <select
+                      className={styles.select}
+                      value={customForm.asset_type}
+                      onChange={(e) =>
+                        setCustomForm((prev) => ({
+                          ...prev,
+                          asset_type: e.target.value as CustomHoldingAssetType,
+                        }))
+                      }
+                    >
+                      <option value="fund">펀드</option>
+                      <option value="bond">채권</option>
+                      <option value="other">기타</option>
+                    </select>
+                  </div>
+                  <div className={styles.customHoldingFormGroup}>
+                    <label>증권 계좌</label>
+                    <select
+                      className={styles.select}
+                      value={customForm.account_id || ""}
+                      onChange={(e) =>
+                        setCustomForm((prev) => ({
+                          ...prev,
+                          account_id: e.target.value || null,
+                        }))
+                      }
+                    >
+                      <option value="">미지정</option>
+                      {accounts.map((acc) => (
+                        <option key={acc.id} value={acc.id}>
+                          {acc.broker_name} - {acc.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* 날짜기준 */}
+                <div className={styles.customHoldingFormGroup}>
+                  <label>기준일</label>
+                  <input
+                    className={styles.input}
+                    type="date"
+                    value={customForm.date_basis}
+                    onChange={(e) =>
+                      setCustomForm((prev) => ({
+                        ...prev,
+                        date_basis: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                {/* 원금 + 평가금액 (만원) */}
+                <div className={styles.customHoldingFormRow}>
+                  <div className={styles.customHoldingFormGroup}>
+                    <label>투자금액 (원)</label>
+                    <input
+                      className={styles.input}
+                      type="text"
+                      value={customForm.principal}
+                      onChange={(e) =>
+                        setCustomForm((prev) => ({
+                          ...prev,
+                          principal: e.target.value,
+                        }))
+                      }
+                      placeholder="10000000"
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                    />
+                  </div>
+                  <div className={styles.customHoldingFormGroup}>
+                    <label>평가금액 (원)</label>
+                    <input
+                      className={styles.input}
+                      type="text"
+                      value={customForm.current_value}
+                      onChange={(e) =>
+                        setCustomForm((prev) => ({
+                          ...prev,
+                          current_value: e.target.value,
+                        }))
+                      }
+                      placeholder="10500000"
+                      onWheel={(e) => (e.target as HTMLElement).blur()}
+                    />
+                  </div>
+                </div>
+
+                {/* 액션 */}
+                <div className={styles.customHoldingFormActions}>
+                  <button
+                    type="button"
+                    className={styles.cancelBtn}
+                    onClick={closeCustomHoldingModal}
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.submitBtn}
+                    onClick={handleSaveCustomHolding}
+                  >
+                    {editingCustomHolding ? "업데이트" : "추가"}
+                  </button>
+                </div>
+
+                {/* 스냅샷 이력 (수정 모드일 때만) */}
+                {editingCustomHolding &&
+                  (() => {
+                    const snaps =
+                      customHoldingSnapshots.get(editingCustomHolding.id) || [];
+                    const sortedSnaps = [...snaps].sort((a, b) =>
+                      b.date_basis.localeCompare(a.date_basis),
+                    );
+                    if (sortedSnaps.length === 0) return null;
+                    return (
+                      <div className={styles.snapshotSection}>
+                        <span className={styles.snapshotTitle}>스냅샷</span>
+                        <div className={styles.snapshotList}>
+                          <div className={styles.snapshotRowHeader}>
+                            <span className={styles.snapshotDate}>기준일</span>
+                            <span className={styles.snapshotValue}>
+                              평가금액
+                            </span>
+                            <span className={styles.snapshotInvested}>
+                              투자금액
+                            </span>
+                            <span className={styles.snapshotPL}>손익</span>
+                            <span className={styles.snapshotActions} />
+                          </div>
+                          {sortedSnaps.map((snap) => {
+                            if (editingSnapshotId === snap.id) {
+                              return (
+                                <div
+                                  key={snap.id}
+                                  className={styles.snapshotRow}
+                                >
+                                  <span className={styles.snapshotDate}>
+                                    <input
+                                      className={styles.snapshotInput}
+                                      type="date"
+                                      value={snapshotEditForm.date_basis}
+                                      onChange={(e) =>
+                                        setSnapshotEditForm((p) => ({
+                                          ...p,
+                                          date_basis: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  </span>
+                                  <span className={styles.snapshotValue}>
+                                    <input
+                                      className={styles.snapshotInput}
+                                      type="text"
+                                      value={snapshotEditForm.current_value}
+                                      onChange={(e) =>
+                                        setSnapshotEditForm((p) => ({
+                                          ...p,
+                                          current_value: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  </span>
+                                  <span className={styles.snapshotInvested}>
+                                    <input
+                                      className={styles.snapshotInput}
+                                      type="text"
+                                      value={snapshotEditForm.principal}
+                                      onChange={(e) =>
+                                        setSnapshotEditForm((p) => ({
+                                          ...p,
+                                          principal: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  </span>
+                                  <span className={styles.snapshotPL} />
+                                  <span className={styles.snapshotActions}>
+                                    <button
+                                      className={styles.snapshotActionBtn}
+                                      onClick={() =>
+                                        handleUpdateSnapshot(
+                                          snap.id,
+                                          editingCustomHolding!.id,
+                                        )
+                                      }
+                                      title="저장"
+                                    >
+                                      저장
+                                    </button>
+                                    <button
+                                      className={styles.snapshotActionBtn}
+                                      onClick={() => setEditingSnapshotId(null)}
+                                      title="취소"
+                                    >
+                                      취소
+                                    </button>
+                                  </span>
+                                </div>
+                              );
+                            }
+                            const snapPL = snap.current_value - snap.principal;
+                            const snapPLRate =
+                              snap.principal > 0
+                                ? ((snap.current_value - snap.principal) /
+                                    snap.principal) *
+                                  100
+                                : null;
+                            return (
+                              <div key={snap.id} className={styles.snapshotRow}>
+                                <span className={styles.snapshotDate}>
+                                  {snap.date_basis}
+                                </span>
+                                <span className={styles.snapshotValue}>
+                                  {Math.round(
+                                    snap.current_value,
+                                  ).toLocaleString()}
+                                  원
+                                </span>
+                                <span className={styles.snapshotInvested}>
+                                  {Math.round(snap.principal).toLocaleString()}
+                                  원
+                                </span>
+                                <span
+                                  className={`${styles.snapshotPL} ${snapPL >= 0 ? styles.profitColor : styles.lossColor}`}
+                                >
+                                  {snapPL >= 0 ? "+" : ""}
+                                  {Math.round(snapPL).toLocaleString()}원
+                                  {snapPLRate !== null && (
+                                    <span className={styles.plRateSmall}>
+                                      {" "}
+                                      ({snapPLRate >= 0 ? "+" : ""}
+                                      {snapPLRate.toFixed(1)}%)
+                                    </span>
+                                  )}
+                                </span>
+                                <span className={styles.snapshotActions}>
+                                  <button
+                                    className={styles.snapshotActionBtn}
+                                    onClick={() => startEditSnapshot(snap)}
+                                    title="수정"
+                                  >
+                                    <Edit2 size={12} />
+                                  </button>
+                                  <button
+                                    className={styles.snapshotActionBtn}
+                                    onClick={() =>
+                                      handleDeleteSnapshot(
+                                        snap.id,
+                                        editingCustomHolding!.id,
+                                      )
+                                    }
+                                    title="삭제"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2035,8 +3275,25 @@ function SearchResultChart({
 }: {
   data: StockData[];
   symbol: string;
-  chartLineColors: { price: string; value: string; profit: string; loss: string; buy: string; sell: string };
-  chartScaleColors: { gridColor: string; tickColor: string; textColor: string; textSecondary: string; tooltipBg: string; tooltipBorder: string; tooltipText: string; doughnutBorder: string; emptyState: string };
+  chartLineColors: {
+    price: string;
+    value: string;
+    profit: string;
+    loss: string;
+    buy: string;
+    sell: string;
+  };
+  chartScaleColors: {
+    gridColor: string;
+    tickColor: string;
+    textColor: string;
+    textSecondary: string;
+    tooltipBg: string;
+    tooltipBorder: string;
+    tooltipText: string;
+    doughnutBorder: string;
+    emptyState: string;
+  };
   toRgba: (hex: string, alpha: number) => string;
 }) {
   const isKorean = symbol.endsWith(".KS") || symbol.endsWith(".KQ");
@@ -2051,11 +3308,21 @@ function SearchResultChart({
           label: "종가",
           data: data.map((d) => d.Close),
           borderColor: chartLineColors.price,
-          backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
+          backgroundColor: (context: {
+            chart: {
+              ctx: CanvasRenderingContext2D;
+              chartArea: { top: number; bottom: number };
+            };
+          }) => {
             const { chart } = context;
             const { ctx, chartArea } = chart;
             if (!chartArea) return toRgba(chartLineColors.price, 0.1);
-            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            const gradient = ctx.createLinearGradient(
+              0,
+              chartArea.top,
+              0,
+              chartArea.bottom,
+            );
             gradient.addColorStop(0, toRgba(chartLineColors.price, 0.2));
             gradient.addColorStop(1, toRgba(chartLineColors.price, 0));
             return gradient;
@@ -2069,59 +3336,62 @@ function SearchResultChart({
     };
   }, [data, chartLineColors, toRgba]);
 
-  const options = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: {
-      duration: 1000,
-      easing: 'easeOutQuart',
-    } as const,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          label: (ctx: any) => {
-            const val = ctx.parsed?.y;
-            if (val == null) return "";
-            return isKorean
-              ? `${Math.round(val).toLocaleString()}원`
-              : `$${val.toLocaleString()}`;
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 1000,
+        easing: "easeOutQuart",
+      } as const,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            label: (ctx: any) => {
+              const val = ctx.parsed?.y;
+              if (val == null) return "";
+              return isKorean
+                ? `${Math.round(val).toLocaleString()}원`
+                : `$${val.toLocaleString()}`;
+            },
           },
         },
       },
-    },
-    scales: {
-      x: {
-        display: true,
-        grid: { display: false },
-        ticks: {
-          maxTicksLimit: 5,
-          font: { size: 11 },
-          color: chartScaleColors.tickColor,
+      scales: {
+        x: {
+          display: true,
+          grid: { display: false },
+          ticks: {
+            maxTicksLimit: 5,
+            font: { size: 11 },
+            color: chartScaleColors.tickColor,
+          },
         },
-      },
-      y: {
-        display: true,
-        grid: { color: chartScaleColors.gridColor },
-        ticks: {
-          font: { size: 11 },
-          color: chartScaleColors.tickColor,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          callback: (val: any) => {
-            const num = typeof val === "number" ? val : parseFloat(val);
-            return isKorean
-              ? `${(num / 10000).toFixed(0)}만`
-              : `$${num.toLocaleString()}`;
+        y: {
+          display: true,
+          grid: { color: chartScaleColors.gridColor },
+          ticks: {
+            font: { size: 11 },
+            color: chartScaleColors.tickColor,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            callback: (val: any) => {
+              const num = typeof val === "number" ? val : parseFloat(val);
+              return isKorean
+                ? `${(num / 10000).toFixed(0)}만`
+                : `$${num.toLocaleString()}`;
+            },
           },
         },
       },
-    },
-    interaction: {
-      intersect: false,
-      mode: "index" as const,
-    },
-  }), [isKorean, chartScaleColors]);
+      interaction: {
+        intersect: false,
+        mode: "index" as const,
+      },
+    }),
+    [isKorean, chartScaleColors],
+  );
 
   if (!chartData) return null;
 
@@ -2153,10 +3423,16 @@ function Sparkline({
   profitLoss?: number | null;
   width?: number;
   height?: number;
-  chartLineColors: { price: string; value: string; profit: string; loss: string; buy: string; sell: string };
+  chartLineColors: {
+    price: string;
+    value: string;
+    profit: string;
+    loss: string;
+    buy: string;
+    sell: string;
+  };
   toRgba: (hex: string, alpha: number) => string;
 }) {
-
   const chartData = useMemo(() => {
     if (!priceData || priceData.size === 0) return null;
 
@@ -2174,12 +3450,15 @@ function Sparkline({
   }, [priceData]);
 
   if (!chartData) {
-    return <div style={{ width, height, background: "#f5f5f5", borderRadius: 4 }} />;
+    return (
+      <div style={{ width, height, background: "#f5f5f5", borderRadius: 4 }} />
+    );
   }
 
   const { labels, prices } = chartData;
   // 손익 기준으로 색상 결정 (한국식: 수익=빨강, 손실=파랑)
-  const isProfit = profitLoss !== null && profitLoss !== undefined ? profitLoss >= 0 : true;
+  const isProfit =
+    profitLoss !== null && profitLoss !== undefined ? profitLoss >= 0 : true;
   const lineColor = isProfit ? chartLineColors.profit : chartLineColors.loss;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2189,11 +3468,21 @@ function Sparkline({
       {
         data: prices,
         borderColor: lineColor,
-        backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
+        backgroundColor: (context: {
+          chart: {
+            ctx: CanvasRenderingContext2D;
+            chartArea: { top: number; bottom: number };
+          };
+        }) => {
           const { chart } = context;
           const { ctx, chartArea } = chart;
           if (!chartArea) return toRgba(lineColor, 0.15);
-          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          const gradient = ctx.createLinearGradient(
+            0,
+            chartArea.top,
+            0,
+            chartArea.bottom,
+          );
           gradient.addColorStop(0, toRgba(lineColor, 0.25));
           gradient.addColorStop(1, toRgba(lineColor, 0));
           return gradient;
@@ -2226,7 +3515,13 @@ function Sparkline({
 
   return (
     <div style={{ width, height }}>
-      <Chart type="line" data={data} options={options} width={width} height={height} />
+      <Chart
+        type="line"
+        data={data}
+        options={options}
+        width={width}
+        height={height}
+      />
     </div>
   );
 }
@@ -2237,6 +3532,8 @@ function PortfolioValueChart({
   priceCacheLoading,
   transactions,
   filterAccountIds = [],
+  customHoldings = [],
+  customHoldingSnapshots = new Map(),
   chartLineColors,
   chartScaleColors,
   toRgba,
@@ -2245,8 +3542,27 @@ function PortfolioValueChart({
   priceCacheLoading: boolean;
   transactions: PortfolioTransaction[];
   filterAccountIds?: string[];
-  chartLineColors: { price: string; value: string; profit: string; loss: string; buy: string; sell: string };
-  chartScaleColors: { gridColor: string; tickColor: string; textColor: string; textSecondary: string; tooltipBg: string; tooltipBorder: string; tooltipText: string; doughnutBorder: string; emptyState: string };
+  customHoldings?: CustomHolding[];
+  customHoldingSnapshots?: Map<string, CustomHoldingSnapshot[]>;
+  chartLineColors: {
+    price: string;
+    value: string;
+    profit: string;
+    loss: string;
+    buy: string;
+    sell: string;
+  };
+  chartScaleColors: {
+    gridColor: string;
+    tickColor: string;
+    textColor: string;
+    textSecondary: string;
+    tooltipBg: string;
+    tooltipBorder: string;
+    tooltipText: string;
+    doughnutBorder: string;
+    emptyState: string;
+  };
   toRgba: (hex: string, alpha: number) => string;
 }) {
   const [period, setPeriod] = useState<ChartPeriod>("ALL");
@@ -2257,37 +3573,53 @@ function PortfolioValueChart({
 
   // 평가금액 그라데이션 함수 (공식 문서 방식)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getValueGradient = useCallback((ctx: CanvasRenderingContext2D, chartArea: any) => {
-    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-    gradient.addColorStop(0, toRgba(chartLineColors.value, 0.15));
-    gradient.addColorStop(1, toRgba(chartLineColors.value, 0));
-    return gradient;
-  }, [chartLineColors.value, toRgba]);
+  const getValueGradient = useCallback(
+    (ctx: CanvasRenderingContext2D, chartArea: any) => {
+      const gradient = ctx.createLinearGradient(
+        0,
+        chartArea.top,
+        0,
+        chartArea.bottom,
+      );
+      gradient.addColorStop(0, toRgba(chartLineColors.value, 0.15));
+      gradient.addColorStop(1, toRgba(chartLineColors.value, 0));
+      return gradient;
+    },
+    [chartLineColors.value, toRgba],
+  );
 
   // 손익 양수(빨강) 그라데이션 - 위에서 아래로 투명
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getPLPosGradient = useCallback((ctx: CanvasRenderingContext2D, chartArea: any, scales: any) => {
-    const zeroY = scales?.y1?.getPixelForValue(0) ?? chartArea.bottom;
-    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, zeroY);
-    gradient.addColorStop(0, toRgba(chartLineColors.profit, 0.2));
-    gradient.addColorStop(1, toRgba(chartLineColors.profit, 0));
-    return gradient;
-  }, [chartLineColors.profit, toRgba]);
+  const getPLPosGradient = useCallback(
+    (ctx: CanvasRenderingContext2D, chartArea: any, scales: any) => {
+      const zeroY = scales?.y1?.getPixelForValue(0) ?? chartArea.bottom;
+      const gradient = ctx.createLinearGradient(0, chartArea.top, 0, zeroY);
+      gradient.addColorStop(0, toRgba(chartLineColors.profit, 0.2));
+      gradient.addColorStop(1, toRgba(chartLineColors.profit, 0));
+      return gradient;
+    },
+    [chartLineColors.profit, toRgba],
+  );
 
   // 손익 음수(파랑) 그라데이션 - 0에서 아래로 색상
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getPLNegGradient = useCallback((ctx: CanvasRenderingContext2D, chartArea: any, scales: any) => {
-    const zeroY = scales?.y1?.getPixelForValue(0) ?? chartArea.top;
-    const gradient = ctx.createLinearGradient(0, zeroY, 0, chartArea.bottom);
-    gradient.addColorStop(0, toRgba(chartLineColors.loss, 0));
-    gradient.addColorStop(1, toRgba(chartLineColors.loss, 0.2));
-    return gradient;
-  }, [chartLineColors.loss, toRgba]);
+  const getPLNegGradient = useCallback(
+    (ctx: CanvasRenderingContext2D, chartArea: any, scales: any) => {
+      const zeroY = scales?.y1?.getPixelForValue(0) ?? chartArea.top;
+      const gradient = ctx.createLinearGradient(0, zeroY, 0, chartArea.bottom);
+      gradient.addColorStop(0, toRgba(chartLineColors.loss, 0));
+      gradient.addColorStop(1, toRgba(chartLineColors.loss, 0.2));
+      return gradient;
+    },
+    [chartLineColors.loss, toRgba],
+  );
 
   // 계좌 필터링된 거래 내역
   const filteredTx = useMemo(() => {
     if (filterAccountIds.length === 0) return transactions;
-    return transactions.filter((tx) => tx.account_id && filterAccountIds.includes(tx.account_id));
+    return transactions.filter(
+      (tx) => tx.account_id && filterAccountIds.includes(tx.account_id),
+    );
   }, [transactions, filterAccountIds]);
 
   // 날짜별 거래 내역 맵 (툴팁 및 마커용)
@@ -2307,15 +3639,21 @@ function PortfolioValueChart({
   const fullData = useMemo(() => {
     if (!priceCache || filteredTx.length === 0) return null;
 
-    const { priceDataMap, exchangeRateMap, tickerCurrencyMap, dates } = priceCache;
+    const { priceDataMap, exchangeRateMap, tickerCurrencyMap, dates } =
+      priceCache;
 
     // 필터링된 거래로 날짜별 보유량 계산
     const sortedTx = [...filteredTx].sort(
-      (a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime()
+      (a, b) =>
+        new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime(),
     );
 
     // 날짜별 보유 수량 및 평균단가 계산
-    type HoldingState = { quantity: number; totalInvested: number; avgPrice: number };
+    type HoldingState = {
+      quantity: number;
+      totalInvested: number;
+      avgPrice: number;
+    };
     const holdingsAtDate = new Map<string, Map<string, number>>();
     const holdingStateAtDate = new Map<string, Map<string, HoldingState>>();
 
@@ -2326,11 +3664,16 @@ function PortfolioValueChart({
       sortedTx.forEach((tx) => {
         if (tx.trade_date <= date) {
           const currentQty = holdings.get(tx.ticker) || 0;
-          const currentState = holdingStates.get(tx.ticker) || { quantity: 0, totalInvested: 0, avgPrice: 0 };
+          const currentState = holdingStates.get(tx.ticker) || {
+            quantity: 0,
+            totalInvested: 0,
+            avgPrice: 0,
+          };
 
           if (tx.type === "buy") {
             const newQty = currentState.quantity + tx.quantity;
-            const newInvested = currentState.totalInvested + tx.quantity * tx.price;
+            const newInvested =
+              currentState.totalInvested + tx.quantity * tx.price;
             holdings.set(tx.ticker, currentQty + tx.quantity);
             holdingStates.set(tx.ticker, {
               quantity: newQty,
@@ -2366,7 +3709,6 @@ function PortfolioValueChart({
       holdingStates.forEach((state) => {
         totalInvested += state.totalInvested;
       });
-      invested.push(totalInvested);
 
       const holdings = holdingsAtDate.get(date) || new Map();
       let totalValue = 0;
@@ -2409,11 +3751,31 @@ function PortfolioValueChart({
         }
       });
 
+      // 커스텀 종목 반영: 해당 날짜에 유효한 최신 스냅샷의 값을 합산
+      customHoldings.forEach((ch) => {
+        const snaps = customHoldingSnapshots.get(ch.id);
+        if (!snaps || snaps.length === 0) return;
+        // date_basis <= date인 가장 최신 스냅샷 찾기
+        let applicable: { principal: number; current_value: number } | null =
+          null;
+        for (let i = snaps.length - 1; i >= 0; i--) {
+          if (snaps[i].date_basis <= date) {
+            applicable = snaps[i];
+            break;
+          }
+        }
+        if (applicable) {
+          totalInvested += applicable.principal;
+          totalValue += applicable.current_value;
+        }
+      });
+
+      invested.push(totalInvested);
       value.push(totalValue || totalInvested);
     });
 
     return { labels: dates, invested, value };
-  }, [priceCache, filteredTx]);
+  }, [priceCache, filteredTx, customHoldings, customHoldingSnapshots]);
 
   // 기간에 따라 필터링된 데이터
   const chartData = useMemo(() => {
@@ -2479,7 +3841,9 @@ function PortfolioValueChart({
   const plData = chartData.value.map((v, i) => v - chartData.invested[i]);
 
   // 날짜별 거래 내역 (세로선 마커용)
-  const txAtIndex = chartData.labels.map((label) => transactionsByDate.get(label) || null);
+  const txAtIndex = chartData.labels.map(
+    (label) => transactionsByDate.get(label) || null,
+  );
 
   // Y축 대칭을 위한 최대 절대값 계산
   const maxAbsPL = Math.max(...plData.map((v) => Math.abs(v)));
@@ -2531,7 +3895,9 @@ function PortfolioValueChart({
   }).current;
 
   const zeroPlData = chartReady ? plData : plData.map(() => 0);
-  const zeroValueData = chartReady ? chartData.value : chartData.value.map(() => 0);
+  const zeroValueData = chartReady
+    ? chartData.value
+    : chartData.value.map(() => 0);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data: any = {
@@ -2541,8 +3907,16 @@ function PortfolioValueChart({
         type: "bar" as const,
         label: "손익",
         data: zeroPlData,
-        backgroundColor: plData.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.7) : toRgba(chartLineColors.loss, 0.7)),
-        hoverBackgroundColor: plData.map((v) => v >= 0 ? toRgba(chartLineColors.profit, 0.9) : toRgba(chartLineColors.loss, 0.9)),
+        backgroundColor: plData.map((v) =>
+          v >= 0
+            ? toRgba(chartLineColors.profit, 0.7)
+            : toRgba(chartLineColors.loss, 0.7),
+        ),
+        hoverBackgroundColor: plData.map((v) =>
+          v >= 0
+            ? toRgba(chartLineColors.profit, 0.9)
+            : toRgba(chartLineColors.loss, 0.9),
+        ),
         borderWidth: 0,
         borderRadius: 2,
         yAxisID: "y1",
@@ -2553,7 +3927,12 @@ function PortfolioValueChart({
         label: "평가금액",
         data: zeroValueData,
         borderColor: toRgba(chartLineColors.value, 0.8),
-        backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D; chartArea: { top: number; bottom: number } } }) => {
+        backgroundColor: (context: {
+          chart: {
+            ctx: CanvasRenderingContext2D;
+            chartArea: { top: number; bottom: number };
+          };
+        }) => {
           const { chart } = context;
           const { ctx, chartArea } = chart;
           if (!chartArea) return toRgba(chartLineColors.value, 0.05);
@@ -2577,7 +3956,7 @@ function PortfolioValueChart({
     maintainAspectRatio: false,
     animation: {
       duration: 1000,
-      easing: 'easeOutQuart' as const,
+      easing: "easeOutQuart" as const,
     },
     interaction: {
       mode: "index" as const,
@@ -2589,14 +3968,25 @@ function PortfolioValueChart({
       },
       tooltip: {
         enabled: false,
-        external: (context: { chart: { canvas: HTMLCanvasElement }; tooltip: { opacity: number; caretX: number; caretY: number; title?: string[]; dataPoints?: { dataset: { label?: string }; raw: number }[] } }) => {
+        external: (context: {
+          chart: { canvas: HTMLCanvasElement };
+          tooltip: {
+            opacity: number;
+            caretX: number;
+            caretY: number;
+            title?: string[];
+            dataPoints?: { dataset: { label?: string }; raw: number }[];
+          };
+        }) => {
           const { chart, tooltip } = context;
 
           // 차트 컨테이너 안에 툴팁을 넣어야 backdrop-filter가 작동함
           const chartContainer = chart.canvas.parentElement;
           if (!chartContainer) return;
 
-          let tooltipEl = chartContainer.querySelector("#portfolio-chart-tooltip") as HTMLDivElement | null;
+          let tooltipEl = chartContainer.querySelector(
+            "#portfolio-chart-tooltip",
+          ) as HTMLDivElement | null;
 
           if (!tooltipEl) {
             tooltipEl = document.createElement("div");
@@ -2637,7 +4027,8 @@ function PortfolioValueChart({
           // 현재 인덱스에서 거래 내역 확인
           let currentTx: PortfolioTransaction[] | null = null;
           if (tooltip.dataPoints && tooltip.dataPoints.length > 0) {
-            const idx = (tooltip.dataPoints[0] as { dataIndex?: number }).dataIndex;
+            const idx = (tooltip.dataPoints[0] as { dataIndex?: number })
+              .dataIndex;
             if (idx !== undefined && txAtIndex[idx]) {
               currentTx = txAtIndex[idx];
             }
@@ -2649,7 +4040,8 @@ function PortfolioValueChart({
               const value = point.raw;
 
               if (label === "손익") {
-                const color = value >= 0 ? chartLineColors.profit : chartLineColors.loss;
+                const color =
+                  value >= 0 ? chartLineColors.profit : chartLineColors.loss;
                 const sign = value >= 0 ? "+" : "";
                 html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;">
                   <span style="color:#6b7280;font-weight:500;">손익</span>
@@ -2779,17 +4171,32 @@ function PortfolioValueChart({
         ))}
       </div>
       <div className={styles.chartInner}>
-        <Chart ref={chartRef} type="bar" data={data} options={options} plugins={[txVerticalLinePlugin]} />
+        <Chart
+          ref={chartRef}
+          type="bar"
+          data={data}
+          options={options}
+          plugins={[txVerticalLinePlugin]}
+        />
       </div>
       <div className={styles.chartLegend}>
         <div className={styles.legendItem}>
-          <span className={styles.legendLine} style={{ background: chartLineColors.value }}></span>
+          <span
+            className={styles.legendLine}
+            style={{ background: chartLineColors.value }}
+          ></span>
           <span className={styles.legendLabel}>평가금액</span>
         </div>
         <div className={styles.legendItem}>
           <div className={styles.legendLines}>
-            <span className={styles.legendBar} style={{ background: chartLineColors.profit }}></span>
-            <span className={styles.legendBar} style={{ background: chartLineColors.loss }}></span>
+            <span
+              className={styles.legendBar}
+              style={{ background: chartLineColors.profit }}
+            ></span>
+            <span
+              className={styles.legendBar}
+              style={{ background: chartLineColors.loss }}
+            ></span>
           </div>
           <span className={styles.legendLabel}>손익</span>
         </div>

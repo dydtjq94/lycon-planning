@@ -5,19 +5,50 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  Search, RefreshCw, ChevronLeft, Settings,
-  Landmark, Home, Briefcase, GraduationCap, Plane, Heart,
-  TrendingUp, Wallet, PiggyBank, Shield, Target, Umbrella,
-  Baby, Car, Gem, Building2, Palmtree, Rocket, Star, Coffee,
-  ListOrdered, Percent, Users, CalendarClock,
+  Search,
+  RefreshCw,
+  ChevronLeft,
+  Settings,
+  Landmark,
+  Home,
+  Briefcase,
+  GraduationCap,
+  Plane,
+  Heart,
+  TrendingUp,
+  Wallet,
+  PiggyBank,
+  Shield,
+  Target,
+  Umbrella,
+  Baby,
+  Car,
+  Gem,
+  Building2,
+  Palmtree,
+  Rocket,
+  Star,
+  Coffee,
+  ListOrdered,
+  Percent,
+  Users,
+  CalendarClock,
   type LucideIcon,
 } from "lucide-react";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { AccountManagementModal } from "./components/AccountManagementModal";
 import { CategoryManagementModal } from "./components/CategoryManagementModal";
 import { AddSimulationModal } from "./components/AddSimulationModal";
-import { SimulationAssumptionsPanel, CashFlowPrioritiesPanel, FamilyConfigPanel, LifeCyclePanel } from "./components/tabs/scenario";
-import { useFinancialContext, type FamilyMember } from "@/contexts/FinancialContext";
+import {
+  SimulationAssumptionsPanel,
+  CashFlowPrioritiesPanel,
+  FamilyConfigPanel,
+  LifeCyclePanel,
+} from "./components/tabs/scenario";
+import {
+  useFinancialContext,
+  type FamilyMember,
+} from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
   useSimulationV2Data,
@@ -56,7 +87,6 @@ import {
   SettingsTab,
 } from "./components/tabs";
 import styles from "./dashboard.module.css";
-
 
 const sectionTitles: Record<string, string> = {
   // 대시보드
@@ -102,7 +132,7 @@ const SIMULATION_ICONS: { id: string; icon: LucideIcon; label: string }[] = [
 ];
 
 function getSimulationIcon(iconId?: string): LucideIcon {
-  const found = SIMULATION_ICONS.find(i => i.id === iconId);
+  const found = SIMULATION_ICONS.find((i) => i.id === iconId);
   return found?.icon || Star;
 }
 
@@ -132,96 +162,146 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
 
   // 시뮬레이션 아이콘 맵
   const SIM_ICON_MAP: Record<string, LucideIcon> = {
-    landmark: Landmark, home: Home, briefcase: Briefcase,
-    'graduation-cap': GraduationCap, plane: Plane, heart: Heart,
-    baby: Baby, 'trending-up': TrendingUp, wallet: Wallet,
-    'piggy-bank': PiggyBank, target: Target, umbrella: Umbrella,
-    car: Car, gem: Gem, building: Building2, palmtree: Palmtree,
-    rocket: Rocket, star: Star, coffee: Coffee, shield: Shield,
+    landmark: Landmark,
+    home: Home,
+    briefcase: Briefcase,
+    "graduation-cap": GraduationCap,
+    plane: Plane,
+    heart: Heart,
+    baby: Baby,
+    "trending-up": TrendingUp,
+    wallet: Wallet,
+    "piggy-bank": PiggyBank,
+    target: Target,
+    umbrella: Umbrella,
+    car: Car,
+    gem: Gem,
+    building: Building2,
+    palmtree: Palmtree,
+    rocket: Rocket,
+    star: Star,
+    coffee: Coffee,
+    shield: Shield,
   };
 
   // 상태 (URL에서 초기화는 useEffect에서 처리)
   const [currentSection, setCurrentSection] = useState<string>("dashboard");
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
-  const [selectedSimulationId, setSelectedSimulationId] = useState<string>(simulation.id);
-  const [initializingSimulationId, setInitializingSimulationId] = useState<string | null>(null);
-  const [syncingPricesSimulationId, setSyncingPricesSimulationId] = useState<string | null>(null);
+  const [selectedSimulationId, setSelectedSimulationId] = useState<string>(
+    simulation.id,
+  );
+  const [initializingSimulationId, setInitializingSimulationId] = useState<
+    string | null
+  >(null);
+  const [syncingPricesSimulationId, setSyncingPricesSimulationId] = useState<
+    string | null
+  >(null);
   const [simulationDataKey, setSimulationDataKey] = useState(0); // 데이터 리로드 트리거
   const [isEditingSimTitle, setIsEditingSimTitle] = useState(false);
   const [editSimTitle, setEditSimTitle] = useState("");
   const [showIconPicker, setShowIconPicker] = useState(false);
   const iconPickerRef = useRef<HTMLDivElement>(null);
   const [showAssumptionsPanel, setShowAssumptionsPanel] = useState(false);
-  const [assumptionsPanelRect, setAssumptionsPanelRect] = useState<{ top: number; left: number } | null>(null);
+  const [assumptionsPanelRect, setAssumptionsPanelRect] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const assumptionsPanelBtnRef = useRef<HTMLButtonElement>(null);
   const assumptionsPanelRef = useRef<HTMLDivElement>(null);
 
   const [showPrioritiesPanel, setShowPrioritiesPanel] = useState(false);
-  const [prioritiesPanelRect, setPrioritiesPanelRect] = useState<{ top: number; left: number } | null>(null);
+  const [prioritiesPanelRect, setPrioritiesPanelRect] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const prioritiesPanelBtnRef = useRef<HTMLButtonElement>(null);
   const prioritiesPanelRef = useRef<HTMLDivElement>(null);
 
   const [showFamilyPanel, setShowFamilyPanel] = useState(false);
-  const [familyPanelRect, setFamilyPanelRect] = useState<{ top: number; left: number } | null>(null);
+  const [familyPanelRect, setFamilyPanelRect] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const familyPanelBtnRef = useRef<HTMLButtonElement>(null);
   const familyPanelRef = useRef<HTMLDivElement>(null);
 
   const [showLifeCyclePanel, setShowLifeCyclePanel] = useState(false);
-  const [lifeCyclePanelRect, setLifeCyclePanelRect] = useState<{ top: number; left: number } | null>(null);
+  const [lifeCyclePanelRect, setLifeCyclePanelRect] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const lifeCyclePanelBtnRef = useRef<HTMLButtonElement>(null);
   const lifeCyclePanelRef = useRef<HTMLDivElement>(null);
   const [showAddSimModal, setShowAddSimModal] = useState(false);
-  const [addSimModalRect, setAddSimModalRect] = useState<{ top: number; left: number; bottom: number; width: number } | null>(null);
+  const [addSimModalRect, setAddSimModalRect] = useState<{
+    top: number;
+    left: number;
+    bottom: number;
+    width: number;
+  } | null>(null);
 
   // 비교 선택 상태: 'asset-trend' = 자산 추이, 시뮬레이션 ID = 다른 시뮬레이션
-  const [compareSelections, setCompareSelections] = useState<Set<string>>(new Set());
+  const [compareSelections, setCompareSelections] = useState<Set<string>>(
+    new Set(),
+  );
 
   // URL 업데이트 함수 (pushState 직접 사용으로 즉시 반응)
-  const updateUrl = useCallback((section: string, simId: string) => {
-    const params = new URLSearchParams();
-    // 관리자 모드: viewAs 파라미터 보존
-    if (adminView) {
-      params.set("viewAs", adminView.targetUserId);
-    }
-    if (section !== "dashboard") {
-      params.set("section", section);
-    }
-    // 시뮬레이션 섹션에서는 항상 sim 파라미터 포함
-    if (section === "simulation" && simId) {
-      params.set("sim", simId);
-    }
-    const queryString = params.toString();
-    const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
-    window.history.pushState(null, "", newUrl);
-  }, [pathname, adminView]);
+  const updateUrl = useCallback(
+    (section: string, simId: string) => {
+      const params = new URLSearchParams();
+      // 관리자 모드: viewAs 파라미터 보존
+      if (adminView) {
+        params.set("viewAs", adminView.targetUserId);
+      }
+      if (section !== "dashboard") {
+        params.set("section", section);
+      }
+      // 시뮬레이션 섹션에서는 항상 sim 파라미터 포함
+      if (section === "simulation" && simId) {
+        params.set("sim", simId);
+      }
+      const queryString = params.toString();
+      const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
+      window.history.pushState(null, "", newUrl);
+    },
+    [pathname, adminView],
+  );
 
   // 설정 탭 초기 메뉴
-  const [settingsInitialMenu, setSettingsInitialMenu] = useState<string | undefined>(undefined);
+  const [settingsInitialMenu, setSettingsInitialMenu] = useState<
+    string | undefined
+  >(undefined);
 
   // 섹션 변경 핸들러
-  const handleSectionChange = useCallback((section: string) => {
-    // "settings-accounts" 같은 특수 키 처리
-    if (section.startsWith("settings-")) {
-      const menu = section.replace("settings-", "");
-      setSettingsInitialMenu(menu);
-      setCurrentSection("settings");
-      updateUrl("settings", selectedSimulationId);
-      return;
-    }
-    setSettingsInitialMenu(undefined);
-    setCurrentSection(section);
-    // simulation 섹션은 handleSimulationChange에서 URL 관리
-    if (section !== "simulation") {
-      updateUrl(section, selectedSimulationId);
-    }
-  }, [selectedSimulationId, updateUrl]);
+  const handleSectionChange = useCallback(
+    (section: string) => {
+      // "settings-accounts" 같은 특수 키 처리
+      if (section.startsWith("settings-")) {
+        const menu = section.replace("settings-", "");
+        setSettingsInitialMenu(menu);
+        setCurrentSection("settings");
+        updateUrl("settings", selectedSimulationId);
+        return;
+      }
+      setSettingsInitialMenu(undefined);
+      setCurrentSection(section);
+      // simulation 섹션은 handleSimulationChange에서 URL 관리
+      if (section !== "simulation") {
+        updateUrl(section, selectedSimulationId);
+      }
+    },
+    [selectedSimulationId, updateUrl],
+  );
 
   // 시뮬레이션 변경 핸들러 (섹션도 함께 변경)
-  const handleSimulationChange = useCallback((simId: string) => {
-    setSelectedSimulationId(simId);
-    setCurrentSection("simulation");
-    updateUrl("simulation", simId);
-  }, [updateUrl]);
+  const handleSimulationChange = useCallback(
+    (simId: string) => {
+      setSelectedSimulationId(simId);
+      setCurrentSection("simulation");
+      updateUrl("simulation", simId);
+    },
+    [updateUrl],
+  );
 
   // 초기 로드 시 URL에서 상태 동기화 (마운트 시 1회만 실행)
   useEffect(() => {
@@ -229,7 +309,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     const simFromUrl = params.get("sim");
     const sectionFromUrl = params.get("section");
 
-    console.log("[DashboardContent] Initial URL sync:", { simFromUrl, sectionFromUrl });
+    console.log("[DashboardContent] Initial URL sync:", {
+      simFromUrl,
+      sectionFromUrl,
+    });
 
     if (sectionFromUrl && validSections.includes(sectionFromUrl)) {
       setCurrentSection(sectionFromUrl);
@@ -268,16 +351,45 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
 
   // 계좌 관리 모달
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const [accountModalTab, setAccountModalTab] = useState<"checking" | "savings" | "investment" | "pension_savings" | "irp" | "dc" | "isa">("checking");
-  const [accountBtnRect, setAccountBtnRect] = useState<{top: number, left: number, width: number} | null>(null);
+  const [accountModalTab, setAccountModalTab] = useState<
+    | "checking"
+    | "savings"
+    | "investment"
+    | "pension_savings"
+    | "irp"
+    | "dc"
+    | "isa"
+  >("checking");
+  const [accountBtnRect, setAccountBtnRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const accountBtnRef = useRef<HTMLButtonElement>(null);
   const [accountCount, setAccountCount] = useState(0);
-  const [accountModalVisibleTabs, setAccountModalVisibleTabs] = useState<("checking" | "savings" | "investment" | "pension_savings" | "irp" | "dc" | "isa")[] | undefined>(undefined);
-  const [accountModalTitle, setAccountModalTitle] = useState<string | undefined>(undefined);
+  const [accountModalVisibleTabs, setAccountModalVisibleTabs] = useState<
+    | (
+        | "checking"
+        | "savings"
+        | "investment"
+        | "pension_savings"
+        | "irp"
+        | "dc"
+        | "isa"
+      )[]
+    | undefined
+  >(undefined);
+  const [accountModalTitle, setAccountModalTitle] = useState<
+    string | undefined
+  >(undefined);
 
   // 카테고리 관리 모달
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [categoryBtnRect, setCategoryBtnRect] = useState<{top: number, left: number, width: number} | null>(null);
+  const [categoryBtnRect, setCategoryBtnRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const categoryBtnRef = useRef<HTMLButtonElement>(null);
 
   // 종목 자동완성
@@ -334,8 +446,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     if (!showAssumptionsPanel) return;
     const handleClick = (e: MouseEvent) => {
       if (
-        assumptionsPanelRef.current && !assumptionsPanelRef.current.contains(e.target as Node) &&
-        assumptionsPanelBtnRef.current && !assumptionsPanelBtnRef.current.contains(e.target as Node)
+        assumptionsPanelRef.current &&
+        !assumptionsPanelRef.current.contains(e.target as Node) &&
+        assumptionsPanelBtnRef.current &&
+        !assumptionsPanelBtnRef.current.contains(e.target as Node)
       ) {
         setShowAssumptionsPanel(false);
       }
@@ -356,8 +470,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     if (!showPrioritiesPanel) return;
     const handleClick = (e: MouseEvent) => {
       if (
-        prioritiesPanelRef.current && !prioritiesPanelRef.current.contains(e.target as Node) &&
-        prioritiesPanelBtnRef.current && !prioritiesPanelBtnRef.current.contains(e.target as Node)
+        prioritiesPanelRef.current &&
+        !prioritiesPanelRef.current.contains(e.target as Node) &&
+        prioritiesPanelBtnRef.current &&
+        !prioritiesPanelBtnRef.current.contains(e.target as Node)
       ) {
         setShowPrioritiesPanel(false);
       }
@@ -378,8 +494,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     if (!showFamilyPanel) return;
     const handleClick = (e: MouseEvent) => {
       if (
-        familyPanelRef.current && !familyPanelRef.current.contains(e.target as Node) &&
-        familyPanelBtnRef.current && !familyPanelBtnRef.current.contains(e.target as Node)
+        familyPanelRef.current &&
+        !familyPanelRef.current.contains(e.target as Node) &&
+        familyPanelBtnRef.current &&
+        !familyPanelBtnRef.current.contains(e.target as Node)
       ) {
         setShowFamilyPanel(false);
       }
@@ -400,8 +518,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     if (!showLifeCyclePanel) return;
     const handleClick = (e: MouseEvent) => {
       if (
-        lifeCyclePanelRef.current && !lifeCyclePanelRef.current.contains(e.target as Node) &&
-        lifeCyclePanelBtnRef.current && !lifeCyclePanelBtnRef.current.contains(e.target as Node)
+        lifeCyclePanelRef.current &&
+        !lifeCyclePanelRef.current.contains(e.target as Node) &&
+        lifeCyclePanelBtnRef.current &&
+        !lifeCyclePanelBtnRef.current.contains(e.target as Node)
       ) {
         setShowLifeCyclePanel(false);
       }
@@ -418,24 +538,27 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   }, [showLifeCyclePanel]);
 
   // 검색어로 종목 필터링
-  const filterSuggestions = useCallback((query: string) => {
-    if (!query.trim() || stocksList.length === 0) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-    const q = query.toLowerCase();
-    const filtered = stocksList
-      .filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.ticker.toLowerCase().includes(q) ||
-          s.code.toLowerCase().includes(q)
-      )
-      .slice(0, 10);
-    setSuggestions(filtered);
-    setShowSuggestions(filtered.length > 0);
-  }, [stocksList]);
+  const filterSuggestions = useCallback(
+    (query: string) => {
+      if (!query.trim() || stocksList.length === 0) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+      const q = query.toLowerCase();
+      const filtered = stocksList
+        .filter(
+          (s) =>
+            s.name.toLowerCase().includes(q) ||
+            s.ticker.toLowerCase().includes(q) ||
+            s.code.toLowerCase().includes(q),
+        )
+        .slice(0, 10);
+      setSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    },
+    [stocksList],
+  );
 
   // 자동완성 선택
   const selectSuggestion = useCallback((stock: StockItem) => {
@@ -463,53 +586,28 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
 
   // 시뮬레이션(시나리오) 목록 조회
   const { data: simulations = [] } = useSimulations(profile.id);
-  const createSimulation = useCreateSimulation(adminView ? profile.id : undefined);
+  const createSimulation = useCreateSimulation(
+    adminView ? profile.id : undefined,
+  );
   const updateSimulation = useUpdateSimulation();
 
   // 선택된 시뮬레이션 계산
-  const selectedSim = simulations.find(s => s.id === selectedSimulationId) || simulations[0];
+  const selectedSim =
+    simulations.find((s) => s.id === selectedSimulationId) || simulations[0];
 
   // 시뮬레이션 추가 모달 열기
-  const handleAddSimulation = useCallback((rect: { top: number; left: number; bottom: number; width: number }) => {
-    setAddSimModalRect(rect);
-    setShowAddSimModal(true);
-  }, []);
+  const handleAddSimulation = useCallback(
+    (rect: { top: number; left: number; bottom: number; width: number }) => {
+      setAddSimModalRect(rect);
+      setShowAddSimModal(true);
+    },
+    [],
+  );
 
   // 새 시뮬레이션 생성 (빈 시뮬레이션)
   const handleCreateNewSimulation = useCallback(async () => {
     const nextNum = simulations.length + 1;
     const title = `새 시뮬레이션 ${nextNum}`;
-    createSimulation.mutate(
-      { title },
-        {
-          onSuccess: (newSim) => {
-            setSelectedSimulationId(newSim.id);
-            setCurrentSection("simulation");
-            updateUrl("simulation", newSim.id);
-            setInitializingSimulationId(newSim.id);
-
-            (async () => {
-              try {
-                await simulationService.initializeSimulationData(newSim.id, profile.id);
-                await simulationService.syncPricesInBackground(newSim.id, profile.id);
-                setSimulationDataKey(prev => prev + 1);
-                queryClient.invalidateQueries({ queryKey: ["simulations"] });
-                await queryClient.invalidateQueries({ queryKey: financialKeys.all });
-                setInitializingSimulationId(null);
-              } catch (error) {
-                console.error("[handleCreateNewSimulation] Initialize error:", error);
-                setInitializingSimulationId(null);
-              }
-            })();
-          },
-        }
-      );
-  }, [createSimulation, simulations.length, profile.id, updateUrl, queryClient]);
-
-  // 기존 시뮬레이션 복사
-  const handleCopySimulation = useCallback(async (sourceSimulationId: string) => {
-    const sourceSim = simulations.find(s => s.id === sourceSimulationId);
-    const title = sourceSim ? `${sourceSim.title} (복사)` : `시뮬레이션 복사`;
     createSimulation.mutate(
       { title },
       {
@@ -521,47 +619,107 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
 
           (async () => {
             try {
-              await simulationService.copyFullSimulation(sourceSimulationId, newSim.id);
-              setSimulationDataKey(prev => prev + 1);
+              await simulationService.initializeSimulationData(
+                newSim.id,
+                profile.id,
+              );
+              await simulationService.syncPricesInBackground(
+                newSim.id,
+                profile.id,
+              );
+              setSimulationDataKey((prev) => prev + 1);
               queryClient.invalidateQueries({ queryKey: ["simulations"] });
-              await queryClient.invalidateQueries({ queryKey: financialKeys.all });
+              await queryClient.invalidateQueries({
+                queryKey: financialKeys.all,
+              });
               setInitializingSimulationId(null);
             } catch (error) {
-              console.error("[handleCopySimulation] Copy error:", error);
+              console.error(
+                "[handleCreateNewSimulation] Initialize error:",
+                error,
+              );
               setInitializingSimulationId(null);
             }
           })();
         },
-      }
+      },
     );
-  }, [createSimulation, simulations, updateUrl, queryClient]);
+  }, [
+    createSimulation,
+    simulations.length,
+    profile.id,
+    updateUrl,
+    queryClient,
+  ]);
+
+  // 기존 시뮬레이션 복사
+  const handleCopySimulation = useCallback(
+    async (sourceSimulationId: string) => {
+      const sourceSim = simulations.find((s) => s.id === sourceSimulationId);
+      const title = sourceSim ? `${sourceSim.title} (복사)` : `시뮬레이션 복사`;
+      createSimulation.mutate(
+        { title },
+        {
+          onSuccess: (newSim) => {
+            setSelectedSimulationId(newSim.id);
+            setCurrentSection("simulation");
+            updateUrl("simulation", newSim.id);
+            setInitializingSimulationId(newSim.id);
+
+            (async () => {
+              try {
+                await simulationService.copyFullSimulation(
+                  sourceSimulationId,
+                  newSim.id,
+                );
+                setSimulationDataKey((prev) => prev + 1);
+                queryClient.invalidateQueries({ queryKey: ["simulations"] });
+                await queryClient.invalidateQueries({
+                  queryKey: financialKeys.all,
+                });
+                setInitializingSimulationId(null);
+              } catch (error) {
+                console.error("[handleCopySimulation] Copy error:", error);
+                setInitializingSimulationId(null);
+              }
+            })();
+          },
+        },
+      );
+    },
+    [createSimulation, simulations, updateUrl, queryClient],
+  );
 
   // 시뮬레이션 삭제
   const deleteSimulation = useDeleteSimulation();
 
-  const handleDeleteSimulation = useCallback((simulationId: string) => {
-    deleteSimulation.mutate(simulationId, {
-      onSuccess: () => {
-        // 삭제된 시뮬레이션이 현재 선택된 것이었다면
-        if (selectedSimulationId === simulationId) {
-          const remaining = simulations.filter(s => s.id !== simulationId);
-          if (remaining.length > 0) {
-            const defaultSim = remaining.find(s => s.is_default) || remaining[0];
-            setSelectedSimulationId(defaultSim.id);
-            updateUrl("simulation", defaultSim.id);
-          } else {
-            // 시뮬레이션이 모두 삭제됨
-            setSelectedSimulationId(null as unknown as string);
-            // 시뮬레이션 탭에 있을 때만 대시보드로 이동
-            if (currentSection === "simulation") {
-              setCurrentSection("dashboard");
-              updateUrl("dashboard", "");
+  const handleDeleteSimulation = useCallback(
+    (simulationId: string) => {
+      deleteSimulation.mutate(simulationId, {
+        onSuccess: () => {
+          // 삭제된 시뮬레이션이 현재 선택된 것이었다면
+          if (selectedSimulationId === simulationId) {
+            const remaining = simulations.filter((s) => s.id !== simulationId);
+            if (remaining.length > 0) {
+              const defaultSim =
+                remaining.find((s) => s.is_default) || remaining[0];
+              setSelectedSimulationId(defaultSim.id);
+              updateUrl("simulation", defaultSim.id);
+            } else {
+              // 시뮬레이션이 모두 삭제됨
+              setSelectedSimulationId(null as unknown as string);
+              // 시뮬레이션 탭에 있을 때만 대시보드로 이동
+              if (currentSection === "simulation") {
+                setCurrentSection("dashboard");
+                updateUrl("dashboard", "");
+              }
             }
           }
-        }
-      },
-    });
-  }, [deleteSimulation, selectedSimulationId, simulations, updateUrl]);
+        },
+      });
+    },
+    [deleteSimulation, selectedSimulationId, simulations, updateUrl],
+  );
 
   // 스냅샷 데이터 Prefetch (CurrentAssetTab, AssetRecordTab에서 사용)
   // 탭 전환 시 즉시 로드되도록 미리 캐싱
@@ -575,30 +733,44 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
 
   // V2 시뮬레이션 데이터 로드 (선택된 시뮬레이션 기준)
   const activeSimulationId = selectedSim?.id || simulation.id;
-  const { data: v2Data, isLoading: isLoadingV2 } = useSimulationV2Data(activeSimulationId);
+  const { data: v2Data, isLoading: isLoadingV2 } =
+    useSimulationV2Data(activeSimulationId);
 
   // 레거시 pension sync용으로만 V1 items 유지
-  const { data: items = [], isLoading } = useFinancialItems(simulation.id, simulationProfile);
+  const { data: items = [], isLoading } = useFinancialItems(
+    simulation.id,
+    simulationProfile,
+  );
 
   // 시뮬레이션 가정 및 캐시플로우 우선순위 (선택된 시뮬레이션 기준)
   const activeSim = selectedSim || simulation;
   // 시뮬레이션 가정: 로컬 override로 즉시 반영
-  const [assumptionsOverride, setAssumptionsOverride] = useState<SimulationAssumptions | null>(null);
-  const simulationAssumptions = assumptionsOverride ?? activeSim.simulation_assumptions ?? DEFAULT_SIMULATION_ASSUMPTIONS;
+  const [assumptionsOverride, setAssumptionsOverride] =
+    useState<SimulationAssumptions | null>(null);
+  const simulationAssumptions =
+    assumptionsOverride ??
+    activeSim.simulation_assumptions ??
+    DEFAULT_SIMULATION_ASSUMPTIONS;
 
   // 캐시플로우 우선순위: 로컬 override로 즉시 반영
-  const [prioritiesOverride, setPrioritiesOverride] = useState<CashFlowPriorities | null>(null);
+  const [prioritiesOverride, setPrioritiesOverride] =
+    useState<CashFlowPriorities | null>(null);
   const prevSimIdRef = useRef(activeSim.id);
   if (prevSimIdRef.current !== activeSim.id) {
     prevSimIdRef.current = activeSim.id;
     setAssumptionsOverride(null);
     setPrioritiesOverride(null);
   }
-  const cashFlowPriorities = useMemo(() => normalizePriorities(prioritiesOverride ?? activeSim.cash_flow_priorities), [activeSim.cash_flow_priorities, prioritiesOverride]);
+  const cashFlowPriorities = useMemo(
+    () =>
+      normalizePriorities(prioritiesOverride ?? activeSim.cash_flow_priorities),
+    [activeSim.cash_flow_priorities, prioritiesOverride],
+  );
 
   // 시뮬레이션별 가족 구성 (없으면 프로필의 가족 사용, self 제외)
   const simFamilyMembers: SimFamilyMember[] = useMemo(() => {
-    if (activeSim.family_config) return activeSim.family_config.filter(m => m.relationship !== 'self');
+    if (activeSim.family_config)
+      return activeSim.family_config.filter((m) => m.relationship !== "self");
     return familyMembers.map((fm) => ({
       id: fm.id,
       relationship: fm.relationship,
@@ -614,7 +786,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
 
   // 본인 아이콘 설정 (family_config 내 self 엔트리)
   const selfFamilyConfig = useMemo(() => {
-    return activeSim.family_config?.find(m => m.relationship === 'self') ?? null;
+    return (
+      activeSim.family_config?.find((m) => m.relationship === "self") ?? null
+    );
   }, [activeSim.family_config]);
 
   // 배우자 정보 (시뮬레이션별 가족 기준)
@@ -627,10 +801,13 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   const lifeCycleSettings: LifeCycleSettings = useMemo(() => {
     const saved = activeSim.life_cycle_settings;
     return {
-      selfRetirementAge: saved?.selfRetirementAge ?? profile.target_retirement_age,
+      selfRetirementAge:
+        saved?.selfRetirementAge ?? profile.target_retirement_age,
       selfLifeExpectancy: saved?.selfLifeExpectancy ?? 100,
-      spouseRetirementAge: saved?.spouseRetirementAge ?? spouseMember?.retirement_age ?? 65,
-      spouseLifeExpectancy: saved?.spouseLifeExpectancy ?? saved?.selfLifeExpectancy ?? 100,
+      spouseRetirementAge:
+        saved?.spouseRetirementAge ?? spouseMember?.retirement_age ?? 65,
+      spouseLifeExpectancy:
+        saved?.spouseLifeExpectancy ?? saved?.selfLifeExpectancy ?? 100,
       retirementIcon: saved?.retirementIcon,
       retirementColor: saved?.retirementColor,
       lifeExpectancyIcon: saved?.lifeExpectancyIcon,
@@ -640,57 +817,77 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       spouseLifeExpectancyIcon: saved?.spouseLifeExpectancyIcon,
       spouseLifeExpectancyColor: saved?.spouseLifeExpectancyColor,
     };
-  }, [activeSim.life_cycle_settings, profile.target_retirement_age, spouseMember?.retirement_age]);
+  }, [
+    activeSim.life_cycle_settings,
+    profile.target_retirement_age,
+    spouseMember?.retirement_age,
+  ]);
 
   // 시뮬레이션 가정 변경 핸들러
-  const handleSimulationAssumptionsChange = useCallback((newAssumptions: SimulationAssumptions) => {
-    setAssumptionsOverride(newAssumptions);
-    if (selectedSim) {
-      updateSimulation.mutate({
-        id: selectedSim.id,
-        updates: { simulation_assumptions: newAssumptions }
-      });
-    }
-  }, [selectedSim, updateSimulation]);
+  const handleSimulationAssumptionsChange = useCallback(
+    (newAssumptions: SimulationAssumptions) => {
+      setAssumptionsOverride(newAssumptions);
+      if (selectedSim) {
+        updateSimulation.mutate({
+          id: selectedSim.id,
+          updates: { simulation_assumptions: newAssumptions },
+        });
+      }
+    },
+    [selectedSim, updateSimulation],
+  );
 
   // 현금 흐름 우선순위 변경 핸들러
-  const handleCashFlowPrioritiesChange = useCallback((newPriorities: CashFlowPriorities) => {
-    setPrioritiesOverride(newPriorities);
-    if (selectedSim) {
-      updateSimulation.mutate({
-        id: selectedSim.id,
-        updates: { cash_flow_priorities: newPriorities }
-      });
-    }
-  }, [selectedSim, updateSimulation]);
+  const handleCashFlowPrioritiesChange = useCallback(
+    (newPriorities: CashFlowPriorities) => {
+      setPrioritiesOverride(newPriorities);
+      if (selectedSim) {
+        updateSimulation.mutate({
+          id: selectedSim.id,
+          updates: { cash_flow_priorities: newPriorities },
+        });
+      }
+    },
+    [selectedSim, updateSimulation],
+  );
 
   // 생애 주기 변경 핸들러 (시뮬레이션별 저장)
-  const handleLifeCycleChange = useCallback((newSettings: LifeCycleSettings) => {
-    if (selectedSim) {
-      updateSimulation.mutate({
-        id: selectedSim.id,
-        updates: { life_cycle_settings: newSettings }
-      });
-    }
-  }, [selectedSim, updateSimulation]);
+  const handleLifeCycleChange = useCallback(
+    (newSettings: LifeCycleSettings) => {
+      if (selectedSim) {
+        updateSimulation.mutate({
+          id: selectedSim.id,
+          updates: { life_cycle_settings: newSettings },
+        });
+      }
+    },
+    [selectedSim, updateSimulation],
+  );
 
   // 가족 구성 변경 핸들러 (시뮬레이션별 저장, self 엔트리 포함)
-  const handleFamilyConfigChange = useCallback((newFamily: SimFamilyMember[], selfEntry?: SimFamilyMember | null) => {
-    if (selectedSim) {
-      // self 엔트리를 포함하여 저장 (있으면 앞에 추가)
-      const existing = activeSim.family_config?.find(m => m.relationship === 'self');
-      const selfToSave = selfEntry !== undefined ? selfEntry : existing;
-      const fullConfig = selfToSave ? [selfToSave, ...newFamily.filter(m => m.relationship !== 'self')] : newFamily;
-      updateSimulation.mutate({
-        id: selectedSim.id,
-        updates: { family_config: fullConfig }
-      });
-    }
-  }, [selectedSim, updateSimulation, activeSim.family_config]);
+  const handleFamilyConfigChange = useCallback(
+    (newFamily: SimFamilyMember[], selfEntry?: SimFamilyMember | null) => {
+      if (selectedSim) {
+        // self 엔트리를 포함하여 저장 (있으면 앞에 추가)
+        const existing = activeSim.family_config?.find(
+          (m) => m.relationship === "self",
+        );
+        const selfToSave = selfEntry !== undefined ? selfEntry : existing;
+        const fullConfig = selfToSave
+          ? [selfToSave, ...newFamily.filter((m) => m.relationship !== "self")]
+          : newFamily;
+        updateSimulation.mutate({
+          id: selectedSim.id,
+          updates: { family_config: fullConfig },
+        });
+      }
+    },
+    [selectedSim, updateSimulation, activeSim.family_config],
+  );
 
   // 비교 선택 토글
   const toggleCompareSelection = useCallback((key: string) => {
-    setCompareSelections(prev => {
+    setCompareSelections((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
         next.delete(key);
@@ -702,16 +899,22 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   }, []);
 
   // Profile update handler (saves to profiles table + updates context)
-  const handleProfileUpdate = useCallback(async (updates: Record<string, any>) => {
-    const supabase = createClient();
-    await supabase.from("profiles").update(updates).eq("id", profile.id);
-    updateProfile(updates as Partial<typeof profile>);
-  }, [profile.id, updateProfile]);
+  const handleProfileUpdate = useCallback(
+    async (updates: Record<string, any>) => {
+      const supabase = createClient();
+      await supabase.from("profiles").update(updates).eq("id", profile.id);
+      updateProfile(updates as Partial<typeof profile>);
+    },
+    [profile.id, updateProfile],
+  );
 
   // Family members change handler (updates context so tab switching preserves changes)
-  const handleFamilyMembersRefresh = useCallback((updatedMembers: FamilyMember[]) => {
-    setFamilyMembers(updatedMembers);
-  }, [setFamilyMembers]);
+  const handleFamilyMembersRefresh = useCallback(
+    (updatedMembers: FamilyMember[]) => {
+      setFamilyMembers(updatedMembers);
+    },
+    [setFamilyMembers],
+  );
 
   // 공유 시뮬레이션 결과 (V2 엔진 사용, 선택된 시뮬레이션 기준)
   // v2Data 로딩 중에는 빈 결과를 반환하여 중간 상태 렌더링 방지
@@ -724,9 +927,13 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
         snapshots: [],
         monthlySnapshots: [],
         summary: {
-          currentNetWorth: 0, retirementNetWorth: 0,
-          peakNetWorth: 0, peakNetWorthYear: 0,
-          yearsToFI: null, fiTarget: 0, bankruptcyYear: null,
+          currentNetWorth: 0,
+          retirementNetWorth: 0,
+          peakNetWorth: 0,
+          peakNetWorthYear: 0,
+          yearsToFI: null,
+          fiTarget: 0,
+          bankruptcyYear: null,
         },
       } as SimulationResult;
     }
@@ -734,7 +941,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       simulationProfile.birthYear,
       simulationProfile.spouseBirthYear,
       lifeCycleSettings.selfLifeExpectancy,
-      lifeCycleSettings.spouseLifeExpectancy
+      lifeCycleSettings.spouseLifeExpectancy,
     );
     const simStartYear = activeSim.start_year || new Date().getFullYear();
     const yearsToSimulate = simulationEndYear - simStartYear;
@@ -752,7 +959,16 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       activeSim.start_year,
       activeSim.start_month,
     );
-  }, [v2Data, isLoadingV2, simulationProfile, lifeCycleSettings, simulationAssumptions, cashFlowPriorities, activeSim.start_year, activeSim.start_month]);
+  }, [
+    v2Data,
+    isLoadingV2,
+    simulationProfile,
+    lifeCycleSettings,
+    simulationAssumptions,
+    cashFlowPriorities,
+    activeSim.start_year,
+    activeSim.start_month,
+  ]);
 
   // 레거시 CRUD 스텁 함수 (실제 업데이트는 개별 서비스 사용)
   const addItem = useCallback(
@@ -761,7 +977,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       // React Query 캐시 무효화로 데이터 새로고침
       return input as FinancialItem;
     },
-    []
+    [],
   );
 
   // 연금 자산 → 연금 소득 동기화 (온보딩 후 첫 로드 시)
@@ -778,7 +994,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
         ? parseInt(profile.birth_date.split("-")[0])
         : new Date().getFullYear() - 35;
       const spouseMemberLocal = familyMembers.find(
-        (fm) => fm.relationship === "spouse"
+        (fm) => fm.relationship === "spouse",
       );
       const spouseBirthYear = spouseMemberLocal?.birth_date
         ? parseInt(spouseMemberLocal.birth_date.split("-")[0])
@@ -791,7 +1007,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       const calculatePMT = (
         presentValue: number,
         years: number,
-        annualRate: number
+        annualRate: number,
       ): number => {
         if (years <= 0 || presentValue <= 0) return 0;
         if (annualRate === 0) return presentValue / years;
@@ -804,13 +1020,14 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       // 근로소득 정보 가져오기 (퇴직연금 계산용)
       const selfLaborIncome = items.find(
         (i) =>
-          i.category === "income" && i.type === "labor" && i.owner === "self"
+          i.category === "income" && i.type === "labor" && i.owner === "self",
       );
       const spouseLaborIncome = items.find(
         (i) =>
-          i.category === "income" && i.type === "labor" && i.owner === "spouse"
+          i.category === "income" && i.type === "labor" && i.owner === "spouse",
       );
-      const incomeGrowthRate = (simulationAssumptions.rates.incomeGrowth ?? 3) / 100;
+      const incomeGrowthRate =
+        (simulationAssumptions.rates.incomeGrowth ?? 3) / 100;
       const currentYear = new Date().getFullYear();
 
       for (const pensionItem of pensionItems) {
@@ -824,7 +1041,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             i.category === "income" &&
             i.type === "pension" &&
             i.owner === pensionItem.owner &&
-            i.title === pensionItem.title
+            i.title === pensionItem.title,
         );
 
         if (existingIncomeItem) continue; // 이미 있으면 스킵
@@ -867,7 +1084,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             const yearsOfService = pensionData.yearsOfService || 0;
             const yearsUntilRetirement = Math.max(
               0,
-              retirementAge - currentAge
+              retirementAge - currentAge,
             );
             const totalYearsAtRetirement =
               yearsOfService + yearsUntilRetirement;
@@ -879,7 +1096,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             if (totalAmount > 0) {
               const yearsUntilReceive = Math.max(
                 0,
-                pensionStartAge - retirementAge
+                pensionStartAge - retirementAge,
               );
               const valueAtReceiveStart =
                 totalAmount *
@@ -887,7 +1104,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
               const annualPMT = calculatePMT(
                 valueAtReceiveStart,
                 receivingYears,
-                investmentReturnRate
+                investmentReturnRate,
               );
               monthlyAmount = Math.round(annualPMT / 12);
               pensionEndYear = pensionStartYear + receivingYears - 1;
@@ -904,7 +1121,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           const annualPMT = calculatePMT(
             futureValue,
             receivingYears,
-            investmentReturnRate
+            investmentReturnRate,
           );
           monthlyAmount = Math.round(annualPMT / 12);
         }
@@ -932,7 +1149,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
         } catch (error) {
           console.error(
             "[DashboardContent] Failed to sync pension to income:",
-            error
+            error,
           );
         }
       }
@@ -941,7 +1158,14 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     };
 
     syncPensionToIncome();
-  }, [items, isLoading, profile, familyMembers, simulationAssumptions, addItem]);
+  }, [
+    items,
+    isLoading,
+    profile,
+    familyMembers,
+    simulationAssumptions,
+    addItem,
+  ]);
 
   const renderContent = () => {
     switch (currentSection) {
@@ -977,7 +1201,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           />
         );
       case "consultation":
-        return <div style={{ padding: 40, color: "#888" }}>상담 기록 (준비중)</div>;
+        return (
+          <div style={{ padding: 40, color: "#888" }}>상담 기록 (준비중)</div>
+        );
       // 자산 추이
       case "current-asset":
         return (
@@ -1001,7 +1227,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             searchQuery={portfolioSearchQuery}
             setSearchQuery={setPortfolioSearchQuery}
             setSearchLoading={setPortfolioSearchLoading}
-            onSearchTrigger={(fn) => { portfolioSearchTriggerRef.current = fn; }}
+            onSearchTrigger={(fn) => {
+              portfolioSearchTriggerRef.current = fn;
+            }}
           />
         );
       case "checking-account":
@@ -1031,7 +1259,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             simulationResult={simulationResult}
             isMarried={isMarried}
             spouseMember={spouseMember}
-            isInitializing={initializingSimulationId === selectedSimulationId || isLoadingV2}
+            isInitializing={
+              initializingSimulationId === selectedSimulationId || isLoadingV2
+            }
             isSyncingPrices={syncingPricesSimulationId === selectedSimulationId}
             simulationAssumptions={simulationAssumptions}
             cashFlowPriorities={cashFlowPriorities}
@@ -1099,7 +1329,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                             key={item.id}
                             className={`${styles.iconPickerItem} ${selectedSim.icon === item.id ? styles.iconPickerItemActive : ""}`}
                             onClick={() => {
-                              updateSimulation.mutate({ id: selectedSim.id, updates: { icon: item.id } });
+                              updateSimulation.mutate({
+                                id: selectedSim.id,
+                                updates: { icon: item.id },
+                              });
                               setShowIconPicker(false);
                             }}
                             title={item.label}
@@ -1121,7 +1354,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                       const newTitle = editSimTitle.trim();
                       if (newTitle && newTitle !== selectedSim.title) {
                         selectedSim.title = newTitle;
-                        updateSimulation.mutate({ id: selectedSim.id, updates: { title: newTitle } });
+                        updateSimulation.mutate({
+                          id: selectedSim.id,
+                          updates: { title: newTitle },
+                        });
                       }
                       setIsEditingSimTitle(false);
                     }}
@@ -1154,8 +1390,12 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   className={styles.simHeaderAction}
                   onClick={() => {
                     if (familyPanelBtnRef.current) {
-                      const rect = familyPanelBtnRef.current.getBoundingClientRect();
-                      setFamilyPanelRect({ top: rect.bottom + 6, left: rect.left });
+                      const rect =
+                        familyPanelBtnRef.current.getBoundingClientRect();
+                      setFamilyPanelRect({
+                        top: rect.bottom + 6,
+                        left: rect.left,
+                      });
                     }
                     setShowFamilyPanel(!showFamilyPanel);
                   }}
@@ -1169,8 +1409,12 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   className={styles.simHeaderAction}
                   onClick={() => {
                     if (lifeCyclePanelBtnRef.current) {
-                      const rect = lifeCyclePanelBtnRef.current.getBoundingClientRect();
-                      setLifeCyclePanelRect({ top: rect.bottom + 6, left: rect.left });
+                      const rect =
+                        lifeCyclePanelBtnRef.current.getBoundingClientRect();
+                      setLifeCyclePanelRect({
+                        top: rect.bottom + 6,
+                        left: rect.left,
+                      });
                     }
                     setShowLifeCyclePanel(!showLifeCyclePanel);
                   }}
@@ -1185,13 +1429,19 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   className={styles.simHeaderAction}
                   onClick={() => {
                     if (assumptionsPanelBtnRef.current) {
-                      const rect = assumptionsPanelBtnRef.current.getBoundingClientRect();
-                      setAssumptionsPanelRect({ top: rect.bottom + 6, left: rect.left });
+                      const rect =
+                        assumptionsPanelBtnRef.current.getBoundingClientRect();
+                      setAssumptionsPanelRect({
+                        top: rect.bottom + 6,
+                        left: rect.left,
+                      });
                     }
                     setShowAssumptionsPanel(!showAssumptionsPanel);
                   }}
                   type="button"
-                  data-tooltip={showAssumptionsPanel ? undefined : "시뮬레이션 가정"}
+                  data-tooltip={
+                    showAssumptionsPanel ? undefined : "시뮬레이션 가정"
+                  }
                 >
                   <Percent size={15} />
                 </button>
@@ -1200,13 +1450,19 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   className={styles.simHeaderAction}
                   onClick={() => {
                     if (prioritiesPanelBtnRef.current) {
-                      const rect = prioritiesPanelBtnRef.current.getBoundingClientRect();
-                      setPrioritiesPanelRect({ top: rect.bottom + 6, left: rect.left });
+                      const rect =
+                        prioritiesPanelBtnRef.current.getBoundingClientRect();
+                      setPrioritiesPanelRect({
+                        top: rect.bottom + 6,
+                        left: rect.left,
+                      });
                     }
                     setShowPrioritiesPanel(!showPrioritiesPanel);
                   }}
                   type="button"
-                  data-tooltip={showPrioritiesPanel ? undefined : "현금 흐름 우선순위"}
+                  data-tooltip={
+                    showPrioritiesPanel ? undefined : "현금 흐름 우선순위"
+                  }
                 >
                   <ListOrdered size={15} />
                 </button>
@@ -1220,7 +1476,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             {/* 현재 자산 날짜 표시 */}
             {currentSection === "current-asset" && (
               <span className={styles.currentAssetDate}>
-                {new Date().getFullYear()}년 {new Date().getMonth() + 1}월 {new Date().getDate()}일
+                {new Date().getFullYear()}년 {new Date().getMonth() + 1}월{" "}
+                {new Date().getDate()}일
               </span>
             )}
 
@@ -1233,12 +1490,23 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   className={styles.accountManageBtn}
                   onClick={() => {
                     setAccountModalTab("investment");
-                    setAccountModalVisibleTabs(["investment", "pension_savings", "irp", "dc", "isa"]);
+                    setAccountModalVisibleTabs([
+                      "investment",
+                      "pension_savings",
+                      "irp",
+                      "dc",
+                      "isa",
+                    ]);
                     setAccountModalTitle("투자 계좌 관리");
 
                     if (accountBtnRef.current) {
-                      const rect = accountBtnRef.current.getBoundingClientRect();
-                      setAccountBtnRect({ top: rect.bottom, left: rect.left, width: rect.width });
+                      const rect =
+                        accountBtnRef.current.getBoundingClientRect();
+                      setAccountBtnRect({
+                        top: rect.bottom,
+                        left: rect.left,
+                        width: rect.width,
+                      });
                     }
                     setShowAccountModal(true);
                   }}
@@ -1256,7 +1524,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   <input
                     ref={searchInputRef}
                     type="text"
-                    placeholder="종목 검색 후 거래 내역 추가하기"
+                    placeholder="종목 검색하고 거래 추가 [국내&미국 주식, ETF]"
                     value={portfolioSearchQuery}
                     onChange={(e) => {
                       setPortfolioSearchQuery(e.target.value);
@@ -1274,7 +1542,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                     className={styles.headerSearchInput}
                   />
                   {showSuggestions && suggestions.length > 0 && (
-                    <div ref={suggestionsRef} className={styles.headerSuggestions}>
+                    <div
+                      ref={suggestionsRef}
+                      className={styles.headerSuggestions}
+                    >
                       {suggestions.map((stock) => (
                         <button
                           key={stock.ticker}
@@ -1282,9 +1553,15 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                           className={styles.headerSuggestionItem}
                           onClick={() => selectSuggestion(stock)}
                         >
-                          <span className={styles.suggestionName}>{stock.name}</span>
-                          <span className={styles.suggestionTicker}>{stock.ticker}</span>
-                          <span className={styles.suggestionMarket}>{stock.market}</span>
+                          <span className={styles.suggestionName}>
+                            {stock.name}
+                          </span>
+                          <span className={styles.suggestionTicker}>
+                            {stock.ticker}
+                          </span>
+                          <span className={styles.suggestionMarket}>
+                            {stock.market}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -1298,108 +1575,145 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   disabled={portfolioSearchLoading}
                   className={styles.headerSearchBtn}
                 >
-                  {portfolioSearchLoading ? <RefreshCw size={16} className={styles.spinning} /> : <Search size={16} />}
+                  {portfolioSearchLoading ? (
+                    <RefreshCw size={16} className={styles.spinning} />
+                  ) : (
+                    <Search size={16} />
+                  )}
                 </button>
               </div>
             )}
           </div>
         </header>
 
-        {showAssumptionsPanel && assumptionsPanelRect && currentSection === "simulation" && selectedSim && (
-          <div
-            ref={assumptionsPanelRef}
-            className={styles.accountsPanelDropdown}
-            style={{
-              position: 'fixed',
-              top: assumptionsPanelRect.top,
-              left: Math.min(assumptionsPanelRect.left, window.innerWidth - 436),
-              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-              zIndex: 200,
-            }}
-          >
-            <SimulationAssumptionsPanel
-              assumptions={simulationAssumptions}
-              onChange={handleSimulationAssumptionsChange}
-            />
-          </div>
-        )}
+        {showAssumptionsPanel &&
+          assumptionsPanelRect &&
+          currentSection === "simulation" &&
+          selectedSim && (
+            <div
+              ref={assumptionsPanelRef}
+              className={styles.accountsPanelDropdown}
+              style={{
+                position: "fixed",
+                top: assumptionsPanelRect.top,
+                left: Math.min(
+                  assumptionsPanelRect.left,
+                  window.innerWidth - 436,
+                ),
+                background: isDark
+                  ? "rgba(34, 37, 41, 0.6)"
+                  : "rgba(255, 255, 255, 0.6)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                zIndex: 200,
+              }}
+            >
+              <SimulationAssumptionsPanel
+                assumptions={simulationAssumptions}
+                onChange={handleSimulationAssumptionsChange}
+              />
+            </div>
+          )}
 
-        {showPrioritiesPanel && prioritiesPanelRect && currentSection === "simulation" && selectedSim && (
-          <div
-            ref={prioritiesPanelRef}
-            className={styles.accountsPanelDropdown}
-            style={{
-              position: 'fixed',
-              top: prioritiesPanelRect.top,
-              left: Math.min(prioritiesPanelRect.left, window.innerWidth - 436),
-              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-              zIndex: 200,
-            }}
-          >
-            <CashFlowPrioritiesPanel
-              priorities={cashFlowPriorities}
-              onChange={handleCashFlowPrioritiesChange}
-              simulationId={selectedSimulationId}
-            />
-          </div>
-        )}
+        {showPrioritiesPanel &&
+          prioritiesPanelRect &&
+          currentSection === "simulation" &&
+          selectedSim && (
+            <div
+              ref={prioritiesPanelRef}
+              className={styles.accountsPanelDropdown}
+              style={{
+                position: "fixed",
+                top: prioritiesPanelRect.top,
+                left: Math.min(
+                  prioritiesPanelRect.left,
+                  window.innerWidth - 436,
+                ),
+                background: isDark
+                  ? "rgba(34, 37, 41, 0.6)"
+                  : "rgba(255, 255, 255, 0.6)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                zIndex: 200,
+              }}
+            >
+              <CashFlowPrioritiesPanel
+                priorities={cashFlowPriorities}
+                onChange={handleCashFlowPrioritiesChange}
+                simulationId={selectedSimulationId}
+              />
+            </div>
+          )}
 
-        {showFamilyPanel && familyPanelRect && currentSection === "simulation" && selectedSim && (
-          <div
-            ref={familyPanelRef}
-            className={styles.accountsPanelDropdown}
-            style={{
-              position: 'fixed',
-              top: familyPanelRect.top,
-              left: familyPanelRect.left,
-              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-              zIndex: 200,
-            }}
-          >
-            <FamilyConfigPanel
-              profile={profile}
-              familyMembers={simFamilyMembers}
-              selfConfig={selfFamilyConfig}
-              onFamilyChange={handleFamilyConfigChange}
-            />
-          </div>
-        )}
+        {showFamilyPanel &&
+          familyPanelRect &&
+          currentSection === "simulation" &&
+          selectedSim && (
+            <div
+              ref={familyPanelRef}
+              className={styles.accountsPanelDropdown}
+              style={{
+                position: "fixed",
+                top: familyPanelRect.top,
+                left: familyPanelRect.left,
+                background: isDark
+                  ? "rgba(34, 37, 41, 0.6)"
+                  : "rgba(255, 255, 255, 0.6)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                zIndex: 200,
+              }}
+            >
+              <FamilyConfigPanel
+                profile={profile}
+                familyMembers={simFamilyMembers}
+                selfConfig={selfFamilyConfig}
+                onFamilyChange={handleFamilyConfigChange}
+              />
+            </div>
+          )}
 
-        {showLifeCyclePanel && lifeCyclePanelRect && currentSection === "simulation" && selectedSim && (
-          <div
-            ref={lifeCyclePanelRef}
-            className={styles.accountsPanelDropdown}
-            style={{
-              position: 'fixed',
-              top: lifeCyclePanelRect.top,
-              left: lifeCyclePanelRect.left,
-              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-              zIndex: 200,
-            }}
-          >
-            <LifeCyclePanel
-              profile={profile}
-              spouseMember={spouseMember}
-              lifeCycleSettings={lifeCycleSettings}
-              onLifeCycleChange={handleLifeCycleChange}
-            />
-          </div>
-        )}
+        {showLifeCyclePanel &&
+          lifeCyclePanelRect &&
+          currentSection === "simulation" &&
+          selectedSim && (
+            <div
+              ref={lifeCyclePanelRef}
+              className={styles.accountsPanelDropdown}
+              style={{
+                position: "fixed",
+                top: lifeCyclePanelRect.top,
+                left: lifeCyclePanelRect.left,
+                background: isDark
+                  ? "rgba(34, 37, 41, 0.6)"
+                  : "rgba(255, 255, 255, 0.6)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                zIndex: 200,
+              }}
+            >
+              <LifeCyclePanel
+                profile={profile}
+                spouseMember={spouseMember}
+                lifeCycleSettings={lifeCycleSettings}
+                onLifeCycleChange={handleLifeCycleChange}
+              />
+            </div>
+          )}
 
-        <div className={`${styles.content} ${currentSection === "simulation" ? styles.noPadding : ""} ${currentSection === "messages" ? styles.noPadding : ""}`}>
-          <div key={currentSection} className={`${styles.contentInner} ${currentSection === "simulation" || currentSection === "dashboard" ? styles.fullWidth : ""}`}>{renderContent()}</div>
+        <div
+          className={`${styles.content} ${currentSection === "simulation" ? styles.noPadding : ""} ${currentSection === "messages" ? styles.noPadding : ""}`}
+        >
+          <div
+            key={currentSection}
+            className={`${styles.contentInner} ${currentSection === "simulation" || currentSection === "dashboard" ? styles.fullWidth : ""}`}
+          >
+            {renderContent()}
+          </div>
         </div>
       </main>
 

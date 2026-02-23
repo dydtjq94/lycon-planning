@@ -336,7 +336,7 @@ export const simulationService = {
     const currentYear = new Date().getFullYear()
     const currentMonth = new Date().getMonth() + 1
 
-    const [portfolioRes, accountsRes, budgetRes] = await Promise.all([
+    const [portfolioRes, accountsRes, budgetRes, customHoldingsRes] = await Promise.all([
       supabase
         .from('portfolio_transactions')
         .select('*')
@@ -353,12 +353,18 @@ export const simulationService = {
         .eq('profile_id', profileId)
         .eq('year', currentYear)
         .eq('month', currentMonth),
+      supabase
+        .from('custom_holdings')
+        .select('*')
+        .eq('profile_id', profileId),
     ])
 
     // 투자 계좌 평가액 계산 (가격 조회 없이 투자금액 기준)
     const investmentValues = calculatePortfolioAccountValues(
       portfolioRes.data || [],
-      null  // 가격 없이 투자금액 사용
+      null,  // 가격 없이 투자금액 사용
+      undefined,
+      customHoldingsRes.data || []
     )
 
     // 저축 계좌 잔액 계산 (가계부 반영)
@@ -396,8 +402,14 @@ export const simulationService = {
     // 2. 실시간 가격 조회 (외부 API)
     const priceCache = await fetchPortfolioPrices(portfolioTransactions)
 
+    // custom_holdings도 가져오기
+    const { data: customHoldings } = await supabase
+      .from('custom_holdings')
+      .select('*')
+      .eq('profile_id', profileId)
+
     // 3. 투자 계좌 평가액 계산
-    const investmentValues = calculatePortfolioAccountValues(portfolioTransactions, priceCache)
+    const investmentValues = calculatePortfolioAccountValues(portfolioTransactions, priceCache, undefined, customHoldings || [])
 
     // 4. 시뮬레이션의 투자 계좌 잔액 업데이트
     const { data: accounts } = await supabase
