@@ -732,7 +732,7 @@ export function DashboardTab({
                     datasets: [
                       {
                         data: line.data,
-                        borderColor: colors[i % colors.length],
+                        borderColor: chartLineColors.price,
                         borderWidth: 2,
                         pointRadius: 0,
                         pointHitRadius: 8,
@@ -748,11 +748,11 @@ export function DashboardTab({
                             );
                           gradient.addColorStop(
                             0,
-                            toRgba(colors[i % colors.length], 0.15)
+                            toRgba(chartLineColors.price, 0.15)
                           );
                           gradient.addColorStop(
                             1,
-                            toRgba(colors[i % colors.length], 0)
+                            toRgba(chartLineColors.price, 0)
                           );
                           return gradient;
                         },
