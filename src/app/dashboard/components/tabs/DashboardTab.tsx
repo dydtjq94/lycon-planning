@@ -19,6 +19,8 @@ import { useChartTheme } from "@/hooks/useChartTheme";
 import { formatMoney, formatWon } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { CustomHolding } from "@/types/tables";
+import { getNextBooking, type NextBooking } from "@/lib/services/bookingService";
+import { getConversations, getMessages, type Conversation, type Message } from "@/lib/services/messageService";
 import { getIncomes } from "@/lib/services/incomeService";
 import { getExpenses } from "@/lib/services/expenseService";
 import { getSavings } from "@/lib/services/savingsService";
@@ -37,6 +39,8 @@ import {
   Activity,
   CreditCard,
   ChevronRight,
+  Calendar,
+  MessageSquare,
 } from "lucide-react";
 import styles from "./DashboardTab.module.css";
 
@@ -88,6 +92,8 @@ export function DashboardTab({
   const [simLines, setSimLines] = useState<SimLine[]>([]);
   const [simLoading, setSimLoading] = useState(true);
   const [customHoldings, setCustomHoldings] = useState<CustomHolding[]>([]);
+  const [nextBooking, setNextBooking] = useState<NextBooking | null>(null);
+  const [recentChat, setRecentChat] = useState<{ expertName: string; lastMessage: string; lastDate: string; unread: number } | null>(null);
   const [hoveredPoint, setHoveredPoint] = useState<{ value: number; date: string; index: number } | null>(null);
   const hoveredPointRef = useRef<{ value: number; date: string; index: number } | null>(null);
   const chartRef = useRef<any>(null);
@@ -115,6 +121,27 @@ export function DashboardTab({
     portfolioTransactions,
     !!profileId && portfolioTransactions.length > 0
   );
+
+  // Load next booking & recent chat
+  useEffect(() => {
+    getNextBooking().then(setNextBooking).catch(() => {});
+    getConversations().then(async (convos) => {
+      if (convos.length === 0) return;
+      const primary = convos[0]; // primary first, sorted by last_message_at
+      const messages = await getMessages(primary.id);
+      const last = messages[messages.length - 1];
+      if (last) {
+        const d = new Date(last.created_at);
+        const dateStr = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+        setRecentChat({
+          expertName: primary.expert?.name || "전문가",
+          lastMessage: last.content,
+          lastDate: dateStr,
+          unread: primary.unread_count || 0,
+        });
+      }
+    }).catch(() => {});
+  }, []);
 
   // Load custom holdings
   useEffect(() => {
@@ -366,6 +393,15 @@ export function DashboardTab({
             </button>
           )}
         </div>
+        {/* Skeleton quick info */}
+        <div className={styles.skeletonQuickInfoRow}>
+          {[...Array(2)].map((_, i) => (
+            <div key={`qi-${i}`} className={styles.skeletonQuickInfoCard}>
+              <div className={`${styles.skeletonTextSm} ${styles.skeleton}`} />
+              <div className={`${styles.skeletonTextSm} ${styles.skeleton}`} style={{ width: 140 }} />
+            </div>
+          ))}
+        </div>
         {/* Skeleton charts */}
         <div className={styles.skeletonGrid}>
           {[...Array(2)].map((_, i) => (
@@ -390,7 +426,7 @@ export function DashboardTab({
   }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${styles.loaded}`}>
       {/* Greeting */}
       <div className={styles.greetingRow}>
         {profileName && (
@@ -404,6 +440,66 @@ export function DashboardTab({
           </button>
         )}
       </div>
+
+      {/* Quick info: next booking + recent chat */}
+      {(nextBooking || recentChat) && (
+        <div className={styles.quickInfoRow}>
+          {nextBooking ? (
+            <div className={styles.quickInfoCard} onClick={() => onNavigate("consultation")}>
+              <Calendar size={16} className={styles.quickInfoIcon} />
+              <div className={styles.quickInfoContent}>
+                <span className={styles.quickInfoLabel}>다음 상담</span>
+                <span className={styles.quickInfoValue}>
+                  {(() => {
+                    const d = new Date(nextBooking.booking_date + "T00:00:00");
+                    return `${d.getMonth() + 1}/${d.getDate()} ${nextBooking.booking_time}`;
+                  })()}
+                  <span className={styles.quickInfoSub}>{nextBooking.expert_name}</span>
+                </span>
+              </div>
+              <ChevronRight size={14} className={styles.quickInfoArrow} />
+            </div>
+          ) : (
+            <div className={styles.quickInfoCard} onClick={() => onNavigate("consultation")}>
+              <Calendar size={16} className={styles.quickInfoIcon} />
+              <div className={styles.quickInfoContent}>
+                <span className={styles.quickInfoLabel}>다음 상담</span>
+                <span className={styles.quickInfoMuted}>예정된 상담이 없습니다</span>
+              </div>
+              <ChevronRight size={14} className={styles.quickInfoArrow} />
+            </div>
+          )}
+          {recentChat ? (
+            <div className={styles.quickInfoCard} onClick={() => onNavigate("messages")}>
+              <MessageSquare size={16} className={styles.quickInfoIcon} />
+              <div className={styles.quickInfoContent}>
+                <span className={styles.quickInfoLabel}>
+                  {recentChat.expertName}
+                  {recentChat.unread > 0 && (
+                    <span className={styles.unreadBadge}>{recentChat.unread}</span>
+                  )}
+                </span>
+                <span className={styles.quickInfoValue}>
+                  {recentChat.lastMessage.length > 30
+                    ? recentChat.lastMessage.slice(0, 30) + "..."
+                    : recentChat.lastMessage}
+                  <span className={styles.quickInfoSub}>{recentChat.lastDate}</span>
+                </span>
+              </div>
+              <ChevronRight size={14} className={styles.quickInfoArrow} />
+            </div>
+          ) : (
+            <div className={styles.quickInfoCard} onClick={() => onNavigate("messages")}>
+              <MessageSquare size={16} className={styles.quickInfoIcon} />
+              <div className={styles.quickInfoContent}>
+                <span className={styles.quickInfoLabel}>전문가 채팅</span>
+                <span className={styles.quickInfoMuted}>채팅 내역이 없습니다</span>
+              </div>
+              <ChevronRight size={14} className={styles.quickInfoArrow} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Top section: net worth chart + portfolio chart */}
       <div className={styles.topSection}>

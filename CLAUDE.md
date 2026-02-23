@@ -120,9 +120,15 @@ conversations
 └── SELECT/INSERT/UPDATE: Expert가 담당 대화 가능
 ```
 
+### Admin(Expert)은 슈퍼 계정 (매우 중요!)
+- **Admin은 담당 고객의 모든 데이터를 조회/생성/수정/삭제 가능해야 함**
+- 새 테이블 생성 시 Expert용 **SELECT/INSERT/UPDATE/DELETE 모든 정책** 추가 필수
+- Expert 정책 패턴: `conversations` 테이블을 통해 담당 관계 확인 (`c.user_id = 테이블.profile_id AND e.user_id = auth.uid()`)
+- 자식 테이블(FK 관계)은 부모 테이블을 JOIN하여 `profile_id` 확인
+
 ### 새 기능 추가 시 체크리스트
-1. **Admin이 고객 데이터 수정** → Expert용 UPDATE 정책 있는지 확인
-2. **새 테이블 생성** → RLS 활성화 + 적절한 정책 추가
+1. **Admin이 고객 데이터 수정** → Expert용 **SELECT/INSERT/UPDATE/DELETE** 정책 모두 있는지 확인
+2. **새 테이블 생성** → RLS 활성화 + 본인 정책 + Expert 전체 CRUD 정책 추가
 3. **저장 실패 시** → 브라우저 콘솔 에러 확인 + RLS 정책 확인
 
 ### 정책 추가 예시

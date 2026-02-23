@@ -9,6 +9,19 @@
   gap: 20px;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.loaded {
+  animation: fadeIn 0.3s ease-out;
+}
+
 /* Greeting */
 .greetingRow {
   display: flex;
@@ -41,6 +54,86 @@
 
 .accountBtn:hover {
   color: var(--dashboard-text);
+}
+
+/* Quick info row */
+.quickInfoRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.quickInfoCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--dashboard-border);
+  cursor: pointer;
+}
+
+.quickInfoIcon {
+  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
+}
+
+.quickInfoContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quickInfoLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quickInfoValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quickInfoSub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--dashboard-text-muted);
+}
+
+.quickInfoMuted {
+  font-size: 13px;
+  color: var(--dashboard-text-muted);
+}
+
+.quickInfoArrow {
+  color: var(--dashboard-text-muted);
+  flex-shrink: 0;
+}
+
+.unreadBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 /* Top section: 2-column grid */
@@ -224,6 +317,20 @@
   100% { background-position: 200px 0; }
 }
 
+.skeletonQuickInfoRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.skeletonQuickInfoCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
 .skeleton {
   border-radius: 6px;
   background: linear-gradient(
@@ -278,6 +385,14 @@
   .container {
     padding: 16px;
     gap: 16px;
+  }
+
+  .quickInfoRow {
+    grid-template-columns: 1fr;
+  }
+
+  .skeletonQuickInfoRow {
+    grid-template-columns: 1fr;
   }
 
   .topSection {
