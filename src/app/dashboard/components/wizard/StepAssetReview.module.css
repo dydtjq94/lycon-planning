@@ -1,0 +1,49 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0 8px;
+}
+
+.description {
+  font-size: 13px;
+  color: var(--dashboard-text-muted);
+}
+
+.groupSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.groupLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dashboard-text-secondary);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.itemRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.itemName {
+  font-size: 13px;
+  color: var(--dashboard-text);
+}
+
+.itemAmount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+}
+
+.emptyText {
+  font-size: 13px;
+  color: var(--dashboard-text-muted);
+}

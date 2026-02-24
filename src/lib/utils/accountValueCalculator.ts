@@ -422,10 +422,6 @@ export function calculatePortfolioAccountValues(
 ): Map<string, number> {
   const investmentAccountValues = new Map<string, number>();
 
-  if (transactions.length === 0) {
-    return investmentAccountValues;
-  }
-
   const priceDataMap = priceCache?.priceDataMap;
   const exchangeRateMap = priceCache?.exchangeRateMap;
 

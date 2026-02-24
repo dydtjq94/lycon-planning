@@ -31,12 +31,10 @@ export function StepRetirement({ data, onChange }: StepProps) {
             <input
               type="number"
               className={styles.ageInput}
-              value={retirement.retirementAge}
-              min={30}
-              max={80}
+              value={retirement.retirementAge ?? ""}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
-                if (!isNaN(val)) updateRetirement({ retirementAge: Math.min(80, Math.max(30, val)) });
+                updateRetirement({ retirementAge: isNaN(val) ? null : val });
               }}
               onWheel={(e) => (e.target as HTMLElement).blur()}
             />
@@ -50,12 +48,10 @@ export function StepRetirement({ data, onChange }: StepProps) {
             <input
               type="number"
               className={styles.ageInput}
-              value={retirement.lifeExpectancy}
-              min={60}
-              max={120}
+              value={retirement.lifeExpectancy ?? ""}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
-                if (!isNaN(val)) updateRetirement({ lifeExpectancy: Math.min(120, Math.max(60, val)) });
+                updateRetirement({ lifeExpectancy: isNaN(val) ? null : val });
               }}
               onWheel={(e) => (e.target as HTMLElement).blur()}
             />
@@ -97,12 +93,10 @@ export function StepRetirement({ data, onChange }: StepProps) {
                   <input
                     type="number"
                     className={styles.ageInput}
-                    value={retirement.spouseRetirementAge ?? 65}
-                    min={30}
-                    max={80}
+                    value={retirement.spouseRetirementAge ?? ""}
                     onChange={(e) => {
                       const val = parseInt(e.target.value, 10);
-                      if (!isNaN(val)) updateRetirement({ spouseRetirementAge: Math.min(80, Math.max(30, val)) });
+                      updateRetirement({ spouseRetirementAge: isNaN(val) ? null : val });
                     }}
                     onWheel={(e) => (e.target as HTMLElement).blur()}
                   />
@@ -118,12 +112,10 @@ export function StepRetirement({ data, onChange }: StepProps) {
               <input
                 type="number"
                 className={styles.ageInput}
-                value={retirement.spouseLifeExpectancy ?? 100}
-                min={60}
-                max={120}
+                value={retirement.spouseLifeExpectancy ?? ""}
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
-                  if (!isNaN(val)) updateRetirement({ spouseLifeExpectancy: Math.min(120, Math.max(60, val)) });
+                  updateRetirement({ spouseLifeExpectancy: isNaN(val) ? null : val });
                 }}
                 onWheel={(e) => (e.target as HTMLElement).blur()}
               />

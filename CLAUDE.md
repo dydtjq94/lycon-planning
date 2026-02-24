@@ -345,22 +345,6 @@ WebkitBackdropFilter: 'blur(8px)'
 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
 ```
 
-#### 3. 대형 모달 (위자드, 전체 화면급 모달)
-- **배경 투명도**: `0.8` (라이트/다크 모두)
-- **블러**: `blur(10px)` 고정
-- **그림자**: `0 8px 32px rgba(0, 0, 0, 0.12)`
-- **backdrop(뒷배경)에 blur 넣지 말 것**: blur는 모달 자체에만 적용
-- **다른 값 사용 금지**: 투명도와 블러 값을 임의로 변경하지 말 것
-
-```tsx
-// 대형 모달, 위자드 등 큰 화면급 요소
-background: isDark ? 'rgba(34, 37, 41, 0.8)' : 'rgba(255, 255, 255, 0.8)'
-backdropFilter: 'blur(10px)'
-WebkitBackdropFilter: 'blur(10px)'
-boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
-// backdrop(뒷배경)에는 blur 없음 - 모달 자체만 글래스모피즘
-```
-
 #### 구현 시 주의사항 (매우 중요!)
 - **CSS Module에서 `backdrop-filter` 사용 금지**: Next.js CSS Module 빌드 파이프라인에서 `backdrop-filter`가 제대로 적용 안 됨
 - **반드시 인라인 스타일 사용**: `style={{ backdropFilter: 'blur(Xpx)', WebkitBackdropFilter: 'blur(Xpx)' }}`
@@ -605,6 +589,8 @@ src/app/feature/
 - **단위 배치**: 단위(세, 만원 등)는 입력칸 바로 옆에 배치
 - **스핀 버튼 제거**: `type="number"` 입력의 위아래 화살표 숨김
 - **스크롤 변경 방지**: 숫자 입력에서 마우스 스크롤로 값 변경되지 않도록 처리
+- **빈 입력 허용 (매우 중요!)**: 숫자 입력을 다 지웠을 때 0이 남으면 안 됨. 상태를 `number | null`로 관리하고, 빈 값은 `null`로 처리. `value={val ?? ""}` 패턴 사용
+- **입력 중 클램핑 금지**: `onChange`에서 `Math.min`/`Math.max`로 값을 강제하면 입력 중에 숫자를 지우고 다시 쓸 수 없음. 클램핑은 `onBlur`나 저장 시점에만 적용
 
 ```css
 .smallInput {

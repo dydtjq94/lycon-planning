@@ -7,7 +7,6 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  Info,
   X,
   ArrowLeft,
 } from "lucide-react";
@@ -24,15 +23,11 @@ import type {
   DashboardExpenseItem,
   DashboardExpenseFrequency,
   SimFamilyMember,
+  LifeCycleSettings,
 } from "@/types";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import type { Expense } from "@/types/tables";
 import type { SimulationResult } from "@/lib/services/simulationTypes";
-import {
-  MEDICAL_EXPENSE_INFO,
-  MEDICAL_EXPENSE_BY_AGE,
-  EDUCATION_EXPENSE_BY_AGE,
-} from "@/types";
 import { FinancialItemIcon } from "@/components/FinancialItemIcon";
 import { FinancialIconPicker } from "@/components/FinancialIconPicker";
 import {
@@ -50,7 +45,6 @@ import { CHART_COLORS, categorizeExpense } from "@/lib/utils/tooltipCategories";
 import { useExpenses, useInvalidateByCategory } from "@/hooks/useFinancialData";
 import {
   createExpense,
-  createExpensesBatch,
   updateExpense,
   deleteExpense,
   deleteExpensesByType,
@@ -74,6 +68,8 @@ interface ExpenseTabProps {
   spouseLifeExpectancy?: number;
   simulationResult: SimulationResult;
   familyMembers: SimFamilyMember[];
+  autoExpenses?: LifeCycleSettings['autoExpenses'];
+  onAutoExpensesChange?: (autoExpenses: LifeCycleSettings['autoExpenses']) => void;
 }
 
 // 로컬 타입 별칭
@@ -92,6 +88,8 @@ export function ExpenseTab({
   spouseLifeExpectancy,
   simulationResult,
   familyMembers,
+  autoExpenses,
+  onAutoExpensesChange,
 }: ExpenseTabProps) {
   const { chartScaleColors, isDark } = useChartTheme();
   const currentYear = new Date().getFullYear();
@@ -191,9 +189,6 @@ export function ExpenseTab({
   // 확장/축소 상태
   const [isExpanded, setIsExpanded] = useState(true);
 
-  // 의료비 섹션 토글 상태
-  const [medicalExpanded, setMedicalExpanded] = useState(false);
-  const [showMedicalInfo, setShowMedicalInfo] = useState(false);
 
   // 편집 중인 항목 ID
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -227,48 +222,12 @@ export function ExpenseTab({
   const [showTypeMenu, setShowTypeMenu] = useState(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
 
-  // 그룹 상세 모달 (의료비/교육비)
-  const [detailGroupType, setDetailGroupType] = useState<'medical' | 'education' | null>(null);
+  // 교육비 tier 선택 중 상태
+  const [educationTierSelection, setEducationTierSelection] = useState(false);
 
   type DisplayItem = ExpenseItem & { displayGrowthRate: number };
 
-  // 그룹 분류
-  const medicalItems = displayItems.filter(i => {
-    // DB type 'medical' maps to UI type 'medical'
-    const dbItem = dbExpenses.find(e => e.id === i.id);
-    return dbItem?.type === 'medical';
-  });
-  const educationItems = displayItems.filter(i => {
-    const dbItem = dbExpenses.find(e => e.id === i.id);
-    return dbItem?.type === 'education';
-  });
-  // Regular items: everything that's NOT medical or education in DB
-  const regularItems = displayItems.filter(i => {
-    const dbItem = dbExpenses.find(e => e.id === i.id);
-    return dbItem?.type !== 'medical' && dbItem?.type !== 'education';
-  });
-
   const totalCount = displayItems.length;
-
-  // 현재 연도에 해당하는 의료비만 필터링
-  const currentMedicalItems = useMemo(() => {
-    return medicalItems.filter((item) => {
-      const start = item.startYear;
-      const end = item.endYear || 9999;
-      return currentYear >= start && currentYear <= end;
-    });
-  }, [medicalItems, currentYear]);
-
-  // 그룹의 현재 월별 총액 계산
-  const getGroupCurrentMonthly = (items: DisplayItem[]) => {
-    return items
-      .filter(item => {
-        const start = item.startYear;
-        const end = item.endYear || 9999;
-        return currentYear >= start && currentYear <= end;
-      })
-      .reduce((sum, item) => sum + (item.frequency === 'yearly' ? item.amount / 12 : item.amount), 0);
-  };
 
   // 차트 데이터 - simulationResult에서 직접 가져옴 (Single Source of Truth)
   const projectionData = useMemo(() => {
@@ -564,133 +523,35 @@ export function ExpenseTab({
     },
   };
 
-  // 연령 구간 라벨
-  const getMedicalAgeLabel = (startAge: number, endAge: number): string => {
-    return `${startAge}~${endAge}세`;
-  };
-
-  // 나이대별 의료비 자동 생성 (배치, 연간 현재가치 + amount_base_year)
-  const generateMedicalExpenses = async () => {
-    if (!simulationId) return;
-
-    const ageKeys = Object.keys(MEDICAL_EXPENSE_BY_AGE)
-      .map(Number)
-      .sort((a, b) => a - b);
-
+  // 자동 지출 활성화 핸들러
+  const handleEnableMedical = async () => {
+    // 기존 DB 레코드 정리
     try {
-      // 기존 의료비 일괄 삭제
       await deleteExpensesByType(simulationId, "medical");
-
-      // 생성할 항목 모으기
-      const inputs: Parameters<typeof createExpensesBatch>[0] = [];
-
-      const buildInputs = (personBirthYear: number, personLabel: string, personLifeExpectancy: number) => {
-        const maxAge = personLifeExpectancy;
-
-        for (let i = 0; i < ageKeys.length; i++) {
-          const startAge = ageKeys[i];
-
-          if (startAge >= maxAge) continue;
-
-          const rawEndAge = i < ageKeys.length - 1 ? ageKeys[i + 1] - 1 : 100;
-          const endAge = Math.min(rawEndAge, maxAge);
-          const startYear = personBirthYear + startAge;
-          const endYear = personBirthYear + endAge;
-
-          if (endYear < currentYear) continue;
-
-          inputs.push({
-            simulation_id: simulationId,
-            type: "medical" as const,
-            title: `${personLabel} 의료비 (${getMedicalAgeLabel(startAge, endAge)})`,
-            amount: MEDICAL_EXPENSE_BY_AGE[startAge], // 현재가치 그대로 저장
-            frequency: "yearly" as const,
-            start_year: Math.max(startYear, currentYear),
-            start_month: 1,
-            end_year: endYear,
-            end_month: 12,
-            is_fixed_to_retirement: false,
-            growth_rate: 3,
-            rate_category: "inflation" as const,
-            amount_base_year: currentYear, // 엔진이 현재년도부터 복리 적용
-          });
-        }
-      };
-
-      // 본인 의료비
-      const selfLifeExpectancy = lifeExpectancy;
-      buildInputs(birthYear, "본인", selfLifeExpectancy);
-
-      // 배우자 의료비
-      if (isMarried && spouseBirthYear) {
-        const spouseLifeExp = spouseLifeExpectancy ?? selfLifeExpectancy;
-        buildInputs(spouseBirthYear, "배우자", spouseLifeExp);
-      }
-
-      // 한 번에 일괄 생성
-      await createExpensesBatch(inputs);
-
       invalidate("expenses");
-      setMedicalExpanded(true);
-      resetAddForm();
-    } catch (error) {
-      console.error("Failed to generate medical expenses:", error);
-    }
+    } catch { /* ignore */ }
+    onAutoExpensesChange?.({ ...autoExpenses, medical: true });
+    resetAddForm();
   };
 
-  // 나이대별 교육비 자동 생성 (배치, 현재가치 + amount_base_year)
-  const generateEducationExpenses = async () => {
-    if (!simulationId || children.length === 0) return;
-
-    const ageKeys = Object.keys(EDUCATION_EXPENSE_BY_AGE).map(Number).sort((a, b) => a - b);
-
+  const handleEnableEducation = async (tier: 'normal' | 'premium') => {
+    // 기존 DB 레코드 정리
     try {
-      // 기존 교육비 일괄 삭제
       await deleteExpensesByType(simulationId, "education");
-
-      // 생성할 항목 모으기
-      const inputs: Parameters<typeof createExpensesBatch>[0] = [];
-
-      for (const child of children) {
-        const childBirthYear = new Date(child.birth_date!).getFullYear();
-        const childName = child.name || '자녀';
-
-        for (let i = 0; i < ageKeys.length; i++) {
-          const startAge = ageKeys[i];
-          const endAge = i < ageKeys.length - 1 ? ageKeys[i + 1] - 1 : 21;
-          const startYear = childBirthYear + startAge;
-          const endYear = childBirthYear + endAge;
-
-          if (endYear < currentYear) continue;
-
-          const { label, amount: baseAmount } = EDUCATION_EXPENSE_BY_AGE[startAge];
-
-          inputs.push({
-            simulation_id: simulationId,
-            type: 'education',
-            title: `${childName} ${label}`,
-            amount: baseAmount, // 현재가치 그대로 저장
-            frequency: 'monthly',
-            start_year: Math.max(startYear, currentYear),
-            start_month: 3,
-            end_year: endYear,
-            end_month: 2,
-            is_fixed_to_retirement: false,
-            growth_rate: 3,
-            rate_category: 'inflation',
-            amount_base_year: currentYear, // 엔진이 현재년도부터 복리 적용
-          });
-        }
-      }
-
-      // 한 번에 일괄 생성
-      await createExpensesBatch(inputs);
-
       invalidate("expenses");
-      resetAddForm();
-    } catch (error) {
-      console.error("Failed to generate education expenses:", error);
-    }
+    } catch { /* ignore */ }
+    onAutoExpensesChange?.({ ...autoExpenses, education: { enabled: true, tier } });
+    resetAddForm();
+  };
+
+  const handleDisableMedical = () => {
+    const { medical: _, ...rest } = autoExpenses || {};
+    onAutoExpensesChange?.(Object.keys(rest).length > 0 ? rest : undefined);
+  };
+
+  const handleDisableEducation = () => {
+    const { education: _, ...rest } = autoExpenses || {};
+    onAutoExpensesChange?.(Object.keys(rest).length > 0 ? rest : undefined);
   };
 
   // 항목 추가 (DB)
@@ -782,6 +643,7 @@ export function ExpenseTab({
     setNewEndDateText(toPeriodRaw(selfRetirementYear, 12));
     setNewRateCategory('inflation');
     setNewCustomRate("");
+    setEducationTierSelection(false);
   };
 
   // 항목 삭제 (DB)
@@ -930,10 +792,7 @@ export function ExpenseTab({
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (detailGroupType) {
-          setDetailGroupType(null);
-          e.stopPropagation();
-        } else if (editingId) {
+        if (editingId) {
           cancelEdit();
           e.stopPropagation();
         } else if (showTypeMenu) {
@@ -944,7 +803,7 @@ export function ExpenseTab({
     };
     window.addEventListener("keydown", handleEsc, true);
     return () => window.removeEventListener("keydown", handleEsc, true);
-  }, [showTypeMenu, editingId, detailGroupType]);
+  }, [showTypeMenu, editingId]);
 
   const handleTypeSelect = (type: ExpenseType) => {
     setAddingType(type);
@@ -1073,27 +932,59 @@ export function ExpenseTab({
 
                 {/* Auto-generation presets section */}
                 <div className={styles.presetSection}>
-                  <span className={styles.presetLabel}>자동 생성</span>
+                  <span className={styles.presetLabel}>자동 반영</span>
                   <div className={styles.presetList}>
-                    <button className={styles.presetCard} onClick={() => { generateMedicalExpenses(); }}>
-                      <div className={styles.presetInfo}>
-                        <span className={styles.presetName}>의료비</span>
-                        <span className={styles.presetDesc}>
-                          {isMarried && spouseBirthYear ? '본인 + 배우자 나이대별' : '본인 나이대별'}
-                        </span>
-                      </div>
-                      <Plus size={16} className={styles.presetIcon} />
-                    </button>
-                    {children.length > 0 && (
-                      <button className={styles.presetCard} onClick={() => { generateEducationExpenses(); }}>
+                    {!autoExpenses?.medical && (
+                      <button className={styles.presetCard} onClick={handleEnableMedical}>
                         <div className={styles.presetInfo}>
-                          <span className={styles.presetName}>교육비</span>
+                          <span className={styles.presetName}>의료비</span>
+                          <span className={styles.presetDesc}>
+                            {isMarried && spouseBirthYear ? '본인 + 배우자 나이대별' : '본인 나이대별'}
+                          </span>
+                        </div>
+                        <Plus size={16} className={styles.presetIcon} />
+                      </button>
+                    )}
+                    {autoExpenses?.medical && (
+                      <div className={styles.presetCard} style={{ opacity: 0.6 }}>
+                        <div className={styles.presetInfo}>
+                          <span className={styles.presetName}>의료비</span>
+                          <span className={styles.presetDesc}>
+                            {isMarried && spouseBirthYear ? '본인 + 배우자' : '본인'} 반영 중
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {children.length > 0 && !autoExpenses?.education?.enabled && !educationTierSelection && (
+                      <button className={styles.presetCard} onClick={() => setEducationTierSelection(true)}>
+                        <div className={styles.presetInfo}>
+                          <span className={styles.presetName}>양육비</span>
                           <span className={styles.presetDesc}>
                             {children.map(c => c.name || '자녀').join(', ')} 기반
                           </span>
                         </div>
                         <Plus size={16} className={styles.presetIcon} />
                       </button>
+                    )}
+                    {children.length > 0 && autoExpenses?.education?.enabled && (
+                      <div className={styles.presetCard} style={{ opacity: 0.6 }}>
+                        <div className={styles.presetInfo}>
+                          <span className={styles.presetName}>양육비</span>
+                          <span className={styles.presetDesc}>자동 반영 중 ({autoExpenses.education.tier === 'premium' ? '여유' : '보통'})</span>
+                        </div>
+                      </div>
+                    )}
+                    {educationTierSelection && (
+                      <div className={styles.tierSelection}>
+                        <button className={styles.tierBtn} onClick={() => { handleEnableEducation('normal'); setEducationTierSelection(false); }}>
+                          <span className={styles.tierName}>보통</span>
+                          <span className={styles.tierDesc}>연 150~3,000만원</span>
+                        </button>
+                        <button className={styles.tierBtn} onClick={() => { handleEnableEducation('premium'); setEducationTierSelection(false); }}>
+                          <span className={styles.tierName}>여유</span>
+                          <span className={styles.tierDesc}>연 1,000~7,000만원</span>
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1670,126 +1561,52 @@ export function ExpenseTab({
 
       {isExpanded && (
         <div className={styles.groupedList}>
-          {displayItems.length === 0 && (
+          {/* 자동 반영 상태 표시 */}
+          {(autoExpenses?.medical || autoExpenses?.education?.enabled) && (
+            <div className={styles.autoStatusSection}>
+              {autoExpenses?.medical && (
+                <div className={styles.autoStatusItem}>
+                  <div className={styles.autoStatusInfo}>
+                    <span className={styles.autoStatusLabel}>의료비</span>
+                    <span className={styles.autoStatusDesc}>
+                      {isMarried && spouseBirthYear ? '본인 + 배우자' : '본인'} 나이대별 자동 반영
+                    </span>
+                  </div>
+                  <button className={styles.autoStatusToggle} onClick={handleDisableMedical}>해제</button>
+                </div>
+              )}
+              {autoExpenses?.education?.enabled && (
+                <div className={styles.autoStatusItem}>
+                  <div className={styles.autoStatusInfo}>
+                    <span className={styles.autoStatusLabel}>
+                      양육비 ({autoExpenses.education.tier === 'premium' ? '여유' : '보통'})
+                    </span>
+                    <span className={styles.autoStatusDesc}>
+                      {children.length > 0
+                        ? children.map(c => c.name || '자녀').join(', ')
+                        : '자녀'} 기반 자동 반영
+                    </span>
+                  </div>
+                  <button className={styles.autoStatusToggle} onClick={handleDisableEducation}>해제</button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {displayItems.length === 0 && !autoExpenses?.medical && !autoExpenses?.education?.enabled && (
             <p className={styles.emptyHint}>
               아직 등록된 지출이 없습니다. 오른쪽 + 버튼으로 추가하세요.
             </p>
           )}
 
-          {regularItems.length > 0 && (
+          {displayItems.length > 0 && (
             <div className={styles.sectionGroup}>
-              <div className={styles.sectionGroupHeader}>
-                <div className={styles.sectionTitleRow}>
-                  <span className={styles.sectionGroupTitle}>일반 지출</span>
-                  <span className={styles.sectionCount}>{regularItems.length}개</span>
-                </div>
-              </div>
               <div className={styles.sectionItems}>
-                {regularItems.map((item) => renderItem(item))}
-              </div>
-            </div>
-          )}
-
-          {medicalItems.length > 0 && (
-            <div className={styles.sectionGroup}>
-              <div className={styles.sectionGroupHeader}>
-                <div className={styles.sectionTitleRow}>
-                  <span className={styles.sectionGroupTitle}>의료비</span>
-                  <span className={styles.sectionCount}>{medicalItems.length}개</span>
-                </div>
-              </div>
-              <div className={styles.sectionItems}>
-                <div className={styles.expenseItem} onClick={() => setDetailGroupType('medical')}>
-                  <div className={styles.itemInfo}>
-                    <span className={styles.itemName}>의료비</span>
-                    <span className={styles.itemMeta}>
-                      {medicalItems.length}개 항목 | 현재 월 {formatMoney(getGroupCurrentMonthly(medicalItems))}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {educationItems.length > 0 && (
-            <div className={styles.sectionGroup}>
-              <div className={styles.sectionGroupHeader}>
-                <div className={styles.sectionTitleRow}>
-                  <span className={styles.sectionGroupTitle}>교육비</span>
-                  <span className={styles.sectionCount}>{educationItems.length}개</span>
-                </div>
-              </div>
-              <div className={styles.sectionItems}>
-                <div className={styles.expenseItem} onClick={() => setDetailGroupType('education')}>
-                  <div className={styles.itemInfo}>
-                    <span className={styles.itemName}>교육비</span>
-                    <span className={styles.itemMeta}>
-                      {educationItems.length}개 항목 | 현재 월 {formatMoney(getGroupCurrentMonthly(educationItems))}
-                    </span>
-                  </div>
-                </div>
+                {displayItems.map((item) => renderItem(item))}
               </div>
             </div>
           )}
         </div>
-      )}
-
-      {/* Group detail modal (medical/education) */}
-      {detailGroupType && createPortal(
-        <div className={styles.typeModalOverlay} data-scenario-dropdown-portal="true" onClick={() => setDetailGroupType(null)}>
-          <div className={styles.groupDetailModal} onClick={e => e.stopPropagation()} style={{
-            background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-          }}>
-            <div className={styles.typeModalHeader}>
-              <span className={styles.typeModalTitle}>
-                {detailGroupType === 'medical' ? '의료비' : '교육비'} 관리
-              </span>
-              <button className={styles.typeModalClose} onClick={() => setDetailGroupType(null)}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className={styles.groupDetailList}>
-              {(detailGroupType === 'medical' ? medicalItems : educationItems).map((item) => (
-                <div key={item.id} className={styles.groupDetailItem} onClick={() => { setDetailGroupType(null); startEdit(item); }}>
-                  <div className={styles.itemInfo}>
-                    <span className={styles.itemName}>{item.label}</span>
-                    <span className={styles.itemMeta}>{formatPeriod(item)}</span>
-                    <span className={styles.itemMeta}>
-                      {item.rateCategory === 'fixed'
-                        ? `연 ${item.displayGrowthRate}% 상승`
-                        : `시뮬레이션 가정 (${item.rateCategory === 'income' ? '소득 상승률' : item.rateCategory === 'inflation' ? '물가 상승률' : item.rateCategory === 'realEstate' ? '부동산 상승률' : '투자 수익률'})`}
-                    </span>
-                  </div>
-                  <div className={styles.itemRight}>
-                    <span className={styles.itemAmount}>
-                      {formatAmountWithFreq(item)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className={styles.groupDetailActions}>
-              <button
-                className={styles.regenerateBtn}
-                onClick={() => {
-                  if (detailGroupType === 'medical') {
-                    generateMedicalExpenses();
-                    setDetailGroupType(null);
-                  } else {
-                    generateEducationExpenses();
-                    setDetailGroupType(null);
-                  }
-                }}
-              >
-                다시 생성
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
       )}
     </div>
   );

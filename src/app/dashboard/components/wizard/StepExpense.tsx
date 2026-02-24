@@ -1,165 +1,120 @@
 "use client";
 
-import { X, Plus } from "lucide-react";
-import type { StepProps, WizardData } from "./types";
+import { calculateAge, formatMoney } from "@/lib/utils";
+import type { StepProps } from "./types";
 import styles from "./StepExpense.module.css";
 
-type FixedExpenseItem = WizardData["expense"]["fixedExpenses"][number];
+interface StepExpenseProps extends StepProps {
+  profileBirthDate: string | null;
+}
 
-const LIVING_CATEGORIES: { key: keyof WizardData["expense"]["livingExpenseDetails"]; label: string }[] = [
-  { key: "food", label: "식비" },
-  { key: "transport", label: "교통비" },
-  { key: "shopping", label: "쇼핑/미용" },
-  { key: "leisure", label: "여가/유흥" },
-];
-
-export function StepExpense({ data, onChange }: StepProps) {
+export function StepExpense({ data, onChange, profileBirthDate }: StepExpenseProps) {
   const { expense } = data;
 
   const updateExpense = (updates: Partial<typeof expense>) => {
     onChange({ expense: { ...expense, ...updates } });
   };
 
-  const handleDetailChange = (key: keyof typeof expense.livingExpenseDetails, value: number | null) => {
-    const updated = { ...expense.livingExpenseDetails, [key]: value };
-    const total = (updated.food || 0) + (updated.transport || 0) + (updated.shopping || 0) + (updated.leisure || 0);
-    updateExpense({
-      livingExpenseDetails: updated,
-      livingExpense: total > 0 ? total : null,
-    });
-  };
+  // Preview calculation
+  const livingExpense = expense.livingExpense;
+  const postRetirementRate = expense.postRetirementRate;
+  const retirementAge = data.retirement.retirementAge;
 
-  const handleAddFixed = () => {
-    updateExpense({
-      fixedExpenses: [
-        ...expense.fixedExpenses,
-        { title: "", type: "other", amount: null, frequency: "monthly" },
-      ],
-    });
-  };
+  let yearsToRetirement = 0;
+  let currentAge = 0;
+  if (profileBirthDate) {
+    currentAge = calculateAge(profileBirthDate);
+    yearsToRetirement = Math.max(0, (retirementAge ?? 65) - currentAge);
+  }
 
-  const handleRemoveFixed = (index: number) => {
-    updateExpense({
-      fixedExpenses: expense.fixedExpenses.filter((_, i) => i !== index),
-    });
-  };
-
-  const handleFixedChange = (index: number, updates: Partial<FixedExpenseItem>) => {
-    updateExpense({
-      fixedExpenses: expense.fixedExpenses.map((item, i) =>
-        i === index ? { ...item, ...updates } : item
-      ),
-    });
-  };
+  const showPreview = livingExpense !== null && livingExpense > 0;
+  const inflationRate = 0.025;
+  const preRetirementExpense = showPreview
+    ? Math.round(livingExpense * Math.pow(1 + inflationRate, yearsToRetirement))
+    : 0;
+  const postRetirementExpense = showPreview
+    ? Math.round(preRetirementExpense * postRetirementRate)
+    : 0;
 
   return (
     <div className={styles.root}>
-      {/* 생활비 섹션 */}
       <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionLabel}>생활비</span>
-          {expense.livingExpense != null && expense.livingExpense > 0 && (
-            <span className={styles.totalBadge}>
-              합계 {expense.livingExpense}만원/월
-            </span>
-          )}
-        </div>
-
-        <div className={styles.detailGrid}>
-          {LIVING_CATEGORIES.map((cat) => (
-            <div key={cat.key} className={styles.detailRow}>
-              <label className={styles.detailLabel}>{cat.label}</label>
-              <div className={styles.amountWrapper}>
-                <input
-                  type="number"
-                  className={styles.amountInput}
-                  value={expense.livingExpenseDetails[cat.key] ?? ""}
-                  placeholder="0"
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    handleDetailChange(cat.key, raw === "" ? null : parseInt(raw, 10));
-                  }}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                />
-                <span className={styles.unit}>만원/월</span>
-              </div>
-            </div>
-          ))}
+        <span className={styles.sectionLabel}>생활비</span>
+        <div className={styles.amountWrapper}>
+          <input
+            type="number"
+            className={styles.amountInput}
+            value={expense.livingExpense ?? ""}
+            placeholder="0"
+            onChange={(e) => {
+              const raw = e.target.value;
+              updateExpense({ livingExpense: raw === "" ? null : parseInt(raw, 10) });
+            }}
+            onWheel={(e) => (e.target as HTMLElement).blur()}
+          />
+          <span className={styles.unit}>만원/월</span>
         </div>
       </section>
 
-      {/* 고정비 섹션 */}
       <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionLabel}>고정비</span>
-          {expense.fixedExpenses.length > 0 && (
-            <span className={styles.countBadge}>{expense.fixedExpenses.length}건</span>
-          )}
+        <span className={styles.sectionLabel}>고정비</span>
+        <div className={styles.amountWrapper}>
+          <input
+            type="number"
+            className={styles.amountInput}
+            value={expense.fixedExpense ?? ""}
+            placeholder="0"
+            onChange={(e) => {
+              const raw = e.target.value;
+              updateExpense({ fixedExpense: raw === "" ? null : parseInt(raw, 10) });
+            }}
+            onWheel={(e) => (e.target as HTMLElement).blur()}
+          />
+          <span className={styles.unit}>만원/월</span>
+        </div>
+      </section>
+
+      <hr className={styles.divider} />
+
+      <section className={styles.rateSection}>
+        <span className={styles.sectionLabel}>은퇴 후 생활비</span>
+        <div className={styles.rateRow}>
+          <input
+            type="number"
+            className={styles.rateInput}
+            value={Math.round(postRetirementRate * 100)}
+            min={50}
+            max={100}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === "") return;
+              const pct = Math.min(100, Math.max(50, parseInt(raw, 10)));
+              updateExpense({ postRetirementRate: pct / 100 });
+            }}
+            onWheel={(e) => (e.target as HTMLElement).blur()}
+          />
+          <span className={styles.percent}>%</span>
         </div>
 
-        {expense.fixedExpenses.length === 0 ? (
-          <p className={styles.emptyText}>등록된 고정비가 없습니다</p>
-        ) : (
-          <div className={styles.list}>
-            {expense.fixedExpenses.map((item, index) => (
-              <div key={index} className={styles.fixedRow}>
-                <input
-                  type="text"
-                  className={styles.titleInput}
-                  value={item.title}
-                  onChange={(e) => handleFixedChange(index, { title: e.target.value })}
-                  placeholder="항목명 (예: 통신비, 보험료)"
-                />
-
-                <div className={styles.amountWrapper}>
-                  <input
-                    type="number"
-                    className={styles.amountInputSmall}
-                    value={item.amount ?? ""}
-                    placeholder="0"
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      handleFixedChange(index, { amount: raw === "" ? null : parseInt(raw, 10) });
-                    }}
-                    onWheel={(e) => (e.target as HTMLElement).blur()}
-                  />
-                  <span className={styles.unit}>만원</span>
+        {showPreview && (
+          <div className={styles.previewGrid}>
+            {yearsToRetirement <= 0 ? (
+              <span className={styles.previewHint}>이미 은퇴 나이 도달</span>
+            ) : (
+              <>
+                <div className={styles.previewRow}>
+                  <span className={styles.previewLabel}>은퇴 전 예상</span>
+                  <span className={styles.previewValue}>약 {formatMoney(preRetirementExpense)}/월</span>
                 </div>
-
-                <div className={styles.pillGroup}>
-                  <button
-                    type="button"
-                    className={`${styles.pillSmall} ${item.frequency === "monthly" ? styles.pillSmallActive : ""}`}
-                    onClick={() => handleFixedChange(index, { frequency: "monthly" })}
-                  >
-                    월
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.pillSmall} ${item.frequency === "yearly" ? styles.pillSmallActive : ""}`}
-                    onClick={() => handleFixedChange(index, { frequency: "yearly" })}
-                  >
-                    년
-                  </button>
+                <div className={styles.previewRow}>
+                  <span className={styles.previewLabel}>은퇴 후 예상</span>
+                  <span className={styles.previewValue}>약 {formatMoney(postRetirementExpense)}/월</span>
                 </div>
-
-                <button
-                  type="button"
-                  className={styles.deleteBtn}
-                  onClick={() => handleRemoveFixed(index)}
-                  aria-label="고정비 삭제"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
+                <span className={styles.previewHint}>(물가 2.5% 반영, {yearsToRetirement}년 후 기준)</span>
+              </>
+            )}
           </div>
         )}
-
-        <button type="button" className={styles.addBtn} onClick={handleAddFixed}>
-          <Plus size={14} />
-          고정비 추가
-        </button>
       </section>
     </div>
   );

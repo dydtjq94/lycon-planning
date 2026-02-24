@@ -671,6 +671,10 @@ export interface LifeCycleSettings {
   spouseRetirementColor?: string;
   spouseLifeExpectancyIcon?: string;
   spouseLifeExpectancyColor?: string;
+  autoExpenses?: {
+    medical?: boolean;
+    education?: { enabled: boolean; tier: 'normal' | 'premium' };
+  };
 }
 
 export interface SimFamilyMember {
@@ -1126,22 +1130,35 @@ export const MEDICAL_EXPENSE_BY_AGE: Record<number, number> = {
   90: 950, // 90~100세: 연 950만원
 };
 
-// 나이대별 교육비 (만원/월, 사교육 포함 평균)
-export const EDUCATION_EXPENSE_BY_AGE: Record<number, { label: string; amount: number }> = {
-  3: { label: '유치원', amount: 40 },
-  6: { label: '초등학교', amount: 50 },
-  12: { label: '중학교', amount: 70 },
-  15: { label: '고등학교', amount: 90 },
-  18: { label: '대학교', amount: 120 },
+// 나이대별 양육비 (만원/년, 사교육 포함)
+export const EDUCATION_EXPENSE_BY_AGE: Record<number, {
+  label: string;
+  normal: number;   // 보통 (만원/년)
+  premium: number;  // 여유 (만원/년)
+  isOneTime?: boolean; // 결혼자금 등 일시금
+}> = {
+  0: { label: '영아 (어린이집)', normal: 150, premium: 1000 },
+  3: { label: '유아 (어린이집)', normal: 200, premium: 1200 },
+  4: { label: '유치원', normal: 450, premium: 1800 },
+  7: { label: '초등학교', normal: 1000, premium: 2500 },
+  13: { label: '중학교', normal: 1500, premium: 4000 },
+  16: { label: '고등학교', normal: 2000, premium: 5000 },
+  19: { label: '대학교', normal: 3000, premium: 7000 },
+  30: { label: '결혼자금', normal: 10000, premium: 50000, isOneTime: true },
 };
 
-export const EDUCATION_EXPENSE_INFO = `한국 평균 사교육비 포함 교육비 (통계청, 교육부 자료 기반)
+export const EDUCATION_EXPENSE_INFO = `한국 평균 양육비 (통계청, 교육부 자료 기반)
 
-- 유치원 (3~5세): 월 40만원
-- 초등학교 (6~11세): 월 50만원
-- 중학교 (12~14세): 월 70만원
-- 고등학교 (15~17세): 월 90만원
-- 대학교 (18~21세): 월 120만원
+|  | 보통 | 여유 |
+|--|------|------|
+| 영아 0~2세 | 연 150만원 | 연 1,000만원 |
+| 유아 3세 | 연 200만원 | 연 1,200만원 |
+| 유치원 4~6세 | 연 450만원 | 연 1,800만원 |
+| 초등학교 7~12세 | 연 1,000만원 | 연 2,500만원 |
+| 중학교 13~15세 | 연 1,500만원 | 연 4,000만원 |
+| 고등학교 16~18세 | 연 2,000만원 | 연 5,000만원 |
+| 대학교 19~22세 | 연 3,000만원 | 연 7,000만원 |
+| 결혼자금 (일시금) | 1억원 | 5억원 |
 
 ※ 지역, 학교 유형, 사교육 규모에 따라 크게 다를 수 있습니다.`;
 

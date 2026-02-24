@@ -49,6 +49,8 @@ interface ScenarioTabProps {
   allSimulations?: Simulation[];
   profileId?: string;
   onToggleCompare?: (key: string) => void;
+  autoExpenses?: LifeCycleSettings['autoExpenses'];
+  onAutoExpensesChange?: (autoExpenses: LifeCycleSettings['autoExpenses']) => void;
 }
 
 // Top level tabs
@@ -99,6 +101,8 @@ export function ScenarioTab({
   allSimulations,
   profileId,
   onToggleCompare,
+  autoExpenses,
+  onAutoExpensesChange,
 }: ScenarioTabProps) {
   const { isDark, chartScaleColors } = useChartTheme();
 
@@ -363,6 +367,7 @@ export function ScenarioTab({
       return (
         <NetWorthTab
           simulationId={simulationId}
+          simulationResult={simulationResult}
           birthYear={simulationProfile.birthYear}
           spouseBirthYear={simulationProfile.spouseBirthYear}
           retirementAge={lifeCycleSettings.selfRetirementAge}
@@ -371,12 +376,9 @@ export function ScenarioTab({
           onTimeRangeChange={setSharedTimeRange}
           selectedYear={sharedSelectedYear}
           onSelectedYearChange={setSharedSelectedYear}
-          simulationAssumptions={assumptions}
-          cashFlowPriorities={priorities}
           selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
           spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
           simulationStartYear={simulation.start_year}
-          simulationStartMonth={simulation.start_month}
           lifecycleMilestones={lifecycleMilestones}
           compareSelections={compareSelections}
           allSimulations={allSimulations}
@@ -396,12 +398,10 @@ export function ScenarioTab({
         onTimeRangeChange={setSharedTimeRange}
         selectedYear={sharedSelectedYear}
         onSelectedYearChange={setSharedSelectedYear}
-        simulationAssumptions={assumptions}
-        cashFlowPriorities={priorities}
+        simulationResult={simulationResult}
         selfLifeExpectancy={lifeCycleSettings.selfLifeExpectancy}
         spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
         simulationStartYear={simulation.start_year}
-        simulationStartMonth={simulation.start_month}
         lifecycleMilestones={lifecycleMilestones}
       />
     );
@@ -439,6 +439,8 @@ export function ScenarioTab({
             spouseLifeExpectancy={lifeCycleSettings.spouseLifeExpectancy}
             simulationResult={simulationResult}
             familyMembers={familyMembers}
+            autoExpenses={autoExpenses}
+            onAutoExpensesChange={onAutoExpensesChange}
           />
         );
       case "savings":

@@ -18,14 +18,65 @@
   letter-spacing: -0.2px;
 }
 
-.amountWrapper {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.ownerLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+  min-width: 36px;
 }
 
+.personBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Pill Toggle */
+.pillGroup {
+  display: flex;
+  gap: 3px;
+}
+
+.pill {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-secondary);
+  transition: background 0.15s ease, color 0.15s ease;
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+}
+
+.pill:hover {
+  color: var(--dashboard-text);
+}
+
+.pillActive {
+  background: var(--accent-color, #007aff);
+  color: #fff;
+}
+
+.pillActive:hover {
+  color: #fff;
+}
+
+/* Amount input */
 .amountInput {
-  width: 120px;
+  width: 100px;
   padding: 8px 12px;
   font-size: 14px;
   font-weight: 500;
@@ -53,34 +104,9 @@
   margin: 0;
 }
 
-.unit {
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
-  white-space: nowrap;
-}
-
-.divider {
-  border: none;
-  border-top: 1px solid var(--dashboard-border);
-  margin: 4px 0;
-}
-
-.rateSection {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.rateRow {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-}
-
-.rateInput {
+.ageInput {
   width: 60px;
-  padding: 8px 10px;
+  padding: 8px 8px;
   font-size: 14px;
   font-weight: 500;
   color: var(--dashboard-text);
@@ -92,47 +118,23 @@
   letter-spacing: -0.1px;
 }
 
-.rateInput:focus {
+.ageInput:focus {
   border-color: var(--accent-color, #007aff);
 }
 
-.rateInput::-webkit-outer-spin-button,
-.rateInput::-webkit-inner-spin-button {
+.ageInput::placeholder {
+  color: var(--dashboard-text-muted);
+  font-weight: 400;
+}
+
+.ageInput::-webkit-outer-spin-button,
+.ageInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.percent {
+.unit {
   font-size: 13px;
   color: var(--dashboard-text-secondary);
-}
-
-.previewGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.previewRow {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.previewLabel {
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
-}
-
-.previewValue {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--dashboard-text);
-}
-
-.previewHint {
-  font-size: 12px;
-  color: var(--dashboard-text-muted);
-  letter-spacing: -0.1px;
+  white-space: nowrap;
 }

@@ -2,7 +2,16 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import {
-  Plus, Trash2, Link2, User, Users, Baby, Target, Settings, X, ChevronRight,
+  Plus,
+  Trash2,
+  Link2,
+  User,
+  Users,
+  Baby,
+  Target,
+  Settings,
+  X,
+  ChevronRight,
 } from "lucide-react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
@@ -17,10 +26,30 @@ import {
   usePortfolioChartPriceData,
 } from "@/hooks/useFinancialData";
 import { useChartTheme } from "@/hooks/useChartTheme";
-import type { FinancialSnapshotItem, FinancialSnapshotItemInput, PortfolioAccount, Account, Profile, FamilyMember, CustomHolding } from "@/types/tables";
-import { formatMoney, formatWon, calculateAge, wonToManwon, manwonToWon } from "@/lib/utils";
+import type {
+  FinancialSnapshotItem,
+  FinancialSnapshotItemInput,
+  PortfolioAccount,
+  Account,
+  Profile,
+  FamilyMember,
+  CustomHolding,
+} from "@/types/tables";
+import {
+  formatMoney,
+  formatWon,
+  calculateAge,
+  wonToManwon,
+  manwonToWon,
+} from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { calculatePortfolioAccountValuesDetailed, calculateAccountBalances, calculateTermDepositValue, calculateMaturityAmountPreTax, calculateMaturityAmountPostTax } from "@/lib/utils/accountValueCalculator";
+import {
+  calculatePortfolioAccountValuesDetailed,
+  calculateAccountBalances,
+  calculateTermDepositValue,
+  calculateMaturityAmountPreTax,
+  calculateMaturityAmountPostTax,
+} from "@/lib/utils/accountValueCalculator";
 import { BrokerLogo } from "./shared/BrokerLogo";
 import styles from "./CurrentAssetTab.module.css";
 
@@ -52,7 +81,11 @@ const HOUSING_TYPES: { value: HousingType; label: string }[] = [
 ];
 
 // 상환 방식
-type RepaymentType = "원리금균등상환" | "원금균등상환" | "만기일시상환" | "거치식상환";
+type RepaymentType =
+  | "원리금균등상환"
+  | "원금균등상환"
+  | "만기일시상환"
+  | "거치식상환";
 const REPAYMENT_TYPES: { value: RepaymentType; label: string }[] = [
   { value: "원리금균등상환", label: "원리금균등" },
   { value: "원금균등상환", label: "원금균등" },
@@ -166,7 +199,10 @@ interface ModalItemConfig {
   label: string;
 }
 
-const MODAL_ITEMS: Record<ModalCategory, { title: string; items: ModalItemConfig[] }> = {
+const MODAL_ITEMS: Record<
+  ModalCategory,
+  { title: string; items: ModalItemConfig[] }
+> = {
   investment: {
     title: "투자",
     items: [
@@ -216,23 +252,44 @@ interface DebtCardProps {
   onDelete: (id: string) => void;
 }
 
-function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardProps) {
+function DebtCard({
+  item,
+  currentYear,
+  isCouple,
+  onUpdate,
+  onDelete,
+}: DebtCardProps) {
   const meta = (item.metadata || {}) as Record<string, unknown>;
 
-  const getDefaultTitle = () => item.title || ITEM_TYPES.debt.find(t => t.value === item.item_type)?.label || "";
+  const getDefaultTitle = () =>
+    item.title ||
+    ITEM_TYPES.debt.find((t) => t.value === item.item_type)?.label ||
+    "";
 
   const [title, setTitle] = useState(getDefaultTitle());
   const [amount, setAmount] = useState(String(item.amount || ""));
-  const [loanRate, setLoanRate] = useState(String((meta?.loan_rate as number) || ""));
-  const [maturityYear, setMaturityYear] = useState(String((meta?.loan_maturity_year as number) || ""));
-  const [maturityMonth, setMaturityMonth] = useState(String((meta?.loan_maturity_month as number) || ""));
-  const [repaymentType, setRepaymentType] = useState((meta?.loan_repayment_type as RepaymentType) || "원리금균등상환");
-  const [gracePeriodYear, setGracePeriodYear] = useState(String((meta?.grace_period_year as number) || ""));
-  const [gracePeriodMonth, setGracePeriodMonth] = useState(String((meta?.grace_period_month as number) || ""));
+  const [loanRate, setLoanRate] = useState(
+    String((meta?.loan_rate as number) || ""),
+  );
+  const [maturityYear, setMaturityYear] = useState(
+    String((meta?.loan_maturity_year as number) || ""),
+  );
+  const [maturityMonth, setMaturityMonth] = useState(
+    String((meta?.loan_maturity_month as number) || ""),
+  );
+  const [repaymentType, setRepaymentType] = useState(
+    (meta?.loan_repayment_type as RepaymentType) || "원리금균등상환",
+  );
+  const [gracePeriodYear, setGracePeriodYear] = useState(
+    String((meta?.grace_period_year as number) || ""),
+  );
+  const [gracePeriodMonth, setGracePeriodMonth] = useState(
+    String((meta?.grace_period_month as number) || ""),
+  );
 
   // Enter 키로 저장 트리거
   const handleKeyDown = (e: React.KeyboardEvent, saveCallback: () => void) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       (e.target as HTMLElement).blur();
       saveCallback();
@@ -257,9 +314,11 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
               value={title}
               placeholder="이름 입력"
               onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                if (title !== item.title) onUpdate(item.id, { title });
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  if (title !== item.title) onUpdate(item.id, { title });
+                })
+              }
               onBlur={() => {
                 if (title !== item.title) onUpdate(item.id, { title });
               }}
@@ -269,8 +328,12 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
             <span className={styles.itemCardFieldLabel}>소유</span>
             <select
               className={styles.itemCardFieldSelect}
-              value={item.owner || 'self'}
-              onChange={(e) => onUpdate(item.id, { owner: e.target.value as 'self' | 'spouse' })}
+              value={item.owner || "self"}
+              onChange={(e) =>
+                onUpdate(item.id, {
+                  owner: e.target.value as "self" | "spouse",
+                })
+              }
             >
               <option value="self">본인</option>
               {isCouple && <option value="spouse">배우자</option>}
@@ -288,8 +351,10 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
             value={item.item_type}
             onChange={(e) => onUpdate(item.id, { item_type: e.target.value })}
           >
-            {ITEM_TYPES.debt.map(type => (
-              <option key={type.value} value={type.value}>{type.label}</option>
+            {ITEM_TYPES.debt.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
             ))}
           </select>
         </div>
@@ -302,12 +367,14 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
               className={styles.itemCardFieldInput}
               value={amount}
               placeholder="0"
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = parseInt(amount) || 0;
-                if (val !== item.amount) onUpdate(item.id, { amount: val });
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = parseInt(amount) || 0;
+                  if (val !== item.amount) onUpdate(item.id, { amount: val });
+                })
+              }
               onBlur={() => {
                 const val = parseInt(amount) || 0;
                 if (val !== item.amount) onUpdate(item.id, { amount: val });
@@ -326,14 +393,18 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
               value={loanRate}
               placeholder="0"
               step="0.1"
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setLoanRate(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = parseFloat(loanRate) || 0;
-                if (val !== (meta?.loan_rate as number)) {
-                  onUpdate(item.id, { metadata: { ...meta, loan_rate: val } });
-                }
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = parseFloat(loanRate) || 0;
+                  if (val !== (meta?.loan_rate as number)) {
+                    onUpdate(item.id, {
+                      metadata: { ...meta, loan_rate: val },
+                    });
+                  }
+                })
+              }
               onBlur={() => {
                 const val = parseFloat(loanRate) || 0;
                 if (val !== (meta?.loan_rate as number)) {
@@ -347,29 +418,39 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
 
         <div className={styles.itemCardField}>
           <span className={styles.itemCardFieldLabel}>만기일</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <input
               type="number"
               className={styles.itemCardFieldInput}
               style={{ width: 80, paddingRight: 12 }}
               value={maturityYear}
               placeholder={String(currentYear + 3)}
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setMaturityYear(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = maturityYear ? parseInt(maturityYear) : null;
-                if (val !== (meta?.loan_maturity_year as number | null)) {
-                  onUpdate(item.id, { metadata: { ...meta, loan_maturity_year: val } });
-                }
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = maturityYear ? parseInt(maturityYear) : null;
+                  if (val !== (meta?.loan_maturity_year as number | null)) {
+                    onUpdate(item.id, {
+                      metadata: { ...meta, loan_maturity_year: val },
+                    });
+                  }
+                })
+              }
               onBlur={() => {
                 const val = maturityYear ? parseInt(maturityYear) : null;
                 if (val !== (meta?.loan_maturity_year as number | null)) {
-                  onUpdate(item.id, { metadata: { ...meta, loan_maturity_year: val } });
+                  onUpdate(item.id, {
+                    metadata: { ...meta, loan_maturity_year: val },
+                  });
                 }
               }}
             />
-            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+            <span
+              style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+            >
+              년
+            </span>
             <input
               type="number"
               className={styles.itemCardFieldInput}
@@ -378,22 +459,32 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
               placeholder="12"
               min={1}
               max={12}
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setMaturityMonth(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = maturityMonth ? parseInt(maturityMonth) : null;
-                if (val !== (meta?.loan_maturity_month as number | null)) {
-                  onUpdate(item.id, { metadata: { ...meta, loan_maturity_month: val } });
-                }
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = maturityMonth ? parseInt(maturityMonth) : null;
+                  if (val !== (meta?.loan_maturity_month as number | null)) {
+                    onUpdate(item.id, {
+                      metadata: { ...meta, loan_maturity_month: val },
+                    });
+                  }
+                })
+              }
               onBlur={() => {
                 const val = maturityMonth ? parseInt(maturityMonth) : null;
                 if (val !== (meta?.loan_maturity_month as number | null)) {
-                  onUpdate(item.id, { metadata: { ...meta, loan_maturity_month: val } });
+                  onUpdate(item.id, {
+                    metadata: { ...meta, loan_maturity_month: val },
+                  });
                 }
               }}
             />
-            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+            <span
+              style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+            >
+              월
+            </span>
           </div>
         </div>
 
@@ -405,11 +496,15 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
             onChange={(e) => {
               const val = e.target.value as RepaymentType;
               setRepaymentType(val);
-              onUpdate(item.id, { metadata: { ...meta, loan_repayment_type: val } });
+              onUpdate(item.id, {
+                metadata: { ...meta, loan_repayment_type: val },
+              });
             }}
           >
-            {REPAYMENT_TYPES.map(type => (
-              <option key={type.value} value={type.value}>{type.label}</option>
+            {REPAYMENT_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
             ))}
           </select>
         </div>
@@ -417,29 +512,43 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
         {repaymentType === "거치식상환" ? (
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>거치기간</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <input
                 type="number"
                 className={styles.itemCardFieldInput}
                 style={{ width: 80, paddingRight: 12 }}
                 value={gracePeriodYear}
                 placeholder={String(currentYear + 3)}
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setGracePeriodYear(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
-                  if (val !== (meta?.grace_period_year as number | null)) {
-                    onUpdate(item.id, { metadata: { ...meta, grace_period_year: val } });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = gracePeriodYear
+                      ? parseInt(gracePeriodYear)
+                      : null;
+                    if (val !== (meta?.grace_period_year as number | null)) {
+                      onUpdate(item.id, {
+                        metadata: { ...meta, grace_period_year: val },
+                      });
+                    }
+                  })
+                }
                 onBlur={() => {
-                  const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
+                  const val = gracePeriodYear
+                    ? parseInt(gracePeriodYear)
+                    : null;
                   if (val !== (meta?.grace_period_year as number | null)) {
-                    onUpdate(item.id, { metadata: { ...meta, grace_period_year: val } });
+                    onUpdate(item.id, {
+                      metadata: { ...meta, grace_period_year: val },
+                    });
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                년
+              </span>
               <input
                 type="number"
                 className={styles.itemCardFieldInput}
@@ -448,22 +557,36 @@ function DebtCard({ item, currentYear, isCouple, onUpdate, onDelete }: DebtCardP
                 placeholder="12"
                 min={1}
                 max={12}
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setGracePeriodMonth(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
-                  if (val !== (meta?.grace_period_month as number | null)) {
-                    onUpdate(item.id, { metadata: { ...meta, grace_period_month: val } });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = gracePeriodMonth
+                      ? parseInt(gracePeriodMonth)
+                      : null;
+                    if (val !== (meta?.grace_period_month as number | null)) {
+                      onUpdate(item.id, {
+                        metadata: { ...meta, grace_period_month: val },
+                      });
+                    }
+                  })
+                }
                 onBlur={() => {
-                  const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
+                  const val = gracePeriodMonth
+                    ? parseInt(gracePeriodMonth)
+                    : null;
                   if (val !== (meta?.grace_period_month as number | null)) {
-                    onUpdate(item.id, { metadata: { ...meta, grace_period_month: val } });
+                    onUpdate(item.id, {
+                      metadata: { ...meta, grace_period_month: val },
+                    });
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                월
+              </span>
             </div>
           </div>
         ) : (
@@ -482,14 +605,22 @@ interface OtherInvestmentCardProps {
   onDelete: (id: string) => void;
 }
 
-function OtherInvestmentCard({ item, isCouple, onUpdate, onDelete }: OtherInvestmentCardProps) {
-  const getDefaultTitle = () => item.title || ITEM_TYPES.investment.find(t => t.value === item.item_type)?.label || "";
+function OtherInvestmentCard({
+  item,
+  isCouple,
+  onUpdate,
+  onDelete,
+}: OtherInvestmentCardProps) {
+  const getDefaultTitle = () =>
+    item.title ||
+    ITEM_TYPES.investment.find((t) => t.value === item.item_type)?.label ||
+    "";
 
   const [title, setTitle] = useState(getDefaultTitle());
   const [amount, setAmount] = useState(String(item.amount || ""));
 
   const handleKeyDown = (e: React.KeyboardEvent, saveCallback: () => void) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       (e.target as HTMLElement).blur();
       saveCallback();
@@ -514,9 +645,11 @@ function OtherInvestmentCard({ item, isCouple, onUpdate, onDelete }: OtherInvest
               value={title}
               placeholder="이름 입력"
               onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                if (title !== item.title) onUpdate(item.id, { title });
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  if (title !== item.title) onUpdate(item.id, { title });
+                })
+              }
               onBlur={() => {
                 if (title !== item.title) onUpdate(item.id, { title });
               }}
@@ -526,8 +659,12 @@ function OtherInvestmentCard({ item, isCouple, onUpdate, onDelete }: OtherInvest
             <span className={styles.itemCardFieldLabel}>소유</span>
             <select
               className={styles.itemCardFieldSelect}
-              value={item.owner || 'self'}
-              onChange={(e) => onUpdate(item.id, { owner: e.target.value as 'self' | 'spouse' })}
+              value={item.owner || "self"}
+              onChange={(e) =>
+                onUpdate(item.id, {
+                  owner: e.target.value as "self" | "spouse",
+                })
+              }
             >
               <option value="self">본인</option>
               {isCouple && <option value="spouse">배우자</option>}
@@ -545,8 +682,10 @@ function OtherInvestmentCard({ item, isCouple, onUpdate, onDelete }: OtherInvest
             value={item.item_type}
             onChange={(e) => onUpdate(item.id, { item_type: e.target.value })}
           >
-            {ITEM_TYPES.investment.map(type => (
-              <option key={type.value} value={type.value}>{type.label}</option>
+            {ITEM_TYPES.investment.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
             ))}
           </select>
         </div>
@@ -559,12 +698,14 @@ function OtherInvestmentCard({ item, isCouple, onUpdate, onDelete }: OtherInvest
               className={styles.itemCardFieldInput}
               value={amount}
               placeholder="0"
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = amount ? parseInt(amount) : 0;
-                if (val !== item.amount) onUpdate(item.id, { amount: val });
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = amount ? parseInt(amount) : 0;
+                  if (val !== item.amount) onUpdate(item.id, { amount: val });
+                })
+              }
               onBlur={() => {
                 const val = amount ? parseInt(amount) : 0;
                 if (val !== item.amount) onUpdate(item.id, { amount: val });
@@ -586,31 +727,68 @@ interface RealAssetCardProps {
   onDelete: (id: string) => void;
 }
 
-function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProps) {
+function RealAssetCard({
+  item,
+  isCouple,
+  onUpdate,
+  onDelete,
+}: RealAssetCardProps) {
   const meta = (item.metadata || {}) as Record<string, unknown>;
   const hasLoan = meta?.has_loan as boolean;
   const currentYear = new Date().getFullYear();
 
-  const [title, setTitle] = useState(item.title || ITEM_TYPES.realAsset.find(t => t.value === item.item_type)?.label || "");
-  const [purchasePrice, setPurchasePrice] = useState(String((meta?.purchase_price as number) || ""));
+  const [title, setTitle] = useState(
+    item.title ||
+      ITEM_TYPES.realAsset.find((t) => t.value === item.item_type)?.label ||
+      "",
+  );
+  const [purchasePrice, setPurchasePrice] = useState(
+    String((meta?.purchase_price as number) || ""),
+  );
   const [amount, setAmount] = useState(String(item.amount || ""));
-  const [purchaseYear, setPurchaseYear] = useState(String((meta?.purchase_year as number) || ""));
-  const [purchaseMonth, setPurchaseMonth] = useState(String((meta?.purchase_month as number) || ""));
-  const [loanAmount, setLoanAmount] = useState(String((meta?.loan_amount as number) || ""));
-  const [loanRate, setLoanRate] = useState(String((meta?.loan_rate as number) || ""));
-  const [loanMaturityYear, setLoanMaturityYear] = useState(String((meta?.loan_maturity_year as number) || ""));
-  const [loanMaturityMonth, setLoanMaturityMonth] = useState(String((meta?.loan_maturity_month as number) || ""));
-  const [loanRepaymentType, setLoanRepaymentType] = useState((meta?.loan_repayment_type as RepaymentType) || "원리금균등상환");
-  const [gracePeriodYear, setGracePeriodYear] = useState(String((meta?.grace_period_year as number) || ""));
-  const [gracePeriodMonth, setGracePeriodMonth] = useState(String((meta?.grace_period_month as number) || ""));
+  const [purchaseYear, setPurchaseYear] = useState(
+    String((meta?.purchase_year as number) || ""),
+  );
+  const [purchaseMonth, setPurchaseMonth] = useState(
+    String((meta?.purchase_month as number) || ""),
+  );
+  const [loanAmount, setLoanAmount] = useState(
+    String((meta?.loan_amount as number) || ""),
+  );
+  const [loanRate, setLoanRate] = useState(
+    String((meta?.loan_rate as number) || ""),
+  );
+  const [loanMaturityYear, setLoanMaturityYear] = useState(
+    String((meta?.loan_maturity_year as number) || ""),
+  );
+  const [loanMaturityMonth, setLoanMaturityMonth] = useState(
+    String((meta?.loan_maturity_month as number) || ""),
+  );
+  const [loanRepaymentType, setLoanRepaymentType] = useState(
+    (meta?.loan_repayment_type as RepaymentType) || "원리금균등상환",
+  );
+  const [gracePeriodYear, setGracePeriodYear] = useState(
+    String((meta?.grace_period_year as number) || ""),
+  );
+  const [gracePeriodMonth, setGracePeriodMonth] = useState(
+    String((meta?.grace_period_month as number) || ""),
+  );
   const hasInstallment = meta?.has_installment as boolean;
-  const [installmentRemaining, setInstallmentRemaining] = useState(String((meta?.installment_remaining as number) || ""));
-  const [installmentRate, setInstallmentRate] = useState(String((meta?.installment_rate as number) || ""));
-  const [installmentEndYear, setInstallmentEndYear] = useState(String((meta?.installment_end_year as number) || ""));
-  const [installmentEndMonth, setInstallmentEndMonth] = useState(String((meta?.installment_end_month as number) || ""));
+  const [installmentRemaining, setInstallmentRemaining] = useState(
+    String((meta?.installment_remaining as number) || ""),
+  );
+  const [installmentRate, setInstallmentRate] = useState(
+    String((meta?.installment_rate as number) || ""),
+  );
+  const [installmentEndYear, setInstallmentEndYear] = useState(
+    String((meta?.installment_end_year as number) || ""),
+  );
+  const [installmentEndMonth, setInstallmentEndMonth] = useState(
+    String((meta?.installment_end_month as number) || ""),
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent, saveCallback: () => void) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       (e.target as HTMLElement).blur();
       saveCallback();
@@ -639,8 +817,10 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
               value={item.item_type}
               onChange={(e) => onUpdate(item.id, { item_type: e.target.value })}
             >
-              {ITEM_TYPES.realAsset.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
+              {ITEM_TYPES.realAsset.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
               ))}
             </select>
           </div>
@@ -652,9 +832,11 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
               value={title}
               placeholder="이름 입력"
               onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                if (title !== item.title) onUpdate(item.id, { title });
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  if (title !== item.title) onUpdate(item.id, { title });
+                })
+              }
               onBlur={() => {
                 if (title !== item.title) onUpdate(item.id, { title });
               }}
@@ -664,8 +846,12 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
             <span className={styles.itemCardFieldLabel}>소유</span>
             <select
               className={styles.itemCardFieldSelect}
-              value={item.owner || 'self'}
-              onChange={(e) => onUpdate(item.id, { owner: e.target.value as 'self' | 'spouse' })}
+              value={item.owner || "self"}
+              onChange={(e) =>
+                onUpdate(item.id, {
+                  owner: e.target.value as "self" | "spouse",
+                })
+              }
             >
               <option value="self">본인</option>
               {isCouple && <option value="spouse">배우자</option>}
@@ -678,21 +864,23 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
       <div className={styles.itemCardGrid}>
         <div className={styles.itemCardField}>
           <span className={styles.itemCardFieldLabel}>취득일</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <input
               type="number"
               className={styles.itemCardFieldInput}
               style={{ width: 80, paddingRight: 12 }}
               value={purchaseYear}
               placeholder={String(currentYear)}
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setPurchaseYear(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = purchaseYear ? parseInt(purchaseYear) : null;
-                if (val !== (meta?.purchase_year as number | null)) {
-                  updateMeta({ purchase_year: val });
-                }
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = purchaseYear ? parseInt(purchaseYear) : null;
+                  if (val !== (meta?.purchase_year as number | null)) {
+                    updateMeta({ purchase_year: val });
+                  }
+                })
+              }
               onBlur={() => {
                 const val = purchaseYear ? parseInt(purchaseYear) : null;
                 if (val !== (meta?.purchase_year as number | null)) {
@@ -700,7 +888,11 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
                 }
               }}
             />
-            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+            <span
+              style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+            >
+              년
+            </span>
             <input
               type="number"
               className={styles.itemCardFieldInput}
@@ -709,14 +901,16 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
               placeholder="1"
               min={1}
               max={12}
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setPurchaseMonth(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = purchaseMonth ? parseInt(purchaseMonth) : null;
-                if (val !== (meta?.purchase_month as number | null)) {
-                  updateMeta({ purchase_month: val });
-                }
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = purchaseMonth ? parseInt(purchaseMonth) : null;
+                  if (val !== (meta?.purchase_month as number | null)) {
+                    updateMeta({ purchase_month: val });
+                  }
+                })
+              }
               onBlur={() => {
                 const val = purchaseMonth ? parseInt(purchaseMonth) : null;
                 if (val !== (meta?.purchase_month as number | null)) {
@@ -724,7 +918,11 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
                 }
               }}
             />
-            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+            <span
+              style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+            >
+              월
+            </span>
           </div>
         </div>
 
@@ -736,14 +934,16 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
               className={styles.itemCardFieldInput}
               value={purchasePrice}
               placeholder="0"
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setPurchasePrice(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = parseInt(purchasePrice) || 0;
-                if (val !== (meta?.purchase_price as number)) {
-                  updateMeta({ purchase_price: val });
-                }
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = parseInt(purchasePrice) || 0;
+                  if (val !== (meta?.purchase_price as number)) {
+                    updateMeta({ purchase_price: val });
+                  }
+                })
+              }
               onBlur={() => {
                 const val = parseInt(purchasePrice) || 0;
                 if (val !== (meta?.purchase_price as number)) {
@@ -763,12 +963,14 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
               className={styles.itemCardFieldInput}
               value={amount}
               placeholder="0"
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = parseInt(amount) || 0;
-                if (val !== item.amount) onUpdate(item.id, { amount: val });
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = parseInt(amount) || 0;
+                  if (val !== item.amount) onUpdate(item.id, { amount: val });
+                })
+              }
               onBlur={() => {
                 const val = parseInt(amount) || 0;
                 if (val !== item.amount) onUpdate(item.id, { amount: val });
@@ -784,11 +986,21 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>담보대출</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
-                onClick={() => updateMeta({ has_loan: false })}>없음</button>
-              <button type="button" className={`${styles.typeBtn} ${hasLoan ? styles.active : ""}`}
-                onClick={() => updateMeta({ has_loan: true })}>있음</button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
+                onClick={() => updateMeta({ has_loan: false })}
+              >
+                없음
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${hasLoan ? styles.active : ""}`}
+                onClick={() => updateMeta({ has_loan: true })}
+              >
+                있음
+              </button>
             </div>
           </div>
           {hasLoan ? (
@@ -796,11 +1008,25 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
               <div className={styles.itemCardField}>
                 <span className={styles.itemCardFieldLabel}>대출금액</span>
                 <div className={styles.itemCardFieldUnit}>
-                  <input type="number" className={styles.itemCardFieldInput} value={loanAmount} placeholder="0"
-                    onWheel={e => (e.target as HTMLElement).blur()}
+                  <input
+                    type="number"
+                    className={styles.itemCardFieldInput}
+                    value={loanAmount}
+                    placeholder="0"
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
                     onChange={(e) => setLoanAmount(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, () => { const val = parseInt(loanAmount) || 0; if (val !== (meta?.loan_amount as number)) updateMeta({ loan_amount: val }); })}
-                    onBlur={() => { const val = parseInt(loanAmount) || 0; if (val !== (meta?.loan_amount as number)) updateMeta({ loan_amount: val }); }}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, () => {
+                        const val = parseInt(loanAmount) || 0;
+                        if (val !== (meta?.loan_amount as number))
+                          updateMeta({ loan_amount: val });
+                      })
+                    }
+                    onBlur={() => {
+                      const val = parseInt(loanAmount) || 0;
+                      if (val !== (meta?.loan_amount as number))
+                        updateMeta({ loan_amount: val });
+                    }}
                   />
                   <span className={styles.itemCardFieldUnitLabel}>만원</span>
                 </div>
@@ -808,18 +1034,36 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
               <div className={styles.itemCardField}>
                 <span className={styles.itemCardFieldLabel}>금리</span>
                 <div className={styles.itemCardFieldUnit}>
-                  <input type="number" className={styles.itemCardFieldInput} value={loanRate} placeholder="0" step="0.1"
-                    onWheel={e => (e.target as HTMLElement).blur()}
+                  <input
+                    type="number"
+                    className={styles.itemCardFieldInput}
+                    value={loanRate}
+                    placeholder="0"
+                    step="0.1"
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
                     onChange={(e) => setLoanRate(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, () => { const val = parseFloat(loanRate) || 0; if (val !== (meta?.loan_rate as number)) updateMeta({ loan_rate: val }); })}
-                    onBlur={() => { const val = parseFloat(loanRate) || 0; if (val !== (meta?.loan_rate as number)) updateMeta({ loan_rate: val }); }}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, () => {
+                        const val = parseFloat(loanRate) || 0;
+                        if (val !== (meta?.loan_rate as number))
+                          updateMeta({ loan_rate: val });
+                      })
+                    }
+                    onBlur={() => {
+                      const val = parseFloat(loanRate) || 0;
+                      if (val !== (meta?.loan_rate as number))
+                        updateMeta({ loan_rate: val });
+                    }}
                   />
                   <span className={styles.itemCardFieldUnitLabel}>%</span>
                 </div>
               </div>
             </>
           ) : (
-            <><div /><div /></>
+            <>
+              <div />
+              <div />
+            </>
           )}
         </div>
       )}
@@ -829,54 +1073,155 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>만기일</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <input type="number" className={styles.itemCardFieldInput} style={{ width: 80, paddingRight: 12 }}
-                value={loanMaturityYear} placeholder={String(currentYear + 10)}
-                onWheel={e => (e.target as HTMLElement).blur()}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                style={{ width: 80, paddingRight: 12 }}
+                value={loanMaturityYear}
+                placeholder={String(currentYear + 10)}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setLoanMaturityYear(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => { const val = loanMaturityYear ? parseInt(loanMaturityYear) : null; if (val !== (meta?.loan_maturity_year as number | null)) updateMeta({ loan_maturity_year: val }); })}
-                onBlur={() => { const val = loanMaturityYear ? parseInt(loanMaturityYear) : null; if (val !== (meta?.loan_maturity_year as number | null)) updateMeta({ loan_maturity_year: val }); }}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = loanMaturityYear
+                      ? parseInt(loanMaturityYear)
+                      : null;
+                    if (val !== (meta?.loan_maturity_year as number | null))
+                      updateMeta({ loan_maturity_year: val });
+                  })
+                }
+                onBlur={() => {
+                  const val = loanMaturityYear
+                    ? parseInt(loanMaturityYear)
+                    : null;
+                  if (val !== (meta?.loan_maturity_year as number | null))
+                    updateMeta({ loan_maturity_year: val });
+                }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
-              <input type="number" className={styles.itemCardFieldInput} style={{ width: 60, paddingRight: 12 }}
-                value={loanMaturityMonth} placeholder="12" min={1} max={12}
-                onWheel={e => (e.target as HTMLElement).blur()}
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                년
+              </span>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                style={{ width: 60, paddingRight: 12 }}
+                value={loanMaturityMonth}
+                placeholder="12"
+                min={1}
+                max={12}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setLoanMaturityMonth(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => { const val = loanMaturityMonth ? parseInt(loanMaturityMonth) : null; if (val !== (meta?.loan_maturity_month as number | null)) updateMeta({ loan_maturity_month: val }); })}
-                onBlur={() => { const val = loanMaturityMonth ? parseInt(loanMaturityMonth) : null; if (val !== (meta?.loan_maturity_month as number | null)) updateMeta({ loan_maturity_month: val }); }}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = loanMaturityMonth
+                      ? parseInt(loanMaturityMonth)
+                      : null;
+                    if (val !== (meta?.loan_maturity_month as number | null))
+                      updateMeta({ loan_maturity_month: val });
+                  })
+                }
+                onBlur={() => {
+                  const val = loanMaturityMonth
+                    ? parseInt(loanMaturityMonth)
+                    : null;
+                  if (val !== (meta?.loan_maturity_month as number | null))
+                    updateMeta({ loan_maturity_month: val });
+                }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                월
+              </span>
             </div>
           </div>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>상환방식</span>
-            <select className={styles.itemCardFieldSelect} value={loanRepaymentType}
-              onChange={(e) => { const val = e.target.value as RepaymentType; setLoanRepaymentType(val); updateMeta({ loan_repayment_type: val }); }}>
-              {REPAYMENT_TYPES.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
+            <select
+              className={styles.itemCardFieldSelect}
+              value={loanRepaymentType}
+              onChange={(e) => {
+                const val = e.target.value as RepaymentType;
+                setLoanRepaymentType(val);
+                updateMeta({ loan_repayment_type: val });
+              }}
+            >
+              {REPAYMENT_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
               ))}
             </select>
           </div>
           {loanRepaymentType === "거치식상환" ? (
             <div className={styles.itemCardField}>
               <span className={styles.itemCardFieldLabel}>거치기간</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <input type="number" className={styles.itemCardFieldInput} style={{ width: 80, paddingRight: 12 }}
-                  value={gracePeriodYear} placeholder={String(currentYear + 3)}
-                  onWheel={e => (e.target as HTMLElement).blur()}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  style={{ width: 80, paddingRight: 12 }}
+                  value={gracePeriodYear}
+                  placeholder={String(currentYear + 3)}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setGracePeriodYear(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => { const val = gracePeriodYear ? parseInt(gracePeriodYear) : null; if (val !== (meta?.grace_period_year as number | null)) updateMeta({ grace_period_year: val }); })}
-                  onBlur={() => { const val = gracePeriodYear ? parseInt(gracePeriodYear) : null; if (val !== (meta?.grace_period_year as number | null)) updateMeta({ grace_period_year: val }); }}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = gracePeriodYear
+                        ? parseInt(gracePeriodYear)
+                        : null;
+                      if (val !== (meta?.grace_period_year as number | null))
+                        updateMeta({ grace_period_year: val });
+                    })
+                  }
+                  onBlur={() => {
+                    const val = gracePeriodYear
+                      ? parseInt(gracePeriodYear)
+                      : null;
+                    if (val !== (meta?.grace_period_year as number | null))
+                      updateMeta({ grace_period_year: val });
+                  }}
                 />
-                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
-                <input type="number" className={styles.itemCardFieldInput} style={{ width: 60, paddingRight: 12 }}
-                  value={gracePeriodMonth} placeholder="12" min={1} max={12}
-                  onWheel={e => (e.target as HTMLElement).blur()}
+                <span
+                  style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+                >
+                  년
+                </span>
+                <input
+                  type="number"
+                  className={styles.itemCardFieldInput}
+                  style={{ width: 60, paddingRight: 12 }}
+                  value={gracePeriodMonth}
+                  placeholder="12"
+                  min={1}
+                  max={12}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setGracePeriodMonth(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => { const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null; if (val !== (meta?.grace_period_month as number | null)) updateMeta({ grace_period_month: val }); })}
-                  onBlur={() => { const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null; if (val !== (meta?.grace_period_month as number | null)) updateMeta({ grace_period_month: val }); }}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = gracePeriodMonth
+                        ? parseInt(gracePeriodMonth)
+                        : null;
+                      if (val !== (meta?.grace_period_month as number | null))
+                        updateMeta({ grace_period_month: val });
+                    })
+                  }
+                  onBlur={() => {
+                    const val = gracePeriodMonth
+                      ? parseInt(gracePeriodMonth)
+                      : null;
+                    if (val !== (meta?.grace_period_month as number | null))
+                      updateMeta({ grace_period_month: val });
+                  }}
                 />
-                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+                <span
+                  style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+                >
+                  월
+                </span>
               </div>
             </div>
           ) : (
@@ -890,11 +1235,21 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>할부</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" className={`${styles.typeBtn} ${!hasInstallment ? styles.active : ""}`}
-                onClick={() => updateMeta({ has_installment: false })}>없음</button>
-              <button type="button" className={`${styles.typeBtn} ${hasInstallment ? styles.active : ""}`}
-                onClick={() => updateMeta({ has_installment: true })}>있음</button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${!hasInstallment ? styles.active : ""}`}
+                onClick={() => updateMeta({ has_installment: false })}
+              >
+                없음
+              </button>
+              <button
+                type="button"
+                className={`${styles.typeBtn} ${hasInstallment ? styles.active : ""}`}
+                onClick={() => updateMeta({ has_installment: true })}
+              >
+                있음
+              </button>
             </div>
           </div>
           {hasInstallment ? (
@@ -902,11 +1257,25 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
               <div className={styles.itemCardField}>
                 <span className={styles.itemCardFieldLabel}>잔여금액</span>
                 <div className={styles.itemCardFieldUnit}>
-                  <input type="number" className={styles.itemCardFieldInput} value={installmentRemaining} placeholder="0"
-                    onWheel={e => (e.target as HTMLElement).blur()}
+                  <input
+                    type="number"
+                    className={styles.itemCardFieldInput}
+                    value={installmentRemaining}
+                    placeholder="0"
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
                     onChange={(e) => setInstallmentRemaining(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, () => { const val = parseInt(installmentRemaining) || 0; if (val !== (meta?.installment_remaining as number)) updateMeta({ installment_remaining: val }); })}
-                    onBlur={() => { const val = parseInt(installmentRemaining) || 0; if (val !== (meta?.installment_remaining as number)) updateMeta({ installment_remaining: val }); }}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, () => {
+                        const val = parseInt(installmentRemaining) || 0;
+                        if (val !== (meta?.installment_remaining as number))
+                          updateMeta({ installment_remaining: val });
+                      })
+                    }
+                    onBlur={() => {
+                      const val = parseInt(installmentRemaining) || 0;
+                      if (val !== (meta?.installment_remaining as number))
+                        updateMeta({ installment_remaining: val });
+                    }}
                   />
                   <span className={styles.itemCardFieldUnitLabel}>만원</span>
                 </div>
@@ -914,18 +1283,36 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
               <div className={styles.itemCardField}>
                 <span className={styles.itemCardFieldLabel}>금리</span>
                 <div className={styles.itemCardFieldUnit}>
-                  <input type="number" className={styles.itemCardFieldInput} value={installmentRate} placeholder="0" step="0.1"
-                    onWheel={e => (e.target as HTMLElement).blur()}
+                  <input
+                    type="number"
+                    className={styles.itemCardFieldInput}
+                    value={installmentRate}
+                    placeholder="0"
+                    step="0.1"
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
                     onChange={(e) => setInstallmentRate(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, () => { const val = parseFloat(installmentRate) || 0; if (val !== (meta?.installment_rate as number)) updateMeta({ installment_rate: val }); })}
-                    onBlur={() => { const val = parseFloat(installmentRate) || 0; if (val !== (meta?.installment_rate as number)) updateMeta({ installment_rate: val }); }}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, () => {
+                        const val = parseFloat(installmentRate) || 0;
+                        if (val !== (meta?.installment_rate as number))
+                          updateMeta({ installment_rate: val });
+                      })
+                    }
+                    onBlur={() => {
+                      const val = parseFloat(installmentRate) || 0;
+                      if (val !== (meta?.installment_rate as number))
+                        updateMeta({ installment_rate: val });
+                    }}
                   />
                   <span className={styles.itemCardFieldUnitLabel}>%</span>
                 </div>
               </div>
             </>
           ) : (
-            <><div /><div /></>
+            <>
+              <div />
+              <div />
+            </>
           )}
         </div>
       )}
@@ -935,26 +1322,73 @@ function RealAssetCard({ item, isCouple, onUpdate, onDelete }: RealAssetCardProp
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>종료일</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <input type="number" className={styles.itemCardFieldInput} style={{ width: 80, paddingRight: 12 }}
-                value={installmentEndYear} placeholder={String(currentYear + 3)}
-                onWheel={e => (e.target as HTMLElement).blur()}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                style={{ width: 80, paddingRight: 12 }}
+                value={installmentEndYear}
+                placeholder={String(currentYear + 3)}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setInstallmentEndYear(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => { const val = installmentEndYear ? parseInt(installmentEndYear) : null; if (val !== (meta?.installment_end_year as number | null)) updateMeta({ installment_end_year: val }); })}
-                onBlur={() => { const val = installmentEndYear ? parseInt(installmentEndYear) : null; if (val !== (meta?.installment_end_year as number | null)) updateMeta({ installment_end_year: val }); }}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = installmentEndYear
+                      ? parseInt(installmentEndYear)
+                      : null;
+                    if (val !== (meta?.installment_end_year as number | null))
+                      updateMeta({ installment_end_year: val });
+                  })
+                }
+                onBlur={() => {
+                  const val = installmentEndYear
+                    ? parseInt(installmentEndYear)
+                    : null;
+                  if (val !== (meta?.installment_end_year as number | null))
+                    updateMeta({ installment_end_year: val });
+                }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
-              <input type="number" className={styles.itemCardFieldInput} style={{ width: 60, paddingRight: 12 }}
-                value={installmentEndMonth} placeholder="12" min={1} max={12}
-                onWheel={e => (e.target as HTMLElement).blur()}
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                년
+              </span>
+              <input
+                type="number"
+                className={styles.itemCardFieldInput}
+                style={{ width: 60, paddingRight: 12 }}
+                value={installmentEndMonth}
+                placeholder="12"
+                min={1}
+                max={12}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setInstallmentEndMonth(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => { const val = installmentEndMonth ? parseInt(installmentEndMonth) : null; if (val !== (meta?.installment_end_month as number | null)) updateMeta({ installment_end_month: val }); })}
-                onBlur={() => { const val = installmentEndMonth ? parseInt(installmentEndMonth) : null; if (val !== (meta?.installment_end_month as number | null)) updateMeta({ installment_end_month: val }); }}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = installmentEndMonth
+                      ? parseInt(installmentEndMonth)
+                      : null;
+                    if (val !== (meta?.installment_end_month as number | null))
+                      updateMeta({ installment_end_month: val });
+                  })
+                }
+                onBlur={() => {
+                  const val = installmentEndMonth
+                    ? parseInt(installmentEndMonth)
+                    : null;
+                  if (val !== (meta?.installment_end_month as number | null))
+                    updateMeta({ installment_end_month: val });
+                }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                월
+              </span>
             </div>
           </div>
-          <div /><div />
+          <div />
+          <div />
         </div>
       )}
     </div>
@@ -970,25 +1404,55 @@ interface InvestmentRealEstateCardProps {
   onDelete: (id: string) => void;
 }
 
-function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDelete }: InvestmentRealEstateCardProps) {
+function InvestmentRealEstateCard({
+  item,
+  currentYear,
+  isCouple,
+  onUpdate,
+  onDelete,
+}: InvestmentRealEstateCardProps) {
   const meta = (item.metadata || {}) as Record<string, unknown>;
   const hasLoan = meta?.has_loan as boolean;
 
-  const [title, setTitle] = useState(item.title || ITEM_TYPES.realEstate.find(t => t.value === item.item_type)?.label || "");
+  const [title, setTitle] = useState(
+    item.title ||
+      ITEM_TYPES.realEstate.find((t) => t.value === item.item_type)?.label ||
+      "",
+  );
   const [amount, setAmount] = useState(String(item.amount || ""));
-  const [purchasePrice, setPurchasePrice] = useState(String((meta?.purchase_price as number) || ""));
-  const [purchaseYear, setPurchaseYear] = useState(String((meta?.purchase_year as number) || ""));
-  const [purchaseMonth, setPurchaseMonth] = useState(String((meta?.purchase_month as number) || ""));
-  const [loanAmount, setLoanAmount] = useState(String((meta?.loan_amount as number) || ""));
-  const [loanRate, setLoanRate] = useState(String((meta?.loan_rate as number) || ""));
-  const [maturityYear, setMaturityYear] = useState(String((meta?.loan_maturity_year as number) || ""));
-  const [maturityMonth, setMaturityMonth] = useState(String((meta?.loan_maturity_month as number) || ""));
-  const [repaymentType, setRepaymentType] = useState<string>((meta?.loan_repayment_type as string) || "원리금균등상환");
-  const [gracePeriodYear, setGracePeriodYear] = useState(String((meta?.grace_period_year as number) || ""));
-  const [gracePeriodMonth, setGracePeriodMonth] = useState(String((meta?.grace_period_month as number) || ""));
+  const [purchasePrice, setPurchasePrice] = useState(
+    String((meta?.purchase_price as number) || ""),
+  );
+  const [purchaseYear, setPurchaseYear] = useState(
+    String((meta?.purchase_year as number) || ""),
+  );
+  const [purchaseMonth, setPurchaseMonth] = useState(
+    String((meta?.purchase_month as number) || ""),
+  );
+  const [loanAmount, setLoanAmount] = useState(
+    String((meta?.loan_amount as number) || ""),
+  );
+  const [loanRate, setLoanRate] = useState(
+    String((meta?.loan_rate as number) || ""),
+  );
+  const [maturityYear, setMaturityYear] = useState(
+    String((meta?.loan_maturity_year as number) || ""),
+  );
+  const [maturityMonth, setMaturityMonth] = useState(
+    String((meta?.loan_maturity_month as number) || ""),
+  );
+  const [repaymentType, setRepaymentType] = useState<string>(
+    (meta?.loan_repayment_type as string) || "원리금균등상환",
+  );
+  const [gracePeriodYear, setGracePeriodYear] = useState(
+    String((meta?.grace_period_year as number) || ""),
+  );
+  const [gracePeriodMonth, setGracePeriodMonth] = useState(
+    String((meta?.grace_period_month as number) || ""),
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent, saveCallback: () => void) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       (e.target as HTMLElement).blur();
       saveCallback();
@@ -1017,8 +1481,10 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
               value={item.item_type}
               onChange={(e) => onUpdate(item.id, { item_type: e.target.value })}
             >
-              {ITEM_TYPES.realEstate.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
+              {ITEM_TYPES.realEstate.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
               ))}
             </select>
           </div>
@@ -1030,9 +1496,11 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
               value={title}
               placeholder="이름 입력"
               onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                if (title !== item.title) onUpdate(item.id, { title });
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  if (title !== item.title) onUpdate(item.id, { title });
+                })
+              }
               onBlur={() => {
                 if (title !== item.title) onUpdate(item.id, { title });
               }}
@@ -1042,8 +1510,12 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
             <span className={styles.itemCardFieldLabel}>소유</span>
             <select
               className={styles.itemCardFieldSelect}
-              value={item.owner || 'self'}
-              onChange={(e) => onUpdate(item.id, { owner: e.target.value as 'self' | 'spouse' })}
+              value={item.owner || "self"}
+              onChange={(e) =>
+                onUpdate(item.id, {
+                  owner: e.target.value as "self" | "spouse",
+                })
+              }
             >
               <option value="self">본인</option>
               {isCouple && <option value="spouse">배우자</option>}
@@ -1056,21 +1528,23 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
       <div className={styles.itemCardGrid}>
         <div className={styles.itemCardField}>
           <span className={styles.itemCardFieldLabel}>취득일</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <input
               type="number"
               className={styles.itemCardFieldInput}
               style={{ width: 80, paddingRight: 12 }}
               value={purchaseYear}
               placeholder={String(currentYear)}
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setPurchaseYear(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = purchaseYear ? parseInt(purchaseYear) : null;
-                if (val !== (meta?.purchase_year as number | null)) {
-                  updateMeta({ purchase_year: val });
-                }
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = purchaseYear ? parseInt(purchaseYear) : null;
+                  if (val !== (meta?.purchase_year as number | null)) {
+                    updateMeta({ purchase_year: val });
+                  }
+                })
+              }
               onBlur={() => {
                 const val = purchaseYear ? parseInt(purchaseYear) : null;
                 if (val !== (meta?.purchase_year as number | null)) {
@@ -1078,7 +1552,11 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
                 }
               }}
             />
-            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+            <span
+              style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+            >
+              년
+            </span>
             <input
               type="number"
               className={styles.itemCardFieldInput}
@@ -1087,14 +1565,16 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
               placeholder="1"
               min={1}
               max={12}
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setPurchaseMonth(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = purchaseMonth ? parseInt(purchaseMonth) : null;
-                if (val !== (meta?.purchase_month as number | null)) {
-                  updateMeta({ purchase_month: val });
-                }
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = purchaseMonth ? parseInt(purchaseMonth) : null;
+                  if (val !== (meta?.purchase_month as number | null)) {
+                    updateMeta({ purchase_month: val });
+                  }
+                })
+              }
               onBlur={() => {
                 const val = purchaseMonth ? parseInt(purchaseMonth) : null;
                 if (val !== (meta?.purchase_month as number | null)) {
@@ -1102,7 +1582,11 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
                 }
               }}
             />
-            <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+            <span
+              style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+            >
+              월
+            </span>
           </div>
         </div>
 
@@ -1114,14 +1598,16 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
               className={styles.itemCardFieldInput}
               value={purchasePrice}
               placeholder="0"
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setPurchasePrice(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = parseInt(purchasePrice) || 0;
-                if (val !== (meta?.purchase_price as number)) {
-                  updateMeta({ purchase_price: val });
-                }
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = parseInt(purchasePrice) || 0;
+                  if (val !== (meta?.purchase_price as number)) {
+                    updateMeta({ purchase_price: val });
+                  }
+                })
+              }
               onBlur={() => {
                 const val = parseInt(purchasePrice) || 0;
                 if (val !== (meta?.purchase_price as number)) {
@@ -1141,12 +1627,14 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
               className={styles.itemCardFieldInput}
               value={amount}
               placeholder="0"
-              onWheel={e => (e.target as HTMLElement).blur()}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
               onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, () => {
-                const val = parseInt(amount) || 0;
-                if (val !== item.amount) onUpdate(item.id, { amount: val });
-              })}
+              onKeyDown={(e) =>
+                handleKeyDown(e, () => {
+                  const val = parseInt(amount) || 0;
+                  if (val !== item.amount) onUpdate(item.id, { amount: val });
+                })
+              }
               onBlur={() => {
                 const val = parseInt(amount) || 0;
                 if (val !== item.amount) onUpdate(item.id, { amount: val });
@@ -1161,7 +1649,7 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
       <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
         <div className={styles.itemCardField}>
           <span className={styles.itemCardFieldLabel}>담보대출</span>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: "flex", gap: 8 }}>
             <button
               type="button"
               className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
@@ -1188,14 +1676,16 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
                   className={styles.itemCardFieldInput}
                   value={loanAmount}
                   placeholder="0"
-                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setLoanAmount(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => {
-                    const val = parseInt(loanAmount) || 0;
-                    if (val !== (meta?.loan_amount as number)) {
-                      updateMeta({ loan_amount: val });
-                    }
-                  })}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = parseInt(loanAmount) || 0;
+                      if (val !== (meta?.loan_amount as number)) {
+                        updateMeta({ loan_amount: val });
+                      }
+                    })
+                  }
                   onBlur={() => {
                     const val = parseInt(loanAmount) || 0;
                     if (val !== (meta?.loan_amount as number)) {
@@ -1215,14 +1705,16 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
                   value={loanRate}
                   placeholder="3.5"
                   step="0.1"
-                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setLoanRate(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => {
-                    const val = parseFloat(loanRate) || 0;
-                    if (val !== (meta?.loan_rate as number)) {
-                      updateMeta({ loan_rate: val });
-                    }
-                  })}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = parseFloat(loanRate) || 0;
+                      if (val !== (meta?.loan_rate as number)) {
+                        updateMeta({ loan_rate: val });
+                      }
+                    })
+                  }
                   onBlur={() => {
                     const val = parseFloat(loanRate) || 0;
                     if (val !== (meta?.loan_rate as number)) {
@@ -1247,21 +1739,23 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>만기일</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <input
                 type="number"
                 className={styles.itemCardFieldInput}
                 style={{ width: 80, paddingRight: 12 }}
                 value={maturityYear}
                 placeholder={String(currentYear + 20)}
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setMaturityYear(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maturityYear ? parseInt(maturityYear) : null;
-                  if (val !== (meta?.loan_maturity_year as number | null)) {
-                    updateMeta({ loan_maturity_year: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = maturityYear ? parseInt(maturityYear) : null;
+                    if (val !== (meta?.loan_maturity_year as number | null)) {
+                      updateMeta({ loan_maturity_year: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = maturityYear ? parseInt(maturityYear) : null;
                   if (val !== (meta?.loan_maturity_year as number | null)) {
@@ -1269,7 +1763,11 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                년
+              </span>
               <input
                 type="number"
                 className={styles.itemCardFieldInput}
@@ -1278,14 +1776,16 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
                 placeholder="12"
                 min={1}
                 max={12}
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setMaturityMonth(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maturityMonth ? parseInt(maturityMonth) : null;
-                  if (val !== (meta?.loan_maturity_month as number | null)) {
-                    updateMeta({ loan_maturity_month: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = maturityMonth ? parseInt(maturityMonth) : null;
+                    if (val !== (meta?.loan_maturity_month as number | null)) {
+                      updateMeta({ loan_maturity_month: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = maturityMonth ? parseInt(maturityMonth) : null;
                   if (val !== (meta?.loan_maturity_month as number | null)) {
@@ -1293,7 +1793,11 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                월
+              </span>
             </div>
           </div>
           <div className={styles.itemCardField}>
@@ -1307,37 +1811,49 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
                 updateMeta({ loan_repayment_type: val });
               }}
             >
-              {REPAYMENT_TYPES.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
+              {REPAYMENT_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
               ))}
             </select>
           </div>
           {repaymentType === "거치식상환" ? (
             <div className={styles.itemCardField}>
               <span className={styles.itemCardFieldLabel}>거치기간</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="number"
                   className={styles.itemCardFieldInput}
                   style={{ width: 80, paddingRight: 12 }}
                   value={gracePeriodYear}
                   placeholder={String(currentYear + 3)}
-                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setGracePeriodYear(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => {
-                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
-                    if (val !== (meta?.grace_period_year as number | null)) {
-                      updateMeta({ grace_period_year: val });
-                    }
-                  })}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = gracePeriodYear
+                        ? parseInt(gracePeriodYear)
+                        : null;
+                      if (val !== (meta?.grace_period_year as number | null)) {
+                        updateMeta({ grace_period_year: val });
+                      }
+                    })
+                  }
                   onBlur={() => {
-                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
+                    const val = gracePeriodYear
+                      ? parseInt(gracePeriodYear)
+                      : null;
                     if (val !== (meta?.grace_period_year as number | null)) {
                       updateMeta({ grace_period_year: val });
                     }
                   }}
                 />
-                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+                <span
+                  style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+                >
+                  년
+                </span>
                 <input
                   type="number"
                   className={styles.itemCardFieldInput}
@@ -1346,22 +1862,32 @@ function InvestmentRealEstateCard({ item, currentYear, isCouple, onUpdate, onDel
                   placeholder="12"
                   min={1}
                   max={12}
-                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setGracePeriodMonth(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => {
-                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
-                    if (val !== (meta?.grace_period_month as number | null)) {
-                      updateMeta({ grace_period_month: val });
-                    }
-                  })}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = gracePeriodMonth
+                        ? parseInt(gracePeriodMonth)
+                        : null;
+                      if (val !== (meta?.grace_period_month as number | null)) {
+                        updateMeta({ grace_period_month: val });
+                      }
+                    })
+                  }
                   onBlur={() => {
-                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
+                    const val = gracePeriodMonth
+                      ? parseInt(gracePeriodMonth)
+                      : null;
                     if (val !== (meta?.grace_period_month as number | null)) {
                       updateMeta({ grace_period_month: val });
                     }
                   }}
                 />
-                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+                <span
+                  style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+                >
+                  월
+                </span>
               </div>
             </div>
           ) : (
@@ -1380,33 +1906,71 @@ interface ResidenceCardProps {
   currentYear: number;
   isCouple: boolean;
   onUpdate: (id: string, updates: Partial<FinancialSnapshotItem>) => void;
-  onCreate: (input: FinancialSnapshotItemInput) => Promise<FinancialSnapshotItem>;
+  onCreate: (
+    input: FinancialSnapshotItemInput,
+  ) => Promise<FinancialSnapshotItem>;
   onDelete: (id: string) => void;
 }
 
-function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCreate, onDelete }: ResidenceCardProps) {
+function ResidenceCard({
+  item,
+  snapshotId,
+  currentYear,
+  isCouple,
+  onUpdate,
+  onCreate,
+  onDelete,
+}: ResidenceCardProps) {
   const meta = (item?.metadata || {}) as Record<string, unknown>;
   const currentMonth = new Date().getMonth() + 1;
 
   // 로컬 state
-  const [housingType, setHousingType] = useState<string>((meta?.housing_type as string) || "");
-  const [currentValue, setCurrentValue] = useState(String((meta?.current_value as number) || ""));
-  const [purchaseYear, setPurchaseYear] = useState(String((meta?.purchase_year as number) || ""));
-  const [purchaseMonth, setPurchaseMonth] = useState(String((meta?.purchase_month as number) || ""));
-  const [purchasePrice, setPurchasePrice] = useState(String((meta?.purchase_price as number) || ""));
+  const [housingType, setHousingType] = useState<string>(
+    (meta?.housing_type as string) || "",
+  );
+  const [currentValue, setCurrentValue] = useState(
+    String((meta?.current_value as number) || ""),
+  );
+  const [purchaseYear, setPurchaseYear] = useState(
+    String((meta?.purchase_year as number) || ""),
+  );
+  const [purchaseMonth, setPurchaseMonth] = useState(
+    String((meta?.purchase_month as number) || ""),
+  );
+  const [purchasePrice, setPurchasePrice] = useState(
+    String((meta?.purchase_price as number) || ""),
+  );
   const [hasLoan, setHasLoan] = useState((meta?.has_loan as boolean) || false);
-  const [loanAmount, setLoanAmount] = useState(String((meta?.loan_amount as number) || ""));
-  const [loanRate, setLoanRate] = useState(String((meta?.loan_rate as number) || ""));
-  const [maturityYear, setMaturityYear] = useState(String((meta?.loan_maturity_year as number) || ""));
-  const [maturityMonth, setMaturityMonth] = useState(String((meta?.loan_maturity_month as number) || ""));
-  const [repaymentType, setRepaymentType] = useState<string>((meta?.loan_repayment_type as string) || "원리금균등상환");
-  const [monthlyRent, setMonthlyRent] = useState(String((meta?.monthly_rent as number) || ""));
-  const [maintenanceFee, setMaintenanceFee] = useState(String((meta?.maintenance_fee as number) || ""));
-  const [gracePeriodYear, setGracePeriodYear] = useState(String((meta?.grace_period_year as number) || ""));
-  const [gracePeriodMonth, setGracePeriodMonth] = useState(String((meta?.grace_period_month as number) || ""));
+  const [loanAmount, setLoanAmount] = useState(
+    String((meta?.loan_amount as number) || ""),
+  );
+  const [loanRate, setLoanRate] = useState(
+    String((meta?.loan_rate as number) || ""),
+  );
+  const [maturityYear, setMaturityYear] = useState(
+    String((meta?.loan_maturity_year as number) || ""),
+  );
+  const [maturityMonth, setMaturityMonth] = useState(
+    String((meta?.loan_maturity_month as number) || ""),
+  );
+  const [repaymentType, setRepaymentType] = useState<string>(
+    (meta?.loan_repayment_type as string) || "원리금균등상환",
+  );
+  const [monthlyRent, setMonthlyRent] = useState(
+    String((meta?.monthly_rent as number) || ""),
+  );
+  const [maintenanceFee, setMaintenanceFee] = useState(
+    String((meta?.maintenance_fee as number) || ""),
+  );
+  const [gracePeriodYear, setGracePeriodYear] = useState(
+    String((meta?.grace_period_year as number) || ""),
+  );
+  const [gracePeriodMonth, setGracePeriodMonth] = useState(
+    String((meta?.grace_period_month as number) || ""),
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent, saveCallback: () => void) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       (e.target as HTMLElement).blur();
       saveCallback();
@@ -1486,13 +2050,18 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
     return (
       <div className={styles.itemCard}>
         <div className={styles.itemCardHeaderSimple}>
-          <span className={styles.itemCardTitle} style={{ fontWeight: 600 }}>거주 정보</span>
+          <span className={styles.itemCardTitle} style={{ fontWeight: 600 }}>
+            거주 정보
+          </span>
         </div>
         <div className={styles.itemCardGrid}>
-          <div className={styles.itemCardField} style={{ gridColumn: '1 / -1' }}>
+          <div
+            className={styles.itemCardField}
+            style={{ gridColumn: "1 / -1" }}
+          >
             <span className={styles.itemCardFieldLabel}>거주형태</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {HOUSING_TYPES.map(type => (
+            <div style={{ display: "flex", gap: 8 }}>
+              {HOUSING_TYPES.map((type) => (
                 <button
                   key={type.value}
                   type="button"
@@ -1528,8 +2097,10 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               value={housingType}
               onChange={(e) => handleHousingTypeChange(e.target.value)}
             >
-              {HOUSING_TYPES.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
+              {HOUSING_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
               ))}
             </select>
           </div>
@@ -1537,8 +2108,13 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
             <span className={styles.itemCardFieldLabel}>소유</span>
             <select
               className={styles.itemCardFieldSelect}
-              value={item?.owner || 'self'}
-              onChange={(e) => item && onUpdate(item.id, { owner: e.target.value as 'self' | 'spouse' })}
+              value={item?.owner || "self"}
+              onChange={(e) =>
+                item &&
+                onUpdate(item.id, {
+                  owner: e.target.value as "self" | "spouse",
+                })
+              }
             >
               <option value="self">본인</option>
               {isCouple && <option value="spouse">배우자</option>}
@@ -1547,29 +2123,41 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
           {housingType === "자가" && (
             <div className={styles.itemCardField}>
               <span className={styles.itemCardFieldLabel}>취득일</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="number"
                   className={styles.itemCardFieldInput}
                   style={{ width: 80, paddingRight: 12 }}
                   value={purchaseYear}
                   placeholder={String(currentYear)}
-                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setPurchaseYear(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => {
-                    const val = purchaseYear ? parseInt(purchaseYear) : null;
-                    if (item && val !== (meta?.purchase_year as number | null)) {
-                      updateMeta({ purchase_year: val });
-                    }
-                  })}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = purchaseYear ? parseInt(purchaseYear) : null;
+                      if (
+                        item &&
+                        val !== (meta?.purchase_year as number | null)
+                      ) {
+                        updateMeta({ purchase_year: val });
+                      }
+                    })
+                  }
                   onBlur={() => {
                     const val = purchaseYear ? parseInt(purchaseYear) : null;
-                    if (item && val !== (meta?.purchase_year as number | null)) {
+                    if (
+                      item &&
+                      val !== (meta?.purchase_year as number | null)
+                    ) {
                       updateMeta({ purchase_year: val });
                     }
                   }}
                 />
-                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+                <span
+                  style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+                >
+                  년
+                </span>
                 <input
                   type="number"
                   className={styles.itemCardFieldInput}
@@ -1578,22 +2166,36 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                   placeholder={String(currentMonth)}
                   min={1}
                   max={12}
-                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setPurchaseMonth(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => {
-                    const val = purchaseMonth ? parseInt(purchaseMonth) : null;
-                    if (item && val !== (meta?.purchase_month as number | null)) {
-                      updateMeta({ purchase_month: val });
-                    }
-                  })}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = purchaseMonth
+                        ? parseInt(purchaseMonth)
+                        : null;
+                      if (
+                        item &&
+                        val !== (meta?.purchase_month as number | null)
+                      ) {
+                        updateMeta({ purchase_month: val });
+                      }
+                    })
+                  }
                   onBlur={() => {
                     const val = purchaseMonth ? parseInt(purchaseMonth) : null;
-                    if (item && val !== (meta?.purchase_month as number | null)) {
+                    if (
+                      item &&
+                      val !== (meta?.purchase_month as number | null)
+                    ) {
                       updateMeta({ purchase_month: val });
                     }
                   }}
                 />
-                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+                <span
+                  style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+                >
+                  월
+                </span>
               </div>
             </div>
           )}
@@ -1611,15 +2213,17 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                 className={styles.itemCardFieldInput}
                 value={currentValue}
                 placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setCurrentValue(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = parseInt(currentValue) || 0;
-                  if (item) {
-                    onUpdate(item.id, { amount: val });
-                    updateMeta({ current_value: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = parseInt(currentValue) || 0;
+                    if (item) {
+                      onUpdate(item.id, { amount: val });
+                      updateMeta({ current_value: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = parseInt(currentValue) || 0;
                   if (item) {
@@ -1639,17 +2243,27 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                 className={styles.itemCardFieldInput}
                 value={maintenanceFee}
                 placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setMaintenanceFee(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
-                    updateMeta({ maintenance_fee: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = maintenanceFee
+                      ? parseInt(maintenanceFee)
+                      : null;
+                    if (
+                      item &&
+                      val !== (meta?.maintenance_fee as number | null)
+                    ) {
+                      updateMeta({ maintenance_fee: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
+                  if (
+                    item &&
+                    val !== (meta?.maintenance_fee as number | null)
+                  ) {
                     updateMeta({ maintenance_fee: val });
                   }
                 }}
@@ -1672,15 +2286,17 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                 className={styles.itemCardFieldInput}
                 value={currentValue}
                 placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setCurrentValue(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = parseInt(currentValue) || 0;
-                  if (item) {
-                    onUpdate(item.id, { amount: val });
-                    updateMeta({ current_value: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = parseInt(currentValue) || 0;
+                    if (item) {
+                      onUpdate(item.id, { amount: val });
+                      updateMeta({ current_value: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = parseInt(currentValue) || 0;
                   if (item) {
@@ -1700,14 +2316,16 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                 className={styles.itemCardFieldInput}
                 value={monthlyRent}
                 placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setMonthlyRent(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = monthlyRent ? parseInt(monthlyRent) : null;
-                  if (item && val !== (meta?.monthly_rent as number | null)) {
-                    updateMeta({ monthly_rent: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = monthlyRent ? parseInt(monthlyRent) : null;
+                    if (item && val !== (meta?.monthly_rent as number | null)) {
+                      updateMeta({ monthly_rent: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = monthlyRent ? parseInt(monthlyRent) : null;
                   if (item && val !== (meta?.monthly_rent as number | null)) {
@@ -1726,17 +2344,27 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                 className={styles.itemCardFieldInput}
                 value={maintenanceFee}
                 placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setMaintenanceFee(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
-                    updateMeta({ maintenance_fee: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = maintenanceFee
+                      ? parseInt(maintenanceFee)
+                      : null;
+                    if (
+                      item &&
+                      val !== (meta?.maintenance_fee as number | null)
+                    ) {
+                      updateMeta({ maintenance_fee: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
+                  if (
+                    item &&
+                    val !== (meta?.maintenance_fee as number | null)
+                  ) {
                     updateMeta({ maintenance_fee: val });
                   }
                 }}
@@ -1758,17 +2386,27 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                 className={styles.itemCardFieldInput}
                 value={maintenanceFee}
                 placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setMaintenanceFee(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
-                    updateMeta({ maintenance_fee: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = maintenanceFee
+                      ? parseInt(maintenanceFee)
+                      : null;
+                    if (
+                      item &&
+                      val !== (meta?.maintenance_fee as number | null)
+                    ) {
+                      updateMeta({ maintenance_fee: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
+                  if (
+                    item &&
+                    val !== (meta?.maintenance_fee as number | null)
+                  ) {
                     updateMeta({ maintenance_fee: val });
                   }
                 }}
@@ -1786,7 +2424,7 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>전월세대출</span>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: "flex", gap: 8 }}>
               <button
                 type="button"
                 className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
@@ -1813,17 +2451,25 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                     className={styles.itemCardFieldInput}
                     value={loanAmount}
                     placeholder="0"
-                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
                     onChange={(e) => setLoanAmount(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, () => {
-                      const val = loanAmount ? parseInt(loanAmount) : null;
-                      if (item && val !== (meta?.loan_amount as number | null)) {
-                        updateMeta({ loan_amount: val });
-                      }
-                    })}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, () => {
+                        const val = loanAmount ? parseInt(loanAmount) : null;
+                        if (
+                          item &&
+                          val !== (meta?.loan_amount as number | null)
+                        ) {
+                          updateMeta({ loan_amount: val });
+                        }
+                      })
+                    }
                     onBlur={() => {
                       const val = loanAmount ? parseInt(loanAmount) : null;
-                      if (item && val !== (meta?.loan_amount as number | null)) {
+                      if (
+                        item &&
+                        val !== (meta?.loan_amount as number | null)
+                      ) {
                         updateMeta({ loan_amount: val });
                       }
                     }}
@@ -1840,14 +2486,19 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                     value={loanRate}
                     placeholder="3.5"
                     step="0.1"
-                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
                     onChange={(e) => setLoanRate(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, () => {
-                      const val = loanRate ? parseFloat(loanRate) : null;
-                      if (item && val !== (meta?.loan_rate as number | null)) {
-                        updateMeta({ loan_rate: val });
-                      }
-                    })}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, () => {
+                        const val = loanRate ? parseFloat(loanRate) : null;
+                        if (
+                          item &&
+                          val !== (meta?.loan_rate as number | null)
+                        ) {
+                          updateMeta({ loan_rate: val });
+                        }
+                      })
+                    }
                     onBlur={() => {
                       const val = loanRate ? parseFloat(loanRate) : null;
                       if (item && val !== (meta?.loan_rate as number | null)) {
@@ -1879,14 +2530,19 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                 className={styles.itemCardFieldInput}
                 value={purchasePrice}
                 placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setPurchasePrice(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = purchasePrice ? parseInt(purchasePrice) : null;
-                  if (item && val !== (meta?.purchase_price as number | null)) {
-                    updateMeta({ purchase_price: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = purchasePrice ? parseInt(purchasePrice) : null;
+                    if (
+                      item &&
+                      val !== (meta?.purchase_price as number | null)
+                    ) {
+                      updateMeta({ purchase_price: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = purchasePrice ? parseInt(purchasePrice) : null;
                   if (item && val !== (meta?.purchase_price as number | null)) {
@@ -1905,15 +2561,17 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                 className={styles.itemCardFieldInput}
                 value={currentValue}
                 placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setCurrentValue(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = parseInt(currentValue) || 0;
-                  if (item) {
-                    onUpdate(item.id, { amount: val });
-                    updateMeta({ current_value: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = parseInt(currentValue) || 0;
+                    if (item) {
+                      onUpdate(item.id, { amount: val });
+                      updateMeta({ current_value: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = parseInt(currentValue) || 0;
                   if (item) {
@@ -1933,17 +2591,27 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                 className={styles.itemCardFieldInput}
                 value={maintenanceFee}
                 placeholder="0"
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setMaintenanceFee(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
-                    updateMeta({ maintenance_fee: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = maintenanceFee
+                      ? parseInt(maintenanceFee)
+                      : null;
+                    if (
+                      item &&
+                      val !== (meta?.maintenance_fee as number | null)
+                    ) {
+                      updateMeta({ maintenance_fee: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = maintenanceFee ? parseInt(maintenanceFee) : null;
-                  if (item && val !== (meta?.maintenance_fee as number | null)) {
+                  if (
+                    item &&
+                    val !== (meta?.maintenance_fee as number | null)
+                  ) {
                     updateMeta({ maintenance_fee: val });
                   }
                 }}
@@ -1959,7 +2627,7 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>주담대</span>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: "flex", gap: 8 }}>
               <button
                 type="button"
                 className={`${styles.typeBtn} ${!hasLoan ? styles.active : ""}`}
@@ -1986,17 +2654,25 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                     className={styles.itemCardFieldInput}
                     value={loanAmount}
                     placeholder="0"
-                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
                     onChange={(e) => setLoanAmount(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, () => {
-                      const val = loanAmount ? parseInt(loanAmount) : null;
-                      if (item && val !== (meta?.loan_amount as number | null)) {
-                        updateMeta({ loan_amount: val });
-                      }
-                    })}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, () => {
+                        const val = loanAmount ? parseInt(loanAmount) : null;
+                        if (
+                          item &&
+                          val !== (meta?.loan_amount as number | null)
+                        ) {
+                          updateMeta({ loan_amount: val });
+                        }
+                      })
+                    }
                     onBlur={() => {
                       const val = loanAmount ? parseInt(loanAmount) : null;
-                      if (item && val !== (meta?.loan_amount as number | null)) {
+                      if (
+                        item &&
+                        val !== (meta?.loan_amount as number | null)
+                      ) {
                         updateMeta({ loan_amount: val });
                       }
                     }}
@@ -2013,14 +2689,19 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                     value={loanRate}
                     placeholder="3.5"
                     step="0.1"
-                    onWheel={e => (e.target as HTMLElement).blur()}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
                     onChange={(e) => setLoanRate(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, () => {
-                      const val = loanRate ? parseFloat(loanRate) : null;
-                      if (item && val !== (meta?.loan_rate as number | null)) {
-                        updateMeta({ loan_rate: val });
-                      }
-                    })}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, () => {
+                        const val = loanRate ? parseFloat(loanRate) : null;
+                        if (
+                          item &&
+                          val !== (meta?.loan_rate as number | null)
+                        ) {
+                          updateMeta({ loan_rate: val });
+                        }
+                      })
+                    }
                     onBlur={() => {
                       const val = loanRate ? parseFloat(loanRate) : null;
                       if (item && val !== (meta?.loan_rate as number | null)) {
@@ -2046,29 +2727,41 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>만기일</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <input
                 type="number"
                 className={styles.itemCardFieldInput}
                 style={{ width: 80, paddingRight: 12 }}
                 value={maturityYear}
                 placeholder={String(currentYear + 20)}
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setMaturityYear(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maturityYear ? parseInt(maturityYear) : null;
-                  if (item && val !== (meta?.loan_maturity_year as number | null)) {
-                    updateMeta({ loan_maturity_year: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = maturityYear ? parseInt(maturityYear) : null;
+                    if (
+                      item &&
+                      val !== (meta?.loan_maturity_year as number | null)
+                    ) {
+                      updateMeta({ loan_maturity_year: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = maturityYear ? parseInt(maturityYear) : null;
-                  if (item && val !== (meta?.loan_maturity_year as number | null)) {
+                  if (
+                    item &&
+                    val !== (meta?.loan_maturity_year as number | null)
+                  ) {
                     updateMeta({ loan_maturity_year: val });
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                년
+              </span>
               <input
                 type="number"
                 className={styles.itemCardFieldInput}
@@ -2077,22 +2770,34 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                 placeholder="12"
                 min={1}
                 max={12}
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setMaturityMonth(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maturityMonth ? parseInt(maturityMonth) : null;
-                  if (item && val !== (meta?.loan_maturity_month as number | null)) {
-                    updateMeta({ loan_maturity_month: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = maturityMonth ? parseInt(maturityMonth) : null;
+                    if (
+                      item &&
+                      val !== (meta?.loan_maturity_month as number | null)
+                    ) {
+                      updateMeta({ loan_maturity_month: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = maturityMonth ? parseInt(maturityMonth) : null;
-                  if (item && val !== (meta?.loan_maturity_month as number | null)) {
+                  if (
+                    item &&
+                    val !== (meta?.loan_maturity_month as number | null)
+                  ) {
                     updateMeta({ loan_maturity_month: val });
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                월
+              </span>
             </div>
           </div>
           <div className={styles.itemCardField}>
@@ -2102,37 +2807,55 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               value={repaymentType}
               onChange={(e) => handleRepaymentTypeChange(e.target.value)}
             >
-              {REPAYMENT_TYPES.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
+              {REPAYMENT_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
               ))}
             </select>
           </div>
           {repaymentType === "거치식상환" ? (
             <div className={styles.itemCardField}>
               <span className={styles.itemCardFieldLabel}>거치기간</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="number"
                   className={styles.itemCardFieldInput}
                   style={{ width: 80, paddingRight: 12 }}
                   value={gracePeriodYear}
                   placeholder={String(currentYear + 3)}
-                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setGracePeriodYear(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => {
-                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
-                    if (item && val !== (meta?.grace_period_year as number | null)) {
-                      updateMeta({ grace_period_year: val });
-                    }
-                  })}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = gracePeriodYear
+                        ? parseInt(gracePeriodYear)
+                        : null;
+                      if (
+                        item &&
+                        val !== (meta?.grace_period_year as number | null)
+                      ) {
+                        updateMeta({ grace_period_year: val });
+                      }
+                    })
+                  }
                   onBlur={() => {
-                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
-                    if (item && val !== (meta?.grace_period_year as number | null)) {
+                    const val = gracePeriodYear
+                      ? parseInt(gracePeriodYear)
+                      : null;
+                    if (
+                      item &&
+                      val !== (meta?.grace_period_year as number | null)
+                    ) {
                       updateMeta({ grace_period_year: val });
                     }
                   }}
                 />
-                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+                <span
+                  style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+                >
+                  년
+                </span>
                 <input
                   type="number"
                   className={styles.itemCardFieldInput}
@@ -2141,22 +2864,38 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                   placeholder="12"
                   min={1}
                   max={12}
-                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setGracePeriodMonth(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => {
-                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
-                    if (item && val !== (meta?.grace_period_month as number | null)) {
-                      updateMeta({ grace_period_month: val });
-                    }
-                  })}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = gracePeriodMonth
+                        ? parseInt(gracePeriodMonth)
+                        : null;
+                      if (
+                        item &&
+                        val !== (meta?.grace_period_month as number | null)
+                      ) {
+                        updateMeta({ grace_period_month: val });
+                      }
+                    })
+                  }
                   onBlur={() => {
-                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
-                    if (item && val !== (meta?.grace_period_month as number | null)) {
+                    const val = gracePeriodMonth
+                      ? parseInt(gracePeriodMonth)
+                      : null;
+                    if (
+                      item &&
+                      val !== (meta?.grace_period_month as number | null)
+                    ) {
                       updateMeta({ grace_period_month: val });
                     }
                   }}
                 />
-                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+                <span
+                  style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+                >
+                  월
+                </span>
               </div>
             </div>
           ) : (
@@ -2170,29 +2909,41 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
         <div className={styles.itemCardGrid} style={{ marginTop: 8 }}>
           <div className={styles.itemCardField}>
             <span className={styles.itemCardFieldLabel}>만기일</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <input
                 type="number"
                 className={styles.itemCardFieldInput}
                 style={{ width: 80, paddingRight: 12 }}
                 value={maturityYear}
                 placeholder={String(currentYear + 20)}
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setMaturityYear(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maturityYear ? parseInt(maturityYear) : null;
-                  if (item && val !== (meta?.loan_maturity_year as number | null)) {
-                    updateMeta({ loan_maturity_year: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = maturityYear ? parseInt(maturityYear) : null;
+                    if (
+                      item &&
+                      val !== (meta?.loan_maturity_year as number | null)
+                    ) {
+                      updateMeta({ loan_maturity_year: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = maturityYear ? parseInt(maturityYear) : null;
-                  if (item && val !== (meta?.loan_maturity_year as number | null)) {
+                  if (
+                    item &&
+                    val !== (meta?.loan_maturity_year as number | null)
+                  ) {
                     updateMeta({ loan_maturity_year: val });
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                년
+              </span>
               <input
                 type="number"
                 className={styles.itemCardFieldInput}
@@ -2201,22 +2952,34 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                 placeholder="12"
                 min={1}
                 max={12}
-                onWheel={e => (e.target as HTMLElement).blur()}
+                onWheel={(e) => (e.target as HTMLElement).blur()}
                 onChange={(e) => setMaturityMonth(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, () => {
-                  const val = maturityMonth ? parseInt(maturityMonth) : null;
-                  if (item && val !== (meta?.loan_maturity_month as number | null)) {
-                    updateMeta({ loan_maturity_month: val });
-                  }
-                })}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, () => {
+                    const val = maturityMonth ? parseInt(maturityMonth) : null;
+                    if (
+                      item &&
+                      val !== (meta?.loan_maturity_month as number | null)
+                    ) {
+                      updateMeta({ loan_maturity_month: val });
+                    }
+                  })
+                }
                 onBlur={() => {
                   const val = maturityMonth ? parseInt(maturityMonth) : null;
-                  if (item && val !== (meta?.loan_maturity_month as number | null)) {
+                  if (
+                    item &&
+                    val !== (meta?.loan_maturity_month as number | null)
+                  ) {
                     updateMeta({ loan_maturity_month: val });
                   }
                 }}
               />
-              <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+              <span
+                style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+              >
+                월
+              </span>
             </div>
           </div>
           <div className={styles.itemCardField}>
@@ -2226,37 +2989,55 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
               value={repaymentType}
               onChange={(e) => handleRepaymentTypeChange(e.target.value)}
             >
-              {REPAYMENT_TYPES.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
+              {REPAYMENT_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
               ))}
             </select>
           </div>
           {repaymentType === "거치식상환" ? (
             <div className={styles.itemCardField}>
               <span className={styles.itemCardFieldLabel}>거치기간</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="number"
                   className={styles.itemCardFieldInput}
                   style={{ width: 80, paddingRight: 12 }}
                   value={gracePeriodYear}
                   placeholder={String(currentYear + 3)}
-                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setGracePeriodYear(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => {
-                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
-                    if (item && val !== (meta?.grace_period_year as number | null)) {
-                      updateMeta({ grace_period_year: val });
-                    }
-                  })}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = gracePeriodYear
+                        ? parseInt(gracePeriodYear)
+                        : null;
+                      if (
+                        item &&
+                        val !== (meta?.grace_period_year as number | null)
+                      ) {
+                        updateMeta({ grace_period_year: val });
+                      }
+                    })
+                  }
                   onBlur={() => {
-                    const val = gracePeriodYear ? parseInt(gracePeriodYear) : null;
-                    if (item && val !== (meta?.grace_period_year as number | null)) {
+                    const val = gracePeriodYear
+                      ? parseInt(gracePeriodYear)
+                      : null;
+                    if (
+                      item &&
+                      val !== (meta?.grace_period_year as number | null)
+                    ) {
                       updateMeta({ grace_period_year: val });
                     }
                   }}
                 />
-                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>년</span>
+                <span
+                  style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+                >
+                  년
+                </span>
                 <input
                   type="number"
                   className={styles.itemCardFieldInput}
@@ -2265,22 +3046,38 @@ function ResidenceCard({ item, snapshotId, currentYear, isCouple, onUpdate, onCr
                   placeholder="12"
                   min={1}
                   max={12}
-                  onWheel={e => (e.target as HTMLElement).blur()}
+                  onWheel={(e) => (e.target as HTMLElement).blur()}
                   onChange={(e) => setGracePeriodMonth(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, () => {
-                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
-                    if (item && val !== (meta?.grace_period_month as number | null)) {
-                      updateMeta({ grace_period_month: val });
-                    }
-                  })}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, () => {
+                      const val = gracePeriodMonth
+                        ? parseInt(gracePeriodMonth)
+                        : null;
+                      if (
+                        item &&
+                        val !== (meta?.grace_period_month as number | null)
+                      ) {
+                        updateMeta({ grace_period_month: val });
+                      }
+                    })
+                  }
                   onBlur={() => {
-                    const val = gracePeriodMonth ? parseInt(gracePeriodMonth) : null;
-                    if (item && val !== (meta?.grace_period_month as number | null)) {
+                    const val = gracePeriodMonth
+                      ? parseInt(gracePeriodMonth)
+                      : null;
+                    if (
+                      item &&
+                      val !== (meta?.grace_period_month as number | null)
+                    ) {
                       updateMeta({ grace_period_month: val });
                     }
                   }}
                 />
-                <span style={{ fontSize: 13, color: 'var(--dashboard-text-muted)' }}>월</span>
+                <span
+                  style={{ fontSize: 13, color: "var(--dashboard-text-muted)" }}
+                >
+                  월
+                </span>
               </div>
             </div>
           ) : (
@@ -2315,7 +3112,11 @@ function CheckingAccountCard({ data, onSave }: CheckingAccountCardProps) {
   return (
     <div className={styles.simpleRow}>
       <div className={styles.simpleRowInfo}>
-        <BrokerLogo brokerName={data.broker} fallback={data.name || "?"} size="md" />
+        <BrokerLogo
+          brokerName={data.broker}
+          fallback={data.name || "?"}
+          size="md"
+        />
         <div className={styles.accountInfo}>
           <span className={styles.accountName}>{data.name}</span>
           <span className={styles.accountTypeLabel}>입출금통장</span>
@@ -2328,14 +3129,19 @@ function CheckingAccountCard({ data, onSave }: CheckingAccountCardProps) {
             className={styles.itemCardFieldInput}
             value={balance}
             placeholder="0"
-            onWheel={e => (e.target as HTMLElement).blur()}
-            onChange={e => setBalance(e.target.value)}
+            onWheel={(e) => (e.target as HTMLElement).blur()}
+            onChange={(e) => setBalance(e.target.value)}
             onBlur={saveBalance}
-            onKeyDown={e => {
-              if (e.key === "Enter") { e.preventDefault(); (e.target as HTMLElement).blur(); saveBalance(); }
-              if (e.key === "Escape") setBalance(data.value ? String(data.value) : "");
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                (e.target as HTMLElement).blur();
+                saveBalance();
+              }
+              if (e.key === "Escape")
+                setBalance(data.value ? String(data.value) : "");
             }}
-            style={{ width: 140, textAlign: 'right' }}
+            style={{ width: 140, textAlign: "right" }}
           />
           <span className={styles.itemCardFieldUnitLabel}>원</span>
         </div>
@@ -2348,13 +3154,25 @@ function CheckingAccountCard({ data, onSave }: CheckingAccountCardProps) {
 interface TermDepositCardProps {
   account: Account;
   displayValue: number; // 원 단위 평가금액
-  onSave: (accountId: string, updateData: Record<string, unknown>) => Promise<void>;
+  onSave: (
+    accountId: string,
+    updateData: Record<string, unknown>,
+  ) => Promise<void>;
 }
 
-function TermDepositCard({ account, displayValue, onSave: _onSave }: TermDepositCardProps) {
-  const typeLabel = account.account_type === "deposit" ? "예금" :
-    account.account_type === "housing" ? "주택청약" :
-    account.account_type === "free_savings" ? "자유적금" : "적금";
+function TermDepositCard({
+  account,
+  displayValue,
+  onSave: _onSave,
+}: TermDepositCardProps) {
+  const typeLabel =
+    account.account_type === "deposit"
+      ? "예금"
+      : account.account_type === "housing"
+        ? "주택청약"
+        : account.account_type === "free_savings"
+          ? "자유적금"
+          : "적금";
 
   const maturityPreTax = calculateMaturityAmountPreTax(account);
   const maturityPostTax = calculateMaturityAmountPostTax(account);
@@ -2362,18 +3180,37 @@ function TermDepositCard({ account, displayValue, onSave: _onSave }: TermDeposit
   return (
     <div className={styles.simpleRow}>
       <div className={styles.simpleRowInfo}>
-        <BrokerLogo brokerName={account.broker_name || ""} fallback={account.name || "?"} size="md" />
+        <BrokerLogo
+          brokerName={account.broker_name || ""}
+          fallback={account.name || "?"}
+          size="md"
+        />
         <div className={styles.accountInfo}>
           <span className={styles.accountName}>{account.name}</span>
           <span className={styles.accountTypeLabel}>{typeLabel}</span>
         </div>
       </div>
       <div className={styles.simpleRowAmount}>
-        <div style={{ textAlign: 'right' }}>
-          <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--dashboard-text)' }}>{formatWon(displayValue)}</span>
+        <div style={{ textAlign: "right" }}>
+          <span
+            style={{
+              fontWeight: 600,
+              fontSize: 15,
+              color: "var(--dashboard-text)",
+            }}
+          >
+            {formatWon(displayValue)}
+          </span>
           {maturityPreTax != null && maturityPreTax > 0 && (
-            <div style={{ fontSize: 11, color: 'var(--dashboard-text-muted)', marginTop: 2 }}>
-              예상 만기 금액: 세전 {formatWon(maturityPreTax)} / 세후 {formatWon(maturityPostTax ?? maturityPreTax)}
+            <div
+              style={{
+                fontSize: 11,
+                color: "var(--dashboard-text-muted)",
+                marginTop: 2,
+              }}
+            >
+              예상 만기 금액: 세전 {formatWon(maturityPreTax)} / 세후{" "}
+              {formatWon(maturityPostTax ?? maturityPreTax)}
             </div>
           )}
         </div>
@@ -2382,28 +3219,46 @@ function TermDepositCard({ account, displayValue, onSave: _onSave }: TermDeposit
   );
 }
 
-export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: CurrentAssetTabProps) {
+export function CurrentAssetTab({
+  profileId,
+  onNavigate,
+  onOpenAccountModal,
+}: CurrentAssetTabProps) {
   const [activeTab, setActiveTab] = useState<TabType>("savings");
   const supabase = createClient();
-  const { isDark, categoryColors, categoryShades, chartScaleColors } = useChartTheme();
+  const { isDark, categoryColors, categoryShades, chartScaleColors } =
+    useChartTheme();
 
   // 스냅샷 데이터 (항상 오늘)
-  const { data: todaySnapshot, isLoading: isSnapshotLoading } = useTodaySnapshot(profileId);
+  const { data: todaySnapshot, isLoading: isSnapshotLoading } =
+    useTodaySnapshot(profileId);
   const currentSnapshot = todaySnapshot;
 
-  const { data: dbItems = [], isLoading: isItemsLoading } = useSnapshotItems(currentSnapshot?.id);
+  const { data: dbItems = [], isLoading: isItemsLoading } = useSnapshotItems(
+    currentSnapshot?.id,
+  );
 
   // 거주용 부동산 편집 상태 - 더 이상 사용 안 함 (카드로 대체)
   const [isEditingResidence, setIsEditingResidence] = useState(false);
-  const [editResidence, setEditResidence] = useState<Partial<ResidenceData>>({});
+  const [editResidence, setEditResidence] = useState<Partial<ResidenceData>>(
+    {},
+  );
 
   // 투자용 부동산 편집 상태
-  const [editingInvestmentId, setEditingInvestmentId] = useState<string | null>(null);
-  const [editInvestment, setEditInvestment] = useState<Partial<InvestmentRealEstateData>>({});
+  const [editingInvestmentId, setEditingInvestmentId] = useState<string | null>(
+    null,
+  );
+  const [editInvestment, setEditInvestment] = useState<
+    Partial<InvestmentRealEstateData>
+  >({});
 
   // 실물 자산 편집 상태
-  const [editingRealAssetId, setEditingRealAssetId] = useState<string | null>(null);
-  const [editRealAsset, setEditRealAsset] = useState<Partial<RealAssetData>>({});
+  const [editingRealAssetId, setEditingRealAssetId] = useState<string | null>(
+    null,
+  );
+  const [editRealAsset, setEditRealAsset] = useState<Partial<RealAssetData>>(
+    {},
+  );
 
   // 금융 부채 편집 상태
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
@@ -2414,20 +3269,33 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   const chartPopoverRef = useRef<HTMLDivElement>(null);
 
   // 추가 모달 상태
-  const [addModalCategory, setAddModalCategory] = useState<ModalCategory | null>(null);
+  const [addModalCategory, setAddModalCategory] =
+    useState<ModalCategory | null>(null);
 
   // 실제 사용할 items (DB에서 직접)
   const items = dbItems;
 
   // Mutation 훅
   const createMutation = useCreateSnapshotItem(profileId);
-  const updateMutation = useUpdateSnapshotItem(profileId, currentSnapshot?.id || '');
-  const deleteMutation = useDeleteSnapshotItem(profileId, currentSnapshot?.id || '');
+  const updateMutation = useUpdateSnapshotItem(
+    profileId,
+    currentSnapshot?.id || "",
+  );
+  const deleteMutation = useDeleteSnapshotItem(
+    profileId,
+    currentSnapshot?.id || "",
+  );
   const updateSnapshotMutation = useUpdateSnapshot(profileId);
 
   // 포트폴리오 거래 + 계좌 데이터
-  const { data: portfolioTransactions = [], isLoading: isTransactionsLoading } = usePortfolioTransactions(profileId);
-  const { data: priceCache, isLoading: isPriceLoading } = usePortfolioChartPriceData(profileId, portfolioTransactions, portfolioTransactions.length > 0);
+  const { data: portfolioTransactions = [], isLoading: isTransactionsLoading } =
+    usePortfolioTransactions(profileId);
+  const { data: priceCache, isLoading: isPriceLoading } =
+    usePortfolioChartPriceData(
+      profileId,
+      portfolioTransactions,
+      portfolioTransactions.length > 0,
+    );
   const [accounts, setAccounts] = useState<PortfolioAccount[]>([]);
   const [customHoldings, setCustomHoldings] = useState<CustomHolding[]>([]);
   const [isAccountsLoading, setIsAccountsLoading] = useState(true);
@@ -2438,7 +3306,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   // 프로필 편집 상태
-  const [editingProfileField, setEditingProfileField] = useState<string | null>(null);
+  const [editingProfileField, setEditingProfileField] = useState<string | null>(
+    null,
+  );
   const [editProfileData, setEditProfileData] = useState<{
     name?: string;
     birthYear?: string;
@@ -2461,7 +3331,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
       // 프로필 데이터
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("id, name, birth_date, gender, target_retirement_age, target_retirement_fund, settings, created_at, updated_at")
+        .select(
+          "id, name, birth_date, gender, target_retirement_age, target_retirement_fund, settings, created_at, updated_at",
+        )
         .eq("id", profileId)
         .single();
 
@@ -2492,18 +3364,21 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       // 차트 토글 버튼 클릭은 무시 (onClick에서 처리)
-      if (target.closest('[data-chart-toggle]')) return;
-      if (chartPopoverRef.current && !chartPopoverRef.current.contains(target)) {
+      if (target.closest("[data-chart-toggle]")) return;
+      if (
+        chartPopoverRef.current &&
+        !chartPopoverRef.current.contains(target)
+      ) {
         setExpandedChart(null);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [expandedChart]);
 
   // 가계 단위 여부 (배우자 존재 여부)
-  const isCouple = familyMembers.some(m => m.relationship === "spouse");
-  const spouse = familyMembers.find(m => m.relationship === "spouse");
+  const isCouple = familyMembers.some((m) => m.relationship === "spouse");
+  const spouse = familyMembers.find((m) => m.relationship === "spouse");
 
   // 가계/개인 모드 전환 모달
   const [showPlanningModeModal, setShowPlanningModeModal] = useState(false);
@@ -2511,13 +3386,13 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   // ESC 키로 모달 닫기
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         if (addModalCategory) setAddModalCategory(null);
         if (showPlanningModeModal) setShowPlanningModeModal(false);
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, [addModalCategory, showPlanningModeModal]);
 
   // 가계/개인 모드 전환 실행
@@ -2528,7 +3403,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     if (isCouple) {
       // 배우자 삭제 - optimistic update
       const spouseId = spouse?.id;
-      setFamilyMembers(prev => prev.filter(m => m.id !== spouseId));
+      setFamilyMembers((prev) => prev.filter((m) => m.id !== spouseId));
       // 백그라운드에서 DB 업데이트
       if (spouseId) {
         supabase.from("family_members").delete().eq("id", spouseId);
@@ -2551,7 +3426,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       } as FamilyMember;
-      setFamilyMembers(prev => [...prev, newSpouse]);
+      setFamilyMembers((prev) => [...prev, newSpouse]);
       // 백그라운드에서 DB 업데이트
       const { data } = await supabase
         .from("family_members")
@@ -2565,7 +3440,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
         .single();
       // 실제 ID로 교체
       if (data) {
-        setFamilyMembers(prev => prev.map(m => m.id === tempId ? data as FamilyMember : m));
+        setFamilyMembers((prev) =>
+          prev.map((m) => (m.id === tempId ? (data as FamilyMember) : m)),
+        );
       }
     }
   };
@@ -2586,16 +3463,21 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   // 본인 정보 저장
   const saveProfile = async () => {
     if (!profile) return;
-    const birthDate = editProfileData.birthYear && editProfileData.birthMonth && editProfileData.birthDay
-      ? `${editProfileData.birthYear}-${String(editProfileData.birthMonth).padStart(2, '0')}-${String(editProfileData.birthDay).padStart(2, '0')}`
-      : null;
+    const birthDate =
+      editProfileData.birthYear &&
+      editProfileData.birthMonth &&
+      editProfileData.birthDay
+        ? `${editProfileData.birthYear}-${String(editProfileData.birthMonth).padStart(2, "0")}-${String(editProfileData.birthDay).padStart(2, "0")}`
+        : null;
 
     const { data } = await supabase
       .from("profiles")
       .update({
         name: editProfileData.name || null,
         birth_date: birthDate,
-        target_retirement_age: parseInt(editProfileData.targetRetirementAge || "60"),
+        target_retirement_age: parseInt(
+          editProfileData.targetRetirementAge || "60",
+        ),
       })
       .eq("id", profileId)
       .select()
@@ -2622,9 +3504,12 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   // 배우자 정보 저장
   const saveSpouse = async () => {
     if (!spouse) return;
-    const birthDate = editSpouseData.birthYear && editSpouseData.birthMonth && editSpouseData.birthDay
-      ? `${editSpouseData.birthYear}-${String(editSpouseData.birthMonth).padStart(2, '0')}-${String(editSpouseData.birthDay).padStart(2, '0')}`
-      : null;
+    const birthDate =
+      editSpouseData.birthYear &&
+      editSpouseData.birthMonth &&
+      editSpouseData.birthDay
+        ? `${editSpouseData.birthYear}-${String(editSpouseData.birthMonth).padStart(2, "0")}-${String(editSpouseData.birthDay).padStart(2, "0")}`
+        : null;
 
     const { data } = await supabase
       .from("family_members")
@@ -2637,7 +3522,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
       .single();
 
     if (data) {
-      setFamilyMembers(prev => prev.map(m => m.id === spouse.id ? data as FamilyMember : m));
+      setFamilyMembers((prev) =>
+        prev.map((m) => (m.id === spouse.id ? (data as FamilyMember) : m)),
+      );
     }
     setEditingProfileField(null);
   };
@@ -2679,7 +3566,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
           year: tx.year,
           month: tx.month,
           day: tx.day,
-        }))
+        })),
       );
       setIsAccountsLoading(false);
       setIsBudgetTxLoading(false);
@@ -2688,18 +3575,27 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   }, [profileId, supabase]);
 
   // 계좌 데이터에서 파생 (별도 쿼리 불필요)
-  const checkingAccounts = useMemo(() =>
-    accounts.filter(a => a.account_type === "checking"),
-  [accounts]);
+  const checkingAccounts = useMemo(
+    () => accounts.filter((a) => a.account_type === "checking"),
+    [accounts],
+  );
   const termDepositAccounts = useMemo(() => {
     const now = new Date();
     const nowYear = now.getFullYear();
     const nowMonth = now.getMonth() + 1;
-    return accounts.filter(a => {
-      if (!["savings", "deposit", "free_savings", "housing"].includes(a.account_type)) return false;
+    return accounts.filter((a) => {
+      if (
+        !["savings", "deposit", "free_savings", "housing"].includes(
+          a.account_type,
+        )
+      )
+        return false;
       // 만기된 계좌 제외 (만기 후 수령액은 다른 통장/투자로 이동되므로)
       if (a.maturity_year && a.maturity_month) {
-        if (a.maturity_year < nowYear || (a.maturity_year === nowYear && a.maturity_month < nowMonth)) {
+        if (
+          a.maturity_year < nowYear ||
+          (a.maturity_year === nowYear && a.maturity_month < nowMonth)
+        ) {
           return false;
         }
       }
@@ -2707,7 +3603,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     });
   }, [accounts]);
 
-  const [budgetTransactions, setBudgetTransactions] = useState<{ account_id: string | null; type: string; amount: number }[]>([]);
+  const [budgetTransactions, setBudgetTransactions] = useState<
+    { account_id: string | null; type: string; amount: number }[]
+  >([]);
 
   // 현재 연/월
   const currentYear = new Date().getFullYear();
@@ -2720,21 +3618,29 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
   // 저축 계좌별 데이터 계산 (원 단위, 거래 반영한 예상 잔액)
   const savingsAccountValues = useMemo(() => {
-    const values: { id: string; type: string; name: string; broker: string; value: number }[] = [];
+    const values: {
+      id: string;
+      type: string;
+      name: string;
+      broker: string;
+      value: number;
+    }[] = [];
 
     // 입출금 계좌 (원 단위) - 유틸리티 함수 사용
-    checkingAccounts.forEach(acc => {
+    checkingAccounts.forEach((acc) => {
       values.push({
         id: acc.id,
         type: "checking",
         name: acc.name,
         broker: acc.broker_name,
-        value: accountBalanceInfo[acc.id]?.expectedBalance ?? (acc.current_balance || 0),
+        value:
+          accountBalanceInfo[acc.id]?.expectedBalance ??
+          (acc.current_balance || 0),
       });
     });
 
     // 정기 예금/적금 (원 단위)
-    termDepositAccounts.forEach(acc => {
+    termDepositAccounts.forEach((acc) => {
       values.push({
         id: acc.id,
         type: acc.account_type,
@@ -2757,52 +3663,65 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     return Math.round(linkedSavingsTotalWon / 10000);
   }, [linkedSavingsTotalWon]);
 
-
   // 계좌 데이터 저장 (입출금 통장 + 정기 예금/적금 공용)
-  const handleAccountSave = useCallback(async (accountId: string, updateData: Record<string, unknown>) => {
-    if (Object.keys(updateData).length === 0) return;
-    // 입출금 통장 잔액 변경 시 balance_updated_at도 업데이트
-    if ('current_balance' in updateData && checkingAccounts.some(a => a.id === accountId)) {
-      updateData.balance_updated_at = new Date().toISOString();
-    }
-    await supabase
-      .from("accounts")
-      .update(updateData)
-      .eq("id", accountId);
-    // 데이터 새로고침 (전체 계좌 reload)
-    const { data: refreshed } = await supabase
-      .from("accounts")
-      .select("*")
-      .eq("profile_id", profileId)
-      .eq("is_active", true)
-      .order("is_default", { ascending: false });
-    if (refreshed) setAccounts(refreshed);
-  }, [supabase, profileId, checkingAccounts]);
+  const handleAccountSave = useCallback(
+    async (accountId: string, updateData: Record<string, unknown>) => {
+      if (Object.keys(updateData).length === 0) return;
+      // 입출금 통장 잔액 변경 시 balance_updated_at도 업데이트
+      if (
+        "current_balance" in updateData &&
+        checkingAccounts.some((a) => a.id === accountId)
+      ) {
+        updateData.balance_updated_at = new Date().toISOString();
+      }
+      await supabase.from("accounts").update(updateData).eq("id", accountId);
+      // 데이터 새로고침 (전체 계좌 reload)
+      const { data: refreshed } = await supabase
+        .from("accounts")
+        .select("*")
+        .eq("profile_id", profileId)
+        .eq("is_active", true)
+        .order("is_default", { ascending: false });
+      if (refreshed) setAccounts(refreshed);
+    },
+    [supabase, profileId, checkingAccounts],
+  );
 
   const isLoading = isSnapshotLoading || isItemsLoading;
-  const isInvestmentDataReady = !isTransactionsLoading && !isPriceLoading && !isAccountsLoading;
+  const isInvestmentDataReady =
+    !isTransactionsLoading && !isPriceLoading && !isAccountsLoading;
   const isSavingsDataReady = !isAccountsLoading && !isBudgetTxLoading;
 
   // 증권 계좌별 평가금액 계산 (유틸리티 함수 사용)
   const accountValues = useMemo(() => {
-    return calculatePortfolioAccountValuesDetailed(portfolioTransactions, priceCache, accounts, customHoldings);
+    return calculatePortfolioAccountValuesDetailed(
+      portfolioTransactions,
+      priceCache,
+      accounts,
+      customHoldings,
+    );
   }, [portfolioTransactions, accounts, priceCache, customHoldings]);
 
   // 기타 투자 항목 (실물 금, 채권 등)
   const otherInvestmentItems = useMemo(() => {
-    const investmentTypes = ITEM_TYPES.investment.map(t => t.value);
-    return items.filter(i => i.category === "asset" && investmentTypes.includes(i.item_type));
+    const investmentTypes = ITEM_TYPES.investment.map((t) => t.value);
+    return items.filter(
+      (i) => i.category === "asset" && investmentTypes.includes(i.item_type),
+    );
   }, [items]);
 
   // 기타 투자 합계 (원 단위) - DB는 만원 단위이므로 x10000
   const otherInvestmentTotalWon = useMemo(() => {
-    return otherInvestmentItems.reduce((sum, item) => sum + item.amount * 10000, 0);
+    return otherInvestmentItems.reduce(
+      (sum, item) => sum + item.amount * 10000,
+      0,
+    );
   }, [otherInvestmentItems]);
 
   // 투자 총액 (원 단위) = 포트폴리오 + 기타 투자
   const investmentTotalWon = useMemo(() => {
     let total = 0;
-    accountValues.forEach(v => {
+    accountValues.forEach((v) => {
       total += v.value;
     });
     return Math.round(total) + otherInvestmentTotalWon;
@@ -2815,36 +3734,63 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
     // 투자: 포트폴리오 + 기타 투자 합계 (만원 단위로 변환)
     let portfolioTotal = 0;
-    accountValues.forEach(v => {
+    accountValues.forEach((v) => {
       portfolioTotal += v.value; // 평가금액 사용
     });
-    const otherInvestment = otherInvestmentItems.reduce((sum, item) => sum + item.amount, 0);
+    const otherInvestment = otherInvestmentItems.reduce(
+      (sum, item) => sum + item.amount,
+      0,
+    );
     const investment = Math.round(portfolioTotal / 10000) + otherInvestment;
 
     // 부동산: 거주용 + 투자용
     // 거주용: 자가(시세), 전세/월세(보증금) - 무상 제외
-    const residenceItems = items
-      .filter(i => i.category === "asset" &&
-              (i.metadata as Record<string, unknown>)?.purpose === "residential" &&
-              (i.metadata as Record<string, unknown>)?.housing_type !== "무상");
+    const residenceItems = items.filter(
+      (i) =>
+        i.category === "asset" &&
+        (i.metadata as Record<string, unknown>)?.purpose === "residential" &&
+        (i.metadata as Record<string, unknown>)?.housing_type !== "무상",
+    );
 
     const residenceGross = residenceItems.reduce((sum, i) => sum + i.amount, 0);
     const residenceLoan = residenceItems.reduce((sum, i) => {
       const meta = i.metadata as Record<string, unknown>;
-      return sum + ((meta?.has_loan && meta?.loan_amount) ? (meta.loan_amount as number) : 0);
+      return (
+        sum +
+        (meta?.has_loan && meta?.loan_amount ? (meta.loan_amount as number) : 0)
+      );
     }, 0);
 
     // 투자용 부동산
     const investmentItems = items
-      .filter(i => i.category === "asset" &&
-              ((i.metadata as Record<string, unknown>)?.purpose === "investment" ||
-               ["real_estate", "apartment", "house", "officetel", "land", "commercial"].includes(i.item_type)))
-      .filter(i => (i.metadata as Record<string, unknown>)?.purpose !== "residential"); // 거주용 제외
+      .filter(
+        (i) =>
+          i.category === "asset" &&
+          ((i.metadata as Record<string, unknown>)?.purpose === "investment" ||
+            [
+              "real_estate",
+              "apartment",
+              "house",
+              "officetel",
+              "land",
+              "commercial",
+            ].includes(i.item_type)),
+      )
+      .filter(
+        (i) =>
+          (i.metadata as Record<string, unknown>)?.purpose !== "residential",
+      ); // 거주용 제외
 
-    const investmentRealEstateGross = investmentItems.reduce((sum, i) => sum + i.amount, 0);
+    const investmentRealEstateGross = investmentItems.reduce(
+      (sum, i) => sum + i.amount,
+      0,
+    );
     const investmentRealEstateLoan = investmentItems.reduce((sum, i) => {
       const meta = i.metadata as Record<string, unknown>;
-      return sum + ((meta?.has_loan && meta?.loan_amount) ? (meta.loan_amount as number) : 0);
+      return (
+        sum +
+        (meta?.has_loan && meta?.loan_amount ? (meta.loan_amount as number) : 0)
+      );
     }, 0);
 
     const realEstateGross = residenceGross + investmentRealEstateGross;
@@ -2852,39 +3798,60 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     const realEstate = realEstateGross; // 총 자산 가치 (부채 미차감)
 
     // 실물 자산: 자동차, 귀금속, 미술품 등
-    const realAssetItems = items.filter(i => i.category === "asset" && ["car", "precious_metal", "art", "other"].includes(i.item_type));
+    const realAssetItems = items.filter(
+      (i) =>
+        i.category === "asset" &&
+        ["car", "precious_metal", "art", "other"].includes(i.item_type),
+    );
 
     const realAssetGross = realAssetItems.reduce((sum, i) => sum + i.amount, 0);
     const realAssetLoan = realAssetItems.reduce((sum, i) => {
       const meta = i.metadata as Record<string, unknown>;
-      return sum + ((meta?.has_loan && meta?.loan_amount) ? (meta.loan_amount as number) : 0);
+      return (
+        sum +
+        (meta?.has_loan && meta?.loan_amount ? (meta.loan_amount as number) : 0)
+      );
     }, 0);
     const realAssetInstallment = realAssetItems.reduce((sum, i) => {
       const meta = i.metadata as Record<string, unknown>;
-      return sum + ((meta?.has_installment && meta?.installment_remaining) ? (meta.installment_remaining as number) : 0);
+      return (
+        sum +
+        (meta?.has_installment && meta?.installment_remaining
+          ? (meta.installment_remaining as number)
+          : 0)
+      );
     }, 0);
     const realAsset = realAssetGross; // 총 자산 가치 (부채 미차감)
 
     // 금융 부채 (source 없는 순수 금융부채)
     const unsecuredDebt = items
-      .filter(i => i.category === "debt")
-      .filter(i => {
+      .filter((i) => i.category === "debt")
+      .filter((i) => {
         const meta = i.metadata as Record<string, unknown>;
         return !meta?.source;
       })
       .reduce((sum, i) => sum + i.amount, 0);
 
     // 전체 부채 (금융부채 + 부동산대출 + 실물자산대출 + 할부)
-    const debt = unsecuredDebt + realEstateLoan + realAssetLoan + realAssetInstallment;
+    const debt =
+      unsecuredDebt + realEstateLoan + realAssetLoan + realAssetInstallment;
 
     const totalAssets = savings + investment + realEstate + realAsset;
     const netWorth = totalAssets - debt;
 
     return {
-      savings, investment,
-      realEstate, realEstateGross, realEstateLoan,
-      realAsset, realAssetGross, realAssetInstallment,
-      debt, unsecuredDebt, totalAssets, netWorth
+      savings,
+      investment,
+      realEstate,
+      realEstateGross,
+      realEstateLoan,
+      realAsset,
+      realAssetGross,
+      realAssetInstallment,
+      debt,
+      unsecuredDebt,
+      totalAssets,
+      netWorth,
     };
   }, [items, accountValues, linkedSavingsTotal]);
 
@@ -2951,17 +3918,19 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
   // 현재 탭의 항목들
   const currentItems = useMemo(() => {
-    const typeValues = ITEM_TYPES[activeTab].map(t => t.value);
+    const typeValues = ITEM_TYPES[activeTab].map((t) => t.value);
     // realEstate는 기존 real_estate도 포함
     const additionalTypes = activeTab === "realEstate" ? ["real_estate"] : [];
     const allTypes = [...typeValues, ...additionalTypes];
     const category = activeTab === "debt" ? "debt" : "asset";
 
-    let filtered = items.filter(i => i.category === category && allTypes.includes(i.item_type));
+    let filtered = items.filter(
+      (i) => i.category === category && allTypes.includes(i.item_type),
+    );
 
     // 부채 탭에서는 자산에 연결된 부채 제외 (금융 부채만 표시)
     if (activeTab === "debt") {
-      filtered = filtered.filter(i => {
+      filtered = filtered.filter((i) => {
         const meta = i.metadata as Record<string, unknown>;
         return !meta?.source; // source가 없는 것만 (금융 부채)
       });
@@ -2971,27 +3940,59 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   }, [items, activeTab]);
 
   // 차트 데이터 - 순자산 (메인) - 부채 포함
-  const hasData = totals.savings > 0 || totals.investment > 0 || totals.realEstate > 0 || totals.realAsset > 0 || totals.unsecuredDebt > 0;
+  const hasData =
+    totals.savings > 0 ||
+    totals.investment > 0 ||
+    totals.realEstate > 0 ||
+    totals.realAsset > 0 ||
+    totals.unsecuredDebt > 0;
   const chartData = {
-    labels: hasData ? ["저축", "투자", "부동산", "실물 자산", "금융 부채"] : ["데이터 없음"],
-    datasets: [{
-      data: hasData
-        ? [totals.savings || 0.01, totals.investment || 0.01, totals.realEstate || 0.01, totals.realAsset || 0.01, totals.unsecuredDebt || 0.01]
-        : [1],
-      backgroundColor: hasData
-        ? [categoryColors.savings, categoryColors.investment, categoryColors.realEstate, categoryColors.realAsset, categoryColors.debt]
-        : [chartScaleColors.emptyState],
-      borderWidth: 3,
-      borderColor: chartScaleColors.doughnutBorder,
-    }],
+    labels: hasData
+      ? ["저축", "투자", "부동산", "실물 자산", "금융 부채"]
+      : ["데이터 없음"],
+    datasets: [
+      {
+        data: hasData
+          ? [
+              totals.savings || 0.01,
+              totals.investment || 0.01,
+              totals.realEstate || 0.01,
+              totals.realAsset || 0.01,
+              totals.unsecuredDebt || 0.01,
+            ]
+          : [1],
+        backgroundColor: hasData
+          ? [
+              categoryColors.savings,
+              categoryColors.investment,
+              categoryColors.realEstate,
+              categoryColors.realAsset,
+              categoryColors.debt,
+            ]
+          : [chartScaleColors.emptyState],
+        borderWidth: 3,
+        borderColor: chartScaleColors.doughnutBorder,
+      },
+    ],
   };
 
   // 부동산 유형별 데이터
   const realEstateBreakdown = useMemo(() => {
     const breakdown = new Map<string, number>();
     items
-      .filter(i => i.category === "asset" && ["real_estate", "apartment", "house", "officetel", "land", "commercial"].includes(i.item_type))
-      .forEach(item => {
+      .filter(
+        (i) =>
+          i.category === "asset" &&
+          [
+            "real_estate",
+            "apartment",
+            "house",
+            "officetel",
+            "land",
+            "commercial",
+          ].includes(i.item_type),
+      )
+      .forEach((item) => {
         const current = breakdown.get(item.item_type) || 0;
         breakdown.set(item.item_type, current + item.amount);
       });
@@ -3000,15 +4001,27 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
   const realEstateChartData = useMemo(() => {
     const hasRealEstate = totals.realEstate > 0;
-    const entries = Array.from(realEstateBreakdown.entries()).filter(([, amount]) => amount > 0);
+    const entries = Array.from(realEstateBreakdown.entries()).filter(
+      ([, amount]) => amount > 0,
+    );
 
     return {
-      labels: hasRealEstate ? entries.map(([type]) => ITEM_TYPES.realEstate.find(t => t.value === type)?.label || type) : ["데이터 없음"],
-      datasets: [{
-        data: hasRealEstate ? entries.map(([, amount]) => amount) : [1],
-        backgroundColor: hasRealEstate ? categoryShades.realEstate.slice(0, entries.length) : [chartScaleColors.emptyState],
-        borderWidth: 0,
-      }],
+      labels: hasRealEstate
+        ? entries.map(
+            ([type]) =>
+              ITEM_TYPES.realEstate.find((t) => t.value === type)?.label ||
+              type,
+          )
+        : ["데이터 없음"],
+      datasets: [
+        {
+          data: hasRealEstate ? entries.map(([, amount]) => amount) : [1],
+          backgroundColor: hasRealEstate
+            ? categoryShades.realEstate.slice(0, entries.length)
+            : [chartScaleColors.emptyState],
+          borderWidth: 0,
+        },
+      ],
     };
   }, [realEstateBreakdown, totals.realEstate, categoryShades.realEstate]);
 
@@ -3016,8 +4029,12 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   const realAssetBreakdown = useMemo(() => {
     const breakdown = new Map<string, number>();
     items
-      .filter(i => i.category === "asset" && ["car", "precious_metal", "art", "other"].includes(i.item_type))
-      .forEach(item => {
+      .filter(
+        (i) =>
+          i.category === "asset" &&
+          ["car", "precious_metal", "art", "other"].includes(i.item_type),
+      )
+      .forEach((item) => {
         const current = breakdown.get(item.item_type) || 0;
         breakdown.set(item.item_type, current + item.amount);
       });
@@ -3026,15 +4043,26 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
   const realAssetChartData = useMemo(() => {
     const hasRealAsset = totals.realAsset > 0;
-    const entries = Array.from(realAssetBreakdown.entries()).filter(([, amount]) => amount > 0);
+    const entries = Array.from(realAssetBreakdown.entries()).filter(
+      ([, amount]) => amount > 0,
+    );
 
     return {
-      labels: hasRealAsset ? entries.map(([type]) => ITEM_TYPES.realAsset.find(t => t.value === type)?.label || type) : ["데이터 없음"],
-      datasets: [{
-        data: hasRealAsset ? entries.map(([, amount]) => amount) : [1],
-        backgroundColor: hasRealAsset ? categoryShades.realAsset.slice(0, entries.length) : [chartScaleColors.emptyState],
-        borderWidth: 0,
-      }],
+      labels: hasRealAsset
+        ? entries.map(
+            ([type]) =>
+              ITEM_TYPES.realAsset.find((t) => t.value === type)?.label || type,
+          )
+        : ["데이터 없음"],
+      datasets: [
+        {
+          data: hasRealAsset ? entries.map(([, amount]) => amount) : [1],
+          backgroundColor: hasRealAsset
+            ? categoryShades.realAsset.slice(0, entries.length)
+            : [chartScaleColors.emptyState],
+          borderWidth: 0,
+        },
+      ],
     };
   }, [realAssetBreakdown, totals.realAsset, categoryShades.realAsset]);
 
@@ -3042,8 +4070,8 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   const debtBreakdown = useMemo(() => {
     const breakdown = new Map<string, number>();
     items
-      .filter(i => i.category === "debt")
-      .forEach(item => {
+      .filter((i) => i.category === "debt")
+      .forEach((item) => {
         const current = breakdown.get(item.item_type) || 0;
         breakdown.set(item.item_type, current + item.amount);
       });
@@ -3052,16 +4080,27 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
   const debtChartData = useMemo(() => {
     const hasDebt = totals.debt > 0;
-    const entries = Array.from(debtBreakdown.entries()).filter(([, amount]) => amount > 0);
+    const entries = Array.from(debtBreakdown.entries()).filter(
+      ([, amount]) => amount > 0,
+    );
 
     return {
-      labels: hasDebt ? entries.map(([type]) => ITEM_TYPES.debt.find(t => t.value === type)?.label || type) : ["데이터 없음"],
-      datasets: [{
-        data: hasDebt ? entries.map(([, amount]) => amount) : [1],
-        backgroundColor: hasDebt ? categoryShades.debt.slice(0, entries.length) : [chartScaleColors.emptyState],
-        borderWidth: 2,
-        borderColor: chartScaleColors.doughnutBorder,
-      }],
+      labels: hasDebt
+        ? entries.map(
+            ([type]) =>
+              ITEM_TYPES.debt.find((t) => t.value === type)?.label || type,
+          )
+        : ["데이터 없음"],
+      datasets: [
+        {
+          data: hasDebt ? entries.map(([, amount]) => amount) : [1],
+          backgroundColor: hasDebt
+            ? categoryShades.debt.slice(0, entries.length)
+            : [chartScaleColors.emptyState],
+          borderWidth: 2,
+          borderColor: chartScaleColors.doughnutBorder,
+        },
+      ],
     };
   }, [debtBreakdown, totals.debt, categoryShades.debt]);
 
@@ -3086,7 +4125,8 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
         cashItems.push({
           label: data.accountName,
           value: Math.round(data.value / 10000), // 원 -> 만원
-          color: categoryShades.investment[idx % categoryShades.investment.length],
+          color:
+            categoryShades.investment[idx % categoryShades.investment.length],
         });
       }
     });
@@ -3095,16 +4135,28 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     const hasData = cashItems.length > 0;
 
     return {
-      labels: hasData ? cashItems.map(i => i.label) : ["데이터 없음"],
-      datasets: [{
-        data: hasData ? cashItems.map(i => i.value) : [1],
-        backgroundColor: hasData ? cashItems.map(i => i.color) : [chartScaleColors.emptyState],
-        borderWidth: 2,
-        borderColor: chartScaleColors.doughnutBorder,
-      }],
+      labels: hasData ? cashItems.map((i) => i.label) : ["데이터 없음"],
+      datasets: [
+        {
+          data: hasData ? cashItems.map((i) => i.value) : [1],
+          backgroundColor: hasData
+            ? cashItems.map((i) => i.color)
+            : [chartScaleColors.emptyState],
+          borderWidth: 2,
+          borderColor: chartScaleColors.doughnutBorder,
+        },
+      ],
       total,
     };
-  }, [savingsAccountValues, accountValues, totals.savings, totals.investment, categoryShades.savings, categoryShades.investment, chartScaleColors]);
+  }, [
+    savingsAccountValues,
+    accountValues,
+    totals.savings,
+    totals.investment,
+    categoryShades.savings,
+    categoryShades.investment,
+    chartScaleColors,
+  ]);
 
   // 실물 자산 차트 (부동산 + 실물 자산 세부 항목)
   const realAssetTotalChartData = useMemo(() => {
@@ -3112,32 +4164,52 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
     // 부동산 항목들
     items
-      .filter(i => i.category === "asset" &&
-        ((i.metadata as Record<string, unknown>)?.purpose === "residential" ||
-         (i.metadata as Record<string, unknown>)?.purpose === "investment" ||
-         ["apartment", "house", "officetel", "land", "commercial"].includes(i.item_type)))
+      .filter(
+        (i) =>
+          i.category === "asset" &&
+          ((i.metadata as Record<string, unknown>)?.purpose === "residential" ||
+            (i.metadata as Record<string, unknown>)?.purpose === "investment" ||
+            ["apartment", "house", "officetel", "land", "commercial"].includes(
+              i.item_type,
+            )),
+      )
       .forEach((item, idx) => {
         if (item.amount > 0) {
           const meta = item.metadata as Record<string, unknown>;
-          const label = item.title || (meta?.housing_type as string) || ITEM_TYPES.realEstate.find(t => t.value === item.item_type)?.label || item.item_type;
+          const label =
+            item.title ||
+            (meta?.housing_type as string) ||
+            ITEM_TYPES.realEstate.find((t) => t.value === item.item_type)
+              ?.label ||
+            item.item_type;
           realItems.push({
             label,
             value: item.amount,
-            color: categoryShades.realEstate[idx % categoryShades.realEstate.length],
+            color:
+              categoryShades.realEstate[idx % categoryShades.realEstate.length],
           });
         }
       });
 
     // 실물 자산 항목들
     items
-      .filter(i => i.category === "asset" && ["car", "precious_metal", "art", "other"].includes(i.item_type))
+      .filter(
+        (i) =>
+          i.category === "asset" &&
+          ["car", "precious_metal", "art", "other"].includes(i.item_type),
+      )
       .forEach((item, idx) => {
         if (item.amount > 0) {
-          const label = item.title || ITEM_TYPES.realAsset.find(t => t.value === item.item_type)?.label || item.item_type;
+          const label =
+            item.title ||
+            ITEM_TYPES.realAsset.find((t) => t.value === item.item_type)
+              ?.label ||
+            item.item_type;
           realItems.push({
             label,
             value: item.amount,
-            color: categoryShades.realAsset[idx % categoryShades.realAsset.length],
+            color:
+              categoryShades.realAsset[idx % categoryShades.realAsset.length],
           });
         }
       });
@@ -3146,16 +4218,27 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     const hasData = realItems.length > 0;
 
     return {
-      labels: hasData ? realItems.map(i => i.label) : ["데이터 없음"],
-      datasets: [{
-        data: hasData ? realItems.map(i => i.value) : [1],
-        backgroundColor: hasData ? realItems.map(i => i.color) : [chartScaleColors.emptyState],
-        borderWidth: 2,
-        borderColor: chartScaleColors.doughnutBorder,
-      }],
+      labels: hasData ? realItems.map((i) => i.label) : ["데이터 없음"],
+      datasets: [
+        {
+          data: hasData ? realItems.map((i) => i.value) : [1],
+          backgroundColor: hasData
+            ? realItems.map((i) => i.color)
+            : [chartScaleColors.emptyState],
+          borderWidth: 2,
+          borderColor: chartScaleColors.doughnutBorder,
+        },
+      ],
       total,
     };
-  }, [items, totals.realEstate, totals.realAsset, categoryShades.realEstate, categoryShades.realAsset, chartScaleColors]);
+  }, [
+    items,
+    totals.realEstate,
+    totals.realAsset,
+    categoryShades.realEstate,
+    categoryShades.realAsset,
+    chartScaleColors,
+  ]);
 
   // 총 부채 차트 (모든 부채 세부 항목)
   const totalDebtChartData = useMemo(() => {
@@ -3163,10 +4246,13 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
     // 금융 부채 항목
     items
-      .filter(i => i.category === "debt")
+      .filter((i) => i.category === "debt")
       .forEach((item, idx) => {
         if (item.amount > 0) {
-          const label = item.title || ITEM_TYPES.debt.find(t => t.value === item.item_type)?.label || item.item_type;
+          const label =
+            item.title ||
+            ITEM_TYPES.debt.find((t) => t.value === item.item_type)?.label ||
+            item.item_type;
           debtItems.push({
             label,
             value: item.amount,
@@ -3178,15 +4264,23 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     // 부동산 대출 (metadata에 포함된 주담대)
     let colorIdx = debtItems.length;
     items
-      .filter(i => i.category === "asset" &&
-        ((i.metadata as Record<string, unknown>)?.purpose === "residential" ||
-         (i.metadata as Record<string, unknown>)?.purpose === "investment" ||
-         ["apartment", "house", "officetel", "land", "commercial"].includes(i.item_type)))
+      .filter(
+        (i) =>
+          i.category === "asset" &&
+          ((i.metadata as Record<string, unknown>)?.purpose === "residential" ||
+            (i.metadata as Record<string, unknown>)?.purpose === "investment" ||
+            ["apartment", "house", "officetel", "land", "commercial"].includes(
+              i.item_type,
+            )),
+      )
       .forEach((item) => {
         const meta = item.metadata as Record<string, unknown>;
-        const loanAmount = (meta?.has_loan && meta?.loan_amount) ? (meta.loan_amount as number) : 0;
+        const loanAmount =
+          meta?.has_loan && meta?.loan_amount
+            ? (meta.loan_amount as number)
+            : 0;
         if (loanAmount > 0) {
-          const title = item.title || '부동산';
+          const title = item.title || "부동산";
           debtItems.push({
             label: `${title} 대출`,
             value: loanAmount,
@@ -3198,12 +4292,19 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
     // 실물자산 할부
     items
-      .filter(i => i.category === "asset" && ["car", "precious_metal", "art", "other"].includes(i.item_type))
+      .filter(
+        (i) =>
+          i.category === "asset" &&
+          ["car", "precious_metal", "art", "other"].includes(i.item_type),
+      )
       .forEach((item) => {
         const meta = item.metadata as Record<string, unknown>;
-        const installment = (meta?.has_installment && meta?.installment_remaining) ? (meta.installment_remaining as number) : 0;
+        const installment =
+          meta?.has_installment && meta?.installment_remaining
+            ? (meta.installment_remaining as number)
+            : 0;
         if (installment > 0) {
-          const title = item.title || '실물자산';
+          const title = item.title || "실물자산";
           debtItems.push({
             label: `${title} 할부`,
             value: installment,
@@ -3217,13 +4318,17 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     const hasData = debtItems.length > 0;
 
     return {
-      labels: hasData ? debtItems.map(i => i.label) : ["데이터 없음"],
-      datasets: [{
-        data: hasData ? debtItems.map(i => i.value) : [1],
-        backgroundColor: hasData ? debtItems.map(i => i.color) : [chartScaleColors.emptyState],
-        borderWidth: 2,
-        borderColor: chartScaleColors.doughnutBorder,
-      }],
+      labels: hasData ? debtItems.map((i) => i.label) : ["데이터 없음"],
+      datasets: [
+        {
+          data: hasData ? debtItems.map((i) => i.value) : [1],
+          backgroundColor: hasData
+            ? debtItems.map((i) => i.color)
+            : [chartScaleColors.emptyState],
+          borderWidth: 2,
+          borderColor: chartScaleColors.doughnutBorder,
+        },
+      ],
       total,
     };
   }, [items, totals.debt, categoryShades.debt, chartScaleColors]);
@@ -3240,10 +4345,14 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
           const { chart, tooltip } = context;
 
           // 차트 섹션 전체를 컨테이너로 사용 (overflow 문제 해결)
-          const chartSection = chart.canvas.closest(`.${styles.chartSection}`) as HTMLElement;
+          const chartSection = chart.canvas.closest(
+            `.${styles.chartSection}`,
+          ) as HTMLElement;
           if (!chartSection) return;
 
-          let tooltipEl = chartSection.querySelector(`#${tooltipId}`) as HTMLDivElement | null;
+          let tooltipEl = chartSection.querySelector(
+            `#${tooltipId}`,
+          ) as HTMLDivElement | null;
 
           if (!tooltipEl) {
             tooltipEl = document.createElement("div");
@@ -3302,7 +4411,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
           // 마우스 이벤트에서 실제 커서 위치 가져오기
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const mouseEvent = (chart as any)._lastEvent?.native as MouseEvent | undefined;
+          const mouseEvent = (chart as any)._lastEvent?.native as
+            | MouseEvent
+            | undefined;
 
           let left: number;
           let top: number;
@@ -3314,8 +4425,13 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
           } else {
             // fallback: caret 위치 사용
             const canvasRect = chart.canvas.getBoundingClientRect();
-            left = (canvasRect.left - sectionRect.left) + tooltip.caretX;
-            top = (canvasRect.top - sectionRect.top) + tooltip.caretY - tooltipHeight - 10;
+            left = canvasRect.left - sectionRect.left + tooltip.caretX;
+            top =
+              canvasRect.top -
+              sectionRect.top +
+              tooltip.caretY -
+              tooltipHeight -
+              10;
           }
 
           // 상단 오버플로우 체크
@@ -3325,7 +4441,11 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
           // 좌우 오버플로우 체크
           if (left + tooltipWidth > sectionRect.width - 10) {
-            left = (mouseEvent?.clientX ?? sectionRect.width) - sectionRect.left - tooltipWidth - 15;
+            left =
+              (mouseEvent?.clientX ?? sectionRect.width) -
+              sectionRect.left -
+              tooltipWidth -
+              15;
           }
           if (left < 10) {
             left = 10;
@@ -3376,13 +4496,18 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   };
 
   // 항목 업데이트 (DB에 바로 저장)
-  const handleUpdateItem = async (id: string, updates: Partial<FinancialSnapshotItem>) => {
+  const handleUpdateItem = async (
+    id: string,
+    updates: Partial<FinancialSnapshotItem>,
+  ) => {
     // undefined 값은 제외하고 실제 업데이트할 필드만 전달
     const cleanUpdates: Partial<FinancialSnapshotItem> = {};
-    if (updates.item_type !== undefined) cleanUpdates.item_type = updates.item_type;
+    if (updates.item_type !== undefined)
+      cleanUpdates.item_type = updates.item_type;
     if (updates.title !== undefined) cleanUpdates.title = updates.title;
     if (updates.amount !== undefined) cleanUpdates.amount = updates.amount;
-    if (updates.metadata !== undefined) cleanUpdates.metadata = updates.metadata;
+    if (updates.metadata !== undefined)
+      cleanUpdates.metadata = updates.metadata;
 
     await updateMutation.mutateAsync({
       id,
@@ -3401,7 +4526,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     if (!currentSnapshot) return;
     if (createMutation.isPending) return;
 
-    const typeConfig = MODAL_ITEMS.realEstate.items.find(i => i.value === itemType);
+    const typeConfig = MODAL_ITEMS.realEstate.items.find(
+      (i) => i.value === itemType,
+    );
     const newItem = await createMutation.mutateAsync({
       snapshot_id: currentSnapshot.id,
       category: "asset",
@@ -3419,7 +4546,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
   // 투자용 부동산 편집 시작
   const startEditInvestment = (id: string) => {
-    const item = items.find(i => i.id === id);
+    const item = items.find((i) => i.id === id);
     if (!item) return;
 
     const meta = item.metadata as Record<string, unknown>;
@@ -3482,8 +4609,10 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     // 대출이 있으면 부채에 추가/업데이트
     if (editData.hasLoan && editData.loanAmount) {
       const existingDebt = items.find(
-        item => item.category === "debt" &&
-                (item.metadata as Record<string, unknown>)?.source === `investment-${itemId}`
+        (item) =>
+          item.category === "debt" &&
+          (item.metadata as Record<string, unknown>)?.source ===
+            `investment-${itemId}`,
       );
 
       const debtMetadata = {
@@ -3498,7 +4627,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
         updateMutation.mutate({
           id: existingDebt.id,
           updates: {
-            title: `${editData.title || '투자용 부동산'} 담보대출`,
+            title: `${editData.title || "투자용 부동산"} 담보대출`,
             amount: editData.loanAmount,
             metadata: debtMetadata,
           },
@@ -3508,7 +4637,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
           snapshot_id: currentSnapshot.id,
           category: "debt",
           item_type: "mortgage",
-          title: `${editData.title || '투자용 부동산'} 담보대출`,
+          title: `${editData.title || "투자용 부동산"} 담보대출`,
           amount: editData.loanAmount,
           owner: "self",
           metadata: debtMetadata,
@@ -3517,8 +4646,10 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     } else {
       // 대출이 없으면 기존 연동 부채 삭제
       const existingDebt = items.find(
-        item => item.category === "debt" &&
-                (item.metadata as Record<string, unknown>)?.source === `investment-${itemId}`
+        (item) =>
+          item.category === "debt" &&
+          (item.metadata as Record<string, unknown>)?.source ===
+            `investment-${itemId}`,
       );
       if (existingDebt) {
         deleteMutation.mutate(existingDebt.id);
@@ -3543,7 +4674,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     if (!currentSnapshot) return;
     if (createMutation.isPending) return;
 
-    const typeConfig = MODAL_ITEMS.realAsset.items.find(i => i.value === itemType);
+    const typeConfig = MODAL_ITEMS.realAsset.items.find(
+      (i) => i.value === itemType,
+    );
     const newItem = await createMutation.mutateAsync({
       snapshot_id: currentSnapshot.id,
       category: "asset",
@@ -3560,7 +4693,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
   // 실물 자산 편집 시작
   const startEditRealAsset = (id: string) => {
-    const item = items.find(i => i.id === id);
+    const item = items.find((i) => i.id === id);
     if (!item) return;
 
     const meta = item.metadata as Record<string, unknown>;
@@ -3618,8 +4751,10 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     // 담보대출이 있으면 부채에 추가/업데이트
     if (editData.hasLoan && editData.loanAmount) {
       const existingDebt = items.find(
-        item => item.category === "debt" &&
-                (item.metadata as Record<string, unknown>)?.source === `realasset-${itemId}`
+        (item) =>
+          item.category === "debt" &&
+          (item.metadata as Record<string, unknown>)?.source ===
+            `realasset-${itemId}`,
       );
 
       const debtMetadata = {
@@ -3634,7 +4769,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
         updateMutation.mutate({
           id: existingDebt.id,
           updates: {
-            title: `${editData.title || '실물 자산'} 담보대출`,
+            title: `${editData.title || "실물 자산"} 담보대출`,
             amount: editData.loanAmount,
             metadata: debtMetadata,
           },
@@ -3644,7 +4779,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
           snapshot_id: currentSnapshot.id,
           category: "debt",
           item_type: "mortgage",
-          title: `${editData.title || '실물 자산'} 담보대출`,
+          title: `${editData.title || "실물 자산"} 담보대출`,
           amount: editData.loanAmount,
           owner: "self",
           metadata: debtMetadata,
@@ -3653,8 +4788,10 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     } else {
       // 담보대출이 없으면 기존 연동 부채 삭제
       const existingDebt = items.find(
-        item => item.category === "debt" &&
-                (item.metadata as Record<string, unknown>)?.source === `realasset-${itemId}`
+        (item) =>
+          item.category === "debt" &&
+          (item.metadata as Record<string, unknown>)?.source ===
+            `realasset-${itemId}`,
       );
       if (existingDebt) {
         deleteMutation.mutate(existingDebt.id);
@@ -3679,7 +4816,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     if (!currentSnapshot) return;
     if (createMutation.isPending) return;
 
-    const typeConfig = MODAL_ITEMS.debt.items.find(i => i.value === itemType);
+    const typeConfig = MODAL_ITEMS.debt.items.find((i) => i.value === itemType);
     const newItem = await createMutation.mutateAsync({
       snapshot_id: currentSnapshot.id,
       category: "debt",
@@ -3696,7 +4833,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
   // 금융 부채 편집 시작
   const startEditDebt = (id: string) => {
-    const item = items.find(i => i.id === id);
+    const item = items.find((i) => i.id === id);
     if (!item) return;
 
     const meta = item.metadata as Record<string, unknown>;
@@ -3717,7 +4854,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   const handleAddOtherInvestment = async (itemType: string) => {
     if (!currentSnapshot) return;
 
-    const typeConfig = ITEM_TYPES.investment.find(t => t.value === itemType);
+    const typeConfig = ITEM_TYPES.investment.find((t) => t.value === itemType);
     await createMutation.mutateAsync({
       snapshot_id: currentSnapshot.id,
       category: "asset",
@@ -3794,8 +4931,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   const startEditResidence = () => {
     // 기존 거주용 데이터가 있으면 로드
     const existingResidence = items.find(
-      item => item.category === "asset" &&
-              (item.metadata as Record<string, unknown>)?.purpose === "residential"
+      (item) =>
+        item.category === "asset" &&
+        (item.metadata as Record<string, unknown>)?.purpose === "residential",
     );
 
     if (existingResidence) {
@@ -3803,7 +4941,8 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
       setEditResidence({
         id: existingResidence.id,
         housingType: (meta?.housing_type as HousingType) || null,
-        currentValue: (meta?.current_value as number) || existingResidence.amount || 0,
+        currentValue:
+          (meta?.current_value as number) || existingResidence.amount || 0,
         purchaseYear: (meta?.purchase_year as number) || null,
         purchaseMonth: (meta?.purchase_month as number) || null,
         purchasePrice: (meta?.purchase_price as number) || null,
@@ -3840,8 +4979,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     isSavingItemsRef.current = true;
 
     const existingResidence = items.find(
-      item => item.category === "asset" &&
-              (item.metadata as Record<string, unknown>)?.purpose === "residential"
+      (item) =>
+        item.category === "asset" &&
+        (item.metadata as Record<string, unknown>)?.purpose === "residential",
     );
 
     const metadata = {
@@ -3863,9 +5003,8 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
     // 자가/전세/월세는 자산으로 계산 (무상만 제외)
     // 자가: 시세, 전세/월세: 보증금 (돌려받을 돈이므로 자산)
-    const amount = editData.housingType === "무상"
-      ? 0
-      : (editData.currentValue || 0);
+    const amount =
+      editData.housingType === "무상" ? 0 : editData.currentValue || 0;
 
     if (existingResidence) {
       // 기존 항목 수정
@@ -3893,11 +5032,13 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     // 대출이 있으면 부채에도 추가/업데이트
     if (editData.hasLoan && editData.loanAmount) {
       const debtType = editData.housingType === "자가" ? "mortgage" : "jeonse";
-      const debtTitle = editData.housingType === "자가" ? "주택담보대출" : "전월세 보증금 대출";
+      const debtTitle =
+        editData.housingType === "자가" ? "주택담보대출" : "전월세 보증금 대출";
 
       const existingDebt = items.find(
-        item => item.category === "debt" &&
-                (item.metadata as Record<string, unknown>)?.source === "residence"
+        (item) =>
+          item.category === "debt" &&
+          (item.metadata as Record<string, unknown>)?.source === "residence",
       );
 
       const debtMetadata = {
@@ -3932,8 +5073,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
     } else {
       // 대출이 없으면 기존 거주 관련 부채 삭제
       const existingDebt = items.find(
-        item => item.category === "debt" &&
-                (item.metadata as Record<string, unknown>)?.source === "residence"
+        (item) =>
+          item.category === "debt" &&
+          (item.metadata as Record<string, unknown>)?.source === "residence",
       );
       if (existingDebt) {
         deleteMutation.mutate(existingDebt.id);
@@ -3956,27 +5098,34 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
   // 거주용 부동산 데이터 가져오기
   const existingResidenceItem = useMemo(() => {
     return items.find(
-      item => item.category === "asset" &&
-              (item.metadata as Record<string, unknown>)?.purpose === "residential"
+      (item) =>
+        item.category === "asset" &&
+        (item.metadata as Record<string, unknown>)?.purpose === "residential",
     );
   }, [items]);
 
   // 투자용 부동산 목록
   const investmentItems = useMemo(() => {
     return items.filter(
-      item => item.category === "asset" &&
-              (item.metadata as Record<string, unknown>)?.purpose === "investment"
+      (item) =>
+        item.category === "asset" &&
+        (item.metadata as Record<string, unknown>)?.purpose === "investment",
     );
   }, [items]);
 
   // 탭별 금액
   const getTabAmount = (tabId: TabType): number => {
     switch (tabId) {
-      case "savings": return totals.savings;
-      case "investment": return totals.investment;
-      case "realEstate": return totals.realEstate;
-      case "realAsset": return totals.realAsset;
-      case "debt": return totals.unsecuredDebt;
+      case "savings":
+        return totals.savings;
+      case "investment":
+        return totals.investment;
+      case "realEstate":
+        return totals.realEstate;
+      case "realAsset":
+        return totals.realAsset;
+      case "debt":
+        return totals.unsecuredDebt;
     }
   };
 
@@ -3990,19 +5139,27 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
             <div className={styles.chartBoxMain}>
               <div className={styles.skeletonChartMain} />
               <div className={styles.chartCenter}>
-                <span className={`${styles.skeleton} ${styles.skeletonChartLabel}`} />
-                <span className={`${styles.skeleton} ${styles.skeletonChartAmount}`} />
+                <span
+                  className={`${styles.skeleton} ${styles.skeletonChartLabel}`}
+                />
+                <span
+                  className={`${styles.skeleton} ${styles.skeletonChartAmount}`}
+                />
               </div>
             </div>
           </div>
           <div className={styles.subChartsGroup}>
-            {[1, 2, 3].map(i => (
+            {[1, 2, 3].map((i) => (
               <div key={i} className={styles.chartCardSmall}>
                 <div className={styles.chartBoxSmall}>
                   <div className={styles.skeletonChartSmall} />
                   <div className={styles.chartCenter}>
-                    <span className={`${styles.skeleton} ${styles.skeletonChartLabelSmall}`} />
-                    <span className={`${styles.skeleton} ${styles.skeletonChartAmountSmall}`} />
+                    <span
+                      className={`${styles.skeleton} ${styles.skeletonChartLabelSmall}`}
+                    />
+                    <span
+                      className={`${styles.skeleton} ${styles.skeletonChartAmountSmall}`}
+                    />
                   </div>
                 </div>
               </div>
@@ -4013,7 +5170,10 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
         {/* 탭 스켈레톤 */}
         <div className={styles.tabsSection}>
           {TABS.map((tab) => (
-            <div key={tab.id} className={`${styles.skeleton} ${styles.skeletonTab}`} />
+            <div
+              key={tab.id}
+              className={`${styles.skeleton} ${styles.skeletonTab}`}
+            />
           ))}
         </div>
 
@@ -4021,14 +5181,20 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
         <div className={styles.contentSection}>
           <div className={styles.simpleSection}>
             <div className={styles.simpleSectionHeader}>
-              <span className={`${styles.skeleton} ${styles.skeletonSectionTitle}`} />
+              <span
+                className={`${styles.skeleton} ${styles.skeletonSectionTitle}`}
+              />
               <span className={`${styles.skeleton} ${styles.skeletonTotal}`} />
             </div>
             <div className={styles.skeletonContentList}>
-              {[1, 2, 3].map(i => (
+              {[1, 2, 3].map((i) => (
                 <div key={i} className={styles.skeletonContentItem}>
-                  <span className={`${styles.skeleton} ${styles.skeletonName}`} />
-                  <span className={`${styles.skeleton} ${styles.skeletonAmount}`} />
+                  <span
+                    className={`${styles.skeleton} ${styles.skeletonName}`}
+                  />
+                  <span
+                    className={`${styles.skeleton} ${styles.skeletonAmount}`}
+                  />
                 </div>
               ))}
             </div>
@@ -4048,28 +5214,52 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
             <Doughnut data={chartData} options={chartOptions} />
             <div
               className={styles.chartCenter}
-              onClick={() => setExpandedChart(expandedChart === 'netWorth' ? null : 'netWorth')}
+              onClick={() =>
+                setExpandedChart(
+                  expandedChart === "netWorth" ? null : "netWorth",
+                )
+              }
               data-chart-toggle
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: "pointer" }}
             >
               <span className={styles.chartLabel}>순자산</span>
-              <span className={styles.chartAmount}>{formatMoney(totals.netWorth)}</span>
+              <span className={styles.chartAmount}>
+                {formatMoney(totals.netWorth)}
+              </span>
             </div>
           </div>
-          {expandedChart === 'netWorth' && (
-            <div ref={chartPopoverRef} className={styles.chartPopover} style={{ background: chartScaleColors.tooltipBg, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: `1px solid ${chartScaleColors.tooltipBorder}`, boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)' }}>
-              {(chartData.labels as string[]).map((label: string, idx: number) => {
-                const value = chartData.datasets[0].data[idx];
-                const color = chartData.datasets[0].backgroundColor[idx];
-                if (!value || value <= 0 || label === '데이터 없음') return null;
-                return (
-                  <div key={idx} className={styles.chartPopoverItem}>
-                    <span className={styles.chartPopoverDot} style={{ background: color }} />
-                    <span className={styles.chartPopoverLabel}>{label}</span>
-                    <span className={styles.chartPopoverValue}>{formatMoney(value)}</span>
-                  </div>
-                );
-              })}
+          {expandedChart === "netWorth" && (
+            <div
+              ref={chartPopoverRef}
+              className={styles.chartPopover}
+              style={{
+                background: chartScaleColors.tooltipBg,
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+                border: `1px solid ${chartScaleColors.tooltipBorder}`,
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+              }}
+            >
+              {(chartData.labels as string[]).map(
+                (label: string, idx: number) => {
+                  const value = chartData.datasets[0].data[idx];
+                  const color = chartData.datasets[0].backgroundColor[idx];
+                  if (!value || value <= 0 || label === "데이터 없음")
+                    return null;
+                  return (
+                    <div key={idx} className={styles.chartPopoverItem}>
+                      <span
+                        className={styles.chartPopoverDot}
+                        style={{ background: color }}
+                      />
+                      <span className={styles.chartPopoverLabel}>{label}</span>
+                      <span className={styles.chartPopoverValue}>
+                        {formatMoney(value)}
+                      </span>
+                    </div>
+                  );
+                },
+              )}
             </div>
           )}
         </div>
@@ -4081,59 +5271,116 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
               <Doughnut data={cashAssetChartData} options={cashChartOptions} />
               <div
                 className={styles.chartCenter}
-                onClick={() => setExpandedChart(expandedChart === 'financial' ? null : 'financial')}
+                onClick={() =>
+                  setExpandedChart(
+                    expandedChart === "financial" ? null : "financial",
+                  )
+                }
                 data-chart-toggle
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: "pointer" }}
               >
                 <span className={styles.chartLabelSmall}>금융 자산</span>
-                <span className={styles.chartAmountSmall}>{formatMoney(cashAssetChartData.total)}</span>
+                <span className={styles.chartAmountSmall}>
+                  {formatMoney(cashAssetChartData.total)}
+                </span>
               </div>
             </div>
-            {expandedChart === 'financial' && (
-              <div ref={chartPopoverRef} className={styles.chartPopover} style={{ background: chartScaleColors.tooltipBg, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: `1px solid ${chartScaleColors.tooltipBorder}`, boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)' }}>
-                {(cashAssetChartData.labels as string[]).map((label: string, idx: number) => {
-                  const value = cashAssetChartData.datasets[0].data[idx];
-                  const color = cashAssetChartData.datasets[0].backgroundColor[idx];
-                  if (!value || value <= 0 || label === '데이터 없음') return null;
-                  return (
-                    <div key={idx} className={styles.chartPopoverItem}>
-                      <span className={styles.chartPopoverDot} style={{ background: color }} />
-                      <span className={styles.chartPopoverLabel}>{label}</span>
-                      <span className={styles.chartPopoverValue}>{formatMoney(value)}</span>
-                    </div>
-                  );
-                })}
+            {expandedChart === "financial" && (
+              <div
+                ref={chartPopoverRef}
+                className={styles.chartPopover}
+                style={{
+                  background: chartScaleColors.tooltipBg,
+                  backdropFilter: "blur(6px)",
+                  WebkitBackdropFilter: "blur(6px)",
+                  border: `1px solid ${chartScaleColors.tooltipBorder}`,
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                }}
+              >
+                {(cashAssetChartData.labels as string[]).map(
+                  (label: string, idx: number) => {
+                    const value = cashAssetChartData.datasets[0].data[idx];
+                    const color =
+                      cashAssetChartData.datasets[0].backgroundColor[idx];
+                    if (!value || value <= 0 || label === "데이터 없음")
+                      return null;
+                    return (
+                      <div key={idx} className={styles.chartPopoverItem}>
+                        <span
+                          className={styles.chartPopoverDot}
+                          style={{ background: color }}
+                        />
+                        <span className={styles.chartPopoverLabel}>
+                          {label}
+                        </span>
+                        <span className={styles.chartPopoverValue}>
+                          {formatMoney(value)}
+                        </span>
+                      </div>
+                    );
+                  },
+                )}
               </div>
             )}
           </div>
 
           <div className={styles.chartCardSmall}>
             <div className={styles.chartBoxSmall}>
-              <Doughnut data={realAssetTotalChartData} options={realChartOptions} />
+              <Doughnut
+                data={realAssetTotalChartData}
+                options={realChartOptions}
+              />
               <div
                 className={styles.chartCenter}
-                onClick={() => setExpandedChart(expandedChart === 'realAsset' ? null : 'realAsset')}
+                onClick={() =>
+                  setExpandedChart(
+                    expandedChart === "realAsset" ? null : "realAsset",
+                  )
+                }
                 data-chart-toggle
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: "pointer" }}
               >
                 <span className={styles.chartLabelSmall}>실물 자산</span>
-                <span className={styles.chartAmountSmall}>{formatMoney(realAssetTotalChartData.total)}</span>
+                <span className={styles.chartAmountSmall}>
+                  {formatMoney(realAssetTotalChartData.total)}
+                </span>
               </div>
             </div>
-            {expandedChart === 'realAsset' && (
-              <div ref={chartPopoverRef} className={styles.chartPopover} style={{ background: chartScaleColors.tooltipBg, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: `1px solid ${chartScaleColors.tooltipBorder}`, boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)' }}>
-                {(realAssetTotalChartData.labels as string[]).map((label: string, idx: number) => {
-                  const value = realAssetTotalChartData.datasets[0].data[idx];
-                  const color = realAssetTotalChartData.datasets[0].backgroundColor[idx];
-                  if (!value || value <= 0 || label === '데이터 없음') return null;
-                  return (
-                    <div key={idx} className={styles.chartPopoverItem}>
-                      <span className={styles.chartPopoverDot} style={{ background: color }} />
-                      <span className={styles.chartPopoverLabel}>{label}</span>
-                      <span className={styles.chartPopoverValue}>{formatMoney(value)}</span>
-                    </div>
-                  );
-                })}
+            {expandedChart === "realAsset" && (
+              <div
+                ref={chartPopoverRef}
+                className={styles.chartPopover}
+                style={{
+                  background: chartScaleColors.tooltipBg,
+                  backdropFilter: "blur(6px)",
+                  WebkitBackdropFilter: "blur(6px)",
+                  border: `1px solid ${chartScaleColors.tooltipBorder}`,
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                }}
+              >
+                {(realAssetTotalChartData.labels as string[]).map(
+                  (label: string, idx: number) => {
+                    const value = realAssetTotalChartData.datasets[0].data[idx];
+                    const color =
+                      realAssetTotalChartData.datasets[0].backgroundColor[idx];
+                    if (!value || value <= 0 || label === "데이터 없음")
+                      return null;
+                    return (
+                      <div key={idx} className={styles.chartPopoverItem}>
+                        <span
+                          className={styles.chartPopoverDot}
+                          style={{ background: color }}
+                        />
+                        <span className={styles.chartPopoverLabel}>
+                          {label}
+                        </span>
+                        <span className={styles.chartPopoverValue}>
+                          {formatMoney(value)}
+                        </span>
+                      </div>
+                    );
+                  },
+                )}
               </div>
             )}
           </div>
@@ -4143,30 +5390,56 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
               <Doughnut data={totalDebtChartData} options={debtChartOptions} />
               <div
                 className={styles.chartCenter}
-                onClick={() => setExpandedChart(expandedChart === 'debt' ? null : 'debt')}
+                onClick={() =>
+                  setExpandedChart(expandedChart === "debt" ? null : "debt")
+                }
                 data-chart-toggle
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: "pointer" }}
               >
                 <span className={styles.chartLabelSmall}>부채</span>
-                <span className={styles.chartAmountSmall} style={{ color: "#64748b" }}>
+                <span
+                  className={styles.chartAmountSmall}
+                  style={{ color: "#64748b" }}
+                >
                   {formatMoney(totalDebtChartData.total)}
                 </span>
               </div>
             </div>
-            {expandedChart === 'debt' && (
-              <div ref={chartPopoverRef} className={styles.chartPopover} style={{ background: chartScaleColors.tooltipBg, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: `1px solid ${chartScaleColors.tooltipBorder}`, boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)' }}>
-                {(totalDebtChartData.labels as string[]).map((label: string, idx: number) => {
-                  const value = totalDebtChartData.datasets[0].data[idx];
-                  const color = totalDebtChartData.datasets[0].backgroundColor[idx];
-                  if (!value || value <= 0 || label === '데이터 없음') return null;
-                  return (
-                    <div key={idx} className={styles.chartPopoverItem}>
-                      <span className={styles.chartPopoverDot} style={{ background: color }} />
-                      <span className={styles.chartPopoverLabel}>{label}</span>
-                      <span className={styles.chartPopoverValue}>{formatMoney(value)}</span>
-                    </div>
-                  );
-                })}
+            {expandedChart === "debt" && (
+              <div
+                ref={chartPopoverRef}
+                className={styles.chartPopover}
+                style={{
+                  background: chartScaleColors.tooltipBg,
+                  backdropFilter: "blur(6px)",
+                  WebkitBackdropFilter: "blur(6px)",
+                  border: `1px solid ${chartScaleColors.tooltipBorder}`,
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+                }}
+              >
+                {(totalDebtChartData.labels as string[]).map(
+                  (label: string, idx: number) => {
+                    const value = totalDebtChartData.datasets[0].data[idx];
+                    const color =
+                      totalDebtChartData.datasets[0].backgroundColor[idx];
+                    if (!value || value <= 0 || label === "데이터 없음")
+                      return null;
+                    return (
+                      <div key={idx} className={styles.chartPopoverItem}>
+                        <span
+                          className={styles.chartPopoverDot}
+                          style={{ background: color }}
+                        />
+                        <span className={styles.chartPopoverLabel}>
+                          {label}
+                        </span>
+                        <span className={styles.chartPopoverValue}>
+                          {formatMoney(value)}
+                        </span>
+                      </div>
+                    );
+                  },
+                )}
               </div>
             )}
           </div>
@@ -4175,7 +5448,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
       {/* 카테고리 탭 - 레퍼런스 스타일 */}
       <div className={styles.tabsSection}>
-        {TABS.map(tab => {
+        {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const amount = getTabAmount(tab.id);
           return (
@@ -4197,8 +5470,12 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
           /* 저축 탭 - 입출금 통장 + 정기 예금/적금 */
           <div className={styles.investmentSection}>
             {(() => {
-              const checkingValues = savingsAccountValues.filter(v => v.type === "checking");
-              const termDepositValues = savingsAccountValues.filter(v => v.type !== "checking");
+              const checkingValues = savingsAccountValues.filter(
+                (v) => v.type === "checking",
+              );
+              const termDepositValues = savingsAccountValues.filter(
+                (v) => v.type !== "checking",
+              );
 
               return (
                 <>
@@ -4206,15 +5483,19 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
                   {checkingValues.length > 0 ? (
                     <div className={styles.simpleSection}>
                       <div className={styles.simpleSectionHeader}>
-                        <span className={styles.simpleSectionTitle}>입출금 통장</span>
+                        <span className={styles.simpleSectionTitle}>
+                          입출금 통장
+                        </span>
                       </div>
                       <div className={styles.simpleList}>
-                        {checkingValues.map(data => (
+                        {checkingValues.map((data) => (
                           <CheckingAccountCard
                             key={data.id}
                             data={data}
                             onSave={async (accountId, balanceWon) => {
-                              await handleAccountSave(accountId, { current_balance: balanceWon });
+                              await handleAccountSave(accountId, {
+                                current_balance: balanceWon,
+                              });
                             }}
                           />
                         ))}
@@ -4230,10 +5511,14 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
                   {termDepositValues.length > 0 ? (
                     <div style={{ marginTop: 20 }}>
                       <div className={styles.simpleSectionHeader}>
-                        <span className={styles.simpleSectionTitle}>정기 예금/적금</span>
+                        <span className={styles.simpleSectionTitle}>
+                          정기 예금/적금
+                        </span>
                       </div>
-                      {termDepositValues.map(data => {
-                        const acc = termDepositAccounts.find(a => a.id === data.id);
+                      {termDepositValues.map((data) => {
+                        const acc = termDepositAccounts.find(
+                          (a) => a.id === data.id,
+                        );
                         if (!acc) return null;
                         return (
                           <TermDepositCard
@@ -4254,13 +5539,18 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
                   {/* 하단: 관리 버튼 + 합계 */}
                   <div className={styles.sectionFooterWithButtons}>
                     <div className={styles.footerButtons}>
-                      <button className={styles.footerLinkButton} onClick={() => onNavigate?.("settings-account")}>
+                      <button
+                        className={styles.footerLinkButton}
+                        onClick={() => onNavigate?.("settings-account")}
+                      >
                         저축 계좌 관리
                       </button>
                     </div>
                     <div className={styles.footerTotalGroup}>
                       <span className={styles.footerTotalLabel}>합계</span>
-                      <span className={styles.footerTotalValue}>{formatWon(linkedSavingsTotalWon)}</span>
+                      <span className={styles.footerTotalValue}>
+                        {formatWon(linkedSavingsTotalWon)}
+                      </span>
                     </div>
                   </div>
                 </>
@@ -4281,7 +5571,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
                           계좌
                           <span className={styles.linkedBadgeSmall}>
                             <Link2 size={10} />
-                            일반 투자에서 연동됨
+                            투자에서 자동 연동됨
                           </span>
                         </div>
                       </th>
@@ -4290,21 +5580,30 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
                   </thead>
                   <tbody>
                     {Array.from(accountValues.entries()).map(([id, data]) => {
-                      const accountTypeLabel = {
-                        general: "증권계좌",
-                        isa: "ISA",
-                        pension_savings: "연금저축",
-                        irp: "IRP",
-                        dc: "DC형 퇴직연금",
-                      }[data.accountType] || "증권계좌";
+                      const accountTypeLabel =
+                        {
+                          general: "증권계좌",
+                          isa: "ISA",
+                          pension_savings: "연금저축",
+                          irp: "IRP",
+                          dc: "DC형 퇴직연금",
+                        }[data.accountType] || "증권계좌";
                       return (
                         <tr key={id}>
                           <td>
                             <div className={styles.accountCellWithLogo}>
-                              <BrokerLogo brokerName={data.broker} fallback={data.accountName || "?"} size="md" />
+                              <BrokerLogo
+                                brokerName={data.broker}
+                                fallback={data.accountName || "?"}
+                                size="md"
+                              />
                               <div className={styles.accountInfo}>
-                                <span className={styles.accountName}>{data.accountName}</span>
-                                <span className={styles.accountTypeLabel}>{accountTypeLabel}</span>
+                                <span className={styles.accountName}>
+                                  {data.accountName}
+                                </span>
+                                <span className={styles.accountTypeLabel}>
+                                  {accountTypeLabel}
+                                </span>
                               </div>
                             </div>
                           </td>
@@ -4323,12 +5622,14 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
             <div className={styles.otherInvestmentSection}>
               <div className={styles.otherInvestmentHeader}>
                 <span className={styles.otherInvestmentTitle}>투자</span>
-                <span className={styles.otherInvestmentDesc}>채권, 달러 등</span>
+                <span className={styles.otherInvestmentDesc}>
+                  채권, 달러 등
+                </span>
               </div>
 
               {otherInvestmentItems.length > 0 && (
                 <div className={styles.itemCardList}>
-                  {otherInvestmentItems.map(item => (
+                  {otherInvestmentItems.map((item) => (
                     <OtherInvestmentCard
                       key={item.id}
                       item={item}
@@ -4340,7 +5641,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
                 </div>
               )}
 
-              <div style={{ padding: '16px 20px' }}>
+              <div style={{ padding: "16px 20px" }}>
                 <button
                   className={styles.addButtonSmall}
                   onClick={() => setAddModalCategory("investment")}
@@ -4354,13 +5655,18 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
             {/* 하단: 관리 버튼 + 합계 */}
             <div className={styles.sectionFooterWithButtons}>
               <div className={styles.footerButtons}>
-                <button className={styles.footerLinkButton} onClick={() => onNavigate?.("portfolio")}>
+                <button
+                  className={styles.footerLinkButton}
+                  onClick={() => onNavigate?.("portfolio")}
+                >
                   일반 투자 관리
                 </button>
               </div>
               <div className={styles.footerTotalGroup}>
                 <span className={styles.footerTotalLabel}>합계</span>
-                <span className={styles.footerTotalValue}>{formatWon(investmentTotalWon)}</span>
+                <span className={styles.footerTotalValue}>
+                  {formatWon(investmentTotalWon)}
+                </span>
               </div>
             </div>
           </div>
@@ -4371,12 +5677,14 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
             <div className={styles.realEstateGroup}>
               <div className={styles.realEstateGroupHeader}>
                 <span className={styles.realEstateGroupTitle}>거주용</span>
-                <span className={styles.realEstateGroupDesc}>현재 거주 중인 주거 형태</span>
+                <span className={styles.realEstateGroupDesc}>
+                  현재 거주 중인 주거 형태
+                </span>
               </div>
 
               <ResidenceCard
                 item={existingResidenceItem || null}
-                snapshotId={currentSnapshot?.id || ''}
+                snapshotId={currentSnapshot?.id || ""}
                 currentYear={currentYear}
                 isCouple={isCouple}
                 onUpdate={handleUpdateItem}
@@ -4392,10 +5700,12 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
             <div className={styles.realEstateGroup}>
               <div className={styles.realEstateGroupHeader}>
                 <span className={styles.realEstateGroupTitle}>투자/임대</span>
-                <span className={styles.realEstateGroupDesc}>투자 또는 임대 수익 목적 부동산</span>
+                <span className={styles.realEstateGroupDesc}>
+                  투자 또는 임대 수익 목적 부동산
+                </span>
               </div>
 
-              {investmentItems.map(item => (
+              {investmentItems.map((item) => (
                 <InvestmentRealEstateCard
                   key={item.id}
                   item={item}
@@ -4406,7 +5716,7 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
                 />
               ))}
 
-              <div style={{ padding: '16px 20px' }}>
+              <div style={{ padding: "16px 20px" }}>
                 <button
                   className={styles.addButtonSmall}
                   onClick={() => setAddModalCategory("realEstate")}
@@ -4422,17 +5732,23 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
               <div className={styles.sectionFooterExpanded}>
                 <div className={styles.footerRow}>
                   <span className={styles.footerTotalLabel}>합계</span>
-                  <span className={styles.footerTotalValue}>{formatMoney(totals.realEstateGross)}</span>
+                  <span className={styles.footerTotalValue}>
+                    {formatMoney(totals.realEstateGross)}
+                  </span>
                 </div>
                 {totals.realEstateLoan > 0 && (
                   <>
                     <div className={styles.footerRow}>
                       <span className={styles.footerLoanLabel}>담보대출</span>
-                      <span className={styles.footerLoanValue}>-{formatMoney(totals.realEstateLoan)}</span>
+                      <span className={styles.footerLoanValue}>
+                        -{formatMoney(totals.realEstateLoan)}
+                      </span>
                     </div>
                     <div className={styles.footerRow}>
                       <span className={styles.footerNetLabel}>순자산</span>
-                      <span className={styles.footerNetValue}>{formatMoney(totals.realEstate)}</span>
+                      <span className={styles.footerNetValue}>
+                        {formatMoney(totals.realEstate)}
+                      </span>
                     </div>
                   </>
                 )}
@@ -4444,10 +5760,12 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
           <div className={styles.simpleSection}>
             <div className={styles.simpleSectionHeader}>
               <span className={styles.simpleSectionTitle}>실물 자산</span>
-              <span className={styles.simpleSectionDesc}>자동차, 귀금속, 미술품 등</span>
+              <span className={styles.simpleSectionDesc}>
+                자동차, 귀금속, 미술품 등
+              </span>
             </div>
 
-            {currentItems.map(item => (
+            {currentItems.map((item) => (
               <RealAssetCard
                 key={item.id}
                 item={item}
@@ -4457,8 +5775,11 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
               />
             ))}
 
-            <div style={{ padding: '16px 20px' }}>
-              <button className={styles.addButtonSmall} onClick={() => setAddModalCategory("realAsset")}>
+            <div style={{ padding: "16px 20px" }}>
+              <button
+                className={styles.addButtonSmall}
+                onClick={() => setAddModalCategory("realAsset")}
+              >
                 <Plus size={14} />
                 실물 자산 추가
               </button>
@@ -4468,17 +5789,23 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
               <div className={styles.sectionFooterExpanded}>
                 <div className={styles.footerRow}>
                   <span className={styles.footerTotalLabel}>합계</span>
-                  <span className={styles.footerTotalValue}>{formatMoney(totals.realAssetGross)}</span>
+                  <span className={styles.footerTotalValue}>
+                    {formatMoney(totals.realAssetGross)}
+                  </span>
                 </div>
                 {totals.realAssetInstallment > 0 && (
                   <>
                     <div className={styles.footerRow}>
                       <span className={styles.footerLoanLabel}>할부 잔액</span>
-                      <span className={styles.footerLoanValue}>-{formatMoney(totals.realAssetInstallment)}</span>
+                      <span className={styles.footerLoanValue}>
+                        -{formatMoney(totals.realAssetInstallment)}
+                      </span>
                     </div>
                     <div className={styles.footerRow}>
                       <span className={styles.footerNetLabel}>순자산</span>
-                      <span className={styles.footerNetValue}>{formatMoney(totals.realAsset)}</span>
+                      <span className={styles.footerNetValue}>
+                        {formatMoney(totals.realAsset)}
+                      </span>
                     </div>
                   </>
                 )}
@@ -4490,10 +5817,12 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
           <div className={styles.simpleSection}>
             <div className={styles.simpleSectionHeader}>
               <span className={styles.simpleSectionTitle}>금융 부채</span>
-              <span className={styles.simpleSectionDesc}>신용대출, 카드론 등 담보 없는 부채</span>
+              <span className={styles.simpleSectionDesc}>
+                신용대출, 카드론 등 담보 없는 부채
+              </span>
             </div>
 
-            {currentItems.map(item => (
+            {currentItems.map((item) => (
               <DebtCard
                 key={item.id}
                 item={item}
@@ -4504,8 +5833,11 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
               />
             ))}
 
-            <div style={{ padding: '16px 20px' }}>
-              <button className={styles.addButtonSmall} onClick={() => setAddModalCategory("debt")}>
+            <div style={{ padding: "16px 20px" }}>
+              <button
+                className={styles.addButtonSmall}
+                onClick={() => setAddModalCategory("debt")}
+              >
                 <Plus size={14} />
                 금융 부채 추가
               </button>
@@ -4515,7 +5847,9 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
               <div className={styles.sectionFooterExpanded}>
                 <div className={styles.footerRow}>
                   <span className={styles.footerTotalLabel}>합계</span>
-                  <span className={styles.footerTotalValue}>{formatMoney(totals.unsecuredDebt)}</span>
+                  <span className={styles.footerTotalValue}>
+                    {formatMoney(totals.unsecuredDebt)}
+                  </span>
                 </div>
               </div>
             )}
@@ -4525,18 +5859,30 @@ export function CurrentAssetTab({ profileId, onNavigate, onOpenAccountModal }: C
 
       {/* 추가 모달 */}
       {addModalCategory && (
-        <div className={styles.modalOverlay} onClick={() => setAddModalCategory(null)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setAddModalCategory(null)}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
             style={{
-              background: isDark ? 'rgba(34, 37, 41, 0.6)' : 'rgba(255, 255, 255, 0.6)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+              background: isDark
+                ? "rgba(34, 37, 41, 0.6)"
+                : "rgba(255, 255, 255, 0.6)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
             }}
           >
             <div className={styles.modalHeader}>
-              <span className={styles.modalTitle}>{MODAL_ITEMS[addModalCategory].title} 추가</span>
-              <button className={styles.modalCloseBtn} onClick={() => setAddModalCategory(null)}>
+              <span className={styles.modalTitle}>
+                {MODAL_ITEMS[addModalCategory].title} 추가
+              </span>
+              <button
+                className={styles.modalCloseBtn}
+                onClick={() => setAddModalCategory(null)}
+              >
                 <X size={20} />
               </button>
             </div>

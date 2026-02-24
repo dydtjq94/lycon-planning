@@ -32,6 +32,7 @@ import { getRealEstates } from "@/lib/services/realEstateService";
 import { getPhysicalAssets } from "@/lib/services/physicalAssetService";
 import { runSimulationV2 } from "@/lib/services/simulationEngineV2";
 import { calculateEndYear } from "@/lib/utils/chartDataTransformer";
+import { generateVirtualExpenses } from "@/lib/utils/virtualExpenses";
 import type { Simulation, LifeCycleSettings } from "@/types";
 import {
   ArrowRight,
@@ -280,6 +281,35 @@ export function DashboardTab({
               getPhysicalAssets(sim.id),
             ]);
           const lcs = sim.life_cycle_settings || lifeCycleSettings;
+
+          // Augment expenses with virtual medical/education expenses
+          const autoExp = lcs.autoExpenses;
+          const inclMed = autoExp?.medical === true;
+          const inclEdu = autoExp?.education?.enabled === true;
+          let augExpenses = expenses;
+          if (inclMed || inclEdu) {
+            augExpenses = expenses.filter(e => {
+              if (inclMed && e.type === 'medical') return false;
+              if (inclEdu && e.type === 'education') return false;
+              return true;
+            });
+            const children = ((sim.family_config as Array<{ relationship: string; birth_date?: string; name: string }>) || [])
+              .filter(m => m.relationship === 'child' && m.birth_date)
+              .map(m => ({ name: m.name, birthYear: parseInt(m.birth_date!.split('-')[0]) }));
+            const virtual = generateVirtualExpenses({
+              selfBirthYear: birthYear,
+              spouseBirthYear: spouseBirthYear ?? undefined,
+              children,
+              selfLifeExpectancy: lcs.selfLifeExpectancy ?? 100,
+              spouseLifeExpectancy: lcs.spouseLifeExpectancy ?? 100,
+              simulationId: sim.id,
+              includeMedical: inclMed,
+              includeEducation: inclEdu,
+              educationTier: autoExp?.education?.tier,
+            });
+            augExpenses = [...augExpenses, ...virtual];
+          }
+
           const endYear = calculateEndYear(
             birthYear,
             spouseBirthYear,
@@ -290,7 +320,7 @@ export function DashboardTab({
           const result = runSimulationV2(
             {
               incomes,
-              expenses,
+              expenses: augExpenses,
               savings,
               debts,
               nationalPensions: np,

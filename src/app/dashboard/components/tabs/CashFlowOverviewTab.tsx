@@ -2,11 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { ChevronDown } from 'lucide-react'
-import type { SimulationAssumptions, CashFlowPriorities } from '@/types'
-import { DEFAULT_SIMULATION_ASSUMPTIONS } from '@/types'
-import { runSimulationV2 } from '@/lib/services/simulationEngineV2'
-import type { MonthlySnapshot } from '@/lib/services/simulationTypes'
-import { useSimulationV2Data } from '@/hooks/useFinancialData'
+import type { SimulationResult } from '@/lib/services/simulationTypes'
 import { calculateEndYear } from '@/lib/utils/chartDataTransformer'
 import { formatMoney } from '@/lib/utils'
 import { CashFlowChart, SankeyChart } from '../charts'
@@ -20,8 +16,7 @@ interface CashFlowOverviewTabProps {
   spouseBirthYear?: number | null
   retirementAge: number
   spouseRetirementAge?: number
-  simulationAssumptions?: SimulationAssumptions
-  cashFlowPriorities?: CashFlowPriorities
+  simulationResult: SimulationResult
   isInitializing?: boolean
   timeRange?: 'next3m' | 'next5m' | 'next5' | 'next10' | 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full'
   onTimeRangeChange?: (range: 'next3m' | 'next5m' | 'next5' | 'next10' | 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full') => void
@@ -30,7 +25,6 @@ interface CashFlowOverviewTabProps {
   selfLifeExpectancy?: number
   spouseLifeExpectancy?: number
   simulationStartYear?: number | null
-  simulationStartMonth?: number | null
   lifecycleMilestones?: { year: number; color: string; label: string; iconId: string }[]
 }
 
@@ -56,8 +50,7 @@ export function CashFlowOverviewTab({
   spouseBirthYear,
   retirementAge,
   spouseRetirementAge = 60,
-  simulationAssumptions,
-  cashFlowPriorities,
+  simulationResult,
   isInitializing = false,
   timeRange: propTimeRange,
   onTimeRangeChange,
@@ -66,7 +59,6 @@ export function CashFlowOverviewTab({
   selfLifeExpectancy = 100,
   spouseLifeExpectancy = 100,
   simulationStartYear,
-  simulationStartMonth,
   lifecycleMilestones,
 }: CashFlowOverviewTabProps) {
   const currentYear = simulationStartYear || new Date().getFullYear()
@@ -130,26 +122,6 @@ export function CashFlowOverviewTab({
         return { start: currentYear, end: simulationEndYear }
     }
   }, [timeRange, currentYear, simulationEndYear, retirementYear])
-
-  // React Query로 데이터 로드 (캐시에서 즉시 가져옴)
-  const { data: v2Data, isLoading: loading } = useSimulationV2Data(simulationId)
-
-  // 시뮬레이션 실행
-  const simulationResult = useMemo(() => {
-    return runSimulationV2(
-      v2Data,
-      {
-        birthYear,
-        retirementAge,
-        spouseBirthYear: spouseBirthYear || undefined,
-      },
-      yearsToSimulate,
-      simulationAssumptions || DEFAULT_SIMULATION_ASSUMPTIONS,
-      cashFlowPriorities,
-      simulationStartYear,
-      simulationStartMonth,
-    )
-  }, [v2Data, birthYear, retirementAge, spouseBirthYear, yearsToSimulate, simulationAssumptions, cashFlowPriorities, simulationStartYear, simulationStartMonth])
 
   // 필터링된 시뮬레이션 결과 (기간 선택에 따라)
   const filteredSimulationResult = useMemo(() => ({
@@ -217,7 +189,7 @@ export function CashFlowOverviewTab({
   }, [isMonthlyMode, filteredMonthlySnapshots, sankeyYear])
 
   // 로딩 중일 때 로딩 표시
-  if (loading || isInitializing) {
+  if (isInitializing) {
     return <div className={styles.loadingState}>데이터를 불러오는 중...</div>
   }
 

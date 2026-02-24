@@ -2,12 +2,10 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { ChevronDown } from 'lucide-react'
-import type { Simulation, SimulationAssumptions, CashFlowPriorities } from '@/types'
-import type { MonthlySnapshot } from '@/lib/services/simulationTypes'
-import type { FinancialSnapshot } from '@/types/tables'
+import type { Simulation } from '@/types'
+import type { SimulationResult } from '@/lib/services/simulationTypes'
 import { DEFAULT_SIMULATION_ASSUMPTIONS, normalizePriorities } from '@/types'
-import { runSimulationV2, type SimulationV2Input } from '@/lib/services/simulationEngineV2'
-import { useSimulationV2Data } from '@/hooks/useFinancialData'
+import { runSimulationV2 } from '@/lib/services/simulationEngineV2'
 import { getSnapshots } from '@/lib/services/snapshotService'
 import { getIncomes } from '@/lib/services/incomeService'
 import { getExpenses } from '@/lib/services/expenseService'
@@ -20,6 +18,7 @@ import { getRealEstates } from '@/lib/services/realEstateService'
 import { getPhysicalAssets } from '@/lib/services/physicalAssetService'
 import { wonToManwon } from '@/lib/utils'
 import { calculateEndYear } from '@/lib/utils/chartDataTransformer'
+import { generateVirtualExpenses } from '@/lib/utils/virtualExpenses'
 import { AssetStackChart } from '../charts'
 import { formatMoney } from '@/lib/utils'
 import { useChartTheme } from '@/hooks/useChartTheme'
@@ -28,6 +27,7 @@ import styles from './NetWorthTab.module.css'
 
 interface NetWorthTabProps {
   simulationId: string
+  simulationResult: SimulationResult
   birthYear: number
   spouseBirthYear?: number | null
   retirementAge: number
@@ -37,12 +37,9 @@ interface NetWorthTabProps {
   onTimeRangeChange?: (range: 'next3m' | 'next5m' | 'next5' | 'next10' | 'next20' | 'next30' | 'next40' | 'accumulation' | 'drawdown' | 'full') => void
   selectedYear?: number
   onSelectedYearChange?: (year: number) => void
-  simulationAssumptions?: SimulationAssumptions
-  cashFlowPriorities?: CashFlowPriorities
   selfLifeExpectancy?: number
   spouseLifeExpectancy?: number
   simulationStartYear?: number | null
-  simulationStartMonth?: number | null
   lifecycleMilestones?: { year: number; color: string; label: string; iconId: string }[]
   compareSelections?: Set<string>
   allSimulations?: Simulation[]
@@ -70,6 +67,7 @@ const OVERLAY_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
 
 export function NetWorthTab({
   simulationId,
+  simulationResult,
   birthYear,
   spouseBirthYear,
   retirementAge,
@@ -79,12 +77,9 @@ export function NetWorthTab({
   onTimeRangeChange,
   selectedYear: propSelectedYear,
   onSelectedYearChange,
-  simulationAssumptions,
-  cashFlowPriorities,
   selfLifeExpectancy = 100,
   spouseLifeExpectancy = 100,
   simulationStartYear,
-  simulationStartMonth,
   lifecycleMilestones,
   compareSelections,
   allSimulations,
@@ -184,26 +179,6 @@ export function NetWorthTab({
     }
   }, [showTimeRangeMenu])
 
-  // React Query로 데이터 로드
-  const { data: v2Data, isLoading } = useSimulationV2Data(simulationId)
-
-  // 시뮬레이션 실행
-  const simulationResult = useMemo(() => {
-    return runSimulationV2(
-      v2Data,
-      {
-        birthYear,
-        retirementAge,
-        spouseBirthYear: spouseBirthYear || undefined,
-      },
-      yearsToSimulate,
-      simulationAssumptions || DEFAULT_SIMULATION_ASSUMPTIONS,
-      cashFlowPriorities,
-      simulationStartYear,
-      simulationStartMonth,
-    )
-  }, [v2Data, birthYear, retirementAge, spouseBirthYear, yearsToSimulate, simulationAssumptions, cashFlowPriorities, simulationStartYear, simulationStartMonth])
-
   // 기간에 따른 표시 범위 계산
   const displayRange = useMemo(() => {
     switch (timeRange) {
@@ -292,8 +267,38 @@ export function NetWorthTab({
             ])
             const targetSim = allSimulations?.find(s => s.id === key)
             if (!targetSim) continue
+
+            // 가상 교육비/의료비 augmentation (비교 시뮬레이션)
+            const targetLifeCycle = targetSim.life_cycle_settings as { selfLifeExpectancy?: number; spouseLifeExpectancy?: number; autoExpenses?: { medical?: boolean; education?: { enabled: boolean; tier: 'normal' | 'premium' } } } | null
+            const targetAutoExp = targetLifeCycle?.autoExpenses
+            const targetIncludeMedical = targetAutoExp?.medical === true
+            const targetIncludeEducation = targetAutoExp?.education?.enabled === true
+            let augmentedExpenses = expenses
+            if (targetIncludeMedical || targetIncludeEducation) {
+              augmentedExpenses = expenses.filter(e => {
+                if (targetIncludeMedical && e.type === 'medical') return false
+                if (targetIncludeEducation && e.type === 'education') return false
+                return true
+              })
+              const targetChildren = (targetSim.family_config || [])
+                .filter(fm => fm.relationship === 'child' && fm.birth_date)
+                .map(fm => ({ name: fm.name, birthYear: parseInt(fm.birth_date!.split('-')[0]) }))
+              const virtualExpenses = generateVirtualExpenses({
+                selfBirthYear: birthYear,
+                spouseBirthYear: spouseBirthYear,
+                children: targetChildren,
+                selfLifeExpectancy: targetLifeCycle?.selfLifeExpectancy ?? selfLifeExpectancy,
+                spouseLifeExpectancy: targetLifeCycle?.spouseLifeExpectancy ?? spouseLifeExpectancy,
+                simulationId: key,
+                includeMedical: targetIncludeMedical,
+                includeEducation: targetIncludeEducation,
+                educationTier: targetAutoExp?.education?.tier,
+              })
+              augmentedExpenses = [...augmentedExpenses, ...virtualExpenses]
+            }
+
             const compResult = runSimulationV2(
-              { incomes, expenses, savings, debts, nationalPensions, retirementPensions, personalPensions, realEstates, physicalAssets },
+              { incomes, expenses: augmentedExpenses, savings, debts, nationalPensions, retirementPensions, personalPensions, realEstates, physicalAssets },
               { birthYear, retirementAge, spouseBirthYear: spouseBirthYear || undefined },
               yearsToSimulate,
               targetSim.simulation_assumptions || DEFAULT_SIMULATION_ASSUMPTIONS,
@@ -421,7 +426,7 @@ export function NetWorthTab({
     return groupDebtItems(selectedSnapshot.debtBreakdown || [])
   }, [selectedSnapshot])
 
-  if (isLoading || isInitializing) {
+  if (isInitializing) {
     return <div className={styles.loadingState}>데이터를 불러오는 중...</div>
   }
 

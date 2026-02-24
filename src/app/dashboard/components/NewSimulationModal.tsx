@@ -9,8 +9,8 @@ import {
   StepRetirement,
   StepIncome,
   StepExpense,
-  StepPension,
   StepEvents,
+  StepAssetReview,
   WIZARD_STEPS,
   INITIAL_WIZARD_DATA,
 } from "./wizard";
@@ -20,7 +20,7 @@ import styles from "./NewSimulationModal.module.css";
 
 interface NewSimulationModalProps {
   onClose: () => void;
-  onCreate: () => void;
+  onCreate: (wizardData: WizardData) => void;
   profile: ProfileBasics;
   familyMembers: FamilyMember[];
 }
@@ -55,7 +55,7 @@ export function NewSimulationModal({
         children,
       },
       retirement: {
-        retirementAge: profile.target_retirement_age || 65,
+        retirementAge: profile.target_retirement_age || null,
         lifeExpectancy: 100,
         spouseIsWorking: spouse?.is_working ?? false,
         spouseRetirementAge: spouse?.retirement_age || null,
@@ -127,25 +127,41 @@ export function NewSimulationModal({
         // 지출
         const prepExpense = prep.expense;
         if (prepExpense) {
-          type WizardFixedExpense = WizardData["expense"]["fixedExpenses"][number];
-          const fixedExpenses: WizardFixedExpense[] = (prepExpense.fixedExpenses || [])
-            .filter((e: { amount: number }) => e.amount > 0)
-            .map((e: { title: string; type: string; amount: number; frequency?: string }) => ({
-              title: e.title,
-              type: e.type,
-              amount: e.amount,
-              frequency: (e.frequency as "monthly" | "yearly") || "monthly",
-            }));
+          let livingTotal = prepExpense.livingExpense || 0;
+          if (!livingTotal && prepExpense.livingExpenseDetails) {
+            const d = prepExpense.livingExpenseDetails;
+            livingTotal = (d.food || 0) + (d.transport || 0) + (d.shopping || 0) + (d.leisure || 0) + (d.other || 0);
+          }
+
+          let fixedTotal = 0;
+          if (prepExpense.fixedExpenses) {
+            for (const e of prepExpense.fixedExpenses) {
+              if (e.amount > 0) {
+                fixedTotal += e.frequency === "yearly" ? Math.round(e.amount / 12) : e.amount;
+              }
+            }
+          }
 
           updates.expense = {
-            livingExpense: prepExpense.livingExpense || null,
-            livingExpenseDetails: {
-              food: prepExpense.livingExpenseDetails?.food || null,
-              transport: prepExpense.livingExpenseDetails?.transport || null,
-              shopping: prepExpense.livingExpenseDetails?.shopping || null,
-              leisure: prepExpense.livingExpenseDetails?.leisure || null,
-            },
-            fixedExpenses,
+            livingExpense: livingTotal > 0 ? livingTotal : null,
+            fixedExpense: fixedTotal > 0 ? fixedTotal : null,
+            postRetirementRate: 0.7,
+            autoMedical: true,
+            autoEducation: true,
+            educationTier: 'normal',
+          };
+        }
+
+        // 연금 (공적연금만)
+        const prepNational = prep.nationalPension;
+        if (prepNational) {
+          updates.pension = {
+            selfType: prepNational.selfType || "national",
+            selfExpectedAmount: prepNational.selfExpectedAmount || null,
+            selfStartAge: prepNational.selfStartAge || 65,
+            spouseType: prepNational.spouseType || "national",
+            spouseExpectedAmount: prepNational.spouseExpectedAmount || null,
+            spouseStartAge: prepNational.spouseStartAge || null,
           };
         }
 
@@ -197,7 +213,7 @@ export function NewSimulationModal({
   };
 
   const handleCreate = () => {
-    onCreate();
+    onCreate(wizardData);
     onClose();
   };
 
@@ -246,11 +262,11 @@ export function NewSimulationModal({
       case 3:
         return <StepIncome {...props} />;
       case 4:
-        return <StepExpense {...props} />;
+        return <StepExpense {...props} profileBirthDate={profile.birth_date} />;
       case 5:
-        return <StepPension {...props} />;
+        return <StepEvents {...props} profileBirthDate={profile.birth_date ?? ""} />;
       case 6:
-        return <StepEvents {...props} />;
+        return <StepAssetReview {...props} profileId={profile.id} />;
       default:
         return null;
     }
@@ -265,16 +281,16 @@ export function NewSimulationModal({
         className={styles.modal}
         style={{
           background: isDark
-            ? "rgba(34, 37, 41, 0.8)"
-            : "rgba(255, 255, 255, 0.8)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
+            ? "rgba(34, 37, 41, 0.6)"
+            : "rgba(255, 255, 255, 0.6)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
           boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
         }}
       >
         <div className={styles.header}>
           <div className={styles.headerTop}>
-            <h2 className={styles.title}>새 시뮬레이션</h2>
+            <h2 className={styles.title}>{wizardData.title.trim() || "새 시뮬레이션"}</h2>
             <button className={styles.closeBtn} onClick={onClose}>
               <X size={16} />
             </button>

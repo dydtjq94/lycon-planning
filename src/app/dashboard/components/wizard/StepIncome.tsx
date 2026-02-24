@@ -5,6 +5,7 @@ import type { StepProps, WizardData } from "./types";
 import styles from "./StepIncome.module.css";
 
 type IncomeItem = WizardData["income"]["items"][number];
+type PensionType = WizardData["pension"]["selfType"];
 
 const INCOME_TYPES: { value: IncomeItem["type"]; label: string }[] = [
   { value: "labor", label: "근로" },
@@ -13,9 +14,23 @@ const INCOME_TYPES: { value: IncomeItem["type"]; label: string }[] = [
   { value: "other", label: "기타" },
 ];
 
+const PENSION_TYPES: { value: PensionType; label: string }[] = [
+  { value: "national", label: "국민" },
+  { value: "government", label: "공무원" },
+  { value: "military", label: "군인" },
+  { value: "private_school", label: "사학" },
+];
+
 export function StepIncome({ data, onChange }: StepProps) {
   const { income, family } = data;
   const hasSpouse = family.hasSpouse;
+  const pension = data.pension?.selfType
+    ? data.pension
+    : { selfType: "national" as const, selfExpectedAmount: null, selfStartAge: 65, spouseType: "national" as const, spouseExpectedAmount: null, spouseStartAge: null };
+
+  const updatePension = (updates: Partial<typeof pension>) => {
+    onChange({ pension: { ...pension, ...updates } });
+  };
 
   const updateItems = (items: IncomeItem[]) => {
     onChange({ income: { items } });
@@ -168,6 +183,91 @@ export function StepIncome({ data, onChange }: StepProps) {
         <Plus size={14} />
         소득 추가
       </button>
+
+      <hr className={styles.divider} />
+
+      {/* 공적연금 */}
+      <div className={styles.pensionSection}>
+        <span className={styles.pensionLabel}>공적연금</span>
+
+        <div className={styles.pensionRow}>
+          <span className={styles.pensionOwner}>본인</span>
+          <div className={styles.pillGroup}>
+            {PENSION_TYPES.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                className={`${styles.pillSmall} ${pension.selfType === value ? styles.pillSmallActive : ""}`}
+                onClick={() => updatePension({ selfType: value })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <input
+            type="number"
+            className={styles.amountInput}
+            value={pension.selfExpectedAmount ?? ""}
+            onChange={(e) =>
+              updatePension({ selfExpectedAmount: e.target.value === "" ? null : Number(e.target.value) })
+            }
+            onWheel={(e) => (e.target as HTMLElement).blur()}
+            placeholder="0"
+          />
+          <span className={styles.unit}>만원/월</span>
+          <input
+            type="number"
+            className={styles.ageInput}
+            value={pension.selfStartAge ?? ""}
+            onChange={(e) =>
+              updatePension({ selfStartAge: e.target.value === "" ? 65 : Number(e.target.value) })
+            }
+            onWheel={(e) => (e.target as HTMLElement).blur()}
+            placeholder="65"
+          />
+          <span className={styles.unit}>세부터</span>
+        </div>
+
+        {hasSpouse && (
+          <div className={styles.pensionRow}>
+            <span className={styles.pensionOwner}>배우자</span>
+            <div className={styles.pillGroup}>
+              {PENSION_TYPES.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`${styles.pillSmall} ${pension.spouseType === value ? styles.pillSmallActive : ""}`}
+                  onClick={() => updatePension({ spouseType: value })}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <input
+              type="number"
+              className={styles.amountInput}
+              value={pension.spouseExpectedAmount ?? ""}
+              onChange={(e) =>
+                updatePension({ spouseExpectedAmount: e.target.value === "" ? null : Number(e.target.value) })
+              }
+              onWheel={(e) => (e.target as HTMLElement).blur()}
+              placeholder="0"
+            />
+            <span className={styles.unit}>만원/월</span>
+            <input
+              type="number"
+              className={styles.ageInput}
+              value={pension.spouseStartAge ?? ""}
+              onChange={(e) =>
+                updatePension({ spouseStartAge: e.target.value === "" ? null : Number(e.target.value) })
+              }
+              onWheel={(e) => (e.target as HTMLElement).blur()}
+              placeholder="65"
+            />
+            <span className={styles.unit}>세부터</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

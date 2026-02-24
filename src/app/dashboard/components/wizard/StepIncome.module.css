@@ -125,6 +125,35 @@
   margin: 0;
 }
 
+.ageInput {
+  width: 60px;
+  padding: 7px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text);
+  background: var(--dashboard-input-bg);
+  border: 1px solid var(--dashboard-input-border);
+  border-radius: 8px;
+  outline: none;
+  text-align: right;
+  letter-spacing: -0.1px;
+}
+
+.ageInput:focus {
+  border-color: var(--accent-color, #007aff);
+}
+
+.ageInput::placeholder {
+  color: var(--dashboard-text-muted);
+  font-weight: 400;
+}
+
+.ageInput::-webkit-outer-spin-button,
+.ageInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .unit {
   font-size: 13px;
   color: var(--dashboard-text-secondary);
@@ -253,6 +282,43 @@
 
 .addBtn:hover {
   color: var(--dashboard-text-secondary);
+}
+
+/* Divider */
+.divider {
+  border: none;
+  border-top: 1px solid var(--dashboard-border);
+  margin: 4px 0;
+}
+
+/* Pension section */
+.pensionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pensionLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  letter-spacing: -0.2px;
+}
+
+.pensionOwner {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+  min-width: 36px;
+}
+
+.pensionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* Empty Text */

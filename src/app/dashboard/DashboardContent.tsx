@@ -40,6 +40,10 @@ import { AccountManagementModal } from "./components/AccountManagementModal";
 import { CategoryManagementModal } from "./components/CategoryManagementModal";
 import { AddSimulationModal } from "./components/AddSimulationModal";
 import { NewSimulationModal } from "./components/NewSimulationModal";
+import type { WizardData } from "./components/wizard";
+import { createIncome } from "@/lib/services/incomeService";
+import { createExpensesBatch } from "@/lib/services/expenseService";
+import { createNationalPension } from "@/lib/services/nationalPensionService";
 import {
   SimulationAssumptionsPanel,
   CashFlowPrioritiesPanel,
@@ -49,6 +53,7 @@ import {
 import {
   useFinancialContext,
   type FamilyMember,
+  type ProfileBasics,
 } from "@/contexts/FinancialContext";
 import {
   useFinancialItems,
@@ -72,6 +77,7 @@ import type {
   SimulationAssumptions,
 } from "@/types";
 import { runSimulationV2 } from "@/lib/services/simulationEngineV2";
+import { generateVirtualExpenses } from "@/lib/utils/virtualExpenses";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
 import { simulationService } from "@/lib/services/simulationService";
 import { calculateEndYear } from "@/lib/utils/chartDataTransformer";
@@ -623,10 +629,136 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     [],
   );
 
-  // 새 시뮬레이션 생성 (빈 시뮬레이션)
-  const handleCreateNewSimulation = useCallback(async () => {
+  // 위자드 데이터를 실제 DB 재무 데이터로 변환/생성
+  async function createFinancialDataFromWizard(
+    simulationId: string,
+    data: WizardData,
+    profileData: ProfileBasics,
+  ) {
+    const currentYear = new Date().getFullYear();
+    const birthYear = profileData.birth_date
+      ? parseInt(profileData.birth_date.split("-")[0])
+      : currentYear - 30;
+
+    // 1. 소득 생성
+    for (const item of data.income.items) {
+      if (!item.amount || item.amount <= 0) continue;
+      const isYearly = item.frequency === "yearly";
+      await createIncome({
+        simulation_id: simulationId,
+        type: item.type === "side" ? "side" : item.type === "business" ? "business" : item.type === "other" ? "other" : "labor",
+        title: item.title || (item.owner === "self" ? "본인 소득" : "배우자 소득"),
+        owner: item.owner,
+        amount: item.amount,
+        frequency: isYearly ? "yearly" : "monthly",
+        start_year: currentYear,
+        start_month: 1,
+        retirement_link: item.retirementLinked ? item.owner : null,
+        rate_category: "income",
+      });
+    }
+
+    // 2. 지출 생성 (생활비 + 고정비)
+    const expenseInputs: Parameters<typeof createExpensesBatch>[0] = [];
+
+    if (data.expense.livingExpense && data.expense.livingExpense > 0) {
+      expenseInputs.push({
+        simulation_id: simulationId,
+        type: "living",
+        title: "생활비",
+        amount: data.expense.livingExpense,
+        frequency: "monthly",
+        start_year: currentYear,
+        start_month: 1,
+        owner: "common",
+        rate_category: "inflation",
+        amount_base_year: currentYear,
+      });
+    }
+
+    if (data.expense.fixedExpense && data.expense.fixedExpense > 0) {
+      expenseInputs.push({
+        simulation_id: simulationId,
+        type: "other",
+        title: "고정비",
+        amount: data.expense.fixedExpense,
+        frequency: "monthly",
+        start_year: currentYear,
+        start_month: 1,
+        owner: "common",
+        rate_category: "inflation",
+        amount_base_year: currentYear,
+      });
+    }
+
+    // 3. 수동 이벤트 -> 지출 (일회성)
+    for (const event of data.events.items) {
+      if (!event.amount || !event.year) continue;
+      expenseInputs.push({
+        simulation_id: simulationId,
+        type: event.type === "housing" ? "housing"
+          : event.type === "education" ? "education"
+          : event.type === "medical" ? "medical"
+          : event.type === "car" ? "other"
+          : event.type === "wedding" ? "wedding"
+          : event.type === "travel" ? "travel"
+          : "other",
+        title: event.title || "이벤트",
+        amount: event.amount,
+        frequency: "yearly",
+        start_year: event.year,
+        start_month: 1,
+        end_year: event.year,
+        end_month: 12,
+        owner: "common",
+        growth_rate: 0,
+        rate_category: "fixed",
+      });
+    }
+
+    if (expenseInputs.length > 0) {
+      await createExpensesBatch(expenseInputs);
+    }
+
+    // 4. 공적연금 생성
+    if (data.pension.selfExpectedAmount && data.pension.selfExpectedAmount > 0) {
+      await createNationalPension(
+        {
+          simulation_id: simulationId,
+          owner: "self",
+          pension_type: data.pension.selfType,
+          expected_monthly_amount: data.pension.selfExpectedAmount,
+          start_age: data.pension.selfStartAge,
+        },
+        birthYear,
+      );
+    }
+
+    if (
+      data.family.hasSpouse &&
+      data.pension.spouseExpectedAmount &&
+      data.pension.spouseExpectedAmount > 0
+    ) {
+      const spouseBirthYear = data.family.spouseBirthDate
+        ? parseInt(data.family.spouseBirthDate.split("-")[0])
+        : birthYear;
+      await createNationalPension(
+        {
+          simulation_id: simulationId,
+          owner: "spouse",
+          pension_type: data.pension.spouseType,
+          expected_monthly_amount: data.pension.spouseExpectedAmount,
+          start_age: data.pension.spouseStartAge ?? 65,
+        },
+        spouseBirthYear,
+      );
+    }
+  }
+
+  // 새 시뮬레이션 생성 (위자드 데이터 포함)
+  const handleCreateNewSimulation = useCallback(async (wizardData?: WizardData) => {
     const nextNum = simulations.length + 1;
-    const title = `새 시뮬레이션 ${nextNum}`;
+    const title = wizardData?.title?.trim() || `새 시뮬레이션 ${nextNum}`;
     createSimulation.mutate(
       { title },
       {
@@ -638,10 +770,34 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
 
           (async () => {
             try {
+              // 기존 초기화 (계좌/포트폴리오 복사)
               await simulationService.initializeSimulationData(
                 newSim.id,
                 profile.id,
               );
+
+              // 위자드 데이터가 있으면 재무 데이터 생성
+              if (wizardData) {
+                await createFinancialDataFromWizard(newSim.id, wizardData, profile);
+
+                // 자동 지출 플래그 설정 (위자드에서 선택한 값 사용)
+                const hasChildren = wizardData.family.children.length > 0 || wizardData.family.plannedChildren.length > 0;
+                const wizardAutoExpenses: LifeCycleSettings['autoExpenses'] = {
+                  ...(wizardData.expense.autoMedical ? { medical: true } : {}),
+                  ...(hasChildren && wizardData.expense.autoEducation
+                    ? { education: { enabled: true, tier: wizardData.expense.educationTier } }
+                    : {}),
+                };
+                const wizardLifeCycle: LifeCycleSettings = {
+                  selfRetirementAge: wizardData.retirement.retirementAge ?? 65,
+                  selfLifeExpectancy: wizardData.retirement.lifeExpectancy ?? 100,
+                  spouseRetirementAge: wizardData.retirement.spouseRetirementAge ?? 65,
+                  spouseLifeExpectancy: wizardData.retirement.spouseLifeExpectancy ?? (wizardData.retirement.lifeExpectancy ?? 100),
+                  autoExpenses: Object.keys(wizardAutoExpenses).length > 0 ? wizardAutoExpenses : undefined,
+                };
+                await simulationService.update(newSim.id, { life_cycle_settings: wizardLifeCycle });
+              }
+
               await simulationService.syncPricesInBackground(
                 newSim.id,
                 profile.id,
@@ -666,7 +822,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   }, [
     createSimulation,
     simulations.length,
-    profile.id,
+    profile,
     updateUrl,
     queryClient,
   ]);
@@ -835,6 +991,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       spouseRetirementColor: saved?.spouseRetirementColor,
       spouseLifeExpectancyIcon: saved?.spouseLifeExpectancyIcon,
       spouseLifeExpectancyColor: saved?.spouseLifeExpectancyColor,
+      autoExpenses: saved?.autoExpenses,
     };
   }, [
     activeSim.life_cycle_settings,
@@ -881,6 +1038,23 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       }
     },
     [selectedSim, updateSimulation],
+  );
+
+  // 자동 지출 플래그 변경 핸들러
+  const handleAutoExpensesChange = useCallback(
+    (autoExpenses: LifeCycleSettings['autoExpenses']) => {
+      if (selectedSim) {
+        const newSettings: LifeCycleSettings = {
+          ...lifeCycleSettings,
+          autoExpenses,
+        };
+        updateSimulation.mutate({
+          id: selectedSim.id,
+          updates: { life_cycle_settings: newSettings },
+        });
+      }
+    },
+    [selectedSim, updateSimulation, lifeCycleSettings],
   );
 
   // 가족 구성 변경 핸들러 (시뮬레이션별 저장, self 엔트리 포함)
@@ -964,8 +1138,48 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     );
     const simStartYear = activeSim.start_year || new Date().getFullYear();
     const yearsToSimulate = simulationEndYear - simStartYear;
+    // 가상 교육비/의료비 지출 생성 (플래그 기반)
+    const autoExp = lifeCycleSettings.autoExpenses;
+    const includeMedical = autoExp?.medical === true;
+    const includeEducation = autoExp?.education?.enabled === true;
+
+    let augmentedExpenses = v2Data.expenses;
+
+    if (includeMedical || includeEducation) {
+      // DB에 남아있는 medical/education 레코드 필터링 (중복 방지)
+      augmentedExpenses = v2Data.expenses.filter(e => {
+        if (includeMedical && e.type === 'medical') return false;
+        if (includeEducation && e.type === 'education') return false;
+        return true;
+      });
+
+      const virtualExpenses = generateVirtualExpenses({
+        selfBirthYear: simulationProfile.birthYear,
+        spouseBirthYear: simulationProfile.spouseBirthYear,
+        children: simFamilyMembers
+          .filter((fm) => fm.relationship === "child" && fm.birth_date)
+          .map((fm) => ({
+            name: fm.name,
+            birthYear: parseInt(fm.birth_date!.split("-")[0]),
+          })),
+        selfLifeExpectancy: lifeCycleSettings.selfLifeExpectancy,
+        spouseLifeExpectancy: lifeCycleSettings.spouseLifeExpectancy,
+        simulationId: activeSimulationId,
+        includeMedical,
+        includeEducation,
+        educationTier: autoExp?.education?.tier,
+      });
+
+      augmentedExpenses = [...augmentedExpenses, ...virtualExpenses];
+    }
+
+    const augmentedData = {
+      ...v2Data,
+      expenses: augmentedExpenses,
+    };
+
     return runSimulationV2(
-      v2Data,
+      augmentedData,
       {
         birthYear: simulationProfile.birthYear,
         retirementAge: lifeCycleSettings.selfRetirementAge,
@@ -987,6 +1201,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     cashFlowPriorities,
     activeSim.start_year,
     activeSim.start_month,
+    simFamilyMembers,
+    activeSimulationId,
   ]);
 
   // 레거시 CRUD 스텁 함수 (실제 업데이트는 개별 서비스 사용)
@@ -1302,6 +1518,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             allSimulations={simulations}
             profileId={profile.id}
             onToggleCompare={toggleCompareSelection}
+            autoExpenses={lifeCycleSettings.autoExpenses}
+            onAutoExpensesChange={handleAutoExpensesChange}
           />
         );
       }
@@ -1824,7 +2042,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       {showNewSimModal && (
         <NewSimulationModal
           onClose={() => setShowNewSimModal(false)}
-          onCreate={handleCreateNewSimulation}
+          onCreate={(wizardData) => handleCreateNewSimulation(wizardData)}
           profile={profile}
           familyMembers={familyMembers}
         />
