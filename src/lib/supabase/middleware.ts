@@ -27,9 +27,13 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch {
+    // Invalid refresh token — treat as unauthenticated
+  }
 
   // 보호된 경로 체크
   const protectedPaths = ['/dashboard', '/onboarding', '/waiting']

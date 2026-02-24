@@ -39,6 +39,7 @@ import { useChartTheme } from "@/hooks/useChartTheme";
 import { AccountManagementModal } from "./components/AccountManagementModal";
 import { CategoryManagementModal } from "./components/CategoryManagementModal";
 import { AddSimulationModal } from "./components/AddSimulationModal";
+import { NewSimulationModal } from "./components/NewSimulationModal";
 import {
   SimulationAssumptionsPanel,
   CashFlowPrioritiesPanel,
@@ -240,6 +241,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     bottom: number;
     width: number;
   } | null>(null);
+  const [showNewSimModal, setShowNewSimModal] = useState(false);
 
   // 비교 선택 상태: 'asset-trend' = 자산 추이, 시뮬레이션 ID = 다른 시뮬레이션
   const [compareSelections, setCompareSelections] = useState<Set<string>>(
@@ -1809,9 +1811,22 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
         <AddSimulationModal
           triggerRect={addSimModalRect}
           simulations={simulations}
-          onCreateNew={handleCreateNewSimulation}
+          onCreateNew={() => {
+            setShowAddSimModal(false);
+            setShowNewSimModal(true);
+          }}
           onCopyFrom={handleCopySimulation}
           onClose={() => setShowAddSimModal(false)}
+        />
+      )}
+
+      {/* 새 시뮬레이션 생성 모달 */}
+      {showNewSimModal && (
+        <NewSimulationModal
+          onClose={() => setShowNewSimModal(false)}
+          onCreate={handleCreateNewSimulation}
+          profile={profile}
+          familyMembers={familyMembers}
         />
       )}
     </div>

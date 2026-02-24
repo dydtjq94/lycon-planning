@@ -345,6 +345,22 @@ WebkitBackdropFilter: 'blur(8px)'
 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
 ```
 
+#### 3. 대형 모달 (위자드, 전체 화면급 모달)
+- **배경 투명도**: `0.8` (라이트/다크 모두)
+- **블러**: `blur(10px)` 고정
+- **그림자**: `0 8px 32px rgba(0, 0, 0, 0.12)`
+- **backdrop(뒷배경)에 blur 넣지 말 것**: blur는 모달 자체에만 적용
+- **다른 값 사용 금지**: 투명도와 블러 값을 임의로 변경하지 말 것
+
+```tsx
+// 대형 모달, 위자드 등 큰 화면급 요소
+background: isDark ? 'rgba(34, 37, 41, 0.8)' : 'rgba(255, 255, 255, 0.8)'
+backdropFilter: 'blur(10px)'
+WebkitBackdropFilter: 'blur(10px)'
+boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+// backdrop(뒷배경)에는 blur 없음 - 모달 자체만 글래스모피즘
+```
+
 #### 구현 시 주의사항 (매우 중요!)
 - **CSS Module에서 `backdrop-filter` 사용 금지**: Next.js CSS Module 빌드 파이프라인에서 `backdrop-filter`가 제대로 적용 안 됨
 - **반드시 인라인 스타일 사용**: `style={{ backdropFilter: 'blur(Xpx)', WebkitBackdropFilter: 'blur(Xpx)' }}`

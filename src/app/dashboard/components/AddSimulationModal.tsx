@@ -101,7 +101,6 @@ export function AddSimulationModal({
   return (
     <>
       <div className={styles.overlay} onClick={onClose} />
-
       <div
         ref={modalRef}
         className={styles.modal}
@@ -130,7 +129,6 @@ export function AddSimulationModal({
                   </span>
                 </div>
               </button>
-
               <button
                 className={styles.optionCard}
                 onClick={() => setShowSimList(true)}
@@ -140,9 +138,7 @@ export function AddSimulationModal({
                   <Copy size={18} />
                 </div>
                 <div className={styles.optionText}>
-                  <span className={styles.optionTitle}>
-                    기존 시뮬레이션 복사
-                  </span>
+                  <span className={styles.optionTitle}>기존 시뮬레이션 복사</span>
                   <span className={styles.optionDesc}>
                     기존 데이터를 복사하여 만듭니다
                   </span>

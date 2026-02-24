@@ -59,7 +59,13 @@ export default function AdminLayout({
     const supabase = createClient();
 
     const loadData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      let user = null;
+      try {
+        const { data } = await supabase.auth.getUser();
+        user = data.user;
+      } catch {
+        // Invalid refresh token
+      }
 
       if (!user) {
         setLoading(false);

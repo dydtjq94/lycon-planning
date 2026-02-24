@@ -46,7 +46,11 @@
 }
 
 .optionCard:hover {
-  background: var(--dashboard-hover-bg);
+}
+
+.optionCard:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .optionCard + .optionCard {

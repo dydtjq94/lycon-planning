@@ -1,6 +1,6 @@
 /* Container */
 .container {
-  padding: 24px;
+  padding: 24px 24px 120px;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -103,6 +103,14 @@
 .quickInfoMuted {
   font-size: 13px;
   color: var(--dashboard-text-muted);
+}
+
+.quickInfoRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .quickInfoArrow {
@@ -276,11 +284,41 @@
   padding: 12px 0;
 }
 
+.assetGroup {
+  padding-bottom: 4px;
+}
+
+.assetGroup + .assetGroup {
+  padding-top: 4px;
+  border-top: 1px solid var(--dashboard-border);
+}
+
+.assetGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0 2px;
+}
+
+.assetGroupLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dashboard-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.assetGroupTotal {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dashboard-text-secondary);
+}
+
 .assetListItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 7px 0;
+  padding: 5px 0;
 }
 
 .assetListLabel {

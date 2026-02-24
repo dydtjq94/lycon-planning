@@ -93,7 +93,7 @@ export function DashboardTab({
   const [simLoading, setSimLoading] = useState(true);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [customHoldings, setCustomHoldings] = useState<CustomHolding[]>([]);
-  const [portfolioAccounts, setPortfolioAccounts] = useState<{ id: string; account_type: string }[]>([]);
+  const [portfolioAccounts, setPortfolioAccounts] = useState<{ id: string; account_type: string; current_balance: number | null }[]>([]);
   const [nextBooking, setNextBooking] = useState<NextBooking | null>(null);
   const [recentChat, setRecentChat] = useState<{ expertName: string; lastMessage: string; lastDate: string; unread: number } | null>(null);
   const [hoveredPoint, setHoveredPoint] = useState<{ value: number; date: string; index: number } | null>(null);
@@ -109,53 +109,12 @@ export function DashboardTab({
   const { data: todaySnapshot } = useTodaySnapshot(profileId || "", !!profileId);
   const { data: snapshotItems = [] } = useSnapshotItems(todaySnapshot?.id, !!todaySnapshot?.id);
 
-  // 자산 항목: 저축/투자 (snapshot summary) + 부동산/실물자산 (snapshot items)
-  const assetItems = useMemo(() => {
-    const items: { id: string; title: string; amount: number }[] = [];
+  // 부채 그룹: 자산 대출 / 금융 부채
+  const debtGroups = useMemo(() => {
+    const groups: { label: string; items: { id: string; title: string; amount: number }[] }[] = [];
 
-    // 저축 (pre-computed by CurrentAssetTab → snapshot summary)
-    if (todaySnapshot && todaySnapshot.savings > 0) {
-      items.push({ id: "_savings", title: "저축", amount: todaySnapshot.savings });
-    }
-    // 투자 (pre-computed by CurrentAssetTab → snapshot summary)
-    if (todaySnapshot && todaySnapshot.investments > 0) {
-      items.push({ id: "_investments", title: "투자", amount: todaySnapshot.investments });
-    }
-
-    // 부동산 items
-    snapshotItems
-      .filter(i => {
-        if (i.category !== "asset") return false;
-        const meta = (i.metadata || {}) as Record<string, unknown>;
-        if (meta.housing_type === "무상") return false;
-        return meta.purpose === "residential" || meta.purpose === "investment" ||
-          ["apartment", "house", "officetel", "land", "commercial"].includes(i.item_type);
-      })
-      .forEach(i => items.push({ id: i.id, title: i.title, amount: i.amount }));
-
-    // 실물자산 items
-    snapshotItems
-      .filter(i => i.category === "asset" && ["car", "precious_metal", "art"].includes(i.item_type))
-      .forEach(i => items.push({ id: i.id, title: i.title, amount: i.amount }));
-
-    return items.sort((a, b) => b.amount - a.amount);
-  }, [snapshotItems, todaySnapshot]);
-
-  // 부채 항목: 금융부채 (snapshot items) + 담보대출 (asset item metadata)
-  const debtItems = useMemo(() => {
-    const items: { id: string; title: string; amount: number }[] = [];
-
-    // 금융 부채 (순수 부채 - source 없는 것)
-    snapshotItems
-      .filter(i => i.category === "debt")
-      .forEach(i => {
-        const meta = (i.metadata || {}) as Record<string, unknown>;
-        if (!meta.source) {
-          items.push({ id: i.id, title: i.title, amount: i.amount });
-        }
-      });
-
-    // 부동산/실물자산 담보대출 (asset item metadata에서)
+    // 자산 대출 (부동산/실물자산 담보대출)
+    const loanItems: { id: string; title: string; amount: number }[] = [];
     snapshotItems
       .filter(i => i.category === "asset")
       .forEach(i => {
@@ -163,11 +122,24 @@ export function DashboardTab({
         const loanAmt = meta.loan_amount as number | undefined;
         const hasLoan = meta.has_loan as boolean | undefined;
         if (hasLoan && loanAmt && loanAmt > 0) {
-          items.push({ id: `${i.id}-loan`, title: `${i.title} 대출`, amount: loanAmt });
+          loanItems.push({ id: `${i.id}-loan`, title: `${i.title} 대출`, amount: loanAmt });
         }
       });
+    if (loanItems.length > 0) groups.push({ label: "자산 대출", items: loanItems.sort((a, b) => b.amount - a.amount) });
 
-    return items.sort((a, b) => b.amount - a.amount);
+    // 금융 부채 (순수 부채 - source 없는 것)
+    const finDebtItems: { id: string; title: string; amount: number }[] = [];
+    snapshotItems
+      .filter(i => i.category === "debt")
+      .forEach(i => {
+        const meta = (i.metadata || {}) as Record<string, unknown>;
+        if (!meta.source) {
+          finDebtItems.push({ id: i.id, title: i.title, amount: i.amount });
+        }
+      });
+    if (finDebtItems.length > 0) groups.push({ label: "금융 부채", items: finDebtItems.sort((a, b) => b.amount - a.amount) });
+
+    return groups;
   }, [snapshotItems]);
 
   const {
@@ -189,10 +161,9 @@ export function DashboardTab({
     const supabase = createClient();
     supabase
       .from("accounts")
-      .select("id, account_type")
+      .select("id, account_type, current_balance")
       .eq("profile_id", profileId)
       .eq("is_active", true)
-      .in("account_type", ["general", "isa", "pension_savings", "irp", "dc"])
       .then(({ data }) => {
         if (data) setPortfolioAccounts(data);
       });
@@ -481,8 +452,84 @@ export function DashboardTab({
     [buildPortfolioTimeSeries, pensionPriceCache, pensionTransactions, pensionCustomHoldings],
   );
 
-  const totalAssets = useMemo(() => assetItems.reduce((sum, item) => sum + item.amount, 0), [assetItems]);
-  const totalDebts = useMemo(() => debtItems.reduce((sum, item) => sum + item.amount, 0), [debtItems]);
+  // 자산 그룹: 저축/투자/부동산/실물자산 카테고리별 분류
+  const assetGroups = useMemo(() => {
+    const groups: { label: string; total: number; items: { id: string; title: string; amount: number }[] }[] = [];
+
+    // 1. 저축 (accounts 기반, 원→만원)
+    const savingsItems: { id: string; title: string; amount: number }[] = [];
+    const checkingTotal = Math.round(
+      portfolioAccounts
+        .filter(a => a.account_type === "checking")
+        .reduce((sum, a) => sum + (a.current_balance || 0), 0) / 10000
+    );
+    if (checkingTotal > 0) savingsItems.push({ id: "_checking", title: "입출금통장", amount: checkingTotal });
+
+    const depositTotal = Math.round(
+      portfolioAccounts
+        .filter(a => a.account_type === "deposit")
+        .reduce((sum, a) => sum + (a.current_balance || 0), 0) / 10000
+    );
+    if (depositTotal > 0) savingsItems.push({ id: "_deposit", title: "정기예금", amount: depositTotal });
+
+    const savingsAccTotal = Math.round(
+      portfolioAccounts
+        .filter(a => ["savings", "free_savings", "housing"].includes(a.account_type))
+        .reduce((sum, a) => sum + (a.current_balance || 0), 0) / 10000
+    );
+    if (savingsAccTotal > 0) savingsItems.push({ id: "_savings_acc", title: "적금", amount: savingsAccTotal });
+
+    const totalSavingsCalc = savingsItems.reduce((s, i) => s + i.amount, 0);
+    if (savingsItems.length > 0) {
+      groups.push({ label: "저축", total: totalSavingsCalc, items: savingsItems });
+    } else if (todaySnapshot && todaySnapshot.savings > 0) {
+      groups.push({ label: "저축", total: todaySnapshot.savings, items: [{ id: "_savings", title: "저축", amount: todaySnapshot.savings }] });
+    }
+
+    // 2. 투자 (portfolio time series, 원→만원)
+    const investItems: { id: string; title: string; amount: number }[] = [];
+    const generalVal = generalTimeSeries?.value[generalTimeSeries.value.length - 1];
+    if (generalVal && generalVal > 0) {
+      investItems.push({ id: "_general_inv", title: "일반 투자", amount: Math.round(generalVal / 10000) });
+    }
+    const pensionVal = pensionTimeSeries?.value[pensionTimeSeries.value.length - 1];
+    if (pensionVal && pensionVal > 0) {
+      investItems.push({ id: "_pension_inv", title: "연금 투자", amount: Math.round(pensionVal / 10000) });
+    }
+    const totalInvCalc = investItems.reduce((s, i) => s + i.amount, 0);
+    if (investItems.length > 0) {
+      groups.push({ label: "투자", total: totalInvCalc, items: investItems });
+    } else if (todaySnapshot && todaySnapshot.investments > 0) {
+      groups.push({ label: "투자", total: todaySnapshot.investments, items: [{ id: "_investments", title: "투자", amount: todaySnapshot.investments }] });
+    }
+
+    // 3. 부동산
+    const realEstateItems = snapshotItems
+      .filter(i => {
+        if (i.category !== "asset") return false;
+        const meta = (i.metadata || {}) as Record<string, unknown>;
+        if (meta.housing_type === "무상") return false;
+        return meta.purpose === "residential" || meta.purpose === "investment" ||
+          ["apartment", "house", "officetel", "land", "commercial"].includes(i.item_type);
+      })
+      .map(i => ({ id: i.id, title: i.title, amount: i.amount }))
+      .sort((a, b) => b.amount - a.amount);
+    const totalRE = realEstateItems.reduce((s, i) => s + i.amount, 0);
+    if (totalRE > 0) groups.push({ label: "부동산", total: totalRE, items: realEstateItems });
+
+    // 4. 실물 자산
+    const physicalItems = snapshotItems
+      .filter(i => i.category === "asset" && ["car", "precious_metal", "art"].includes(i.item_type))
+      .map(i => ({ id: i.id, title: i.title, amount: i.amount }))
+      .sort((a, b) => b.amount - a.amount);
+    const totalPA = physicalItems.reduce((s, i) => s + i.amount, 0);
+    if (totalPA > 0) groups.push({ label: "실물 자산", total: totalPA, items: physicalItems });
+
+    return groups;
+  }, [snapshotItems, todaySnapshot, portfolioAccounts, generalTimeSeries, pensionTimeSeries]);
+
+  const totalAssets = useMemo(() => assetGroups.reduce((sum, g) => sum + g.total, 0), [assetGroups]);
+  const totalDebts = useMemo(() => debtGroups.reduce((sum, g) => sum + g.items.reduce((s, i) => s + i.amount, 0), 0), [debtGroups]);
 
   // Crosshair plugin for vertical dashed line on hover (uses ref to avoid re-creating)
   const crosshairPlugin = useMemo(() => ({
@@ -602,7 +649,6 @@ export function DashboardTab({
         <div className={styles.quickInfoRow}>
           {nextBooking ? (
             <div className={styles.quickInfoCard} onClick={() => onNavigate("consultation")}>
-              <Calendar size={16} className={styles.quickInfoIcon} />
               <div className={styles.quickInfoContent}>
                 <span className={styles.quickInfoLabel}>다음 상담</span>
                 <span className={styles.quickInfoValue}>
@@ -610,14 +656,13 @@ export function DashboardTab({
                     const d = new Date(nextBooking.booking_date + "T00:00:00");
                     return `${d.getMonth() + 1}/${d.getDate()} ${nextBooking.booking_time}`;
                   })()}
-                  <span className={styles.quickInfoSub}>{nextBooking.expert_name}</span>
+                  <span className={styles.quickInfoSub}>{nextBooking.expert_name} 전문가</span>
                 </span>
               </div>
               <ChevronRight size={14} className={styles.quickInfoArrow} />
             </div>
           ) : (
             <div className={styles.quickInfoCard} onClick={() => onNavigate("consultation")}>
-              <Calendar size={16} className={styles.quickInfoIcon} />
               <div className={styles.quickInfoContent}>
                 <span className={styles.quickInfoLabel}>다음 상담</span>
                 <span className={styles.quickInfoMuted}>예정된 상담이 없습니다</span>
@@ -627,10 +672,9 @@ export function DashboardTab({
           )}
           {recentChat ? (
             <div className={styles.quickInfoCard} onClick={() => onNavigate("messages")}>
-              <MessageSquare size={16} className={styles.quickInfoIcon} />
               <div className={styles.quickInfoContent}>
                 <span className={styles.quickInfoLabel}>
-                  {recentChat.expertName}
+                  {recentChat.expertName} 전문가
                   {recentChat.unread > 0 && (
                     <span className={styles.unreadBadge}>{recentChat.unread}</span>
                   )}
@@ -639,14 +683,15 @@ export function DashboardTab({
                   {recentChat.lastMessage.length > 30
                     ? recentChat.lastMessage.slice(0, 30) + "..."
                     : recentChat.lastMessage}
-                  <span className={styles.quickInfoSub}>{recentChat.lastDate}</span>
                 </span>
               </div>
-              <ChevronRight size={14} className={styles.quickInfoArrow} />
+              <div className={styles.quickInfoRight}>
+                <span className={styles.quickInfoSub}>{recentChat.lastDate}</span>
+                <ChevronRight size={14} className={styles.quickInfoArrow} />
+              </div>
             </div>
           ) : (
             <div className={styles.quickInfoCard} onClick={() => onNavigate("messages")}>
-              <MessageSquare size={16} className={styles.quickInfoIcon} />
               <div className={styles.quickInfoContent}>
                 <span className={styles.quickInfoLabel}>전문가 채팅</span>
                 <span className={styles.quickInfoMuted}>채팅 내역이 없습니다</span>
@@ -825,7 +870,7 @@ export function DashboardTab({
 
         <div className={styles.assetListPanel} onClick={() => onNavigate("current-asset")}>
           <div className={styles.assetListInner}>
-            {(assetItems.length > 0 || debtItems.length > 0) ? (
+            {(assetGroups.length > 0 || debtGroups.length > 0) ? (
               <div className={styles.assetDebtColumns}>
                 <div className={styles.assetColumn}>
                   <div className={styles.columnHeader}>
@@ -833,13 +878,20 @@ export function DashboardTab({
                     <span className={styles.columnTotal}>{formatMoney(totalAssets)}</span>
                   </div>
                   <div className={styles.columnScroll}>
-                    {assetItems.map((item) => (
-                      <div key={item.id} className={styles.assetListItem}>
-                        <span className={styles.assetListLabel}>{item.title}</span>
-                        <span className={styles.assetListValue}>{formatMoney(item.amount)}</span>
+                    {assetGroups.map((group) => (
+                      <div key={group.label} className={styles.assetGroup}>
+                        <div className={styles.assetGroupHeader}>
+                          <span className={styles.assetGroupLabel}>{group.label}</span>
+                        </div>
+                        {group.items.map((item) => (
+                          <div key={item.id} className={styles.assetListItem}>
+                            <span className={styles.assetListLabel}>{item.title}</span>
+                            <span className={styles.assetListValue}>{formatMoney(item.amount)}</span>
+                          </div>
+                        ))}
                       </div>
                     ))}
-                    {assetItems.length === 0 && (
+                    {assetGroups.length === 0 && (
                       <span className={styles.columnEmpty}>등록된 자산 없음</span>
                     )}
                   </div>
@@ -852,15 +904,22 @@ export function DashboardTab({
                     </span>
                   </div>
                   <div className={styles.columnScroll}>
-                    {debtItems.map((item) => (
-                      <div key={item.id} className={styles.assetListItem}>
-                        <span className={styles.assetListLabel}>{item.title}</span>
-                        <span className={`${styles.assetListValue} ${styles.negative}`}>
-                          {formatMoney(item.amount)}
-                        </span>
+                    {debtGroups.map((group) => (
+                      <div key={group.label} className={styles.assetGroup}>
+                        <div className={styles.assetGroupHeader}>
+                          <span className={styles.assetGroupLabel}>{group.label}</span>
+                        </div>
+                        {group.items.map((item) => (
+                          <div key={item.id} className={styles.assetListItem}>
+                            <span className={styles.assetListLabel}>{item.title}</span>
+                            <span className={`${styles.assetListValue} ${styles.negative}`}>
+                              {formatMoney(item.amount)}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     ))}
-                    {debtItems.length === 0 && (
+                    {debtGroups.length === 0 && (
                       <span className={styles.columnEmpty}>등록된 부채 없음</span>
                     )}
                   </div>
@@ -1176,24 +1235,29 @@ export function DashboardTab({
                         borderWidth: 2,
                         pointRadius: 0,
                         pointHitRadius: 8,
-                        fill: true,
+                        fill: "origin",
+                        segment: {
+                          borderColor: (ctx: any) => {
+                            const y0 = ctx.p0.parsed.y;
+                            const y1 = ctx.p1.parsed.y;
+                            if (y0 >= 0 && y1 >= 0) return chartLineColors.price;
+                            if (y0 < 0 && y1 < 0) return chartLineColors.expense;
+                            return chartLineColors.price;
+                          },
+                        },
                         backgroundColor: (ctx: any) => {
-                          if (!ctx.chart.chartArea) return "transparent";
-                          const gradient =
-                            ctx.chart.ctx.createLinearGradient(
-                              0,
-                              ctx.chart.chartArea.top,
-                              0,
-                              ctx.chart.chartArea.bottom
-                            );
-                          gradient.addColorStop(
-                            0,
-                            toRgba(chartLineColors.price, 0.15)
-                          );
-                          gradient.addColorStop(
-                            1,
-                            toRgba(chartLineColors.price, 0)
-                          );
+                          const { chart } = ctx;
+                          const { chartArea, scales } = chart;
+                          if (!chartArea || !scales?.y) return "transparent";
+                          const chartHeight = chartArea.bottom - chartArea.top;
+                          if (chartHeight <= 0) return "transparent";
+                          const zeroPixel = scales.y.getPixelForValue(0);
+                          const zeroRatio = Math.max(0.01, Math.min(0.99, (zeroPixel - chartArea.top) / chartHeight));
+                          const gradient = chart.ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                          gradient.addColorStop(0, toRgba(chartLineColors.price, 0.2));
+                          gradient.addColorStop(zeroRatio, toRgba(chartLineColors.price, 0.02));
+                          gradient.addColorStop(zeroRatio, toRgba(chartLineColors.expense, 0.02));
+                          gradient.addColorStop(1, toRgba(chartLineColors.expense, 0.2));
                           return gradient;
                         },
                         tension: 0.3,

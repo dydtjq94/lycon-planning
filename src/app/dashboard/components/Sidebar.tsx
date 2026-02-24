@@ -58,7 +58,7 @@ const expertMenu = [
 // 재무 관리
 const financeMenu = [
   { id: "portfolio", label: "일반 투자", icon: LineChart },
-  { id: "pension-portfolio", label: "연금 투자", icon: PiggyBank },
+  { id: "pension-portfolio", label: "연금 투자", icon: Landmark },
   { id: "current-asset", label: "현재 자산", icon: PieChart },
 ];
 
