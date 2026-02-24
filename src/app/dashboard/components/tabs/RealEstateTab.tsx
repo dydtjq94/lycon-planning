@@ -890,39 +890,6 @@ export function RealEstateTab({
                     <span className={styles.checkboxText}>현금 흐름으로 처리</span>
                   </label>
                 </div>
-                <div className={styles.modalFormRow}>
-                  <span className={styles.modalFormLabel}>매각 예정</span>
-                  <div className={styles.fieldContent}>
-                    <div className={styles.typeButtons}>
-                      <button
-                        type="button"
-                        className={`${styles.typeBtn} ${sellMode === 'none' ? styles.active : ''}`}
-                        onClick={() => { setSellMode('none'); setSellDateText('') }}
-                      >
-                        매각 안함
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.typeBtn} ${sellMode === 'custom' ? styles.active : ''}`}
-                        onClick={() => setSellMode('custom')}
-                      >
-                        직접 입력
-                      </button>
-                    </div>
-                    {sellMode === 'custom' && (
-                      <input
-                        type="text"
-                        className={styles.periodInput}
-                        value={formatPeriodDisplay(sellDateText)}
-                        onChange={(e) => {
-                          handlePeriodTextChange(e, setSellDateText, () => {}, () => {})
-                        }}
-                        placeholder="2030.01"
-                        maxLength={7}
-                      />
-                    )}
-                  </div>
-                </div>
               </>
             )}
 
@@ -952,6 +919,41 @@ export function RealEstateTab({
                 placeholder="0"
               />
               <span className={styles.modalFormUnit}>만원/월</span>
+            </div>
+
+            {/* 매각/종료 예정 (모든 거주형태 공통) */}
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>{housingType === '자가' ? '매각 예정' : '종료 예정'}</span>
+              <div className={styles.fieldContent}>
+                <div className={styles.typeButtons}>
+                  <button
+                    type="button"
+                    className={`${styles.typeBtn} ${sellMode === 'none' ? styles.active : ''}`}
+                    onClick={() => { setSellMode('none'); setSellDateText('') }}
+                  >
+                    {housingType === '자가' ? '매각 안함' : '종료 안함'}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.typeBtn} ${sellMode === 'custom' ? styles.active : ''}`}
+                    onClick={() => setSellMode('custom')}
+                  >
+                    직접 입력
+                  </button>
+                </div>
+                {sellMode === 'custom' && (
+                  <input
+                    type="text"
+                    className={styles.periodInput}
+                    value={formatPeriodDisplay(sellDateText)}
+                    onChange={(e) => {
+                      handlePeriodTextChange(e, setSellDateText, () => {}, () => {})
+                    }}
+                    placeholder="2030.01"
+                    maxLength={7}
+                  />
+                )}
+              </div>
             </div>
 
             <div className={styles.modalDivider} />
@@ -1419,7 +1421,8 @@ export function RealEstateTab({
     }
 
     if (property.sell_year) {
-      metaParts.push(`매각 ${property.sell_year}년${property.sell_month ? ` ${property.sell_month}월` : ''}`)
+      const sellLabel = property.housing_type === '자가' ? '매각' : '종료'
+      metaParts.push(`${sellLabel} ${property.sell_year}년${property.sell_month ? ` ${property.sell_month}월` : ''}`)
     }
 
     if (property.include_in_cashflow) {

@@ -15,6 +15,7 @@ import { Bar } from "react-chartjs-2";
 import type {
   DashboardIncomeItem,
   DashboardIncomeFrequency,
+  RateCategory,
 } from "@/types";
 import type { SimulationResult } from "@/lib/services/simulationTypes";
 import type { Income, IncomeInput, IncomeType as DBIncomeType } from "@/types/tables";
@@ -41,7 +42,9 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 interface IncomeTabProps {
   simulationId: string;
   birthYear: number;
+  birthMonth: number;
   spouseBirthYear?: number | null;
+  spouseBirthMonth?: number | null;
   retirementAge: number;
   spouseRetirementAge?: number;
   isMarried: boolean;
@@ -69,7 +72,9 @@ const UI_TYPE_LABELS: Record<IncomeType, string> = {
 export function IncomeTab({
   simulationId,
   birthYear,
+  birthMonth,
   spouseBirthYear,
+  spouseBirthMonth,
   retirementAge,
   spouseRetirementAge = 60,
   isMarried,
@@ -88,6 +93,14 @@ export function IncomeTab({
   const currentAge = currentYear - birthYear;
   const selfRetirementYear = currentYear + (retirementAge - currentAge);
 
+  // 은퇴 월 정밀 계산 (생일 기준)
+  // 마지막 근무 월: 은퇴 나이가 되는 달의 전 달
+  const selfRetEndMonth = birthMonth === 1 ? 12 : birthMonth - 1;
+  const selfRetEndYear = birthMonth === 1 ? selfRetirementYear - 1 : selfRetirementYear;
+  // 은퇴 시작 월: 은퇴 나이가 되는 달 (생일 달)
+  const selfRetStartYear = selfRetirementYear;
+  const selfRetStartMonth = birthMonth;
+
   // 배우자 나이 계산
   const spouseCurrentAge = spouseBirthYear ? currentYear - spouseBirthYear : null;
 
@@ -96,6 +109,13 @@ export function IncomeTab({
     if (!spouseBirthYear || spouseCurrentAge === null) return selfRetirementYear;
     return currentYear + (spouseRetirementAge - spouseCurrentAge);
   }, [spouseBirthYear, currentYear, selfRetirementYear, spouseCurrentAge, spouseRetirementAge]);
+
+  // 배우자 은퇴 월 정밀 계산
+  const effectiveSpouseBirthMonth = spouseBirthMonth || 1;
+  const spouseRetEndMonth = effectiveSpouseBirthMonth === 1 ? 12 : effectiveSpouseBirthMonth - 1;
+  const spouseRetEndYear = effectiveSpouseBirthMonth === 1 ? spouseRetirementYear - 1 : spouseRetirementYear;
+  const spouseRetStartYear = spouseRetirementYear;
+  const spouseRetStartMonth = effectiveSpouseBirthMonth;
 
   const hasSpouse = isMarried && spouseBirthYear;
 
@@ -120,9 +140,9 @@ export function IncomeTab({
     item: IncomeItem
   ): { year: number; month: number } => {
     if (item.endType === "self-retirement")
-      return { year: selfRetirementYear, month: 12 };
+      return { year: selfRetEndYear, month: selfRetEndMonth };
     if (item.endType === "spouse-retirement")
-      return { year: spouseRetirementYear, month: 12 };
+      return { year: spouseRetEndYear, month: spouseRetEndMonth };
     if (item.endType === "self-life-expectancy")
       return { year: selfLifeExpectancyYear, month: 12 };
     if (item.endType === "spouse-life-expectancy")
@@ -224,9 +244,9 @@ export function IncomeTab({
   const [newStartYear, setNewStartYear] = useState(currentYear);
   const [newStartMonth, setNewStartMonth] = useState(currentMonth);
   const [newEndType, setNewEndType] = useState<'self-retirement' | 'spouse-retirement' | 'self-life-expectancy' | 'spouse-life-expectancy' | 'year'>('self-retirement');
-  const [newEndYear, setNewEndYear] = useState(selfRetirementYear);
-  const [newEndMonth, setNewEndMonth] = useState(12);
-  const [newRateCategory, setNewRateCategory] = useState<'inflation' | 'income' | 'investment' | 'realEstate' | 'fixed'>('income');
+  const [newEndYear, setNewEndYear] = useState(selfRetEndYear);
+  const [newEndMonth, setNewEndMonth] = useState(selfRetEndMonth);
+  const [newRateCategory, setNewRateCategory] = useState<RateCategory>('income');
   const [newCustomRate, setNewCustomRate] = useState("");
   const [newStartDateText, setNewStartDateText] = useState('');
   const [newEndDateText, setNewEndDateText] = useState('');
@@ -674,12 +694,12 @@ export function IncomeTab({
     setNewStartYear(currentYear);
     setNewStartMonth(currentMonth);
     setNewEndType('self-retirement');
-    setNewEndYear(selfRetirementYear);
-    setNewEndMonth(12);
+    setNewEndYear(selfRetEndYear);
+    setNewEndMonth(selfRetEndMonth);
     setNewRateCategory('income');
     setNewCustomRate("");
     setNewStartDateText(toPeriodRaw(currentYear, currentMonth));
-    setNewEndDateText(toPeriodRaw(selfRetirementYear, 12));
+    setNewEndDateText(toPeriodRaw(selfRetEndYear, selfRetEndMonth));
     setNewOnetimeDateText(toPeriodRaw(currentYear, currentMonth));
   };
 
@@ -771,9 +791,9 @@ export function IncomeTab({
     // startType 결정
     if (item.startYear === currentYear && item.startMonth === currentMonth) {
       setEditStartType('current');
-    } else if (item.startYear === selfRetirementYear + 1 && item.startMonth === 1) {
+    } else if (item.startYear === selfRetStartYear && item.startMonth === selfRetStartMonth) {
       setEditStartType('self-retirement');
-    } else if (hasSpouse && item.startYear === spouseRetirementYear + 1 && item.startMonth === 1) {
+    } else if (hasSpouse && item.startYear === spouseRetStartYear && item.startMonth === spouseRetStartMonth) {
       setEditStartType('spouse-retirement');
     } else {
       setEditStartType('year');
@@ -886,16 +906,16 @@ export function IncomeTab({
     )}`;
 
     if (item.endType === "self-retirement") {
-      return `${startStr} ~ 본인 은퇴`;
+      return `${startStr} ~ ${selfRetEndYear}.${String(selfRetEndMonth).padStart(2, "0")} (본인 은퇴)`;
     }
     if (item.endType === "spouse-retirement") {
-      return `${startStr} ~ 배우자 은퇴`;
+      return `${startStr} ~ ${spouseRetEndYear}.${String(spouseRetEndMonth).padStart(2, "0")} (배우자 은퇴)`;
     }
     if (item.endType === "self-life-expectancy") {
-      return `${startStr} ~ 본인 기대수명`;
+      return `${startStr} ~ ${selfLifeExpectancyYear}.12 (본인 기대수명)`;
     }
     if (item.endType === "spouse-life-expectancy") {
-      return `${startStr} ~ 배우자 기대수명`;
+      return `${startStr} ~ ${spouseLifeExpectancyYear}.12 (배우자 기대수명)`;
     }
 
     // 종료일이 없으면 "시작일 ~" 형식으로 표시
@@ -916,10 +936,10 @@ export function IncomeTab({
 
   // 종료 타입 표시 텍스트 (편집용)
   const getEndTypeLabel = (item: IncomeItem): string => {
-    if (item.endType === "self-retirement") return `본인 은퇴`;
-    if (item.endType === "spouse-retirement") return `배우자 은퇴`;
-    if (item.endType === "self-life-expectancy") return `본인 기대수명`;
-    if (item.endType === "spouse-life-expectancy") return `배우자 기대수명`;
+    if (item.endType === "self-retirement") return `본인 은퇴 (${selfRetEndYear}.${String(selfRetEndMonth).padStart(2, "0")})`;
+    if (item.endType === "spouse-retirement") return `배우자 은퇴 (${spouseRetEndYear}.${String(spouseRetEndMonth).padStart(2, "0")})`;
+    if (item.endType === "self-life-expectancy") return `본인 기대수명 (${selfLifeExpectancyYear}.12)`;
+    if (item.endType === "spouse-life-expectancy") return `배우자 기대수명 (${spouseLifeExpectancyYear}.12)`;
     return `직접 입력`;
   };
 
@@ -948,12 +968,12 @@ export function IncomeTab({
     setNewStartYear(currentYear);
     setNewStartMonth(currentMonth);
     setNewEndType('self-retirement');
-    setNewEndYear(selfRetirementYear);
-    setNewEndMonth(12);
+    setNewEndYear(selfRetEndYear);
+    setNewEndMonth(selfRetEndMonth);
     setNewRateCategory(getDefaultRateCategory(type));
     setNewCustomRate("");
     setNewStartDateText(toPeriodRaw(currentYear, currentMonth));
-    setNewEndDateText(toPeriodRaw(selfRetirementYear, 12));
+    setNewEndDateText(toPeriodRaw(selfRetEndYear, selfRetEndMonth));
     setNewOnetimeDateText(toPeriodRaw(currentYear, currentMonth));
     // Don't close showTypeMenu - stay in modal for step 2
   };
@@ -1352,12 +1372,12 @@ export function IncomeTab({
                                 setNewStartMonth(currentMonth);
                               } else if (val === 'self-retirement') {
                                 setNewStartType('self-retirement');
-                                setNewStartYear(selfRetirementYear + 1);
-                                setNewStartMonth(1);
+                                setNewStartYear(selfRetStartYear);
+                                setNewStartMonth(selfRetStartMonth);
                               } else if (val === 'spouse-retirement') {
                                 setNewStartType('spouse-retirement');
-                                setNewStartYear(spouseRetirementYear + 1);
-                                setNewStartMonth(1);
+                                setNewStartYear(spouseRetStartYear);
+                                setNewStartMonth(spouseRetStartMonth);
                               } else {
                                 setNewStartType('year');
                                 setNewStartDateText(toPeriodRaw(newStartYear, newStartMonth));
@@ -1365,8 +1385,8 @@ export function IncomeTab({
                             }}
                           >
                             <option value="current">현재</option>
-                            <option value="self-retirement">본인 은퇴 후</option>
-                            {hasSpouse && <option value="spouse-retirement">배우자 은퇴 후</option>}
+                            <option value="self-retirement">{`본인 은퇴 후 (${selfRetStartYear}.${String(selfRetStartMonth).padStart(2, "0")})`}</option>
+                            {hasSpouse && <option value="spouse-retirement">{`배우자 은퇴 후 (${spouseRetStartYear}.${String(spouseRetStartMonth).padStart(2, "0")})`}</option>}
                             <option value="year">직접 입력</option>
                           </select>
                           {newStartType === 'year' && (
@@ -1402,10 +1422,10 @@ export function IncomeTab({
                               }
                             }}
                           >
-                            <option value="self-retirement">본인 은퇴</option>
-                            {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
-                            <option value="self-life-expectancy">본인 기대수명</option>
-                            {hasSpouse && <option value="spouse-life-expectancy">배우자 기대수명</option>}
+                            <option value="self-retirement">{`본인 은퇴 (${selfRetEndYear}.${String(selfRetEndMonth).padStart(2, "0")})`}</option>
+                            {hasSpouse && <option value="spouse-retirement">{`배우자 은퇴 (${spouseRetEndYear}.${String(spouseRetEndMonth).padStart(2, "0")})`}</option>}
+                            <option value="self-life-expectancy">{`본인 기대수명 (${selfLifeExpectancyYear}.12)`}</option>
+                            {hasSpouse && <option value="spouse-life-expectancy">{`배우자 기대수명 (${spouseLifeExpectancyYear}.12)`}</option>}
                             <option value="year">직접 입력</option>
                           </select>
                           {newEndType === 'year' && (
@@ -1660,10 +1680,10 @@ export function IncomeTab({
                             setEditForm({ ...editForm, startYear: currentYear, startMonth: currentMonth });
                           } else if (val === 'self-retirement') {
                             setEditStartType('self-retirement');
-                            setEditForm({ ...editForm, startYear: selfRetirementYear + 1, startMonth: 1 });
+                            setEditForm({ ...editForm, startYear: selfRetStartYear, startMonth: selfRetStartMonth });
                           } else if (val === 'spouse-retirement') {
                             setEditStartType('spouse-retirement');
-                            setEditForm({ ...editForm, startYear: spouseRetirementYear + 1, startMonth: 1 });
+                            setEditForm({ ...editForm, startYear: spouseRetStartYear, startMonth: spouseRetStartMonth });
                           } else {
                             setEditStartType('year');
                             setEditStartDateText(toPeriodRaw(editForm.startYear, editForm.startMonth));
@@ -1671,8 +1691,8 @@ export function IncomeTab({
                         }}
                       >
                         <option value="current">현재</option>
-                        <option value="self-retirement">본인 은퇴 후</option>
-                        {hasSpouse && <option value="spouse-retirement">배우자 은퇴 후</option>}
+                        <option value="self-retirement">{`본인 은퇴 후 (${selfRetStartYear}.${String(selfRetStartMonth).padStart(2, "0")})`}</option>
+                        {hasSpouse && <option value="spouse-retirement">{`배우자 은퇴 후 (${spouseRetStartYear}.${String(spouseRetStartMonth).padStart(2, "0")})`}</option>}
                         <option value="year">직접 입력</option>
                       </select>
                       {editStartType === 'year' && (
@@ -1727,10 +1747,10 @@ export function IncomeTab({
                           }
                         }}
                       >
-                        <option value="self-retirement">본인 은퇴</option>
-                        {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
-                        <option value="self-life-expectancy">본인 기대수명</option>
-                        {hasSpouse && <option value="spouse-life-expectancy">배우자 기대수명</option>}
+                        <option value="self-retirement">{`본인 은퇴 (${selfRetEndYear}.${String(selfRetEndMonth).padStart(2, "0")})`}</option>
+                        {hasSpouse && <option value="spouse-retirement">{`배우자 은퇴 (${spouseRetEndYear}.${String(spouseRetEndMonth).padStart(2, "0")})`}</option>}
+                        <option value="self-life-expectancy">{`본인 기대수명 (${selfLifeExpectancyYear}.12)`}</option>
+                        {hasSpouse && <option value="spouse-life-expectancy">{`배우자 기대수명 (${spouseLifeExpectancyYear}.12)`}</option>}
                         <option value="year">직접 입력</option>
                       </select>
                       {editEndType === 'year' && (

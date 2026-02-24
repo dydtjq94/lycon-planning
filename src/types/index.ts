@@ -128,6 +128,7 @@ export type RateCategory =
   | "income"
   | "investment"
   | "realEstate"
+  | "physicalAsset"
   | "fixed";
 
 // 상승률 카테고리 라벨
@@ -136,6 +137,7 @@ export const RATE_CATEGORY_LABELS: Record<RateCategory, string> = {
   income: "소득연동",
   investment: "투자수익",
   realEstate: "부동산",
+  physicalAsset: "실물자산",
   fixed: "고정",
 };
 
@@ -569,6 +571,7 @@ export interface SimulationRates {
   investment: number; // 투자 수익률 (%)
   pension: number; // 연금 수익률 (%)
   realEstate: number; // 부동산 상승률 (%)
+  physicalAsset?: number; // 실물자산 상승률 (%)
   inflation: number; // 물가 상승률 (%)
   incomeGrowth?: number; // 소득 상승률 (%)
   baseRate?: number; // 기준금리 (%) - 변동금리 대출에 사용
@@ -593,6 +596,7 @@ export const DEFAULT_SIMULATION_ASSUMPTIONS: SimulationAssumptions = {
     investment: 7.0,
     pension: 5.0,
     realEstate: 3.0,
+    physicalAsset: 0,
     inflation: 2.5,
     incomeGrowth: 3.0,
     baseRate: 3.5,

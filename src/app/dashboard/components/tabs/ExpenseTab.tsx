@@ -24,6 +24,7 @@ import type {
   DashboardExpenseFrequency,
   SimFamilyMember,
   LifeCycleSettings,
+  RateCategory,
 } from "@/types";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import type { Expense } from "@/types/tables";
@@ -60,7 +61,9 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 interface ExpenseTabProps {
   simulationId: string;
   birthYear: number;
+  birthMonth: number;
   spouseBirthYear?: number | null;
+  spouseBirthMonth?: number | null;
   retirementAge: number;
   spouseRetirementAge?: number;
   isMarried: boolean;
@@ -80,7 +83,9 @@ type ExpenseFrequency = DashboardExpenseFrequency;
 export function ExpenseTab({
   simulationId,
   birthYear,
+  birthMonth,
   spouseBirthYear,
+  spouseBirthMonth,
   retirementAge,
   spouseRetirementAge = 60,
   isMarried,
@@ -97,6 +102,14 @@ export function ExpenseTab({
   // 현재 나이 계산
   const currentAge = currentYear - birthYear;
   const selfRetirementYear = currentYear + (retirementAge - currentAge);
+
+  // 은퇴 월 정밀 계산 (생일 기준)
+  // 마지막 근무 월: 은퇴 나이가 되는 달의 전 달
+  const selfRetEndMonth = birthMonth === 1 ? 12 : birthMonth - 1;
+  const selfRetEndYear = birthMonth === 1 ? selfRetirementYear - 1 : selfRetirementYear;
+  // 은퇴 시작 월: 은퇴 나이가 되는 달 (생일 달)
+  const selfRetStartYear = selfRetirementYear;
+  const selfRetStartMonth = birthMonth;
 
   // 배우자 나이 계산
   const spouseCurrentAge = spouseBirthYear
@@ -115,6 +128,13 @@ export function ExpenseTab({
     spouseCurrentAge,
     spouseRetirementAge,
   ]);
+
+  // 배우자 은퇴 월 정밀 계산
+  const effectiveSpouseBirthMonth = spouseBirthMonth || 1;
+  const spouseRetEndMonth = effectiveSpouseBirthMonth === 1 ? 12 : effectiveSpouseBirthMonth - 1;
+  const spouseRetEndYear = effectiveSpouseBirthMonth === 1 ? spouseRetirementYear - 1 : spouseRetirementYear;
+  const spouseRetStartYear = spouseRetirementYear;
+  const spouseRetStartMonth = effectiveSpouseBirthMonth;
 
   const hasSpouse = isMarried && spouseBirthYear;
   const currentMonth = new Date().getMonth() + 1;
@@ -211,11 +231,11 @@ export function ExpenseTab({
   const [newStartMonth, setNewStartMonth] = useState(currentMonth);
   const [newStartDateText, setNewStartDateText] = useState(toPeriodRaw(currentYear, currentMonth));
   const [newEndType, setNewEndType] = useState<'self-retirement' | 'spouse-retirement' | 'self-life-expectancy' | 'spouse-life-expectancy' | 'year'>('self-retirement');
-  const [newEndYear, setNewEndYear] = useState(selfRetirementYear);
-  const [newEndMonth, setNewEndMonth] = useState(12);
-  const [newEndDateText, setNewEndDateText] = useState(toPeriodRaw(selfRetirementYear, 12));
+  const [newEndYear, setNewEndYear] = useState(selfRetEndYear);
+  const [newEndMonth, setNewEndMonth] = useState(selfRetEndMonth);
+  const [newEndDateText, setNewEndDateText] = useState(toPeriodRaw(selfRetEndYear, selfRetEndMonth));
   const [newOwner, setNewOwner] = useState<'self' | 'spouse' | 'common'>('common');
-  const [newRateCategory, setNewRateCategory] = useState<'inflation' | 'income' | 'investment' | 'realEstate' | 'fixed'>('inflation');
+  const [newRateCategory, setNewRateCategory] = useState<RateCategory>('inflation');
   const [newCustomRate, setNewCustomRate] = useState("");
 
   // 타입 선택 드롭다운
@@ -638,9 +658,9 @@ export function ExpenseTab({
     setNewStartMonth(currentMonth);
     setNewStartDateText(toPeriodRaw(currentYear, currentMonth));
     setNewEndType('self-retirement');
-    setNewEndYear(selfRetirementYear);
-    setNewEndMonth(12);
-    setNewEndDateText(toPeriodRaw(selfRetirementYear, 12));
+    setNewEndYear(selfRetEndYear);
+    setNewEndMonth(selfRetEndMonth);
+    setNewEndDateText(toPeriodRaw(selfRetEndYear, selfRetEndMonth));
     setNewRateCategory('inflation');
     setNewCustomRate("");
     setEducationTierSelection(false);
@@ -673,9 +693,9 @@ export function ExpenseTab({
     // startType 결정
     if (item.startYear === currentYear && item.startMonth === currentMonth) {
       setEditStartType('current');
-    } else if (item.startYear === selfRetirementYear + 1 && item.startMonth === 1) {
+    } else if (item.startYear === selfRetStartYear && item.startMonth === selfRetStartMonth) {
       setEditStartType('self-retirement');
-    } else if (hasSpouse && item.startYear === spouseRetirementYear + 1 && item.startMonth === 1) {
+    } else if (hasSpouse && item.startYear === spouseRetStartYear && item.startMonth === spouseRetStartMonth) {
       setEditStartType('spouse-retirement');
     } else {
       setEditStartType('year');
@@ -769,10 +789,10 @@ export function ExpenseTab({
 
     const startStr = `${item.startYear}.${String(item.startMonth).padStart(2, "0")}`;
 
-    if (item.endType === "self-retirement") return `${startStr} ~ 본인 은퇴`;
-    if (item.endType === "spouse-retirement") return `${startStr} ~ 배우자 은퇴`;
-    if (item.endType === "self-life-expectancy") return `${startStr} ~ 본인 기대수명`;
-    if (item.endType === "spouse-life-expectancy") return `${startStr} ~ 배우자 기대수명`;
+    if (item.endType === "self-retirement") return `${startStr} ~ ${selfRetEndYear}.${String(selfRetEndMonth).padStart(2, "0")} (본인 은퇴)`;
+    if (item.endType === "spouse-retirement") return `${startStr} ~ ${spouseRetEndYear}.${String(spouseRetEndMonth).padStart(2, "0")} (배우자 은퇴)`;
+    if (item.endType === "self-life-expectancy") return `${startStr} ~ ${selfLifeExpectancyYear}.12 (본인 기대수명)`;
+    if (item.endType === "spouse-life-expectancy") return `${startStr} ~ ${spouseLifeExpectancyYear}.12 (배우자 기대수명)`;
 
     // 종료일이 없으면 "시작일 ~" 형식으로 표시
     if (!item.endYear) return `${startStr} ~`;
@@ -812,8 +832,8 @@ export function ExpenseTab({
     setNewStartYear(currentYear);
     setNewStartMonth(currentMonth);
     setNewEndType('self-retirement');
-    setNewEndYear(selfRetirementYear);
-    setNewEndMonth(12);
+    setNewEndYear(selfRetEndYear);
+    setNewEndMonth(selfRetEndMonth);
     setNewRateCategory(getDefaultRateCategory(type));
     setNewCustomRate("");
     // DON'T close showTypeMenu - stay in modal for step 2
@@ -1105,19 +1125,19 @@ export function ExpenseTab({
                                 setNewStartMonth(currentMonth);
                                 setNewStartDateText(toPeriodRaw(currentYear, currentMonth));
                               } else if (val === 'self-retirement') {
-                                setNewStartYear(selfRetirementYear + 1);
-                                setNewStartMonth(1);
-                                setNewStartDateText(toPeriodRaw(selfRetirementYear + 1, 1));
+                                setNewStartYear(selfRetStartYear);
+                                setNewStartMonth(selfRetStartMonth);
+                                setNewStartDateText(toPeriodRaw(selfRetStartYear, selfRetStartMonth));
                               } else if (val === 'spouse-retirement') {
-                                setNewStartYear(spouseRetirementYear + 1);
-                                setNewStartMonth(1);
-                                setNewStartDateText(toPeriodRaw(spouseRetirementYear + 1, 1));
+                                setNewStartYear(spouseRetStartYear);
+                                setNewStartMonth(spouseRetStartMonth);
+                                setNewStartDateText(toPeriodRaw(spouseRetStartYear, spouseRetStartMonth));
                               }
                             }}
                           >
                             <option value="current">현재</option>
-                            <option value="self-retirement">본인 은퇴 후</option>
-                            {hasSpouse && <option value="spouse-retirement">배우자 은퇴 후</option>}
+                            <option value="self-retirement">{`본인 은퇴 후 (${selfRetStartYear}.${String(selfRetStartMonth).padStart(2, "0")})`}</option>
+                            {hasSpouse && <option value="spouse-retirement">{`배우자 은퇴 후 (${spouseRetStartYear}.${String(spouseRetStartMonth).padStart(2, "0")})`}</option>}
                             <option value="year">직접 입력</option>
                           </select>
                           {newStartType === 'year' && (
@@ -1141,13 +1161,13 @@ export function ExpenseTab({
                               const val = e.target.value as typeof newEndType;
                               setNewEndType(val);
                               if (val === 'self-retirement') {
-                                setNewEndYear(selfRetirementYear);
-                                setNewEndMonth(12);
-                                setNewEndDateText(toPeriodRaw(selfRetirementYear, 12));
+                                setNewEndYear(selfRetEndYear);
+                                setNewEndMonth(selfRetEndMonth);
+                                setNewEndDateText(toPeriodRaw(selfRetEndYear, selfRetEndMonth));
                               } else if (val === 'spouse-retirement') {
-                                setNewEndYear(spouseRetirementYear);
-                                setNewEndMonth(12);
-                                setNewEndDateText(toPeriodRaw(spouseRetirementYear, 12));
+                                setNewEndYear(spouseRetEndYear);
+                                setNewEndMonth(spouseRetEndMonth);
+                                setNewEndDateText(toPeriodRaw(spouseRetEndYear, spouseRetEndMonth));
                               } else if (val === 'self-life-expectancy') {
                                 setNewEndYear(selfLifeExpectancyYear);
                                 setNewEndMonth(12);
@@ -1159,10 +1179,10 @@ export function ExpenseTab({
                               }
                             }}
                           >
-                            <option value="self-retirement">본인 은퇴</option>
-                            {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
-                            <option value="self-life-expectancy">본인 기대수명</option>
-                            {hasSpouse && <option value="spouse-life-expectancy">배우자 기대수명</option>}
+                            <option value="self-retirement">{`본인 은퇴 (${selfRetEndYear}.${String(selfRetEndMonth).padStart(2, "0")})`}</option>
+                            {hasSpouse && <option value="spouse-retirement">{`배우자 은퇴 (${spouseRetEndYear}.${String(spouseRetEndMonth).padStart(2, "0")})`}</option>}
+                            <option value="self-life-expectancy">{`본인 기대수명 (${selfLifeExpectancyYear}.12)`}</option>
+                            {hasSpouse && <option value="spouse-life-expectancy">{`배우자 기대수명 (${spouseLifeExpectancyYear}.12)`}</option>}
                             <option value="year">직접 입력</option>
                           </select>
                           {newEndType === 'year' && (
@@ -1406,17 +1426,17 @@ export function ExpenseTab({
                             setEditForm({ ...editForm, startYear: currentYear, startMonth: currentMonth });
                             setEditStartDateText(toPeriodRaw(currentYear, currentMonth));
                           } else if (val === 'self-retirement') {
-                            setEditForm({ ...editForm, startYear: selfRetirementYear + 1, startMonth: 1 });
-                            setEditStartDateText(toPeriodRaw(selfRetirementYear + 1, 1));
+                            setEditForm({ ...editForm, startYear: selfRetStartYear, startMonth: selfRetStartMonth });
+                            setEditStartDateText(toPeriodRaw(selfRetStartYear, selfRetStartMonth));
                           } else if (val === 'spouse-retirement') {
-                            setEditForm({ ...editForm, startYear: spouseRetirementYear + 1, startMonth: 1 });
-                            setEditStartDateText(toPeriodRaw(spouseRetirementYear + 1, 1));
+                            setEditForm({ ...editForm, startYear: spouseRetStartYear, startMonth: spouseRetStartMonth });
+                            setEditStartDateText(toPeriodRaw(spouseRetStartYear, spouseRetStartMonth));
                           }
                         }}
                       >
                         <option value="current">현재</option>
-                        <option value="self-retirement">본인 은퇴 후</option>
-                        {hasSpouse && <option value="spouse-retirement">배우자 은퇴 후</option>}
+                        <option value="self-retirement">{`본인 은퇴 후 (${selfRetStartYear}.${String(selfRetStartMonth).padStart(2, "0")})`}</option>
+                        {hasSpouse && <option value="spouse-retirement">{`배우자 은퇴 후 (${spouseRetStartYear}.${String(spouseRetStartMonth).padStart(2, "0")})`}</option>}
                         <option value="year">직접 입력</option>
                       </select>
                       {editStartType === 'year' && (
@@ -1451,11 +1471,11 @@ export function ExpenseTab({
                           const val = e.target.value as typeof editEndType;
                           setEditEndType(val);
                           if (val === 'self-retirement') {
-                            setEditForm({ ...editForm, endYear: selfRetirementYear, endMonth: 12 });
-                            setEditEndDateText(toPeriodRaw(selfRetirementYear, 12));
+                            setEditForm({ ...editForm, endYear: selfRetEndYear, endMonth: selfRetEndMonth });
+                            setEditEndDateText(toPeriodRaw(selfRetEndYear, selfRetEndMonth));
                           } else if (val === 'spouse-retirement') {
-                            setEditForm({ ...editForm, endYear: spouseRetirementYear, endMonth: 12 });
-                            setEditEndDateText(toPeriodRaw(spouseRetirementYear, 12));
+                            setEditForm({ ...editForm, endYear: spouseRetEndYear, endMonth: spouseRetEndMonth });
+                            setEditEndDateText(toPeriodRaw(spouseRetEndYear, spouseRetEndMonth));
                           } else if (val === 'self-life-expectancy') {
                             setEditForm({ ...editForm, endType: 'self-life-expectancy', endYear: selfLifeExpectancyYear, endMonth: 12 });
                             setEditEndDateText(toPeriodRaw(selfLifeExpectancyYear, 12));
@@ -1465,10 +1485,10 @@ export function ExpenseTab({
                           }
                         }}
                       >
-                        <option value="self-retirement">본인 은퇴</option>
-                        {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
-                        <option value="self-life-expectancy">본인 기대수명</option>
-                        {hasSpouse && <option value="spouse-life-expectancy">배우자 기대수명</option>}
+                        <option value="self-retirement">{`본인 은퇴 (${selfRetEndYear}.${String(selfRetEndMonth).padStart(2, "0")})`}</option>
+                        {hasSpouse && <option value="spouse-retirement">{`배우자 은퇴 (${spouseRetEndYear}.${String(spouseRetEndMonth).padStart(2, "0")})`}</option>}
+                        <option value="self-life-expectancy">{`본인 기대수명 (${selfLifeExpectancyYear}.12)`}</option>
+                        {hasSpouse && <option value="spouse-life-expectancy">{`배우자 기대수명 (${spouseLifeExpectancyYear}.12)`}</option>}
                         <option value="year">직접 입력</option>
                       </select>
                       {editEndType === 'year' && (

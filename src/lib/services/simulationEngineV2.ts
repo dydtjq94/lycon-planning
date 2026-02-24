@@ -181,6 +181,7 @@ interface PhysicalAssetItemState {
   currentValue: number;
   purchasePrice: number;
   annualRate: number;
+  rateCategory: string;
   sellYear: number | null;
   sellMonth: number | null;
   isSold: boolean;
@@ -288,6 +289,32 @@ function getRetirementYear(owner: string, profile: SimulationProfile): number {
     return profile.spouseBirthYear + profile.spouseRetirementAge;
   }
   return profile.birthYear + profile.retirementAge;
+}
+
+/**
+ * 은퇴 시점을 { year, month } 로 반환.
+ * "은퇴 나이가 되는 생일 달의 직전 달"이 마지막 근로 달.
+ * 예) 4월생 65세 은퇴 → 2059년 3월이 마지막 근로 달.
+ *     1월생 65세 은퇴 → 전년도 12월이 마지막 근로 달.
+ */
+function getRetirementYearMonth(
+  owner: string,
+  profile: SimulationProfile,
+): { year: number; month: number } {
+  if (
+    owner === "spouse" &&
+    profile.spouseBirthYear &&
+    profile.spouseRetirementAge
+  ) {
+    const retYear = profile.spouseBirthYear + profile.spouseRetirementAge;
+    const bm = profile.spouseBirthMonth || 1;
+    if (bm === 1) return { year: retYear - 1, month: 12 };
+    return { year: retYear, month: bm - 1 };
+  }
+  const retYear = profile.birthYear + profile.retirementAge;
+  const bm = profile.birthMonth || 1;
+  if (bm === 1) return { year: retYear - 1, month: 12 };
+  return { year: retYear, month: bm - 1 };
 }
 
 function isInPeriod(
@@ -768,6 +795,7 @@ function initializeState(
       currentValue: a.current_value,
       purchasePrice: a.purchase_price || a.current_value,
       annualRate: a.annual_rate,
+      rateCategory: a.rate_category || "fixed",
       sellYear: a.sell_year,
       sellMonth: a.sell_month,
       isSold: false,
@@ -910,11 +938,18 @@ export function runSimulationV2(
     );
 
     // rateCategory별 assumptions 비율 매핑
+    const physicalAssetGrowthPct = getRateForYear(
+      "physicalAsset",
+      year,
+      currentYear,
+      effectiveAssumptions,
+    );
     const assumptionRateByCategory: Record<string, number> = {
       income: incomeGrowthPct,
       inflation: inflationPct,
       investment: investmentReturnPct,
       realEstate: realEstateGrowthPct,
+      physicalAsset: physicalAssetGrowthPct,
     };
 
     const incomeBreakdown: { title: string; amount: number; type?: string }[] =
@@ -1011,11 +1046,13 @@ export function runSimulationV2(
         let endY = income.end_year;
         let endM = income.end_month;
         if (income.retirement_link === "self") {
-          endY = profile.birthYear + profile.retirementAge;
-          endM = 12;
+          const ret = getRetirementYearMonth("self", profile);
+          endY = ret.year;
+          endM = ret.month;
         } else if (income.retirement_link === "spouse") {
-          endY = getRetirementYear("spouse", profile);
-          endM = 12;
+          const ret = getRetirementYearMonth("spouse", profile);
+          endY = ret.year;
+          endM = ret.month;
         }
 
         if (
@@ -1064,11 +1101,13 @@ export function runSimulationV2(
         let endY = expense.end_year;
         let endM = expense.end_month;
         if (expense.retirement_link === "self") {
-          endY = profile.birthYear + profile.retirementAge;
-          endM = 12;
+          const ret = getRetirementYearMonth("self", profile);
+          endY = ret.year;
+          endM = ret.month;
         } else if (expense.retirement_link === "spouse") {
-          endY = getRetirementYear("spouse", profile);
-          endM = 12;
+          const ret = getRetirementYearMonth("spouse", profile);
+          endY = ret.year;
+          endM = ret.month;
         }
 
         if (
@@ -1095,8 +1134,10 @@ export function runSimulationV2(
         const growthBaseMonth = expense.amount_base_year ? 1 : expense.start_month;
         const monthsFromBase =
           (year - growthBaseYear) * 12 + (month - growthBaseMonth);
+        // 일시금(start===end) 또는 1개월짜리는 yearly여도 전액 반영
+        const isOneTimeExpense = expense.start_year === expense.end_year && expense.start_month === expense.end_month;
         const baseAmount =
-          expense.frequency === "yearly" ? expense.amount / 12 : expense.amount;
+          (expense.frequency === "yearly" && !isOneTimeExpense) ? expense.amount / 12 : expense.amount;
         const amount =
           baseAmount * Math.pow(1 + monthlyRate, Math.max(0, monthsFromBase));
 
@@ -1868,62 +1909,86 @@ export function runSimulationV2(
         }
       }
 
-      // A7. 부동산 매각 이벤트
+      // A7. 부동산 매각/종료 이벤트
       for (const re of state.realEstates) {
         if (re.isSold) continue;
         if (re.sellYear === year && re.sellMonth === month) {
-          const salePrice = re.currentValue;
-          const holdingYears = re.purchaseYear ? year - re.purchaseYear : 0;
-          const isResidence = re.type === "residence";
+          const isLeaseEnd = re.housingType === "전세" || re.housingType === "월세";
 
-          // 세금 비활성화 (추후 프리미엄 기능으로 재설계)
-          // const cgt = calculateCapitalGainsTax(salePrice, re.purchasePrice, holdingYears, isResidence)
-          // yearlyTax += cgt
-          const cgt = 0;
+          if (isLeaseEnd) {
+            // 전세/월세 종료: 보증금 반환, 월세/관리비 중단
+            const depositReturn = re.deposit || 0;
+            if (depositReturn > 0) {
+              state.currentCash += depositReturn;
+              yearlyIncome += depositReturn;
+              monthIncome += depositReturn;
+              monthIncomeBreakdown.push({
+                title: `${re.title} 보증금 반환`,
+                amount: depositReturn,
+                type: "deposit_return",
+              });
+              eventFlowItems.push({
+                title: `${re.title} 보증금 반환`,
+                amount: Math.round(depositReturn),
+                flowType: "real_estate_sale",
+                sourceType: "real_estates",
+                sourceId: re.id,
+              });
+            }
+            re.isSold = true;
+            events.push(
+              `${re.title} 종료 (보증금 ${Math.round(depositReturn)}만원 반환)`,
+            );
+          } else {
+            // 자가/투자 등: 기존 매각 로직
+            const salePrice = re.currentValue;
 
-          // 순매각대금 → currentCash
-          const netProceeds = salePrice - cgt;
-          state.currentCash += netProceeds;
-          yearlyIncome += netProceeds;
-          monthIncome += netProceeds;
-          monthIncomeBreakdown.push({
-            title: `${re.title} 매각`,
-            amount: netProceeds,
-            type: "real_estate_sale",
-          });
+            // 세금 비활성화 (추후 프리미엄 기능으로 재설계)
+            const cgt = 0;
 
-          // 연동 대출이 있으면 정리
-          if (re.hasLoan && re.loanBalance > 0) {
-            state.currentCash -= re.loanBalance;
-            yearlyExpense += re.loanBalance;
-            monthExpense += re.loanBalance;
-            monthExpenseBreakdown.push({
-              title: `${re.title} 대출 상환`,
-              amount: re.loanBalance,
-              type: "loan_repayment",
+            // 순매각대금 → currentCash
+            const netProceeds = salePrice - cgt;
+            state.currentCash += netProceeds;
+            yearlyIncome += netProceeds;
+            monthIncome += netProceeds;
+            monthIncomeBreakdown.push({
+              title: `${re.title} 매각`,
+              amount: netProceeds,
+              type: "real_estate_sale",
             });
+
+            // 연동 대출이 있으면 정리
+            if (re.hasLoan && re.loanBalance > 0) {
+              state.currentCash -= re.loanBalance;
+              yearlyExpense += re.loanBalance;
+              monthExpense += re.loanBalance;
+              monthExpenseBreakdown.push({
+                title: `${re.title} 대출 상환`,
+                amount: re.loanBalance,
+                type: "loan_repayment",
+              });
+              eventFlowItems.push({
+                title: `${re.title} 대출 상환`,
+                amount: -Math.round(re.loanBalance),
+                flowType: "debt_principal",
+                sourceType: "real_estates",
+                sourceId: re.id,
+              });
+              re.loanBalance = 0;
+            }
+
+            re.isSold = true;
+            events.push(
+              `${re.title} 매각 (${Math.round(salePrice)}만원)`,
+            );
             eventFlowItems.push({
-              title: `${re.title} 대출 상환`,
-              amount: -Math.round(re.loanBalance),
-              flowType: "debt_principal",
+              title: `${re.title} 매각`,
+              amount: Math.round(salePrice),
+              flowType: "real_estate_sale",
               sourceType: "real_estates",
               sourceId: re.id,
             });
-            re.loanBalance = 0;
           }
-
-          re.isSold = true;
-          events.push(
-            `${re.title} 매각 (${Math.round(salePrice)}만원, 세금 ${Math.round(cgt)}만원)`,
-          );
-          // Track for cashFlowItems
-          eventFlowItems.push({
-            title: `${re.title} 매각`,
-            amount: Math.round(salePrice),
-            flowType: "real_estate_sale",
-            sourceType: "real_estates",
-            sourceId: re.id,
-          });
         }
       }
 
@@ -2292,8 +2357,11 @@ export function runSimulationV2(
           const currentYM = year * 12 + month;
           if (currentYM < purchaseYM) continue;
         }
-        if (asset.annualRate !== 0) {
-          const monthlyRate = Math.pow(1 + asset.annualRate / 100, 1 / 12) - 1;
+        const physRate = asset.rateCategory === "fixed"
+          ? asset.annualRate
+          : (assumptionRateByCategory[asset.rateCategory] ?? asset.annualRate);
+        if (physRate !== 0) {
+          const monthlyRate = Math.pow(1 + physRate / 100, 1 / 12) - 1;
           asset.currentValue *= 1 + monthlyRate;
           if (asset.currentValue < 0) asset.currentValue = 0;
         }
@@ -3479,11 +3547,13 @@ function buildIncomeBreakdown(
     let endY = income.end_year;
     let endM = income.end_month;
     if (income.retirement_link === "self") {
-      endY = profile.birthYear + profile.retirementAge;
-      endM = 12;
+      const ret = getRetirementYearMonth("self", profile);
+      endY = ret.year;
+      endM = ret.month;
     } else if (income.retirement_link === "spouse") {
-      endY = getRetirementYear("spouse", profile);
-      endM = 12;
+      const ret = getRetirementYearMonth("spouse", profile);
+      endY = ret.year;
+      endM = ret.month;
     }
 
     const rateCategory =
@@ -3546,11 +3616,13 @@ function buildExpenseBreakdown(
     let endY = expense.end_year;
     let endM = expense.end_month;
     if (expense.retirement_link === "self") {
-      endY = profile.birthYear + profile.retirementAge;
-      endM = 12;
+      const ret = getRetirementYearMonth("self", profile);
+      endY = ret.year;
+      endM = ret.month;
     } else if (expense.retirement_link === "spouse") {
-      endY = getRetirementYear("spouse", profile);
-      endM = 12;
+      const ret = getRetirementYearMonth("spouse", profile);
+      endY = ret.year;
+      endM = ret.month;
     }
 
     const rateCategory =
@@ -3578,8 +3650,9 @@ function buildExpenseBreakdown(
       const growthBaseMonth = expense.amount_base_year ? 1 : expense.start_month;
       const monthsFromBase =
         (year - growthBaseYear) * 12 + (month - growthBaseMonth);
+      const isOneTimeExpense = expense.start_year === expense.end_year && expense.start_month === expense.end_month;
       const baseAmount =
-        expense.frequency === "yearly" ? expense.amount / 12 : expense.amount;
+        (expense.frequency === "yearly" && !isOneTimeExpense) ? expense.amount / 12 : expense.amount;
       yearTotal +=
         baseAmount * Math.pow(1 + monthlyRate, Math.max(0, monthsFromBase));
     }

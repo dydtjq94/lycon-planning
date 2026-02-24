@@ -177,9 +177,39 @@ export function StepExpense({ data, onChange, profileBirthDate }: StepExpensePro
   const lifeExpectancy = data.retirement.lifeExpectancy;
 
   let yearsToRetirement = 0;
+  let selfRetEndYear: number | null = null;
+  let selfRetEndMonth: number | null = null;
+  let selfRetStartYear: number | null = null;
+  let selfRetStartMonth: number | null = null;
+  let selfLifeExpEndYear: number | null = null;
+  let selfLifeExpEndMonth: number | null = null;
   if (profileBirthDate) {
     const currentAge = calculateAge(profileBirthDate);
     yearsToRetirement = Math.max(0, (retirementAge ?? 65) - currentAge);
+    const d = new Date(profileBirthDate);
+    const birthYear = d.getFullYear();
+    const birthMonth = d.getMonth() + 1; // 1-12
+    const retYear = birthYear + (retirementAge ?? 65);
+    // Last working month (before turning retirement age)
+    if (birthMonth === 1) {
+      selfRetEndYear = retYear - 1;
+      selfRetEndMonth = 12;
+    } else {
+      selfRetEndYear = retYear;
+      selfRetEndMonth = birthMonth - 1;
+    }
+    // First retirement month
+    selfRetStartYear = retYear;
+    selfRetStartMonth = birthMonth;
+    // Life expectancy end
+    const lifeYear = birthYear + (lifeExpectancy ?? 100);
+    if (birthMonth === 1) {
+      selfLifeExpEndYear = lifeYear - 1;
+      selfLifeExpEndMonth = 12;
+    } else {
+      selfLifeExpEndYear = lifeYear;
+      selfLifeExpEndMonth = birthMonth - 1;
+    }
   }
 
   const showPreview = livingExpense !== null && livingExpense > 0;
@@ -249,7 +279,7 @@ export function StepExpense({ data, onChange, profileBirthDate }: StepExpensePro
               <div className={styles.cardInfo}>
                 <span className={styles.cardName}>은퇴 전 생활비</span>
                 <span className={styles.cardMeta}>
-                  현재 ~ {retirementAge ? `${retirementAge}세 은퇴` : "은퇴"} · 식비, 교통, 쇼핑, 여가 등
+                  {selfRetEndYear ? `현재 ~ ${selfRetEndYear}.${String(selfRetEndMonth).padStart(2, "0")} (은퇴)` : retirementAge ? `현재 ~ ${retirementAge}세 은퇴` : "현재 ~ 은퇴"} · 식비, 교통, 쇼핑, 여가 등
                 </span>
               </div>
               <div className={styles.cardRight}>
@@ -368,7 +398,7 @@ export function StepExpense({ data, onChange, profileBirthDate }: StepExpensePro
             <div className={styles.cardInfo}>
               <span className={styles.cardName}>은퇴 후 생활비</span>
               <span className={styles.cardMeta}>
-                {retirementAge ? `${retirementAge}세` : "은퇴"} ~ {lifeExpectancy ? `${lifeExpectancy}세` : "기대수명"} · 현재의 {Math.round(postRetirementRate * 100)}%
+                {selfRetStartYear ? `${selfRetStartYear}.${String(selfRetStartMonth).padStart(2, "0")}` : retirementAge ? `${retirementAge}세` : "은퇴"} ~ {selfLifeExpEndYear ? `${selfLifeExpEndYear}.${String(selfLifeExpEndMonth).padStart(2, "0")}` : lifeExpectancy ? `${lifeExpectancy}세` : "기대수명"} · 현재의 {Math.round(postRetirementRate * 100)}%
               </span>
             </div>
             <div className={styles.cardRight}>

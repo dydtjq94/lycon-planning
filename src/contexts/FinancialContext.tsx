@@ -164,6 +164,12 @@ export function FinancialProvider({
     return parseInt(profile.birth_date.split('-')[0])
   }, [profile.birth_date, currentYear])
 
+  // 생월 계산
+  const birthMonth = useMemo(() => {
+    if (!profile.birth_date) return 1 // 기본값
+    return parseInt(profile.birth_date.split('-')[1])
+  }, [profile.birth_date])
+
   // 현재 나이 계산
   const currentAge = useMemo(() => {
     return currentYear - birthYear
@@ -180,19 +186,24 @@ export function FinancialProvider({
     const spouseMember = familyMembers.find(fm => fm.relationship === 'spouse')
 
     let spouseBirthYear: number | undefined
+    let spouseBirthMonth: number | undefined
     if (spouseMember?.birth_date) {
       spouseBirthYear = parseInt(spouseMember.birth_date.split('-')[0])
+      spouseBirthMonth = parseInt(spouseMember.birth_date.split('-')[1])
     } else if (spouseMember) {
       spouseBirthYear = birthYear // 배우자가 있지만 생년월일 없으면 본인과 동갑
+      spouseBirthMonth = birthMonth
     }
 
     return {
       birthYear,
+      birthMonth,
       retirementAge: profile.target_retirement_age,
       spouseBirthYear,
+      spouseBirthMonth,
       spouseRetirementAge: spouseMember?.retirement_age || undefined,
     }
-  }, [birthYear, profile.target_retirement_age, familyMembers])
+  }, [birthYear, birthMonth, profile.target_retirement_age, familyMembers])
 
   // 재무 데이터 로드 함수
   const loadItems = useCallback(async (): Promise<FinancialItem[]> => {

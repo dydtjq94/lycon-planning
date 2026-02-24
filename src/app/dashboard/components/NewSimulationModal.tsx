@@ -262,7 +262,7 @@ export function NewSimulationModal({
       case 2:
         return <StepRetirement {...props} />;
       case 3:
-        return <StepIncome {...props} />;
+        return <StepIncome {...props} profileBirthDate={profile.birth_date} />;
       case 4:
         return <StepExpense {...props} profileBirthDate={profile.birth_date} />;
       case 5:

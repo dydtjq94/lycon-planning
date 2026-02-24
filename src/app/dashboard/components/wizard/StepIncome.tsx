@@ -8,7 +8,7 @@ import {
   getLifecycleIcon,
 } from "@/lib/constants/lifecycle";
 import { useChartTheme } from "@/hooks/useChartTheme";
-import { formatMoney } from "@/lib/utils";
+import { calculateAge, formatMoney } from "@/lib/utils";
 import type { StepProps, WizardData } from "./types";
 import styles from "./StepIncome.module.css";
 
@@ -50,7 +50,11 @@ type PensionOwner = "self" | "spouse";
 type PensionData = WizardData["pension"];
 type PickerTarget = { kind: "income"; index: number } | { kind: "pension"; owner: PensionOwner } | null;
 
-export function StepIncome({ data, onChange }: StepProps) {
+interface StepIncomeProps extends StepProps {
+  profileBirthDate: string | null;
+}
+
+export function StepIncome({ data, onChange, profileBirthDate }: StepIncomeProps) {
   const { isDark } = useChartTheme();
   const { income, family } = data;
   const hasSpouse = family.hasSpouse;
@@ -177,10 +181,29 @@ export function StepIncome({ data, onChange }: StepProps) {
     return `${formatMoney(item.amount)}/${item.frequency === "monthly" ? "월" : "년"}`;
   };
 
+  const getRetirementEnd = (owner: "self" | "spouse"): { year: number; month: number } | null => {
+    if (owner === "spouse" && data.family.spouseBirthDate && data.retirement.spouseRetirementAge) {
+      const d = new Date(data.family.spouseBirthDate);
+      const retYear = d.getFullYear() + data.retirement.spouseRetirementAge;
+      const bm = d.getMonth() + 1; // 1-12
+      return bm === 1 ? { year: retYear - 1, month: 12 } : { year: retYear, month: bm - 1 };
+    }
+    if (profileBirthDate && data.retirement.retirementAge) {
+      const d = new Date(profileBirthDate);
+      const retYear = d.getFullYear() + data.retirement.retirementAge;
+      const bm = d.getMonth() + 1;
+      return bm === 1 ? { year: retYear - 1, month: 12 } : { year: retYear, month: bm - 1 };
+    }
+    return null;
+  };
+
   const getMetaText = (item: IncomeItem) => {
-    const owner = item.owner === "spouse" ? "배우자" : "본인";
-    const linked = item.retirementLinked ? `${owner} 은퇴까지` : "";
-    return linked || owner;
+    const ownerLabel = item.owner === "spouse" ? "배우자" : "본인";
+    if (item.retirementLinked) {
+      const ret = getRetirementEnd(item.owner);
+      return ret ? `현재 ~ ${ret.year}.${String(ret.month).padStart(2, "0")} (${ownerLabel} 은퇴)` : `${ownerLabel} 은퇴까지`;
+    }
+    return ownerLabel;
   };
 
   // Icon helpers
@@ -526,7 +549,18 @@ export function StepIncome({ data, onChange }: StepProps) {
                     {PENSION_TYPE_LABELS[pension.selfType]}
                     <span className={styles.ownerTag}>본인</span>
                   </span>
-                  <span className={styles.cardMeta}>{pension.selfStartAge || 65}세부터</span>
+                  <span className={styles.cardMeta}>
+                    {(() => {
+                      const startAge = pension.selfStartAge || 65;
+                      if (profileBirthDate) {
+                        const d = new Date(profileBirthDate);
+                        const yr = d.getFullYear() + startAge;
+                        const mo = String(d.getMonth() + 1).padStart(2, "0");
+                        return `${yr}.${mo}부터 (${startAge}세)`;
+                      }
+                      return `${startAge}세부터`;
+                    })()}
+                  </span>
                 </div>
                 <div className={styles.cardRight}>
                   <span className={styles.cardAmount}>
@@ -606,7 +640,18 @@ export function StepIncome({ data, onChange }: StepProps) {
                       {PENSION_TYPE_LABELS[pension.spouseType]}
                       <span className={styles.ownerTag}>배우자</span>
                     </span>
-                    <span className={styles.cardMeta}>{pension.spouseStartAge || 65}세부터</span>
+                    <span className={styles.cardMeta}>
+                      {(() => {
+                        const startAge = pension.spouseStartAge || 65;
+                        if (data.family.spouseBirthDate) {
+                          const d = new Date(data.family.spouseBirthDate);
+                          const yr = d.getFullYear() + startAge;
+                          const mo = String(d.getMonth() + 1).padStart(2, "0");
+                          return `${yr}.${mo}부터 (${startAge}세)`;
+                        }
+                        return `${startAge}세부터`;
+                      })()}
+                    </span>
                   </div>
                   <div className={styles.cardRight}>
                     <span className={styles.cardAmount}>

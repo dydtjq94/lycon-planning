@@ -8,8 +8,10 @@ import type { CashFlowItem } from "@/types";
 // 프로필 정보 (시뮬레이션용)
 export interface SimulationProfile {
   birthYear: number;
+  birthMonth?: number | null; // 1-12, optional (기본값 1 = 1월)
   retirementAge: number;
   spouseBirthYear?: number | null;
+  spouseBirthMonth?: number | null; // 1-12
   spouseRetirementAge?: number;
 }
 

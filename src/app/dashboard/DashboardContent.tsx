@@ -639,6 +639,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     const birthYear = profileData.birth_date
       ? parseInt(profileData.birth_date.split("-")[0])
       : currentYear - 30;
+    const birthMonth = profileData.birth_date
+      ? parseInt(profileData.birth_date.split("-")[1])
+      : 1;
 
     // 1. 소득 생성
     for (const item of data.income.items) {
@@ -680,8 +683,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
         amount_base_year: currentYear,
       });
 
-      // 은퇴 후 생활비 (은퇴 다음 해부터, 물가 반영 금액, 비율 적용)
-      const postRetirementStartYear = retirementYear + 1;
+      // 은퇴 후 생활비 (은퇴 시점 = 생일 월부터, 물가 반영 금액, 비율 적용)
+      const postRetirementStartYear = retirementYear;
+      const postRetirementStartMonth = birthMonth;
       const yearsToPostRetirement = Math.max(0, postRetirementStartYear - currentYear);
       const inflationRate = 0.025;
       const inflatedAtPostRetirement = data.expense.livingExpense * Math.pow(1 + inflationRate, yearsToPostRetirement);
@@ -694,7 +698,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           amount: postRetirementAmount,
           frequency: "monthly",
           start_year: postRetirementStartYear,
-          start_month: 1,
+          start_month: postRetirementStartMonth,
           owner: "common",
           rate_category: "inflation",
         });

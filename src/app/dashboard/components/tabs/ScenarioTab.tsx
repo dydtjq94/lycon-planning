@@ -417,7 +417,9 @@ export function ScenarioTab({
           <IncomeTab
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
+            birthMonth={simulationProfile.birthMonth ?? 1}
             spouseBirthYear={simulationProfile.spouseBirthYear}
+            spouseBirthMonth={simulationProfile.spouseBirthMonth}
             retirementAge={lifeCycleSettings.selfRetirementAge}
             spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}
@@ -431,7 +433,9 @@ export function ScenarioTab({
           <ExpenseTab
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
+            birthMonth={simulationProfile.birthMonth ?? 1}
             spouseBirthYear={simulationProfile.spouseBirthYear}
+            spouseBirthMonth={simulationProfile.spouseBirthMonth}
             retirementAge={lifeCycleSettings.selfRetirementAge}
             spouseRetirementAge={lifeCycleSettings.spouseRetirementAge}
             isMarried={isMarried}

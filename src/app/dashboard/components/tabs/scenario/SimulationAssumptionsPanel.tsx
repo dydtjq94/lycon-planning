@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { TrendingUp, Landmark, Home, Percent, Wallet } from "lucide-react";
+import { TrendingUp, Landmark, Home, Percent, Wallet, Package } from "lucide-react";
 import type { SimulationAssumptions, SimulationRates } from "@/types";
 import styles from "./SimulationAssumptionsPanel.module.css";
 
@@ -75,6 +75,15 @@ const RATE_FIELDS: {
     step: 0.5,
     defaultValue: 3.0,
   },
+  {
+    key: "physicalAsset",
+    label: "실물자산 상승률",
+    icon: <Package size={14} />,
+    min: -10,
+    max: 15,
+    step: 0.5,
+    defaultValue: 0,
+  },
 ];
 
 export function SimulationAssumptionsPanel({
@@ -135,6 +144,7 @@ export function SimulationAssumptionsPanel({
       investment: 7.0,
       pension: 5.0,
       realEstate: 3.0,
+      physicalAsset: 0,
       inflation: 2.5,
       incomeGrowth: 3.0,
     };
@@ -156,7 +166,7 @@ export function SimulationAssumptionsPanel({
           <div className={`${styles.skeleton} ${styles.skeletonTitle}`} />
         </div>
         <div className={styles.skeletonContent}>
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+          {[1, 2, 3, 4, 5, 6, 7].map((i) => (
             <div key={i} className={styles.skeletonRow}>
               <div className={styles.skeletonLabel}>
                 <div className={`${styles.skeleton} ${styles.skeletonIcon}`} />

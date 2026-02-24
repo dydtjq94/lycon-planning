@@ -145,7 +145,7 @@ export function getDefaultRateCategory(
     case 'car':
     case 'precious_metal':
     case 'custom_asset':
-      return 'inflation'
+      return 'physicalAsset'
     // 연금
     case 'retirement_pension':
     case 'personal_pension':

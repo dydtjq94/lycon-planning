@@ -218,10 +218,10 @@ export function AssetTab({
         ? '원리금균등상환'
         : (editValues.loanRepaymentType as LoanRepaymentType || null)
 
-      // annual_rate 결정
+      // annual_rate 결정: fixed면 직접 입력값, 아니면 0 (엔진이 시뮬레이션 가정에서 가져옴)
       const annualRate = editValues.rateCategory === 'fixed'
         ? (editValues.annualRate ? parseFloat(editValues.annualRate) : 0)
-        : 2.5
+        : 0
 
       // Parse sell date
       let sellYear: number | null = null

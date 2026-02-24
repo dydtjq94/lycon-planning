@@ -54,7 +54,7 @@ export interface FamilyMember {
 export type Owner = 'self' | 'spouse'
 export type OwnerWithCommon = 'self' | 'spouse' | 'common'
 export type Frequency = 'monthly' | 'yearly'
-export type RateCategory = 'inflation' | 'income' | 'investment' | 'realEstate' | 'fixed'
+export type RateCategory = 'inflation' | 'income' | 'investment' | 'realEstate' | 'physicalAsset' | 'fixed'
 export type RateType = 'fixed' | 'floating'
 
 // 연동 출처 타입
