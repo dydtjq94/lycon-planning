@@ -662,6 +662,10 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     const expenseInputs: Parameters<typeof createExpensesBatch>[0] = [];
 
     if (data.expense.livingExpense && data.expense.livingExpense > 0) {
+      const retirementAge = data.retirement.retirementAge ?? 65;
+      const retirementYear = birthYear + retirementAge;
+
+      // 은퇴 전 생활비 (은퇴 시 종료)
       expenseInputs.push({
         simulation_id: simulationId,
         type: "living",
@@ -670,10 +674,31 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
         frequency: "monthly",
         start_year: currentYear,
         start_month: 1,
+        retirement_link: "self",
         owner: "common",
         rate_category: "inflation",
         amount_base_year: currentYear,
       });
+
+      // 은퇴 후 생활비 (은퇴 다음 해부터, 물가 반영 금액, 비율 적용)
+      const postRetirementStartYear = retirementYear + 1;
+      const yearsToPostRetirement = Math.max(0, postRetirementStartYear - currentYear);
+      const inflationRate = 0.025;
+      const inflatedAtPostRetirement = data.expense.livingExpense * Math.pow(1 + inflationRate, yearsToPostRetirement);
+      const postRetirementAmount = Math.round(inflatedAtPostRetirement * data.expense.postRetirementRate);
+      if (postRetirementAmount > 0) {
+        expenseInputs.push({
+          simulation_id: simulationId,
+          type: "living",
+          title: "은퇴 후 생활비",
+          amount: postRetirementAmount,
+          frequency: "monthly",
+          start_year: postRetirementStartYear,
+          start_month: 1,
+          owner: "common",
+          rate_category: "inflation",
+        });
+      }
     }
 
     if (data.expense.fixedExpense && data.expense.fixedExpense > 0) {

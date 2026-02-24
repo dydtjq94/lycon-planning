@@ -216,7 +216,7 @@ export function FamilyModal({ profile, familyMembers, onClose, onSaved }: Family
                   type="date"
                   className={styles.formInput}
                   min="1900-01-01"
-                  max="2200-12-31"
+                  max="9999-12-31"
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
                 />
@@ -323,7 +323,7 @@ export function FamilyModal({ profile, familyMembers, onClose, onSaved }: Family
                       type="date"
                       className={styles.formInput}
                       min="1900-01-01"
-                      max="2200-12-31"
+                      max="9999-12-31"
                       value={spouse.birth_date || ""}
                       onChange={(e) =>
                         handleSpouseChange("birth_date", e.target.value)
@@ -382,7 +382,7 @@ export function FamilyModal({ profile, familyMembers, onClose, onSaved }: Family
                       type="date"
                       className={styles.formInput}
                       min="1900-01-01"
-                      max="2200-12-31"
+                      max="9999-12-31"
                       value={child.birth_date || ""}
                       onChange={(e) =>
                         updateChild(index, "birth_date", e.target.value)

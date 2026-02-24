@@ -1,21 +1,115 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 16px;
   padding: 4px 0 8px;
 }
 
-.section {
+.list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
 
-.sectionLabel {
+/* Card */
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--dashboard-border);
+  cursor: pointer;
+  animation: cardEnter 0.2s ease-out;
+}
+
+.card:last-child {
+  border-bottom: none;
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Icon Button */
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.iconBtn:hover {
+  opacity: 0.7;
+}
+
+/* Card info */
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cardName {
   font-size: 14px;
   font-weight: 600;
   color: var(--dashboard-text);
   letter-spacing: -0.2px;
+}
+
+.cardMeta {
+  font-size: 11px;
+  color: var(--dashboard-text-secondary);
+  letter-spacing: -0.1px;
+}
+
+.cardRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cardAmount {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  letter-spacing: -0.2px;
+}
+
+/* Edit form */
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.editLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  letter-spacing: -0.1px;
+}
+
+.editRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .amountWrapper {
@@ -26,8 +120,8 @@
 
 .amountInput {
   width: 120px;
-  padding: 8px 12px;
-  font-size: 14px;
+  padding: 7px 12px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--dashboard-text);
   background: var(--dashboard-input-bg);
@@ -53,35 +147,10 @@
   margin: 0;
 }
 
-.unit {
-  font-size: 13px;
-  color: var(--dashboard-text-secondary);
-  white-space: nowrap;
-}
-
-.divider {
-  border: none;
-  border-top: 1px solid var(--dashboard-border);
-  margin: 4px 0;
-}
-
-.rateSection {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.rateRow {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-}
-
 .rateInput {
   width: 60px;
-  padding: 8px 10px;
-  font-size: 14px;
+  padding: 7px 10px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--dashboard-text);
   background: var(--dashboard-input-bg);
@@ -102,11 +171,13 @@
   margin: 0;
 }
 
-.percent {
+.unit {
   font-size: 13px;
   color: var(--dashboard-text-secondary);
+  white-space: nowrap;
 }
 
+/* Preview */
 .previewGrid {
   display: flex;
   flex-direction: column;
@@ -115,24 +186,198 @@
 
 .previewRow {
   display: flex;
-  flex-direction: row;
   justify-content: space-between;
   align-items: center;
 }
 
 .previewLabel {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--dashboard-text-secondary);
 }
 
 .previewValue {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--dashboard-text);
 }
 
 .previewHint {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--dashboard-text-muted);
   letter-spacing: -0.1px;
+}
+
+/* Edit actions */
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.cancelBtn {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: -0.1px;
+}
+
+.cancelBtn:hover {
+  color: var(--dashboard-text-secondary);
+}
+
+.doneBtn {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-hover-bg);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: -0.1px;
+}
+
+.doneBtn:hover {
+  color: var(--dashboard-text);
+}
+
+/* Icon/Color Picker */
+.picker {
+  width: 220px;
+  border-radius: 10px;
+  padding: 10px;
+  animation: pickerEnter 0.2s ease-out;
+}
+
+@keyframes pickerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pickerSection {
+  padding: 2px 0;
+}
+
+.pickerGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+}
+
+.pickerIconItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--dashboard-text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.pickerIconItem:hover {
+  color: var(--dashboard-text);
+}
+
+.pickerItemActive {
+  background: var(--dashboard-hover-bg);
+}
+
+.pickerDivider {
+  height: 1px;
+  background: var(--dashboard-border);
+  margin: 6px 0;
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  justify-items: center;
+}
+
+.colorItem {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.colorItem:hover {
+  transform: scale(1.15);
+}
+
+.colorItemActive {
+  border-color: var(--dashboard-text);
+}
+
+/* Section divider */
+.sectionDivider {
+  padding: 14px 4px 4px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dashboard-text-muted);
+  letter-spacing: -0.1px;
+}
+
+.autoCheckbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-color, #007aff);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Tier toggle */
+.tierToggleDisabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.tierToggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.tierBtn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  letter-spacing: -0.1px;
+}
+
+.tierBtn + .tierBtn {
+  border-left: 1px solid var(--dashboard-border);
+}
+
+.tierBtnActive {
+  color: var(--accent-color, #007aff);
+  background: var(--dashboard-hover-bg);
 }

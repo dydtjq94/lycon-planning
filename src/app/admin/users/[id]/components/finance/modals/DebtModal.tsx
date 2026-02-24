@@ -239,10 +239,13 @@ export function DebtModal({
             <input
               type="number"
               value={startYear}
-              onChange={(e) => setStartYear(Number(e.target.value))}
+              onChange={(e) => {
+                if (e.target.value.length > 4) return;
+                setStartYear(Number(e.target.value));
+              }}
               onWheel={(e) => (e.target as HTMLElement).blur()}
               min={2000}
-              max={2100}
+              max={9999}
               className={styles.input}
             />
             <span className={styles.unit}>년</span>
@@ -264,10 +267,13 @@ export function DebtModal({
             <input
               type="number"
               value={maturityYear}
-              onChange={(e) => setMaturityYear(Number(e.target.value))}
+              onChange={(e) => {
+                if (e.target.value.length > 4) return;
+                setMaturityYear(Number(e.target.value));
+              }}
               onWheel={(e) => (e.target as HTMLElement).blur()}
               min={startYear}
-              max={2100}
+              max={9999}
               className={styles.input}
             />
             <span className={styles.unit}>년</span>

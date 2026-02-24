@@ -660,6 +660,7 @@ export function RetirementDiagnosisForm({
                   />
                   <input
                     type="date"
+                    max="9999-12-31"
                     className={styles.input}
                     value={member.birth_date || ""}
                     onChange={(e) => updateFamilyMember(idx, "birth_date", e.target.value || null)}

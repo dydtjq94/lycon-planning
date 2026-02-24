@@ -25,6 +25,15 @@ export interface WizardData {
     spouseIsWorking: boolean;
     spouseRetirementAge: number | null;
     spouseLifeExpectancy: number | null;
+    // 아이콘/색상
+    retirementIcon: string;
+    retirementColor: string;
+    lifeExpectancyIcon: string;
+    lifeExpectancyColor: string;
+    spouseRetirementIcon: string;
+    spouseRetirementColor: string;
+    spouseLifeExpectancyIcon: string;
+    spouseLifeExpectancyColor: string;
   };
   // Step 3: 소득
   income: {
@@ -35,12 +44,18 @@ export interface WizardData {
       amount: number | null; // 만원
       frequency: "monthly" | "yearly";
       retirementLinked: boolean; // 은퇴 시 종료
+      icon?: string;
+      color?: string;
     }[];
   };
   // Step 4: 지출
   expense: {
     livingExpense: number | null; // 생활비 합계 (만원/월)
+    livingExpenseIcon?: string;
+    livingExpenseColor?: string;
     fixedExpense: number | null; // 고정비 합계 (만원/월)
+    fixedExpenseIcon?: string;
+    fixedExpenseColor?: string;
     postRetirementRate: number; // 은퇴 후 생활비 비율 (0.5~1.0, 기본 0.7)
     autoMedical: boolean; // 의료비 자동 반영
     autoEducation: boolean; // 양육비 자동 반영
@@ -51,9 +66,13 @@ export interface WizardData {
     selfType: "national" | "government" | "military" | "private_school";
     selfExpectedAmount: number | null; // 만원/월
     selfStartAge: number; // 수령 시작 나이
+    selfIcon?: string;
+    selfColor?: string;
     spouseType: "national" | "government" | "military" | "private_school";
     spouseExpectedAmount: number | null; // 만원/월
     spouseStartAge: number | null; // 수령 시작 나이
+    spouseIcon?: string;
+    spouseColor?: string;
   };
   // Step 6: 라이프 이벤트
   events: {
@@ -98,6 +117,14 @@ export const INITIAL_WIZARD_DATA: WizardData = {
     spouseIsWorking: false,
     spouseRetirementAge: null,
     spouseLifeExpectancy: null,
+    retirementIcon: "sparkles",
+    retirementColor: "#6366f1",
+    lifeExpectancyIcon: "hourglass",
+    lifeExpectancyColor: "#6366f1",
+    spouseRetirementIcon: "sparkles",
+    spouseRetirementColor: "#ec4899",
+    spouseLifeExpectancyIcon: "hourglass",
+    spouseLifeExpectancyColor: "#ec4899",
   },
   income: { items: [] },
   expense: { livingExpense: null, fixedExpense: null, postRetirementRate: 0.7, autoMedical: true, autoEducation: true, educationTier: 'normal' },

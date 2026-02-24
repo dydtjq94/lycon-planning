@@ -673,9 +673,9 @@ export function ExpenseTab({
     // startType 결정
     if (item.startYear === currentYear && item.startMonth === currentMonth) {
       setEditStartType('current');
-    } else if (item.startYear === selfRetirementYear && item.startMonth === 12) {
+    } else if (item.startYear === selfRetirementYear + 1 && item.startMonth === 1) {
       setEditStartType('self-retirement');
-    } else if (hasSpouse && item.startYear === spouseRetirementYear && item.startMonth === 12) {
+    } else if (hasSpouse && item.startYear === spouseRetirementYear + 1 && item.startMonth === 1) {
       setEditStartType('spouse-retirement');
     } else {
       setEditStartType('year');
@@ -1105,19 +1105,19 @@ export function ExpenseTab({
                                 setNewStartMonth(currentMonth);
                                 setNewStartDateText(toPeriodRaw(currentYear, currentMonth));
                               } else if (val === 'self-retirement') {
-                                setNewStartYear(selfRetirementYear);
-                                setNewStartMonth(12);
-                                setNewStartDateText(toPeriodRaw(selfRetirementYear, 12));
+                                setNewStartYear(selfRetirementYear + 1);
+                                setNewStartMonth(1);
+                                setNewStartDateText(toPeriodRaw(selfRetirementYear + 1, 1));
                               } else if (val === 'spouse-retirement') {
-                                setNewStartYear(spouseRetirementYear);
-                                setNewStartMonth(12);
-                                setNewStartDateText(toPeriodRaw(spouseRetirementYear, 12));
+                                setNewStartYear(spouseRetirementYear + 1);
+                                setNewStartMonth(1);
+                                setNewStartDateText(toPeriodRaw(spouseRetirementYear + 1, 1));
                               }
                             }}
                           >
                             <option value="current">현재</option>
-                            <option value="self-retirement">본인 은퇴</option>
-                            {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+                            <option value="self-retirement">본인 은퇴 후</option>
+                            {hasSpouse && <option value="spouse-retirement">배우자 은퇴 후</option>}
                             <option value="year">직접 입력</option>
                           </select>
                           {newStartType === 'year' && (
@@ -1406,17 +1406,17 @@ export function ExpenseTab({
                             setEditForm({ ...editForm, startYear: currentYear, startMonth: currentMonth });
                             setEditStartDateText(toPeriodRaw(currentYear, currentMonth));
                           } else if (val === 'self-retirement') {
-                            setEditForm({ ...editForm, startYear: selfRetirementYear, startMonth: 12 });
-                            setEditStartDateText(toPeriodRaw(selfRetirementYear, 12));
+                            setEditForm({ ...editForm, startYear: selfRetirementYear + 1, startMonth: 1 });
+                            setEditStartDateText(toPeriodRaw(selfRetirementYear + 1, 1));
                           } else if (val === 'spouse-retirement') {
-                            setEditForm({ ...editForm, startYear: spouseRetirementYear, startMonth: 12 });
-                            setEditStartDateText(toPeriodRaw(spouseRetirementYear, 12));
+                            setEditForm({ ...editForm, startYear: spouseRetirementYear + 1, startMonth: 1 });
+                            setEditStartDateText(toPeriodRaw(spouseRetirementYear + 1, 1));
                           }
                         }}
                       >
                         <option value="current">현재</option>
-                        <option value="self-retirement">본인 은퇴</option>
-                        {hasSpouse && <option value="spouse-retirement">배우자 은퇴</option>}
+                        <option value="self-retirement">본인 은퇴 후</option>
+                        {hasSpouse && <option value="spouse-retirement">배우자 은퇴 후</option>}
                         <option value="year">직접 입력</option>
                       </select>
                       {editStartType === 'year' && (

@@ -27,11 +27,33 @@
 }
 
 .fieldLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 13px;
   font-weight: 500;
   color: var(--dashboard-text-secondary);
-  min-width: 72px;
+  min-width: 100px;
   letter-spacing: -0.1px;
+}
+
+/* Icon Button */
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.iconBtn:hover {
+  opacity: 0.7;
 }
 
 /* Age Input */
@@ -125,4 +147,109 @@
   color: var(--dashboard-text-muted);
   margin: 0;
   letter-spacing: -0.1px;
+}
+
+/* Icon/Color Picker */
+.picker {
+  width: 220px;
+  border-radius: 10px;
+  padding: 10px;
+  animation: pickerEnter 0.2s ease-out;
+}
+
+@keyframes pickerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pickerSection {
+  padding: 2px 0;
+}
+
+.pickerGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+}
+
+.pickerIconItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--dashboard-text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.pickerIconItem:hover {
+  color: var(--dashboard-text);
+}
+
+.pickerItemActive {
+  background: var(--dashboard-hover-bg);
+}
+
+.pickerDivider {
+  height: 1px;
+  background: var(--dashboard-border);
+  margin: 6px 0;
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  justify-items: center;
+}
+
+.colorItem {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.colorItem:hover {
+  transform: scale(1.15);
+}
+
+.colorItemActive {
+  border-color: var(--dashboard-text);
+}
+
+/* Disabled age input */
+.ageInputDisabled {
+  opacity: 0.35;
+}
+
+/* Checkbox label */
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--dashboard-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: -0.1px;
+}
+
+.checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--accent-color, #007aff);
 }

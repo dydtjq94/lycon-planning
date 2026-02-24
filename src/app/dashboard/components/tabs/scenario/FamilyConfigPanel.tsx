@@ -332,6 +332,7 @@ export function FamilyConfigPanel({ profile, familyMembers: initial, selfConfig,
                   {editingId === member.id && editingField === "birth_date" ? (
                     <input
                       type="date"
+                      max="9999-12-31"
                       className={styles.dateInput}
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}

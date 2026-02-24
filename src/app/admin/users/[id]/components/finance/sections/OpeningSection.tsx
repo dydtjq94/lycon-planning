@@ -503,6 +503,7 @@ export function OpeningSection({
                     <label className={styles.formLabel}>생년월일</label>
                     <input
                       type="date"
+                      max="9999-12-31"
                       className={styles.formInput}
                       value={memberForm.birth_date}
                       onChange={(e) =>

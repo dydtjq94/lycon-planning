@@ -2681,6 +2681,7 @@ export default function UserDetailPage() {
                 <label className={styles.smsLabel}>예약 날짜</label>
                 <input
                   type="date"
+                  max="9999-12-31"
                   className={styles.smsInput}
                   value={smsForm.date}
                   onChange={(e) =>

@@ -697,6 +697,7 @@ export function AssetRecordTab({ profileId }: AssetRecordTabProps) {
                 <div className={styles.dateInputWrapper}>
                   <input
                     type="date"
+                    max="9999-12-31"
                     value={modalData.date}
                     onChange={(e) => setModalData({ ...modalData, date: e.target.value })}
                   />

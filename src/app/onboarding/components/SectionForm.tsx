@@ -201,6 +201,7 @@ export function SectionForm({ data, activeSection, onUpdateData }: SectionFormPr
                 <div className={styles.sectionFieldWithInfo}>
                   <Input
                     type="date"
+                    max="9999-12-31"
                     value={data.birth_date}
                     onChange={(e) => onUpdateData({ birth_date: e.target.value })}
                   />
@@ -238,6 +239,7 @@ export function SectionForm({ data, activeSection, onUpdateData }: SectionFormPr
                   <div className={styles.sectionFieldWithInfo}>
                     <Input
                       type="date"
+                      max="9999-12-31"
                       value={data.spouse.birth_date}
                       onChange={(e) => onUpdateData({ spouse: { ...data.spouse!, birth_date: e.target.value } })}
                     />

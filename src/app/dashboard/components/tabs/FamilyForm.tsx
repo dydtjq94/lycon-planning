@@ -165,7 +165,7 @@ export function FamilyForm({ missionNumber, initialData, onComplete, onSkip, onB
                 type="date"
                 className={styles.dateInput}
                 min="1900-01-01"
-                max="2200-12-31"
+                max="9999-12-31"
                 value={spouseBirthDate}
                 onChange={(e) => setSpouseBirthDate(e.target.value)}
               />
@@ -211,7 +211,7 @@ export function FamilyForm({ missionNumber, initialData, onComplete, onSkip, onB
                     type="date"
                     className={styles.dateInput}
                     min="1900-01-01"
-                    max="2200-12-31"
+                    max="9999-12-31"
                     value={child.birthDate}
                     onChange={(e) => updateChildBirthDate(index, e.target.value)}
                   />
@@ -251,7 +251,7 @@ export function FamilyForm({ missionNumber, initialData, onComplete, onSkip, onB
                     type="date"
                     className={styles.dateInput}
                     min="1900-01-01"
-                    max="2200-12-31"
+                    max="9999-12-31"
                     value={parent.birthDate}
                     onChange={(e) => updateParentBirthDate(index, e.target.value)}
                   />

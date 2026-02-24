@@ -2398,6 +2398,7 @@ export function PortfolioTab({
                       <div className={styles.colDate}>
                         <input
                           type="date"
+                          max="9999-12-31"
                           value={row.trade_date}
                           onChange={(e) =>
                             updateRow(index, { trade_date: e.target.value })
@@ -3039,6 +3040,7 @@ export function PortfolioTab({
                   <input
                     className={styles.input}
                     type="date"
+                    max="9999-12-31"
                     value={customForm.date_basis}
                     onChange={(e) =>
                       setCustomForm((prev) => ({
@@ -3138,6 +3140,7 @@ export function PortfolioTab({
                                     <input
                                       className={styles.snapshotInput}
                                       type="date"
+                                      max="9999-12-31"
                                       value={snapshotEditForm.date_basis}
                                       onChange={(e) =>
                                         setSnapshotEditForm((p) => ({

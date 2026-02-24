@@ -22,7 +22,7 @@
 
 .modal {
   width: 100%;
-  max-width: 900px;
+  max-width: 600px;
   height: 85vh;
   max-height: 700px;
   display: flex;
@@ -133,6 +133,13 @@
   letter-spacing: -0.3px;
 }
 
+.titleDescription {
+  font-size: 13px;
+  color: var(--dashboard-text-muted);
+  line-height: 1.5;
+  margin: 4px 0 0 0;
+}
+
 .titleInput {
   width: 100%;
   max-width: 400px;
@@ -167,51 +174,17 @@
 
 .stepContent {
   min-height: 200px;
+  animation: stepEnter 0.2s ease-out;
 }
 
-/* Step transition animations */
-.slideIn {
-  animation: slideIn 0.2s ease-out;
-}
-
-.slideOutLeft {
-  animation: slideOutLeft 0.2s ease-out;
-}
-
-.slideOutRight {
-  animation: slideOutRight 0.2s ease-out;
-}
-
-@keyframes slideIn {
+@keyframes stepEnter {
   from {
     opacity: 0;
-    transform: translateX(0);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideOutLeft {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-}
-
-@keyframes slideOutRight {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(30px);
+    transform: translateY(0);
   }
 }
 

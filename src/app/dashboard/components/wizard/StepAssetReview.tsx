@@ -1,6 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {
+  Landmark,
+  TrendingUp,
+  PiggyBank,
+  Briefcase,
+  Building2,
+  Car,
+  CreditCard,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   fetchPortfolioPrices,
@@ -18,11 +27,24 @@ interface StepAssetReviewProps extends StepProps {
 }
 
 interface AssetGroup {
+  key: string;
   label: string;
+  icon: typeof Landmark;
+  color: string;
   items: { name: string; amount: number }[];
 }
 
-// accounts 테이블 account_type 분류 (simulationService.ts와 동일)
+const GROUP_META: Record<string, { icon: typeof Landmark; color: string }> = {
+  bank: { icon: Landmark, color: "#3b82f6" },
+  investment: { icon: TrendingUp, color: "#10b981" },
+  pension: { icon: PiggyBank, color: "#8b5cf6" },
+  retirement: { icon: Briefcase, color: "#6366f1" },
+  realEstate: { icon: Building2, color: "#f59e0b" },
+  physical: { icon: Car, color: "#64748b" },
+  debt: { icon: CreditCard, color: "#ef4444" },
+};
+
+// accounts 테이블 account_type 분류
 const BANK_TYPES = ["checking", "savings", "deposit", "free_savings", "housing"];
 const INVESTMENT_TYPES = ["general"];
 const PENSION_TYPES = ["pension_savings", "irp", "isa"];
@@ -31,13 +53,13 @@ const RETIREMENT_TYPES = ["dc"];
 export function StepAssetReview({ profileId }: StepAssetReviewProps) {
   const [groups, setGroups] = useState<AssetGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
 
     async function loadAssets() {
       try {
-        // 1. 병렬로 모든 데이터 조회
         const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
 
@@ -66,7 +88,6 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
         const accounts = accountsRes.data;
         const portfolioTransactions = portfolioRes.data || [];
 
-        // 2. 실시간 시세로 투자 계좌 평가금액 계산 (CurrentAssetTab과 동일)
         const priceCache = await fetchPortfolioPrices(portfolioTransactions);
         const investmentValues = calculatePortfolioAccountValues(
           portfolioTransactions,
@@ -75,7 +96,6 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
           customHoldingsRes.data || []
         );
 
-        // 3. 저축 계좌 잔액 계산 (가계부 반영 + 이자 포함)
         const savingsValues = new Map<string, number>();
         const txSummary = calculateAccountTransactionSummary(budgetRes.data || []);
         const bankTypeAccounts = accounts?.filter((a) =>
@@ -90,7 +110,6 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
           }
         }
 
-        // 잔액 조회 헬퍼
         const getBalance = (accountId: string, currentBalance: number | null, isInvestment: boolean): number => {
           if (isInvestment && investmentValues.has(accountId)) {
             return investmentValues.get(accountId)!;
@@ -101,7 +120,6 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
           return currentBalance || 0;
         };
 
-        // 2. 기본 시뮬레이션에서 부채/부동산/실물자산 조회 (copySimulationData 소스)
         const { data: defaultSim } = await supabase
           .from("simulations")
           .select("id")
@@ -125,7 +143,6 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
           physicalAssets = paRes.data || [];
         }
 
-        // 3. 기본 시뮬레이션에 없는 항목은 스냅샷 폴백 (copyMissingDataFromSnapshot)
         if (!debts.length || !realEstates.length || !physicalAssets.length) {
           const { data: snapshots } = await supabase
             .from("financial_snapshots")
@@ -164,15 +181,16 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
           }
         }
 
-        // 4. 그룹 구성
+        // 그룹 구성
         const result: AssetGroup[] = [];
 
         if (accounts) {
-          // 예적금
           const bankAccounts = accounts.filter((a) => BANK_TYPES.includes(a.account_type || ""));
           if (bankAccounts.length > 0) {
             result.push({
+              key: "bank",
               label: "예적금",
+              ...GROUP_META.bank,
               items: bankAccounts.map((a) => ({
                 name: a.name,
                 amount: getBalance(a.id, a.current_balance, false),
@@ -180,11 +198,12 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
             });
           }
 
-          // 투자
           const investAccounts = accounts.filter((a) => INVESTMENT_TYPES.includes(a.account_type || ""));
           if (investAccounts.length > 0) {
             result.push({
+              key: "investment",
               label: "투자",
+              ...GROUP_META.investment,
               items: investAccounts.map((a) => ({
                 name: a.name,
                 amount: getBalance(a.id, a.current_balance, true),
@@ -192,11 +211,12 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
             });
           }
 
-          // 연금
           const pensionAccounts = accounts.filter((a) => PENSION_TYPES.includes(a.account_type || ""));
           if (pensionAccounts.length > 0) {
             result.push({
+              key: "pension",
               label: "연금",
+              ...GROUP_META.pension,
               items: pensionAccounts.map((a) => ({
                 name: a.name,
                 amount: getBalance(a.id, a.current_balance, true),
@@ -204,11 +224,12 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
             });
           }
 
-          // 퇴직연금
           const retirementAccounts = accounts.filter((a) => RETIREMENT_TYPES.includes(a.account_type || ""));
           if (retirementAccounts.length > 0) {
             result.push({
+              key: "retirement",
               label: "퇴직연금",
+              ...GROUP_META.retirement,
               items: retirementAccounts.map((a) => ({
                 name: a.name,
                 amount: getBalance(a.id, a.current_balance, true),
@@ -217,31 +238,35 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
           }
         }
 
-        // 부동산
         if (realEstates.length > 0) {
           result.push({
+            key: "realEstate",
             label: "부동산",
+            ...GROUP_META.realEstate,
             items: realEstates.map((i) => ({ name: i.title, amount: i.current_value ?? 0 })),
           });
         }
 
-        // 실물자산
         if (physicalAssets.length > 0) {
           result.push({
+            key: "physical",
             label: "실물자산",
+            ...GROUP_META.physical,
             items: physicalAssets.map((i) => ({ name: i.title, amount: i.current_value ?? 0 })),
           });
         }
 
-        // 부채
         if (debts.length > 0) {
           result.push({
+            key: "debt",
             label: "부채",
+            ...GROUP_META.debt,
             items: debts.map((i) => ({ name: i.title, amount: i.current_balance ?? 0 })),
           });
         }
 
         setGroups(result);
+        if (result.length > 0) setActiveTab(result[0].key);
       } catch (err) {
         console.error("[StepAssetReview] Failed to load assets:", err);
       } finally {
@@ -255,7 +280,7 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
   if (loading) {
     return (
       <div className={styles.root}>
-        <div className={styles.description}>자산 데이터를 불러오는 중...</div>
+        <div className={styles.emptyText}>자산 데이터를 불러오는 중...</div>
       </div>
     );
   }
@@ -268,24 +293,63 @@ export function StepAssetReview({ profileId }: StepAssetReviewProps) {
     );
   }
 
+  const activeGroup = groups.find((g) => g.key === activeTab) ?? groups[0];
+  const groupTotal = activeGroup.items.reduce((sum, i) => sum + i.amount, 0);
+  const isDebt = activeGroup.key === "debt";
+
   return (
     <div className={styles.root}>
       <div className={styles.description}>
         현재 등록된 자산이 새 시뮬레이션에 자동으로 복사됩니다.
       </div>
-      {groups.map((group) => (
-        <div key={group.label} className={styles.groupSection}>
-          <div className={styles.groupLabel}>{group.label}</div>
-          {group.items.map((item, idx) => (
+
+      <div className={styles.tabBar}>
+        {groups.map((group) => {
+          const isActive = group.key === activeTab;
+          return (
+            <button
+              key={group.key}
+              type="button"
+              className={`${styles.tab} ${isActive ? styles.tabActive : ""}`}
+              onClick={() => setActiveTab(group.key)}
+            >
+              {group.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={styles.list}>
+        {activeGroup.items.map((item, idx) => {
+          const Icon = activeGroup.icon;
+          const color = activeGroup.color;
+          return (
             <div key={idx} className={styles.itemRow}>
-              <span className={styles.itemName}>{item.name}</span>
-              <span className={styles.itemAmount}>
-                {formatMoney(Math.round(item.amount / 10000))}
-              </span>
+              <div className={styles.iconBtn} style={{ background: `${color}18` }}>
+                <Icon size={15} style={{ color }} />
+              </div>
+              <div className={styles.itemInfo}>
+                <span className={styles.itemName}>{item.name}</span>
+                <span className={styles.itemMeta}>
+                  {activeGroup.label} · {formatMoney(Math.round(item.amount / 10000))}
+                </span>
+              </div>
+              <div className={styles.itemRight}>
+                <span className={styles.itemAmount}>
+                  {formatMoney(Math.round(item.amount / 10000))}
+                </span>
+              </div>
             </div>
-          ))}
-        </div>
-      ))}
+          );
+        })}
+      </div>
+
+      <div className={styles.totalRow}>
+        <span className={styles.totalLabel}>{activeGroup.label} 합계</span>
+        <span className={`${styles.totalAmount} ${isDebt ? styles.totalDebt : ""}`}>
+          {formatMoney(Math.round(groupTotal / 10000))}
+        </span>
+      </div>
     </div>
   );
 }

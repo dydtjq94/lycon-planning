@@ -9,22 +9,24 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
-/* Row card */
-.row {
+/* Card (view mode) */
+.card {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: 10px;
-  padding: 14px 16px;
-  background: var(--dashboard-bg-secondary);
-  border: 1px solid var(--dashboard-border);
-  border-radius: 10px;
-  animation: rowEnter 0.2s ease-out;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--dashboard-border);
+  cursor: pointer;
+  animation: cardEnter 0.2s ease-out;
 }
 
-@keyframes rowEnter {
+.card:last-child {
+  border-bottom: none;
+}
+
+@keyframes cardEnter {
   from {
     opacity: 0;
     transform: translateY(-6px);
@@ -35,16 +37,63 @@
   }
 }
 
-.rowTop {
+/* Card info */
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cardName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: -0.2px;
+}
+
+.ownerTag {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+}
+
+.cardMeta {
+  font-size: 11px;
+  color: var(--dashboard-text-secondary);
+  letter-spacing: -0.1px;
+}
+
+.cardRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.cardAmount {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  letter-spacing: -0.2px;
+}
+
+/* Edit form (inside card) */
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.editRow {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.rowBottom {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 /* Type select */
@@ -244,23 +293,42 @@
   white-space: nowrap;
 }
 
-/* Delete Button */
-.deleteBtn {
+/* Edit actions row */
+.editActions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: none;
-  color: var(--dashboard-text-muted);
-  cursor: pointer;
-  border-radius: 6px;
-  flex-shrink: 0;
-  transition: color 0.15s ease;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
-.deleteBtn:hover {
+.cancelBtn {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: -0.1px;
+}
+
+.cancelBtn:hover {
+  color: var(--dashboard-text-secondary);
+}
+
+.doneBtn {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-hover-bg);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: -0.1px;
+}
+
+.doneBtn:hover {
   color: var(--dashboard-text);
 }
 
@@ -305,20 +373,113 @@
   letter-spacing: -0.2px;
 }
 
-.pensionOwner {
+/* Edit owner label (pension) */
+.editOwnerLabel {
   font-size: 13px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
+  font-weight: 600;
+  color: var(--dashboard-text);
   letter-spacing: -0.1px;
   white-space: nowrap;
-  min-width: 36px;
 }
 
-.pensionRow {
+/* Icon Button */
+.iconBtn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.iconBtn:hover {
+  opacity: 0.7;
+}
+
+/* Icon/Color Picker */
+.picker {
+  width: 220px;
+  border-radius: 10px;
+  padding: 10px;
+  animation: pickerEnter 0.2s ease-out;
+}
+
+@keyframes pickerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pickerSection {
+  padding: 2px 0;
+}
+
+.pickerGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+}
+
+.pickerIconItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--dashboard-text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.pickerIconItem:hover {
+  color: var(--dashboard-text);
+}
+
+.pickerItemActive {
+  background: var(--dashboard-hover-bg);
+}
+
+.pickerDivider {
+  height: 1px;
+  background: var(--dashboard-border);
+  margin: 6px 0;
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  justify-items: center;
+}
+
+.colorItem {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.colorItem:hover {
+  transform: scale(1.15);
+}
+
+.colorItemActive {
+  border-color: var(--dashboard-text);
 }
 
 /* Empty Text */

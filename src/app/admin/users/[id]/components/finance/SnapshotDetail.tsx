@@ -356,6 +356,7 @@ export function SnapshotDetail({ snapshotId, userId, onUpdate, onDelete }: Snaps
           <Calendar size={14} />
           <input
             type="date"
+            max="9999-12-31"
             value={snapshot.recorded_at}
             onChange={(e) => handleDateChange(e.target.value)}
             className={styles.dateInput}

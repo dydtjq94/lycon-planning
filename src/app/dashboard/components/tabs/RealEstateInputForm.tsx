@@ -600,14 +600,16 @@ export function RealEstateInputForm({
                           type="number"
                           className={styles.yearInput}
                           placeholder="2024"
+                          max={9999}
                           value={property.loan_start_year || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            if (e.target.value.length > 4) return;
                             handleUpdateProperty(
                               index,
                               "loan_start_year",
                               e.target.value ? parseInt(e.target.value) : null
-                            )
-                          }
+                            );
+                          }}
                           onWheel={(e) => (e.target as HTMLElement).blur()}
                         />
                         <span className={styles.dateSeparator}>년</span>
@@ -637,14 +639,16 @@ export function RealEstateInputForm({
                           type="number"
                           className={styles.yearInput}
                           placeholder="2054"
+                          max={9999}
                           value={property.loan_maturity_year || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            if (e.target.value.length > 4) return;
                             handleUpdateProperty(
                               index,
                               "loan_maturity_year",
                               e.target.value ? parseInt(e.target.value) : null
-                            )
-                          }
+                            );
+                          }}
                           onWheel={(e) => (e.target as HTMLElement).blur()}
                         />
                         <span className={styles.dateSeparator}>년</span>
@@ -809,14 +813,16 @@ export function RealEstateInputForm({
                           type="number"
                           className={styles.yearInput}
                           placeholder="2024"
+                          max={9999}
                           value={property.loan_start_year || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            if (e.target.value.length > 4) return;
                             handleUpdateProperty(
                               index,
                               "loan_start_year",
                               e.target.value ? parseInt(e.target.value) : null
-                            )
-                          }
+                            );
+                          }}
                           onWheel={(e) => (e.target as HTMLElement).blur()}
                         />
                         <span className={styles.dateSeparator}>년</span>
@@ -846,14 +852,16 @@ export function RealEstateInputForm({
                           type="number"
                           className={styles.yearInput}
                           placeholder="2054"
+                          max={9999}
                           value={property.loan_maturity_year || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            if (e.target.value.length > 4) return;
                             handleUpdateProperty(
                               index,
                               "loan_maturity_year",
                               e.target.value ? parseInt(e.target.value) : null
-                            )
-                          }
+                            );
+                          }}
                           onWheel={(e) => (e.target as HTMLElement).blur()}
                         />
                         <span className={styles.dateSeparator}>년</span>

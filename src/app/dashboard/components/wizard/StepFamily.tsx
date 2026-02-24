@@ -1,10 +1,8 @@
 "use client";
 
-import { X, Plus, User } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import type { StepProps } from "./types";
 import styles from "./StepFamily.module.css";
-
-type ChildGender = "male" | "female" | null;
 
 interface StepFamilyProps extends StepProps {
   userGender: "male" | "female" | null;
@@ -30,7 +28,7 @@ export function StepFamily({ data, onChange, userGender }: StepFamilyProps) {
     updateFamily({
       children: [
         ...family.children,
-        { name: "", birthDate: "", gender: "male" as ChildGender },
+        { name: "", birthDate: "", gender: "male" as const },
       ],
     });
   };
@@ -43,7 +41,7 @@ export function StepFamily({ data, onChange, userGender }: StepFamilyProps) {
 
   const handleChildChange = (
     index: number,
-    field: "name" | "birthDate" | "gender",
+    field: "birthDate" | "gender",
     value: string
   ) => {
     const updated = family.children.map((child, i) => {
@@ -65,6 +63,8 @@ export function StepFamily({ data, onChange, userGender }: StepFamilyProps) {
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>배우자</span>
+        </div>
+        <div className={styles.childRow}>
           <div className={styles.pillGroup}>
             <button
               type="button"
@@ -81,74 +81,50 @@ export function StepFamily({ data, onChange, userGender }: StepFamilyProps) {
               없음
             </button>
           </div>
+
+          {family.hasSpouse && (
+            <input
+              type="date"
+              max="9999-12-31"
+              className={styles.childDateInput}
+              value={family.spouseBirthDate}
+              onChange={(e) =>
+                updateFamily({ spouseBirthDate: e.target.value })
+              }
+            />
+          )}
         </div>
-
-        {family.hasSpouse && (
-          <div className={styles.spouseFields}>
-            <div className={styles.fieldRow}>
-              <label className={styles.fieldLabel}>이름</label>
-              <input
-                type="text"
-                className={styles.textInput}
-                value={family.spouseName}
-                onChange={(e) => updateFamily({ spouseName: e.target.value })}
-                placeholder="배우자 이름"
-              />
-            </div>
-
-            <div className={styles.fieldRow}>
-              <label className={styles.fieldLabel}>생년월일</label>
-              <input
-                type="date"
-                className={styles.dateInput}
-                value={family.spouseBirthDate}
-                onChange={(e) =>
-                  updateFamily({ spouseBirthDate: e.target.value })
-                }
-              />
-            </div>
-
-          </div>
-        )}
       </section>
 
-      {/* Children Section */}
+      {/* Children + Planned Children combined section */}
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionLabel}>자녀</span>
-          {family.children.length > 0 && (
-            <span className={styles.countBadge}>{family.children.length}명</span>
-          )}
         </div>
 
-        {family.children.length === 0 ? (
-          <p className={styles.emptyText}>자녀가 없습니다</p>
-        ) : (
+        {family.children.length > 0 && (
           <div className={styles.childrenList}>
             {family.children.map((child, index) => (
               <div key={index} className={styles.childRow}>
-                <button
-                  type="button"
-                  className={`${styles.genderPill} ${child.gender === "female" ? styles.genderPillFemale : styles.genderPillMale}`}
-                  onClick={() => handleChildGenderToggle(index)}
-                  title={child.gender === "male" ? "남" : "여"}
-                >
-                  <User size={12} />
-                  {child.gender === "male" ? "남" : "여"}
-                </button>
-
-                <input
-                  type="text"
-                  className={styles.childNameInput}
-                  value={child.name}
-                  onChange={(e) =>
-                    handleChildChange(index, "name", e.target.value)
-                  }
-                  placeholder="이름"
-                />
-
+                <div className={styles.pillGroup}>
+                  <button
+                    type="button"
+                    className={`${styles.pill} ${child.gender === "male" ? styles.pillActive : ""}`}
+                    onClick={() => handleChildChange(index, "gender", "male")}
+                  >
+                    아들
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.pill} ${child.gender === "female" ? styles.pillActive : ""}`}
+                    onClick={() => handleChildChange(index, "gender", "female")}
+                  >
+                    딸
+                  </button>
+                </div>
                 <input
                   type="date"
+                  max="9999-12-31"
                   className={styles.childDateInput}
                   value={child.birthDate}
                   onChange={(e) =>
@@ -162,46 +138,28 @@ export function StepFamily({ data, onChange, userGender }: StepFamilyProps) {
                   onClick={() => handleRemoveChild(index)}
                   aria-label="자녀 삭제"
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               </div>
             ))}
           </div>
         )}
 
-        <button
-          type="button"
-          className={styles.addBtn}
-          onClick={handleAddChild}
-        >
-          <Plus size={14} />
-          자녀 추가
-        </button>
-      </section>
-
-      {/* Planned Children Section */}
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <span className={styles.sectionLabel}>계획 중인 자녀</span>
-          {family.plannedChildren.length > 0 && (
-            <span className={styles.countBadge}>{family.plannedChildren.length}명</span>
-          )}
-        </div>
-
-        {family.plannedChildren.length === 0 ? (
-          <p className={styles.emptyText}>계획 중인 자녀가 없습니다</p>
-        ) : (
+        {family.plannedChildren.length > 0 && (
           <div className={styles.childrenList}>
             {family.plannedChildren.map((planned, index) => (
               <div key={index} className={styles.childRow}>
+                <span className={styles.childLabelPlanned}>계획</span>
                 <div className={styles.yearInputWrapper}>
                   <input
                     type="number"
                     className={styles.yearInput}
                     value={planned.birthYear ?? ""}
                     placeholder="2028"
+                    max={9999}
                     onChange={(e) => {
                       const raw = e.target.value;
+                      if (raw.length > 4) return;
                       const val = raw === "" ? null : parseInt(raw, 10);
                       const updated = family.plannedChildren.map((p, i) =>
                         i === index ? { ...p, birthYear: val } : p
@@ -210,7 +168,7 @@ export function StepFamily({ data, onChange, userGender }: StepFamilyProps) {
                     }}
                     onWheel={(e) => (e.target as HTMLElement).blur()}
                   />
-                  <span className={styles.numberUnit}>년 출생</span>
+                  <span className={styles.numberUnit}>년 출생 예정</span>
                 </div>
 
                 <button
@@ -223,28 +181,40 @@ export function StepFamily({ data, onChange, userGender }: StepFamilyProps) {
                   }}
                   aria-label="계획 자녀 삭제"
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               </div>
             ))}
           </div>
         )}
 
-        {family.plannedChildren.length < 5 && (
+        <div className={styles.addBtnRow}>
           <button
             type="button"
             className={styles.addBtn}
-            onClick={() => {
-              updateFamily({
-                plannedChildren: [...family.plannedChildren, { birthYear: null }],
-              });
-            }}
+            onClick={handleAddChild}
           >
-            <Plus size={14} />
-            계획 자녀 추가
+            <Plus size={13} />
+            자녀 추가
           </button>
-        )}
-        <p className={styles.fieldHint}>출생 예정 연도를 입력하면 해당 연도 기준으로 시뮬레이션에 반영됩니다</p>
+
+          {family.plannedChildren.length < 5 && (
+            <button
+              type="button"
+              className={styles.addBtn}
+              onClick={() => {
+                updateFamily({
+                  plannedChildren: [...family.plannedChildren, { birthYear: null }],
+                });
+              }}
+            >
+              <Plus size={13} />
+              계획 자녀 추가
+            </button>
+          )}
+        </div>
+
+        <p className={styles.fieldHint}>계획 자녀는 출생 예정 연도 기준으로 시뮬레이션에 반영됩니다</p>
       </section>
     </div>
   );

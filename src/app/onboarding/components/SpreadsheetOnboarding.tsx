@@ -170,6 +170,7 @@ export function SpreadsheetOnboarding({ data, onUpdateData }: SpreadsheetOnboard
             <label className={styles.spreadsheetLabel}>생년월일</label>
             <Input
               type="date"
+              max="9999-12-31"
               value={data.birth_date}
               onChange={(e) => onUpdateData({ birth_date: e.target.value })}
             />
@@ -203,6 +204,7 @@ export function SpreadsheetOnboarding({ data, onUpdateData }: SpreadsheetOnboard
               <label className={styles.spreadsheetLabel}>생년월일</label>
               <Input
                 type="date"
+                max="9999-12-31"
                 value={data.spouse.birth_date}
                 onChange={(e) => updateSpouse({ birth_date: e.target.value })}
               />
@@ -230,6 +232,7 @@ export function SpreadsheetOnboarding({ data, onUpdateData }: SpreadsheetOnboard
               />
               <Input
                 type="date"
+                max="9999-12-31"
                 value={child.birth_date}
                 onChange={(e) => updateChild(index, { birth_date: e.target.value })}
               />
@@ -266,6 +269,7 @@ export function SpreadsheetOnboarding({ data, onUpdateData }: SpreadsheetOnboard
               />
               <Input
                 type="date"
+                max="9999-12-31"
                 value={parent.birth_date}
                 onChange={(e) => updateParent(index, { birth_date: e.target.value })}
               />

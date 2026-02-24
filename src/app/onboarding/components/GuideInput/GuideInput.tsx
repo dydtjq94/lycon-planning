@@ -315,7 +315,7 @@ function renderInputForRow(
             value={data.birth_date}
             onChange={(e) => onUpdateData({ birth_date: e.target.value })}
             min="1900-01-01"
-            max="2099-12-31"
+            max="9999-12-31"
           />
           {data.birth_date && (
             <p className={styles.ageInfo}>
@@ -425,7 +425,7 @@ function renderInputForRow(
                   })
                 }
                 min="1900-01-01"
-                max="2099-12-31"
+                max="9999-12-31"
               />
               {data.spouse?.birth_date && (
                 <span className={styles.infoAgeDisplay}>
@@ -578,7 +578,7 @@ function renderInputForRow(
                     value={child.birth_date || ""}
                     onChange={(e) => updateChildBirthDate(index, e.target.value)}
                     min="1990-01-01"
-                    max="2099-12-31"
+                    max="9999-12-31"
                   />
                   {child.birth_date && (
                     <span className={styles.childAge}>
@@ -648,7 +648,7 @@ function renderInputForRow(
                 value={data.birth_date}
                 onChange={(e) => onUpdateData({ birth_date: e.target.value })}
                 min="1900-01-01"
-                max="2099-12-31"
+                max="9999-12-31"
               />
               {data.birth_date && (
                 <span className={styles.ageDisplay}>
@@ -713,7 +713,7 @@ function renderInputForRow(
                         })
                       }
                       min="1900-01-01"
-                      max="2099-12-31"
+                      max="9999-12-31"
                     />
                     {data.spouse?.birth_date && (
                       <span className={styles.ageDisplay}>

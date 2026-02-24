@@ -1,7 +1,7 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
   padding: 4px 0 8px;
 }
 
@@ -9,7 +9,7 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .sectionHeader {
@@ -23,16 +23,6 @@
   font-weight: 600;
   color: var(--dashboard-text);
   letter-spacing: -0.2px;
-  min-width: 80px;
-}
-
-.countBadge {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-muted);
-  background: var(--dashboard-bg-secondary);
-  border-radius: 10px;
-  padding: 2px 8px;
 }
 
 /* Pill Toggle */
@@ -42,7 +32,7 @@
 }
 
 .pill {
-  padding: 7px 16px;
+  padding: 6px 14px;
   font-size: 13px;
   font-weight: 500;
   border-radius: 20px;
@@ -67,80 +57,12 @@
   color: #fff;
 }
 
-/* Spouse Fields */
-.spouseFields {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  background: var(--dashboard-bg-secondary);
-  border-radius: 10px;
-  border: 1px solid var(--dashboard-border);
-  animation: fieldEnter 0.2s ease-out;
-}
-
-@keyframes fieldEnter {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.fieldRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.fieldLabel {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  min-width: 56px;
-  letter-spacing: -0.1px;
-}
-
-/* Inputs */
-.textInput,
-.dateInput {
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--dashboard-text);
-  background: var(--dashboard-input-bg);
-  border: 1px solid var(--dashboard-input-border);
-  border-radius: 8px;
-  outline: none;
-  letter-spacing: -0.1px;
-}
-
-.textInput {
-  width: 200px;
-}
-
-.dateInput {
-  width: 160px;
-  color-scheme: light dark;
-}
-
-.textInput:focus,
-.dateInput:focus {
-  border-color: var(--accent-color, #007aff);
-}
-
-.textInput::placeholder {
-  color: var(--dashboard-text-muted);
-}
 
 /* Children List */
 .childrenList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .childRow {
@@ -148,6 +70,10 @@
   align-items: center;
   gap: 8px;
   animation: childEnter 0.2s ease-out;
+}
+
+.childRow:hover .deleteBtn {
+  opacity: 1;
 }
 
 @keyframes childEnter {
@@ -161,70 +87,29 @@
   }
 }
 
-/* Gender Pill (small, toggleable) */
-.genderPill {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: 20px;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+/* Planned tag */
+.childLabelPlanned {
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 5px;
+  background: var(--dashboard-hover-bg);
+  color: var(--dashboard-text-muted);
   letter-spacing: -0.1px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.genderPillMale {
-  background: var(--dashboard-hover-bg);
-  color: var(--dashboard-text-secondary);
-}
-
-.genderPillMale:hover {
-  color: var(--dashboard-text);
-}
-
-.genderPillFemale {
-  background: var(--dashboard-hover-bg);
-  color: var(--dashboard-text-secondary);
-}
-
-.genderPillFemale:hover {
-  color: var(--dashboard-text);
-}
-
-/* Child Inputs */
-.childNameInput {
-  padding: 8px 12px;
-  font-size: 13px;
-  color: var(--dashboard-text);
-  background: var(--dashboard-input-bg);
-  border: 1px solid var(--dashboard-input-border);
-  border-radius: 8px;
-  outline: none;
-  width: 120px;
-  letter-spacing: -0.1px;
-}
-
-.childNameInput:focus {
-  border-color: var(--accent-color, #007aff);
-}
-
-.childNameInput::placeholder {
-  color: var(--dashboard-text-muted);
-}
-
+/* Child date input */
 .childDateInput {
-  padding: 8px 12px;
+  padding: 7px 11px;
   font-size: 13px;
   color: var(--dashboard-text);
   background: var(--dashboard-input-bg);
   border: 1px solid var(--dashboard-input-border);
-  border-radius: 8px;
+  border-radius: 7px;
   outline: none;
-  width: 160px;
+  width: 155px;
   color-scheme: light dark;
   letter-spacing: -0.1px;
 }
@@ -233,32 +118,42 @@
   border-color: var(--accent-color, #007aff);
 }
 
-/* Delete Button */
+/* Delete Button - subtle, revealed on row hover */
 .deleteBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border: none;
   background: none;
   color: var(--dashboard-text-muted);
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 5px;
   margin-left: auto;
   flex-shrink: 0;
-  transition: color 0.15s ease;
+  opacity: 0.35;
+  transition: opacity 0.15s ease, color 0.15s ease;
 }
 
 .deleteBtn:hover {
+  opacity: 1;
   color: var(--dashboard-text);
+}
+
+/* Add buttons row - both in one line */
+.addBtnRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 2px;
 }
 
 /* Add Button */
 .addBtn {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   padding: 0;
   font-size: 13px;
   font-weight: 500;
@@ -274,14 +169,6 @@
   color: var(--dashboard-text-secondary);
 }
 
-/* Empty Text */
-.emptyText {
-  font-size: 13px;
-  color: var(--dashboard-text-muted);
-  margin: 0;
-  letter-spacing: -0.1px;
-}
-
 /* Year Input */
 .yearInputWrapper {
   display: flex;
@@ -290,14 +177,14 @@
 }
 
 .yearInput {
-  width: 80px;
-  padding: 8px 12px;
+  width: 76px;
+  padding: 7px 11px;
   font-size: 13px;
   font-weight: 500;
   color: var(--dashboard-text);
   background: var(--dashboard-input-bg);
   border: 1px solid var(--dashboard-input-border);
-  border-radius: 8px;
+  border-radius: 7px;
   outline: none;
   text-align: center;
   letter-spacing: -0.1px;
@@ -322,6 +209,7 @@
 .numberUnit {
   font-size: 13px;
   color: var(--dashboard-text-secondary);
+  letter-spacing: -0.1px;
 }
 
 /* Hint text */

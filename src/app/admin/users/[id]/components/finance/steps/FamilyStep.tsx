@@ -276,6 +276,7 @@ function FamilyMemberModal({
             <label className={styles.formLabel}>생년월일</label>
             <input
               type="date"
+              max="9999-12-31"
               className={styles.formInput}
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}

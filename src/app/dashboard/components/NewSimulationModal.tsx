@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X } from "lucide-react";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -55,6 +55,7 @@ export function NewSimulationModal({
         children,
       },
       retirement: {
+        ...INITIAL_WIZARD_DATA.retirement,
         retirementAge: profile.target_retirement_age || null,
         lifeExpectancy: 100,
         spouseIsWorking: spouse?.is_working ?? false,
@@ -170,8 +171,7 @@ export function NewSimulationModal({
         }
       });
   }, [profile.id]);
-  const [direction, setDirection] = useState<"next" | "prev">("next");
-  const [animating, setAnimating] = useState(false);
+  const [animKey, setAnimKey] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -190,26 +190,25 @@ export function NewSimulationModal({
     setWizardData((prev) => ({ ...prev, ...updates }));
   };
 
-  const goToStep = (newStep: number, dir: "next" | "prev") => {
-    if (animating) return;
-    setDirection(dir);
-    setAnimating(true);
-    setTimeout(() => {
-      setStep(newStep);
-      setAnimating(false);
-    }, 200);
-  };
-
   const handlePrev = () => {
-    if (step > 0) goToStep(step - 1, "prev");
+    if (step > 0) {
+      setStep(step - 1);
+      setAnimKey((k) => k + 1);
+    }
   };
 
   const handleNext = () => {
-    if (step < WIZARD_STEPS.length - 1) goToStep(step + 1, "next");
+    if (step < WIZARD_STEPS.length - 1) {
+      setStep(step + 1);
+      setAnimKey((k) => k + 1);
+    }
   };
 
   const handleSkip = () => {
-    if (step < WIZARD_STEPS.length - 1) goToStep(step + 1, "next");
+    if (step < WIZARD_STEPS.length - 1) {
+      setStep(step + 1);
+      setAnimKey((k) => k + 1);
+    }
   };
 
   const handleCreate = () => {
@@ -246,13 +245,16 @@ export function NewSimulationModal({
                 setWizardData((prev) => ({ ...prev, title: e.target.value }))
               }
               onKeyDown={(e) => {
-                if (e.key === "Enter" && wizardData.title.trim()) {
+                if (e.key === "Enter") {
                   handleNext();
                 }
               }}
               placeholder="예: 내 집 마련, 조기 은퇴, 자녀 교육"
               autoFocus
             />
+            <p className={styles.titleDescription}>
+              앞으로 몇 단계에 걸쳐 미래를 설계하기 위한 핵심 정보를 입력합니다. 입력한 내용은 언제든지 수정할 수 있습니다.
+            </p>
           </div>
         );
       case 1:
@@ -309,9 +311,7 @@ export function NewSimulationModal({
         </div>
 
         <div className={styles.body} ref={contentRef}>
-          <div
-            className={`${styles.stepContent} ${animating ? (direction === "next" ? styles.slideOutLeft : styles.slideOutRight) : styles.slideIn}`}
-          >
+          <div key={animKey} className={styles.stepContent}>
             {renderStepContent()}
           </div>
         </div>
@@ -320,7 +320,6 @@ export function NewSimulationModal({
           <div className={styles.footerLeft}>
             {step > 0 && (
               <button className={styles.prevBtn} onClick={handlePrev}>
-                <ChevronLeft size={14} />
                 이전
               </button>
             )}
@@ -336,10 +335,9 @@ export function NewSimulationModal({
                 <button
                   className={styles.nextBtn}
                   onClick={handleNext}
-                  disabled={step === 0 && !wizardData.title.trim()}
+                  disabled={false}
                 >
                   다음
-                  <ChevronRight size={14} />
                 </button>
               </>
             )}

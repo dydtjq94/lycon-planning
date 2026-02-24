@@ -441,10 +441,13 @@ export function RealEstateModal({
               <input
                 type="number"
                 value={loanMaturityYear}
-                onChange={(e) => setLoanMaturityYear(Number(e.target.value))}
+                onChange={(e) => {
+                  if (e.target.value.length > 4) return;
+                  setLoanMaturityYear(Number(e.target.value));
+                }}
                 onWheel={(e) => (e.target as HTMLElement).blur()}
                 min={currentYear}
-                max={2100}
+                max={9999}
                 className={styles.input}
               />
               <span className={styles.unit}>년</span>

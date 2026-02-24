@@ -351,6 +351,7 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
             {editingProfileField === "birth_date" ? (
               <input
                 type="date"
+                max="9999-12-31"
                 className={styles.dateInput}
                 value={editProfileValue}
                 onChange={(e) => setEditProfileValue(e.target.value)}
@@ -433,6 +434,7 @@ export function SettingsTab({ profile, familyMembers, onFamilyMembersChange, onP
                   {editingMemberId === member.id && editingField === "birth_date" ? (
                     <input
                       type="date"
+                      max="9999-12-31"
                       className={styles.dateInput}
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}

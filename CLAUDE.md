@@ -589,6 +589,7 @@ src/app/feature/
 - **단위 배치**: 단위(세, 만원 등)는 입력칸 바로 옆에 배치
 - **스핀 버튼 제거**: `type="number"` 입력의 위아래 화살표 숨김
 - **스크롤 변경 방지**: 숫자 입력에서 마우스 스크롤로 값 변경되지 않도록 처리
+- **연도 입력 4자리 제한 (매우 중요!)**: 연도 입력(`type="number"`)은 반드시 최대 4자리로 제한. `max={9999}` 속성 추가 + `onChange`에서 `if (e.target.value.length > 4) return;` 가드 추가. 재사용 컴포넌트(`YearInput`, `YearMonthInput`)에는 이미 적용됨
 - **빈 입력 허용 (매우 중요!)**: 숫자 입력을 다 지웠을 때 0이 남으면 안 됨. 상태를 `number | null`로 관리하고, 빈 값은 `null`로 처리. `value={val ?? ""}` 패턴 사용
 - **입력 중 클램핑 금지**: `onChange`에서 `Math.min`/`Math.max`로 값을 강제하면 입력 중에 숫자를 지우고 다시 쓸 수 없음. 클램핑은 `onBlur`나 저장 시점에만 적용
 
@@ -612,6 +613,17 @@ input[type="number"]::-webkit-inner-spin-button {
 // 숫자 입력에서 스크롤 변경 방지 (필수)
 <input
   type="number"
+  onWheel={(e) => (e.target as HTMLElement).blur()}
+/>
+
+// 연도 입력 4자리 제한 (필수)
+<input
+  type="number"
+  max={9999}
+  onChange={(e) => {
+    if (e.target.value.length > 4) return;
+    // ... 나머지 처리
+  }}
   onWheel={(e) => (e.target as HTMLElement).blur()}
 />
 ```

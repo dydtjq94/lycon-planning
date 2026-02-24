@@ -687,6 +687,7 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                   <label>잔액 기준일</label>
                   <input
                     type="date"
+                    max="9999-12-31"
                     value={accountFormData.balance_date || ""}
                     onChange={(e) => setAccountFormData({ ...accountFormData, balance_date: e.target.value })}
                     className={styles.input}
@@ -704,8 +705,12 @@ export function AccountManagementModal({ profileId, onClose, initialTab = "check
                       <input
                         type="number"
                         placeholder={String(new Date().getFullYear())}
+                        max={9999}
                         value={accountFormData.start_year || ""}
-                        onChange={(e) => setAccountFormData({ ...accountFormData, start_year: parseInt(e.target.value) || undefined })}
+                        onChange={(e) => {
+                          if (e.target.value.length > 4) return;
+                          setAccountFormData({ ...accountFormData, start_year: parseInt(e.target.value) || undefined });
+                        }}
                         onWheel={(e) => (e.target as HTMLElement).blur()}
                         className={styles.input}
                       />

@@ -8,19 +8,20 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
-.eventCard {
+/* Card */
+.card {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: 10px;
-  padding-bottom: 12px;
+  padding: 12px 4px;
   border-bottom: 1px solid var(--dashboard-border);
+  cursor: pointer;
   animation: cardEnter 0.2s ease-out;
 }
 
-.eventCard:last-child {
+.card:last-child {
   border-bottom: none;
 }
 
@@ -35,6 +36,75 @@
   }
 }
 
+/* Icon Button */
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Card info */
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cardName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  letter-spacing: -0.2px;
+}
+
+.cardMeta {
+  font-size: 11px;
+  color: var(--dashboard-text-secondary);
+  letter-spacing: -0.1px;
+}
+
+.cardRight {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cardAmount {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dashboard-text);
+  letter-spacing: -0.2px;
+}
+
+/* Edit form */
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.editRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.amountWrapper {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Pill Group */
 .pillGroup {
   display: flex;
   flex-direction: row;
@@ -45,12 +115,14 @@
 .pill {
   padding: 5px 10px;
   font-size: 12px;
+  font-weight: 500;
   border-radius: 20px;
   background: var(--dashboard-hover-bg);
   color: var(--dashboard-text-secondary);
   border: none;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
+  letter-spacing: -0.1px;
 }
 
 .pill:hover {
@@ -66,6 +138,7 @@
   color: #fff;
 }
 
+/* Inputs */
 .titleInput {
   width: 100%;
   padding: 7px 12px;
@@ -76,6 +149,7 @@
   border-radius: 8px;
   outline: none;
   box-sizing: border-box;
+  letter-spacing: -0.1px;
 }
 
 .titleInput:focus {
@@ -86,17 +160,11 @@
   color: var(--dashboard-text-muted);
 }
 
-.detailRow {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-}
-
 .yearInput {
   width: 80px;
   padding: 7px 10px;
   font-size: 13px;
+  font-weight: 500;
   text-align: right;
   color: var(--dashboard-text);
   background: var(--dashboard-input-bg);
@@ -104,6 +172,7 @@
   border-radius: 8px;
   outline: none;
   box-sizing: border-box;
+  letter-spacing: -0.1px;
 }
 
 .yearInput:focus {
@@ -112,12 +181,14 @@
 
 .yearInput::placeholder {
   color: var(--dashboard-text-muted);
+  font-weight: 400;
 }
 
 .amountInput {
   width: 100px;
   padding: 7px 10px;
   font-size: 13px;
+  font-weight: 500;
   text-align: right;
   color: var(--dashboard-text);
   background: var(--dashboard-input-bg);
@@ -125,6 +196,7 @@
   border-radius: 8px;
   outline: none;
   box-sizing: border-box;
+  letter-spacing: -0.1px;
 }
 
 .amountInput:focus {
@@ -133,9 +205,10 @@
 
 .amountInput::placeholder {
   color: var(--dashboard-text-muted);
+  font-weight: 400;
 }
 
-/* Hide spin buttons on number inputs */
+/* Hide spin buttons */
 .yearInput::-webkit-outer-spin-button,
 .yearInput::-webkit-inner-spin-button,
 .amountInput::-webkit-outer-spin-button,
@@ -144,36 +217,69 @@
   margin: 0;
 }
 
-.yearInput[type="number"],
-.amountInput[type="number"] {
-  -moz-appearance: textfield;
-}
-
 .unit {
   font-size: 13px;
   color: var(--dashboard-text-secondary);
   white-space: nowrap;
 }
 
-.deleteBtn {
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: none;
-  color: var(--dashboard-text-muted);
-  cursor: pointer;
-  border-radius: 6px;
-  flex-shrink: 0;
+/* Edit actions */
+.editActions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: auto;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.deleteBtn {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: -0.1px;
+  margin-right: auto;
 }
 
 .deleteBtn:hover {
+  color: #ef4444;
+}
+
+.cancelBtn {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-muted);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: -0.1px;
+}
+
+.cancelBtn:hover {
+  color: var(--dashboard-text-secondary);
+}
+
+.doneBtn {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashboard-text-secondary);
+  background: var(--dashboard-hover-bg);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: -0.1px;
+}
+
+.doneBtn:hover {
   color: var(--dashboard-text);
 }
 
+/* Add Button */
 .addBtn {
   display: flex;
   flex-direction: row;
@@ -186,103 +292,15 @@
   background: none;
   cursor: pointer;
   padding: 0;
+  letter-spacing: -0.1px;
+  transition: color 0.15s ease;
 }
 
 .addBtn:hover {
   color: var(--dashboard-text-secondary);
 }
 
-.emptyText {
-  font-size: 13px;
-  color: var(--dashboard-text-muted);
-}
-
-.autoSection {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--dashboard-border);
-}
-
-.autoSectionLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--dashboard-text-muted);
-  margin-bottom: 6px;
-}
-
-.autoItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--dashboard-border);
-  cursor: pointer;
-}
-
-.autoItem:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.autoCheckbox {
-  margin-top: 2px;
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent-color, #007aff);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.autoItemText {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.autoItemName {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--dashboard-text);
-}
-
-.autoItemDesc {
-  font-size: 12px;
-  color: var(--dashboard-text-muted);
-}
-
-.tierToggle {
-  display: flex;
-  gap: 0;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 6px;
-  overflow: hidden;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.tierBtn {
-  padding: 4px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--dashboard-text-secondary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-.tierBtn + .tierBtn {
-  border-left: 1px solid var(--dashboard-border);
-}
-
-.tierBtnActive {
-  color: var(--accent-color, #007aff);
-  background: var(--dashboard-hover-bg);
-}
-
+/* Preset section */
 .presetSection {
   display: flex;
   flex-direction: column;
@@ -293,4 +311,5 @@
   font-size: 11px;
   font-weight: 600;
   color: var(--dashboard-text-muted);
+  letter-spacing: -0.1px;
 }

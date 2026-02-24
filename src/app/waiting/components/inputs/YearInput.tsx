@@ -24,7 +24,11 @@ export function YearInput({
         inputMode="numeric"
         className={`${styles.yearInput} ${className || ""}`}
         value={value}
-        onChange={(e) => onChange(parseInt(e.target.value) || defaultValue)}
+        max={9999}
+        onChange={(e) => {
+          if (e.target.value.length > 4) return;
+          onChange(parseInt(e.target.value) || defaultValue);
+        }}
         onWheel={(e) => (e.target as HTMLElement).blur()}
       />
       <span className={styles.unit}>{unit}</span>

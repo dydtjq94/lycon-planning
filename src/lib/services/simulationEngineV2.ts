@@ -358,6 +358,67 @@ function getRateForYear(
 }
 
 // ============================================
+// 시뮬레이션 시작 전 경과 개월에 대한 잔액 보정
+// ============================================
+
+function adjustBalanceForElapsed(
+  principal: number,
+  annualRate: number,
+  repaymentType: string,
+  startYear: number,
+  startMonth: number,
+  maturityYear: number,
+  maturityMonth: number,
+  simStartYear: number,
+  simStartMonth: number,
+  gracePeriodMonths: number = 0,
+): number {
+  const totalMonths = (maturityYear - startYear) * 12 + (maturityMonth - startMonth);
+  const elapsedMonths = Math.max(0, (simStartYear - startYear) * 12 + (simStartMonth - startMonth));
+  if (totalMonths <= 0 || elapsedMonths <= 0) return principal;
+  if (elapsedMonths >= totalMonths) return 0;
+
+  const monthlyRate = (annualRate || 0) / 100 / 12;
+
+  switch (repaymentType) {
+    case "만기일시상환":
+      return principal;
+
+    case "원금균등상환": {
+      const paid = (principal / totalMonths) * elapsedMonths;
+      return Math.max(0, Math.round(principal - paid));
+    }
+
+    case "원리금균등상환": {
+      if (monthlyRate === 0) {
+        const paid = (principal / totalMonths) * elapsedMonths;
+        return Math.max(0, Math.round(principal - paid));
+      }
+      const factor = Math.pow(1 + monthlyRate, totalMonths);
+      const elapsedFactor = Math.pow(1 + monthlyRate, elapsedMonths);
+      return Math.max(0, Math.round(principal * (factor - elapsedFactor) / (factor - 1)));
+    }
+
+    case "거치식상환": {
+      const effectiveGrace = Math.min(gracePeriodMonths, totalMonths - 1);
+      if (elapsedMonths <= effectiveGrace) return principal;
+      const repayMonths = totalMonths - effectiveGrace;
+      const elapsedAfterGrace = elapsedMonths - effectiveGrace;
+      if (monthlyRate === 0) {
+        const paid = (principal / repayMonths) * elapsedAfterGrace;
+        return Math.max(0, Math.round(principal - paid));
+      }
+      const factor = Math.pow(1 + monthlyRate, repayMonths);
+      const elapsedFactor = Math.pow(1 + monthlyRate, elapsedAfterGrace);
+      return Math.max(0, Math.round(principal * (factor - elapsedFactor) / (factor - 1)));
+    }
+
+    default:
+      return principal;
+  }
+}
+
+// ============================================
 // State 초기화
 // ============================================
 
@@ -552,6 +613,9 @@ function initializeState(
   }
 
   // 부채 초기화
+  const sYear = simStartYear || new Date().getFullYear();
+  const sMonth = simStartMonth || 1;
+
   for (const d of data.debts) {
     if (!d.is_active) continue;
     const effectiveRate = getEffectiveDebtRate(
@@ -562,23 +626,39 @@ function initializeState(
     const totalMonths =
       (d.maturity_year - d.start_year) * 12 +
       (d.maturity_month - d.start_month);
-    const principal = d.current_balance || d.principal;
-    let monthlyPayment = 0;
 
-    switch (d.repayment_type) {
-      case "만기일시상환":
-        monthlyPayment = principal * monthlyRate;
-        break;
-      case "원리금균등상환":
-        monthlyPayment = calculatePMT(principal, monthlyRate, totalMonths);
-        break;
-      case "원금균등상환":
-        monthlyPayment = principal / totalMonths + principal * monthlyRate;
-        break;
-      case "거치식상환": {
-        const repayMonths = Math.max(1, totalMonths - d.grace_period_months);
-        monthlyPayment = calculatePMT(principal, monthlyRate, repayMonths);
-        break;
+    // current_balance가 명시적으로 있으면 그대로 사용, 없으면 경과 보정
+    const principal = d.current_balance || adjustBalanceForElapsed(
+      d.principal,
+      effectiveRate,
+      d.repayment_type,
+      d.start_year,
+      d.start_month,
+      d.maturity_year,
+      d.maturity_month,
+      sYear,
+      sMonth,
+      d.grace_period_months,
+    );
+    const alreadyPaidOff = principal <= 0;
+
+    let monthlyPayment = 0;
+    if (!alreadyPaidOff) {
+      switch (d.repayment_type) {
+        case "만기일시상환":
+          monthlyPayment = principal * monthlyRate;
+          break;
+        case "원리금균등상환":
+          monthlyPayment = calculatePMT(principal, monthlyRate, totalMonths);
+          break;
+        case "원금균등상환":
+          monthlyPayment = principal / totalMonths + principal * monthlyRate;
+          break;
+        case "거치식상환": {
+          const repayMonths = Math.max(1, totalMonths - d.grace_period_months);
+          monthlyPayment = calculatePMT(principal, monthlyRate, repayMonths);
+          break;
+        }
       }
     }
 
@@ -588,7 +668,7 @@ function initializeState(
       type: d.type,
       sourceType: d.source_type,
       originalPrincipal: d.principal,
-      currentBalance: d.current_balance || d.principal,
+      currentBalance: principal,
       interestRate: effectiveRate,
       rateType: d.rate_type,
       spread: d.spread,
@@ -599,7 +679,7 @@ function initializeState(
       maturityMonth: d.maturity_month,
       gracePeriodMonths: d.grace_period_months,
       monthlyPayment,
-      isPaidOff: false,
+      isPaidOff: alreadyPaidOff,
     });
   }
 
@@ -646,7 +726,20 @@ function initializeState(
       loanRepaymentType: re.loan_repayment_type || "원리금균등상환",
       loanGraceEndYear: re.grace_end_year,
       loanGraceEndMonth: re.grace_end_month,
-      loanBalance: re.loan_amount || 0,
+      loanBalance: re.has_loan && re.loan_amount ? adjustBalanceForElapsed(
+        re.loan_amount,
+        getEffectiveDebtRate(
+          { rate: re.loan_rate || 0, rateType: re.loan_rate_type || 'fixed', spread: re.loan_spread || 0 },
+          rates,
+        ),
+        re.loan_repayment_type || "원리금균등상환",
+        re.loan_start_year || re.purchase_year || sYear,
+        re.loan_start_month || 1,
+        re.loan_maturity_year || (re.loan_start_year || re.purchase_year || sYear) + 30,
+        re.loan_maturity_month || 12,
+        sYear,
+        sMonth,
+      ) : 0,
       includeInCashflow: re.include_in_cashflow ?? false,
       isPurchased: true,
     });
@@ -655,8 +748,6 @@ function initializeState(
     const reState = state.realEstates[state.realEstates.length - 1];
     if (reState.includeInCashflow && reState.purchaseYear) {
       const pMonth = reState.purchaseMonth || 1;
-      const sYear = simStartYear || new Date().getFullYear();
-      const sMonth = simStartMonth || 1;
       const purchaseYM = reState.purchaseYear * 12 + pMonth;
       const startYM = sYear * 12 + sMonth;
       if (purchaseYM >= startYM) {
@@ -691,7 +782,17 @@ function initializeState(
         (a.loan_start_year || new Date().getFullYear()) + 30,
       loanMaturityMonth: a.loan_maturity_month || 12,
       loanRepaymentType: a.loan_repayment_type || "원리금균등상환",
-      loanBalance: a.loan_amount || 0,
+      loanBalance: a.has_loan && a.loan_amount ? adjustBalanceForElapsed(
+        a.loan_amount,
+        a.loan_rate || 0,
+        a.loan_repayment_type || "원리금균등상환",
+        a.loan_start_year || sYear,
+        a.loan_start_month || 1,
+        a.loan_maturity_year || (a.loan_start_year || sYear) + 30,
+        a.loan_maturity_month || 12,
+        sYear,
+        sMonth,
+      ) : 0,
       purchaseYear: a.purchase_year,
       purchaseMonth: a.purchase_month,
       includeInCashflow: a.include_in_cashflow ?? false,
@@ -1151,8 +1252,16 @@ export function runSimulationV2(
             debt.maturityYear,
             debt.maturityMonth,
           )
-        )
+        ) {
+          // 만기 이후인데 잔액이 남아있으면 강제 정리
+          const pastMaturity = year > debt.maturityYear ||
+            (year === debt.maturityYear && month > debt.maturityMonth);
+          if (pastMaturity && debt.currentBalance > 0) {
+            debt.currentBalance = 0;
+            debt.isPaidOff = true;
+          }
           continue;
+        }
 
         const monthsFromStart =
           (year - debt.startYear) * 12 + (month - debt.startMonth);
@@ -1328,8 +1437,15 @@ export function runSimulationV2(
             re.loanMaturityYear,
             re.loanMaturityMonth || 12,
           )
-        )
+        ) {
+          // 만기 이후 잔액 강제 정리
+          const pastMaturity = year > re.loanMaturityYear ||
+            (year === re.loanMaturityYear && month > (re.loanMaturityMonth || 12));
+          if (pastMaturity && re.loanBalance > 0) {
+            re.loanBalance = 0;
+          }
           continue;
+        }
 
         const loanRate = re.loanRate || (effectiveAssumptions.rates.debtDefault ?? 3.5);
         const loanMonthlyRate = loanRate / 100 / 12;
@@ -1472,8 +1588,15 @@ export function runSimulationV2(
             asset.loanMaturityYear,
             asset.loanMaturityMonth || 12,
           )
-        )
+        ) {
+          // 만기 이후 잔액 강제 정리
+          const pastMaturity = year > asset.loanMaturityYear ||
+            (year === asset.loanMaturityYear && month > (asset.loanMaturityMonth || 12));
+          if (pastMaturity && asset.loanBalance > 0) {
+            asset.loanBalance = 0;
+          }
           continue;
+        }
 
         const assetLoanRate = asset.loanRate || (effectiveAssumptions.rates.debtDefault ?? 3.5);
         const assetMonthlyRate = assetLoanRate / 100 / 12;

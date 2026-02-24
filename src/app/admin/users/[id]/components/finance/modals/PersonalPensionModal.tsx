@@ -197,10 +197,13 @@ export function PersonalPensionModal({
                 <input
                   type="number"
                   value={contributionEndYear || currentYear + 10}
-                  onChange={(e) => setContributionEndYear(Number(e.target.value))}
+                  onChange={(e) => {
+                    if (e.target.value.length > 4) return;
+                    setContributionEndYear(Number(e.target.value));
+                  }}
                   onWheel={(e) => (e.target as HTMLElement).blur()}
                   min={currentYear}
-                  max={2100}
+                  max={9999}
                   className={styles.input}
                 />
                 <span className={styles.unit}>년</span>

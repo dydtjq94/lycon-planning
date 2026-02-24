@@ -27,6 +27,7 @@ export function YearMonthInput({
         className={styles.yearInput}
         value={year}
         onChange={(e) => {
+          if (e.target.value.length > 4) return;
           const v = parseInt(e.target.value);
           if (!isNaN(v) && v >= minYear && v <= maxYear) {
             onYearChange(v);
@@ -34,7 +35,7 @@ export function YearMonthInput({
         }}
         onWheel={(e) => (e.target as HTMLElement).blur()}
         min={minYear}
-        max={maxYear}
+        max={9999}
       />
       <span className={styles.unit}>년</span>
       <select
