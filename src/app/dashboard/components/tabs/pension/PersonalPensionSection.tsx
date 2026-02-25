@@ -26,6 +26,7 @@ interface PersonalPensionSectionProps {
   owner: Owner
   ownerLabel: string
   birthYear: number
+  birthMonth: number
   retirementAge: number
   onSave: () => void
 }
@@ -36,9 +37,11 @@ export function PersonalPensionSection({
   owner,
   ownerLabel,
   birthYear,
+  birthMonth,
   retirementAge,
   onSave,
 }: PersonalPensionSectionProps) {
+  const pad2 = (n: number) => String(n).padStart(2, '0')
   const [editingType, setEditingType] = useState<PersonalPensionType | null>(null)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
   const [startDateText, setStartDateText] = useState('')
@@ -132,6 +135,8 @@ export function PersonalPensionSection({
     const receivingYears = pensionSavings?.receiving_years || 20
     const startYear = birthYear + startAge
     const endYear = startYear + receivingYears
+    const endM = birthMonth > 1 ? birthMonth - 1 : 12
+    const effectiveEndYear = birthMonth > 1 ? endYear : endYear - 1
 
     // Set icon and color
     setEditIcon(pensionSavings?.icon || null)
@@ -142,14 +147,14 @@ export function PersonalPensionSection({
       balance: pensionSavings?.current_balance?.toString() || '',
       monthly: pensionSavings?.monthly_contribution?.toString() || '',
       startYear: String(startYear),
-      startMonth: '1',
-      endYear: String(endYear),
-      endMonth: '12',
+      startMonth: String(birthMonth),
+      endYear: String(effectiveEndYear),
+      endMonth: String(endM),
       rateCategory,
       returnRate: pensionSavings?.return_rate?.toString() || '5',
     })
-    setStartDateText(toPeriodRaw(startYear, 1))
-    setEndDateText(toPeriodRaw(endYear, 12))
+    setStartDateText(toPeriodRaw(startYear, birthMonth))
+    setEndDateText(toPeriodRaw(effectiveEndYear, endM))
   }
 
   const startEditIrp = () => {
@@ -158,6 +163,8 @@ export function PersonalPensionSection({
     const receivingYears = irp?.receiving_years || 20
     const startYear = birthYear + startAge
     const endYear = startYear + receivingYears
+    const endM = birthMonth > 1 ? birthMonth - 1 : 12
+    const effectiveEndYear = birthMonth > 1 ? endYear : endYear - 1
 
     // Set icon and color
     setEditIcon(irp?.icon || null)
@@ -168,14 +175,14 @@ export function PersonalPensionSection({
       balance: irp?.current_balance?.toString() || '',
       monthly: irp?.monthly_contribution?.toString() || '',
       startYear: String(startYear),
-      startMonth: '1',
-      endYear: String(endYear),
-      endMonth: '12',
+      startMonth: String(birthMonth),
+      endYear: String(effectiveEndYear),
+      endMonth: String(endM),
       rateCategory,
       returnRate: irp?.return_rate?.toString() || '5',
     })
-    setStartDateText(toPeriodRaw(startYear, 1))
-    setEndDateText(toPeriodRaw(endYear, 12))
+    setStartDateText(toPeriodRaw(startYear, birthMonth))
+    setEndDateText(toPeriodRaw(effectiveEndYear, endM))
   }
 
   const savePension = async (pensionType: PersonalPensionType) => {
@@ -436,7 +443,7 @@ export function PersonalPensionSection({
               <span className={styles.itemMeta}>월 {formatMoney(pensionSavings.monthly_contribution)} 납입</span>
             )}
             <span className={styles.itemMeta}>
-              {birthYear + (pensionSavings.start_age || 56)}년부터 {pensionSavings.receiving_years || 20}년간 수령
+              {birthYear + (pensionSavings.start_age || 56)}.{pad2(birthMonth)}부터 {pensionSavings.receiving_years || 20}년간 수령
             </span>
           </div>
           <div className={styles.itemRight}>
@@ -488,7 +495,7 @@ export function PersonalPensionSection({
               <span className={styles.itemMeta}>월 {formatMoney(irp.monthly_contribution)} 납입</span>
             )}
             <span className={styles.itemMeta}>
-              {birthYear + (irp.start_age || 56)}년부터 {irp.receiving_years || 20}년간 수령
+              {birthYear + (irp.start_age || 56)}.{pad2(birthMonth)}부터 {irp.receiving_years || 20}년간 수령
             </span>
           </div>
           <div className={styles.itemRight}>

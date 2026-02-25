@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ShoppingCart, Receipt, Sunset, HeartPulse, GraduationCap } from "lucide-react";
+import { ShoppingCart, Receipt, Sunset, HeartPulse, GraduationCap, Building2 } from "lucide-react";
 import {
   LIFECYCLE_ICONS,
   LIFECYCLE_COLORS,
@@ -10,17 +10,19 @@ import {
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { calculateAge, formatMoney } from "@/lib/utils";
 import type { StepProps, WizardData } from "./types";
+import type { HousingExpenseInfo } from "./StepAssetReview";
 import styles from "./StepExpense.module.css";
 
 interface StepExpenseProps extends StepProps {
   profileBirthDate: string | null;
+  housingExpenses?: HousingExpenseInfo[];
 }
 
 type ExpenseCard = "living" | "fixed" | "rate";
 
 const DEFAULT_EXPENSE_COLOR = "#f43f5e";
 
-export function StepExpense({ data, onChange, profileBirthDate }: StepExpenseProps) {
+export function StepExpense({ data, onChange, profileBirthDate, housingExpenses = [] }: StepExpenseProps) {
   const { isDark } = useChartTheme();
   const { expense } = data;
 
@@ -493,6 +495,47 @@ export function StepExpense({ data, onChange, profileBirthDate }: StepExpensePro
                 </div>
               </div>
             )}
+          </>
+        )}
+
+        {/* 부동산 지출 */}
+        {housingExpenses.length > 0 && (
+          <>
+            <div className={styles.sectionDivider}>
+              <span className={styles.sectionLabel}>부동산 지출</span>
+            </div>
+
+            {housingExpenses.map((he, idx) => {
+              const items: string[] = [];
+              if (he.monthlyRent > 0) items.push(`월세 ${formatMoney(Math.round(he.monthlyRent / 10000))}`);
+              if (he.maintenanceFee > 0) items.push(`관리비 ${formatMoney(Math.round(he.maintenanceFee / 10000))}`);
+              if (he.hasLoan && he.loanAmount > 0) items.push(`대출 ${formatMoney(Math.round(he.loanAmount / 10000))}${he.loanRate ? ` (${he.loanRate}%)` : ""}`);
+              if (items.length === 0) return null;
+
+              const monthlyTotal = Math.round(he.monthlyRent / 10000) + Math.round(he.maintenanceFee / 10000);
+              const typeLabel = he.housingType === "전세" ? "전세" : he.housingType === "월세" ? "월세" : he.housingType === "자가" ? "자가" : "";
+
+              return (
+                <div key={idx} className={styles.card} style={{ cursor: "default" }}>
+                  <div className={styles.iconBtn} style={{ background: "#f59e0b18" }}>
+                    <Building2 size={15} style={{ color: "#f59e0b" }} />
+                  </div>
+                  <div className={styles.cardInfo}>
+                    <span className={styles.cardName}>{he.title}</span>
+                    <span className={styles.cardMeta}>
+                      {typeLabel ? `${typeLabel} · ` : ""}{items.join(" · ")}
+                    </span>
+                  </div>
+                  {monthlyTotal > 0 && (
+                    <div className={styles.cardRight}>
+                      <span className={styles.cardAmount}>
+                        {formatMoney(monthlyTotal)}/월
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </>
         )}
       </div>

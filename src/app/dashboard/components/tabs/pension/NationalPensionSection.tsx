@@ -26,6 +26,7 @@ interface NationalPensionSectionProps {
   owner: Owner
   ownerLabel: string
   birthYear: number
+  birthMonth: number
   onSave: () => void
   retirementAge?: number
   lifeExpectancy?: number
@@ -38,11 +39,13 @@ export function NationalPensionSection({
   owner,
   ownerLabel,
   birthYear,
+  birthMonth,
   onSave,
   retirementAge,
   lifeExpectancy,
   inflationRate,
 }: NationalPensionSectionProps) {
+  const pad2 = (n: number) => String(n).padStart(2, '0')
   const [isEditing, setIsEditing] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
   const [startDateText, setStartDateText] = useState('')
@@ -67,15 +70,18 @@ export function NationalPensionSection({
     setEditIcon(pension?.icon || null)
     setEditColor(pension?.color || null)
 
+    const endM = birthMonth > 1 ? birthMonth - 1 : 12
+    const effectiveEndYear = endAge ? (birthMonth > 1 ? birthYear + endAge : birthYear + endAge - 1) : null
+
     setEditValues({
       amount: pension?.expected_monthly_amount?.toString() || '',
       startYear: String(startYear),
-      startMonth: '1',
-      endYear: endYear ? String(endYear) : '',
-      endMonth: endYear ? '12' : '',
+      startMonth: String(birthMonth),
+      endYear: effectiveEndYear ? String(effectiveEndYear) : '',
+      endMonth: effectiveEndYear ? String(endM) : '',
     })
-    setStartDateText(toPeriodRaw(startYear, 1))
-    setEndDateText(endYear ? toPeriodRaw(endYear, 12) : '')
+    setStartDateText(toPeriodRaw(startYear, birthMonth))
+    setEndDateText(effectiveEndYear ? toPeriodRaw(effectiveEndYear, endM) : '')
 
     // 수령시작 모드 복원: 65세와 일치하면 default
     if (startAge === 65) {
@@ -191,7 +197,7 @@ export function NationalPensionSection({
           <div className={styles.itemInfo}>
             <span className={styles.itemName}>{ownerLabel} 공적연금</span>
             <span className={styles.itemMeta}>
-              {birthYear + pension.start_age}년부터 수령{pension.end_age ? ` ~ ${birthYear + pension.end_age}년` : ''}
+              {birthYear + pension.start_age}.{pad2(birthMonth)}부터 수령{pension.end_age ? ` ~ ${birthMonth > 1 ? birthYear + pension.end_age : birthYear + pension.end_age - 1}.${pad2(birthMonth > 1 ? birthMonth - 1 : 12)}` : ''}
             </span>
             {inflationRate && (() => {
               const currentYear = new Date().getFullYear()
@@ -302,13 +308,13 @@ export function NationalPensionSection({
                         setStartMode(mode)
                         if (mode === 'default') {
                           const year = birthYear + 65
-                          setEditValues({ ...editValues, startYear: String(year), startMonth: '1' })
-                          setStartDateText(toPeriodRaw(year, 1))
+                          setEditValues({ ...editValues, startYear: String(year), startMonth: String(birthMonth) })
+                          setStartDateText(toPeriodRaw(year, birthMonth))
                         }
                       }}
                     >
                       <option value="default">
-                        65세 ({birthYear + 65}년)
+                        65세 ({birthYear + 65}.{pad2(birthMonth)})
                       </option>
                       <option value="custom">직접 입력</option>
                     </select>
@@ -341,16 +347,17 @@ export function NationalPensionSection({
                           setEditValues({ ...editValues, endYear: '', endMonth: '' })
                           setEndDateText('')
                         } else if (mode === 'lifeExpectancy' && lifeExpectancy) {
-                          const year = birthYear + lifeExpectancy
-                          setEditValues({ ...editValues, endYear: String(year), endMonth: '12' })
-                          setEndDateText(toPeriodRaw(year, 12))
+                          const endM = birthMonth > 1 ? birthMonth - 1 : 12
+                          const endY = birthMonth > 1 ? birthYear + lifeExpectancy : birthYear + lifeExpectancy - 1
+                          setEditValues({ ...editValues, endYear: String(endY), endMonth: String(endM) })
+                          setEndDateText(toPeriodRaw(endY, endM))
                         }
                       }}
                     >
                       <option value="none">종료 없음 (평생)</option>
                       {lifeExpectancy && (
                         <option value="lifeExpectancy">
-                          기대수명 ({lifeExpectancy}세, {birthYear + lifeExpectancy}년)
+                          기대수명 ({lifeExpectancy}세, {birthMonth > 1 ? birthYear + lifeExpectancy : birthYear + lifeExpectancy - 1}.{pad2(birthMonth > 1 ? birthMonth - 1 : 12)})
                         </option>
                       )}
                       <option value="custom">직접 입력</option>

@@ -24,9 +24,10 @@ import styles from "./StepAssetReview.module.css";
 
 interface StepAssetReviewProps extends StepProps {
   profileId: string;
+  cachedGroups?: AssetGroup[] | null;
 }
 
-interface AssetGroup {
+export interface AssetGroup {
   key: string;
   label: string;
   icon: typeof Landmark;
@@ -50,232 +51,278 @@ const INVESTMENT_TYPES = ["general"];
 const PENSION_TYPES = ["pension_savings", "irp", "isa"];
 const RETIREMENT_TYPES = ["dc"];
 
-export function StepAssetReview({ profileId }: StepAssetReviewProps) {
-  const [groups, setGroups] = useState<AssetGroup[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string | null>(null);
+export interface HousingExpenseInfo {
+  title: string;
+  housingType: string | null; // '자가' | '전세' | '월세' | '무상'
+  monthlyRent: number; // 원 단위 (DB raw)
+  maintenanceFee: number; // 원 단위
+  deposit: number; // 원 단위
+  hasLoan: boolean;
+  loanAmount: number; // 원 단위
+  loanRate: number | null;
+  loanRepaymentType: string | null;
+}
 
-  useEffect(() => {
-    const supabase = createClient();
+export async function loadAssetGroups(profileId: string): Promise<{ groups: AssetGroup[]; housingExpenses: HousingExpenseInfo[] }> {
+  const supabase = createClient();
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
 
-    async function loadAssets() {
-      try {
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1;
+  const [accountsRes, portfolioRes, budgetRes, customHoldingsRes] = await Promise.all([
+    supabase
+      .from("accounts")
+      .select("*")
+      .eq("profile_id", profileId)
+      .eq("is_active", true),
+    supabase
+      .from("portfolio_transactions")
+      .select("*")
+      .eq("profile_id", profileId),
+    supabase
+      .from("budget_transactions")
+      .select("account_id, type, amount")
+      .eq("profile_id", profileId)
+      .eq("year", currentYear)
+      .eq("month", currentMonth),
+    supabase
+      .from("custom_holdings")
+      .select("*")
+      .eq("profile_id", profileId),
+  ]);
 
-        const [accountsRes, portfolioRes, budgetRes, customHoldingsRes] = await Promise.all([
-          supabase
-            .from("accounts")
-            .select("*")
-            .eq("profile_id", profileId)
-            .eq("is_active", true),
-          supabase
-            .from("portfolio_transactions")
-            .select("*")
-            .eq("profile_id", profileId),
-          supabase
-            .from("budget_transactions")
-            .select("account_id, type, amount")
-            .eq("profile_id", profileId)
-            .eq("year", currentYear)
-            .eq("month", currentMonth),
-          supabase
-            .from("custom_holdings")
-            .select("*")
-            .eq("profile_id", profileId),
-        ]);
+  const accounts = accountsRes.data;
+  const portfolioTransactions = portfolioRes.data || [];
 
-        const accounts = accountsRes.data;
-        const portfolioTransactions = portfolioRes.data || [];
+  const priceCache = await fetchPortfolioPrices(portfolioTransactions);
+  const investmentValues = calculatePortfolioAccountValues(
+    portfolioTransactions,
+    priceCache,
+    accounts?.map((a) => ({ id: a.id, additional_amount: a.additional_amount })),
+    customHoldingsRes.data || []
+  );
 
-        const priceCache = await fetchPortfolioPrices(portfolioTransactions);
-        const investmentValues = calculatePortfolioAccountValues(
-          portfolioTransactions,
-          priceCache,
-          accounts?.map((a) => ({ id: a.id, additional_amount: a.additional_amount })),
-          customHoldingsRes.data || []
-        );
+  const savingsValues = new Map<string, number>();
+  const txSummary = calculateAccountTransactionSummary(budgetRes.data || []);
+  const bankTypeAccounts = accounts?.filter((a) =>
+    BANK_TYPES.includes(a.account_type || "")
+  ) || [];
 
-        const savingsValues = new Map<string, number>();
-        const txSummary = calculateAccountTransactionSummary(budgetRes.data || []);
-        const bankTypeAccounts = accounts?.filter((a) =>
-          BANK_TYPES.includes(a.account_type || "")
-        ) || [];
+  for (const acc of bankTypeAccounts) {
+    if (acc.account_type === "checking") {
+      savingsValues.set(acc.id, Math.round(calculateExpectedBalance(acc.current_balance || 0, txSummary[acc.id])));
+    } else {
+      savingsValues.set(acc.id, Math.round(calculateTermDepositValue(acc)));
+    }
+  }
 
-        for (const acc of bankTypeAccounts) {
-          if (acc.account_type === "checking") {
-            savingsValues.set(acc.id, Math.round(calculateExpectedBalance(acc.current_balance || 0, txSummary[acc.id])));
-          } else {
-            savingsValues.set(acc.id, Math.round(calculateTermDepositValue(acc)));
-          }
+  const getBalance = (accountId: string, currentBalance: number | null, isInvestment: boolean): number => {
+    if (isInvestment && investmentValues.has(accountId)) {
+      return investmentValues.get(accountId)!;
+    }
+    if (!isInvestment && savingsValues.has(accountId)) {
+      return savingsValues.get(accountId)!;
+    }
+    return currentBalance || 0;
+  };
+
+  const { data: defaultSim } = await supabase
+    .from("simulations")
+    .select("id")
+    .eq("profile_id", profileId)
+    .eq("is_default", true)
+    .single();
+
+  type SimItem = { title: string; current_balance?: number | null; current_value?: number | null };
+  type FullRealEstate = SimItem & {
+    housing_type?: string | null;
+    monthly_rent?: number | null;
+    maintenance_fee?: number | null;
+    deposit?: number | null;
+    has_loan?: boolean;
+    loan_amount?: number | null;
+    loan_rate?: number | null;
+    loan_repayment_type?: string | null;
+  };
+
+  let debts: SimItem[] = [];
+  let realEstates: SimItem[] = [];
+  let physicalAssets: SimItem[] = [];
+  let housingExpenses: HousingExpenseInfo[] = [];
+
+  if (defaultSim) {
+    const [debtsRes, reRes, paRes] = await Promise.all([
+      supabase.from("debts").select("title, current_balance").eq("simulation_id", defaultSim.id),
+      supabase.from("real_estates").select("title, current_value, housing_type, monthly_rent, maintenance_fee, deposit, has_loan, loan_amount, loan_rate, loan_repayment_type").eq("simulation_id", defaultSim.id),
+      supabase.from("physical_assets").select("title, current_value").eq("simulation_id", defaultSim.id),
+    ]);
+    debts = debtsRes.data || [];
+    const fullRealEstates: FullRealEstate[] = reRes.data || [];
+    physicalAssets = paRes.data || [];
+
+    realEstates = fullRealEstates.map((re) => ({ title: re.title, current_value: re.current_value }));
+
+    housingExpenses = fullRealEstates
+      .filter((re) => (re.monthly_rent && re.monthly_rent > 0) || (re.maintenance_fee && re.maintenance_fee > 0) || re.has_loan)
+      .map((re) => ({
+        title: re.title,
+        housingType: re.housing_type || null,
+        monthlyRent: re.monthly_rent || 0,
+        maintenanceFee: re.maintenance_fee || 0,
+        deposit: re.deposit || 0,
+        hasLoan: re.has_loan || false,
+        loanAmount: re.loan_amount || 0,
+        loanRate: re.loan_rate || null,
+        loanRepaymentType: re.loan_repayment_type || null,
+      }));
+  }
+
+  if (!debts.length || !realEstates.length || !physicalAssets.length) {
+    const { data: snapshots } = await supabase
+      .from("financial_snapshots")
+      .select("id")
+      .eq("profile_id", profileId)
+      .eq("is_active", true)
+      .order("recorded_at", { ascending: false })
+      .limit(1);
+
+    if (snapshots && snapshots.length > 0) {
+      const { data: items } = await supabase
+        .from("financial_snapshot_items")
+        .select("category, item_type, title, amount")
+        .eq("snapshot_id", snapshots[0].id)
+        .order("sort_order", { ascending: true });
+
+      if (items) {
+        if (!debts.length) {
+          debts = items
+            .filter((i) => i.category === "debt")
+            .map((i) => ({ title: i.title, current_balance: i.amount }));
         }
-
-        const getBalance = (accountId: string, currentBalance: number | null, isInvestment: boolean): number => {
-          if (isInvestment && investmentValues.has(accountId)) {
-            return investmentValues.get(accountId)!;
-          }
-          if (!isInvestment && savingsValues.has(accountId)) {
-            return savingsValues.get(accountId)!;
-          }
-          return currentBalance || 0;
-        };
-
-        const { data: defaultSim } = await supabase
-          .from("simulations")
-          .select("id")
-          .eq("profile_id", profileId)
-          .eq("is_default", true)
-          .single();
-
-        type SimItem = { title: string; current_balance?: number | null; current_value?: number | null };
-        let debts: SimItem[] = [];
-        let realEstates: SimItem[] = [];
-        let physicalAssets: SimItem[] = [];
-
-        if (defaultSim) {
-          const [debtsRes, reRes, paRes] = await Promise.all([
-            supabase.from("debts").select("title, current_balance").eq("simulation_id", defaultSim.id),
-            supabase.from("real_estates").select("title, current_value").eq("simulation_id", defaultSim.id),
-            supabase.from("physical_assets").select("title, current_value").eq("simulation_id", defaultSim.id),
-          ]);
-          debts = debtsRes.data || [];
-          realEstates = reRes.data || [];
-          physicalAssets = paRes.data || [];
+        if (!realEstates.length) {
+          const RE_TYPES = ["real_estate", "residence", "land", "apartment", "house", "officetel", "commercial"];
+          realEstates = items
+            .filter((i) => i.category === "asset" && RE_TYPES.includes(i.item_type))
+            .map((i) => ({ title: i.title, current_value: i.amount }));
         }
-
-        if (!debts.length || !realEstates.length || !physicalAssets.length) {
-          const { data: snapshots } = await supabase
-            .from("financial_snapshots")
-            .select("id")
-            .eq("profile_id", profileId)
-            .eq("is_active", true)
-            .order("recorded_at", { ascending: false })
-            .limit(1);
-
-          if (snapshots && snapshots.length > 0) {
-            const { data: items } = await supabase
-              .from("financial_snapshot_items")
-              .select("category, item_type, title, amount")
-              .eq("snapshot_id", snapshots[0].id)
-              .order("sort_order", { ascending: true });
-
-            if (items) {
-              if (!debts.length) {
-                debts = items
-                  .filter((i) => i.category === "debt")
-                  .map((i) => ({ title: i.title, current_balance: i.amount }));
-              }
-              if (!realEstates.length) {
-                const RE_TYPES = ["real_estate", "residence", "land", "apartment", "house", "officetel", "commercial"];
-                realEstates = items
-                  .filter((i) => i.category === "asset" && RE_TYPES.includes(i.item_type))
-                  .map((i) => ({ title: i.title, current_value: i.amount }));
-              }
-              if (!physicalAssets.length) {
-                const PA_TYPES = ["car", "precious_metal", "art", "other_asset"];
-                physicalAssets = items
-                  .filter((i) => i.category === "asset" && PA_TYPES.includes(i.item_type))
-                  .map((i) => ({ title: i.title, current_value: i.amount }));
-              }
-            }
-          }
+        if (!physicalAssets.length) {
+          const PA_TYPES = ["car", "precious_metal", "art", "other_asset"];
+          physicalAssets = items
+            .filter((i) => i.category === "asset" && PA_TYPES.includes(i.item_type))
+            .map((i) => ({ title: i.title, current_value: i.amount }));
         }
-
-        // 그룹 구성
-        const result: AssetGroup[] = [];
-
-        if (accounts) {
-          const bankAccounts = accounts.filter((a) => BANK_TYPES.includes(a.account_type || ""));
-          if (bankAccounts.length > 0) {
-            result.push({
-              key: "bank",
-              label: "예적금",
-              ...GROUP_META.bank,
-              items: bankAccounts.map((a) => ({
-                name: a.name,
-                amount: getBalance(a.id, a.current_balance, false),
-              })),
-            });
-          }
-
-          const investAccounts = accounts.filter((a) => INVESTMENT_TYPES.includes(a.account_type || ""));
-          if (investAccounts.length > 0) {
-            result.push({
-              key: "investment",
-              label: "투자",
-              ...GROUP_META.investment,
-              items: investAccounts.map((a) => ({
-                name: a.name,
-                amount: getBalance(a.id, a.current_balance, true),
-              })),
-            });
-          }
-
-          const pensionAccounts = accounts.filter((a) => PENSION_TYPES.includes(a.account_type || ""));
-          if (pensionAccounts.length > 0) {
-            result.push({
-              key: "pension",
-              label: "연금",
-              ...GROUP_META.pension,
-              items: pensionAccounts.map((a) => ({
-                name: a.name,
-                amount: getBalance(a.id, a.current_balance, true),
-              })),
-            });
-          }
-
-          const retirementAccounts = accounts.filter((a) => RETIREMENT_TYPES.includes(a.account_type || ""));
-          if (retirementAccounts.length > 0) {
-            result.push({
-              key: "retirement",
-              label: "퇴직연금",
-              ...GROUP_META.retirement,
-              items: retirementAccounts.map((a) => ({
-                name: a.name,
-                amount: getBalance(a.id, a.current_balance, true),
-              })),
-            });
-          }
-        }
-
-        if (realEstates.length > 0) {
-          result.push({
-            key: "realEstate",
-            label: "부동산",
-            ...GROUP_META.realEstate,
-            items: realEstates.map((i) => ({ name: i.title, amount: i.current_value ?? 0 })),
-          });
-        }
-
-        if (physicalAssets.length > 0) {
-          result.push({
-            key: "physical",
-            label: "실물자산",
-            ...GROUP_META.physical,
-            items: physicalAssets.map((i) => ({ name: i.title, amount: i.current_value ?? 0 })),
-          });
-        }
-
-        if (debts.length > 0) {
-          result.push({
-            key: "debt",
-            label: "부채",
-            ...GROUP_META.debt,
-            items: debts.map((i) => ({ name: i.title, amount: i.current_balance ?? 0 })),
-          });
-        }
-
-        setGroups(result);
-        if (result.length > 0) setActiveTab(result[0].key);
-      } catch (err) {
-        console.error("[StepAssetReview] Failed to load assets:", err);
-      } finally {
-        setLoading(false);
       }
     }
+  }
 
-    loadAssets();
-  }, [profileId]);
+  // 그룹 구성
+  const result: AssetGroup[] = [];
+
+  if (accounts) {
+    const bankAccounts = accounts.filter((a) => BANK_TYPES.includes(a.account_type || ""));
+    if (bankAccounts.length > 0) {
+      result.push({
+        key: "bank",
+        label: "예적금",
+        ...GROUP_META.bank,
+        items: bankAccounts.map((a) => ({
+          name: a.name,
+          amount: getBalance(a.id, a.current_balance, false),
+        })),
+      });
+    }
+
+    const investAccounts = accounts.filter((a) => INVESTMENT_TYPES.includes(a.account_type || ""));
+    if (investAccounts.length > 0) {
+      result.push({
+        key: "investment",
+        label: "투자",
+        ...GROUP_META.investment,
+        items: investAccounts.map((a) => ({
+          name: a.name,
+          amount: getBalance(a.id, a.current_balance, true),
+        })),
+      });
+    }
+
+    const pensionAccounts = accounts.filter((a) => PENSION_TYPES.includes(a.account_type || ""));
+    if (pensionAccounts.length > 0) {
+      result.push({
+        key: "pension",
+        label: "연금",
+        ...GROUP_META.pension,
+        items: pensionAccounts.map((a) => ({
+          name: a.name,
+          amount: getBalance(a.id, a.current_balance, true),
+        })),
+      });
+    }
+
+    const retirementAccounts = accounts.filter((a) => RETIREMENT_TYPES.includes(a.account_type || ""));
+    if (retirementAccounts.length > 0) {
+      result.push({
+        key: "retirement",
+        label: "퇴직연금",
+        ...GROUP_META.retirement,
+        items: retirementAccounts.map((a) => ({
+          name: a.name,
+          amount: getBalance(a.id, a.current_balance, true),
+        })),
+      });
+    }
+  }
+
+  if (realEstates.length > 0) {
+    result.push({
+      key: "realEstate",
+      label: "부동산",
+      ...GROUP_META.realEstate,
+      items: realEstates.map((i) => ({ name: i.title, amount: i.current_value ?? 0 })),
+    });
+  }
+
+  if (physicalAssets.length > 0) {
+    result.push({
+      key: "physical",
+      label: "실물자산",
+      ...GROUP_META.physical,
+      items: physicalAssets.map((i) => ({ name: i.title, amount: i.current_value ?? 0 })),
+    });
+  }
+
+  if (debts.length > 0) {
+    result.push({
+      key: "debt",
+      label: "부채",
+      ...GROUP_META.debt,
+      items: debts.map((i) => ({ name: i.title, amount: i.current_balance ?? 0 })),
+    });
+  }
+
+  return { groups: result, housingExpenses };
+}
+
+export function StepAssetReview({ profileId, cachedGroups }: StepAssetReviewProps) {
+  const [groups, setGroups] = useState<AssetGroup[]>(cachedGroups ?? []);
+  const [loading, setLoading] = useState(!cachedGroups);
+  const [activeTab, setActiveTab] = useState<string | null>(
+    cachedGroups && cachedGroups.length > 0 ? cachedGroups[0].key : null
+  );
+
+  useEffect(() => {
+    if (cachedGroups) return;
+
+    loadAssetGroups(profileId)
+      .then(({ groups: result }) => {
+        setGroups(result);
+        if (result.length > 0) setActiveTab(result[0].key);
+      })
+      .catch((err) => {
+        console.error("[StepAssetReview] Failed to load assets:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [profileId, cachedGroups]);
 
   if (loading) {
     return (

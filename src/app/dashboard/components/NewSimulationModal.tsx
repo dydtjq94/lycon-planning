@@ -13,12 +13,15 @@ import {
   StepAssetReview,
   WIZARD_STEPS,
   INITIAL_WIZARD_DATA,
+  loadAssetGroups,
 } from "./wizard";
-import type { WizardData } from "./wizard";
+import type { WizardData, AssetGroup, HousingExpenseInfo } from "./wizard";
 import type { ProfileBasics, FamilyMember } from "@/contexts/FinancialContext";
 import styles from "./NewSimulationModal.module.css";
 
 interface NewSimulationModalProps {
+  isVisible: boolean;
+  onHide: () => void;
   onClose: () => void;
   onCreate: (wizardData: WizardData) => void;
   profile: ProfileBasics;
@@ -26,6 +29,8 @@ interface NewSimulationModalProps {
 }
 
 export function NewSimulationModal({
+  isVisible,
+  onHide,
   onClose,
   onCreate,
   profile,
@@ -171,20 +176,38 @@ export function NewSimulationModal({
         }
       });
   }, [profile.id]);
+
+  const [cachedAssetGroups, setCachedAssetGroups] = useState<AssetGroup[] | null>(null);
+  const [cachedHousingExpenses, setCachedHousingExpenses] = useState<HousingExpenseInfo[]>([]);
+
+  // Pre-fetch asset data for step 6
+  useEffect(() => {
+    loadAssetGroups(profile.id).then(({ groups, housingExpenses }) => {
+      setCachedAssetGroups(groups);
+      setCachedHousingExpenses(housingExpenses);
+    }).catch((err) => {
+      console.error("[NewSimulationModal] Failed to pre-fetch assets:", err);
+    });
+  }, [profile.id]);
+
   const [animKey, setAnimKey] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onHide();
     };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [onClose]);
+    if (isVisible) {
+      window.addEventListener("keydown", handleEsc);
+      return () => window.removeEventListener("keydown", handleEsc);
+    }
+  }, [onHide, isVisible]);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) onClose();
+    if (e.target === e.currentTarget) onHide();
   };
+
+  if (!isVisible) return null;
 
   const handleWizardChange = (updates: Partial<WizardData>) => {
     setWizardData((prev) => ({ ...prev, ...updates }));
@@ -264,11 +287,11 @@ export function NewSimulationModal({
       case 3:
         return <StepIncome {...props} profileBirthDate={profile.birth_date} />;
       case 4:
-        return <StepExpense {...props} profileBirthDate={profile.birth_date} />;
+        return <StepExpense {...props} profileBirthDate={profile.birth_date} housingExpenses={cachedHousingExpenses} />;
       case 5:
         return <StepEvents {...props} profileBirthDate={profile.birth_date ?? ""} />;
       case 6:
-        return <StepAssetReview {...props} profileId={profile.id} />;
+        return <StepAssetReview {...props} profileId={profile.id} cachedGroups={cachedAssetGroups} />;
       default:
         return null;
     }

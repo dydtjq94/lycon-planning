@@ -498,7 +498,9 @@ export function ScenarioTab({
           <PensionTab
             simulationId={simulationId}
             birthYear={simulationProfile.birthYear}
+            birthMonth={simulationProfile.birthMonth ?? 1}
             spouseBirthYear={simulationProfile.spouseBirthYear}
+            spouseBirthMonth={simulationProfile.spouseBirthMonth}
             retirementAge={lifeCycleSettings.selfRetirementAge}
             isMarried={isMarried}
             lifeCycleSettings={lifeCycleSettings}

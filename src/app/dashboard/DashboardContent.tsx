@@ -247,7 +247,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     bottom: number;
     width: number;
   } | null>(null);
-  const [showNewSimModal, setShowNewSimModal] = useState(false);
+  const [newSimModalMounted, setNewSimModalMounted] = useState(false);
+  const [newSimModalVisible, setNewSimModalVisible] = useState(false);
 
   // 비교 선택 상태: 'asset-trend' = 자산 추이, 시뮬레이션 ID = 다른 시뮬레이션
   const [compareSelections, setCompareSelections] = useState<Set<string>>(
@@ -623,10 +624,15 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   // 시뮬레이션 추가 모달 열기
   const handleAddSimulation = useCallback(
     (rect: { top: number; left: number; bottom: number; width: number }) => {
+      // 위자드가 숨겨져 있으면 다시 보여주기
+      if (newSimModalMounted && !newSimModalVisible) {
+        setNewSimModalVisible(true);
+        return;
+      }
       setAddSimModalRect(rect);
       setShowAddSimModal(true);
     },
-    [],
+    [newSimModalMounted, newSimModalVisible],
   );
 
   // 위자드 데이터를 실제 DB 재무 데이터로 변환/생성
@@ -2060,7 +2066,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           simulations={simulations}
           onCreateNew={() => {
             setShowAddSimModal(false);
-            setShowNewSimModal(true);
+            setNewSimModalMounted(true);
+            setNewSimModalVisible(true);
           }}
           onCopyFrom={handleCopySimulation}
           onClose={() => setShowAddSimModal(false)}
@@ -2068,9 +2075,11 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       )}
 
       {/* 새 시뮬레이션 생성 모달 */}
-      {showNewSimModal && (
+      {newSimModalMounted && (
         <NewSimulationModal
-          onClose={() => setShowNewSimModal(false)}
+          isVisible={newSimModalVisible}
+          onHide={() => setNewSimModalVisible(false)}
+          onClose={() => { setNewSimModalMounted(false); setNewSimModalVisible(false); }}
           onCreate={(wizardData) => handleCreateNewSimulation(wizardData)}
           profile={profile}
           familyMembers={familyMembers}

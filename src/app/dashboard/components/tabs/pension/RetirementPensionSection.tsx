@@ -28,6 +28,7 @@ interface RetirementPensionSectionProps {
   ownerLabel: string
   yearsUntilRetirement: number
   birthYear: number
+  birthMonth: number
   retirementAge: number
   onSave: () => void
 }
@@ -39,9 +40,11 @@ export function RetirementPensionSection({
   ownerLabel,
   yearsUntilRetirement,
   birthYear,
+  birthMonth,
   retirementAge,
   onSave,
 }: RetirementPensionSectionProps) {
+  const pad2 = (n: number) => String(n).padStart(2, '0')
   const [isEditing, setIsEditing] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
   const [startDateText, setStartDateText] = useState('')
@@ -65,6 +68,9 @@ export function RetirementPensionSection({
     setEditIcon(pension?.icon || null)
     setEditColor(pension?.color || null)
 
+    const endM = birthMonth > 1 ? birthMonth - 1 : 12
+    const effectiveEndYear = birthMonth > 1 ? endYear : endYear - 1
+
     setIsEditing(true)
     setEditValues({
       type: isDB ? 'DB' : pension?.pension_type === 'dc' || pension?.pension_type === 'corporate_irp' ? 'DC' : '',
@@ -72,16 +78,16 @@ export function RetirementPensionSection({
       balance: pension?.current_balance?.toString() || '',
       receiveType: pension?.receive_type || 'annuity',
       startYear: String(startYear),
-      startMonth: '1',
-      endYear: String(endYear),
-      endMonth: '12',
+      startMonth: String(birthMonth),
+      endYear: String(effectiveEndYear),
+      endMonth: String(endM),
       rateCategory,
       returnRate: pension?.return_rate?.toString() || '5',
       calculationMode: pension?.calculation_mode || 'auto',
       monthlySalary: pension?.monthly_salary?.toString() || '',
     })
-    setStartDateText(toPeriodRaw(startYear, 1))
-    setEndDateText(toPeriodRaw(endYear, 12))
+    setStartDateText(toPeriodRaw(startYear, birthMonth))
+    setEndDateText(toPeriodRaw(effectiveEndYear, endM))
   }
 
   const cancelEdit = () => {
@@ -290,7 +296,7 @@ export function RetirementPensionSection({
     }
 
     if (pension.receive_type === 'annuity') {
-      metaParts.push(`${birthYear + (pension.start_age || 56)}년부터 ${(pension.receiving_years || 10)}년간 연금 수령`)
+      metaParts.push(`${birthYear + (pension.start_age || 56)}.${pad2(birthMonth)}부터 ${(pension.receiving_years || 10)}년간 연금 수령`)
     } else if (pension.receive_type === 'lump_sum') {
       metaParts.push('일시금 수령')
     }

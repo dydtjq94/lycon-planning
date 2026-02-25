@@ -32,7 +32,9 @@ import styles from './PensionTab.module.css'
 interface PensionTabProps {
   simulationId: string
   birthYear: number
+  birthMonth: number
   spouseBirthYear?: number | null
+  spouseBirthMonth?: number | null
   retirementAge: number
   isMarried: boolean
   lifeCycleSettings?: {
@@ -47,7 +49,9 @@ interface PensionTabProps {
 export function PensionTab({
   simulationId,
   birthYear,
+  birthMonth,
   spouseBirthYear,
+  spouseBirthMonth,
   retirementAge,
   isMarried,
   lifeCycleSettings,
@@ -86,6 +90,7 @@ export function PensionTab({
 
   // 실제 배우자 생년 (없으면 본인과 동일)
   const effectiveSpouseBirthYear = spouseBirthYear || birthYear
+  const effectiveSpouseBirthMonth = spouseBirthMonth || birthMonth
 
   // 모든 연금 데이터 캐시 무효화
   const loadPensions = () => {
@@ -168,27 +173,33 @@ export function PensionTab({
       setAddValues({
         amount: '',
         startYear: String(startYear),
-        startMonth: '1',
+        startMonth: String(birthMonth),
         endYear: '',
         endMonth: '',
       })
     } else if (type === 'personal') {
       const startYear = birthYear + 56
+      const endYear = startYear + 20
+      const endM = birthMonth > 1 ? birthMonth - 1 : 12
+      const effectiveEndYear = birthMonth > 1 ? endYear : endYear - 1
       setAddValues({
         pensionType: '',
         balance: '',
         monthly: '',
         startYear: String(startYear),
-        startMonth: '1',
-        endYear: String(startYear + 20),
-        endMonth: '12',
+        startMonth: String(birthMonth),
+        endYear: String(effectiveEndYear),
+        endMonth: String(endM),
         rateCategory: getDefaultRateCategory('investment'),
         returnRate: '5',
       })
-      setPersonalStartDateText(toPeriodRaw(startYear, 1))
-      setPersonalEndDateText(toPeriodRaw(startYear + 20, 12))
+      setPersonalStartDateText(toPeriodRaw(startYear, birthMonth))
+      setPersonalEndDateText(toPeriodRaw(effectiveEndYear, endM))
     } else {
       const startYear = birthYear + 56
+      const endYear = startYear + 10
+      const endM = birthMonth > 1 ? birthMonth - 1 : 12
+      const effectiveEndYear = birthMonth > 1 ? endYear : endYear - 1
       setAddValues({
         type: '',
         years: '',
@@ -197,16 +208,44 @@ export function PensionTab({
         calculationMode: 'auto',
         receiveType: 'annuity',
         startYear: String(startYear),
-        startMonth: '1',
-        endYear: String(startYear + 10),
-        endMonth: '12',
+        startMonth: String(birthMonth),
+        endYear: String(effectiveEndYear),
+        endMonth: String(endM),
       })
     }
   }
 
-  // 소유자별 birthYear
-  const getBirthYearForOwner = () => {
-    return addOwner === 'self' ? birthYear : effectiveSpouseBirthYear
+  // 소유자별 birthYear / birthMonth
+  const getBirthYearForOwner = (owner?: 'self' | 'spouse') => {
+    return (owner ?? addOwner) === 'self' ? birthYear : effectiveSpouseBirthYear
+  }
+  const getBirthMonthForOwner = (owner?: 'self' | 'spouse') => {
+    return (owner ?? addOwner) === 'self' ? birthMonth : effectiveSpouseBirthMonth
+  }
+
+  // 소유자 변경 시 addValues의 시작/종료 년월 재계산
+  const handleOwnerChange = (newOwner: 'self' | 'spouse') => {
+    setAddOwner(newOwner)
+    const ownerBY = getBirthYearForOwner(newOwner)
+    const ownerBM = getBirthMonthForOwner(newOwner)
+    const endM = ownerBM > 1 ? ownerBM - 1 : 12
+
+    if (addingType === 'national') {
+      const startYear = ownerBY + 65
+      setAddValues(prev => ({ ...prev, startYear: String(startYear), startMonth: String(ownerBM) }))
+    } else if (addingType === 'retirement') {
+      const startYear = ownerBY + 56
+      const endYear = startYear + 10
+      const effectiveEndYear = ownerBM > 1 ? endYear : endYear - 1
+      setAddValues(prev => ({ ...prev, startYear: String(startYear), startMonth: String(ownerBM), endYear: String(effectiveEndYear), endMonth: String(endM) }))
+    } else if (addingType === 'personal') {
+      const startYear = ownerBY + 56
+      const endYear = startYear + 20
+      const effectiveEndYear = ownerBM > 1 ? endYear : endYear - 1
+      setAddValues(prev => ({ ...prev, startYear: String(startYear), startMonth: String(ownerBM), endYear: String(effectiveEndYear), endMonth: String(endM) }))
+      setPersonalStartDateText(toPeriodRaw(startYear, ownerBM))
+      setPersonalEndDateText(toPeriodRaw(effectiveEndYear, endM))
+    }
   }
 
   // 국민연금 저장
@@ -360,9 +399,9 @@ export function PensionTab({
               <span className={styles.modalFormLabel}>소유자</span>
               <div className={styles.typeButtons}>
                 <button type="button" className={`${styles.typeBtn} ${addOwner === 'self' ? styles.active : ''}`}
-                  onClick={() => setAddOwner('self')}>본인</button>
+                  onClick={() => handleOwnerChange('self')}>본인</button>
                 <button type="button" className={`${styles.typeBtn} ${addOwner === 'spouse' ? styles.active : ''}`}
-                  onClick={() => setAddOwner('spouse')}>배우자</button>
+                  onClick={() => handleOwnerChange('spouse')}>배우자</button>
               </div>
             </div>
           )}
@@ -446,9 +485,9 @@ export function PensionTab({
               <span className={styles.modalFormLabel}>소유자</span>
               <div className={styles.typeButtons}>
                 <button type="button" className={`${styles.typeBtn} ${addOwner === 'self' ? styles.active : ''}`}
-                  onClick={() => setAddOwner('self')}>본인</button>
+                  onClick={() => handleOwnerChange('self')}>본인</button>
                 <button type="button" className={`${styles.typeBtn} ${addOwner === 'spouse' ? styles.active : ''}`}
-                  onClick={() => setAddOwner('spouse')}>배우자</button>
+                  onClick={() => handleOwnerChange('spouse')}>배우자</button>
               </div>
             </div>
           )}
@@ -688,9 +727,9 @@ export function PensionTab({
               <span className={styles.modalFormLabel}>소유자</span>
               <div className={styles.typeButtons}>
                 <button type="button" className={`${styles.typeBtn} ${addOwner === 'self' ? styles.active : ''}`}
-                  onClick={() => setAddOwner('self')}>본인</button>
+                  onClick={() => handleOwnerChange('self')}>본인</button>
                 <button type="button" className={`${styles.typeBtn} ${addOwner === 'spouse' ? styles.active : ''}`}
-                  onClick={() => setAddOwner('spouse')}>배우자</button>
+                  onClick={() => handleOwnerChange('spouse')}>배우자</button>
               </div>
             </div>
           )}
@@ -919,6 +958,7 @@ export function PensionTab({
                   owner="self"
                   ownerLabel="본인"
                   birthYear={birthYear}
+                  birthMonth={birthMonth}
                   onSave={loadPensions}
                   retirementAge={lifeCycleSettings?.selfRetirementAge}
                   lifeExpectancy={lifeCycleSettings?.selfLifeExpectancy}
@@ -931,6 +971,7 @@ export function PensionTab({
                     owner="spouse"
                     ownerLabel="배우자"
                     birthYear={effectiveSpouseBirthYear}
+                    birthMonth={effectiveSpouseBirthMonth}
                     onSave={loadPensions}
                     retirementAge={lifeCycleSettings?.spouseRetirementAge}
                     lifeExpectancy={lifeCycleSettings?.spouseLifeExpectancy}
@@ -958,6 +999,7 @@ export function PensionTab({
 
                   yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
                   birthYear={birthYear}
+                  birthMonth={birthMonth}
                   retirementAge={retirementAge}
                   onSave={loadPensions}
                 />
@@ -967,9 +1009,10 @@ export function PensionTab({
                     simulationId={simulationId}
                     owner="spouse"
                     ownerLabel="배우자"
-  
+
                     yearsUntilRetirement={Math.max(0, retirementAge - currentAge)}
                     birthYear={effectiveSpouseBirthYear}
+                    birthMonth={effectiveSpouseBirthMonth}
                     retirementAge={retirementAge}
                     onSave={loadPensions}
                   />
@@ -993,6 +1036,7 @@ export function PensionTab({
                   owner="self"
                   ownerLabel="본인"
                   birthYear={birthYear}
+                  birthMonth={birthMonth}
                   retirementAge={retirementAge}
                   onSave={loadPensions}
                 />
@@ -1003,6 +1047,7 @@ export function PensionTab({
                     owner="spouse"
                     ownerLabel="배우자"
                     birthYear={effectiveSpouseBirthYear}
+                    birthMonth={effectiveSpouseBirthMonth}
                     retirementAge={retirementAge}
                     onSave={loadPensions}
                   />
