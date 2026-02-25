@@ -2249,8 +2249,9 @@ export function runSimulationV2(
           }
 
           const receivingYears = pension.receivingYears || 20;
+          const effectiveReturnRate = pension.returnRate > 0 ? pension.returnRate : pensionReturnPct;
           const monthlyReturnRate =
-            Math.pow(1 + pensionReturnPct / 100, 1 / 12) - 1;
+            Math.pow(1 + effectiveReturnRate / 100, 1 / 12) - 1;
 
           // PMT를 이자 적용 전 잔액으로 계산 (표준 연금 모델)
           // 그래야 매월 정확히 동일한 PMT가 나옴
@@ -2322,7 +2323,7 @@ export function runSimulationV2(
           (pension.pensionType === 'db' || pension.pensionType === 'severance') &&
           pension.calculationMode === 'auto'
         ) continue;
-        const returnRate = pensionReturnPct;
+        const returnRate = pension.returnRate > 0 ? pension.returnRate : pensionReturnPct;
         if (returnRate > 0) {
           const monthlyRate = Math.pow(1 + returnRate / 100, 1 / 12) - 1;
           pension.balance *= 1 + monthlyRate;

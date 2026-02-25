@@ -33,6 +33,7 @@ import {
   Percent,
   Users,
   CalendarClock,
+  Save,
   type LucideIcon,
 } from "lucide-react";
 import { useChartTheme } from "@/hooks/useChartTheme";
@@ -67,6 +68,7 @@ import {
   financialKeys,
 } from "@/hooks/useFinancialData";
 import type { SimulationResult } from "@/lib/services/simulationTypes";
+import { exportSimulationToJson } from "@/lib/utils/exportSimulationData";
 import type {
   FinancialItem,
   IncomeData,
@@ -1275,6 +1277,22 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     activeSimulationId,
   ]);
 
+  // 시뮬레이션 데이터 내보내기 (클립보드 복사)
+  const [exportCopied, setExportCopied] = useState(false);
+  const handleExportSimulationData = useCallback(() => {
+    if (!selectedSim || !simulationResult.snapshots.length) return;
+    const json = exportSimulationToJson(simulationResult, {
+      simulationTitle: selectedSim.title,
+      birthYear: simulationProfile.birthYear,
+      retirementAge: simulationProfile.retirementAge,
+      spouseBirthYear: simulationProfile.spouseBirthYear,
+    });
+    navigator.clipboard.writeText(json).then(() => {
+      setExportCopied(true);
+      setTimeout(() => setExportCopied(false), 2000);
+    });
+  }, [selectedSim, simulationResult, simulationProfile]);
+
   // 대시보드용 전체 시뮬레이션 미니차트 데이터
   // 활성 sim: simulationResult에서 추출 + 캐시 저장
   // 비활성 sim: 캐시 우선 사용 (이전에 활성이었을 때의 결과)
@@ -2079,6 +2097,18 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   )}
                 </button>
               </div>
+            )}
+
+            {currentSection === "simulation" && selectedSim && (
+              <button
+                className={styles.simHeaderAction}
+                onClick={handleExportSimulationData}
+                type="button"
+                style={{ marginLeft: "auto" }}
+                data-tooltip={exportCopied ? "복사 완료" : "시뮬레이션 데이터 복사"}
+              >
+                <Save size={15} />
+              </button>
             )}
           </div>
         </header>

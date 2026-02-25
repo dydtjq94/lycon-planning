@@ -63,7 +63,6 @@ export async function POST() {
 
     // 4. Delete family_members and profile (linked directly to user)
     await supabaseAdmin.from('family_members').delete().eq('user_id', user.id)
-    await supabaseAdmin.from('assets').delete().eq('user_id', user.id)
     await supabaseAdmin.from('profiles').delete().eq('id', user.id)
 
     // 5. Delete the auth user
