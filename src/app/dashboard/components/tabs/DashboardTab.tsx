@@ -21,20 +21,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { CustomHolding } from "@/types/tables";
 import { getNextBooking, type NextBooking } from "@/lib/services/bookingService";
 import { getConversations, getMessages, type Conversation, type Message } from "@/lib/services/messageService";
-import { getIncomes } from "@/lib/services/incomeService";
-import { getExpenses } from "@/lib/services/expenseService";
-import { getSavings } from "@/lib/services/savingsService";
-import { getDebts } from "@/lib/services/debtService";
-import { getNationalPensions } from "@/lib/services/nationalPensionService";
-import { getRetirementPensions } from "@/lib/services/retirementPensionService";
-import { getPersonalPensions } from "@/lib/services/personalPensionService";
-import { getRealEstates } from "@/lib/services/realEstateService";
-import { getPhysicalAssets } from "@/lib/services/physicalAssetService";
-import { runSimulationV2 } from "@/lib/services/simulationEngineV2";
-import { calculateEndYear } from "@/lib/utils/chartDataTransformer";
-import { generateVirtualExpenses } from "@/lib/utils/virtualExpenses";
-import type { Simulation, LifeCycleSettings } from "@/types";
-import type { SimulationResult } from "@/lib/services/simulationTypes";
+import type { Simulation } from "@/types";
 import {
   ArrowRight,
   TrendingUp,
@@ -70,15 +57,10 @@ interface DashboardTabProps {
   accountCount?: number;
   onOpenAccountModal?: () => void;
   simulations?: Simulation[];
-  lifeCycleSettings?: LifeCycleSettings;
-  simulationResult?: SimulationResult;
-  activeSimulationId?: string;
+  allSimLines?: { title: string; data: { x: number; y: number }[] }[];
+  allSimLinesLoading?: boolean;
 }
 
-interface SimLine {
-  title: string;
-  data: { x: number; y: number }[];
-}
 
 export function DashboardTab({
   simulationId,
@@ -91,12 +73,9 @@ export function DashboardTab({
   unreadMessageCount,
   onNavigate,
   simulations,
-  lifeCycleSettings,
-  simulationResult,
-  activeSimulationId,
+  allSimLines,
+  allSimLinesLoading,
 }: DashboardTabProps) {
-  const [simLines, setSimLines] = useState<SimLine[]>([]);
-  const [simLoading, setSimLoading] = useState(true);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [customHoldings, setCustomHoldings] = useState<CustomHolding[]>([]);
   const [portfolioAccounts, setPortfolioAccounts] = useState<{ id: string; account_type: string; current_balance: number | null }[]>([]);
@@ -260,129 +239,9 @@ export function DashboardTab({
   const latestSnapshot =
     snapshots && snapshots.length > 0 ? snapshots[0] : null;
 
-  // Load simulation results for dashboard mini charts
-  useEffect(() => {
-    if (!simulations?.length) {
-      setSimLines([]);
-      setSimLoading(false);
-      return;
-    }
-
-    // For active simulation, use pre-computed result from parent
-    const activeSimLine: SimLine | null = (() => {
-      if (!simulationResult || !activeSimulationId) return null;
-      const activeSim = simulations.find(s => s.id === activeSimulationId);
-      if (!activeSim || simulationResult.snapshots.length === 0) return null;
-      return {
-        title: activeSim.title,
-        data: simulationResult.snapshots.map(s => ({ x: s.year, y: s.netWorth })),
-      };
-    })();
-
-    // For non-active simulations, calculate independently
-    const otherSims = simulations.filter(s => s.id !== activeSimulationId);
-
-    if (otherSims.length === 0) {
-      setSimLines(activeSimLine ? [activeSimLine] : []);
-      setSimLoading(false);
-      return;
-    }
-
-    setSimLoading(true);
-    let cancelled = false;
-
-    const loadOtherSims = async () => {
-      const results: SimLine[] = activeSimLine ? [activeSimLine] : [];
-      for (const sim of otherSims) {
-        try {
-          const [incomes, expenses, savings, debts, np, rp, pp, re, pa] =
-            await Promise.all([
-              getIncomes(sim.id),
-              getExpenses(sim.id),
-              getSavings(sim.id),
-              getDebts(sim.id),
-              getNationalPensions(sim.id),
-              getRetirementPensions(sim.id),
-              getPersonalPensions(sim.id),
-              getRealEstates(sim.id),
-              getPhysicalAssets(sim.id),
-            ]);
-          const lcs = sim.life_cycle_settings || lifeCycleSettings;
-          const autoExp = lcs?.autoExpenses;
-          const inclMed = autoExp?.medical === true;
-          const inclEdu = autoExp?.education?.enabled === true;
-          let augExpenses = expenses;
-          if (inclMed || inclEdu) {
-            augExpenses = expenses.filter(e => {
-              if (inclMed && e.type === 'medical') return false;
-              if (inclEdu && e.type === 'education') return false;
-              return true;
-            });
-            const children = ((sim.family_config as Array<{ relationship: string; birth_date?: string; name: string }>) || [])
-              .filter(m => m.relationship === 'child' && m.birth_date)
-              .map(m => ({ name: m.name, birthYear: parseInt(m.birth_date!.split('-')[0]) }));
-            const virtual = generateVirtualExpenses({
-              selfBirthYear: birthYear,
-              spouseBirthYear: spouseBirthYear ?? undefined,
-              children,
-              selfLifeExpectancy: lcs?.selfLifeExpectancy ?? 100,
-              spouseLifeExpectancy: lcs?.spouseLifeExpectancy ?? 100,
-              simulationId: sim.id,
-              includeMedical: inclMed,
-              includeEducation: inclEdu,
-              educationTier: autoExp?.education?.tier,
-            });
-            augExpenses = [...augExpenses, ...virtual];
-          }
-          const endYear = calculateEndYear(
-            birthYear,
-            spouseBirthYear,
-            lcs?.selfLifeExpectancy,
-            lcs?.spouseLifeExpectancy
-          );
-          const startYear = sim.start_year || new Date().getFullYear();
-          const result = runSimulationV2(
-            {
-              incomes,
-              expenses: augExpenses,
-              savings,
-              debts,
-              nationalPensions: np,
-              retirementPensions: rp,
-              personalPensions: pp,
-              realEstates: re,
-              physicalAssets: pa,
-            },
-            {
-              birthYear,
-              retirementAge: lcs?.selfRetirementAge ?? 65,
-              spouseBirthYear: spouseBirthYear ?? undefined,
-              spouseRetirementAge: lcs?.spouseRetirementAge,
-            },
-            endYear - startYear,
-            sim.simulation_assumptions,
-            sim.cash_flow_priorities,
-            sim.start_year,
-            sim.start_month
-          );
-          results.push({
-            title: sim.title,
-            data: result.snapshots.map((s) => ({ x: s.year, y: s.netWorth })),
-          });
-        } catch {
-          // skip failed simulations
-        }
-      }
-      if (!cancelled) {
-        setSimLines(results);
-        setSimLoading(false);
-      }
-    };
-    loadOtherSims();
-    return () => {
-      cancelled = true;
-    };
-  }, [simulations, lifeCycleSettings, birthYear, spouseBirthYear, simulationResult, activeSimulationId]);
+  // Simulation data comes from parent (DashboardContent) - no local calculation
+  const simLines = allSimLines || [];
+  const simLoading = allSimLinesLoading ?? false;
 
   // Snapshots come in DESC order (newest first) - reverse for chart
   const chronoSnapshots = useMemo(

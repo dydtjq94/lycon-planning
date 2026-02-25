@@ -78,6 +78,15 @@ import type {
 } from "@/types";
 import { runSimulationV2 } from "@/lib/services/simulationEngineV2";
 import { generateVirtualExpenses } from "@/lib/utils/virtualExpenses";
+import { getIncomes } from "@/lib/services/incomeService";
+import { getExpenses } from "@/lib/services/expenseService";
+import { getSavings } from "@/lib/services/savingsService";
+import { getDebts } from "@/lib/services/debtService";
+import { getNationalPensions } from "@/lib/services/nationalPensionService";
+import { getRetirementPensions } from "@/lib/services/retirementPensionService";
+import { getPersonalPensions } from "@/lib/services/personalPensionService";
+import { getRealEstates } from "@/lib/services/realEstateService";
+import { getPhysicalAssets } from "@/lib/services/physicalAssetService";
 import { getTotalUnreadCount } from "@/lib/services/messageService";
 import { simulationService } from "@/lib/services/simulationService";
 import { calculateEndYear } from "@/lib/utils/chartDataTransformer";
@@ -143,6 +152,24 @@ function getSimulationIcon(iconId?: string): LucideIcon {
   const found = SIMULATION_ICONS.find((i) => i.id === iconId);
   return found?.icon || Star;
 }
+
+// 로딩 중 사용할 안정적인 빈 시뮬레이션 결과 (매 렌더마다 새 객체 생성 방지)
+const EMPTY_SIMULATION_RESULT: SimulationResult = {
+  startYear: new Date().getFullYear(),
+  endYear: new Date().getFullYear(),
+  retirementYear: new Date().getFullYear(),
+  snapshots: [],
+  monthlySnapshots: [],
+  summary: {
+    currentNetWorth: 0,
+    retirementNetWorth: 0,
+    peakNetWorth: 0,
+    peakNetWorthYear: 0,
+    yearsToFI: null,
+    fiTarget: 0,
+    bankruptcyYear: null,
+  },
+} as SimulationResult;
 
 interface DashboardContentProps {
   adminView?: {
@@ -1171,22 +1198,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
   // v2Data 로딩 중에는 빈 결과를 반환하여 중간 상태 렌더링 방지
   const simulationResult: SimulationResult = useMemo(() => {
     if (isLoadingV2) {
-      return {
-        startYear: new Date().getFullYear(),
-        endYear: new Date().getFullYear(),
-        retirementYear: new Date().getFullYear(),
-        snapshots: [],
-        monthlySnapshots: [],
-        summary: {
-          currentNetWorth: 0,
-          retirementNetWorth: 0,
-          peakNetWorth: 0,
-          peakNetWorthYear: 0,
-          yearsToFI: null,
-          fiTarget: 0,
-          bankruptcyYear: null,
-        },
-      } as SimulationResult;
+      return EMPTY_SIMULATION_RESULT;
     }
     const simulationEndYear = calculateEndYear(
       simulationProfile.birthYear,
@@ -1262,6 +1274,151 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     simFamilyMembers,
     activeSimulationId,
   ]);
+
+  // 대시보드용 전체 시뮬레이션 미니차트 데이터
+  // 활성 sim: simulationResult에서 추출 + 캐시 저장
+  // 비활성 sim: 캐시 우선 사용 (이전에 활성이었을 때의 결과)
+  // 캐시 미스 시에만 DB에서 독립 계산 (최초 로드 등)
+  interface SimLine { title: string; data: { x: number; y: number }[] }
+  const [allSimLines, setAllSimLines] = useState<SimLine[]>([]);
+  const [allSimLinesLoading, setAllSimLinesLoading] = useState(true);
+  const simLineCacheRef = useRef<Map<string, { x: number; y: number }[]>>(new Map());
+
+  useEffect(() => {
+    if (!simulations.length) {
+      setAllSimLines(prev => prev.length === 0 ? prev : []);
+      setAllSimLinesLoading(prev => prev === false ? prev : false);
+      return;
+    }
+    setAllSimLinesLoading(true);
+    let cancelled = false;
+
+    const buildAllLines = async () => {
+      const results: SimLine[] = [];
+
+      // 삭제된 시뮬레이션 캐시 정리
+      const simIds = new Set(simulations.map(s => s.id));
+      for (const key of simLineCacheRef.current.keys()) {
+        if (!simIds.has(key)) simLineCacheRef.current.delete(key);
+      }
+
+      for (const sim of simulations) {
+        if (sim.id === activeSimulationId) {
+          // 활성 sim: simulationResult 사용 + 캐시 갱신
+          const data = simulationResult.snapshots.map(s => ({ x: s.year, y: s.netWorth }));
+          if (data.length > 0) {
+            simLineCacheRef.current.set(sim.id, data);
+          }
+          results.push({ title: sim.title, data });
+          continue;
+        }
+
+        // 비활성 sim: 캐시 우선 사용
+        const cached = simLineCacheRef.current.get(sim.id);
+        if (cached) {
+          results.push({ title: sim.title, data: cached });
+          continue;
+        }
+
+        // 캐시 미스: DB에서 독립 계산 (최초 로드 시)
+        try {
+          const [inc, exp, sav, dbt, np, rp, pp, re, pa] = await Promise.all([
+            getIncomes(sim.id),
+            getExpenses(sim.id),
+            getSavings(sim.id),
+            getDebts(sim.id),
+            getNationalPensions(sim.id),
+            getRetirementPensions(sim.id),
+            getPersonalPensions(sim.id),
+            getRealEstates(sim.id),
+            getPhysicalAssets(sim.id),
+          ]);
+
+          // 비활성 sim의 가족 구성원 (활성 sim과 동일한 폴백 로직)
+          // family_config가 null이면 프로필의 familyMembers로 폴백
+          const simFamily: Array<{ relationship: string; birth_date?: string | null; name: string; retirement_age?: number | null }> = sim.family_config
+            ? (sim.family_config as Array<{ relationship: string; birth_date?: string | null; name: string; retirement_age?: number | null }>).filter(m => m.relationship !== 'self')
+            : familyMembers.map(fm => ({ relationship: fm.relationship, birth_date: fm.birth_date, name: fm.name, retirement_age: fm.retirement_age }));
+          const simSpouse = simFamily.find(m => m.relationship === 'spouse');
+
+          const simLcs = sim.life_cycle_settings;
+          const lcs = {
+            selfRetirementAge: simLcs?.selfRetirementAge ?? profile.target_retirement_age,
+            selfLifeExpectancy: simLcs?.selfLifeExpectancy ?? 100,
+            spouseRetirementAge: simLcs?.spouseRetirementAge ?? simSpouse?.retirement_age ?? 65,
+            spouseLifeExpectancy: simLcs?.spouseLifeExpectancy ?? simLcs?.selfLifeExpectancy ?? 100,
+            autoExpenses: simLcs?.autoExpenses,
+          };
+
+          const simAssumptions = sim.simulation_assumptions ?? DEFAULT_SIMULATION_ASSUMPTIONS;
+          const simPriorities = normalizePriorities(sim.cash_flow_priorities);
+
+          const autoExp = lcs.autoExpenses;
+          const inclMed = autoExp?.medical === true;
+          const inclEdu = autoExp?.education?.enabled === true;
+          let augExp = exp;
+          if (inclMed || inclEdu) {
+            augExp = exp.filter(e => {
+              if (inclMed && e.type === 'medical') return false;
+              if (inclEdu && e.type === 'education') return false;
+              return true;
+            });
+            const children = simFamily
+              .filter(m => m.relationship === 'child' && m.birth_date)
+              .map(m => ({ name: m.name, birthYear: parseInt(m.birth_date!.split('-')[0]) }));
+            const virtual = generateVirtualExpenses({
+              selfBirthYear: simulationProfile.birthYear,
+              spouseBirthYear: simulationProfile.spouseBirthYear,
+              children,
+              selfLifeExpectancy: lcs.selfLifeExpectancy,
+              spouseLifeExpectancy: lcs.spouseLifeExpectancy,
+              simulationId: sim.id,
+              includeMedical: inclMed,
+              includeEducation: inclEdu,
+              educationTier: autoExp?.education?.tier,
+            });
+            augExp = [...augExp, ...virtual];
+          }
+
+          const endYear = calculateEndYear(
+            simulationProfile.birthYear,
+            simulationProfile.spouseBirthYear,
+            lcs.selfLifeExpectancy,
+            lcs.spouseLifeExpectancy
+          );
+          const startYear = sim.start_year || new Date().getFullYear();
+
+          const result = runSimulationV2(
+            { incomes: inc, expenses: augExp, savings: sav, debts: dbt, nationalPensions: np, retirementPensions: rp, personalPensions: pp, realEstates: re, physicalAssets: pa },
+            {
+              birthYear: simulationProfile.birthYear,
+              retirementAge: lcs.selfRetirementAge,
+              spouseBirthYear: simulationProfile.spouseBirthYear ?? undefined,
+              spouseRetirementAge: lcs.spouseRetirementAge,
+            },
+            endYear - startYear,
+            simAssumptions,
+            simPriorities,
+            sim.start_year,
+            sim.start_month,
+          );
+          const data = result.snapshots.map(s => ({ x: s.year, y: s.netWorth }));
+          simLineCacheRef.current.set(sim.id, data);
+          results.push({ title: sim.title, data });
+        } catch {
+          // skip failed simulations
+        }
+      }
+
+      if (!cancelled) {
+        setAllSimLines(results);
+        setAllSimLinesLoading(false);
+      }
+    };
+
+    buildAllLines();
+    return () => { cancelled = true; };
+  }, [simulations, simulationResult, activeSimulationId, simulationProfile, profile.target_retirement_age, familyMembers]);
 
   // 레거시 CRUD 스텁 함수 (실제 업데이트는 개별 서비스 사용)
   const addItem = useCallback(
@@ -1475,7 +1632,6 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             profileId={profile.id}
             profileName={profile.name}
             simulations={simulations}
-            lifeCycleSettings={lifeCycleSettings}
             accountCount={accountCount}
             onOpenAccountModal={() => {
               setAccountModalTab("checking");
@@ -1483,8 +1639,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
               setAccountModalTitle(undefined);
               setShowAccountModal(true);
             }}
-            simulationResult={simulationResult}
-            activeSimulationId={activeSimulationId}
+            allSimLines={allSimLines}
+            allSimLinesLoading={allSimLinesLoading}
           />
         );
       // 담당자 관련
