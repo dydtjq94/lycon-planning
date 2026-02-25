@@ -72,7 +72,9 @@ const DEFAULT_ASSUMPTIONS: SimulationAssumptions = {
     investment: 7.0,
     pension: 5.0,
     realEstate: 3.0,
+    physicalAsset: 0,
     inflation: 2.5,
+    incomeGrowth: 3.0,
   },
 };
 

@@ -795,7 +795,7 @@ function initializeState(
       currentValue: a.current_value,
       purchasePrice: a.purchase_price || a.current_value,
       annualRate: a.annual_rate,
-      rateCategory: a.rate_category || "fixed",
+      rateCategory: a.rate_category || "physicalAsset",
       sellYear: a.sell_year,
       sellMonth: a.sell_month,
       isSold: false,
