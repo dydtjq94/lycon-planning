@@ -15,7 +15,7 @@ import {
   INITIAL_WIZARD_DATA,
   loadAssetGroups,
 } from "./wizard";
-import type { WizardData, AssetGroup, HousingExpenseInfo } from "./wizard";
+import type { WizardData, AssetGroup, HousingExpenseInfo, PhysicalAssetLoanInfo, DebtExpenseInfo } from "./wizard";
 import type { ProfileBasics, FamilyMember } from "@/contexts/FinancialContext";
 import styles from "./NewSimulationModal.module.css";
 
@@ -179,12 +179,16 @@ export function NewSimulationModal({
 
   const [cachedAssetGroups, setCachedAssetGroups] = useState<AssetGroup[] | null>(null);
   const [cachedHousingExpenses, setCachedHousingExpenses] = useState<HousingExpenseInfo[]>([]);
+  const [cachedPhysicalAssetLoans, setCachedPhysicalAssetLoans] = useState<PhysicalAssetLoanInfo[]>([]);
+  const [cachedDebtExpenses, setCachedDebtExpenses] = useState<DebtExpenseInfo[]>([]);
 
   // Pre-fetch asset data for step 6
   useEffect(() => {
-    loadAssetGroups(profile.id).then(({ groups, housingExpenses }) => {
+    loadAssetGroups(profile.id).then(({ groups, housingExpenses, physicalAssetLoans, debtExpenses }) => {
       setCachedAssetGroups(groups);
       setCachedHousingExpenses(housingExpenses);
+      setCachedPhysicalAssetLoans(physicalAssetLoans);
+      setCachedDebtExpenses(debtExpenses);
     }).catch((err) => {
       console.error("[NewSimulationModal] Failed to pre-fetch assets:", err);
     });
@@ -192,6 +196,15 @@ export function NewSimulationModal({
 
   const [animKey, setAnimKey] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Step 0에서 자동 포커스
+  useEffect(() => {
+    if (step === 0 && titleInputRef.current) {
+      titleInputRef.current.focus();
+    }
+  }, [step]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -241,15 +254,6 @@ export function NewSimulationModal({
 
   const isLastStep = step === WIZARD_STEPS.length - 1;
 
-  const titleInputRef = useRef<HTMLInputElement>(null);
-
-  // Step 0에서 자동 포커스
-  useEffect(() => {
-    if (step === 0 && titleInputRef.current) {
-      titleInputRef.current.focus();
-    }
-  }, [step]);
-
   const renderStepContent = () => {
     const props = { data: wizardData, onChange: handleWizardChange };
     switch (step) {
@@ -287,7 +291,7 @@ export function NewSimulationModal({
       case 3:
         return <StepIncome {...props} profileBirthDate={profile.birth_date} />;
       case 4:
-        return <StepExpense {...props} profileBirthDate={profile.birth_date} housingExpenses={cachedHousingExpenses} />;
+        return <StepExpense {...props} profileBirthDate={profile.birth_date} housingExpenses={cachedHousingExpenses} physicalAssetLoans={cachedPhysicalAssetLoans} debtExpenses={cachedDebtExpenses} />;
       case 5:
         return <StepEvents {...props} profileBirthDate={profile.birth_date ?? ""} />;
       case 6:

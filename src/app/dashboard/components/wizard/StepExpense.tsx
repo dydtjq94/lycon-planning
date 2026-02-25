@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ShoppingCart, Receipt, Sunset, HeartPulse, GraduationCap, Building2 } from "lucide-react";
+import { ShoppingCart, Receipt, Sunset, HeartPulse, GraduationCap, Building2, Car, CreditCard } from "lucide-react";
 import {
   LIFECYCLE_ICONS,
   LIFECYCLE_COLORS,
@@ -10,19 +10,30 @@ import {
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { calculateAge, formatMoney } from "@/lib/utils";
 import type { StepProps, WizardData } from "./types";
-import type { HousingExpenseInfo } from "./StepAssetReview";
+import type { HousingExpenseInfo, PhysicalAssetLoanInfo, DebtExpenseInfo } from "./StepAssetReview";
 import styles from "./StepExpense.module.css";
 
 interface StepExpenseProps extends StepProps {
   profileBirthDate: string | null;
   housingExpenses?: HousingExpenseInfo[];
+  physicalAssetLoans?: PhysicalAssetLoanInfo[];
+  debtExpenses?: DebtExpenseInfo[];
 }
 
 type ExpenseCard = "living" | "fixed" | "rate";
 
 const DEFAULT_EXPENSE_COLOR = "#f43f5e";
 
-export function StepExpense({ data, onChange, profileBirthDate, housingExpenses = [] }: StepExpenseProps) {
+const REPAYMENT_SHORT: Record<string, string> = {
+  "만기일시상환": "만기일시",
+  "원리금균등상환": "원리금균등",
+  "원금균등상환": "원금균등",
+  "거치식상환": "거치식",
+};
+const shortRepayment = (type: string | null | undefined): string =>
+  type ? (REPAYMENT_SHORT[type] || type) : "";
+
+export function StepExpense({ data, onChange, profileBirthDate, housingExpenses = [], physicalAssetLoans = [], debtExpenses = [] }: StepExpenseProps) {
   const { isDark } = useChartTheme();
   const { expense } = data;
 
@@ -509,10 +520,16 @@ export function StepExpense({ data, onChange, profileBirthDate, housingExpenses 
               const items: string[] = [];
               if (he.monthlyRent > 0) items.push(`월세 ${formatMoney(Math.round(he.monthlyRent / 10000))}`);
               if (he.maintenanceFee > 0) items.push(`관리비 ${formatMoney(Math.round(he.maintenanceFee / 10000))}`);
-              if (he.hasLoan && he.loanAmount > 0) items.push(`대출 ${formatMoney(Math.round(he.loanAmount / 10000))}${he.loanRate ? ` (${he.loanRate}%)` : ""}`);
+              if (he.hasLoan && he.loanAmount > 0) {
+                const repLabel = shortRepayment(he.loanRepaymentType);
+                let loanText = `대출 ${formatMoney(Math.round(he.loanAmount / 10000))}`;
+                if (he.loanRate) loanText += ` (${he.loanRate}%)`;
+                if (repLabel) loanText += ` · ${repLabel}`;
+                items.push(loanText);
+              }
               if (items.length === 0) return null;
 
-              const monthlyTotal = Math.round(he.monthlyRent / 10000) + Math.round(he.maintenanceFee / 10000);
+              const monthlyTotal = Math.round(he.monthlyRent / 10000) + Math.round(he.maintenanceFee / 10000) + (he.monthlyLoanPayment || 0);
               const typeLabel = he.housingType === "전세" ? "전세" : he.housingType === "월세" ? "월세" : he.housingType === "자가" ? "자가" : "";
 
               return (
@@ -530,6 +547,87 @@ export function StepExpense({ data, onChange, profileBirthDate, housingExpenses 
                     <div className={styles.cardRight}>
                       <span className={styles.cardAmount}>
                         {formatMoney(monthlyTotal)}/월
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* 실물자산 대출 */}
+        {physicalAssetLoans.length > 0 && (
+          <>
+            <div className={styles.sectionDivider}>
+              <span className={styles.sectionLabel}>실물자산 대출</span>
+            </div>
+
+            {physicalAssetLoans.map((pa, idx) => {
+              const items: string[] = [];
+              if (pa.financingType === 'installment') {
+                items.push('할부');
+              } else {
+                items.push('대출');
+              }
+              items.push(`${formatMoney(Math.round(pa.loanAmount / 10000))}`);
+              if (pa.loanRate) items.push(`${pa.loanRate}%`);
+              const paRepLabel = shortRepayment(pa.loanRepaymentType);
+              if (paRepLabel) items.push(paRepLabel);
+
+              return (
+                <div key={idx} className={styles.card} style={{ cursor: "default" }}>
+                  <div className={styles.iconBtn} style={{ background: "#64748b18" }}>
+                    <Car size={15} style={{ color: "#64748b" }} />
+                  </div>
+                  <div className={styles.cardInfo}>
+                    <span className={styles.cardName}>{pa.title}</span>
+                    <span className={styles.cardMeta}>
+                      {items.join(" · ")}
+                    </span>
+                  </div>
+                  {pa.monthlyPayment > 0 && (
+                    <div className={styles.cardRight}>
+                      <span className={styles.cardAmount}>
+                        {formatMoney(pa.monthlyPayment)}/월
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* 부채 상환 */}
+        {debtExpenses.length > 0 && (
+          <>
+            <div className={styles.sectionDivider}>
+              <span className={styles.sectionLabel}>부채 상환</span>
+            </div>
+
+            {debtExpenses.map((de, idx) => {
+              const items: string[] = [];
+              const deRepLabel = shortRepayment(de.repaymentType);
+              if (deRepLabel) items.push(deRepLabel);
+              items.push(`잔액 ${formatMoney(Math.round(de.currentBalance / 10000))}`);
+              if (de.interestRate > 0) items.push(`${de.interestRate}%`);
+
+              return (
+                <div key={idx} className={styles.card} style={{ cursor: "default" }}>
+                  <div className={styles.iconBtn} style={{ background: "#ef444418" }}>
+                    <CreditCard size={15} style={{ color: "#ef4444" }} />
+                  </div>
+                  <div className={styles.cardInfo}>
+                    <span className={styles.cardName}>{de.title}</span>
+                    <span className={styles.cardMeta}>
+                      {items.join(" · ")}
+                    </span>
+                  </div>
+                  {de.monthlyPayment > 0 && (
+                    <div className={styles.cardRight}>
+                      <span className={styles.cardAmount}>
+                        {formatMoney(de.monthlyPayment)}/월
                       </span>
                     </div>
                   )}

@@ -831,6 +831,29 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                   autoExpenses: Object.keys(wizardAutoExpenses).length > 0 ? wizardAutoExpenses : undefined,
                 };
                 await simulationService.update(newSim.id, { life_cycle_settings: wizardLifeCycle });
+
+                // 개인연금/퇴직연금 수령 시작 나이를 은퇴 나이로 맞춤
+                const selfRetAge = wizardData.retirement.retirementAge ?? 65;
+                const spouseRetAge = wizardData.retirement.spouseRetirementAge ?? selfRetAge;
+                const supabaseClient = createClient();
+                await Promise.all([
+                  supabaseClient.from('personal_pensions')
+                    .update({ start_age: selfRetAge })
+                    .eq('simulation_id', newSim.id)
+                    .eq('owner', 'self'),
+                  supabaseClient.from('personal_pensions')
+                    .update({ start_age: spouseRetAge })
+                    .eq('simulation_id', newSim.id)
+                    .eq('owner', 'spouse'),
+                  supabaseClient.from('retirement_pensions')
+                    .update({ start_age: selfRetAge })
+                    .eq('simulation_id', newSim.id)
+                    .eq('owner', 'self'),
+                  supabaseClient.from('retirement_pensions')
+                    .update({ start_age: spouseRetAge })
+                    .eq('simulation_id', newSim.id)
+                    .eq('owner', 'spouse'),
+                ]);
               }
 
               await simulationService.syncPricesInBackground(
