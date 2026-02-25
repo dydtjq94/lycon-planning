@@ -1483,6 +1483,8 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
               setAccountModalTitle(undefined);
               setShowAccountModal(true);
             }}
+            simulationResult={simulationResult}
+            activeSimulationId={activeSimulationId}
           />
         );
       // 담당자 관련

@@ -34,6 +34,7 @@ import { runSimulationV2 } from "@/lib/services/simulationEngineV2";
 import { calculateEndYear } from "@/lib/utils/chartDataTransformer";
 import { generateVirtualExpenses } from "@/lib/utils/virtualExpenses";
 import type { Simulation, LifeCycleSettings } from "@/types";
+import type { SimulationResult } from "@/lib/services/simulationTypes";
 import {
   ArrowRight,
   TrendingUp,
@@ -70,6 +71,8 @@ interface DashboardTabProps {
   onOpenAccountModal?: () => void;
   simulations?: Simulation[];
   lifeCycleSettings?: LifeCycleSettings;
+  simulationResult?: SimulationResult;
+  activeSimulationId?: string;
 }
 
 interface SimLine {
@@ -89,6 +92,8 @@ export function DashboardTab({
   onNavigate,
   simulations,
   lifeCycleSettings,
+  simulationResult,
+  activeSimulationId,
 }: DashboardTabProps) {
   const [simLines, setSimLines] = useState<SimLine[]>([]);
   const [simLoading, setSimLoading] = useState(true);
@@ -255,18 +260,40 @@ export function DashboardTab({
   const latestSnapshot =
     snapshots && snapshots.length > 0 ? snapshots[0] : null;
 
-  // Load all simulation results
+  // Load simulation results for dashboard mini charts
   useEffect(() => {
-    if (!simulations?.length || !lifeCycleSettings) {
+    if (!simulations?.length) {
+      setSimLines([]);
       setSimLoading(false);
       return;
     }
+
+    // For active simulation, use pre-computed result from parent
+    const activeSimLine: SimLine | null = (() => {
+      if (!simulationResult || !activeSimulationId) return null;
+      const activeSim = simulations.find(s => s.id === activeSimulationId);
+      if (!activeSim || simulationResult.snapshots.length === 0) return null;
+      return {
+        title: activeSim.title,
+        data: simulationResult.snapshots.map(s => ({ x: s.year, y: s.netWorth })),
+      };
+    })();
+
+    // For non-active simulations, calculate independently
+    const otherSims = simulations.filter(s => s.id !== activeSimulationId);
+
+    if (otherSims.length === 0) {
+      setSimLines(activeSimLine ? [activeSimLine] : []);
+      setSimLoading(false);
+      return;
+    }
+
     setSimLoading(true);
     let cancelled = false;
 
-    const loadAllSims = async () => {
-      const results: SimLine[] = [];
-      for (const sim of simulations) {
+    const loadOtherSims = async () => {
+      const results: SimLine[] = activeSimLine ? [activeSimLine] : [];
+      for (const sim of otherSims) {
         try {
           const [incomes, expenses, savings, debts, np, rp, pp, re, pa] =
             await Promise.all([
@@ -281,9 +308,7 @@ export function DashboardTab({
               getPhysicalAssets(sim.id),
             ]);
           const lcs = sim.life_cycle_settings || lifeCycleSettings;
-
-          // Augment expenses with virtual medical/education expenses
-          const autoExp = lcs.autoExpenses;
+          const autoExp = lcs?.autoExpenses;
           const inclMed = autoExp?.medical === true;
           const inclEdu = autoExp?.education?.enabled === true;
           let augExpenses = expenses;
@@ -300,8 +325,8 @@ export function DashboardTab({
               selfBirthYear: birthYear,
               spouseBirthYear: spouseBirthYear ?? undefined,
               children,
-              selfLifeExpectancy: lcs.selfLifeExpectancy ?? 100,
-              spouseLifeExpectancy: lcs.spouseLifeExpectancy ?? 100,
+              selfLifeExpectancy: lcs?.selfLifeExpectancy ?? 100,
+              spouseLifeExpectancy: lcs?.spouseLifeExpectancy ?? 100,
               simulationId: sim.id,
               includeMedical: inclMed,
               includeEducation: inclEdu,
@@ -309,12 +334,11 @@ export function DashboardTab({
             });
             augExpenses = [...augExpenses, ...virtual];
           }
-
           const endYear = calculateEndYear(
             birthYear,
             spouseBirthYear,
-            lcs.selfLifeExpectancy,
-            lcs.spouseLifeExpectancy
+            lcs?.selfLifeExpectancy,
+            lcs?.spouseLifeExpectancy
           );
           const startYear = sim.start_year || new Date().getFullYear();
           const result = runSimulationV2(
@@ -331,9 +355,9 @@ export function DashboardTab({
             },
             {
               birthYear,
-              retirementAge: lcs.selfRetirementAge,
+              retirementAge: lcs?.selfRetirementAge ?? 65,
               spouseBirthYear: spouseBirthYear ?? undefined,
-              spouseRetirementAge: lcs.spouseRetirementAge,
+              spouseRetirementAge: lcs?.spouseRetirementAge,
             },
             endYear - startYear,
             sim.simulation_assumptions,
@@ -354,11 +378,11 @@ export function DashboardTab({
         setSimLoading(false);
       }
     };
-    loadAllSims();
+    loadOtherSims();
     return () => {
       cancelled = true;
     };
-  }, [simulations, lifeCycleSettings, birthYear, spouseBirthYear]);
+  }, [simulations, lifeCycleSettings, birthYear, spouseBirthYear, simulationResult, activeSimulationId]);
 
   // Snapshots come in DESC order (newest first) - reverse for chart
   const chronoSnapshots = useMemo(
