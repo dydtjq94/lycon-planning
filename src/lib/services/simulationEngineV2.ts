@@ -2250,7 +2250,7 @@ export function runSimulationV2(
 
           const receivingYears = pension.receivingYears || 20;
           const monthlyReturnRate =
-            Math.pow(1 + pension.returnRate / 100, 1 / 12) - 1;
+            Math.pow(1 + pensionReturnPct / 100, 1 / 12) - 1;
 
           // PMT를 이자 적용 전 잔액으로 계산 (표준 연금 모델)
           // 그래야 매월 정확히 동일한 PMT가 나옴
@@ -2316,14 +2316,13 @@ export function runSimulationV2(
       // 연금 적립 성장 (수령 중인 연금은 A11에서 수익률 적용 완료)
       for (const pension of state.pensions) {
         if (pension.category === "national" || pension.isMatured) continue;
-        if (pension.pensionSubType === "isa") continue;
         if (pension.isReceiving) continue;
         // DB/퇴직금 auto 모드: 투자 잔액이 아니므로 수익률 적용 불필요
         if (
           (pension.pensionType === 'db' || pension.pensionType === 'severance') &&
           pension.calculationMode === 'auto'
         ) continue;
-        const returnRate = pension.returnRate || pensionReturnPct;
+        const returnRate = pensionReturnPct;
         if (returnRate > 0) {
           const monthlyRate = Math.pow(1 + returnRate / 100, 1 / 12) - 1;
           pension.balance *= 1 + monthlyRate;

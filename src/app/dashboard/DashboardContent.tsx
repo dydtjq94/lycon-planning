@@ -1931,7 +1931,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           selectedSim && (
             <div
               ref={assumptionsPanelRef}
-              className={styles.accountsPanelDropdown}
+              className={styles.headerPanelDropdown}
               style={{
                 position: "fixed",
                 top: assumptionsPanelRect.top,
@@ -1961,7 +1961,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           selectedSim && (
             <div
               ref={prioritiesPanelRef}
-              className={styles.accountsPanelDropdown}
+              className={styles.headerPanelDropdown}
               style={{
                 position: "fixed",
                 top: prioritiesPanelRect.top,
@@ -1992,7 +1992,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           selectedSim && (
             <div
               ref={familyPanelRef}
-              className={styles.accountsPanelDropdown}
+              className={styles.headerPanelDropdown}
               style={{
                 position: "fixed",
                 top: familyPanelRect.top,
@@ -2021,7 +2021,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           selectedSim && (
             <div
               ref={lifeCyclePanelRef}
-              className={styles.accountsPanelDropdown}
+              className={styles.headerPanelDropdown}
               style={{
                 position: "fixed",
                 top: lifeCyclePanelRect.top,

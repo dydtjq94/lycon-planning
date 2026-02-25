@@ -165,7 +165,7 @@
   transform: translateX(-50%) translateY(0);
 }
 
-.accountsPanelDropdown {
+.headerPanelDropdown {
   width: 380px;
   max-height: 500px;
   overflow-y: auto;
