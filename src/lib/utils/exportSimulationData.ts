@@ -1,8 +1,14 @@
 /**
  * 시뮬레이션 데이터를 AI가 파싱하기 좋은 JSON 형식으로 변환
+ * - 차트 툴팁과 동일한 데이터 소스 및 그룹핑 사용
  */
 
 import type { SimulationResult } from "@/lib/services/simulationTypes";
+import {
+  groupCashFlowItems,
+  groupAssetItems,
+  groupDebtItems,
+} from "@/lib/utils/tooltipCategories";
 
 interface ExportOptions {
   simulationTitle: string;
@@ -13,18 +19,6 @@ interface ExportOptions {
 
 function round(v: number): number {
   return Math.round(v);
-}
-
-function breakdownToObj(
-  items: { title: string; amount: number; type?: string }[],
-): Record<string, number> | null {
-  if (!items || items.length === 0) return null;
-  const obj: Record<string, number> = {};
-  for (const item of items) {
-    const val = round(item.amount);
-    if (val !== 0) obj[item.title] = val;
-  }
-  return Object.keys(obj).length > 0 ? obj : null;
 }
 
 export function exportSimulationToJson(
@@ -53,62 +47,112 @@ export function exportSimulationToJson(
       FI목표금액: round(summary.fiTarget),
     },
     년도별데이터: snapshots.map((s) => {
+      // === 자산 (차트 툴팁과 동일: assetBreakdown + pensionBreakdown → groupAssetItems) ===
+      const allAssetItems = [
+        ...(s.assetBreakdown || []),
+        ...(s.pensionBreakdown || []),
+      ];
+      const assetGroups = groupAssetItems(allAssetItems);
+      const totalAssets = assetGroups.reduce((sum, g) => sum + g.total, 0);
+
+      const 자산상세: Record<string, number | Record<string, number>> = {};
+      for (const group of assetGroups) {
+        if (group.items.length === 1) {
+          자산상세[group.category.label] = round(group.items[0].amount);
+        } else {
+          const items: Record<string, number> = {};
+          for (const item of group.items) {
+            if (round(item.amount) !== 0) items[item.title] = round(item.amount);
+          }
+          if (Object.keys(items).length > 0) {
+            자산상세[group.category.label] = items;
+          }
+        }
+      }
+
+      // === 부채 (차트 툴팁과 동일: debtBreakdown → groupDebtItems) ===
+      const debtGroups = groupDebtItems(s.debtBreakdown || []);
+      const totalDebts = debtGroups.reduce((sum, g) => sum + g.total, 0);
+
+      const 부채상세: Record<string, number | Record<string, number>> = {};
+      for (const group of debtGroups) {
+        if (group.items.length === 1) {
+          부채상세[group.category.label] = round(group.items[0].amount);
+        } else {
+          const items: Record<string, number> = {};
+          for (const item of group.items) {
+            if (round(item.amount) !== 0) items[item.title] = round(item.amount);
+          }
+          if (Object.keys(items).length > 0) {
+            부채상세[group.category.label] = items;
+          }
+        }
+      }
+
+      // === 현금흐름 (차트 툴팁과 동일: cashFlowBreakdown → groupCashFlowItems) ===
+      const cfItems = s.cashFlowBreakdown;
+      let 공급상세: Record<string, number | Record<string, number>> = {};
+      let 수요상세: Record<string, number | Record<string, number>> = {};
+      let 총공급 = round(s.totalIncome);
+      let 총수요 = round(s.totalExpense);
+      let 순현금흐름 = round(s.netCashFlow);
+
+      if (cfItems && cfItems.length > 0) {
+        const regularItems = cfItems.filter(
+          (item) => item.flowType !== "deficit_withdrawal" && item.flowType !== "surplus_investment",
+        );
+        const grouped = groupCashFlowItems(regularItems);
+        총공급 = round(grouped.totalInflow);
+        총수요 = round(grouped.totalOutflow);
+        순현금흐름 = round(grouped.totalInflow - grouped.totalOutflow);
+
+        for (const group of grouped.inflows) {
+          const items: Record<string, number> = {};
+          for (const item of group.items) {
+            if (round(item.amount) !== 0) items[item.title] = round(item.amount);
+          }
+          if (Object.keys(items).length > 0) {
+            공급상세[group.category.label] = Object.keys(items).length === 1
+              ? Object.values(items)[0]
+              : items;
+          }
+        }
+
+        for (const group of grouped.outflows) {
+          const items: Record<string, number> = {};
+          for (const item of group.items) {
+            const val = round(Math.abs(item.amount));
+            if (val !== 0) items[item.title] = val;
+          }
+          if (Object.keys(items).length > 0) {
+            수요상세[group.category.label] = Object.keys(items).length === 1
+              ? Object.values(items)[0]
+              : items;
+          }
+        }
+      }
+
+      // === 조합 ===
       const yearData: Record<string, unknown> = {
         년도: s.year,
         나이: s.age,
-        자산: {
-          금융자산: round(s.financialAssets),
-          부동산: round(s.realEstateValue),
-          연금: round(s.pensionAssets),
-          실물자산: round(s.physicalAssetValue ?? 0),
-          부채: round(s.totalDebts),
-          순자산: round(s.netWorth),
-        },
-        현금흐름: {
-          총수입: round(s.totalIncome),
-          총지출: round(s.totalExpense),
-          순현금흐름: round(s.netCashFlow),
-        },
+        순자산: round(s.netWorth),
+        자산: round(totalAssets),
+        부채: round(totalDebts),
       };
 
-      // 수입 상세
-      const incomeDetail = breakdownToObj(s.incomeBreakdown);
-      if (incomeDetail) yearData.수입상세 = incomeDetail;
+      if (Object.keys(자산상세).length > 0) yearData.자산상세 = 자산상세;
+      if (Object.keys(부채상세).length > 0) yearData.부채상세 = 부채상세;
 
-      // 지출 상세
-      const expenseDetail = breakdownToObj(s.expenseBreakdown);
-      if (expenseDetail) yearData.지출상세 = expenseDetail;
+      yearData.현금흐름 = {
+        총공급: 총공급,
+        총수요: 총수요,
+        순현금흐름: 순현금흐름,
+      };
 
-      // 저축/투자 상세
-      if (s.savingsBreakdown && s.savingsBreakdown.length > 0) {
-        const obj: Record<string, number> = {};
-        for (const item of s.savingsBreakdown) {
-          const val = round(item.balance);
-          if (val !== 0) obj[item.title] = val;
-        }
-        if (Object.keys(obj).length > 0) yearData.저축투자상세 = obj;
-      }
+      if (Object.keys(공급상세).length > 0) yearData.공급상세 = 공급상세;
+      if (Object.keys(수요상세).length > 0) yearData.수요상세 = 수요상세;
 
-      // 부동산 상세
-      if (s.realEstateBreakdown && s.realEstateBreakdown.length > 0) {
-        const obj: Record<string, number> = {};
-        for (const item of s.realEstateBreakdown) {
-          if (!item.isSold && round(item.value) !== 0) {
-            obj[item.title] = round(item.value);
-          }
-        }
-        if (Object.keys(obj).length > 0) yearData.부동산상세 = obj;
-      }
-
-      // 연금 상세
-      const pensionDetail = breakdownToObj(s.pensionBreakdown);
-      if (pensionDetail) yearData.연금상세 = pensionDetail;
-
-      // 부채 상세
-      const debtDetail = breakdownToObj(s.debtBreakdown);
-      if (debtDetail) yearData.부채상세 = debtDetail;
-
-      // 이벤트
       if (s.events && s.events.length > 0) yearData.이벤트 = s.events;
 
       return yearData;

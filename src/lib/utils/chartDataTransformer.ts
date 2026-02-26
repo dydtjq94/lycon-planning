@@ -28,6 +28,7 @@ export const ASSET_COLORS = {
   financialAssets: CHART_COLORS.asset.financial,
   realEstate: CHART_COLORS.asset.realEstate,
   pension: CHART_COLORS.asset.pension,
+  physicalAssets: CHART_COLORS.asset.tangible,
   cash: CHART_COLORS.asset.cash,
   debt: CHART_COLORS.negative,
 } as const
@@ -37,6 +38,7 @@ export const ASSET_LABELS = {
   financialAssets: '금융자산',
   realEstate: '부동산',
   pension: '연금',
+  physicalAssets: '실물자산',
   cash: '현금',
   debt: '부채',
 } as const
@@ -98,6 +100,12 @@ export function transformSimulationToChartData(
       label: ASSET_LABELS.pension,
       data: filteredSnapshots.map(s => s.pensionAssets),
       backgroundColor: ASSET_COLORS.pension,
+      stack: 'stack',
+    },
+    {
+      label: ASSET_LABELS.physicalAssets,
+      data: filteredSnapshots.map(s => s.physicalAssetValue ?? 0),
+      backgroundColor: ASSET_COLORS.physicalAssets,
       stack: 'stack',
     },
   ]
