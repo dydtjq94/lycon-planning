@@ -391,25 +391,33 @@ export function NetWorthTab({
     setSelectedYear(parseInt(e.target.value))
   }, [])
 
-  // 키보드 좌우 화살표로 연도 이동
+  // 키보드 좌우 화살표로 연도/월 이동
   const selectedYearRef = useRef(selectedYear)
   selectedYearRef.current = selectedYear
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        const next = Math.max(displayRange.start, Math.floor(selectedYearRef.current) - 1)
-        setSelectedYear(next)
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault()
-        const next = Math.min(displayRange.end, Math.floor(selectedYearRef.current) + 1)
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      e.preventDefault()
+      const delta = e.key === 'ArrowLeft' ? -1 : 1
+
+      if (isMonthlyMode && filteredMonthlySnapshots && filteredMonthlySnapshots.length > 0) {
+        const currentVal = selectedYearRef.current
+        const currentIdx = filteredMonthlySnapshots.findIndex(s =>
+          s.year === Math.floor(currentVal) && s.month === (Math.round((currentVal % 1) * 100) || 1)
+        )
+        const nextIdx = Math.max(0, Math.min(filteredMonthlySnapshots.length - 1, (currentIdx === -1 ? 0 : currentIdx) + delta))
+        const ms = filteredMonthlySnapshots[nextIdx]
+        if (ms) setSelectedYear(ms.year + ms.month / 100)
+      } else {
+        const current = Math.floor(selectedYearRef.current)
+        const next = Math.max(displayRange.start, Math.min(displayRange.end, current + delta))
         setSelectedYear(next)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [displayRange.start, displayRange.end, setSelectedYear])
+  }, [displayRange.start, displayRange.end, setSelectedYear, isMonthlyMode, filteredMonthlySnapshots])
 
   // 자산/부채 카테고리 그룹 계산 (hooks는 early return 전에 위치해야 함)
   const assetGroups = useMemo(() => {

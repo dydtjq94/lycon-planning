@@ -151,25 +151,33 @@ export function CashFlowOverviewTab({
   const sankeyYear = propSelectedYear ?? localSelectedYear
   const setSankeyYear = onSelectedYearChange ?? setLocalSelectedYear
 
-  // 키보드 좌우 화살표로 연도 이동
+  // 키보드 좌우 화살표로 연도/월 이동
   const sankeyYearRef = useRef(sankeyYear)
   sankeyYearRef.current = sankeyYear
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        const next = Math.max(displayRange.start, Math.floor(sankeyYearRef.current) - 1)
-        setSankeyYear(next)
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault()
-        const next = Math.min(displayRange.end, Math.floor(sankeyYearRef.current) + 1)
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      e.preventDefault()
+      const delta = e.key === 'ArrowLeft' ? -1 : 1
+
+      if (isMonthlyMode && filteredMonthlySnapshots && filteredMonthlySnapshots.length > 0) {
+        const currentVal = sankeyYearRef.current
+        const currentIdx = filteredMonthlySnapshots.findIndex(s =>
+          s.year === Math.floor(currentVal) && s.month === (Math.round((currentVal % 1) * 100) || 1)
+        )
+        const nextIdx = Math.max(0, Math.min(filteredMonthlySnapshots.length - 1, (currentIdx === -1 ? 0 : currentIdx) + delta))
+        const ms = filteredMonthlySnapshots[nextIdx]
+        if (ms) setSankeyYear(ms.year + ms.month / 100)
+      } else {
+        const current = Math.floor(sankeyYearRef.current)
+        const next = Math.max(displayRange.start, Math.min(displayRange.end, current + delta))
         setSankeyYear(next)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [displayRange.start, displayRange.end, setSankeyYear])
+  }, [displayRange.start, displayRange.end, setSankeyYear, isMonthlyMode, filteredMonthlySnapshots])
 
   // 현재 나이 계산
   const sankeyAge = Math.floor(sankeyYear) - birthYear
