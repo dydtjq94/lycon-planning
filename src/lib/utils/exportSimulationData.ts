@@ -157,6 +157,9 @@ export function exportSimulationToJson(
       let 총수요 = round(s.totalExpense);
       let 순현금흐름 = round(s.netCashFlow);
 
+      let 잉여금배분: Record<string, number> = {};
+      let 부족분인출: Record<string, number> = {};
+
       if (cfItems && cfItems.length > 0) {
         const regularItems = cfItems.filter(
           (item) => item.flowType !== "deficit_withdrawal" && item.flowType !== "surplus_investment",
@@ -190,6 +193,20 @@ export function exportSimulationToJson(
               : items;
           }
         }
+
+        // 잉여금 배분 (surplus_investment)
+        for (const item of cfItems) {
+          if (item.flowType === "surplus_investment" && round(Math.abs(item.amount)) !== 0) {
+            잉여금배분[item.title] = round(Math.abs(item.amount));
+          }
+        }
+
+        // 부족분 인출 (deficit_withdrawal)
+        for (const item of cfItems) {
+          if (item.flowType === "deficit_withdrawal" && round(Math.abs(item.amount)) !== 0) {
+            부족분인출[item.title] = round(Math.abs(item.amount));
+          }
+        }
       }
 
       // === 조합 ===
@@ -213,6 +230,9 @@ export function exportSimulationToJson(
 
       if (Object.keys(공급상세).length > 0) yearData.공급상세 = 공급상세;
       if (Object.keys(수요상세).length > 0) yearData.수요상세 = 수요상세;
+
+      if (Object.keys(잉여금배분).length > 0) yearData.잉여금배분 = 잉여금배분;
+      if (Object.keys(부족분인출).length > 0) yearData.부족분인출 = 부족분인출;
 
       if (s.events && s.events.length > 0) yearData.이벤트 = s.events;
 
@@ -286,6 +306,22 @@ export function exportMonthlySimulationToJson(
 
     if (Object.keys(공급상세).length > 0) monthData.공급상세 = 공급상세;
     if (Object.keys(수요상세).length > 0) monthData.수요상세 = 수요상세;
+
+    // 잉여금 배분 (surplusBreakdown)
+    const 잉여금배분: Record<string, number> = {};
+    for (const item of s.surplusBreakdown ?? []) {
+      const val = round(Math.abs(item.amount));
+      if (val !== 0) 잉여금배분[item.title] = (잉여금배분[item.title] ?? 0) + val;
+    }
+    if (Object.keys(잉여금배분).length > 0) monthData.잉여금배분 = 잉여금배분;
+
+    // 부족분 인출 (withdrawalBreakdown)
+    const 부족분인출: Record<string, number> = {};
+    for (const item of s.withdrawalBreakdown ?? []) {
+      const val = round(Math.abs(item.amount));
+      if (val !== 0) 부족분인출[item.title] = (부족분인출[item.title] ?? 0) + val;
+    }
+    if (Object.keys(부족분인출).length > 0) monthData.부족분인출 = 부족분인출;
 
     return monthData;
   });
