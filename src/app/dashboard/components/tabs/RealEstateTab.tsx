@@ -106,6 +106,7 @@ export function RealEstateTab({
   // Preset types
   const [purchaseType, setPurchaseType] = useState<'current' | 'year'>('current')
   const [loanStartType, setLoanStartType] = useState<'current' | 'year'>('current')
+  const [loanMaturityType, setLoanMaturityType] = useState<'date' | 'none'>('date')
 
   // 타입 선택 드롭다운
   const [showTypeMenu, setShowTypeMenu] = useState(false)
@@ -202,6 +203,7 @@ export function RealEstateTab({
     setGraceEndDateText('')
     setPurchaseType('current')
     setLoanStartType('current')
+    setLoanMaturityType('date')
   }
 
   // 편집 시작 (거주용) - for step 2 in add modal or edit modal
@@ -227,8 +229,15 @@ export function RealEstateTab({
     }
 
     if (prop?.loan_maturity_year && prop?.loan_maturity_month) {
-      setLoanMaturityDateText(toPeriodRaw(prop.loan_maturity_year, prop.loan_maturity_month))
+      if (prop.loan_maturity_year === 9999) {
+        setLoanMaturityType('none')
+        setLoanMaturityDateText('')
+      } else {
+        setLoanMaturityType('date')
+        setLoanMaturityDateText(toPeriodRaw(prop.loan_maturity_year, prop.loan_maturity_month))
+      }
     } else {
+      setLoanMaturityType('date')
       setLoanMaturityDateText('')
     }
 
@@ -333,8 +342,15 @@ export function RealEstateTab({
     }
 
     if (property.loan_maturity_year && property.loan_maturity_month) {
-      setLoanMaturityDateText(toPeriodRaw(property.loan_maturity_year, property.loan_maturity_month))
+      if (property.loan_maturity_year === 9999) {
+        setLoanMaturityType('none')
+        setLoanMaturityDateText('')
+      } else {
+        setLoanMaturityType('date')
+        setLoanMaturityDateText(toPeriodRaw(property.loan_maturity_year, property.loan_maturity_month))
+      }
     } else {
+      setLoanMaturityType('date')
       setLoanMaturityDateText('')
     }
 
@@ -405,6 +421,7 @@ export function RealEstateTab({
     setGraceEndDateText('')
     setPurchaseType('current')
     setLoanStartType('current')
+    setLoanMaturityType('date')
     setEditIcon(null)
     setEditColor(null)
   }
@@ -444,9 +461,14 @@ export function RealEstateTab({
       // Parse loan maturity date
       let loanMaturityYear: number | null = null
       let loanMaturityMonth: number | null = null
-      if (editBooleans.hasLoan && loanMaturityDateText.length === 6 && isPeriodValid(loanMaturityDateText)) {
-        loanMaturityYear = parseInt(loanMaturityDateText.slice(0, 4))
-        loanMaturityMonth = parseInt(loanMaturityDateText.slice(4))
+      if (editBooleans.hasLoan) {
+        if (loanMaturityType === 'none') {
+          loanMaturityYear = 9999
+          loanMaturityMonth = 12
+        } else if (loanMaturityDateText.length === 6 && isPeriodValid(loanMaturityDateText)) {
+          loanMaturityYear = parseInt(loanMaturityDateText.slice(0, 4))
+          loanMaturityMonth = parseInt(loanMaturityDateText.slice(4))
+        }
       }
 
       // Parse grace end date
@@ -550,9 +572,14 @@ export function RealEstateTab({
       // Parse loan maturity date
       let loanMaturityYear: number | null = null
       let loanMaturityMonth: number | null = null
-      if (editBooleans.hasLoan && loanMaturityDateText.length === 6 && isPeriodValid(loanMaturityDateText)) {
-        loanMaturityYear = parseInt(loanMaturityDateText.slice(0, 4))
-        loanMaturityMonth = parseInt(loanMaturityDateText.slice(4))
+      if (editBooleans.hasLoan) {
+        if (loanMaturityType === 'none') {
+          loanMaturityYear = 9999
+          loanMaturityMonth = 12
+        } else if (loanMaturityDateText.length === 6 && isPeriodValid(loanMaturityDateText)) {
+          loanMaturityYear = parseInt(loanMaturityDateText.slice(0, 4))
+          loanMaturityMonth = parseInt(loanMaturityDateText.slice(4))
+        }
       }
 
       // Parse grace end date
@@ -711,26 +738,43 @@ export function RealEstateTab({
             <div className={styles.modalFormRow}>
               <span className={styles.modalFormLabel}>만기</span>
               <div className={styles.fieldContent}>
-                <input
-                  type="text"
-                  className={`${styles.periodInput}${loanMaturityDateText.length > 0 && !isPeriodValid(loanMaturityDateText) ? ` ${styles.invalid}` : ''}`}
-                  value={formatPeriodDisplay(loanMaturityDateText)}
+                <select
+                  className={styles.periodSelect}
+                  value={loanMaturityType}
                   onChange={(e) => {
-                    const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
-                    restorePeriodCursor(e.target, raw)
-                    setLoanMaturityDateText(raw)
-                    if (raw.length >= 4) {
-                      const y = parseInt(raw.slice(0, 4))
-                      if (!isNaN(y)) setEditValues({ ...editValues, loanMaturityYear: y.toString() })
-                    }
-                    if (raw.length >= 5) {
-                      const m = parseInt(raw.slice(4))
-                      if (!isNaN(m) && m >= 1 && m <= 12) setEditValues({ ...editValues, loanMaturityMonth: m.toString() })
+                    const type = e.target.value as 'date' | 'none'
+                    setLoanMaturityType(type)
+                    if (type === 'none') {
+                      setLoanMaturityDateText('')
+                      setEditValues({ ...editValues, loanMaturityYear: '9999', loanMaturityMonth: '12' })
                     }
                   }}
-                  onWheel={(e) => (e.target as HTMLElement).blur()}
-                  placeholder="2030.12"
-                />
+                >
+                  <option value="date">직접 입력</option>
+                  <option value="none">만기 없음</option>
+                </select>
+                {loanMaturityType === 'date' && (
+                  <input
+                    type="text"
+                    className={`${styles.periodInput}${loanMaturityDateText.length > 0 && !isPeriodValid(loanMaturityDateText) ? ` ${styles.invalid}` : ''}`}
+                    value={formatPeriodDisplay(loanMaturityDateText)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
+                      restorePeriodCursor(e.target, raw)
+                      setLoanMaturityDateText(raw)
+                      if (raw.length >= 4) {
+                        const y = parseInt(raw.slice(0, 4))
+                        if (!isNaN(y)) setEditValues({ ...editValues, loanMaturityYear: y.toString() })
+                      }
+                      if (raw.length >= 5) {
+                        const m = parseInt(raw.slice(4))
+                        if (!isNaN(m) && m >= 1 && m <= 12) setEditValues({ ...editValues, loanMaturityMonth: m.toString() })
+                      }
+                    }}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                    placeholder="2030.12"
+                  />
+                )}
               </div>
             </div>
             <div className={styles.modalFormRow}>
@@ -1357,7 +1401,7 @@ export function RealEstateTab({
       const loanParts = [`대출 ${formatMoney(property.loan_amount)}`]
       if (property.loan_rate) loanParts.push(`${property.loan_rate}%`)
       if (property.loan_repayment_type) loanParts.push(REPAYMENT_TYPE_LABELS[property.loan_repayment_type])
-      if (property.loan_maturity_year) {
+      if (property.loan_maturity_year && property.loan_maturity_year !== 9999) {
         loanParts.push(`${property.loan_maturity_year}.${String(property.loan_maturity_month || 1).padStart(2, '0')} 만기`)
       }
       loanLine = loanParts.join(' | ')
@@ -1437,7 +1481,7 @@ export function RealEstateTab({
       const loanParts = [`${loanLabel} ${formatMoney(property.loan_amount)}`]
       if (property.loan_rate) loanParts.push(`${property.loan_rate}%`)
       if (property.loan_repayment_type) loanParts.push(REPAYMENT_TYPE_LABELS[property.loan_repayment_type])
-      if (property.loan_maturity_year) {
+      if (property.loan_maturity_year && property.loan_maturity_year !== 9999) {
         loanParts.push(`${property.loan_maturity_year}.${String(property.loan_maturity_month || 1).padStart(2, '0')} 만기`)
       }
       loanLine = loanParts.join(' | ')

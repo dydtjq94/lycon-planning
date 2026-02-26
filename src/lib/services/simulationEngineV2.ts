@@ -2975,7 +2975,7 @@ export function runSimulationV2(
         mDebtBreakdown.push({
           title: `${re.title} 대출`,
           amount: Math.round(re.loanBalance),
-          type: "mortgage",
+          type: (re.housingType === '전세' || re.housingType === '월세') ? "jeonse" : "mortgage",
         });
       }
       // 실물자산 대출 잔액
@@ -3395,7 +3395,7 @@ export function runSimulationV2(
       debtBreakdown.push({
         title: `${re.title} 대출`,
         amount: Math.round(re.loanBalance),
-        type: "mortgage",
+        type: (re.housingType === '전세' || re.housingType === '월세') ? "jeonse" : "mortgage",
       });
     }
     // 실물자산 대출 잔액
