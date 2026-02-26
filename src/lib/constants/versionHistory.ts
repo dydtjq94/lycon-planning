@@ -106,6 +106,7 @@ export const VERSION_HISTORY: VersionEntry[] = [
       "거치식 대출 월 납부액이 거치기간 종료 후 금액으로 표시되던 버그 수정 (절대 날짜 기반 거치 판단으로 변경)",
       "시뮬레이션 생성 시 실물자산 기본 상승률 설정 (자동차 -5%, 기타 +5%, rate_category: fixed)",
       "실물자산이 물가상승률(2.5%)로 성장하던 버그 수정 (DB 컬럼 기본값 inflation → fixed, 엔진 fallback physicalAsset으로 변경)",
+      "상담 탭 메인 컴포넌트 추가 (예약/상담내역/예약모달 조합, 스켈레톤 로딩, 페이지네이션)",
     ],
   },
 

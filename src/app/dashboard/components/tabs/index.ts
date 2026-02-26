@@ -9,6 +9,7 @@ export { AssetRecordTab } from './AssetRecordTab'
 export { PortfolioTab } from './PortfolioTab'
 export { ScenarioTab } from './ScenarioTab'
 export { SettingsTab } from './SettingsTab'
+export { ConsultationTab } from './ConsultationTab'
 
 // Finance tabs
 export { BudgetTab } from './BudgetTab'

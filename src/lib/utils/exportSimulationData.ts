@@ -26,6 +26,8 @@ interface SnapshotWithBreakdowns {
   assetBreakdown?: { title: string; amount: number; type?: string }[];
   debtBreakdown?: { title: string; amount: number; type?: string }[];
   pensionBreakdown?: { title: string; amount: number; type?: string }[];
+  cashBalance?: number;   // YearlySnapshot
+  currentCash?: number;   // MonthlySnapshot
 }
 
 // === 공통 헬퍼: 스냅샷 → 자산/부채 그룹 빌드 (월별/연별 공통) ===
@@ -34,6 +36,7 @@ function buildAssetGroups(s: SnapshotWithBreakdowns): {
   부채상세: Record<string, number | Record<string, number>>;
   totalAssets: number;
   totalDebts: number;
+  유동현금: number;
 } {
   const allAssetItems = [
     ...(s.assetBreakdown || []),
@@ -75,17 +78,22 @@ function buildAssetGroups(s: SnapshotWithBreakdowns): {
     }
   }
 
-  return { 자산상세, 부채상세, totalAssets, totalDebts };
+  // 유동현금 (양수=유동현금, 음수=마이너스통장)
+  const cashValue = s.cashBalance ?? s.currentCash ?? 0;
+  const 유동현금 = round(cashValue);
+
+  return { 자산상세, 부채상세, totalAssets, totalDebts, 유동현금 };
 }
 
 // === 공통 헬퍼: 현재자산 섹션 빌드 ===
 function buildCurrentAssets(s: SnapshotWithBreakdowns, currentYear: number, currentMonth: number) {
-  const { 자산상세, 부채상세, totalAssets, totalDebts } = buildAssetGroups(s);
+  const { 자산상세, 부채상세, totalAssets, totalDebts, 유동현금 } = buildAssetGroups(s);
   return {
     기준: `${currentYear}.${String(currentMonth).padStart(2, "0")}`,
     순자산: round(s.netWorth),
     자산: round(totalAssets),
     부채: round(totalDebts),
+    ...(유동현금 !== 0 ? { 유동현금 } : {}),
     ...(Object.keys(자산상세).length > 0 ? { 자산상세 } : {}),
     ...(Object.keys(부채상세).length > 0 ? { 부채상세 } : {}),
   };
@@ -139,7 +147,7 @@ export function exportSimulationToJson(
     ...(currentMonthSnapshot ? { 현재자산: buildCurrentAssets(currentMonthSnapshot, currentYear, currentMonth) } : {}),
     년도별데이터: snapshots.map((s) => {
       // === 자산/부채 ===
-      const { 자산상세, 부채상세, totalAssets, totalDebts } = buildAssetGroups(s);
+      const { 자산상세, 부채상세, totalAssets, totalDebts, 유동현금 } = buildAssetGroups(s);
 
       // === 현금흐름 (차트 툴팁과 동일: cashFlowBreakdown → groupCashFlowItems) ===
       const cfItems = s.cashFlowBreakdown;
@@ -191,6 +199,7 @@ export function exportSimulationToJson(
         순자산: round(s.netWorth),
         자산: round(totalAssets),
         부채: round(totalDebts),
+        ...(유동현금 !== 0 ? { 유동현금 } : {}),
       };
 
       if (Object.keys(자산상세).length > 0) yearData.자산상세 = 자산상세;
@@ -230,7 +239,7 @@ export function exportMonthlySimulationToJson(
 
   const 월별데이터 = monthlySlice.map((s) => {
     // === 자산/부채 ===
-    const { 자산상세, 부채상세, totalAssets, totalDebts } = buildAssetGroups(s);
+    const { 자산상세, 부채상세, totalAssets, totalDebts, 유동현금 } = buildAssetGroups(s);
 
     // === 현금흐름: incomeBreakdown / expenseBreakdown 직접 사용 ===
     const 총공급 = round(s.monthlyIncome);
@@ -263,6 +272,7 @@ export function exportMonthlySimulationToJson(
       순자산: round(s.netWorth),
       자산: round(totalAssets),
       부채: round(totalDebts),
+      ...(유동현금 !== 0 ? { 유동현금 } : {}),
     };
 
     if (Object.keys(자산상세).length > 0) monthData.자산상세 = 자산상세;
