@@ -2876,13 +2876,13 @@ export function runSimulationV2(
             d.sourceType !== "physical_asset",
         )
         .reduce((sum, d) => sum + d.currentBalance, 0);
-      // 부동산 대출 잔액
+      // 부동산 대출 잔액 (미취득 부동산 제외)
       const mRealEstateLoans = state.realEstates
-        .filter((re) => !re.isSold && re.hasLoan && re.loanBalance > 0)
+        .filter((re) => re.isPurchased && !re.isSold && re.hasLoan && re.loanBalance > 0)
         .reduce((sum, re) => sum + re.loanBalance, 0);
-      // 실물자산 대출 잔액
+      // 실물자산 대출 잔액 (미취득 자산 제외)
       const mPhysicalAssetLoans = state.physicalAssets
-        .filter((a) => !a.isSold && a.hasLoan && a.loanBalance > 0)
+        .filter((a) => a.isPurchased && !a.isSold && a.hasLoan && a.loanBalance > 0)
         .reduce((sum, a) => sum + a.loanBalance, 0);
       const mTotalDebts =
         mUserDebts +
@@ -3215,14 +3215,14 @@ export function runSimulationV2(
       )
       .reduce((sum, d) => sum + d.currentBalance, 0);
 
-    // 부동산 대출 잔액
+    // 부동산 대출 잔액 (미취득 부동산 제외 - 자산과 동일 기준)
     const realEstateLoans = state.realEstates
-      .filter((re) => !re.isSold && re.hasLoan && re.loanBalance > 0)
+      .filter((re) => re.isPurchased && !re.isSold && re.hasLoan && re.loanBalance > 0)
       .reduce((sum, re) => sum + re.loanBalance, 0);
 
-    // 실물자산 대출 잔액
+    // 실물자산 대출 잔액 (미취득 자산 제외 - 자산과 동일 기준)
     const physicalAssetLoans = state.physicalAssets
-      .filter((a) => !a.isSold && a.hasLoan && a.loanBalance > 0)
+      .filter((a) => a.isPurchased && !a.isSold && a.hasLoan && a.loanBalance > 0)
       .reduce((sum, a) => sum + a.loanBalance, 0);
 
     const totalDebts = userDebts + realEstateLoans + physicalAssetLoans;
