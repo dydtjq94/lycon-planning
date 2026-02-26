@@ -34,6 +34,7 @@ import {
   Users,
   CalendarClock,
   Save,
+  Check,
   type LucideIcon,
 } from "lucide-react";
 import { useChartTheme } from "@/hooks/useChartTheme";
@@ -1279,6 +1280,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
 
   // 시뮬레이션 데이터 내보내기 (클립보드 복사)
   const [exportCopied, setExportCopied] = useState(false);
+  const [exportFading, setExportFading] = useState(false);
   const handleExportSimulationData = useCallback(() => {
     if (!selectedSim || !simulationResult.snapshots.length) return;
     const json = exportSimulationToJson(simulationResult, {
@@ -1289,7 +1291,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     });
     navigator.clipboard.writeText(json).then(() => {
       setExportCopied(true);
-      setTimeout(() => setExportCopied(false), 2000);
+      setExportFading(false);
+      setTimeout(() => setExportFading(true), 1600);
+      setTimeout(() => { setExportCopied(false); setExportFading(false); }, 2000);
     });
   }, [selectedSim, simulationResult, simulationProfile]);
 
@@ -2100,15 +2104,32 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             )}
 
             {currentSection === "simulation" && selectedSim && (
-              <button
-                className={styles.simHeaderAction}
-                onClick={handleExportSimulationData}
-                type="button"
-                style={{ marginLeft: "auto" }}
-                data-tooltip={exportCopied ? "복사 완료" : "시뮬레이션 데이터 복사"}
-              >
-                <Save size={15} />
-              </button>
+              <div style={{ marginLeft: "auto", position: "relative" }}>
+                <button
+                  className={styles.simHeaderAction}
+                  onClick={handleExportSimulationData}
+                  type="button"
+                  style={{
+                    color: exportCopied ? "var(--accent-primary)" : undefined,
+                  }}
+                  data-tooltip={exportCopied ? undefined : "시뮬레이션 데이터 복사"}
+                >
+                  {exportCopied ? <Check size={15} /> : <Save size={15} />}
+                </button>
+                {exportCopied && (
+                  <div
+                    className={`${styles.exportToast} ${exportFading ? styles.exportToastFading : ""}`}
+                    style={{
+                      background: isDark ? "rgba(34, 37, 41, 0.5)" : "rgba(255, 255, 255, 0.5)",
+                      backdropFilter: "blur(6px)",
+                      WebkitBackdropFilter: "blur(6px)",
+                      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.12)",
+                    }}
+                  >
+                    시뮬레이션 데이터가 클립보드에 복사되었습니다.
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </header>
