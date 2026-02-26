@@ -1,0 +1,105 @@
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+}
+
+/* Hero card skeleton */
+.heroCard {
+  border-radius: 12px;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.heroTitle {
+  width: 120px;
+  height: 14px;
+  border-radius: 6px;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.heroTitle::after,
+.heroLine::after,
+.heroAction::after,
+.historyTitle::after,
+.recordCard::after,
+.recordLine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--skeleton-highlight) 50%, transparent 100%);
+  animation: shimmer 1.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+.heroLine {
+  width: 240px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.heroDetails {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.heroAction {
+  width: 80px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
+}
+
+/* History section skeleton */
+.historySection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.historyTitle {
+  width: 100px;
+  height: 14px;
+  border-radius: 6px;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.recordCard {
+  border-radius: 10px;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  padding: 16px;
+  height: 72px;
+  position: relative;
+  overflow: hidden;
+}
+
+.recordLine {
+  width: 60%;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--skeleton-base);
+  position: relative;
+  overflow: hidden;
+  margin-top: 8px;
+}

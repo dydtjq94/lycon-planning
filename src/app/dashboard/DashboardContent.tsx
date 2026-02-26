@@ -33,6 +33,7 @@ import {
   Percent,
   Users,
   CalendarClock,
+  CalendarDays,
   Save,
   Check,
   type LucideIcon,
@@ -69,7 +70,7 @@ import {
   financialKeys,
 } from "@/hooks/useFinancialData";
 import type { SimulationResult } from "@/lib/services/simulationTypes";
-import { exportSimulationToJson } from "@/lib/utils/exportSimulationData";
+import { exportSimulationToJson, exportMonthlySimulationToJson } from "@/lib/utils/exportSimulationData";
 import type {
   FinancialItem,
   IncomeData,
@@ -1347,24 +1348,39 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
     activeSimulationId,
   ]);
 
-  // 시뮬레이션 데이터 내보내기 (클립보드 복사)
-  const [exportCopied, setExportCopied] = useState(false);
-  const [exportFading, setExportFading] = useState(false);
-  const handleExportSimulationData = useCallback(() => {
-    if (!selectedSim || !simulationResult.snapshots.length) return;
-    const json = exportSimulationToJson(simulationResult, {
+  // 시뮬레이션 데이터 내보내기 드롭다운
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exportCopiedType, setExportCopiedType] = useState<"yearly" | "monthly" | null>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  const handleExportCopy = useCallback((type: "yearly" | "monthly") => {
+    if (!selectedSim) return;
+    const opts = {
       simulationTitle: selectedSim.title,
       birthYear: simulationProfile.birthYear,
       retirementAge: simulationProfile.retirementAge,
       spouseBirthYear: simulationProfile.spouseBirthYear,
-    });
+    };
+    const json = type === "monthly"
+      ? exportMonthlySimulationToJson(simulationResult, opts)
+      : exportSimulationToJson(simulationResult, opts);
     navigator.clipboard.writeText(json).then(() => {
-      setExportCopied(true);
-      setExportFading(false);
-      setTimeout(() => setExportFading(true), 1600);
-      setTimeout(() => { setExportCopied(false); setExportFading(false); }, 2000);
+      setExportCopiedType(type);
+      setTimeout(() => { setExportCopiedType(null); setShowExportMenu(false); }, 1200);
     });
   }, [selectedSim, simulationResult, simulationProfile]);
+
+  // ESC / 외부 클릭으로 드롭다운 닫기
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setShowExportMenu(false); };
+    const handleClick = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) setShowExportMenu(false);
+    };
+    window.addEventListener("keydown", handleEsc);
+    window.addEventListener("mousedown", handleClick);
+    return () => { window.removeEventListener("keydown", handleEsc); window.removeEventListener("mousedown", handleClick); };
+  }, [showExportMenu]);
 
   // 대시보드용 전체 시뮬레이션 미니차트 데이터
   // 활성 sim: simulationResult에서 추출 + 캐시 저장
@@ -2173,29 +2189,44 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
             )}
 
             {currentSection === "simulation" && selectedSim && (
-              <div style={{ marginLeft: "auto", position: "relative" }}>
+              <div ref={exportMenuRef} style={{ marginLeft: "auto", position: "relative" }}>
                 <button
                   className={styles.simHeaderAction}
-                  onClick={handleExportSimulationData}
+                  onClick={() => setShowExportMenu((v) => !v)}
                   type="button"
                   style={{
-                    color: exportCopied ? "var(--accent-primary)" : undefined,
+                    color: exportCopiedType ? "var(--accent-primary)" : undefined,
                   }}
-                  data-tooltip={exportCopied ? undefined : "시뮬레이션 데이터 복사"}
+                  data-tooltip={showExportMenu ? undefined : "데이터 내보내기"}
                 >
-                  {exportCopied ? <Check size={15} /> : <Save size={15} />}
+                  {exportCopiedType ? <Check size={15} /> : <Save size={15} />}
                 </button>
-                {exportCopied && (
+                {showExportMenu && (
                   <div
-                    className={`${styles.exportToast} ${exportFading ? styles.exportToastFading : ""}`}
+                    className={styles.exportDropdown}
                     style={{
-                      background: isDark ? "rgba(34, 37, 41, 0.5)" : "rgba(255, 255, 255, 0.5)",
-                      backdropFilter: "blur(6px)",
-                      WebkitBackdropFilter: "blur(6px)",
-                      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.12)",
+                      background: isDark ? "rgba(34, 37, 41, 0.6)" : "rgba(255, 255, 255, 0.6)",
+                      backdropFilter: "blur(8px)",
+                      WebkitBackdropFilter: "blur(8px)",
+                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
                     }}
                   >
-                    시뮬레이션 데이터가 클립보드에 복사되었습니다.
+                    <button
+                      className={`${styles.exportDropdownItem} ${exportCopiedType === "monthly" ? styles.exportDropdownItemCopied : ""}`}
+                      onClick={() => handleExportCopy("monthly")}
+                      type="button"
+                    >
+                      <CalendarDays size={14} />
+                      {exportCopiedType === "monthly" ? "복사됨" : "5년 월별 데이터"}
+                    </button>
+                    <button
+                      className={`${styles.exportDropdownItem} ${exportCopiedType === "yearly" ? styles.exportDropdownItemCopied : ""}`}
+                      onClick={() => handleExportCopy("yearly")}
+                      type="button"
+                    >
+                      <Save size={14} />
+                      {exportCopiedType === "yearly" ? "복사됨" : "전체 연도별 데이터"}
+                    </button>
                   </div>
                 )}
               </div>

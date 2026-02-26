@@ -144,7 +144,8 @@ export async function createBooking(
   expertId: string,
   bookingDate: string,
   bookingTime: string,
-  notes?: string
+  notes?: string,
+  consultationType?: string
 ): Promise<Booking> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -161,6 +162,7 @@ export async function createBooking(
       booking_time: bookingTime,
       status: 'pending',
       notes,
+      consultation_type: consultationType || 'retirement-diagnosis',
     })
     .select()
     .single()
@@ -278,8 +280,10 @@ export async function updateAvailability(
 }
 
 export interface NextBooking {
+  id: string
   booking_date: string
   booking_time: string
+  consultation_type: string
   status: string
   expert_name: string
 }
@@ -296,8 +300,10 @@ export async function getNextBooking(): Promise<NextBooking | null> {
   const { data, error } = await supabase
     .from('bookings')
     .select(`
+      id,
       booking_date,
       booking_time,
+      consultation_type,
       status,
       experts:expert_id (name)
     `)
@@ -315,8 +321,10 @@ export async function getNextBooking(): Promise<NextBooking | null> {
   const expert = Array.isArray(expertData) ? expertData[0] : expertData
 
   return {
+    id: data.id,
     booking_date: data.booking_date,
     booking_time: data.booking_time,
+    consultation_type: data.consultation_type || 'retirement-diagnosis',
     status: data.status,
     expert_name: expert?.name || '전문가',
   }

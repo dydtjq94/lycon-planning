@@ -1,0 +1,115 @@
+.card {
+  border-radius: 12px;
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-border);
+  padding: 24px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dashboard-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
+.bookingInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.infoLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dateTime {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.expertName {
+  font-size: 14px;
+  color: var(--dashboard-text-secondary);
+  font-weight: 500;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--dashboard-bg-secondary);
+  color: var(--dashboard-text-secondary);
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--dashboard-border);
+  background: none;
+  color: var(--dashboard-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+
+.cancelBtn:hover {
+  color: #ef4444;
+}
+
+/* Empty state */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.emptyText {
+  font-size: 14px;
+  color: var(--dashboard-text-muted);
+}
+
+.bookBtn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  background: var(--sidebar-accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.bookBtn:hover {
+  opacity: 0.85;
+}
