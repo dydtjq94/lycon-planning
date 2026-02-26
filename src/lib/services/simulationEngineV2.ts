@@ -237,6 +237,16 @@ const ownerLabels: Record<string, string> = {
   common: "공동",
 };
 
+const incomeTypeLabels: Record<string, string> = {
+  labor: "근로소득",
+  business: "사업소득",
+  rental: "임대소득",
+  pension: "연금소득",
+  dividend: "배당소득",
+  side: "부업소득",
+  other: "기타소득",
+};
+
 function getSavingsAssetCategory(savingsType: string): string {
   switch (savingsType) {
     case "checking":
@@ -987,6 +997,15 @@ export function runSimulationV2(
       string,
       { title: string; amount: number; id: string }
     >();
+    // 소득/지출 연간 합계 (월별 루프에서 누적 → B8 snapshot/cashFlowItems에 직접 사용)
+    const yearlyIncomeAccum = new Map<
+      string,
+      { title: string; amount: number; type?: string }
+    >();
+    const yearlyExpenseAccum = new Map<
+      string,
+      { title: string; amount: number; type?: string }
+    >();
 
     // ==============================
     // Phase A: 월별 현금흐름
@@ -1089,6 +1108,17 @@ export function runSimulationV2(
           amount,
           type: income.type,
         });
+
+        // 연간 합계 누적 (B8에서 사용)
+        const incAccum = yearlyIncomeAccum.get(income.id);
+        if (incAccum) {
+          incAccum.amount += amount;
+        } else {
+          const lbl = ownerLabels[income.owner] || "";
+          const typeLbl = incomeTypeLabels[income.type] || income.type;
+          const displayTitle = lbl ? `${typeLbl} | ${lbl}` : typeLbl;
+          yearlyIncomeAccum.set(income.id, { title: displayTitle, amount, type: income.type });
+        }
       }
 
       // A2. 월간 지출 (부채/부동산 연동 지출은 직접 계산)
@@ -1149,6 +1179,14 @@ export function runSimulationV2(
           amount,
           type: expense.type,
         });
+
+        // 연간 합계 누적 (B8에서 사용)
+        const expAccum = yearlyExpenseAccum.get(expense.id);
+        if (expAccum) {
+          expAccum.amount += amount;
+        } else {
+          yearlyExpenseAccum.set(expense.id, { title: expense.title, amount, type: expense.type });
+        }
       }
 
       // A3. 저축 월 납입금 처리
@@ -3042,14 +3080,9 @@ export function runSimulationV2(
     // B8. YearlySnapshot 생성
     // ==============================
 
-    // 항목별 연간 소득/지출을 다시 계산하여 breakdown 생성
-    const incomeBrkDown = buildIncomeBreakdown(data.incomes, year, profile, assumptionRateByCategory);
-    const expenseBrkDown = buildExpenseBreakdown(
-      data.expenses,
-      year,
-      profile,
-      assumptionRateByCategory,
-    );
+    // 월별 루프에서 누적한 실제 값을 직접 사용 (이중 계산 방지)
+    const incomeBrkDown: { title: string; amount: number; type?: string }[] = [...yearlyIncomeAccum.values()];
+    const expenseBrkDown: { title: string; amount: number; type?: string }[] = [...yearlyExpenseAccum.values()];
 
     // 직접 계산된 부채 상환액을 지출 breakdown에 추가
     for (const debt of state.debts) {
@@ -3586,159 +3619,5 @@ export function runSimulationV2(
   };
 }
 
-// ============================================
-// Breakdown 빌더 함수
-// ============================================
-
-function buildIncomeBreakdown(
-  incomes: Income[],
-  year: number,
-  profile: SimulationProfile,
-  assumptionRates: Record<string, number>,
-): { title: string; amount: number; type?: string }[] {
-  const result: { title: string; amount: number; type?: string }[] = [];
-
-  const incomeTypeLabels: Record<string, string> = {
-    labor: "근로소득",
-    business: "사업소득",
-    rental: "임대소득",
-    pension: "연금소득",
-    dividend: "배당소득",
-    side: "부업소득",
-    other: "기타소득",
-  };
-
-  for (const income of incomes) {
-    if (!income.is_active) continue;
-    // 연금 연동 소득은 직접 계산되므로 건너뜀
-    if (
-      income.source_type === "national_pension" ||
-      income.source_type === "retirement_pension" ||
-      income.source_type === "personal_pension"
-    )
-      continue;
-
-    let endY = income.end_year;
-    let endM = income.end_month;
-    if (income.retirement_link === "self") {
-      const ret = getRetirementYearMonth("self", profile);
-      endY = ret.year;
-      endM = ret.month;
-    } else if (income.retirement_link === "spouse") {
-      const ret = getRetirementYearMonth("spouse", profile);
-      endY = ret.year;
-      endM = ret.month;
-    }
-
-    const rateCategory =
-      income.rate_category || getDefaultRateCategory(income.type);
-    const effectiveRate = rateCategory === 'fixed'
-      ? (income.growth_rate ?? 0)
-      : (assumptionRates[rateCategory] ?? income.growth_rate ?? 0);
-    const monthlyRate = Math.pow(1 + effectiveRate / 100, 1 / 12) - 1;
-
-    let yearTotal = 0;
-    for (let month = 1; month <= 12; month++) {
-      if (
-        !isInPeriod(
-          year,
-          month,
-          income.start_year,
-          income.start_month,
-          endY,
-          endM,
-        )
-      )
-        continue;
-      const monthsFromStart =
-        (year - income.start_year) * 12 + (month - income.start_month);
-      const baseAmount =
-        income.frequency === "yearly" ? income.amount / 12 : income.amount;
-      yearTotal +=
-        baseAmount * Math.pow(1 + monthlyRate, Math.max(0, monthsFromStart));
-    }
-
-    if (yearTotal > 0) {
-      const label = ownerLabels[income.owner] || "";
-      const typeLabel = incomeTypeLabels[income.type] || income.type;
-      const displayTitle = label ? `${typeLabel} | ${label}` : typeLabel;
-      result.push({
-        title: displayTitle,
-        amount: yearTotal,
-        type: income.type,
-      });
-    }
-  }
-
-  return result;
-}
-
-function buildExpenseBreakdown(
-  expenses: Expense[],
-  year: number,
-  profile: SimulationProfile,
-  assumptionRates: Record<string, number>,
-): { title: string; amount: number; type?: string }[] {
-  const result: { title: string; amount: number; type?: string }[] = [];
-
-  for (const expense of expenses) {
-    if (!expense.is_active) continue;
-    // 부채/부동산 연동 지출은 직접 계산되므로 건너뜀
-    if (expense.source_type === "debt") continue;
-    if (expense.source_type === "real_estate") continue;
-
-    let endY = expense.end_year;
-    let endM = expense.end_month;
-    if (expense.retirement_link === "self") {
-      const ret = getRetirementYearMonth("self", profile);
-      endY = ret.year;
-      endM = ret.month;
-    } else if (expense.retirement_link === "spouse") {
-      const ret = getRetirementYearMonth("spouse", profile);
-      endY = ret.year;
-      endM = ret.month;
-    }
-
-    const rateCategory =
-      expense.rate_category || getDefaultRateCategory(expense.type);
-    const effectiveRate = rateCategory === 'fixed'
-      ? (expense.growth_rate ?? 0)
-      : (assumptionRates[rateCategory] ?? expense.growth_rate ?? 0);
-    const monthlyRate = Math.pow(1 + effectiveRate / 100, 1 / 12) - 1;
-
-    let yearTotal = 0;
-    for (let month = 1; month <= 12; month++) {
-      if (
-        !isInPeriod(
-          year,
-          month,
-          expense.start_year,
-          expense.start_month,
-          endY,
-          endM,
-        )
-      )
-        continue;
-      // amount_base_year가 있으면 기준년도부터 복리
-      const growthBaseYear = expense.amount_base_year ?? expense.start_year;
-      const growthBaseMonth = expense.amount_base_year ? 1 : expense.start_month;
-      const monthsFromBase =
-        (year - growthBaseYear) * 12 + (month - growthBaseMonth);
-      const isOneTimeExpense = expense.start_year === expense.end_year && expense.start_month === expense.end_month;
-      const baseAmount =
-        (expense.frequency === "yearly" && !isOneTimeExpense) ? expense.amount / 12 : expense.amount;
-      yearTotal +=
-        baseAmount * Math.pow(1 + monthlyRate, Math.max(0, monthsFromBase));
-    }
-
-    if (yearTotal > 0) {
-      result.push({
-        title: expense.title,
-        amount: yearTotal,
-        type: expense.type,
-      });
-    }
-  }
-
-  return result;
-}
+// (buildIncomeBreakdown/buildExpenseBreakdown 제거됨)
+// 소득/지출 breakdown은 월별 루프에서 yearlyIncomeAccum/yearlyExpenseAccum으로 직접 누적

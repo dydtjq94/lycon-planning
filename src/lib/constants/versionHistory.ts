@@ -107,6 +107,7 @@ export const VERSION_HISTORY: VersionEntry[] = [
       "시뮬레이션 생성 시 실물자산 기본 상승률 설정 (자동차 -5%, 기타 +5%, rate_category: fixed)",
       "실물자산이 물가상승률(2.5%)로 성장하던 버그 수정 (DB 컬럼 기본값 inflation → fixed, 엔진 fallback physicalAsset으로 변경)",
       "상담 탭 전체 리디자인 (다음 상담 카드, 상담 이력 목록, 예약 모달 4단계 플로우, 스켈레톤 로딩)",
+      "첫해 현금흐름 계산 불일치 수정 (소득/지출 breakdown을 별도 재계산 대신 월별 루프 누적값으로 통일)",
     ],
   },
 
