@@ -1361,6 +1361,9 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       birthYear: simulationProfile.birthYear,
       retirementAge: simulationProfile.retirementAge,
       spouseBirthYear: simulationProfile.spouseBirthYear,
+      selfLifeExpectancy: lifeCycleSettings.selfLifeExpectancy,
+      spouseRetirementAge: lifeCycleSettings.spouseRetirementAge,
+      spouseLifeExpectancy: lifeCycleSettings.spouseLifeExpectancy,
     };
     const json = type === "monthly"
       ? exportMonthlySimulationToJson(simulationResult, opts)
@@ -1369,7 +1372,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
       setExportCopiedType(type);
       setTimeout(() => { setExportCopiedType(null); setShowExportMenu(false); }, 1200);
     });
-  }, [selectedSim, simulationResult, simulationProfile]);
+  }, [selectedSim, simulationResult, simulationProfile, lifeCycleSettings]);
 
   // ESC / 외부 클릭으로 드롭다운 닫기
   useEffect(() => {

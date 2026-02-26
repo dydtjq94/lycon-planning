@@ -33,6 +33,7 @@ import {
 } from '@/lib/utils/chartTooltip'
 import { useChartTheme } from '@/hooks/useChartTheme'
 import { getLifecycleIcon, getLifecycleIconSvg } from '@/lib/constants/lifecycle'
+import { DonutPairView } from './DonutPairView'
 import styles from './AssetStackChart.module.css'
 
 ChartJS.register(
@@ -91,13 +92,13 @@ export function AssetStackChart({
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const hoverIndexRef = useRef<number>(-1)
   const { chartScaleColors, isDark, categoryColors, chartLineColors, toRgba, assetCategoryColors, debtCategoryColors } = useChartTheme()
-  const [chartMode, setChartMode] = useState<'bar' | 'line'>(() => {
+  const [chartMode, setChartMode] = useState<'bar' | 'line' | 'donut'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('asset-chart-mode') as 'bar' | 'line') || 'line'
+      return (localStorage.getItem('asset-chart-mode') as 'bar' | 'line' | 'donut') || 'line'
     }
     return 'line'
   })
-  const handleChartModeChange = useCallback((mode: 'bar' | 'line') => {
+  const handleChartModeChange = useCallback((mode: 'bar' | 'line' | 'donut') => {
     setChartMode(mode)
     localStorage.setItem('asset-chart-mode', mode)
   }, [])
@@ -1125,7 +1126,7 @@ export function AssetStackChart({
       {/* 범례 + 헤더 액션 */}
       <div className={styles.legendRow}>
         <div className={styles.legend}>
-          {chartMode === 'bar' && stackedBarData ? (
+          {chartMode === 'donut' ? null : chartMode === 'bar' && stackedBarData ? (
             <>
               {stackedBarData.assetDatasets.map(ds => (
                 <div key={ds.label} className={styles.legendItem}>
@@ -1189,43 +1190,65 @@ export function AssetStackChart({
                 <rect x="10" y="1" width="3" height="12" rx="0.5" fill="currentColor"/>
               </svg>
             </button>
+            <button
+              className={`${styles.modeButton} ${chartMode === 'donut' ? styles.modeActive : ''}`}
+              onClick={() => handleChartModeChange('donut')}
+              title="도넛 차트"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.8"/>
+                <circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1.8"/>
+              </svg>
+            </button>
           </div>
           {headerAction}
         </div>
       </div>
 
       {/* 차트 */}
-      <div className={styles.chartWrapper}>
-        <canvas ref={chartRef} />
-        {milestonePos.map((pos, i) => {
-          const Icon = getLifecycleIcon(pos.iconId)
-          return (
-            <div key={i} style={{
-              position: 'absolute',
-              left: pos.x,
-              top: pos.y,
-              transform: 'translateX(-50%)',
-              pointerEvents: 'none',
-              zIndex: 10,
-              opacity: pos.opacity ?? 1,
-              width: 17,
-              height: 17,
-              borderRadius: '50%',
-              background: `${pos.color}${isDark ? '30' : '20'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <Icon size={10} color={pos.color} strokeWidth={2.5} />
-            </div>
-          )
-        })}
-      </div>
+      {chartMode === 'donut' ? (
+        <DonutPairView
+          snapshot={
+            snapshots.find(s => s.year === (selectedYear ?? snapshots[snapshots.length - 1]?.year))
+            || snapshots[snapshots.length - 1]
+          }
+          selectedYear={selectedYear ?? snapshots[snapshots.length - 1]?.year ?? new Date().getFullYear()}
+        />
+      ) : (
+        <>
+          <div className={styles.chartWrapper}>
+            <canvas ref={chartRef} />
+            {milestonePos.map((pos, i) => {
+              const Icon = getLifecycleIcon(pos.iconId)
+              return (
+                <div key={i} style={{
+                  position: 'absolute',
+                  left: pos.x,
+                  top: pos.y,
+                  transform: 'translateX(-50%)',
+                  pointerEvents: 'none',
+                  zIndex: 10,
+                  opacity: pos.opacity ?? 1,
+                  width: 17,
+                  height: 17,
+                  borderRadius: '50%',
+                  background: `${pos.color}${isDark ? '30' : '20'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Icon size={10} color={pos.color} strokeWidth={2.5} />
+                </div>
+              )
+            })}
+          </div>
 
-      {/* 클릭 안내 */}
-      <p className={styles.hint}>
-        차트를 클릭하면 해당 연도의 상세 정보를 볼 수 있습니다
-      </p>
+          {/* 클릭 안내 */}
+          <p className={styles.hint}>
+            차트를 클릭하면 해당 연도의 상세 정보를 볼 수 있습니다
+          </p>
+        </>
+      )}
     </div>
   )
 }

@@ -15,6 +15,9 @@ interface ExportOptions {
   birthYear: number;
   retirementAge: number;
   spouseBirthYear?: number | null;
+  selfLifeExpectancy?: number;
+  spouseRetirementAge?: number;
+  spouseLifeExpectancy?: number;
 }
 
 function round(v: number): number {
@@ -116,9 +119,12 @@ function buildCommonSections(result: SimulationResult, options: ExportOptions) {
     기본정보: {
       출생년도: options.birthYear,
       은퇴나이: options.retirementAge,
-      기대수명: result.endYear - options.birthYear,
-      ...(options.spouseBirthYear ? { 배우자출생년도: options.spouseBirthYear } : {}),
-      ...(options.spouseBirthYear ? { 배우자기대수명: result.endYear - options.spouseBirthYear } : {}),
+      기대수명: options.selfLifeExpectancy ?? 100,
+      ...(options.spouseBirthYear ? {
+        배우자출생년도: options.spouseBirthYear,
+        배우자은퇴나이: options.spouseRetirementAge ?? 65,
+        배우자기대수명: options.spouseLifeExpectancy ?? 100,
+      } : {}),
       시뮬레이션기간: `${result.startYear}-${result.endYear}`,
       은퇴시점: result.retirementYear,
     },
