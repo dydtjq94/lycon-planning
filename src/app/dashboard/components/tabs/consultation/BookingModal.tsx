@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { type ReactElement, useState, useEffect, useCallback } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useChartTheme } from '@/hooks/useChartTheme'
 import { CONSULTATION_TYPES } from '@/lib/constants/consultationTypes'
@@ -159,7 +159,7 @@ export function BookingModal({ isOpen, onClose, expertId, onSuccess }: BookingMo
     today.setHours(0, 0, 0, 0)
     const todayStr = formatLocalDate(today)
 
-    const cells: JSX.Element[] = []
+    const cells: ReactElement[] = []
 
     // Empty cells for days before first
     for (let i = 0; i < firstDay; i++) {

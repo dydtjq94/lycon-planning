@@ -105,6 +105,7 @@ import {
   DashboardTab,
   ScenarioTab,
   SettingsTab,
+  ConsultationTab,
 } from "./components/tabs";
 import styles from "./dashboard.module.css";
 
@@ -1759,9 +1760,7 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
           />
         );
       case "consultation":
-        return (
-          <div style={{ padding: 40, color: "#888" }}>상담 기록 (준비중)</div>
-        );
+        return <ConsultationTab profileId={profile.id} />;
       // 자산 추이
       case "current-asset":
         return (
