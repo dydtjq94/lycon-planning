@@ -1206,15 +1206,28 @@ export function AssetStackChart({
       </div>
 
       {/* 차트 */}
-      {chartMode === 'donut' ? (
-        <DonutPairView
-          snapshot={
-            snapshots.find(s => s.year === (selectedYear ?? snapshots[snapshots.length - 1]?.year))
-            || snapshots[snapshots.length - 1]
-          }
-          selectedYear={selectedYear ?? snapshots[snapshots.length - 1]?.year ?? new Date().getFullYear()}
-        />
-      ) : (
+      {chartMode === 'donut' ? (() => {
+        if (isMonthlyMode && monthlySnapshots) {
+          const sy = selectedYear ?? (monthlySnapshots[monthlySnapshots.length - 1]?.year + monthlySnapshots[monthlySnapshots.length - 1]?.month / 100)
+          const yr = Math.floor(sy)
+          const mo = Math.round((sy % 1) * 100) || 1
+          const ms = monthlySnapshots.find(s => s.year === yr && s.month === mo) || monthlySnapshots[monthlySnapshots.length - 1]
+          return (
+            <DonutPairView
+              snapshot={ms}
+              selectedLabel={`${ms.year}년 ${ms.month}월`}
+            />
+          )
+        }
+        const sy = selectedYear ?? snapshots[snapshots.length - 1]?.year ?? new Date().getFullYear()
+        const snap = snapshots.find(s => s.year === sy) || snapshots[snapshots.length - 1]
+        return (
+          <DonutPairView
+            snapshot={snap}
+            selectedLabel={`${Math.floor(sy)}년`}
+          />
+        )
+      })() : (
         <>
           <div className={styles.chartWrapper}>
             <canvas ref={chartRef} />

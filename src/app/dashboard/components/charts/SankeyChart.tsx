@@ -9,7 +9,7 @@ import {
   Legend,
 } from "chart.js";
 import { SankeyController, Flow } from "chartjs-chart-sankey";
-import type { SimulationResult } from "@/lib/services/simulationTypes";
+import type { SimulationResult, MonthlySnapshot } from "@/lib/services/simulationTypes";
 import { useChartTheme } from "@/hooks/useChartTheme";
 import {
   CHART_COLORS,
@@ -45,6 +45,7 @@ if (flowDefaults?.animations) {
 interface SankeyChartProps {
   simulationResult: SimulationResult;
   selectedYear: number;
+  monthlySnapshots?: MonthlySnapshot[];
 }
 
 // 금액 포맷팅 (만원 단위, 반올림)
@@ -142,6 +143,7 @@ function getExpenseCategory(type: string, title: string): string {
 export function SankeyChart({
   simulationResult,
   selectedYear,
+  monthlySnapshots,
 }: SankeyChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<ChartJS | null>(null);
@@ -178,8 +180,27 @@ export function SankeyChart({
   }, []);
 
   const snapshot = useMemo(() => {
+    // Monthly mode: selectedYear is float like 2027.03
+    if (monthlySnapshots && monthlySnapshots.length > 0 && selectedYear % 1 !== 0) {
+      const yr = Math.floor(selectedYear);
+      const mo = Math.round((selectedYear % 1) * 100) || 1;
+      const ms = monthlySnapshots.find(s => s.year === yr && s.month === mo);
+      if (ms && ms.cashFlowBreakdown) {
+        // Return a partial YearlySnapshot-compatible object for the Sankey
+        return {
+          year: ms.year,
+          age: ms.age,
+          totalIncome: ms.monthlyIncome,
+          totalExpense: ms.monthlyExpense,
+          netCashFlow: ms.netCashFlow,
+          cashFlowBreakdown: ms.cashFlowBreakdown,
+          incomeBreakdown: ms.incomeBreakdown,
+          expenseBreakdown: ms.expenseBreakdown,
+        } as SimulationResult['snapshots'][0];
+      }
+    }
     return simulationResult.snapshots.find((s) => s.year === selectedYear);
-  }, [simulationResult.snapshots, selectedYear]);
+  }, [simulationResult.snapshots, selectedYear, monthlySnapshots]);
 
   // 데이터 준비 - cashFlowBreakdown 기반 (fallback: incomeBreakdown/expenseBreakdown)
   const {

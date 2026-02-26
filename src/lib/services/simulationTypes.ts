@@ -99,6 +99,7 @@ export interface MonthlySnapshot {
     category: string;
   }[];
   surplusBreakdown?: { title: string; amount: number; category: string }[];
+  cashFlowBreakdown?: CashFlowItem[];
 }
 
 export interface SimulationResult {

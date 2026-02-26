@@ -3014,6 +3014,93 @@ export function runSimulationV2(
         });
       }
 
+      // 월별 현금흐름 아이템 구성
+      const monthlyCashFlowItems: CashFlowItem[] = [];
+
+      for (const item of monthIncomeBreakdown) {
+        let flowType: CashFlowItem["flowType"] = "income";
+        if (
+          item.type === "pension_withdrawal" ||
+          item.type === "national_pension"
+        ) {
+          flowType = "pension_withdrawal";
+        } else if (item.type === "pension_lump_sum") {
+          flowType = "pension_lump_sum";
+        } else if (item.type === "rental") {
+          flowType = "rental_income";
+        } else if (
+          item.type === "loan_disbursement" ||
+          item.type === "deposit_return"
+        ) {
+          flowType = "loan_disbursement";
+        } else if (item.type === "real_estate_sale") {
+          flowType = "real_estate_sale";
+        } else if (item.type === "physical_asset_sale") {
+          flowType = "asset_sale";
+        } else if (item.type === "isa_maturity") {
+          flowType = "savings_withdrawal";
+        }
+        monthlyCashFlowItems.push({
+          title: item.title,
+          amount: item.amount,
+          flowType,
+        });
+      }
+
+      for (const item of monthExpenseBreakdown) {
+        let flowType: CashFlowItem["flowType"] = "expense";
+        if (item.type === "savings") {
+          flowType = "savings_contribution";
+        } else if (item.type === "pension") {
+          flowType = "pension_contribution";
+        } else if (item.type === "debt" || item.type === "loan") {
+          flowType = "debt_principal";
+        } else if (item.type === "housing") {
+          flowType = "housing_expense";
+        } else if (item.type === "deposit_payment") {
+          flowType = "deposit_payment";
+        } else if (item.type === "real_estate_purchase") {
+          flowType = "real_estate_purchase";
+        } else if (item.type === "asset_purchase") {
+          flowType = "asset_purchase";
+        } else if (item.type === "insurance") {
+          flowType = "insurance_premium";
+        }
+        monthlyCashFlowItems.push({
+          title: item.title,
+          amount: -Math.abs(item.amount),
+          flowType,
+        });
+      }
+
+      for (const w of monthWithdrawals) {
+        monthlyCashFlowItems.push({
+          title: `${w.title} | 인출`,
+          amount: w.amount,
+          flowType: "deficit_withdrawal",
+          sourceType:
+            w.category === "savings"
+              ? "savings"
+              : w.category === "cash"
+              ? "cash"
+              : "pension",
+        });
+      }
+
+      for (const s of monthSurplus) {
+        monthlyCashFlowItems.push({
+          title: `${s.title} | ${s.category === "debt" ? "상환" : "적립"}`,
+          amount: -Math.abs(s.amount),
+          flowType: "surplus_investment",
+          sourceType:
+            s.category === "savings"
+              ? "savings"
+              : s.category === "pension"
+              ? "pension"
+              : "debts",
+        });
+      }
+
       monthlySnapshots.push({
         year,
         month,
@@ -3036,6 +3123,8 @@ export function runSimulationV2(
         withdrawalBreakdown:
           monthWithdrawals.length > 0 ? monthWithdrawals : undefined,
         surplusBreakdown: monthSurplus.length > 0 ? monthSurplus : undefined,
+        cashFlowBreakdown:
+          monthlyCashFlowItems.length > 0 ? monthlyCashFlowItems : undefined,
       });
     }
 

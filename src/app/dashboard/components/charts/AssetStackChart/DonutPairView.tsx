@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { Chart as ChartJS, ArcElement, Tooltip } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
-import type { YearlySnapshot } from '@/lib/services/simulationTypes'
+import type { YearlySnapshot, MonthlySnapshot } from '@/lib/services/simulationTypes'
 import {
   groupAssetItems,
   groupDebtItems,
@@ -15,20 +15,30 @@ import styles from './DonutPairView.module.css'
 ChartJS.register(ArcElement, Tooltip)
 
 interface DonutPairViewProps {
-  snapshot: YearlySnapshot
-  selectedYear: number
+  snapshot: YearlySnapshot | MonthlySnapshot
+  selectedLabel: string
 }
 
-export function DonutPairView({ snapshot, selectedYear }: DonutPairViewProps) {
+export function DonutPairView({ snapshot, selectedLabel }: DonutPairViewProps) {
   const { assetCategoryColors, debtCategoryColors, chartScaleColors } = useChartTheme()
 
+  const pensionBreakdown = 'pensionBreakdown' in snapshot ? snapshot.pensionBreakdown : undefined
+
   const assetGroups = useMemo(
-    () => groupAssetItems(snapshot.assetBreakdown || []),
-    [snapshot.assetBreakdown]
+    () => {
+      const items = [...(snapshot.assetBreakdown || [])]
+      if (pensionBreakdown) {
+        for (const p of pensionBreakdown) {
+          items.push({ title: p.title, amount: p.amount, type: p.type || 'pension' })
+        }
+      }
+      return groupAssetItems(items).sort((a, b) => b.total - a.total)
+    },
+    [snapshot.assetBreakdown, pensionBreakdown]
   )
 
   const debtGroups = useMemo(
-    () => groupDebtItems(snapshot.debtBreakdown || []),
+    () => groupDebtItems(snapshot.debtBreakdown || []).sort((a, b) => b.total - a.total),
     [snapshot.debtBreakdown]
   )
 
@@ -48,7 +58,7 @@ export function DonutPairView({ snapshot, selectedYear }: DonutPairViewProps) {
   if (!hasAssets && !hasDebts) {
     return (
       <div className={styles.emptyState}>
-        {selectedYear}년 자산/부채 데이터가 없습니다
+        {selectedLabel} 자산/부채 데이터가 없습니다
       </div>
     )
   }

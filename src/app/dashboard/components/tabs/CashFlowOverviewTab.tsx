@@ -239,8 +239,7 @@ export function CashFlowOverviewTab({
                 </span>
               </div>
               <div className={styles.viewHeaderRight}>
-                {!isMonthlyMode && (
-                  <div className={styles.chartModeToggle}>
+                <div className={styles.chartModeToggle}>
                     <button
                       className={`${styles.modeButton} ${viewMode === 'chart' ? styles.modeActive : ''}`}
                       onClick={() => setViewMode('chart')}
@@ -263,7 +262,6 @@ export function CashFlowOverviewTab({
                       </svg>
                     </button>
                   </div>
-                )}
                 <div ref={timeRangeRef} className={styles.timeRangeSelector}>
                   <button
                     className={styles.timeRangeButton}
@@ -331,6 +329,7 @@ export function CashFlowOverviewTab({
                   key={simulationId}
                   simulationResult={simulationResult}
                   selectedYear={sankeyYear}
+                  monthlySnapshots={filteredMonthlySnapshots}
                 />
               </div>
             )}
