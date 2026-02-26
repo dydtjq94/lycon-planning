@@ -862,6 +862,75 @@ export function DashboardContent({ adminView }: DashboardContentProps) {
                 };
                 await simulationService.update(newSim.id, { life_cycle_settings: wizardLifeCycle });
 
+                // 가족 구성 저장 (family_config)
+                const familyConfig: SimFamilyMember[] = [];
+                // 배우자
+                if (wizardData.family.hasSpouse && wizardData.family.spouseBirthDate) {
+                  familyConfig.push({
+                    id: `sim-spouse-${Date.now()}`,
+                    relationship: "spouse",
+                    name: wizardData.family.spouseName || "배우자",
+                    birth_date: wizardData.family.spouseBirthDate,
+                    gender: wizardData.family.spouseGender,
+                    is_dependent: false,
+                    is_working: wizardData.retirement.spouseIsWorking,
+                    retirement_age: wizardData.retirement.spouseRetirementAge ?? null,
+                    monthly_income: null,
+                  });
+                }
+                // 기존 자녀
+                for (const child of wizardData.family.children) {
+                  if (!child.birthDate) continue;
+                  familyConfig.push({
+                    id: `sim-child-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    relationship: "child",
+                    name: child.gender === "male" ? "아들" : child.gender === "female" ? "딸" : "자녀",
+                    birth_date: child.birthDate,
+                    gender: child.gender,
+                    is_dependent: true,
+                    is_working: false,
+                    retirement_age: null,
+                    monthly_income: null,
+                  });
+                }
+                // 계획 자녀
+                for (const planned of wizardData.family.plannedChildren) {
+                  if (!planned.birthYear) continue;
+                  familyConfig.push({
+                    id: `sim-planned-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    relationship: "child",
+                    name: planned.gender === "male" ? "아들" : planned.gender === "female" ? "딸" : "자녀",
+                    birth_date: `${planned.birthYear}-01-01`,
+                    gender: planned.gender,
+                    is_dependent: true,
+                    is_working: false,
+                    retirement_age: null,
+                    monthly_income: null,
+                  });
+                }
+                // 부양 부모
+                for (const parent of wizardData.family.dependentParents) {
+                  if (!parent.birthDate) continue;
+                  const nameMap: Record<string, string> = {
+                    "father": "아버지", "mother": "어머니",
+                    "father-in-law": "장인/시아버지", "mother-in-law": "장모/시어머니",
+                  };
+                  familyConfig.push({
+                    id: `sim-parent-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    relationship: "parent",
+                    name: nameMap[parent.relationship] || "부양가족",
+                    birth_date: parent.birthDate,
+                    gender: parent.relationship.includes("father") ? "male" : "female",
+                    is_dependent: true,
+                    is_working: false,
+                    retirement_age: null,
+                    monthly_income: null,
+                  });
+                }
+                if (familyConfig.length > 0) {
+                  await simulationService.update(newSim.id, { family_config: familyConfig });
+                }
+
                 // 개인연금/퇴직연금 수령 시작 나이를 은퇴 나이로 맞춤
                 const selfRetAge = wizardData.retirement.retirementAge ?? 65;
                 const spouseRetAge = wizardData.retirement.spouseRetirementAge ?? selfRetAge;

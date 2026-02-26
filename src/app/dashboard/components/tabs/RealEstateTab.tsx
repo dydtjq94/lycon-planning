@@ -823,50 +823,52 @@ export function RealEstateTab({
               <span className={styles.modalFormUnit}>만원</span>
             </div>
 
+            {/* 취득일자 - 모든 거주형태 공통 */}
+            <div className={styles.modalFormRow}>
+              <span className={styles.modalFormLabel}>취득일자</span>
+              <div className={styles.fieldContent}>
+                <select
+                  className={styles.periodSelect}
+                  value={purchaseType}
+                  onChange={(e) => {
+                    const type = e.target.value as 'current' | 'year'
+                    setPurchaseType(type)
+                    if (type === 'current') {
+                      setPurchaseDateText('')
+                      setEditValues({ ...editValues, purchaseYear: currentYear.toString(), purchaseMonth: currentMonth.toString() })
+                    }
+                  }}
+                >
+                  <option value="current">현재</option>
+                  <option value="year">직접 입력</option>
+                </select>
+                {purchaseType === 'year' && (
+                  <input
+                    type="text"
+                    className={`${styles.periodInput}${purchaseDateText.length > 0 && !isPeriodValid(purchaseDateText) ? ` ${styles.invalid}` : ''}`}
+                    value={formatPeriodDisplay(purchaseDateText)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
+                      restorePeriodCursor(e.target, raw)
+                      setPurchaseDateText(raw)
+                      if (raw.length >= 4) {
+                        const y = parseInt(raw.slice(0, 4))
+                        if (!isNaN(y)) setEditValues({ ...editValues, purchaseYear: y.toString() })
+                      }
+                      if (raw.length >= 5) {
+                        const m = parseInt(raw.slice(4))
+                        if (!isNaN(m) && m >= 1 && m <= 12) setEditValues({ ...editValues, purchaseMonth: m.toString() })
+                      }
+                    }}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                    placeholder="2026.01"
+                  />
+                )}
+              </div>
+            </div>
+
             {housingType === '자가' && (
               <>
-                <div className={styles.modalFormRow}>
-                  <span className={styles.modalFormLabel}>취득일자</span>
-                  <div className={styles.fieldContent}>
-                    <select
-                      className={styles.periodSelect}
-                      value={purchaseType}
-                      onChange={(e) => {
-                        const type = e.target.value as 'current' | 'year'
-                        setPurchaseType(type)
-                        if (type === 'current') {
-                          setPurchaseDateText('')
-                          setEditValues({ ...editValues, purchaseYear: currentYear.toString(), purchaseMonth: currentMonth.toString() })
-                        }
-                      }}
-                    >
-                      <option value="current">현재</option>
-                      <option value="year">직접 입력</option>
-                    </select>
-                    {purchaseType === 'year' && (
-                      <input
-                        type="text"
-                        className={`${styles.periodInput}${purchaseDateText.length > 0 && !isPeriodValid(purchaseDateText) ? ` ${styles.invalid}` : ''}`}
-                        value={formatPeriodDisplay(purchaseDateText)}
-                        onChange={(e) => {
-                          const raw = e.target.value.replace(/\D/g, '').slice(0, 6)
-                          restorePeriodCursor(e.target, raw)
-                          setPurchaseDateText(raw)
-                          if (raw.length >= 4) {
-                            const y = parseInt(raw.slice(0, 4))
-                            if (!isNaN(y)) setEditValues({ ...editValues, purchaseYear: y.toString() })
-                          }
-                          if (raw.length >= 5) {
-                            const m = parseInt(raw.slice(4))
-                            if (!isNaN(m) && m >= 1 && m <= 12) setEditValues({ ...editValues, purchaseMonth: m.toString() })
-                          }
-                        }}
-                        onWheel={(e) => (e.target as HTMLElement).blur()}
-                        placeholder="2026.01"
-                      />
-                    )}
-                  </div>
-                </div>
                 <div className={styles.modalFormRow}>
                   <span className={styles.modalFormLabel}>취득가</span>
                   <input

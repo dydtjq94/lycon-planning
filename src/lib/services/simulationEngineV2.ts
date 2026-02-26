@@ -773,11 +773,11 @@ function initializeState(
 
     // 시뮬레이션 시작 이후 취득이면 취득 전 상태로 전환
     const reState = state.realEstates[state.realEstates.length - 1];
-    if (reState.includeInCashflow && reState.purchaseYear) {
+    if (reState.purchaseYear) {
       const pMonth = reState.purchaseMonth || 1;
       const purchaseYM = reState.purchaseYear * 12 + pMonth;
       const startYM = sYear * 12 + sMonth;
-      if (purchaseYM >= startYM) {
+      if (purchaseYM > startYM) {
         reState.isPurchased = false;
         reState.currentValue = 0;
       }
@@ -1851,32 +1851,106 @@ export function runSimulationV2(
         }
       }
 
-      // A6-5. 부동산 취득 이벤트 (현금 흐름 처리)
+      // A6-5. 부동산 취득 이벤트
       for (const re of state.realEstates) {
         if (re.isPurchased || re.isSold) continue;
-        if (!re.includeInCashflow) continue;
         const purchaseMonth = re.purchaseMonth || 1;
         if (re.purchaseYear === year && purchaseMonth === month) {
-          state.currentCash -= re.purchasePrice;
-          yearlyExpense += re.purchasePrice;
-          monthExpense += re.purchasePrice;
-          monthExpenseBreakdown.push({
-            title: `${re.title} 취득`,
-            amount: re.purchasePrice,
-            type: "real_estate_purchase",
-          });
-          re.currentValue = re.purchasePrice;
           re.isPurchased = true;
-          events.push(
-            `${re.title} 취득 (${Math.round(re.purchasePrice)}만원)`,
-          );
-          eventFlowItems.push({
-            title: `${re.title} 취득`,
-            amount: -Math.round(re.purchasePrice),
-            flowType: "real_estate_purchase",
-            sourceType: "real_estates",
-            sourceId: re.id,
-          });
+          const isLease = re.housingType === "전세" || re.housingType === "월세";
+
+          if (isLease) {
+            // 전세/월세: 대출 실행 → 보증금 지출
+            const depositAmount = re.deposit || 0;
+
+            // 1) 대출금 현금 유입
+            if (re.hasLoan && re.loanBalance > 0) {
+              const loanDisbursement = re.loanBalance;
+              state.currentCash += loanDisbursement;
+              yearlyIncome += loanDisbursement;
+              monthIncome += loanDisbursement;
+              monthIncomeBreakdown.push({
+                title: `${re.title} 대출 실행`,
+                amount: loanDisbursement,
+                type: "loan_disbursement",
+              });
+              eventFlowItems.push({
+                title: `${re.title} 대출 실행`,
+                amount: Math.round(loanDisbursement),
+                flowType: "loan_disbursement",
+                sourceType: "real_estates",
+                sourceId: re.id,
+              });
+            }
+
+            // 2) 보증금 현금 유출
+            if (depositAmount > 0) {
+              state.currentCash -= depositAmount;
+              yearlyExpense += depositAmount;
+              monthExpense += depositAmount;
+              monthExpenseBreakdown.push({
+                title: `${re.title} 보증금`,
+                amount: depositAmount,
+                type: "deposit_payment",
+              });
+              eventFlowItems.push({
+                title: `${re.title} 보증금`,
+                amount: -Math.round(depositAmount),
+                flowType: "deposit_payment",
+                sourceType: "real_estates",
+                sourceId: re.id,
+              });
+            }
+
+            events.push(
+              `${re.title} 입주 (보증금 ${Math.round(depositAmount)}만원)`,
+            );
+          } else {
+            // 자가/투자/임대/토지: 기존 로직
+            re.currentValue = re.purchasePrice;
+            events.push(
+              `${re.title} 취득 (${Math.round(re.purchasePrice)}만원)`,
+            );
+
+            // 대출 실행 현금 유입
+            if (re.hasLoan && re.loanBalance > 0) {
+              const loanDisbursement = re.loanBalance;
+              state.currentCash += loanDisbursement;
+              yearlyIncome += loanDisbursement;
+              monthIncome += loanDisbursement;
+              monthIncomeBreakdown.push({
+                title: `${re.title} 대출 실행`,
+                amount: loanDisbursement,
+                type: "loan_disbursement",
+              });
+              eventFlowItems.push({
+                title: `${re.title} 대출 실행`,
+                amount: Math.round(loanDisbursement),
+                flowType: "loan_disbursement",
+                sourceType: "real_estates",
+                sourceId: re.id,
+              });
+            }
+
+            // 취득가 현금 유출 (includeInCashflow일 때만)
+            if (re.includeInCashflow) {
+              state.currentCash -= re.purchasePrice;
+              yearlyExpense += re.purchasePrice;
+              monthExpense += re.purchasePrice;
+              monthExpenseBreakdown.push({
+                title: `${re.title} 취득`,
+                amount: re.purchasePrice,
+                type: "real_estate_purchase",
+              });
+              eventFlowItems.push({
+                title: `${re.title} 취득`,
+                amount: -Math.round(re.purchasePrice),
+                flowType: "real_estate_purchase",
+                sourceType: "real_estates",
+                sourceId: re.id,
+              });
+            }
+          }
         }
       }
 
@@ -2249,7 +2323,7 @@ export function runSimulationV2(
           }
 
           const receivingYears = pension.receivingYears || 20;
-          const effectiveReturnRate = pension.returnRate > 0 ? pension.returnRate : pensionReturnPct;
+          const effectiveReturnRate = pensionReturnPct;
           const monthlyReturnRate =
             Math.pow(1 + effectiveReturnRate / 100, 1 / 12) - 1;
 
@@ -2323,7 +2397,7 @@ export function runSimulationV2(
           (pension.pensionType === 'db' || pension.pensionType === 'severance') &&
           pension.calculationMode === 'auto'
         ) continue;
-        const returnRate = pension.returnRate > 0 ? pension.returnRate : pensionReturnPct;
+        const returnRate = pensionReturnPct;
         if (returnRate > 0) {
           const monthlyRate = Math.pow(1 + returnRate / 100, 1 / 12) - 1;
           pension.balance *= 1 + monthlyRate;
@@ -2743,7 +2817,7 @@ export function runSimulationV2(
         .reduce((sum, p) => sum + p.balance, 0);
 
       const mRealEstateValue = state.realEstates
-        .filter((re) => !re.isSold)
+        .filter((re) => re.isPurchased && !re.isSold)
         .reduce((sum, re) => {
           if (re.housingType === "전세" || re.housingType === "월세") {
             return sum + (re.deposit || 0);
@@ -2752,7 +2826,7 @@ export function runSimulationV2(
         }, 0);
 
       const mPhysicalAssetValue = state.physicalAssets
-        .filter((a) => !a.isSold)
+        .filter((a) => a.isPurchased && !a.isSold)
         .reduce((sum, a) => sum + a.currentValue, 0);
 
       // 사용자 직접 생성 부채 (연동 부채 제외)
@@ -2790,7 +2864,7 @@ export function runSimulationV2(
 
       // 부동산
       for (const re of state.realEstates) {
-        if (re.isSold) continue;
+        if (!re.isPurchased || re.isSold) continue;
         const label = ownerLabels[re.owner] || "";
         const displayTitle = label ? `${re.title} | ${label}` : re.title;
         if (re.housingType === "전세" || re.housingType === "월세") {
@@ -2859,7 +2933,7 @@ export function runSimulationV2(
       }
       // 부동산 대출 잔액
       for (const re of state.realEstates) {
-        if (re.isSold || !re.hasLoan || re.loanBalance <= 0) continue;
+        if (!re.isPurchased || re.isSold || !re.hasLoan || re.loanBalance <= 0) continue;
         mDebtBreakdown.push({
           title: `${re.title} 대출`,
           amount: Math.round(re.loanBalance),
@@ -2868,7 +2942,7 @@ export function runSimulationV2(
       }
       // 실물자산 대출 잔액
       for (const asset of state.physicalAssets) {
-        if (asset.isSold || !asset.hasLoan || asset.loanBalance <= 0) continue;
+        if (!asset.isPurchased || asset.isSold || !asset.hasLoan || asset.loanBalance <= 0) continue;
         mDebtBreakdown.push({
           title: `${asset.title} 대출`,
           amount: Math.round(asset.loanBalance),
@@ -3082,7 +3156,7 @@ export function runSimulationV2(
       .reduce((sum, p) => sum + p.balance, 0);
 
     const realEstateValue = state.realEstates
-      .filter((re) => !re.isSold)
+      .filter((re) => re.isPurchased && !re.isSold)
       .reduce((sum, re) => {
         if (re.housingType === "전세" || re.housingType === "월세") {
           return sum + (re.deposit || 0);
@@ -3091,7 +3165,7 @@ export function runSimulationV2(
       }, 0);
 
     const physicalAssetValue = state.physicalAssets
-      .filter((a) => !a.isSold)
+      .filter((a) => a.isPurchased && !a.isSold)
       .reduce((sum, a) => sum + a.currentValue, 0);
 
     const totalAssets = Math.round(
@@ -3129,7 +3203,7 @@ export function runSimulationV2(
 
     // 부동산
     for (const re of state.realEstates) {
-      if (re.isSold) continue;
+      if (!re.isPurchased || re.isSold) continue;
       const label = ownerLabels[re.owner] || "";
       const displayTitle = label ? `${re.title} | ${label}` : re.title;
 
@@ -3195,7 +3269,7 @@ export function runSimulationV2(
     }
     // 부동산 대출 잔액
     for (const re of state.realEstates) {
-      if (re.isSold || !re.hasLoan || re.loanBalance <= 0) continue;
+      if (!re.isPurchased || re.isSold || !re.hasLoan || re.loanBalance <= 0) continue;
       debtBreakdown.push({
         title: `${re.title} 대출`,
         amount: Math.round(re.loanBalance),
@@ -3204,7 +3278,7 @@ export function runSimulationV2(
     }
     // 실물자산 대출 잔액
     for (const asset of state.physicalAssets) {
-      if (asset.isSold || !asset.hasLoan || asset.loanBalance <= 0) continue;
+      if (!asset.isPurchased || asset.isSold || !asset.hasLoan || asset.loanBalance <= 0) continue;
       debtBreakdown.push({
         title: `${asset.title} 대출`,
         amount: Math.round(asset.loanBalance),

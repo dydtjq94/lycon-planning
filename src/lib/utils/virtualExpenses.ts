@@ -120,13 +120,9 @@ export function generateVirtualExpenses(params: VirtualExpenseParams): Expense[]
             }),
           );
         } else {
-          // 기간 교육비: endAge는 다음 단계 시작 나이 - 1
-          // 다음이 isOneTime(결혼자금 등)이면 그 나이 - 1까지가 현재 단계 범위
-          const rawEndAge = si < ageKeys.length - 1 ? ageKeys[si + 1] - 1 : startAge;
-          const nextEntry = si < ageKeys.length - 1 ? EDUCATION_EXPENSE_BY_AGE[ageKeys[si + 1]] : null;
-          const effectiveEndAge = nextEntry?.isOneTime
-            ? ageKeys[si + 1] - 1
-            : rawEndAge;
+          // 기간 교육비: endAge가 명시되어 있으면 사용, 없으면 다음 단계 시작 나이 - 1
+          const effectiveEndAge = entry.endAge
+            ?? (si < ageKeys.length - 1 ? ageKeys[si + 1] - 1 : startAge);
 
           if (childAge > effectiveEndAge) continue;
 

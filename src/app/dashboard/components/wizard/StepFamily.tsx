@@ -149,7 +149,44 @@ export function StepFamily({ data, onChange, userGender }: StepFamilyProps) {
           <div className={styles.childrenList}>
             {family.plannedChildren.map((planned, index) => (
               <div key={index} className={styles.childRow}>
-                <span className={styles.childLabelPlanned}>계획</span>
+                <div className={styles.pillGroup}>
+                  <button
+                    type="button"
+                    className={`${styles.pill} ${planned.gender === "male" ? styles.pillActive : ""}`}
+                    onClick={() => {
+                      const updated = family.plannedChildren.map((p, i) =>
+                        i === index ? { ...p, gender: "male" as const } : p
+                      );
+                      updateFamily({ plannedChildren: updated });
+                    }}
+                  >
+                    아들
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.pill} ${planned.gender === "female" ? styles.pillActive : ""}`}
+                    onClick={() => {
+                      const updated = family.plannedChildren.map((p, i) =>
+                        i === index ? { ...p, gender: "female" as const } : p
+                      );
+                      updateFamily({ plannedChildren: updated });
+                    }}
+                  >
+                    딸
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.pill} ${planned.gender === null ? styles.pillActive : ""}`}
+                    onClick={() => {
+                      const updated = family.plannedChildren.map((p, i) =>
+                        i === index ? { ...p, gender: null } : p
+                      );
+                      updateFamily({ plannedChildren: updated });
+                    }}
+                  >
+                    미정
+                  </button>
+                </div>
                 <div className={styles.yearInputWrapper}>
                   <input
                     type="number"
@@ -204,7 +241,7 @@ export function StepFamily({ data, onChange, userGender }: StepFamilyProps) {
               className={styles.addBtn}
               onClick={() => {
                 updateFamily({
-                  plannedChildren: [...family.plannedChildren, { birthYear: null }],
+                  plannedChildren: [...family.plannedChildren, { birthYear: null, gender: null }],
                 });
               }}
             >

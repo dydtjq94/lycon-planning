@@ -12,7 +12,7 @@ export interface WizardData {
       birthDate: string;
       gender: "male" | "female" | null;
     }[];
-    plannedChildren: { birthYear: number | null }[];
+    plannedChildren: { birthYear: number | null; gender: "male" | "female" | null }[];
     dependentParents: {
       relationship: "father" | "mother" | "father-in-law" | "mother-in-law";
       birthDate: string;
